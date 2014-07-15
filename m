@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699AbaGODUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:20:46 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:35132 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970AbaGODUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:20:44 -0400
+	id S1757208AbaGOD37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:29:59 -0400
+Received: from ozlabs.org ([103.22.144.67]:54056 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753577AbaGOD3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:29:55 -0400
+Date: Tue, 15 Jul 2014 13:29:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20140715132946.771def89@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUrAZsoPttFhAd384OJ27ixwC_NCYFMWuMzyDqoKBmTmQ@mail.gmail.com>
-References: <CALCETrXrVNKNQtxncfOth5OqaSOC7KygerbB-+QQb4_VKESVsA@mail.gmail.com>
- <53C40D83.3090501@zytor.com> <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
- <CALCETrVz7a7RVLhYTrGvHkJR2dGHJbRuATOaWaXgkrSABR7YFA@mail.gmail.com>
- <CALCETrU9dmM+bsQYwULjiqw5+erKsu5yUmHJDGYUW1wpcdp-5Q@mail.gmail.com>
- <CALCETrWG-dQL8ipJ8cO3wfbYKA=mAv3CS4-1JFwmBXF3pUbAwg@mail.gmail.com>
- <53C45857.6050605@zytor.com> <CALCETrUrAZsoPttFhAd384OJ27ixwC_NCYFMWuMzyDqoKBmTmQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 14 Jul 2014 20:20:22 -0700
-Message-ID: <CALCETrUdtyQYtXVBtgZELX6HYFutUzLwYSfnVsmtqOAUteht6Q@mail.gmail.com>
-Subject: Re: Is espfix64's double-fault thing OK on Xen?
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8Q1kcl0LNxR.xSlV2DIf1yo"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 7:46 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Jul 14, 2014 at 3:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 07/14/2014 02:35 PM, Andy Lutomirski wrote:
->>> Presumably the problem is here:
->>>
->>> ENTRY(xen_iret)
->>>     pushq $0
->>> 1:    jmp hypercall_iret
->>> ENDPATCH(xen_iret)
->>>
->>> This seems rather unlikely to work on the espfix stack.
->>>
->>> Maybe espfix64 should be disabled when running on Xen and Xen should
->>> implement its own espfix64 in the hypervisor.
->>
->> Perhaps the first question is: is espfix even necessary on Xen?  How
->> does the Xen PV IRET handle returning to a 16-bit stack segment?
->>
->
-> Test case here:
->
-> https://gitorious.org/linux-test-utils/linux-clock-tests/source/dbfe196a0f6efedc119deb1cdbb0139dbdf609ee:
->
-> It's sigreturn_32 and sigreturn_64.  Summary:
->
-> (sigreturn_64 always fails unless my SS patch is applied.  results
-> below for sigreturn_64 assume the patch is applied.  This is on KVM
-> (-cpu host) on Sandy Bridge.)
->
-> On Xen with espfix, both OOPS intermittently.
->
-> On espfix-less kernels (Xen and non-Xen), 16-bit CS w/ 16-bit SS
-> always fails.  Native (32-bit or 64-bit, according to the binary) CS
-> with 16-bit SS fails for sigreturn_32, but passes for sigreturn_64.  I
-> find this somewhat odd.  Native ss always passes.
->
-> So I think that Xen makes no difference here, aside from the bug.
->
-> That being said, I don't know whether Linux can do espfix64 at all
-> when Xen is running -- for all I know, the IRET hypercall switches
-> stacks to a Xen stack.
+--Sig_/8Q1kcl0LNxR.xSlV2DIf1yo
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Microcode is weird.  Without espfix:
+Hi Mauro,
 
-[RUN]    64-bit CS (33), 32-bit SS (2b)
-    SP: 8badf00d5aadc0de -> 8badf00d5aadc0de
-[OK]    all registers okay
-[RUN]    32-bit CS (23), 32-bit SS (2b)
-    SP: 8badf00d5aadc0de -> 5aadc0de
-[OK]    all registers okay
-[RUN]    16-bit CS (7), 32-bit SS (2b)
-    SP: 8badf00d5aadc0de -> 5aadc0de
-[OK]    all registers okay
-[RUN]    64-bit CS (33), 16-bit SS (f)
-    SP: 8badf00d5aadc0de -> 8badf00d5aadc0de
-[OK]    all registers okay
-[RUN]    32-bit CS (23), 16-bit SS (f)
-    SP: 8badf00d5aadc0de -> 5ae3c0de
-[FAIL]    Reg 15 mismatch: requested 0x8badf00d5aadc0de; got 0x5ae3c0de
-[RUN]    16-bit CS (7), 16-bit SS (f)
-    SP: 8badf00d5aadc0de -> 5ae3c0de
-[FAIL]    Reg 15 mismatch: requested 0x8badf00d5aadc0de; got 0x5ae3c0de
+After merging the v4l-dvb tree, today's linux-next build (powerpc ppc64_def=
+config)
+failed like this:
 
---Andy
+arch/powerpc/kernel/smp.c:764:2: error: initialization from incompatible po=
+inter type [-Werror]
+  { cpu_smt_mask, powerpc_smt_flags, SD_INIT_NAME(SMT) },
+  ^
+arch/powerpc/kernel/smp.c:764:2: error: (near initialization for 'powerpc_t=
+opology[0].sd_flags') [-Werror]
+
+Caused by commit 6a0b50087a89 ("Merge branch 'patchwork' into
+to_next").  The change to include/linux/sched.h in this merge commit
+does not seem to appear in either of the parents of the merge.
+
+Its also a change that (when suggested) was shown to cause more
+problems than it was worth and dropped.  I can't imagine how it ended
+up in the merge commit.
+
+I have used the v4l-dvb tree from next-20140714 for today.  Please fix
+this up.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/8Q1kcl0LNxR.xSlV2DIf1yo
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTxKAvAAoJEMDTa8Ir7ZwV1N8P/RnNmtZevn6z2GOPUhT+FsdW
+y9qOGEc0Q5rYRt2in5f5zH5v0B2ipz6Sx1vAMqKh6r8VkTcIbOpv1M2iJ3HfmhUF
+MEy+3x/XPYdwZY5rIBXwcnA47tjtLGLhXyNMS+6kur5c88W5bcN9/S0Gf7bbM2Lt
+o8C2XbB8lmO6+9LYBJ59q7BUMH5Vc8mik3dWmkeoimFgSLPicDR9jPXGFx+fMLBk
+mFEcd+z94nzFqzN1pw7F5ykthuw7S9fsFhasuYNvDM5I3iRzTVpmceYjA7olkw8m
+EXZrWtzILgxpe3kZbUEaBc+ro8HgteAge5oj3LQ8T/lN6iZ5rIg1wvxgu9jpu1zC
+VA4Lc5DOfCTMjAMEG/5sPlx6scVBh6zETo+Eru3Ck1CB1iSPZVqodisIsRjKjwp4
+mQpQb6/aT6/Mb5AMbnbJk+uxJeuF63aBss+nz7j28BwrgbMayY8Az45fykAviP9k
+QP82+xswq8mjuTRoWytzReKkAf0IS3PbId5xc/lVzC6z6cWuBBUvBIpEJBVSZeat
+nODfLEwYmuicz5NWWfh5fAb15M90N5l5HhaLG2hvGJwIYyI0JU93D2+djBZ6dvfk
+VXK0iz8TingSOr85zruPqN5XK3YOiBohl+jyhKAtotmkZpA1SQtmZMw6c1E/QU8W
+T715NS9/U8MiCWlNGlXq
+=GX+2
+-----END PGP SIGNATURE-----
+
+--Sig_/8Q1kcl0LNxR.xSlV2DIf1yo--
