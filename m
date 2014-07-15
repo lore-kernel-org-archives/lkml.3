@@ -1,85 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521AbaGOKc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 06:32:56 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:55992 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758696AbaGOKcw (ORCPT
+	id S932640AbaGOKdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 06:33:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55540 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758678AbaGOKce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 06:32:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 0/4] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Tue, 15 Jul 2014 12:32:09 +0200
-Message-ID: <4736066.znnQ63vBqX@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4527083.RFD2neZ6Bp@wuerfel>
-References: <1401206421-29832-1-git-send-email-daniel.thompson@linaro.org> <53C39D5F.6050901@linaro.org> <4527083.RFD2neZ6Bp@wuerfel>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ri2sxaeiElGIZdps3CEniJUbhggpDGzwWDLICZUjTw+
- 3fTFsyQJAangjrE261rO3ZlDNx65OvB84e3mGixsvuOupIdi/c
- s35dtzuUtcTmHinnvVcNIv05di9zLU7n550Eo+upi+Hw0NHzuh
- smrUv0xqZ6vXu3lwgQXap9BRJLnJCCKHO+g7VZZUiNXiBlA77s
- d3eRXtFTUgiMIP10GKK4vj9sxOp3GX9z1oMs1p1+ETWAt2kats
- o5nIOylV3syNeKajHs5RkMqoH9pDbXxOQokSUknMsjlR2qP6e0
- 1ibqNYO9lVTdF55Ad3ar2jhMg8/kv5mK2nRioda8mdLv8JZZyl
- ky5ghY0BxgxKfh00rMtQ=
+	Tue, 15 Jul 2014 06:32:34 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, broonie@kernel.org, lgirdwood@gmail.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 6/6 RESEND] mfd: arizona: Only free the CTRLIF_ERR IRQ if we requested it
+Date: Tue, 15 Jul 2014 11:21:50 +0100
+Message-Id: <1405419710-14789-7-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1405419710-14789-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1405419710-14789-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 July 2014 17:27:49 Arnd Bergmann wrote:
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 8f90595069a1..0f89d1b84524 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -200,6 +200,14 @@ choice
->  		  Say Y here if you want the debug print routines to direct
->  		  their output to the serial port in the DC21285 (Footbridge).
->  
-> +	config DEBUG_EP93XX
-> +		bool "Kernel low-level debugging messages via ep93xx UART"
-> +		depends on ARCH_EP93XX
-> +		select DEBUG_UART_PL01X
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on Cirrus Logic EP93xx based platforms.
-> +
+We only request the control interface error IRQ if we set ctrlif_error,
+as such we should only free it in that situation. Otherwise we will
+attempt to free an IRQ we never requested and get a warning from the IRQ
+core.
 
-FWIW, this part was broken, fixup below. The problem is that the decompress.h
-for ep93xx uses CONFIG_DEBUG_UART_PHYS even when DEBUG_LL is disabled.
+This patch moves the ctrlif_error variable into the arizona structure
+and checks it in all cases we free the control interface error IRQ.
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 362d764cd358..a99b28029983 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1139,7 +1139,7 @@ config DEBUG_UART_PHYS
- 	default 0x80070000 if DEBUG_IMX23_UART
- 	default 0x80074000 if DEBUG_IMX28_UART
- 	default 0x80230000 if DEBUG_PICOXCELL_UART
--	default 0x808c0000 if DEBUG_EP93XX
-+	default 0x808c0000 if DEBUG_EP93XX || ARCH_EP93XX
- 	default 0x90020000 if DEBUG_NSPIRE_CLASSIC_UART || DEBUG_NSPIRE_CX_UART
- 	default 0xa9a00000 if DEBUG_MSM_UART
- 	default 0xb0090000 if DEBUG_VEXPRESS_UART0_CRX
-@@ -1166,7 +1166,8 @@ config DEBUG_UART_PHYS
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_LL_UART_EFM32 || \
- 		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
--		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART
-+		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART || \
-+		ARCH_EP93XX
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-irq.c        |   19 ++++++++++++-------
+ include/linux/mfd/arizona/core.h |    2 ++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+index e780bc4..d420dbc 100644
+--- a/drivers/mfd/arizona-irq.c
++++ b/drivers/mfd/arizona-irq.c
+@@ -188,16 +188,17 @@ int arizona_irq_init(struct arizona *arizona)
+ 	int flags = IRQF_ONESHOT;
+ 	int ret, i;
+ 	const struct regmap_irq_chip *aod, *irq;
+-	bool ctrlif_error = true;
+ 	struct irq_data *irq_data;
  
- config DEBUG_UART_VIRT
- 	hex "Virtual base address of debug UART"
++	arizona->ctrlif_error = true;
++
+ 	switch (arizona->type) {
+ #ifdef CONFIG_MFD_WM5102
+ 	case WM5102:
+ 		aod = &wm5102_aod;
+ 		irq = &wm5102_irq;
+ 
+-		ctrlif_error = false;
++		arizona->ctrlif_error = false;
+ 		break;
+ #endif
+ #ifdef CONFIG_MFD_WM5110
+@@ -213,7 +214,7 @@ int arizona_irq_init(struct arizona *arizona)
+ 			break;
+ 		}
+ 
+-		ctrlif_error = false;
++		arizona->ctrlif_error = false;
+ 		break;
+ #endif
+ #ifdef CONFIG_MFD_WM8997
+@@ -221,7 +222,7 @@ int arizona_irq_init(struct arizona *arizona)
+ 		aod = &wm8997_aod;
+ 		irq = &wm8997_irq;
+ 
+-		ctrlif_error = false;
++		arizona->ctrlif_error = false;
+ 		break;
+ #endif
+ 	default:
+@@ -308,7 +309,7 @@ int arizona_irq_init(struct arizona *arizona)
+ 	}
+ 
+ 	/* Handle control interface errors in the core */
+-	if (ctrlif_error) {
++	if (arizona->ctrlif_error) {
+ 		i = arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR);
+ 		ret = request_threaded_irq(i, NULL, arizona_ctrlif_err,
+ 					   IRQF_ONESHOT,
+@@ -353,7 +354,9 @@ int arizona_irq_init(struct arizona *arizona)
+ 	return 0;
+ 
+ err_main_irq:
+-	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
++	if (arizona->ctrlif_error)
++		free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR),
++			 arizona);
+ err_ctrlif:
+ 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
+ err_boot_done:
+@@ -369,7 +372,9 @@ err:
+ 
+ int arizona_irq_exit(struct arizona *arizona)
+ {
+-	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
++	if (arizona->ctrlif_error)
++		free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR),
++			 arizona);
+ 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
+ 	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
+ 			    arizona->irq_chip);
+diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
+index 8bc7601..fdd8b7b 100644
+--- a/include/linux/mfd/arizona/core.h
++++ b/include/linux/mfd/arizona/core.h
+@@ -132,6 +132,8 @@ struct arizona {
+ 	struct mutex clk_lock;
+ 	int clk32k_ref;
+ 
++	bool ctrlif_error;
++
+ 	struct snd_soc_dapm_context *dapm;
+ };
+ 
+-- 
+1.7.2.5
 
