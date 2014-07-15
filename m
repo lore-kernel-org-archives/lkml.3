@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942AbaGOXOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:14:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
+	id S934457AbaGOXjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:39:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45503 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933333AbaGOXNj (ORCPT
+	with ESMTP id S933937AbaGOXOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:39 -0400
+	Tue, 15 Jul 2014 19:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Barton Xu <tank.xuhan@gmail.com>,
-        Steffen Weber <steffen.weber@gmail.com>,
-        Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 24/66] ACPI / EC: Fix race condition in ec_transaction_completed()
-Date: Tue, 15 Jul 2014 16:17:18 -0700
-Message-Id: <20140715231703.091815733@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.15 41/84] dm mpath: fix IO hang due to logic bug in multipath_busy
+Date: Tue, 15 Jul 2014 16:17:38 -0700
+Message-Id: <20140715231714.428197443@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,139 +26,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-commit c0d653412fc8450370167a3268b78fc772ff9c87 upstream.
+commit 7a7a3b45fed9a144dbf766ee842a4c5d0632b81d upstream.
 
-There is a race condition in ec_transaction_completed().
+Commit e80991773 ("dm mpath: push back requests instead of queueing")
+modified multipath_busy() to return true if !pg_ready().  pg_ready()
+checks the current state of the multipath device and may return false
+even if a new IO is needed to change the state.
 
-When ec_transaction_completed() is called in the GPE handler, it could
-return true because of (ec->curr == NULL). Then the wake_up() invocation
-could complete the next command unexpectedly since there is no lock between
-the 2 invocations. With the previous cleanup, the IBF=0 waiter race need
-not be handled any more. It's now safe to return a flag from
-advance_condition() to indicate the requirement of wakeup, the flag is
-returned from a locked context.
+Bart Van Assche reported that he had multipath IO lockup when he was
+performing cable pull tests.  Analysis showed that the multipath
+device had a single path group with both paths active, but that the
+path group itself was not active.  During the multipath device state
+transitions 'queue_io' got set but nothing could clear it.  Clearing
+'queue_io' only happens in __choose_pgpath(), but it won't be called
+if multipath_busy() returns true due to pg_ready() returning false
+when 'queue_io' is set.
 
-The ec_transaction_completed() is now only invoked by the ec_poll() where
-the ec->curr is ensured to be different from NULL.
+As such the !pg_ready() check in multipath_busy() is wrong because new
+IO will not be sent to multipath target and the multipath state change
+won't happen.  That results in multipath IO lockup.
 
-After cleaning up, the EVT_SCI=1 check should be moved out of the wakeup
-condition so that an EVT_SCI raised with (ec->curr == NULL) can trigger a
-QR_SC command.
+The intent of multipath_busy() is to avoid unnecessary cycles of
+dequeue + request_fn + requeue if it is known that the multipath
+device will requeue.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Such "busy" situations would be:
+  - path group is being activated
+  - there is no path and the multipath is setup to requeue if no path
+
+Fix multipath_busy() to return "busy" early only for these specific
+situations.
+
+Reported-by: Bart Van Assche <bvanassche@acm.org>
+Tested-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ drivers/md/dm-mpath.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -158,16 +158,17 @@ static int ec_transaction_completed(stru
- 	unsigned long flags;
- 	int ret = 0;
- 	spin_lock_irqsave(&ec->lock, flags);
--	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
-+	if (ec->curr && (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
- 		ret = 1;
- 	spin_unlock_irqrestore(&ec->lock, flags);
- 	return ret;
- }
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1620,8 +1620,9 @@ static int multipath_busy(struct dm_targ
  
--static void advance_transaction(struct acpi_ec *ec)
-+static bool advance_transaction(struct acpi_ec *ec)
- {
- 	struct transaction *t;
- 	u8 status;
-+	bool wakeup = false;
+ 	spin_lock_irqsave(&m->lock, flags);
  
- 	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
- 	status = acpi_ec_read_status(ec);
-@@ -183,21 +184,25 @@ static void advance_transaction(struct a
- 		} else if (t->rlen > t->ri) {
- 			if ((status & ACPI_EC_FLAG_OBF) == 1) {
- 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
--				if (t->rlen == t->ri)
-+				if (t->rlen == t->ri) {
- 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+					wakeup = true;
-+				}
- 			} else
- 				goto err;
- 		} else if (t->wlen == t->wi &&
--			   (status & ACPI_EC_FLAG_IBF) == 0)
-+			   (status & ACPI_EC_FLAG_IBF) == 0) {
- 			t->flags |= ACPI_EC_COMMAND_COMPLETE;
--		return;
-+			wakeup = true;
-+		}
-+		return wakeup;
- 	} else {
- 		if ((status & ACPI_EC_FLAG_IBF) == 0) {
- 			acpi_ec_write_cmd(ec, t->command);
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
- 			goto err;
--		return;
-+		return wakeup;
+-	/* pg_init in progress, requeue until done */
+-	if (!pg_ready(m)) {
++	/* pg_init in progress or no paths available */
++	if (m->pg_init_in_progress ||
++	    (!m->nr_valid_paths && m->queue_if_no_path)) {
+ 		busy = 1;
+ 		goto out;
  	}
- err:
- 	/*
-@@ -208,13 +213,14 @@ err:
- 		if (in_interrupt() && t)
- 			++t->irq_count;
- 	}
-+	return wakeup;
- }
- 
- static void start_transaction(struct acpi_ec *ec)
- {
- 	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
- 	ec->curr->flags = 0;
--	advance_transaction(ec);
-+	(void)advance_transaction(ec);
- }
- 
- static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
-@@ -248,7 +254,7 @@ static int ec_poll(struct acpi_ec *ec)
- 					return 0;
- 			}
- 			spin_lock_irqsave(&ec->lock, flags);
--			advance_transaction(ec);
-+			(void)advance_transaction(ec);
- 			spin_unlock_irqrestore(&ec->lock, flags);
- 		} while (time_before(jiffies, delay));
- 		pr_debug("controller reset, restart transaction\n");
-@@ -627,12 +633,10 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	struct acpi_ec *ec = data;
- 
- 	spin_lock_irqsave(&ec->lock, flags);
--	advance_transaction(ec);
--	spin_unlock_irqrestore(&ec->lock, flags);
--	if (ec_transaction_completed(ec)) {
-+	if (advance_transaction(ec))
- 		wake_up(&ec->wait);
--		ec_check_sci(ec, acpi_ec_read_status(ec));
--	}
-+	spin_unlock_irqrestore(&ec->lock, flags);
-+	ec_check_sci(ec, acpi_ec_read_status(ec));
- 	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
- }
- 
 
 
