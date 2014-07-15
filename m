@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaGOAuH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:50:07 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:52990 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255AbaGOAuD (ORCPT
+	id S1754507AbaGOAxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 20:53:15 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54221 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516AbaGOAxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:50:03 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <peifeiyue@huawei.com>
-Subject: [PATCH v2] ftrace: Do not copy old hash when resetting.
-Date: Tue, 15 Jul 2014 08:40:20 +0800
-Message-ID: <1405384820-48837-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Mon, 14 Jul 2014 20:53:13 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53C47B76.4080306@roeck-us.net>
+Date: Mon, 14 Jul 2014 17:53:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Richard Weinberger <richard@nod.at>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org, arnd@arndb.de,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at> <53C3994C.1010309@metafoo.de> <53C39B66.4060500@nod.at> <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com> <53C47725.8000005@gmail.com>
+In-Reply-To: <53C47725.8000005@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we are going to reset hash, we don't need to duplicate old hash
-and remove every entries right after allocation.
+On 07/14/2014 05:34 PM, Chen Gang wrote:
+> On 07/14/2014 05:22 PM, Chen Gang wrote:
+>>
+>> 在 2014年7月14日，下午4:57，Richard Weinberger <richard@nod.at> 写道：
+>>
+>>> Am 14.07.2014 10:48, schrieb Lars-Peter Clausen:
+>>>> On 07/14/2014 10:31 AM, Richard Weinberger wrote:
+>>>>> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
+>>>>>> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
+>>>>>>> Maybe we could add COMPILE_TEST to the version string too?
+>>>>>>> Just to detect such kernels fast in user bug reports...
+>>>>>>
+>>>>>> What kind of bug report are you going to get?
+>>>>>
+>>>>> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
+>>>>> complains that it does not work. :)
+>>>>
+>>>> These drivers are typically drivers for some SoC peripheral and the device will simply physically not exist on a platform that does not provide HAS_IOMEM. This is not really any
+>>>> different from making the driver selectable via COMPILE_TEST for any other platform. To hit the issue you'd have to instantiate a device driver instance for a device that
+>>>> physically does not exist. This will always result in a failure.
+>>>
+>>> Okay, you have convinced me. :)
+>>>
+>
+> After search the history patches, I found one related patch which made
+> by myself (when I am in Asianux):
+>
+>    "https://lkml.org/lkml/2013/7/1/641"
+>
+> For me, it is a long discussion, and forced many members have to join
+> in. Please help check again.
+>
 
-Change from v1:
- - if statement is swapped to make condition positive.
+One thing you could try would be to return NULL (or where appropriate
+an error) in the #else case of CONFIG_HAS_IOMEM and CONFIG_HAS_IOPORT,
+ie dont take COMPILE_TEST into account at all. Obviously that means
+you won't be able to dump a warning message in the COMPILE_TEST
+case, but at least the code would compile. The rejection of above patch
+would make a good case for this approach.
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-
----
- kernel/trace/ftrace.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5b372e3..aa61d01 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3471,14 +3471,16 @@ ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
- 	else
- 		orig_hash = &ops->notrace_hash;
- 
--	hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
-+	if (reset)
-+		hash = alloc_ftrace_hash(FTRACE_HASH_DEFAULT_BITS);
-+	else
-+		hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
-+
- 	if (!hash) {
- 		ret = -ENOMEM;
- 		goto out_regex_unlock;
- 	}
- 
--	if (reset)
--		ftrace_filter_reset(hash);
- 	if (buf && !ftrace_match_records(hash, buf, len)) {
- 		ret = -EINVAL;
- 		goto out_regex_unlock;
--- 
-1.8.4
+Guenter
 
