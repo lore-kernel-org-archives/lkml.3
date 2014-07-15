@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965138AbaGOXPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S934338AbaGOXPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933899AbaGOXOH (ORCPT
+	with ESMTP id S933929AbaGOXOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:07 -0400
+	Tue, 15 Jul 2014 19:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.15 34/84] crypto: caam - fix memleak in caam_jr module
-Date: Tue, 15 Jul 2014 16:17:31 -0700
-Message-Id: <20140715231714.229649438@linuxfoundation.org>
+        Michal Sojka <sojkam1@fel.cvut.cz>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.15 04/84] USB: serial: ftdi_sio: Add Infineon Triboard
+Date: Tue, 15 Jul 2014 16:17:01 -0700
+Message-Id: <20140715231713.321887045@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,44 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Michal Sojka <sojkam1@fel.cvut.cz>
 
-commit 0378c9a855bfa395f595fbfb049707093e270f69 upstream.
+commit d8279a40e50ad55539780aa617a32a53d7f0953e upstream.
 
-This patch fixes a memory leak that appears when caam_jr module is unloaded.
+This adds support for Infineon TriBoard TC1798 [1]. Only interface 1
+is used as serial line (see [2], Figure 8-6).
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+[1] http://www.infineon.com/cms/de/product/microcontroller/development-tools-software-and-kits/tricore-tm-development-tools-software-and-kits/starterkits-and-evaluation-boards/starter-kit-tc1798/channel.html?channel=db3a304333b8a7ca0133cfa3d73e4268
+[2] http://www.infineon.com/dgdl/TriBoardManual-TC1798-V10.pdf?folderId=db3a304412b407950112b409ae7c0343&fileId=db3a304333b8a7ca0133cfae99fe426a
+
+Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/jr.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/crypto/caam/jr.c
-+++ b/drivers/crypto/caam/jr.c
-@@ -453,8 +453,8 @@ static int caam_jr_probe(struct platform
- 	int error;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -945,6 +945,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
++	/* Infineon Devices */
++	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
+ 	{ }					/* Terminating entry */
+ };
  
- 	jrdev = &pdev->dev;
--	jrpriv = kmalloc(sizeof(struct caam_drv_private_jr),
--			 GFP_KERNEL);
-+	jrpriv = devm_kmalloc(jrdev, sizeof(struct caam_drv_private_jr),
-+			      GFP_KERNEL);
- 	if (!jrpriv)
- 		return -ENOMEM;
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -584,6 +584,12 @@
+ #define RATOC_PRODUCT_ID_USB60F	0xb020
  
-@@ -487,10 +487,8 @@ static int caam_jr_probe(struct platform
- 
- 	/* Now do the platform independent part */
- 	error = caam_jr_init(jrdev); /* now turn on hardware */
--	if (error) {
--		kfree(jrpriv);
-+	if (error)
- 		return error;
--	}
- 
- 	jrpriv->dev = jrdev;
- 	spin_lock(&driver_data.jr_alloc_lock);
+ /*
++ * Infineon Technologies
++ */
++#define INFINEON_VID		0x058b
++#define INFINEON_TRIBOARD_PID	0x0028 /* DAS JTAG TriBoard TC1798 V1.0 */
++
++/*
+  * Acton Research Corp.
+  */
+ #define ACTON_VID		0x0647	/* Vendor ID */
 
 
