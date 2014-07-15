@@ -1,79 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaGOOYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:24:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35175 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaGOOX4 (ORCPT
+	id S1753488AbaGOOYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:24:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36699 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbaGOOYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:23:56 -0400
-Date: Tue, 15 Jul 2014 10:23:05 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 10/11] qspinlock: Paravirt support
-Message-ID: <20140715142305.GA3403@laptop.dumpdata.com>
-References: <20140615124657.264658593@chello.nl>
- <20140615130154.213923590@chello.nl>
- <20140620134608.GA11545@laptop.dumpdata.com>
- <20140707152734.GX6758@twins.programming.kicks-ass.net>
+	Tue, 15 Jul 2014 10:24:25 -0400
+Message-ID: <53C5398F.2000005@pengutronix.de>
+Date: Tue, 15 Jul 2014 16:24:15 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140707152734.GX6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Stefan Agner <stefan@agner.ch>, shawn.guo@freescale.com
+CC: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
+References: <cover.1405428166.git.stefan@agner.ch> <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch>
+In-Reply-To: <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="I1gJ9e9RT6a1qIr6R1G64vew0uOUCeeUx"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 05:27:34PM +0200, Peter Zijlstra wrote:
-> On Fri, Jun 20, 2014 at 09:46:08AM -0400, Konrad Rzeszutek Wilk wrote:
-> > I dug in the code and I have some comments about it, but before
-> > I post them I was wondering if you have any plans to run any performance
-> > tests against the PV ticketlock with normal and over-committed scenarios?
-> 
-> I can barely boot a guest.. I'm not sure I can make them do anything
-> much at all yet. All this virt crap is totally painful.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--I1gJ9e9RT6a1qIr6R1G64vew0uOUCeeUx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-HA!
+On 07/15/2014 02:56 PM, Stefan Agner wrote:
+> Extend FlexCAN driver to support Vybrid. Vybrids variant of the IP
+> has ECC support which is controlled through the memory error
+> control register (MECR). There is also an errata which leads to
+> false positive error detections (ID e5295). This patch disables
+> the memory error detection completely.
+>=20
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+>  drivers/net/can/flexcan.c | 73 +++++++++++++++++++++++++++++++++++++++=
+++------
+>  1 file changed, 64 insertions(+), 9 deletions(-)
+>=20
+> diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+> index 89745aa..1c31a5d 100644
+> --- a/drivers/net/can/flexcan.c
+> +++ b/drivers/net/can/flexcan.c
+> @@ -92,6 +92,27 @@
+>  #define FLEXCAN_CTRL_ERR_ALL \
+>  	(FLEXCAN_CTRL_ERR_BUS | FLEXCAN_CTRL_ERR_STATE)
+> =20
+> +/* FLEXCAN control register 2 (CTRL2) bits */
+> +#define FLEXCAN_CRL2_ECRWRE		BIT(29)
+> +#define FLEXCAN_CRL2_WRMFRZ		BIT(28)
+> +#define FLEXCAN_CRL2_RFFN(x)		(((x) & 0x0f) << 24)
+> +#define FLEXCAN_CRL2_TASD(x)		(((x) & 0x1f) << 19)
+> +#define FLEXCAN_CRL2_MRP		BIT(18)
+> +#define FLEXCAN_CRL2_RRS		BIT(17)
+> +#define FLEXCAN_CRL2_EACEN		BIT(16)
+> +
+> +/* FLEXCAN memory error control register (MECR) bits */
+> +#define FLEXCAN_MECR_ECRWRDIS		BIT(31)
+> +#define FLEXCAN_MECR_HANCEI_MSK		BIT(19)
+> +#define FLEXCAN_MECR_FANCEI_MSK		BIT(18)
+> +#define FLEXCAN_MECR_CEI_MSK		BIT(16)
+> +#define FLEXCAN_MECR_HAERRIE		BIT(15)
+> +#define FLEXCAN_MECR_FAERRIE		BIT(14)
+> +#define FLEXCAN_MECR_EXTERRIE		BIT(13)
+> +#define FLEXCAN_MECR_RERRDIS		BIT(9)
+> +#define FLEXCAN_MECR_ECCDIS		BIT(8)
+> +#define FLEXCAN_MECR_NCEFAFRZ		BIT(7)
+> +
+>  /* FLEXCAN error and status register (ESR) bits */
+>  #define FLEXCAN_ESR_TWRN_INT		BIT(17)
+>  #define FLEXCAN_ESR_RWRN_INT		BIT(16)
+> @@ -150,18 +171,20 @@
+>   * FLEXCAN hardware feature flags
+>   *
+>   * Below is some version info we got:
+> - *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT
+> - *                                Filter?   connected?
+> - *   MX25  FlexCAN2  03.00.00.00     no         no
+> - *   MX28  FlexCAN2  03.00.04.00    yes        yes
+> - *   MX35  FlexCAN2  03.00.00.00     no         no
+> - *   MX53  FlexCAN2  03.00.00.00    yes         no
+> - *   MX6s  FlexCAN3  10.00.12.00    yes        yes
+> + *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT  Memory err
+> + *                                Filter?   connected?  detection
+> + *   MX25  FlexCAN2  03.00.00.00     no         no         no
+> + *   MX28  FlexCAN2  03.00.04.00    yes        yes         no
+> + *   MX35  FlexCAN2  03.00.00.00     no         no         no
+> + *   MX53  FlexCAN2  03.00.00.00    yes         no         no
+> + *   MX6s  FlexCAN3  10.00.12.00    yes        yes         no
+> + *   VF610 FlexCAN3  ?               no         no        yes
+                                        ^^         ^^
 
-The reason I asked about that is from a pen-and-paper view it looks
-suboptimal in the worst case scenario compared to PV ticketlock.
+Can you check the datasheet if the flexcan core has a "Glitch Filter
+Width Register (FLEXCANx_GFWR)"
 
-The 'worst case scenario' is when we over-commit (more CPUs than there
-are physical CPUs) or have to delay guests (the sum of all virtual
-CPUs > physical CPUs and all of the guests are compiling kernels).
+Can you check if the core generates a warning interrupt with the current
+setup, if you don't switch on bus error reporting? This means internally
+the [TR]WRN_INT is connected and works as specified.
 
-In those cases the PV ticketlock goes to sleep and gets woken up
-once the ticket holder has finished. In the PV qspinlock we do
-wake up the first in queue, but we also wake the next one in queue
-so it can progress further. And so on.
+>   *
+>   * Some SOCs do not have the RX_WARN & TX_WARN interrupt line connecte=
+d.
+>   */
+>  #define FLEXCAN_HAS_V10_FEATURES	BIT(1) /* For core version >=3D 10 */=
 
-Perhaps a better mechanism is just ditch the queue part and utilize
-the byte part and under KVM and Xen just do bytelocking (since we
-have 8 bits). For the PV halt/waking we can stash in the 'struct mcs'
-the current lock that each CPU is waiting for. And the unlocker
-can iterate over all of those and wake them all up. Perhaps make
-the iteration random. Anyhow, that is how the old PV bytelock under
-Xen worked (before 3.11) and it had worked pretty well (it didn't
-do it random thought - always started with 'for_each_online_cpu').
+>  #define FLEXCAN_HAS_BROKEN_ERR_STATE	BIT(2) /* [TR]WRN_INT not connect=
+ed */
+> +#define FLEXCAN_HAS_MECR_FEATURES	BIT(3) /* Memory error detection */
+> =20
+>  /* Structure of the message buffer */
+>  struct flexcan_mb {
+> @@ -192,8 +215,11 @@ struct flexcan_regs {
+>  	u32 crcr;		/* 0x44 */
+>  	u32 rxfgmask;		/* 0x48 */
+>  	u32 rxfir;		/* 0x4c */
+> -	u32 _reserved3[12];
+> +	u32 _reserved3[12];	/* 0x50 */
+>  	struct flexcan_mb cantxfg[64];
+> +	u32 _reserved4[408];
+> +	u32 mecr;		/* 0xae0 */
+> +	u32 erriar;		/* 0xae4 */
+>  };
+> =20
+>  struct flexcan_devtype_data {
+> @@ -223,6 +249,9 @@ static struct flexcan_devtype_data fsl_imx28_devtyp=
+e_data;
+>  static struct flexcan_devtype_data fsl_imx6q_devtype_data =3D {
+>  	.features =3D FLEXCAN_HAS_V10_FEATURES,
+>  };
+> +static struct flexcan_devtype_data fsl_vf610_devtype_data =3D {
+> +	.features =3D FLEXCAN_HAS_V10_FEATURES | FLEXCAN_HAS_MECR_FEATURES,
+> +};
 
-Squashing in the ticketlock concept in qspinlock for PV looks
-scary.
+Marc
 
-And as I said - this is all pen-and-paper - so it might be that this
-'wake-up-go-sleep-on-the-queue' kick is actually not that bad?
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Lastly - thank you for taking a stab at this.
-> 
 
+--I1gJ9e9RT6a1qIr6R1G64vew0uOUCeeUx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlPFOY8ACgkQjTAFq1RaXHNdvgCdF6+uqR5ovCTgsV4e9lFxzqY4
+UNoAn3ZLEZsQEKtBddfm2PEMWbx7yncA
+=FWLS
+-----END PGP SIGNATURE-----
+
+--I1gJ9e9RT6a1qIr6R1G64vew0uOUCeeUx--
