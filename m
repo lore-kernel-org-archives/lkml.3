@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942AbaGOGZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:25:58 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:60471 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770AbaGOGZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:25:35 -0400
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: [PATCH RFCv3 03/14] arm64: introduce aarch64_insn_gen_cond_branch_imm()
-Date: Mon, 14 Jul 2014 23:25:01 -0700
-Message-Id: <1405405512-4423-4-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
-References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+	id S1758113AbaGOG2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:28:12 -0400
+Received: from mail.net13.info ([94.19.113.221]:47838 "EHLO mail.net13.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758096AbaGOG2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 02:28:08 -0400
+From: Alexey Asemov <alex@alex-at.ru>
+To: linux-ide@vger.kernel.org
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Asemov <alex@alex-at.ru>
+Subject: [PATCH] libata-eh.c should handle AMNF error condition (error byte bit 0, usually code 0x01) in libata-eh.c along with UNC as a media error so SCSI stack can handle it properly (translation code 0x01 is already present in libata-scsi.c) but was never passed down due to lack of handling in EH.
+Date: Tue, 15 Jul 2014 10:28:42 +0400
+Message-Id: <1405405722-12470-1-git-send-email-alex@alex-at.ru>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20140714161010.GE31610@htj.dyndns.org>
+References: <20140714161010.GE31610@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce function to generate conditional branch (immediate)
-instructions.
+While using linux-based machine (AMD 6550M-based notebook, PCI IDs for the
+controller are 1022:7801 subsys 1025:059d) and ddrescue to salvage data
+from failing hard drive (WD7500BPVT 2.5" 750G SATA2), I've found that pure
+AMNF 0x01 error code generates generic "device error" that is retried
+several times by SCSI stack instead of "media error" that is passed up to
+software.
 
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+So we may assume deprecated AMNF error code is surely not dead yet, and
+it's better for it to be handled properly. As we may see it is used by
+modern enough devices, and used properly: drive returned AMNF only when IDs
+for track cannot be read completely due to dying head or positioning,
+otherwise it returned UNC(orrectables).
+
+Not handling it causes wrong generic error code ("device error") reporting
+down the stack, can damage failing drives further because of excessive
+retries, and slows salvaging down a lot. Also, there is handling code in
+libata-scsi.c for 0x01 AMNF error already.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=80031
+
+Signed-off-by: Alexey Asemov <alex@alex-at.ru>
 ---
- arch/arm64/include/asm/insn.h | 21 +++++++++++++++++++++
- arch/arm64/kernel/insn.c      | 17 +++++++++++++++++
- 2 files changed, 38 insertions(+)
+ drivers/ata/libata-eh.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index 5080962..86a8a9c 100644
---- a/arch/arm64/include/asm/insn.h
-+++ b/arch/arm64/include/asm/insn.h
-@@ -117,6 +117,24 @@ enum aarch64_insn_variant {
- 	AARCH64_INSN_VARIANT_64BIT
- };
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 6760fc4..dad83df 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1811,7 +1811,7 @@ static unsigned int ata_eh_analyze_tf(struct ata_queued_cmd *qc,
+ 	case ATA_DEV_ATA:
+ 		if (err & ATA_ICRC)
+ 			qc->err_mask |= AC_ERR_ATA_BUS;
+-		if (err & ATA_UNC)
++		if (err & (ATA_UNC | ATA_AMNF))
+ 			qc->err_mask |= AC_ERR_MEDIA;
+ 		if (err & ATA_IDNF)
+ 			qc->err_mask |= AC_ERR_INVALID;
+@@ -2556,11 +2556,12 @@ static void ata_eh_link_report(struct ata_link *link)
+ 		}
  
-+enum aarch64_insn_condition {
-+	AARCH64_INSN_COND_EQ = 0x0, /* == */
-+	AARCH64_INSN_COND_NE = 0x1, /* != */
-+	AARCH64_INSN_COND_CS = 0x2, /* unsigned >= */
-+	AARCH64_INSN_COND_CC = 0x3, /* unsigned < */
-+	AARCH64_INSN_COND_MI = 0x4, /* < 0 */
-+	AARCH64_INSN_COND_PL = 0x5, /* >= 0 */
-+	AARCH64_INSN_COND_VS = 0x6, /* overflow */
-+	AARCH64_INSN_COND_VC = 0x7, /* no overflow */
-+	AARCH64_INSN_COND_HI = 0x8, /* unsigned > */
-+	AARCH64_INSN_COND_LS = 0x9, /* unsigned <= */
-+	AARCH64_INSN_COND_GE = 0xa, /* signed >= */
-+	AARCH64_INSN_COND_LT = 0xb, /* signed < */
-+	AARCH64_INSN_COND_GT = 0xc, /* signed > */
-+	AARCH64_INSN_COND_LE = 0xd, /* signed <= */
-+	AARCH64_INSN_COND_AL = 0xe, /* always */
-+};
-+
- enum aarch64_insn_branch_type {
- 	AARCH64_INSN_BRANCH_NOLINK,
- 	AARCH64_INSN_BRANCH_LINK,
-@@ -135,6 +153,7 @@ __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
- __AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
- __AARCH64_INSN_FUNCS(cbz,	0xFE000000, 0x34000000)
- __AARCH64_INSN_FUNCS(cbnz,	0xFE000000, 0x35000000)
-+__AARCH64_INSN_FUNCS(bcond,	0xFF000010, 0x54000000)
- __AARCH64_INSN_FUNCS(svc,	0xFFE0001F, 0xD4000001)
- __AARCH64_INSN_FUNCS(hvc,	0xFFE0001F, 0xD4000002)
- __AARCH64_INSN_FUNCS(smc,	0xFFE0001F, 0xD4000003)
-@@ -159,6 +178,8 @@ u32 aarch64_insn_gen_comp_branch_imm(unsigned long pc, unsigned long addr,
- 				     enum aarch64_insn_register reg,
- 				     enum aarch64_insn_variant variant,
- 				     enum aarch64_insn_branch_type type);
-+u32 aarch64_insn_gen_cond_branch_imm(unsigned long pc, unsigned long addr,
-+				     enum aarch64_insn_condition cond);
- u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op);
- u32 aarch64_insn_gen_nop(void);
- u32 aarch64_insn_gen_branch_reg(enum aarch64_insn_register reg,
-diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index 50193d5..f2cf8ab 100644
---- a/arch/arm64/kernel/insn.c
-+++ b/arch/arm64/kernel/insn.c
-@@ -378,6 +378,23 @@ u32 aarch64_insn_gen_comp_branch_imm(unsigned long pc, unsigned long addr,
- 					     offset >> 2);
- }
- 
-+u32 aarch64_insn_gen_cond_branch_imm(unsigned long pc, unsigned long addr,
-+				     enum aarch64_insn_condition cond)
-+{
-+	u32 insn;
-+	long offset;
-+
-+	offset = branch_imm_common(pc, addr, SZ_1M);
-+
-+	insn = aarch64_insn_get_bcond_value();
-+
-+	BUG_ON(cond < AARCH64_INSN_COND_EQ || cond > AARCH64_INSN_COND_AL);
-+	insn |= cond;
-+
-+	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_19, insn,
-+					     offset >> 2);
-+}
-+
- u32 __kprobes aarch64_insn_gen_hint(enum aarch64_insn_hint_op op)
- {
- 	return aarch64_insn_get_hint_value() | op;
+ 		if (cmd->command != ATA_CMD_PACKET &&
+-		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_IDNF |
+-				     ATA_ABORTED)))
+-			ata_dev_err(qc->dev, "error: { %s%s%s%s}\n",
++		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_AMNF |
++				     ATA_IDNF | ATA_ABORTED)))
++			ata_dev_err(qc->dev, "error: { %s%s%s%s%s}\n",
+ 			  res->feature & ATA_ICRC ? "ICRC " : "",
+ 			  res->feature & ATA_UNC ? "UNC " : "",
++			  res->feature & ATA_AMNF ? "AMNF " : "",
+ 			  res->feature & ATA_IDNF ? "IDNF " : "",
+ 			  res->feature & ATA_ABORTED ? "ABRT " : "");
+ #endif
 -- 
-1.9.1
+1.7.1
 
