@@ -1,122 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572AbaGOJJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:09:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52574 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932500AbaGOJJr (ORCPT
+	id S932602AbaGOJKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:10:12 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42274 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932512AbaGOJKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:09:47 -0400
-Date: Tue, 15 Jul 2014 11:09:42 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Peter.Chen@freescale.com, kishon <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        alexandre.belloni@free-electrons.com,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        zhiming Xu <zmxu@marvell.com>, jszhang@marvell.com,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Subject: Re: [PATCH 3/4] usb: add support to the PHY framework for HCD
-Message-ID: <20140715090942.GC1011@kwain>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404901036-27682-4-git-send-email-antoine.tenart@free-electrons.com>
- <CAFp+6iELkaXOQiM0=JzUj=YZGqfMjOPFt+-dnEs4=Q3EzyBJBQ@mail.gmail.com>
+	Tue, 15 Jul 2014 05:10:07 -0400
+Date: Tue, 15 Jul 2014 10:09:40 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 9/9] pci: Remap I/O bus resources into CPU space with
+ pci_remap_iospace()
+Message-ID: <20140715090939.GA18203@arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-10-git-send-email-Liviu.Dudau@arm.com>
+ <20140714165443.GI1112@arm.com>
+ <7345495.UDsgOtKzyQ@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFp+6iELkaXOQiM0=JzUj=YZGqfMjOPFt+-dnEs4=Q3EzyBJBQ@mail.gmail.com>
+In-Reply-To: <7345495.UDsgOtKzyQ@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
-
-On Mon, Jul 14, 2014 at 02:38:03PM +0530, Vivek Gautam wrote:
-> On Wed, Jul 9, 2014 at 3:47 PM, Antoine Ténart
-> <antoine.tenart@free-electrons.com> wrote:
-> > diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> > index bec31e2efb88..b985af5b167c 100644
-> > --- a/drivers/usb/core/hcd.c
-> > +++ b/drivers/usb/core/hcd.c
-> > @@ -42,6 +42,7 @@
-> >  #include <linux/pm_runtime.h>
-> >  #include <linux/types.h>
-> >
-> > +#include <linux/phy/phy.h>
-> >  #include <linux/usb.h>
-> >  #include <linux/usb/hcd.h>
-> >  #include <linux/usb/phy.h>
-> > @@ -2631,21 +2632,35 @@ int usb_add_hcd(struct usb_hcd *hcd,
-> >         int retval;
-> >         struct usb_device *rhdev;
-> >
-> > -       if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->phy) {
-> > -               struct usb_phy *phy = usb_get_phy_dev(hcd->self.controller, 0);
-> > +       if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->phy && !hcd->usb_phy) {
-> > +               struct phy *phy = of_phy_get(hcd->self.controller->of_node, 0);
-> >
-> > -               if (IS_ERR(phy)) {
-> > -                       retval = PTR_ERR(phy);
-> > -                       if (retval == -EPROBE_DEFER)
-> > -                               return retval;
-> > -               } else {
-> > -                       retval = usb_phy_init(phy);
-> > +               if (!IS_ERR(phy)) {
-> > +                       retval = phy_init(hcd->phy);
-> >                         if (retval) {
-> > -                               usb_put_phy(phy);
-> > +                               phy_exit(hcd->phy);
-> >                                 return retval;
-> >                         }
-> > +                       retval = phy_power_on(hcd->phy);
-> >                         hcd->phy = phy;
-> >                         hcd->remove_phy = 1;
-> > +               } else {
-> > +                       struct usb_phy *phy =
-> > +                               usb_get_phy_dev(hcd->self.controller, 0);
-> > +
-> > +                       if (IS_ERR(phy)) {
-> > +                               retval = PTR_ERR(phy);
-> > +                               if (retval == -EPROBE_DEFER)
-> > +                                       return retval;
-> > +                       } else {
-> > +                               retval = usb_phy_init(phy);
-> > +                               if (retval) {
-> > +                                       usb_put_phy(phy);
-> > +                                       return retval;
-> > +                               }
-> > +                               hcd->usb_phy = phy;
-> > +                               hcd->remove_phy = 1;
-> > +                       }
-> >                 }
-> >         }
+On Mon, Jul 14, 2014 at 07:15:48PM +0100, Arnd Bergmann wrote:
+> On Monday 14 July 2014 17:54:43 Catalin Marinas wrote:
+> > On Tue, Jul 01, 2014 at 07:43:34PM +0100, Liviu Dudau wrote:
+> > > Introduce a default implementation for remapping PCI bus I/O resources
+> > > onto the CPU address space. Architectures with special needs may
+> > > provide their own version, but most should be able to use this one.
+> > [...]
+> > > +/**
+> > > + *   pci_remap_iospace - Remap the memory mapped I/O space
+> > > + *   @res: Resource describing the I/O space
+> > > + *   @phys_addr: physical address where the range will be mapped.
+> > > + *
+> > > + *   Remap the memory mapped I/O space described by the @res
+> > > + *   into the CPU physical address space. Only architectures
+> > > + *   that have memory mapped IO defined (and hence PCI_IOBASE)
+> > > + *   should call this function.
+> > > + */
+> > > +int __weak pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr)
+> > > +{
+> > > +     int err = -ENODEV;
+> > > +
+> > > +#ifdef PCI_IOBASE
+> > > +     if (!(res->flags & IORESOURCE_IO))
+> > > +             return -EINVAL;
+> > > +
+> > > +     if (res->end > IO_SPACE_LIMIT)
+> > > +             return -EINVAL;
+> > > +
+> > > +     err = ioremap_page_range(res->start + (unsigned long)PCI_IOBASE,
+> > > +                             res->end + 1 + (unsigned long)PCI_IOBASE,
+> > > +                             phys_addr, __pgprot(PROT_DEVICE_nGnRE));
+> > 
+> > Except that PROT_DEVICE_nGnRE is arm64 only. I think that's a function
+> > that should remain arch specific.
+> > 
 > 
-> Just a note here:
-> There had already been a patch for adding the generic phy support in
-> usb/core/hcd.c in 3.16 cycle by
-> Sergei and Yoshihiro [1], though structurally a bit different, was not
-> picked since there wasn't any user of the patch
-> till then. Do you mind modifying on top of that patch
-> 
-> [1] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.html
+> How about #defining a macro with the correct pgprot value in asm/pci.h
+> or asm/pgtable.h?
+> We can provide a default for that in another architecture independent
+> location.
 
-Sure, I'll rework my series taking in account this patch. I'll cook a v2
-for later today.
-
-Thanks!
-
-Antoine
+That should work. We already have pgprot_noncached/writecombine in
+asm-generic/pgtable.h which all architectures seem to include. The
+default can be pgprot_noncached and we would invoke it as
+pgprot_device(PAGE_KERNEL).
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Catalin
