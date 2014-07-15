@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566AbaGODH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:07:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42180 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757258AbaGODHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:07:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
-   d="scan'208";a="456988563"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 0/9] ACPICA: Improve GPE handling model.
-Date: Tue, 15 Jul 2014 11:07:10 +0800
-Message-Id: <cover.1405306438.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1403060601.git.lv.zheng@intel.com>
-References: <cover.1403060601.git.lv.zheng@intel.com>
+	id S932128AbaGODN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:13:28 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:46944 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaGODN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:13:26 -0400
+From: sam-the-6 <asadi.samuel@gmail.com>
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sam Asadi <asadi.samuel@gmail.com>
+Subject: [PATCH 91/93] Staging: comedi: 8253.h fixed by removing 'return' from generic func
+Date: Tue, 15 Jul 2014 06:13:19 +0300
+Message-Id: <1405393999-25927-1-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset enables the ideal GPE handling model. The ideal GPE handling
-model should be able to handle the following cases:
+From: Sam Asadi <asadi.samuel@gmail.com>
 
-   1. When upper layers (the users of the driver) submit requests to the
-      drivers, it means they care about the underlying hardware. For this
-      case, acpi_enable_gpe() should be invoked. When the reference count
-      is increased from 0 to 1, driver enables the hardware IRQ. And
-      acpi_disable_gpe() is used as the reversal when the users have
-      completed the submitted requests.
-   2. Driver may temporarily disables the IRQ and wants to re-enable it
-      later, this case is normally used in order to prevent IRQ storm.
-      When a driver cannot fully solve the condition that triggered the IRQ
-      in the IRQ context, in order not to trigger IRQ storm, driver has to
-      disable IRQ and re-enables it in the deferred execution environment
-      - which should be in a task context. The acpi_set_gpe() API should be
-      used exactly for this purpose.
+Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
 
-The reason why this model hasn't been enabled for the current Linux ACPI
-drivers is:
-  In ACPICA, the same GPE lock is held while invoking the GPE handler
-  callback, it's thus impossible to invoke GPE APIs in the GPE handler
-  because the APIs require to hold the GPE lock. The recursive locking
-  leads to dead locks. This is a simple design defect, callbacks should
-  always be invoked in a lockless environment, normally in Linux, this is
-  achieved by RCU locking, and in ACPICA, we achieve this using reference
-  counting.
+	modified:   drivers/staging/comedi/drivers/8253.h
+---
+ drivers/staging/comedi/drivers/8253.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-After fixing the above bug and doing necessary cleanups in the ACPICA GPE
-handling code, we now can enable this ideal GPE handling model for the EC
-driver to implement "commands flushing" and "storm prevention" (the EC
-driver enabling is not included in this patchset).
-
-The refined patches are passed the runtime/suspend tests carried out on the
-following platforms with EC driver enhanced:
-  "Dell Inspiron Mini 1010" - i386 kernel
-  "Dell Latitude 6430u" - x86_64 kernel
-
-Lv Zheng (9):
-  ACPICA: Events: Reduce indent divergences of events files.
-  ACPICA: Events: Fix an issue that GPE APIs cannot be invoked in
-    atomic context.
-  ACPICA: Events: Fix an issue that GPE APIs cannot be invoked in
-    deferred handlers.
-  ACPICA: Events: Introduce acpi_set_gpe()/acpi_finish_gpe() to reduce
-    divergences.
-  ACPICA: Events: Fix an issue that acpi_set_gpe() cannot
-    unconditionally enable GPEs.
-  ACPICA: Events: Fix an issue that status of GPEs are unexpectedly
-    cleared.
-  ACPICA: Events: Fix an issue that originally_enabled check is not
-    paired.
-  ACPICA: Events: Add a flag to disable internal auto GPE clearing.
-  ACPI: Update interrupt handler to honor new ACPI_REENABLE_GPE bit.
-
- drivers/acpi/acpica/acevents.h |    1 +
- drivers/acpi/acpica/aclocal.h  |    5 +-
- drivers/acpi/acpica/evgpe.c    |  136 +++++++++++++++++++++-------------------
- drivers/acpi/acpica/evxface.c  |   41 ++++++++----
- drivers/acpi/acpica/evxfgpe.c  |  105 +++++++++++++++++++++++++++++++
- drivers/acpi/osl.c             |    2 +-
- include/acpi/actypes.h         |   16 ++---
- 7 files changed, 219 insertions(+), 87 deletions(-)
-
+diff --git a/drivers/staging/comedi/drivers/8253.h b/drivers/staging/comedi/drivers/8253.h
+index 5829b46..f6b8607 100644
+--- a/drivers/staging/comedi/drivers/8253.h
++++ b/drivers/staging/comedi/drivers/8253.h
+@@ -55,7 +55,7 @@ static inline void i8253_cascade_ns_to_timer(int i8253_osc_base,
+ 	    /* check for overflow */
+ 	    divider > div1 && divider > div2 &&
+ 	    divider * i8253_osc_base > divider &&
+-	    divider * i8253_osc_base > i8253_osc_base) {
++	    divider * i8253_osc_base > i8253_osc_base)	{
+ 		return;
+ 	}
+ 
+@@ -118,7 +118,6 @@ static inline void i8253_cascade_ns_to_timer(int i8253_osc_base,
+ 	/*  masking is done since counter maps zero to 0x10000 */
+ 	*d1 = div1 & 0xffff;
+ 	*d2 = div2 & 0xffff;
+-	return;
+ }
+ 
+ #ifndef CMDTEST
 -- 
-1.7.10
+1.7.10.4
 
