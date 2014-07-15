@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523AbaGOXoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:44:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933812AbaGOXOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:01 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andras Kovacs <andras@sth.sze.hu>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.15 02/84] USB: cp210x: add support for Corsair usb dongle
-Date: Tue, 15 Jul 2014 16:16:59 -0700
-Message-Id: <20140715231713.265881309@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1030368AbaGOXoT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:44:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34080 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933812AbaGOXoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:44:16 -0400
+Date: Wed, 16 Jul 2014 01:44:14 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] x86, platform, xen, kconfig: move kvmconfig
+	functionality to a helper
+Message-ID: <20140715234414.GL10393@wotan.suse.de>
+References: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com> <alpine.DEB.2.02.1406091401080.30620@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1406091401080.30620@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 09, 2014 at 02:01:42PM -0700, David Rientjes wrote:
+> On Mon, 9 Jun 2014, Luis R. Rodriguez wrote:
+> 
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > 
+> > This can then be used by other virtual configs.
+> > 
+> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> 
+> Suggested-by: David Rientjes <rientjes@google.com>
+> Acked-by: David Rientjes <rientjes@google.com>
 
-------------------
+Folks this series is not yet merged. They all apply cleanly
+as-is on linux-next next-20140715 so I don't think a resend
+is required.
 
-From: Andras Kovacs <andras@sth.sze.hu>
+Just a friendly reminder.
 
-commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
-
-Corsair USB Dongles are shipped with Corsair AXi series PSUs.
-These are cp210x serial usb devices, so make driver detect these.
-I have a program, that can get information from these PSUs.
-
-Tested with 2 different dongles shipped with Corsair AX860i and
-AX1200i units.
-
-Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -153,6 +153,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
-+	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
-
-
+  Luis
