@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaGOR6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:58:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44677 "EHLO mail.kernel.org"
+	id S1757735AbaGOR6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:58:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11316 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756875AbaGOR6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:58:03 -0400
-Date: Tue, 15 Jul 2014 10:57:54 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 2/2] f2fs: check bdi->dirty_exceeded when trying to
- skip data writes
-Message-ID: <20140715175754.GA2590@jmac>
-References: <1405349571-20058-1-git-send-email-jaegeuk@kernel.org>
- <1405349571-20058-2-git-send-email-jaegeuk@kernel.org>
- <20140715005336.GC8745@kroah.com>
+	id S932523AbaGOR6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 13:58:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,667,1400050800"; 
+   d="scan'208";a="573565978"
+Message-ID: <53C56BB0.7000805@intel.com>
+Date: Tue, 15 Jul 2014 20:58:08 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715005336.GC8745@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 24/41] perf tools: Add cpu to struct thread
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-25-git-send-email-adrian.hunter@intel.com> <20140715142421.GD3301@kernel.org>
+In-Reply-To: <20140715142421.GD3301@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 05:53:36PM -0700, Greg KH wrote:
-> On Mon, Jul 14, 2014 at 07:52:51AM -0700, Jaegeuk Kim wrote:
-> > commit dd6b9bf5883c3ca9c17bac80ccd8615fe5a452a3 upstream.
-> 
-> You mean 2743f865543c0c4a5e12fc13edb2bf89a6e9687c, right?
+On 15/07/2014 5:24 p.m., Arnaldo Carvalho de Melo wrote:
+> Em Mon, Jul 14, 2014 at 01:02:48PM +0300, Adrian Hunter escreveu:
+>> Tools may wish to track on which cpu a thread
+>> is running.  Add 'cpu' to struct thread for
+>> that purpose.
+>>
+>> This will be used to determine the cpu when
+>> decoding a per-thread Instruction Trace.
+>
+> Humm, is this the last cpu we got some event telling the cpu was running
+> on? Continuing looking at the patches...
 
-Ah, correct.
-Thank you. :)
+Yes.  Intel PT decoding uses sched_switch events to determine which
+task is running on which cpu.  The Intel PT data comes straight
+from the hardware which doesn't know about linux threads.
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> > 
-> > If we don't check the current backing device status, balance_dirty_pages can
-> > fall into infinite pausing routine.
-> > 
-> > This can be occurred when a lot of directories make a small number of dirty
-> > dentry pages including files.
-> > 
-> > Reported-by: Brian Chadwick <brianchad@westnet.com.au>
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > ---
-> >  fs/f2fs/node.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> > index a9c0495..5696bde 100644
-> > --- a/fs/f2fs/node.c
-> > +++ b/fs/f2fs/node.c
-> > @@ -42,6 +42,8 @@ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
-> >  		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
-> >  		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
-> >  	} else if (type == DIRTY_DENTS) {
-> > +		if (sbi->sb->s_bdi->dirty_exceeded)
-> > +			return false;
-> >  		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
-> >  		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
-> >  	}
-> > -- 
-> > 2.0.1.472.g6f92e5f
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe stable" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Jaegeuk Kim
+>
+> - Arnaldo
+>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>   tools/perf/util/thread.c | 1 +
+>>   tools/perf/util/thread.h | 1 +
+>>   2 files changed, 2 insertions(+)
+>>
+>> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+>> index b9a3ee4..2f8c0c1 100644
+>> --- a/tools/perf/util/thread.c
+>> +++ b/tools/perf/util/thread.c
+>> @@ -69,6 +69,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+>>   		thread->pid_ = pid;
+>>   		thread->tid = tid;
+>>   		thread->ppid = -1;
+>> +		thread->cpu = -1;
+>>   		INIT_LIST_HEAD(&thread->comm_list);
+>>
+>>   		comm_str = malloc(32);
+>> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+>> index b4269af..e4920ff 100644
+>> --- a/tools/perf/util/thread.h
+>> +++ b/tools/perf/util/thread.h
+>> @@ -17,6 +17,7 @@ struct thread {
+>>   	pid_t			pid_; /* Not all tools update this */
+>>   	pid_t			tid;
+>>   	pid_t			ppid;
+>> +	int			cpu;
+>>   	char			shortname[3];
+>>   	bool			comm_set;
+>>   	bool			dead; /* if set thread has exited */
+>> --
+>> 1.8.3.2
