@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934175AbaGOVmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:42:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55119 "EHLO
+	id S964962AbaGOVnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:43:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55108 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934070AbaGOVj3 (ORCPT
+	with ESMTP id S964878AbaGOVj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:29 -0400
+	Tue, 15 Jul 2014 17:39:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 070/198] mtd: pxa3xx_nand: make the driver work on big-endian systems
-Date: Tue, 15 Jul 2014 14:29:00 -0700
-Message-Id: <1405459868-15089-71-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Andreas=20Schr=C3=A4gle?= <ajs124.ajs124@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 056/198] ahci: add PCI ID for Marvell 88SE91A0 SATA Controller
+Date: Tue, 15 Jul 2014 14:28:46 -0700
+Message-Id: <1405459868-15089-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,51 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: =?UTF-8?q?Andreas=20Schr=C3=A4gle?= <ajs124.ajs124@gmail.com>
 
-commit b7e460624f0f3c31150f3b09e75b0d009e22ba5f upstream.
+commit 754a292fe6b08196cb135c03b404444e17de520a upstream.
 
-The pxa3xx_nand driver currently uses __raw_writel() and __raw_readl()
-to access I/O registers. However, those functions do not do any
-endianness swapping, which means that they won't work when the CPU
-runs in big-endian but the I/O registers are little endian, which is
-the common situation for ARM systems running big endian.
+Add support for Marvell Technology Group Ltd. 88SE91A0 SATA 6Gb/s
+Controller by adding its PCI ID.
 
-Since __raw_writel() and __raw_readl() do not include any memory
-barriers and the pxa3xx_nand driver can only be compiled for ARM
-platforms, the closest I/o accessors functions that do endianess
-swapping are writel_relaxed() and readl_relaxed().
-
-This patch has been verified to work on Armada XP GP: without the
-patch, the NAND is not detected when the kernel runs big endian while
-it is properly detected when the kernel runs little endian. With the
-patch applied, the NAND is properly detected in both situations
-(little and big endian).
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Andreas Schrägle <ajs124.ajs124@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mtd/nand/pxa3xx_nand.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/ahci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-index 4b3aaa8..0527537 100644
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -110,10 +110,10 @@
- 
- /* macros for registers read/write */
- #define nand_writel(info, off, val)	\
--	__raw_writel((val), (info)->mmio_base + (off))
-+	writel_relaxed((val), (info)->mmio_base + (off))
- 
- #define nand_readl(info, off)		\
--	__raw_readl((info)->mmio_base + (off))
-+	readl_relaxed((info)->mmio_base + (off))
- 
- /* error code and state */
- enum {
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index bc5579e..7460492 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -444,6 +444,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a0),
++	  .driver_data = board_ahci_yes_fbs },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
 -- 
 1.9.1
 
