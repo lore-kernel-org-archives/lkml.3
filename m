@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943AbaGOROY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:14:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35431 "EHLO
+	id S1758000AbaGORO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:14:28 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:32897 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740AbaGORCO (ORCPT
+	with ESMTP id S1755734AbaGORCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 13:02:14 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Tushar Behera <tushar.b@samsung.com>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 51/94] ARM: dts: Update the parent for Audss clocks in Exynos5420
-Date: Tue, 15 Jul 2014 20:01:06 +0300
-Message-Id: <1405443709-15288-51-git-send-email-asadi.samuel@gmail.com>
+        Shawn Guo <shawn.guo@freescale.com>, Olof Johansson <olof@lixom.net>,
+        sam-the-6 <asadi.samuel@gmail.com>
+Subject: [PATCH 52/94] ARM: imx: fix shared gate clock
+Date: Tue, 15 Jul 2014 20:01:07 +0300
+Message-Id: <1405443709-15288-52-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -23,40 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tushar Behera <tushar.b@samsung.com>
+From: Shawn Guo <shawn.guo@freescale.com>
 
-Currently CLK_FOUT_EPLL was set as one of the parents of AUDSS mux.
-As per the user manual, it should be CLK_MAU_EPLL.
+Let's say clock A and B are two gate clocks that share the same register
+bit in hardware.  Therefore they are registered as shared gate clocks
+with imx_clk_gate2_shared().
 
-The problem surfaced when the bootloader in Peach-pit board set
-the EPLL clock as the parent of AUDSS mux. While booting the kernel,
-we used to get a system hang during late boot if CLK_MAU_EPLL was
-disabled.
+In a scenario that only clock A is enabled by clk_enable(A) while B is
+not used, the shared gate will be unexpectedly disabled in hardware.
+It happens because clk_enable(A) increments the share_count from 0 to 1,
+while clock B is unused to clock core, and therefore the core function
+will just disable B by calling clk->ops->disable() directly.  The
+consequence of that call is share_count is decremented to 0 and the gate
+is disabled in hardware, even though clock A is still in use.
 
-Signed-off-by: Tushar Behera <tushar.b@samsung.com>
-Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
-Reported-by: Kevin Hilman <khilman@linaro.org>
-Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Tested-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+The patch fixes the issue by initializing the share_count per hardware
+state and returns enable state per share_count from .is_enabled() hook,
+in case it's a shared gate.
+
+While at it, add a check in clk_gate2_disable() to ensure it's never
+called with a zero share_count.
+
+Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
+Fixes: f9f28cdf2167 ("ARM: imx: add shared gate clock support")
+Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- arch/arm/boot/dts/exynos5420.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-imx/clk-gate2.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index e385322..79e9119 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -167,7 +167,7 @@
- 		compatible = "samsung,exynos5420-audss-clock";
- 		reg = <0x03810000 0x0C>;
- 		#clock-cells = <1>;
--		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_FOUT_EPLL>,
-+		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MAU_EPLL>,
- 			 <&clock CLK_SCLK_MAUDIO0>, <&clock CLK_SCLK_MAUPCM0>;
- 		clock-names = "pll_ref", "pll_in", "sclk_audio", "sclk_pcm_in";
- 	};
+diff --git a/arch/arm/mach-imx/clk-gate2.c b/arch/arm/mach-imx/clk-gate2.c
+index 4ba587d..84acdfd 100644
+--- a/arch/arm/mach-imx/clk-gate2.c
++++ b/arch/arm/mach-imx/clk-gate2.c
+@@ -67,8 +67,12 @@ static void clk_gate2_disable(struct clk_hw *hw)
+ 
+ 	spin_lock_irqsave(gate->lock, flags);
+ 
+-	if (gate->share_count && --(*gate->share_count) > 0)
+-		goto out;
++	if (gate->share_count) {
++		if (WARN_ON(*gate->share_count == 0))
++			goto out;
++		else if (--(*gate->share_count) > 0)
++			goto out;
++	}
+ 
+ 	reg = readl(gate->reg);
+ 	reg &= ~(3 << gate->bit_idx);
+@@ -78,19 +82,26 @@ out:
+ 	spin_unlock_irqrestore(gate->lock, flags);
+ }
+ 
+-static int clk_gate2_is_enabled(struct clk_hw *hw)
++static int clk_gate2_reg_is_enabled(void __iomem *reg, u8 bit_idx)
+ {
+-	u32 reg;
+-	struct clk_gate2 *gate = to_clk_gate2(hw);
++	u32 val = readl(reg);
+ 
+-	reg = readl(gate->reg);
+-
+-	if (((reg >> gate->bit_idx) & 1) == 1)
++	if (((val >> bit_idx) & 1) == 1)
+ 		return 1;
+ 
+ 	return 0;
+ }
+ 
++static int clk_gate2_is_enabled(struct clk_hw *hw)
++{
++	struct clk_gate2 *gate = to_clk_gate2(hw);
++
++	if (gate->share_count)
++		return !!(*gate->share_count);
++	else
++		return clk_gate2_reg_is_enabled(gate->reg, gate->bit_idx);
++}
++
+ static struct clk_ops clk_gate2_ops = {
+ 	.enable = clk_gate2_enable,
+ 	.disable = clk_gate2_disable,
+@@ -116,6 +127,10 @@ struct clk *clk_register_gate2(struct device *dev, const char *name,
+ 	gate->bit_idx = bit_idx;
+ 	gate->flags = clk_gate2_flags;
+ 	gate->lock = lock;
++
++	/* Initialize share_count per hardware state */
++	if (share_count)
++		*share_count = clk_gate2_reg_is_enabled(reg, bit_idx) ? 1 : 0;
+ 	gate->share_count = share_count;
+ 
+ 	init.name = name;
 -- 
 1.7.10.4
 
