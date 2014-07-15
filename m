@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965184AbaGOXP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S965193AbaGOXQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:16:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933352AbaGOXOP (ORCPT
+	with ESMTP id S934068AbaGOXOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:15 -0400
+	Tue, 15 Jul 2014 19:14:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.15 57/84] drm/radeon: fix typo in golden register setup on evergreen
-Date: Tue, 15 Jul 2014 16:17:54 -0700
-Message-Id: <20140715231714.910503367@linuxfoundation.org>
+        Vincent Minet <vincent@vincent-minet.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 47/84] intel_pstate: Set CPU number before accessing MSRs
+Date: Tue, 15 Jul 2014 16:17:44 -0700
+Message-Id: <20140715231714.623077138@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,59 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Vincent Minet <vincent@vincent-minet.net>
 
-commit 6abafb78f9881b4891baf74ab4e9f090ae45230e upstream.
+commit 179e8471673ce0249cd4ecda796008f7757e5bad upstream.
 
-Fixes hangs on driver load on some cards.
+Ensure that cpu->cpu is set before writing MSR_IA32_PERF_CTL during CPU
+initialization. Otherwise only cpu0 has its P-state set and all other
+cores are left with their values unchanged.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=76998
+In most cases, this is not too serious because the P-states will be set
+correctly when the timer function is run.  But when the default governor
+is set to performance, the per-CPU current_pstate stays the same forever
+and no attempts are made to write the MSRs again.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Vincent Minet <vincent@vincent-minet.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/cpufreq/intel_pstate.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -189,7 +189,7 @@ static const u32 evergreen_golden_regist
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002,
- 	0x913c, 0x0000000f, 0x0000000a
- };
-@@ -476,7 +476,7 @@ static const u32 cedar_golden_registers[
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002
- };
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -709,9 +709,8 @@ static int intel_pstate_init_cpu(unsigne
  
-@@ -635,7 +635,7 @@ static const u32 juniper_mgcg_init[] =
- static const u32 supersumo_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
-@@ -719,7 +719,7 @@ static const u32 sumo_golden_registers[]
- static const u32 wrestler_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
+ 	cpu = all_cpu_data[cpunum];
+ 
+-	intel_pstate_get_cpu_pstates(cpu);
+-
+ 	cpu->cpu = cpunum;
++	intel_pstate_get_cpu_pstates(cpu);
+ 
+ 	init_timer_deferrable(&cpu->timer);
+ 	cpu->timer.function = intel_pstate_timer_func;
 
 
