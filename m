@@ -1,29 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628AbaGOViW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:38:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54751 "EHLO
+	id S1759306AbaGOVxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:53:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54849 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759536AbaGOVh4 (ORCPT
+	with ESMTP id S1759536AbaGOViX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:37:56 -0400
+	Tue, 15 Jul 2014 17:38:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Pekon Gupta <pekon@ti.com>, Brian Norris <computersforpeace@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 180/198] DMA, CMA: fix possible memory leak
-Date: Tue, 15 Jul 2014 14:30:50 -0700
-Message-Id: <1405459868-15089-181-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 044/198] mtd: eLBC NAND: fix subpage write support
+Date: Tue, 15 Jul 2014 14:28:34 -0700
+Message-Id: <1405459868-15089-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -36,65 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Pekon Gupta <pekon@ti.com>
 
-commit fe8eea4f4a3f299ef83ed090d5354698ebe4fda8 upstream.
+commit f034d87def51f026b735d1e2877e9387011b2ba3 upstream.
 
-We should free memory for bitmap when we find zone mismatch, otherwise
-this memory will leak.
+As subpage write is enabled by default for all drivers, nand_write_subpage_hwecc
+causes a crash if the driver did not register ecc->hwctl or ecc->calculate.
+This behavior was introduced in
+   commit 837a6ba4f3b6d23026674e6af6b6849a4634fff9
+   "mtd: nand: subpage write support for hardware based ECC schemes".
 
-Additionally, I copy code comment from PPC KVM's CMA code to inform why
-we need to check zone mis-match.
+This fixes a crash by emulating subpage write support by padding sub-page data
+with 0xff on either sides to make it full page compatible.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Tested-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Reviewed-by: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/dma-contiguous.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/fsl_elbc_nand.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 165c2c2..d3bffa4 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -155,13 +155,23 @@ static int __init cma_activate_area(struct cma *cma)
- 		base_pfn = pfn;
- 		for (j = pageblock_nr_pages; j; --j, pfn++) {
- 			WARN_ON_ONCE(!pfn_valid(pfn));
-+			/*
-+			 * alloc_contig_range requires the pfn range
-+			 * specified to be in the same zone. Make this
-+			 * simple by forcing the entire CMA resv range
-+			 * to be in the same zone.
-+			 */
- 			if (page_zone(pfn_to_page(pfn)) != zone)
--				return -EINVAL;
-+				goto err;
- 		}
- 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
- 	} while (--i);
- 
+diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
+index c966fc7..6ce1fd2 100644
+--- a/drivers/mtd/nand/fsl_elbc_nand.c
++++ b/drivers/mtd/nand/fsl_elbc_nand.c
+@@ -724,6 +724,19 @@ static int fsl_elbc_write_page(struct mtd_info *mtd, struct nand_chip *chip,
  	return 0;
-+
-+err:
-+	kfree(cma->bitmap);
-+	return -EINVAL;
  }
  
- static struct cma cma_areas[MAX_CMA_AREAS];
++/* ECC will be calculated automatically, and errors will be detected in
++ * waitfunc.
++ */
++static int fsl_elbc_write_subpage(struct mtd_info *mtd, struct nand_chip *chip,
++				uint32_t offset, uint32_t data_len,
++				const uint8_t *buf, int oob_required)
++{
++	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
++	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
++
++	return 0;
++}
++
+ static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
+ {
+ 	struct fsl_lbc_ctrl *ctrl = priv->ctrl;
+@@ -762,6 +775,7 @@ static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
+ 
+ 	chip->ecc.read_page = fsl_elbc_read_page;
+ 	chip->ecc.write_page = fsl_elbc_write_page;
++	chip->ecc.write_subpage = fsl_elbc_write_subpage;
+ 
+ 	/* If CS Base Register selects full hardware ECC then use it */
+ 	if ((in_be32(&lbc->bank[priv->bank].br) & BR_DECC) ==
 -- 
 1.9.1
 
