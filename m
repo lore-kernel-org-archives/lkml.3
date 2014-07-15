@@ -1,125 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933759AbaGOTsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:48:35 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:7577 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933276AbaGOTpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:45:24 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linux-foundation.org, arnd@arndb.de, konrad.wilk@oracle.com,
-        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        stefan.bader@canonical.com, luto@amacapital.net, airlied@gmail.com,
-        bp@alien8.de, Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH 7/11] x86, mm: Keep _set_memory_<type>() slot-independent
-Date: Tue, 15 Jul 2014 13:34:40 -0600
-Message-Id: <1405452884-25688-8-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+	id S933372AbaGOTvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:51:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17714 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933003AbaGOTvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:51:10 -0400
+Date: Tue, 15 Jul 2014 14:50:56 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Xypron <xypron.debian@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Seth Jennings <sjenning@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, kpatch@redhat.com
+Subject: Re: [PATCH v2 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140715195056.GB3788@treble.redhat.com>
+References: <cover.1405374204.git.jpoimboe@redhat.com>
+ <53C5653E.8060102@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53C5653E.8060102@gmx.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _set_memory_<type>() interfaces assume how each memory type is
-assigned to PAT slots in the PAT MSTR.  For instance, _set_memory_wb()
-assumes that WB is assigned to the PA0/4 slot by calling
-change_page_attr_clear().
+On Tue, Jul 15, 2014 at 07:30:38PM +0200, Xypron wrote:
+> Hello Josh,
+> 
+> being able to patch a live kernel is very interesting feature. I looked
+> through you patch and some questions remained:
+> 
+> In Documentation/kpatch.txt I found no description on how an out of kernel
+> program uses the new code.
+> See https://lkml.org/lkml/2014/7/14/862
 
-This patch changes the _set_memory_<type>() interfaces to call
-change_page_attr_set_clr() directly for all memory types, and keep
-them independent from the PAT slot assignment.
+You're right, these interfaces aren't documented very well.  Currently
+the only user of these interfaces is the kpatch-build tool in our github
+repository.  It builds kernel patch modules which call kpatch_register()
+and kpatch_unregister().
 
-It also introduces pgprot_set_cache() for setting a specified page
-cache value to a pgprot_t value.
+The interfaces are quite complex.  They require an intelligent
+generation tool to create a kernel module which uses them.  This is by
+necessity, in order to allow dynamic relocations so that patched
+functions can access unexported kernel symbols.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- arch/x86/mm/pageattr.c |   36 ++++++++++++++++++++++++------------
- 1 file changed, 24 insertions(+), 12 deletions(-)
+So I really wonder if it even makes sense to document them.  Instead
+maybe we should also try to put the kpatch-build tool in the Linux
+kernel tree in tools/kpatch.  Then we would just need to document the
+use of the kpatch-build tool.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index a2a1e70..da597d0 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1444,8 +1444,10 @@ int _set_memory_uc(unsigned long addr, int numpages)
- 	/*
- 	 * for now UC MINUS. see comments in ioremap_nocache()
- 	 */
--	return change_page_attr_set(&addr, numpages,
--				    __pgprot(_PAGE_CACHE_UC_MINUS), 0);
-+	return change_page_attr_set_clr(&addr, numpages,
-+					__pgprot(_PAGE_CACHE_UC_MINUS),
-+					__pgprot(_PAGE_CACHE_MASK),
-+					0, 0, NULL);
- }
- 
- int set_memory_uc(unsigned long addr, int numpages)
-@@ -1489,8 +1491,10 @@ static int _set_memory_array(unsigned long *addr, int addrinarray,
- 			goto out_free;
- 	}
- 
--	ret = change_page_attr_set(addr, addrinarray,
--				    __pgprot(_PAGE_CACHE_UC_MINUS), 1);
-+	ret = change_page_attr_set_clr(addr, addrinarray,
-+				       __pgprot(_PAGE_CACHE_UC_MINUS),
-+				       __pgprot(_PAGE_CACHE_MASK),
-+				       0, CPA_ARRAY, NULL);
- 
- 	if (!ret && new_type == _PAGE_CACHE_WC)
- 		ret = change_page_attr_set_clr(addr, addrinarray,
-@@ -1526,8 +1530,10 @@ int _set_memory_wc(unsigned long addr, int numpages)
- 	int ret;
- 	unsigned long addr_copy = addr;
- 
--	ret = change_page_attr_set(&addr, numpages,
--				    __pgprot(_PAGE_CACHE_UC_MINUS), 0);
-+	ret = change_page_attr_set_clr(&addr, numpages,
-+				       __pgprot(_PAGE_CACHE_UC_MINUS),
-+				       __pgprot(_PAGE_CACHE_MASK),
-+				       0, 0, NULL);
- 	if (!ret) {
- 		ret = change_page_attr_set_clr(&addr_copy, numpages,
- 					       __pgprot(_PAGE_CACHE_WC),
-@@ -1570,8 +1576,10 @@ EXPORT_SYMBOL(set_memory_array_wt);
- 
- int _set_memory_wt(unsigned long addr, int numpages)
- {
--	return change_page_attr_set(&addr, numpages,
--				    __pgprot(_PAGE_CACHE_WT), 0);
-+	return change_page_attr_set_clr(&addr, numpages,
-+					__pgprot(_PAGE_CACHE_WT),
-+					__pgprot(_PAGE_CACHE_MASK),
-+					0, 0, NULL);
- }
- 
- int set_memory_wt(unsigned long addr, int numpages)
-@@ -1601,8 +1609,10 @@ EXPORT_SYMBOL(set_memory_wt);
- 
- int _set_memory_wb(unsigned long addr, int numpages)
- {
--	return change_page_attr_clear(&addr, numpages,
--				      __pgprot(_PAGE_CACHE_MASK), 0);
-+	return change_page_attr_set_clr(&addr, numpages,
-+					__pgprot(_PAGE_CACHE_WB),
-+					__pgprot(_PAGE_CACHE_MASK),
-+					0, 0, NULL);
- }
- 
- int set_memory_wb(unsigned long addr, int numpages)
-@@ -1623,8 +1633,10 @@ int set_memory_array_wb(unsigned long *addr, int addrinarray)
- 	int i;
- 	int ret;
- 
--	ret = change_page_attr_clear(addr, addrinarray,
--				      __pgprot(_PAGE_CACHE_MASK), 1);
-+	ret = change_page_attr_set_clr(addr, addrinarray,
-+				       __pgprot(_PAGE_CACHE_WB),
-+				       __pgprot(_PAGE_CACHE_MASK),
-+				       0, CPA_ARRAY, NULL);
- 	if (ret)
- 		return ret;
- 
+> Please, create man pages for kpatch_register and kpatch_unregister before
+> moving kpatch into the kernel (if these are the relevant API calls).
+
+I don't think kernel man pages would be appropriate because these
+interfaces aren't system calls.  They're meant to be called by kernel
+modules.
+
+> I saw some x86 specific code in
+> https://github.com/dynup/kpatch/tree/master/kpatch-build/insn/asm
+> How does your code apply to other architectures?
+
+Right now only x86_64 is supported, as it's the only architecture which
+has the ftrace features we need.  But we do hope to add support for more
+architectures, probably at least powerpc and s390.
+
+> For me the man pages on
+> https://github.com/dynup/kpatch/
+> do not yet include all information that a novice user of kpatch would like
+> to receive.
+
+The end user just needs to know how to use the kpatch-build and kpatch
+tools.  We already have man pages for those.  
+
+> The man pages do not match the format of the other kernel man pages.
+
+Hm, why do they need to match the format of kernel man pages?  They're
+user space tools.
+
+> The man pages are not linked to each other nor to Documentation/kpatch.txt.
+
+True, but it hasn't been merged yet :-)  But yes, the kpatch-build and
+kpatch man pages should probably refer to each other (and to any future
+kernel documentation).
+
+> What is the overall status of the complete kpatch solution? Is is still
+> beta?
+
+I would say it's still in an experimental phase.  But very close to
+being used more extensively by real users.
+
+> Should the kpatch and kpatch-build scripts be distributed with the kernel?
+> Or what are your plans?
+
+The more I think about it, the more it makes sense to put kpatch-build
+in the kernel tree, because of the tight dependencies between it and the
+kpatch core module.
+
+I'm not quite sure whether the kpatch script, which manages the patch
+modules after they have been built (e.g. loading/unloading, replacing,
+installing to initramfs), belongs in the kernel tree because it's much
+less loosely coupled to the kernel interfaces.
+
+> 
+> Best regards
+> 
+> Heinrich Schuchardt
+
+-- 
+Josh
