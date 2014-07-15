@@ -1,420 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755AbaGOIyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:54:44 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:38858
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757584AbaGOIr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:47:57 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: [PATCH v2 11/29] nios2: TLB handling
-Date: Tue, 15 Jul 2014 16:45:38 +0800
-Message-ID: <1405413956-2772-12-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	id S1758137AbaGOIz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:55:26 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:40635 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757584AbaGOIzV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:55:21 -0400
+Message-ID: <53C4EC23.4060309@hp.com>
+Date: Tue, 15 Jul 2014 16:53:55 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(22564002)(189002)(77156001)(99396002)(81542001)(64706001)(95666004)(76176999)(76482001)(88136002)(68736004)(36756003)(84676001)(81342001)(20776003)(85306003)(229853001)(4396001)(21056001)(50226001)(47776003)(80022001)(85852003)(50986999)(107046002)(62966002)(83072002)(104166001)(105596002)(79102001)(77096002)(86362001)(33646002)(92566001)(74662001)(106466001)(31966008)(2201001)(97736001)(93916002)(92726001)(77982001)(83322001)(19580395003)(87936001)(19580405001)(74502001)(6806004)(102836001)(89996001)(48376002)(15975445006)(44976005)(46102001)(42186005)(87286001)(15202345003)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB033;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 027367F73D
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+CC: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] script/kconfig: remove a warning for menucofig
+References: <1404098187-9638-1-git-send-email-zhen-hual@hp.com> <53B1982F.4030504@gmx.de> <1267BB84A242B24E81E0C0C8955CFFC061A30C1D@G9W0343.americas.hpqcorp.net> <53C40589.8050202@gmx.de>
+In-Reply-To: <53C40589.8050202@gmx.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the TLB maintenance functions.
+Heinrich,
+Thank you very much for reviewing. But seems the maintainer will not 
+accept it.
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- arch/nios2/include/asm/tlb.h      |  34 +++++
- arch/nios2/include/asm/tlbflush.h |  46 +++++++
- arch/nios2/mm/tlb.c               | 274 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 354 insertions(+)
- create mode 100644 arch/nios2/include/asm/tlb.h
- create mode 100644 arch/nios2/include/asm/tlbflush.h
- create mode 100644 arch/nios2/mm/tlb.c
+Zhenhua
 
-diff --git a/arch/nios2/include/asm/tlb.h b/arch/nios2/include/asm/tlb.h
-new file mode 100644
-index 0000000..d3bc648
---- /dev/null
-+++ b/arch/nios2/include/asm/tlb.h
-@@ -0,0 +1,34 @@
-+/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_TLB_H
-+#define _ASM_NIOS2_TLB_H
-+
-+#define tlb_flush(tlb)	flush_tlb_mm((tlb)->mm)
-+
-+extern void set_mmu_pid(unsigned long pid);
-+
-+/*
-+ * NiosII doesn't need any special per-pte or per-vma handling, except
-+ * we need to flush cache for the area to be unmapped.
-+ */
-+#define tlb_start_vma(tlb, vma)					\
-+	do {							\
-+		if (!tlb->fullmm)				\
-+			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
-+	}  while (0)
-+
-+#define tlb_end_vma(tlb, vma)	do { } while (0)
-+#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
-+
-+#include <linux/pagemap.h>
-+#include <asm-generic/tlb.h>
-+
-+#endif /* _ASM_NIOS2_TLB_H */
-diff --git a/arch/nios2/include/asm/tlbflush.h b/arch/nios2/include/asm/tlbflush.h
-new file mode 100644
-index 0000000..e19652f
---- /dev/null
-+++ b/arch/nios2/include/asm/tlbflush.h
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#ifndef _ASM_NIOS2_TLBFLUSH_H
-+#define _ASM_NIOS2_TLBFLUSH_H
-+
-+struct mm_struct;
-+
-+/*
-+ * TLB flushing:
-+ *
-+ *  - flush_tlb_all() flushes all processes TLB entries
-+ *  - flush_tlb_mm(mm) flushes the specified mm context TLB entries
-+ *  - flush_tlb_page(vma, vmaddr) flushes one page
-+ *  - flush_tlb_range(vma, start, end) flushes a range of pages
-+ *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
-+ */
-+extern void flush_tlb_all(void);
-+extern void flush_tlb_mm(struct mm_struct *mm);
-+extern void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			    unsigned long end);
-+extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+extern void flush_tlb_one(unsigned long vaddr);
-+
-+static inline void flush_tlb_page(struct vm_area_struct *vma,
-+				unsigned long addr)
-+{
-+	flush_tlb_one(addr);
-+}
-+
-+#endif /* _ASM_NIOS2_TLBFLUSH_H */
-diff --git a/arch/nios2/mm/tlb.c b/arch/nios2/mm/tlb.c
-new file mode 100644
-index 0000000..642b6df
---- /dev/null
-+++ b/arch/nios2/mm/tlb.c
-@@ -0,0 +1,274 @@
-+/*
-+ * Nios2 TLB handling
-+ *
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/pagemap.h>
-+
-+#include <asm/tlb.h>
-+#include <asm/mmu_context.h>
-+#include <asm/pgtable.h>
-+#include <asm/cpuinfo.h>
-+
-+#define TLB_INDEX_MASK		\
-+	((((1UL << (cpuinfo.tlb_ptr_sz - cpuinfo.tlb_num_ways_log2))) - 1) \
-+		<< PAGE_SHIFT)
-+
-+/* Used as illegal PHYS_ADDR for TLB mappings
-+ */
-+#define MAX_PHYS_ADDR 0
-+
-+static void get_misc_and_pid(unsigned long *misc, unsigned long *pid)
-+{
-+	*misc  = RDCTL(CTL_TLBMISC);
-+	*misc &= (TLBMISC_PID | TLBMISC_WAY);
-+	*pid  = *misc & TLBMISC_PID;
-+}
-+
-+/*
-+ * All entries common to a mm share an asid.  To effectively flush these
-+ * entries, we just bump the asid.
-+ */
-+void flush_tlb_mm(struct mm_struct *mm)
-+{
-+	if (current->mm == mm)
-+		flush_tlb_all();
-+	else
-+		memset(&mm->context, 0, sizeof(mm_context_t));
-+}
-+
-+/*
-+ * This one is only used for pages with the global bit set so we don't care
-+ * much about the ASID.
-+ */
-+void flush_tlb_one_pid(unsigned long addr, unsigned long mmu_pid)
-+{
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc;
-+
-+	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
-+
-+	/* remember pid/way until we return. */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+
-+	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
-+
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		unsigned long pteaddr;
-+		unsigned long tlbmisc;
-+		unsigned long pid;
-+
-+		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
-+		WRCTL(CTL_TLBMISC, tlbmisc);
-+		pteaddr = RDCTL(CTL_PTEADDR);
-+		tlbmisc = RDCTL(CTL_TLBMISC);
-+		pid = (tlbmisc >> TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK;
-+		if (((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) &&
-+				pid == mmu_pid) {
-+			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
-+				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
-+				(addr & TLB_INDEX_MASK);
-+			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
-+				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
-+
-+			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
-+			tlbmisc = pid_misc | TLBMISC_WE |
-+				(way << TLBMISC_WAY_SHIFT);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
-+		}
-+	}
-+
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			unsigned long end)
-+{
-+	unsigned long mmu_pid = get_pid_from_context(&vma->vm_mm->context);
-+
-+	while (start < end) {
-+		flush_tlb_one_pid(start, mmu_pid);
-+		start += PAGE_SIZE;
-+	}
-+}
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	while (start < end) {
-+		flush_tlb_one(start);
-+		start += PAGE_SIZE;
-+	}
-+}
-+
-+/*
-+ * This one is only used for pages with the global bit set so we don't care
-+ * much about the ASID.
-+ */
-+void flush_tlb_one(unsigned long addr)
-+{
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc;
-+
-+	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
-+
-+	/* remember pid/way until we return. */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+
-+	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
-+
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		unsigned long pteaddr;
-+		unsigned long tlbmisc;
-+
-+		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
-+		WRCTL(CTL_TLBMISC, tlbmisc);
-+		pteaddr = RDCTL(CTL_PTEADDR);
-+		tlbmisc = RDCTL(CTL_TLBMISC);
-+
-+		if ((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) {
-+			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
-+				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
-+				(addr & TLB_INDEX_MASK);
-+
-+			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
-+				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
-+
-+			tlbmisc = pid_misc | TLBMISC_WE |
-+				(way << TLBMISC_WAY_SHIFT);
-+			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
-+		}
-+	}
-+
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void dump_tlb_line(unsigned long line)
-+{
-+	unsigned int way;
-+	unsigned long org_misc;
-+
-+	pr_debug("dump tlb-entries for line=%#lx (addr %08lx)\n", line,
-+		line << (PAGE_SHIFT + cpuinfo.tlb_num_ways_log2));
-+
-+	/* remember pid/way until we return */
-+	org_misc = (RDCTL(CTL_TLBMISC) & (TLBMISC_PID | TLBMISC_WAY));
-+
-+	WRCTL(CTL_PTEADDR, line << 2);
-+
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		unsigned long pteaddr;
-+		unsigned long tlbmisc;
-+		unsigned long tlbacc;
-+
-+		WRCTL(CTL_TLBMISC, TLBMISC_RD | (way << TLBMISC_WAY_SHIFT));
-+		pteaddr = RDCTL(CTL_PTEADDR);
-+		tlbmisc = RDCTL(CTL_TLBMISC);
-+		tlbacc = RDCTL(CTL_TLBACC);
-+
-+		if ((tlbacc << PAGE_SHIFT) != (MAX_PHYS_ADDR & PAGE_MASK)) {
-+			pr_debug("-- way:%02x vpn:0x%08lx phys:0x%08lx pid:0x%02lx flags:%c%c%c%c%c\n",
-+				way,
-+				(pteaddr << (PAGE_SHIFT-2)),
-+				(tlbacc << PAGE_SHIFT),
-+				((tlbmisc >> TLBMISC_PID_SHIFT) &
-+				TLBMISC_PID_MASK),
-+				(tlbacc & _PAGE_READ ? 'r' : '-'),
-+				(tlbacc & _PAGE_WRITE ? 'w' : '-'),
-+				(tlbacc & _PAGE_EXEC ? 'x' : '-'),
-+				(tlbacc & _PAGE_GLOBAL ? 'g' : '-'),
-+				(tlbacc & _PAGE_CACHED ? 'c' : '-'));
-+		}
-+	}
-+
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void dump_tlb(void)
-+{
-+	unsigned int i;
-+	for (i = 0; i < cpuinfo.tlb_num_lines; i++)
-+		dump_tlb_line(i);
-+}
-+
-+void flush_tlb_pid(unsigned long pid)
-+{
-+	unsigned int line;
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc;
-+
-+	/* remember pid/way until we return */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+
-+	for (line = 0; line < cpuinfo.tlb_num_lines; line++) {
-+		WRCTL(CTL_PTEADDR, line << 2);
-+
-+		for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+			unsigned long pteaddr;
-+			unsigned long tlbmisc;
-+			unsigned long tlbacc;
-+
-+			tlbmisc = pid_misc | TLBMISC_RD |
-+				(way << TLBMISC_WAY_SHIFT);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			pteaddr = RDCTL(CTL_PTEADDR);
-+			tlbmisc = RDCTL(CTL_TLBMISC);
-+			tlbacc = RDCTL(CTL_TLBACC);
-+
-+			if (((tlbmisc>>TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK)
-+				== pid) {
-+				tlbmisc = pid_misc | TLBMISC_WE |
-+					(way << TLBMISC_WAY_SHIFT);
-+				WRCTL(CTL_TLBMISC, tlbmisc);
-+				WRCTL(CTL_TLBACC,
-+					(MAX_PHYS_ADDR >> PAGE_SHIFT));
-+			}
-+		}
-+
-+		WRCTL(CTL_TLBMISC, org_misc);
-+	}
-+}
-+
-+void flush_tlb_all(void)
-+{
-+	int i;
-+	unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE;
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc, tlbmisc;
-+
-+	/* remember pid/way until we return */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+	pid_misc |= TLBMISC_WE;
-+
-+	/* Map each TLB entry to physcal address 0 with no-access and a
-+	   bad ptbase */
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		tlbmisc = pid_misc | (way << TLBMISC_WAY_SHIFT);
-+		for (i = 0; i < cpuinfo.tlb_num_lines; i++) {
-+			WRCTL(CTL_PTEADDR, ((vaddr) >> PAGE_SHIFT) << 2);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
-+			vaddr += 1UL << 12;
-+		}
-+	}
-+
-+	/* restore pid/way */
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void set_mmu_pid(unsigned long pid)
-+{
-+	WRCTL(CTL_TLBMISC, (RDCTL(CTL_TLBMISC) & TLBMISC_WAY) |
-+		((pid & TLBMISC_PID_MASK) << TLBMISC_PID_SHIFT));
-+}
--- 
-1.8.2.1
+On 07/15/2014 12:30 AM, Heinrich Schuchardt wrote:
+> On 01.07.2014 01:10, Li, Zhen-Hua wrote:
+>> When malloc for jump,
+>> if (head && location) {
+>>     jump = xmalloc(sizeof(struct jump_key));
+>>     ....
+>> }
+>> And here it is used:
+>> if (head && location && menu == location)
+>>     jump->offset = strlen(r->s);
+>>
+>>
+>> So I think when jump is used, it must not be NULL; then !=NULL is not 
+>> needed.
+>
+> I tested the patch against v13.6-rc5. It fixes the problem with the 
+> warning.
+>
+> You can add
+>
+> Reviewed-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+>
+> Best regards
+>
+> Heinrich
+>
+>
+>> -----Original Message-----
+>> From: Heinrich Schuchardt [mailto:xypron.glpk@gmx.de]
+>> Sent: Tuesday, July 01, 2014 1:03 AM
+>> To: Li, Zhen-Hua; Yann E. MORIN; linux-kbuild@vger.kernel.org; 
+>> linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH 1/1] script/kconfig: remove a warning for menucofig
+>>
+>> On 30.06.2014 05:16, Li, Zhen-Hua wrote:
+>>> There is a warning when run "make menuconfig".
+>>>
+>>> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+>>> scripts/kconfig/menu.c:591:18: warning: ‘jump’ may be used 
+>>> uninitialized in
+>>> this function [-Wmaybe-uninitialized]
+>>>        jump->offset = strlen(r->s);
+>>>                     ^
+>>> scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
+>>>     struct jump_key *jump;
+>>>                      ^
+>>>
+>>> It is because the compiler think "jump" is not initialized, though 
+>>> in fact
+>>> it is already initialized.
+>>>
+>>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>>> ---
+>>>    scripts/kconfig/menu.c | 2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+>>> index a26cc5d..584e0fc 100644
+>>> --- a/scripts/kconfig/menu.c
+>>> +++ b/scripts/kconfig/menu.c
+>>> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, 
+>>> struct property *prop,
+>>>    {
+>>>        int i, j;
+>>>        struct menu *submenu[8], *menu, *location = NULL;
+>>> -    struct jump_key *jump;
+>>> +    struct jump_key *jump = NULL;
+>>>
+>>>        str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>>>        menu = prop->menu->parent;
+>>>
+>> Hello Zhen-Hua,
+>>
+>> the patch looks incomplete to me. A check
+>> jump != NULL
+>> should be added before accessing parts of structure jump_key.
+>>
+>> Best regards
+>>
+>> Heinrich Schuchardt
+>>
+>
 
