@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965438AbaGOXpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:45:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S965454AbaGOXpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:45:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933770AbaGOXN7 (ORCPT
+	with ESMTP id S933762AbaGOXN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 3.15 15/84] thermal: hwmon: Make the check for critical temp valid consistent
-Date: Tue, 15 Jul 2014 16:17:12 -0700
-Message-Id: <20140715231713.656981767@linuxfoundation.org>
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.15 14/84] serial: imx: Fix build breakage
+Date: Tue, 15 Jul 2014 16:17:11 -0700
+Message-Id: <20140715231713.621762682@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,97 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
+commit 8bec751bd63847b4044aab8b215db52aa6abde61 upstream.
 
-On 05/21/2014 04:22 PM, Aaron Lu wrote:
-> On 05/21/2014 01:57 PM, Kui Zhang wrote:
->> Hello,
->>
->> I get following error when rmmod thermal.
->>
->> rmmod  thermal
->> Killed
+Fix breakage introduced by
+commit c557d392fbf5badd693ea1946a4317c87a26a716,
+'serial: Test for no tx data on tx restart'.
 
-While dealing with this problem, I found another problem that also
-results in a kernel crash on thermal module removal:
-
-From: Aaron Lu <aaron.lu@intel.com>
-Date: Wed, 21 May 2014 16:05:38 +0800
-Subject: [PATCH 3.15 15/84] thermal: hwmon: Make the check for critical temp valid consistent
-
-We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
-to decide if we need to create the temp_crit attribute file but we just
-check if tz->ops->get_crit_temp exists to decide if we need to remove
-that attribute file. Some ACPI thermal zone doesn't have a valid critical
-trip point and that would result in removing a non-existent device file
-on thermal module unload.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/thermal/thermal_hwmon.c |   33 ++++++++++++++++++---------------
- 1 file changed, 18 insertions(+), 15 deletions(-)
+ drivers/tty/serial/imx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/thermal/thermal_hwmon.c
-+++ b/drivers/thermal/thermal_hwmon.c
-@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct t
- 	return NULL;
- }
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -563,7 +563,7 @@ static void imx_start_tx(struct uart_por
+ 	struct imx_port *sport = (struct imx_port *)port;
+ 	unsigned long temp;
  
-+static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
-+{
-+	unsigned long temp;
-+	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
-+}
-+
- int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- {
- 	struct thermal_hwmon_device *hwmon;
-@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct therm
- 	if (result)
- 		goto free_temp_mem;
+-	if (uart_circ_empty(&port.state->xmit))
++	if (uart_circ_empty(&port->state->xmit))
+ 		return;
  
--	if (tz->ops->get_crit_temp) {
--		unsigned long temperature;
--		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(temp->temp_crit.name,
--				 sizeof(temp->temp_crit.name),
-+	if (thermal_zone_crit_temp_valid(tz)) {
-+		snprintf(temp->temp_crit.name,
-+				sizeof(temp->temp_crit.name),
- 				"temp%d_crit", hwmon->count);
--			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
--			temp->temp_crit.attr.attr.mode = 0444;
--			temp->temp_crit.attr.show = temp_crit_show;
--			sysfs_attr_init(&temp->temp_crit.attr.attr);
--			result = device_create_file(hwmon->device,
--						    &temp->temp_crit.attr);
--			if (result)
--				goto unregister_input;
--		}
-+		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-+		temp->temp_crit.attr.attr.mode = 0444;
-+		temp->temp_crit.attr.show = temp_crit_show;
-+		sysfs_attr_init(&temp->temp_crit.attr.attr);
-+		result = device_create_file(hwmon->device,
-+					    &temp->temp_crit.attr);
-+		if (result)
-+			goto unregister_input;
- 	}
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
-@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct t
- 	}
- 
- 	device_remove_file(hwmon->device, &temp->temp_input.attr);
--	if (tz->ops->get_crit_temp)
-+	if (thermal_zone_crit_temp_valid(tz))
- 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
+ 	if (USE_IRDA(sport)) {
 
 
