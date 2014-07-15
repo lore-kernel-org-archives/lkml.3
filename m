@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaGOQMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:12:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49732 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaGOQMG (ORCPT
+	id S1752919AbaGOQM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:12:27 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:53338
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751474AbaGOQMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:12:06 -0400
-Date: Tue, 15 Jul 2014 18:11:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
+	Tue, 15 Jul 2014 12:12:23 -0400
+Date: Tue, 15 Jul 2014 11:12:20 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Howells <dhowells@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [patch 0/4] timerfd c/r support, v4
-In-Reply-To: <20140715135445.GJ23835@moon>
-Message-ID: <alpine.DEB.2.10.1407151811050.24854@nanos>
-References: <20140623185431.396309193@openvz.org> <20140630194354.GB2305@moon> <20140715135445.GJ23835@moon>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+In-Reply-To: <CA+55aFzP_GZaTYcUg7CN+Sz5ZeWX2CgxX3hig2gyBxhCCayamA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1407151054390.11327@gentwo.org>
+References: <20140612135630.GA23606@htj.dyndns.org> <20140612153426.GV4581@linux.vnet.ibm.com> <20140612155227.GB23606@htj.dyndns.org> <20140617144151.GD4669@linux.vnet.ibm.com> <20140617152752.GC31819@htj.dyndns.org> <87lhs35p0v.fsf@rustcorp.com.au>
+ <20140714113911.GM16041@linux.vnet.ibm.com> <alpine.DEB.2.11.1407141014390.25436@gentwo.org> <20140715101150.GA8690@linux.vnet.ibm.com> <alpine.DEB.2.11.1407150903570.10593@gentwo.org> <20140715143225.GC8690@linux.vnet.ibm.com> <alpine.DEB.2.11.1407150952580.10593@gentwo.org>
+ <CA+55aFzP_GZaTYcUg7CN+Sz5ZeWX2CgxX3hig2gyBxhCCayamA@mail.gmail.com>
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Cyrill Gorcunov wrote:
+On Tue, 15 Jul 2014, Linus Torvalds wrote:
 
-> On Mon, Jun 30, 2014 at 11:43:54PM +0400, Cyrill Gorcunov wrote:
-> > On Mon, Jun 23, 2014 at 10:54:31PM +0400, Cyrill Gorcunov wrote:
-> > >
-> > > Hi guys, here is an updated version of c/r support for timerfd files. The main change
-> > > is in how @ticks are restored in patch 3 -- I switched to ioctl code, which is wrapped
-> > > with CONFIG because I still think that while there is only one ioctl designated
-> > > solely for c/r needs no need to build it all the time until explicitly requested.
-> > > Please take a look once time permit. Comments are highly appreciated.
-> > > Also note the last patch is for man-page git repo, not for kernel.
-> > 
-> > Gentlemen, could you please point me if there something preventing the
-> > series from being picked up? Or there some way to improve the series?
-> 
-> Dear sirs, ping?
+> Really, "before" and "after" have ABSOLUTELY NO MEANING unless you
+> have a barrier. And you're arguing against those barriers. So you
+> cannot use "before" as an argument, since in your world, no such thing
+> even exists!
 
-Hmm, I was waiting for a V5, but it seems you just updated that single
-patch according to the review. I'll pick it up
+I mentioned that there is a barrier because the process of handing over
+the offset to the other includes synchronization. In the slab case this is
+a semaphore that is use to protect the structure and the list of
+kmem_cache structures. The control struct containing the offset must be
+entered somehow into something that tracks it for the future and thus
+there is synchronization by the subsytem.
+
+> > There are other arguments, but they basically boil down to "no other
+> CPU ever accesses the per-cpu data of *this* CPU" (wrong) or "the
+> users will do their own barriers" (maybe true, maybe not). Your "value
+> is only available after" argument really isn't an argument. Not
+> without those barriers.
+
+Ok so what is happening is:
+
+1. cacheline is zeroed on per_cpu_alloc but still exists in remote processor.
+
+(we could actually insert code in alloc_percpu to ensure that the remote
+caches are cleaned and not proceed unless that is complete. allocpercpu
+is not performance critical).
+
+2. cacheline is initialized with new values by the subsystem looping over
+all percpu instances. Other processor still keeps the old data.
+
+3. mutex is taken, list modifications occur, mutex is released. Remote
+processor still keeps the old cacheline data.
+
+4. Subsystem makes the percpu offset available.
+
+5. The remote processor is processing using its instance of the per cpu
+data for the first time using the offset to determine the percpu data for
+its data. This typically means its updating the cacheline (and we hope
+that the cacheline will be in exclusive state for good for performance reasons).
+
+And now we still see the old data. The cacheline changes of the initial
+processor are ignored?
+
+Ok if this is the case then we have another way of dealing with this in
+alloc_percpu. Either zap the relevant remote cpu caches after the areas
+were zeroed or do an IPI to make the remote processor run the percpu area
+initialization.
 
 
 
