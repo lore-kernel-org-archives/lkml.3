@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952AbaGOWHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:07:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54507 "EHLO
+	id S965006AbaGOWHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:07:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54502 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758488AbaGOVgZ (ORCPT
+	with ESMTP id S1758418AbaGOVgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:25 -0400
+	Tue, 15 Jul 2014 17:36:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 129/198] target: Report correct response length for some commands
-Date: Tue, 15 Jul 2014 14:29:59 -0700
-Message-Id: <1405459868-15089-130-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 024/198] Drivers: hv: balloon: Ensure pressure reports are posted regularly
+Date: Tue, 15 Jul 2014 14:28:14 -0700
+Message-Id: <1405459868-15089-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,153 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 2426bd456a61407388b6e61fc5f98dbcbebc50e2 upstream.
+commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
 
-When an initiator sends an allocation length bigger than what its
-command consumes, the target should only return the actual response data
-and set the residual length to the unused part of the allocation length.
+The current code posts periodic memory pressure status from a dedicated thread.
+Under some conditions, especially when we are releasing a lot of memory into
+the guest, we may not send timely pressure reports back to the host. Fix this
+issue by reporting pressure in all contexts that can be active in this driver.
 
-Add a helper function that command handlers (INQUIRY, READ CAPACITY,
-etc) can use to do this correctly, and use this code to get the correct
-residual for commands that don't use the full initiator allocation in the
-handlers for READ CAPACITY, READ CAPACITY(16), INQUIRY, MODE SENSE and
-REPORT LUNS.
-
-This addresses a handful of failures as reported by Christophe with
-the Windows Certification Kit:
-
-  http://permalink.gmane.org/gmane.linux.scsi.target.devel/6515
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/target_core_sbc.c       |  4 ++--
- drivers/target/target_core_spc.c       |  9 ++++++---
- drivers/target/target_core_transport.c | 17 +++++++++++++++++
- include/target/target_core_backend.h   |  1 +
- 4 files changed, 26 insertions(+), 5 deletions(-)
+ drivers/hv/hv_balloon.c | 29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index baa8bf4..45d0bc6 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -80,7 +80,7 @@ sbc_emulate_readcapacity(struct se_cmd *cmd)
- 		transport_kunmap_data_sg(cmd);
- 	}
+diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+index 7e17a54..393fd8a 100644
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -19,6 +19,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, 8);
- 	return 0;
- }
+ #include <linux/kernel.h>
++#include <linux/jiffies.h>
+ #include <linux/mman.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+@@ -459,6 +460,11 @@ static bool do_hot_add;
+  */
+ static uint pressure_report_delay = 45;
  
-@@ -128,7 +128,7 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
- 		transport_kunmap_data_sg(cmd);
- 	}
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, 32);
- 	return 0;
- }
- 
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index 021c3f4..143e75b 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -646,6 +646,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
- 	unsigned char buf[SE_INQUIRY_BUF];
- 	sense_reason_t ret;
- 	int p;
-+	int len = 0;
- 
- 	memset(buf, 0, SE_INQUIRY_BUF);
- 
-@@ -663,6 +664,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
- 		}
- 
- 		ret = spc_emulate_inquiry_std(cmd, buf);
-+		len = buf[4] + 5;
- 		goto out;
- 	}
- 
-@@ -670,6 +672,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
- 		if (cdb[2] == evpd_handlers[p].page) {
- 			buf[1] = cdb[2];
- 			ret = evpd_handlers[p].emulate(cmd, buf);
-+			len = get_unaligned_be16(&buf[2]) + 4;
- 			goto out;
- 		}
- 	}
-@@ -685,7 +688,7 @@ out:
- 	}
- 
- 	if (!ret)
--		target_complete_cmd(cmd, GOOD);
-+		target_complete_cmd_with_length(cmd, GOOD, len);
- 	return ret;
- }
- 
-@@ -1003,7 +1006,7 @@ set_length:
- 		transport_kunmap_data_sg(cmd);
- 	}
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, length);
- 	return 0;
- }
- 
-@@ -1180,7 +1183,7 @@ done:
- 	buf[3] = (lun_count & 0xff);
- 	transport_kunmap_data_sg(cmd);
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, 8 + lun_count * 8);
- 	return 0;
- }
- EXPORT_SYMBOL(spc_emulate_report_luns);
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 31adaac..ea545f4 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -669,6 +669,23 @@ void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
- }
- EXPORT_SYMBOL(target_complete_cmd);
- 
-+void target_complete_cmd_with_length(struct se_cmd *cmd, u8 scsi_status, int length)
-+{
-+	if (scsi_status == SAM_STAT_GOOD && length < cmd->data_length) {
-+		if (cmd->se_cmd_flags & SCF_UNDERFLOW_BIT) {
-+			cmd->residual_count += cmd->data_length - length;
-+		} else {
-+			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
-+			cmd->residual_count = cmd->data_length - length;
-+		}
++/*
++ * The last time we posted a pressure report to host.
++ */
++static unsigned long last_post_time;
 +
-+		cmd->data_length = length;
-+	}
-+
-+	target_complete_cmd(cmd, scsi_status);
-+}
-+EXPORT_SYMBOL(target_complete_cmd_with_length);
-+
- static void target_add_to_state_list(struct se_cmd *cmd)
+ module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
+ MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
+ 
+@@ -542,6 +548,7 @@ struct hv_dynmem_device {
+ 
+ static struct hv_dynmem_device dm_device;
+ 
++static void post_status(struct hv_dynmem_device *dm);
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ 
+ static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
+@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
+ 		 * have not been "onlined" within the allowed time.
+ 		 */
+ 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+-
++		post_status(&dm_device);
+ 	}
+ 
+ 	return;
+@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem_device *dm)
  {
- 	struct se_device *dev = cmd->se_dev;
-diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
-index 39e0114..feacd9b 100644
---- a/include/target/target_core_backend.h
-+++ b/include/target/target_core_backend.h
-@@ -56,6 +56,7 @@ int	transport_subsystem_register(struct se_subsystem_api *);
- void	transport_subsystem_release(struct se_subsystem_api *);
+ 	struct dm_status status;
+ 	struct sysinfo val;
++	unsigned long now = jiffies;
++	unsigned long last_post = last_post_time;
  
- void	target_complete_cmd(struct se_cmd *, u8);
-+void	target_complete_cmd_with_length(struct se_cmd *, u8, int);
+ 	if (pressure_report_delay > 0) {
+ 		--pressure_report_delay;
+ 		return;
+ 	}
++
++	if (!time_after(now, (last_post_time + HZ)))
++		return;
++
+ 	si_meminfo(&val);
+ 	memset(&status, 0, sizeof(struct dm_status));
+ 	status.hdr.type = DM_STATUS_REPORT;
+@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem_device *dm)
+ 	if (status.hdr.trans_id != atomic_read(&trans_id))
+ 		return;
  
- sense_reason_t	spc_parse_cdb(struct se_cmd *cmd, unsigned int *size);
- sense_reason_t	spc_emulate_report_luns(struct se_cmd *cmd);
++	/*
++	 * If the last post time that we sampled has changed,
++	 * we have raced, don't post the status.
++	 */
++	if (last_post != last_post_time)
++		return;
++
++	last_post_time = jiffies;
+ 	vmbus_sendpacket(dm->dev->channel, &status,
+ 				sizeof(struct dm_status),
+ 				(unsigned long)NULL,
+@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struct *dummy)
+ 
+ 			if (ret == -EAGAIN)
+ 				msleep(20);
+-
++			post_status(&dm_device);
+ 		} while (ret == -EAGAIN);
+ 
+ 		if (ret) {
+@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynmem_device *dm,
+ 	struct dm_unballoon_response resp;
+ 	int i;
+ 
+-	for (i = 0; i < range_count; i++)
++	for (i = 0; i < range_count; i++) {
+ 		free_balloon_pages(dm, &range_array[i]);
++		post_status(&dm_device);
++	}
+ 
+ 	if (req->more_pages == 1)
+ 		return;
 -- 
 1.9.1
 
