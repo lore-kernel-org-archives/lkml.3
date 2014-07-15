@@ -1,222 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950AbaGOJ1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:27:18 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:55797 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256AbaGOJ1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:27:15 -0400
-Message-ID: <53C4F3F1.4050407@mm-sol.com>
-Date: Tue, 15 Jul 2014 12:27:13 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1758016AbaGOJ1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:27:34 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:36381 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757990AbaGOJ12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:27:28 -0400
+X-Yandex-Uniq: 78a35862-b5cc-4a76-93b4-d93f5edb43a2
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 15 Jul 2014 13:27:19 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, jovi.zhangwei@huawei.com,
+        namhyung.kim@lge.com, tom.zanussi@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] tracing: let user specify tracing_thresh after
+ selecting function_graph
+Message-ID: <20140715092719.GB5127@stfomichev-desktop.yandex.net>
+References: <1401815569-10513-1-git-send-email-stfomichev@yandex-team.ru>
+ <20140603185720.79552fb8@gandalf.local.home>
+ <20140604133350.GC26511@stfomichev-desktop.yandex.net>
+ <20140604154149.3c2857dc@gandalf.local.home>
+ <20140605073839.GG26511@stfomichev-desktop.yandex.net>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [RFC PATCH v2 1/5] mfd: qpnp: add support for Qualcomm QPNP PMICs
-References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com> <1404393243-7324-2-git-send-email-svarbanov@mm-sol.com> <20140709143426.GC2635@lee--X1> <53BD5EC5.3080801@mm-sol.com> <20140710083654.GQ2635@lee--X1> <53BEB1DB.6010301@mm-sol.com> <20140711090718.GA30519@lee--X1> <53C3DE99.4090100@mm-sol.com> <20140714140306.GB3993@lee--X1>
-In-Reply-To: <20140714140306.GB3993@lee--X1>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140605073839.GG26511@stfomichev-desktop.yandex.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 05:03 PM, Lee Jones wrote:
-> On Mon, 14 Jul 2014, Stanimir Varbanov wrote:
->> On 07/11/2014 12:07 PM, Lee Jones wrote:
->>> On Thu, 10 Jul 2014, Stanimir Varbanov wrote:
->>>>>>>> The Qualcomm QPNP PMIC chips are components used with the
->>>>>>>> Snapdragon 800 series SoC family.  This driver exists
->>>>>>>> largely as a glue mfd component, it exists to be an owner
->>>>>>>> of an SPMI regmap for children devices described in
->>>>>>>> device tree.
->>>>>>>>
->>>>>>>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
->>>>>>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->>>>>>>> ---
->>>>>>>>  drivers/mfd/Kconfig     |   15 ++++++
->>>>>>>>  drivers/mfd/Makefile    |    1 +
->>>>>>>>  drivers/mfd/qpnp-spmi.c |  129 +++++++++++++++++++++++++++++++++++++++++++++++
->>>>>>>>  3 files changed, 145 insertions(+), 0 deletions(-)
->>>>>>>>  create mode 100644 drivers/mfd/qpnp-spmi.c
->>>>>>>>
->>>>>>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
->>>>>>>> index ee8204c..258b733 100644
->>>>>>>> --- a/drivers/mfd/Kconfig
->>>>>>>> +++ b/drivers/mfd/Kconfig
->>>>>>>> @@ -524,6 +524,21 @@ config MFD_PM8921_CORE
->>>>>>>>  	  Say M here if you want to include support for PM8921 chip as a module.
->>>>>>>>  	  This will build a module called "pm8921-core".
->>>>>>>>  
->>>>>>>> +config MFD_QPNP_SPMI
->>>>>>>> +	tristate "Qualcomm QPNP SPMI PMIC"
->>>>>>>> +	depends on ARCH_QCOM || COMPILE_TEST
->>>>>>>> +	depends on OF
->>>>>>>> +	select MFD_CORE
->>>>>>>> +	select REGMAP_SPMI
->>>>>>>> +	help
->>>>>>>> +	  This enables support for the Qualcomm QPNP SPMI PMICs.
->>>>>>>> +	  These PMICs are currently used with the Snapdragon 800 series of
->>>>>>>> +	  SoCs.  Note, that this will only be useful paired with descriptions
->>>>>>>> +	  of the independent functions as children nodes in the device tree.
->>>>>>>
->>>>
->>>> <snip>
->>>>
->>>>>>>
->>>>>>>> + * This program is distributed in the hope that it will be useful,
->>>>>>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>>>>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>>>>>>> + * GNU General Public License for more details.
->>>>>>>> + */
->>>>>>>> +#include <linux/kernel.h>
->>>>>>>> +#include <linux/module.h>
->>>>>>>> +#include <linux/spmi.h>
->>>>>>>> +#include <linux/regmap.h>
->>>>>>>> +#include <linux/of_address.h>
->>>>>>>> +#include <linux/slab.h>
->>>>>>>> +#include <linux/mfd/core.h>
->>>>>>>> +
->>>>>>>> +#define QPNP_RESOURCE_SIZE	256
->>>>>>>> +
->>>>>>>> +static const struct regmap_config qpnp_regmap_config = {
->>>>>>>> +	.reg_bits	= 16,
->>>>>>>> +	.val_bits	= 8,
->>>>>>>> +	.max_register	= 0xffff,
->>>>>>>> +};
->>>>>>>> +
->>>>>>>> +static int qpnp_index_to_resource(struct device_node *np, int index,
->>>>>>>> +				  struct resource *res)
->>>>>>>> +{
->>>>>>>> +	const char *name = NULL;
->>>>>>>> +	const __be32 *addrp;
->>>>>>>> +	u64 addr;
->>>>>>>> +
->>>>>>>> +	addrp = of_get_address(np, index, NULL, NULL);
->>>>>>>> +	if (!addrp)
->>>>>>>> +		return -EINVAL;
->>>>>>>> +
->>>>>>>> +	addr = of_read_number(addrp, 1);
->>>>>>>> +	if (addr == OF_BAD_ADDR)
->>>>>>>> +		return -EINVAL;
->>>>>>>> +
->>>>>>>> +	of_property_read_string_index(np, "reg-names", index, &name);
->>>>>>>> +
->>>>>>>> +	res->start = addr;
->>>>>>>> +	res->end = addr + QPNP_RESOURCE_SIZE - 1;
->>>>>>>> +	res->flags = IORESOURCE_REG;
->>>>>>>> +	res->name = name ? name : np->name;
->>>>>>>> +
->>>>>>>> +	return 0;
->>>>>>>> +}
->>>>>>>> +
->>>>>>>> +static int qpnp_add_device(struct spmi_device *root, struct device_node *child)
->>>>>>>> +{
->>>>>>>> +	struct mfd_cell cell = {};
->>>>>>>> +	struct resource *res, *r;
->>>>>>>> +	int num_resources = 0;
->>>>>>>> +	const char *compat;
->>>>>>>> +	int ret, i;
->>>>>>>> +
->>>>>>>> +	compat = of_get_property(child, "compatible", NULL);
->>>>>>>> +	if (!compat)
->>>>>>>> +		return -ENODEV;
->>>>>>>> +
->>>>>>>> +	while (of_get_address(child, num_resources, NULL, NULL))
->>>>>>>> +		num_resources++;
->>>>>>>> +
->>>>>>>> +	if (!num_resources)
->>>>>>>> +		return -ENODEV;
->>>>>>>> +
->>>>>>>> +	res = kcalloc(num_resources, sizeof(*res), GFP_KERNEL);
->>>>>>>> +	if (!res)
->>>>>>>> +		return -ENOMEM;
->>>>>>>> +
->>>>>>>> +	r = res;
->>>>>>>> +	for (i = 0; i < num_resources; i++, r++)
->>>>>>>> +		qpnp_index_to_resource(child, i, r);
->>>>>>>> +
->>>>>>>> +	cell.name = kasprintf(GFP_KERNEL, "%x.%04x.%s", root->usid,
->>>>>>>> +			      (u16)res[0].start, child->name);
->>>>>>>> +	cell.of_compatible = compat;
->>>>>>>> +	cell.num_resources = num_resources;
->>>>>>>> +	cell.resources = res;
->>>>>>>> +
->>>>>>>> +	ret = mfd_add_devices(&root->dev, PLATFORM_DEVID_NONE, &cell, 1,
->>>>>>>> +			      NULL, 0, NULL);
->>>>>>>> +
->>>>>>>> +	kfree(res);
->>>>>>>> +	kfree(cell.name);
->>>>>>>> +
->>>>>>>> +	return ret;
->>>>>>>> +}
->>>>>>>> +
->>>>>>>> +static int qpnp_probe(struct spmi_device *sdev)
->>>>>>>> +{
->>>>>>>> +	struct device_node *root = sdev->dev.of_node;
->>>>>>>> +	struct device_node *child;
->>>>>>>> +	struct regmap *regmap;
->>>>>>>> +
->>>>>>>> +	regmap = devm_regmap_init_spmi_ext(sdev, &qpnp_regmap_config);
->>>>>>>> +	if (IS_ERR(regmap))
->>>>>>>> +		return PTR_ERR(regmap);
->>>>>>>> +
->>>>>>>> +	for_each_available_child_of_node(root, child)
->>>>>>>> +		qpnp_add_device(sdev, child);
->>>>>>>
->>>>>>> This entire driver looks like a re-write of of_platform_populate().
->>>>>>>
->>>>>>> Why?
->>>>>>
->>>>>> of_platform_populate is not used because the PMIC function resources are
->>>>>> non-translatable. You can see that the resources are of type
->>>>>> IORESOURCE_REG (qpnp_index_to_resource()) not IORESOURCE_MEM or _IO.
->>>>>>
->>>>>> The whole point of this mfd driver is to parse devicetree to prepare
->>>>>> resources for every child and create platform device for it through
->>>>>> mfd_add_devices(). Then the PMIC function driver got its resources and
->>>>>> use them as register addresses passed to regmap. These register accesses
->>>>>> hits the SPMI controller which is the physical interface between PMIC's
->>>>>> and SoC.
->>>>>
->>>>> I can't help but think that if this is required, it should be part of
->>>>> the core OF code, rather than doing your own thing which looks
->>>>> frighteningly like existing framework functionality.
->>>>
->>>> does it make sense to have a common of_mfd code for devicetree parsing?
->>>> Is that discussed already? I mean presently the mfd_cell resources and
->>>> number of resources are passed by the mfd_add_devices users. Is it
->>>> possible to have common code which parses devicetree sub-nodes of the
->>>> parent device_node and fill resources/create platform devices for them.
->>>
->>> I'm not sure it does.  Normally users _either_ represent devices in
->>> MFD cells from within the driver _or_ populate using existing DT
->>> interfaces i.e. of_platform_populate().  This is the first time I've
->>> seen someone attempt to parse the entire MFD node structure from
->>> within a driver.
->>
->> Our goal is to use common mfd driver for various Qualcomm PMIC from the
->> same PMIC generation (codenamed QPNP). Presently we have good
->> abstraction of the register manipulation functions through regmap-spmi
->> layer. Using the devicetree to represent different peripherals base
->> addresses (reg property) gives us a benefit by avoiding huge header
->> files in linux/mfd and make flexible transition to new PMIC's which just
->> change the base addresses but keep the IP block the same. This way we
->> should change the devicetree binding without touch the drivers.
-> 
-> I'm still not convinced that you need to write your own parser.  If
-> you're concerned about not translating the reg property, use (or
-> don't) the 'ranges' property accordingly.
+Hi Steven,
 
-Unfortunately "ranges" property doesn't help here. The pmic addresses
-parsed from "reg" properties are SPMI addresses (similar to I2C addresses).
+Did you have some spare time to check why I'm getting triple fault with the
+jump labels inside function tracers? Or will you just pull my another
+patch without them?
+
+On Thu, Jun 05, 2014 at 11:38:39AM +0400, Stanislav Fomichev wrote:
+> > You mean inside the function tracers. I could envision problems with
+> > that, but I don't know exactly what would cause those problems. Have
+> > patches to show? You may have done something unrelated that caused the
+> > issue.
+> Maybe I'm using jump labels incorrectly, patch attached below.
+> And, when I set tracing_thresh after selecting function_graph, I get:
+> 
+> [   42.337679] PANIC: double fault, error_code: 0x0
+> [   42.337357] PANIC: double fault, error_code: 0x0
+> [   42.337357] CPU: 1 PID: 1388 Comm: bash Not tainted 3.15.0-upstream #33
+> [   42.337357] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS VirtualBox 12/01/2006
+> [   42.337357] task: ffff88001f5b3aa0 ti: ffff8800185d4000 task.ti: ffff8800185d4000
+> [   42.337357] RIP: 0010:[<ffffffff811006d4>]  [<ffffffff811006d4>] trace_buffer_lock_reserve+0x4/0x80
+> [   42.337357] RSP: 0000:ffff88001f7ffff0  EFLAGS: 00010086
+> [   42.337357] RAX: 0000000000000000 RBX: ffff88001e409d80 RCX: 0000000000000046
+> [   42.337357] RDX: 0000000000000018 RSI: 000000000000000b RDI: ffff88001e409d80
+> [   42.337357] RBP: ffff88001f800070 R08: 0000000000000000 R09: 0000000000000554
+> [   42.337357] R10: 0000000000000000 R11: 0000000000000013 R12: ffffffff81054e30
+> [   42.337357] R13: 0000000000000000 R14: 0000000000000286 R15: 0000000000000003
+> [   42.337357] FS:  00007f5a6cd83700(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+> [   42.337357] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   42.337357] CR2: ffff88001f7fffe8 CR3: 0000000000e20000 CR4: 00000000000006e0
+> [   42.337357] Stack:
+> [   42.337357]  ffffffffa0010f50 ffffffffa0011170
+> [   42.337357] Call Trace:
+> [   42.337357]  <UNK> 
+> [   42.337357] Code: 02 00 00 48 63 ca 89 14 bd a0 4b ed 81 89 34 8d 60 43 eb 81 89 35 bd 44 dd 00 e9 45 ff ff ff 0f 1f 84 00 00 00 00 00 48 83 ec 28 <48> 89 1c 24 89 f3 48 8
+> 9 d6 48 89 6c 24 08 4c 89 64 24 10 48 89 
+> [   42.337357] Kernel panic - not syncing: Machine halted.
+> [   42.337357] CPU: 1 PID: 1388 Comm: bash Not tainted 3.15.0-upstream #33
+> [   42.337357] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS VirtualBox 12/01/2006
+> [   42.337357]  0000000000000000 ffffffff810184f5 ffffffff816673d3 ffffffff8193437f
+> [   42.337357]  ffffffff8166223e 0000000000000000 ffffffff00000008 ffff88001fd06f28
+> [   42.337357]  ffff88001fd06ec8 00000000000012cc 0000000000000082 0000000000000082
+> [   42.337357] Call Trace:
+> [   42.337357]  <#DF>  [<ffffffff810184f5>] ? show_stack+0x5/0x50
+> [   42.337357]  [<ffffffff816673d3>] ? dump_stack+0x41/0x51
+> [   42.337357]  [<ffffffff8166223e>] ? panic+0xca/0x1e7
+> [   42.337357]  [<ffffffff8104d89d>] ? df_debug+0x2d/0x30
+> [   42.337357]  [<ffffffff81015518>] ? do_double_fault+0x58/0x80
+> [   42.337357]  [<ffffffff81054e30>] ? perf_trace_x86_exceptions+0x130/0x130
+> [   42.337357]  [<ffffffff81670d08>] ? double_fault+0x28/0x30
+> [   42.337357]  [<ffffffff81054e30>] ? perf_trace_x86_exceptions+0x130/0x130
+> [   42.337357]  [<ffffffff811006d4>] ? trace_buffer_lock_reserve+0x4/0x80
+> [   42.337679]  <<EOE>>  <UNK> 
+> [   42.337679] CPU: 0 PID: 1386 Comm: sshd Not tainted 3.15.0-upstream #33
+> [   42.337679] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS VirtualBox 12/01/2006
+> [   42.337679] task: ffff88001f5b29e0 ti: ffff88001849c000 task.ti: ffff88001849c000
+> [   42.337679] RIP: 0010:[<ffffffff811006d4>]  [<ffffffff811006d4>] trace_buffer_lock_reserve+0x4/0x80
+> [   42.337679] RSP: 0018:ffff88001f7ffff0  EFLAGS: 00010086
+> [   42.337679] RAX: 0000000000000000 RBX: ffff88001e409d80 RCX: 0000000000000046
+> [   42.337679] RDX: 0000000000000018 RSI: 000000000000000b RDI: ffff88001e409d80
+> [   42.337679] RBP: ffff88001f800070 R08: 0000000000010000 R09: 00000000000000f4
+> [   42.337679] R10: 0000000000000000 R11: 0000000000000010 R12: ffffffff81054e30
+> [   42.337679] R13: 0000000000000000 R14: ffff88001fc0dff8 R15: 0000000000000003
+> [   42.337679] FS:  00007f2b388a87c0(0000) GS:ffff88001fc00000(0000) knlGS:0000000000000000
+> [   42.337679] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   42.337679] CR2: ffff88001f7fffe8 CR3: 00000000179ea000 CR4: 00000000000006f0
+> [   42.337679] Stack:
+> [   42.337679]  ffffffffa0010f50 ffffffffa0011170
+> [   42.337679] Call Trace:
+> [   42.337679]  <UNK> 
+> [   42.337679] Code: 02 00 00 48 63 ca 89 14 bd a0 4b ed 81 89 34 8d 60 43 eb 81 89 35 bd 44 dd 00 e9 45 ff ff ff 0f 1f 84 00 00 00 00 00 48 83 ec 28 <48> 89 1c 24 89 f3 48 89 d6 48 89 6c 24 08 4c 89 64 24 10 48 89 
+> [   42.337357] Shutting down cpus with NMI
+> [   42.337357] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+> [   42.337357] ---[ end Kernel panic - not syncing: Machine halted.
+> 
+> --
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 737b0efa1a62..0b58d2ff94f6 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -750,6 +750,14 @@ static int __init set_buf_size(char *str)
+>  }
+>  __setup("trace_buf_size=", set_buf_size);
+>  
+> +static void update_tracing_thresh_enabled(void)
+> +{
+> +	if (tracing_thresh && !static_key_enabled(&__tracing_thresh_enabled))
+> +		static_key_slow_inc(&__tracing_thresh_enabled);
+> +	if (!tracing_thresh && static_key_enabled(&__tracing_thresh_enabled))
+> +		static_key_slow_dec(&__tracing_thresh_enabled);
+> +}
+> +
+>  static int __init set_tracing_thresh(char *str)
+>  {
+>  	unsigned long threshold;
+> @@ -761,6 +769,7 @@ static int __init set_tracing_thresh(char *str)
+>  	if (ret < 0)
+>  		return 0;
+>  	tracing_thresh = threshold * 1000;
+> +	update_tracing_thresh_enabled();
+>  	return 1;
+>  }
+>  __setup("tracing_thresh=", set_tracing_thresh);
+> @@ -980,6 +989,7 @@ static arch_spinlock_t ftrace_max_lock =
+>  	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+>  
+>  unsigned long __read_mostly	tracing_thresh;
+> +struct static_key		__tracing_thresh_enabled;
+>  
+>  #ifdef CONFIG_TRACER_MAX_TRACE
+>  unsigned long __read_mostly	tracing_max_latency;
+> @@ -4104,6 +4114,7 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+>  		return ret;
+>  
+>  	*ptr = val * 1000;
+> +	update_tracing_thresh_enabled();
+>  
+>  	return cnt;
+>  }
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 2e29d7ba5a52..ab32c1f33917 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -606,6 +606,12 @@ extern cpumask_var_t __read_mostly tracing_buffer_mask;
+>  extern unsigned long nsecs_to_usecs(unsigned long nsecs);
+>  
+>  extern unsigned long tracing_thresh;
+> +extern struct static_key __tracing_thresh_enabled;
+> +
+> +static inline bool tracing_thresh_enabled(void)
+> +{
+> +	return static_key_false(&__tracing_thresh_enabled);
+> +}
+>  
+>  #ifdef CONFIG_TRACER_MAX_TRACE
+>  extern unsigned long tracing_max_latency;
+> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> index deff11200261..0a893120c05a 100644
+> --- a/kernel/trace/trace_functions_graph.c
+> +++ b/kernel/trace/trace_functions_graph.c
+> @@ -332,7 +332,7 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
+>  
+>  int trace_graph_thresh_entry(struct ftrace_graph_ent *trace)
+>  {
+> -	if (tracing_thresh)
+> +	if (tracing_thresh_enabled())
+>  		return 1;
+>  	else
+>  		return trace_graph_entry(trace);
+> @@ -421,7 +421,7 @@ void set_graph_array(struct trace_array *tr)
+>  
+>  void trace_graph_thresh_return(struct ftrace_graph_ret *trace)
+>  {
+> -	if (tracing_thresh &&
+> +	if (tracing_thresh_enabled() &&
+>  	    (trace->rettime - trace->calltime < tracing_thresh))
+>  		return;
+>  	else
+> @@ -433,12 +433,8 @@ static int graph_trace_init(struct trace_array *tr)
+>  	int ret;
+>  
+>  	set_graph_array(tr);
+> -	if (tracing_thresh)
+> -		ret = register_ftrace_graph(&trace_graph_thresh_return,
+> -					    &trace_graph_thresh_entry);
+> -	else
+> -		ret = register_ftrace_graph(&trace_graph_return,
+> -					    &trace_graph_entry);
+> +	ret = register_ftrace_graph(&trace_graph_thresh_return,
+> +				    &trace_graph_thresh_entry);
+>  	if (ret)
+>  		return ret;
+>  	tracing_start_cmdline_record();
 
 -- 
-regards,
-Stan
+Станислав Фомичев
+http://staff/stfomichev
