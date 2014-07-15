@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaGORMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:12:08 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:61105 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755893AbaGORCT (ORCPT
+	id S932650AbaGORM0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:12:26 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60427 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755754AbaGORCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:02:19 -0400
+	Tue, 15 Jul 2014 13:02:15 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 67/94] ext4: revert commit which was causing fs corruption after journal replays
-Date: Tue, 15 Jul 2014 20:01:22 +0300
-Message-Id: <1405443709-15288-67-git-send-email-asadi.samuel@gmail.com>
+        "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>,
+        sam-the-6 <asadi.samuel@gmail.com>
+Subject: [PATCH 55/94] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
+Date: Tue, 15 Jul 2014 20:01:10 +0300
+Message-Id: <1405443709-15288-55-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -21,144 +22,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-Commit 007649375f6af2 ("ext4: initialize multi-block allocator before
-checking block descriptors") causes the block group descriptor's count
-of the number of free blocks to become inconsistent with the number of
-free blocks in the allocation bitmap.  This is a harmless form of fs
-corruption, but it causes the kernel to potentially remount the file
-system read-only, or to panic, depending on the file systems's error
-behavior.
+Starting with Win8, we have implemented several optimizations to improve the
+scalability and performance of the VMBUS transport between the Host and the
+Guest. Some of the non-performance critical services cannot leverage these
+optimization since they only read and process one message at a time.
+Make adjustments to the callback dispatch code to account for the way
+non-performance critical drivers handle reading of the channel.
 
-Thanks to Eric Whitney for his tireless work to reproduce and to find
-the guilty commit.
-
-Fixes: 007649375f6af2 ("ext4: initialize multi-block allocator before checking block descriptors"
-
-Cc: stable@vger.kernel.org  # 3.15
-Reported-by: David Jander <david@protonic.nl>
-Reported-by: Matteo Croce <technoboy85@gmail.com>
-Tested-by: Eric Whitney <enwlinux@gmail.com>
-Suggested-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- fs/ext4/super.c |   51 ++++++++++++++++++++++++---------------------------
- 1 file changed, 24 insertions(+), 27 deletions(-)
+ drivers/hv/connection.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 6297c07..6df7bc6 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3879,38 +3879,19 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			goto failed_mount2;
- 		}
- 	}
--
--	/*
--	 * set up enough so that it can read an inode,
--	 * and create new inode for buddy allocator
--	 */
--	sbi->s_gdb_count = db_count;
--	if (!test_opt(sb, NOLOAD) &&
--	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
--		sb->s_op = &ext4_sops;
--	else
--		sb->s_op = &ext4_nojournal_sops;
--
--	ext4_ext_init(sb);
--	err = ext4_mb_init(sb);
--	if (err) {
--		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
--			 err);
--		goto failed_mount2;
--	}
--
- 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
- 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
--		goto failed_mount2a;
-+		goto failed_mount2;
- 	}
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
- 		if (!ext4_fill_flex_info(sb)) {
- 			ext4_msg(sb, KERN_ERR,
- 			       "unable to initialize "
- 			       "flex_bg meta info!");
--			goto failed_mount2a;
-+			goto failed_mount2;
- 		}
+diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
+index e84f452..ae22e3c 100644
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -339,9 +339,13 @@ static void process_chn_event(u32 relid)
+ 		 */
  
-+	sbi->s_gdb_count = db_count;
- 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
- 	spin_lock_init(&sbi->s_next_gen_lock);
- 
-@@ -3945,6 +3926,14 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	sbi->s_stripe = ext4_get_stripe_size(sbi);
- 	sbi->s_extent_max_zeroout_kb = 32;
- 
-+	/*
-+	 * set up enough so that it can read an inode
-+	 */
-+	if (!test_opt(sb, NOLOAD) &&
-+	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
-+		sb->s_op = &ext4_sops;
-+	else
-+		sb->s_op = &ext4_nojournal_sops;
- 	sb->s_export_op = &ext4_export_ops;
- 	sb->s_xattr = ext4_xattr_handlers;
- #ifdef CONFIG_QUOTA
-@@ -4134,13 +4123,21 @@ no_journal:
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
- 			 "reserved pool", ext4_calculate_resv_clusters(sb));
--		goto failed_mount5;
-+		goto failed_mount4a;
- 	}
- 
- 	err = ext4_setup_system_zone(sb);
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
- 			 "zone (%d)", err);
-+		goto failed_mount4a;
-+	}
-+
-+	ext4_ext_init(sb);
-+	err = ext4_mb_init(sb);
-+	if (err) {
-+		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
-+			 err);
- 		goto failed_mount5;
- 	}
- 
-@@ -4217,8 +4214,11 @@ failed_mount8:
- failed_mount7:
- 	ext4_unregister_li_request(sb);
- failed_mount6:
--	ext4_release_system_zone(sb);
-+	ext4_mb_release(sb);
- failed_mount5:
-+	ext4_ext_release(sb);
-+	ext4_release_system_zone(sb);
-+failed_mount4a:
- 	dput(sb->s_root);
- 	sb->s_root = NULL;
- failed_mount4:
-@@ -4242,14 +4242,11 @@ failed_mount3:
- 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
- 	if (sbi->s_mmp_tsk)
- 		kthread_stop(sbi->s_mmp_tsk);
--failed_mount2a:
--	ext4_mb_release(sb);
- failed_mount2:
- 	for (i = 0; i < db_count; i++)
- 		brelse(sbi->s_group_desc[i]);
- 	ext4_kvfree(sbi->s_group_desc);
- failed_mount:
--	ext4_ext_release(sb);
- 	if (sbi->s_chksum_driver)
- 		crypto_free_shash(sbi->s_chksum_driver);
- 	if (sbi->s_proc) {
+ 		do {
+-			hv_begin_read(&channel->inbound);
++			if (read_state)
++				hv_begin_read(&channel->inbound);
+ 			channel->onchannel_callback(arg);
+-			bytes_to_read = hv_end_read(&channel->inbound);
++			if (read_state)
++				bytes_to_read = hv_end_read(&channel->inbound);
++			else
++				bytes_to_read = 0;
+ 		} while (read_state && (bytes_to_read != 0));
+ 	} else {
+ 		pr_err("no channel callback for relid - %u\n", relid);
 -- 
 1.7.10.4
 
