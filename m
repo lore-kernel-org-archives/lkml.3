@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965359AbaGOXiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:38:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S933942AbaGOXOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:14:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933947AbaGOXOL (ORCPT
+	with ESMTP id S933333AbaGOXNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:11 -0400
+	Tue, 15 Jul 2014 19:13:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Barton Xu <tank.xuhan@gmail.com>,
+        Steffen Weber <steffen.weber@gmail.com>,
+        Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 44/84] intel_pstate: Fix setting VID
-Date: Tue, 15 Jul 2014 16:17:41 -0700
-Message-Id: <20140715231714.524064836@linuxfoundation.org>
+Subject: [PATCH 3.14 24/66] ACPI / EC: Fix race condition in ec_transaction_completed()
+Date: Tue, 15 Jul 2014 16:17:18 -0700
+Message-Id: <20140715231703.091815733@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,76 +27,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit c16ed06024a6e699c332831dd50d8276744e3de8 upstream.
+commit c0d653412fc8450370167a3268b78fc772ff9c87 upstream.
 
-Commit 21855ff5 (intel_pstate: Set turbo VID for BayTrail) introduced
-setting the turbo VID which is required to prevent a machine check on
-some Baytrail SKUs under heavy graphics based workloads.  The
-docmumentation update that brought the requirement to light also
-changed the bit mask used for enumerating P state and VID values from
-0x7f to 0x3f.
+There is a race condition in ec_transaction_completed().
 
-This change returns the mask value to 0x7f.
+When ec_transaction_completed() is called in the GPE handler, it could
+return true because of (ec->curr == NULL). Then the wake_up() invocation
+could complete the next command unexpectedly since there is no lock between
+the 2 invocations. With the previous cleanup, the IBF=0 waiter race need
+not be handled any more. It's now safe to return a flag from
+advance_condition() to indicate the requirement of wakeup, the flag is
+returned from a locked context.
 
-Tested with the Intel NUC DN2820FYK,
-BIOS version FYBYT10H.86A.0034.2014.0513.1413 with v3.16-rc1 and
-v3.14.8 kernel versions.
+The ec_transaction_completed() is now only invoked by the ec_poll() where
+the ec->curr is ensured to be different from NULL.
 
-Fixes: 21855ff5 (intel_pstate: Set turbo VID for BayTrail)
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=77951
-Reported-and-tested-by: Rune Reterson <rune@megahurts.dk>
-Reported-and-tested-by: Eric Eickmeyer <erich@ericheickmeyer.com>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+After cleaning up, the EVT_SCI=1 check should be moved out of the wakeup
+condition so that an EVT_SCI raised with (ec->curr == NULL) can trigger a
+QR_SC command.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
+Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
+Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
+Reported-by: Barton Xu <tank.xuhan@gmail.com>
+Tested-by: Steffen Weber <steffen.weber@gmail.com>
+Tested-by: Arthur Chen <axchen@nvidia.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/acpi/ec.c |   30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -361,21 +361,21 @@ static int byt_get_min_pstate(void)
- {
- 	u64 value;
- 	rdmsrl(BYT_RATIOS, value);
--	return (value >> 8) & 0x3F;
-+	return (value >> 8) & 0x7F;
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -158,16 +158,17 @@ static int ec_transaction_completed(stru
+ 	unsigned long flags;
+ 	int ret = 0;
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
++	if (ec->curr && (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
+ 		ret = 1;
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ 	return ret;
  }
  
- static int byt_get_max_pstate(void)
+-static void advance_transaction(struct acpi_ec *ec)
++static bool advance_transaction(struct acpi_ec *ec)
  {
- 	u64 value;
- 	rdmsrl(BYT_RATIOS, value);
--	return (value >> 16) & 0x3F;
-+	return (value >> 16) & 0x7F;
+ 	struct transaction *t;
+ 	u8 status;
++	bool wakeup = false;
+ 
+ 	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
+ 	status = acpi_ec_read_status(ec);
+@@ -183,21 +184,25 @@ static void advance_transaction(struct a
+ 		} else if (t->rlen > t->ri) {
+ 			if ((status & ACPI_EC_FLAG_OBF) == 1) {
+ 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
+-				if (t->rlen == t->ri)
++				if (t->rlen == t->ri) {
+ 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
++					wakeup = true;
++				}
+ 			} else
+ 				goto err;
+ 		} else if (t->wlen == t->wi &&
+-			   (status & ACPI_EC_FLAG_IBF) == 0)
++			   (status & ACPI_EC_FLAG_IBF) == 0) {
+ 			t->flags |= ACPI_EC_COMMAND_COMPLETE;
+-		return;
++			wakeup = true;
++		}
++		return wakeup;
+ 	} else {
+ 		if ((status & ACPI_EC_FLAG_IBF) == 0) {
+ 			acpi_ec_write_cmd(ec, t->command);
+ 			t->flags |= ACPI_EC_COMMAND_POLL;
+ 		} else
+ 			goto err;
+-		return;
++		return wakeup;
+ 	}
+ err:
+ 	/*
+@@ -208,13 +213,14 @@ err:
+ 		if (in_interrupt() && t)
+ 			++t->irq_count;
+ 	}
++	return wakeup;
  }
  
- static int byt_get_turbo_pstate(void)
+ static void start_transaction(struct acpi_ec *ec)
  {
- 	u64 value;
- 	rdmsrl(BYT_TURBO_RATIOS, value);
--	return value & 0x3F;
-+	return value & 0x7F;
+ 	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
+ 	ec->curr->flags = 0;
+-	advance_transaction(ec);
++	(void)advance_transaction(ec);
  }
  
- static void byt_set_pstate(struct cpudata *cpudata, int pstate)
-@@ -409,8 +409,8 @@ static void byt_get_vid(struct cpudata *
+ static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+@@ -248,7 +254,7 @@ static int ec_poll(struct acpi_ec *ec)
+ 					return 0;
+ 			}
+ 			spin_lock_irqsave(&ec->lock, flags);
+-			advance_transaction(ec);
++			(void)advance_transaction(ec);
+ 			spin_unlock_irqrestore(&ec->lock, flags);
+ 		} while (time_before(jiffies, delay));
+ 		pr_debug("controller reset, restart transaction\n");
+@@ -627,12 +633,10 @@ static u32 acpi_ec_gpe_handler(acpi_hand
+ 	struct acpi_ec *ec = data;
  
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	advance_transaction(ec);
+-	spin_unlock_irqrestore(&ec->lock, flags);
+-	if (ec_transaction_completed(ec)) {
++	if (advance_transaction(ec))
+ 		wake_up(&ec->wait);
+-		ec_check_sci(ec, acpi_ec_read_status(ec));
+-	}
++	spin_unlock_irqrestore(&ec->lock, flags);
++	ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
+ }
  
- 	rdmsrl(BYT_VIDS, value);
--	cpudata->vid.min = int_tofp((value >> 8) & 0x3f);
--	cpudata->vid.max = int_tofp((value >> 16) & 0x3f);
-+	cpudata->vid.min = int_tofp((value >> 8) & 0x7f);
-+	cpudata->vid.max = int_tofp((value >> 16) & 0x7f);
- 	cpudata->vid.ratio = div_fp(
- 		cpudata->vid.max - cpudata->vid.min,
- 		int_tofp(cpudata->pstate.max_pstate -
 
 
