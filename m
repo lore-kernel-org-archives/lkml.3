@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380AbaGOJqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:46:13 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:37944 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757540AbaGOJqL (ORCPT
+	id S1758500AbaGOJre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:47:34 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:56245 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757530AbaGOJrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:46:11 -0400
+	Tue, 15 Jul 2014 05:47:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH v2 20/29] nios2: Cpuinfo handling
+Date: Tue, 15 Jul 2014 11:47:28 +0200
+Message-ID: <7103938.6xzUh5tnai@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405413956-2772-21-git-send-email-lftan@altera.com>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <1405413956-2772-21-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-In-Reply-To: <53C4F5A9.6030202@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-21-git-send-email-a.ryabinin@samsung.com>
- <20140715061219.GK11317@js1304-P5Q-DELUXE> <53C4F5A9.6030202@samsung.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Tue, 15 Jul 2014 13:45:50 +0400
-Message-ID: <CACT4Y+YHEvCb35YN6OO_Vgs17UFfF0D3B45JBMqnG-k6Wf_sXg@mail.gmail.com>
-Subject: Re: [RFC/PATCH RESEND -next 20/21] fs: dcache: manually unpoison
- dname after allocation to shut up kasan's reports
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:CXUO2LLNHEntqzk0KqdWohbIotamj5bSwg5A7NmmAz9
+ YTsv7u0MYu33fZJ0ur122It9FwnIL7sMTf6uyvrZXTIE7iLsHY
+ sIgn9JMWFDm1RbyPctMQg2wLmnuSyQkQ3E8O1j9i7cmDfPPzMk
+ J2OakFz0MojpgbjdFzCBICPKP3bH3jz9QCnnqrkn2Bf+BDX+yU
+ LNANiBOX4VkYelYaRk/nxEQjr4ygJxscwWGXsJPiURl0/3Rabs
+ w2g3mk4Ahc6iUNWJMntWHwXaJX7qLURPyjDs8iYZVbI44EThWh
+ 87Ro0fGq3a3XNGTiQ9nzNc+XYTp1oI7vwfgnk3weEsL28uW9CM
+ JEaFxgVOhO4RAbqFH5yw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 1:34 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
-> On 07/15/14 10:12, Joonsoo Kim wrote:
->> On Wed, Jul 09, 2014 at 03:30:14PM +0400, Andrey Ryabinin wrote:
->>> We need to manually unpoison rounded up allocation size for dname
->>> to avoid kasan's reports in __d_lookup_rcu.
->>> __d_lookup_rcu may validly read a little beyound allocated size.
->>
->> If it read a little beyond allocated size, IMHO, it is better to
->> allocate correct size.
->>
->> kmalloc(name->len + 1, GFP_KERNEL); -->
->> kmalloc(roundup(name->len + 1, sizeof(unsigned long ), GFP_KERNEL);
->>
->> Isn't it?
->>
->
-> It's not needed here because kmalloc always roundup allocation size.
->
-> This out of bound access happens in dentry_string_cmp() if CONFIG_DCACHE_WORD_ACCESS=y.
-> dentry_string_cmp() relays on fact that kmalloc always round up allocation size,
-> in other words it's by design.
->
-> That was discussed some time ago here - https://lkml.org/lkml/2013/10/3/493.
-> Since filesystem's maintainer don't want to add needless round up here, I'm not going to do it.
->
-> I think this patch needs only more detailed description why we not simply allocate more.
-> Also I think it would be better to rename unpoisoin_shadow to something like kasan_mark_allocated().
+On Tuesday 15 July 2014 16:45:47 Ley Foon Tan wrote:
+> +static void *cpuinfo_start(struct seq_file *m, loff_t *pos)
+> +{
+> +       unsigned long i = *pos;
+> +
+> +       return i < num_possible_cpus() ? (void *) (i + 1) : NULL;
+> +}
+> +
+> +static void *cpuinfo_next(struct seq_file *m, void *v, loff_t *pos)
+> +{
+> +       ++*pos;
+> +       return cpuinfo_start(m, pos);
+> +}
 
+Do you actually have SMP support?
 
-Note that this poison/unpoison functionality can be used in other
-contexts. E.g. when you allocate a bunch of pages, then at some point
-poison a part of it to ensure that nobody touches it, then unpoison it
-back. Allocated/unallocated looks like a bad fit here, because it has
-nothing to do with allocation state. Poison/unpoison is also what we
-use in user-space.
+> +const struct seq_operations cpuinfo_op = {
+> +       .start  = cpuinfo_start,
+> +       .next   = cpuinfo_next,
+> +       .stop   = cpuinfo_stop,
+> +       .show   = show_cpuinfo
+> +};
+
+If not, you can use single_start/next/stop here rather than defining your own.
+
+	Arnd
