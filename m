@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288AbaGOTSu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:18:50 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:34890 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184AbaGOTSR (ORCPT
+	id S933292AbaGOTTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:19:44 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:51234 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932760AbaGOTTn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:18:17 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: rth@twiddle.net
-Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] alpha: Remove whitespace errors that cleanfile missed
-Date: Tue, 15 Jul 2014 15:18:08 -0400
-Message-Id: <1405451890-6057-3-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405451890-6057-1-git-send-email-xerofoify@gmail.com>
-References: <1405451890-6057-1-git-send-email-xerofoify@gmail.com>
+	Tue, 15 Jul 2014 15:19:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <yw1xzjgaa1vg.fsf@unicorn.mansr.com>
+References: <1405448304-3724-1-git-send-email-xerofoify@gmail.com>
+	<1405448304-3724-6-git-send-email-xerofoify@gmail.com>
+	<yw1xzjgaa1vg.fsf@unicorn.mansr.com>
+Date: Tue, 15 Jul 2014 15:19:42 -0400
+Message-ID: <CAPDOMVgJN5wC0yUQrRi8p7dyBz711_ZLFS+op78HsUaCj2U8eA@mail.gmail.com>
+Subject: Re: [PATCH 6/6] alpha: Join lines 90 and 91
+From: Nick Krause <xerofoify@gmail.com>
+To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
+Cc: Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the whitespace error that cleanfile missed when
-I ran it on this file.
----
- arch/alpha/boot/misc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Jul 15, 2014 at 2:54 PM, Måns Rullgård <mans@mansr.com> wrote:
+> Nicholas Krause <xerofoify@gmail.com> writes:
+>
+>> This fixes the checkpatch error I get in this file relating to a
+>> quoted string needed to be joined to the line above it.
+>> ---
+>>  arch/alpha/boot/bootpz.c | 3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/arch/alpha/boot/bootpz.c b/arch/alpha/boot/bootpz.c
+>> index 6fc840d..a9e127b 100644
+>> --- a/arch/alpha/boot/bootpz.c
+>> +++ b/arch/alpha/boot/bootpz.c
+>> @@ -87,8 +87,7 @@ check_range(unsigned long vstart, unsigned long vend,
+>>               kaddr = (find_pa(vaddr) | PAGE_OFFSET);
+>>               if (kaddr >= kstart && kaddr <= kend) {
+>>  #ifdef DEBUG_CHECK_RANGE
+>> -                     srm_printk("OVERLAP: vaddr 0x%lx kaddr 0x%lx"
+>> -                                " [0x%lx:0x%lx]\n",
+>> +                     srm_printk("OVERLAP: vaddr 0x%lx kaddr 0x%lx" " [0x%lx:0x%lx]\n",
+>>                                  vaddr, kaddr, kstart, kend);
+>>  #endif
+>
+> If you're doing this, you should merge the strings too.
+>
+> --
+> Måns Rullgård
+> mans@mansr.com
 
-diff --git a/arch/alpha/boot/misc.c b/arch/alpha/boot/misc.c
-index 119d500..174b7c6 100644
---- a/arch/alpha/boot/misc.c
-+++ b/arch/alpha/boot/misc.c
-@@ -144,7 +144,7 @@ static void error(char *x)
- 	puts(x);
- 	puts("\n\n -- System halted");
- 
--	while (1);	
-+	while (1);
- 	/* Halt */
- }
- 
--- 
-1.9.1
-
+Very well,
+I will merge the strings for this statement.
+Nick
