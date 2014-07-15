@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaGOAxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:53:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58988 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753568AbaGOAxg (ORCPT
+	id S1755732AbaGOAyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 20:54:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36474 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459AbaGOAyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:53:36 -0400
-Date: Mon, 14 Jul 2014 20:53:33 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Corey Minyard <cminyard@mvista.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH RT 0/3] Linux 3.10.47-rt50-rc1
-Message-ID: <20140714205333.6d28ed1f@gandalf.local.home>
-In-Reply-To: <53C4714C.8000103@mvista.com>
-References: <20140714200420.805309842@goodmis.org>
-	<53C4714C.8000103@mvista.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 14 Jul 2014 20:54:37 -0400
+Date: Mon, 14 Jul 2014 17:59:10 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/53] 3.10.48-stable review
+Message-ID: <20140715005910.GA9474@kroah.com>
+References: <20140707235829.281783607@linuxfoundation.org>
+ <53BBEFE9.7030508@roeck-us.net>
+ <20140708221517.GD29964@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140708221517.GD29964@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014 19:09:48 -0500
-Corey Minyard <cminyard@mvista.com> wrote:
-
-> Can we get:
+On Tue, Jul 08, 2014 at 03:15:17PM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jul 08, 2014 at 06:19:37AM -0700, Guenter Roeck wrote:
+> > On 07/07/2014 04:57 PM, Greg Kroah-Hartman wrote:
+> > >This is the start of the stable review cycle for the 3.10.48 release.
+> > >There are 53 patches in this series, all will be posted as a response
+> > >to this one.  If anyone has any issues with these being applied, please
+> > >let me know.
+> > >
+> > >Responses should be made by Wed Jul  9 23:58:20 UTC 2014.
+> > >Anything received after that time might be too late.
+> > >
+> > 
+> > Build results:
+> > 	total: 138 pass: 137 fail: 1
+> > Failed builds:
+> > 	score:defconfig
+> > 
+> > Qemu tests all passed.
+> > 
+> > This is an improvement over 3.10.47, as the unicore32 build now passes.
 > 
-> tracing-use-migrate_disable-to-prevent-beeing-pushed.patch
-
-Sure except that patch is buggy:
-
--               preempt_disable();
-+               migrate_disable();
-                /* The update must run on the CPU that is being updated. */
-                if (cpu_id == smp_processor_id() || !cpu_online(cpu_id))
-                        rb_update_pages(cpu_buffer);
-                else {
--                       /*
--                        * Can not disable preemption for schedule_work_on()
--                        * on PREEMPT_RT.
--                        */
--                       preempt_enable();
-                        schedule_work_on(cpu_id,
-                                         &cpu_buffer->update_pages_work);
-                        wait_for_completion(&cpu_buffer->update_done);
--                       preempt_disable();
-                }
--               preempt_enable();
-+               migrate_enable();
-
-migrate_disable() on non-PREEMPT_RT is preempt_disable(). You can't
-call wait_or_completion with preemption disabled.
-
-When that gets fixed in mainline -rt, I'll add it to the stable
-branches too.
-
--- Steve
-
-
-
+> Yeah!
 > 
-> into 3.10, also?
+> > Details are available at http://server.roeck-us.net:8010/builders.
+> > 
+> > The following patches would fix the remaining build failure.
+> > 
+> > ae49b83dca score: normalize global variables exported by vmlinux.lds
+> > 1ed62ca648 Score: Implement the function csum_ipv6_magic
+> > 5fbbf8a1a9 Score: The commit is for compiling successfully
+> > df9e4d1c39 Score: Modify the Makefile of Score, remove -mlong-calls for compiling
 > 
+> Ok, will do that for the next stable release, thanks.
+
+All now applied, thanks.
+
+greg k-h
