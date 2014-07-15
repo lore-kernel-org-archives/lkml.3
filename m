@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956AbaGOVcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:32:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53965 "EHLO
+	id S1759116AbaGOVc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:32:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54002 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214AbaGOVcD (ORCPT
+	with ESMTP id S1759054AbaGOVcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:03 -0400
+	Tue, 15 Jul 2014 17:32:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Chinner <dchinner@redhat.com>, Dave Chinner <david@fromorbit.com>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 103/198] xfs: block allocation work needs to be kswapd aware
-Date: Tue, 15 Jul 2014 14:29:33 -0700
-Message-Id: <1405459868-15089-104-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 108/198] idr: fix overflow bug during maximum ID calculation at maximum height
+Date: Tue, 15 Jul 2014 14:29:38 -0700
+Message-Id: <1405459868-15089-109-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,105 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 1f6d64829db78a7e1d63e15c9f48f0a5d2b5a679 upstream.
+commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
 
-Upon memory pressure, kswapd calls xfs_vm_writepage() from
-shrink_page_list(). This can result in delayed allocation occurring
-and that gets deferred to the the allocation workqueue.
+idr_replace() open-codes the logic to calculate the maximum valid ID
+given the height of the idr tree; unfortunately, the open-coded logic
+doesn't account for the fact that the top layer may have unused slots
+and over-shifts the limit to zero when the tree is at its maximum
+height.
 
-The allocation then runs outside kswapd context, which means if it
-needs memory (and it does to demand page metadata from disk) it can
-block in shrink_inactive_list() waiting for IO congestion. These
-blocking waits are normally avoiding in kswapd context, so under
-memory pressure writeback from kswapd can be arbitrarily delayed by
-memory reclaim.
+The following test code shows it fails to replace the value for
+id=((1<<27)+42):
 
-To avoid this, pass the kswapd context to the allocation being done
-by the workqueue, so that memory reclaim understands correctly that
-the work is being done for kswapd and therefore it is not blocked
-and does not delay memory reclaim.
+  static void test5(void)
+  {
+        int id;
+        DEFINE_IDR(test_idr);
+  #define TEST5_START ((1<<27)+42) /* use the highest layer */
 
-To avoid issues with int->char conversion of flag fields (as noticed
-in v1 of this patch) convert the flag fields in the struct
-xfs_bmalloca to bool types. pahole indicates these variables are
-still single byte variables, so no extra space is consumed by this
-change.
+        printk(KERN_INFO "Start test5\n");
+        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+        BUG_ON(id != TEST5_START);
+        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+        idr_destroy(&test_idr);
+        printk(KERN_INFO "End of test5\n");
+  }
 
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Fix the bug by using idr_max() which correctly takes into account the
+maximum allowed shift.
+
+sub_alloc() shares the same problem and may incorrectly fail with
+-EAGAIN; however, this bug doesn't affect correct operation because
+idr_get_empty_slot(), which already uses idr_max(), retries with the
+increased @id in such cases.
+
+[tj@kernel.org: Updated patch description.]
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/xfs/xfs_bmap_util.c | 16 +++++++++++++---
- fs/xfs/xfs_bmap_util.h | 13 +++++++------
- 2 files changed, 20 insertions(+), 9 deletions(-)
+ lib/idr.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
-index 82e0dab..035d06a 100644
---- a/fs/xfs/xfs_bmap_util.c
-+++ b/fs/xfs/xfs_bmap_util.c
-@@ -258,14 +258,23 @@ xfs_bmapi_allocate_worker(
- 	struct xfs_bmalloca	*args = container_of(work,
- 						struct xfs_bmalloca, work);
- 	unsigned long		pflags;
-+	unsigned long		new_pflags = PF_FSTRANS;
+diff --git a/lib/idr.c b/lib/idr.c
+index bfe4db4..674c30b 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -250,7 +250,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
  
--	/* we are in a transaction context here */
--	current_set_flags_nested(&pflags, PF_FSTRANS);
-+	/*
-+	 * we are in a transaction context here, but may also be doing work
-+	 * in kswapd context, and hence we may need to inherit that state
-+	 * temporarily to ensure that we don't block waiting for memory reclaim
-+	 * in any way.
-+	 */
-+	if (args->kswapd)
-+		new_pflags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
-+
-+	current_set_flags_nested(&pflags, new_pflags);
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return -EAGAIN;
+ 			}
+@@ -827,12 +827,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
  
- 	args->result = __xfs_bmapi_allocate(args);
- 	complete(args->done);
+-	n = (p->layer+1) * IDR_BITS;
+-
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
  
--	current_restore_flags_nested(&pflags, PF_FSTRANS);
-+	current_restore_flags_nested(&pflags, new_pflags);
- }
- 
- /*
-@@ -284,6 +293,7 @@ xfs_bmapi_allocate(
- 
- 
- 	args->done = &done;
-+	args->kswapd = current_is_kswapd();
- 	INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
- 	queue_work(xfs_alloc_wq, &args->work);
- 	wait_for_completion(&done);
-diff --git a/fs/xfs/xfs_bmap_util.h b/fs/xfs/xfs_bmap_util.h
-index 900747b..f33711d 100644
---- a/fs/xfs/xfs_bmap_util.h
-+++ b/fs/xfs/xfs_bmap_util.h
-@@ -50,12 +50,13 @@ struct xfs_bmalloca {
- 	xfs_extlen_t		total;	/* total blocks needed for xaction */
- 	xfs_extlen_t		minlen;	/* minimum allocation size (blocks) */
- 	xfs_extlen_t		minleft; /* amount must be left after alloc */
--	char			eof;	/* set if allocating past last extent */
--	char			wasdel;	/* replacing a delayed allocation */
--	char			userdata;/* set if is user data */
--	char			aeof;	/* allocated space at eof */
--	char			conv;	/* overwriting unwritten extents */
--	char			stack_switch;
-+	bool			eof;	/* set if allocating past last extent */
-+	bool			wasdel;	/* replacing a delayed allocation */
-+	bool			userdata;/* set if is user data */
-+	bool			aeof;	/* allocated space at eof */
-+	bool			conv;	/* overwriting unwritten extents */
-+	bool			stack_switch;
-+	bool			kswapd;	/* allocation in kswapd context */
- 	int			flags;
- 	struct completion	*done;
- 	struct work_struct	work;
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 -- 
 1.9.1
 
