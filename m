@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760132AbaGOXRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:17:38 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:57137 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759322AbaGOXRd (ORCPT
+	id S934353AbaGOXPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45499 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933930AbaGOXOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:17:33 -0400
-Date: Tue, 15 Jul 2014 16:17:31 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, thp: only collapse hugepages to nodes with
- affinity
-In-Reply-To: <53C4B251.5000505@intel.com>
-Message-ID: <alpine.DEB.2.02.1407151609120.32274@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <53C4B251.5000505@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 15 Jul 2014 19:14:10 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.15 40/84] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
+Date: Tue, 15 Jul 2014 16:17:37 -0700
+Message-Id: <20140715231714.400393606@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Dave Hansen wrote:
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-> > +		if (node == NUMA_NO_NODE) {
-> > +			node = page_to_nid(page);
-> > +		} else {
-> > +			int distance = node_distance(page_to_nid(page), node);
-> > +
-> > +			/*
-> > +			 * Do not migrate to memory that would not be reclaimed
-> > +			 * from.
-> > +			 */
-> > +			if (distance > RECLAIM_DISTANCE)
-> > +				goto out_unmap;
-> > +		}
-> 
-> Isn't the reclaim behavior based on zone_reclaim_mode and not
-> RECLAIM_DISTANCE directly?  And isn't that reclaim behavior disabled by
-> default?
-> 
+------------------
 
-Seems that RECLAIM_DISTANCE has taken on a life of its own independent of 
-zone_reclaim_mode as a heuristic, such as its use in creating sched 
-domains which would be unrelated.
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-> I think you should at least be consulting zone_reclaim_mode.
-> 
+commit affb1aff300ddee54df307812b38f166e8a865ef upstream.
 
-Good point, and it matches what the comment is saying about whether we'd 
-actually reclaim from the remote node to allocate thp on fault or not.  
-I'll add it.
+Starting with Win8, we have implemented several optimizations to improve the
+scalability and performance of the VMBUS transport between the Host and the
+Guest. Some of the non-performance critical services cannot leverage these
+optimization since they only read and process one message at a time.
+Make adjustments to the callback dispatch code to account for the way
+non-performance critical drivers handle reading of the channel.
 
-After this change, we'll also need to consider the behavior of thp at 
-fault and whether remote HPAGE_PMD_SIZE memory when local memory is 
-low/fragmented is better than local PAGE_SIZE memory.  In my page fault 
-latency testing on true NUMA machines it's convincing that it's not.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-This makes me believe that, somewhat similar to this patch, when we 
-allocate thp memory at fault and zone_reclaim_mode is non-zero that we 
-should set only nodes with numa_node_id() <= RECLAIM_DISTANCE and then 
-otherwise fallback to the PAGE_SIZE fault path.
+---
+ drivers/hv/connection.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-I've been hesitant to make that exact change, though, because it's a 
-systemwide setting and I really hope to avoid a prctl() that controls 
-zone reclaim for a particular process.  Perhaps the NUMA balancing work 
-makes this more dependable.
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -319,9 +319,13 @@ static void process_chn_event(u32 relid)
+ 		 */
+ 
+ 		do {
+-			hv_begin_read(&channel->inbound);
++			if (read_state)
++				hv_begin_read(&channel->inbound);
+ 			channel->onchannel_callback(arg);
+-			bytes_to_read = hv_end_read(&channel->inbound);
++			if (read_state)
++				bytes_to_read = hv_end_read(&channel->inbound);
++			else
++				bytes_to_read = 0;
+ 		} while (read_state && (bytes_to_read != 0));
+ 	} else {
+ 		pr_err("no channel callback for relid - %u\n", relid);
+
+
