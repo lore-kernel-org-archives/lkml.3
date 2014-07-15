@@ -1,96 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967AbaGOVvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:51:25 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:5245 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759933AbaGOVvW (ORCPT
+	id S933979AbaGOVin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:38:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54876 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903AbaGOVia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:51:22 -0400
-Date: Tue, 15 Jul 2014 17:51:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>,
-        Michal Simek <monstr@monstr.eu>
-Subject: Re: [RFA][PATCH 22/27] microblaze: ftrace: Remove check of obsolete
- variable function_trace_stop
-Message-ID: <20140715175112.3e9128be@gandalf.local.home>
-In-Reply-To: <20140626165852.891982463@goodmis.org>
-References: <20140626165221.736847419@goodmis.org>
-	<20140626165852.891982463@goodmis.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 15 Jul 2014 17:38:30 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 146/198] rtmutex: Plug slow unlock race
+Date: Tue, 15 Jul 2014 14:30:16 -0700
+Message-Id: <1405459868-15089-147-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal,
+3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
 
-Can you please test and ack this and patch 6 of this series. Otherwise I
-may have to stip it out of the series which will break the build on
-microblaze.
+------------------
 
-You can test my branch at:
+From: Thomas Gleixner <tglx@linutronix.de>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-rfc/remove-function-trace-stop
+commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
 
--- Steve
+When the rtmutex fast path is enabled the slow unlock function can
+create the following situation:
 
+spin_lock(foo->m->wait_lock);
+foo->m->owner = NULL;
+	    			rt_mutex_lock(foo->m); <-- fast path
+				free = atomic_dec_and_test(foo->refcnt);
+				rt_mutex_unlock(foo->m); <-- fast path
+				if (free)
+				   kfree(foo);
 
-On Thu, 26 Jun 2014 12:52:43 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+spin_unlock(foo->m->wait_lock); <--- Use after free.
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Nothing sets function_trace_stop to disable function tracing anymore.
-> Remove the check for it in the arch code.
-> 
-> [ Please test this on your arch ]
-> 
-> Cc: Michal Simek <monstr@monstr.eu>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/microblaze/Kconfig         | 1 -
->  arch/microblaze/kernel/mcount.S | 5 -----
->  2 files changed, 6 deletions(-)
-> 
-> diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-> index 9ae08541e30d..40e1c1dd0e24 100644
-> --- a/arch/microblaze/Kconfig
-> +++ b/arch/microblaze/Kconfig
-> @@ -22,7 +22,6 @@ config MICROBLAZE
->  	select HAVE_DYNAMIC_FTRACE
->  	select HAVE_FTRACE_MCOUNT_RECORD
->  	select HAVE_FUNCTION_GRAPH_TRACER
-> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
->  	select HAVE_FUNCTION_TRACER
->  	select HAVE_MEMBLOCK
->  	select HAVE_MEMBLOCK_NODE_MAP
-> diff --git a/arch/microblaze/kernel/mcount.S b/arch/microblaze/kernel/mcount.S
-> index fc1e1322ce4c..fed9da5de8c4 100644
-> --- a/arch/microblaze/kernel/mcount.S
-> +++ b/arch/microblaze/kernel/mcount.S
-> @@ -91,11 +91,6 @@ ENTRY(ftrace_caller)
->  #endif /* CONFIG_DYNAMIC_FTRACE */
->  	SAVE_REGS
->  	swi	r15, r1, 0;
-> -	/* MS: HAVE_FUNCTION_TRACE_MCOUNT_TEST begin of checking */
-> -	lwi	r5, r0, function_trace_stop;
-> -	bneid	r5, end;
-> -	nop;
-> -	/* MS: HAVE_FUNCTION_TRACE_MCOUNT_TEST end of checking */
->  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->  #ifndef CONFIG_DYNAMIC_FTRACE
->  	lwi	r5, r0, ftrace_graph_return;
+Plug the race by changing the slow unlock to the following scheme:
+
+     while (!rt_mutex_has_waiters(m)) {
+     	    /* Clear the waiters bit in m->owner */
+	    clear_rt_mutex_waiters(m);
+      	    owner = rt_mutex_owner(m);
+      	    spin_unlock(m->wait_lock);
+      	    if (cmpxchg(m->owner, owner, 0) == owner)
+      	       return;
+      	    spin_lock(m->wait_lock);
+     }
+
+So in case of a new waiter incoming while the owner tries the slow
+path unlock we have two situations:
+
+ unlock(wait_lock);
+					lock(wait_lock);
+ cmpxchg(p, owner, 0) == owner
+ 	    	   			mark_rt_mutex_waiters(lock);
+	 				acquire(lock);
+
+Or:
+
+ unlock(wait_lock);
+					lock(wait_lock);
+	 				mark_rt_mutex_waiters(lock);
+ cmpxchg(p, owner, 0) != owner
+					enqueue_waiter();
+					unlock(wait_lock);
+ lock(wait_lock);
+ wakeup_next waiter();
+ unlock(wait_lock);
+					lock(wait_lock);
+					acquire(lock);
+
+If the fast path is disabled, then the simple
+
+   m->owner = NULL;
+   unlock(m->wait_lock);
+
+is sufficient as all access to m->owner is serialized via
+m->wait_lock;
+
+Also document and clarify the wakeup_next_waiter function as suggested
+by Oleg Nesterov.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ kernel/locking/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 109 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index ff24a43..51a8334 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -82,6 +82,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ 		owner = *p;
+ 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
+ }
++
++/*
++ * Safe fastpath aware unlock:
++ * 1) Clear the waiters bit
++ * 2) Drop lock->wait_lock
++ * 3) Try to unlock the lock with cmpxchg
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	struct task_struct *owner = rt_mutex_owner(lock);
++
++	clear_rt_mutex_waiters(lock);
++	raw_spin_unlock(&lock->wait_lock);
++	/*
++	 * If a new waiter comes in between the unlock and the cmpxchg
++	 * we have two situations:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 * cmpxchg(p, owner, 0) == owner
++	 *					mark_rt_mutex_waiters(lock);
++	 *					acquire(lock);
++	 * or:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					mark_rt_mutex_waiters(lock);
++	 *
++	 * cmpxchg(p, owner, 0) != owner
++	 *					enqueue_waiter();
++	 *					unlock(wait_lock);
++	 * lock(wait_lock);
++	 * wake waiter();
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					acquire(lock);
++	 */
++	return rt_mutex_cmpxchg(lock, owner, NULL);
++}
++
+ #else
+ # define rt_mutex_cmpxchg(l,c,n)	(0)
+ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+@@ -89,6 +130,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ 	lock->owner = (struct task_struct *)
+ 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
+ }
++
++/*
++ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	lock->owner = NULL;
++	raw_spin_unlock(&lock->wait_lock);
++	return true;
++}
+ #endif
+ 
+ /*
+@@ -536,7 +588,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ /*
+  * Wake up the next waiter on the lock.
+  *
+- * Remove the top waiter from the current tasks waiter list and wake it up.
++ * Remove the top waiter from the current tasks pi waiter list and
++ * wake it up.
+  *
+  * Called with lock->wait_lock held.
+  */
+@@ -557,10 +610,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	 */
+ 	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
+ 
+-	rt_mutex_set_owner(lock, NULL);
++	/*
++	 * As we are waking up the top waiter, and the waiter stays
++	 * queued on the lock until it gets the lock, this lock
++	 * obviously has waiters. Just set the bit here and this has
++	 * the added benefit of forcing all new tasks into the
++	 * slow path making sure no task of lower priority than
++	 * the top waiter can steal this lock.
++	 */
++	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
+ 
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
++	/*
++	 * It's safe to dereference waiter as it cannot go away as
++	 * long as we hold lock->wait_lock. The waiter task needs to
++	 * acquire it in order to dequeue the waiter.
++	 */
+ 	wake_up_process(waiter->task);
+ }
+ 
+@@ -813,12 +879,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
+ 
+ 	rt_mutex_deadlock_account_unlock(current);
+ 
+-	if (!rt_mutex_has_waiters(lock)) {
+-		lock->owner = NULL;
+-		raw_spin_unlock(&lock->wait_lock);
+-		return;
++	/*
++	 * We must be careful here if the fast path is enabled. If we
++	 * have no waiters queued we cannot set owner to NULL here
++	 * because of:
++	 *
++	 * foo->lock->owner = NULL;
++	 *			rtmutex_lock(foo->lock);   <- fast path
++	 *			free = atomic_dec_and_test(foo->refcnt);
++	 *			rtmutex_unlock(foo->lock); <- fast path
++	 *			if (free)
++	 *				kfree(foo);
++	 * raw_spin_unlock(foo->lock->wait_lock);
++	 *
++	 * So for the fastpath enabled kernel:
++	 *
++	 * Nothing can set the waiters bit as long as we hold
++	 * lock->wait_lock. So we do the following sequence:
++	 *
++	 *	owner = rt_mutex_owner(lock);
++	 *	clear_rt_mutex_waiters(lock);
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
++	 *		return;
++	 *	goto retry;
++	 *
++	 * The fastpath disabled variant is simple as all access to
++	 * lock->owner is serialized by lock->wait_lock:
++	 *
++	 *	lock->owner = NULL;
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 */
++	while (!rt_mutex_has_waiters(lock)) {
++		/* Drops lock->wait_lock ! */
++		if (unlock_rt_mutex_safe(lock) == true)
++			return;
++		/* Relock the rtmutex and try again */
++		raw_spin_lock(&lock->wait_lock);
+ 	}
+ 
++	/*
++	 * The wakeup next waiter path does not suffer from the above
++	 * race. See the comments there.
++	 */
+ 	wakeup_next_waiter(lock);
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+-- 
+1.9.1
 
