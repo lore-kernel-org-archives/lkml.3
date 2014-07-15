@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760918AbaGOX6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:58:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S1760949AbaGOX6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:58:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759998AbaGOXNo (ORCPT
+	with ESMTP id S1759973AbaGOXNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:44 -0400
+	Tue, 15 Jul 2014 19:13:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 35/66] clk: qcom: HDMI source sel is 3 not 2
-Date: Tue, 15 Jul 2014 16:17:29 -0700
-Message-Id: <20140715231703.642607497@linuxfoundation.org>
+Subject: [PATCH 3.14 33/66] clk: spear3xx: Use proper control register offset
+Date: Tue, 15 Jul 2014 16:17:27 -0700
+Message-Id: <20140715231703.539284352@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,33 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit c556bcddc78096caeb46dbe3ad0314dd951f1665 upstream.
+commit 15ebb05248d025534773c9ef64915bd888f04e4b upstream.
 
-The HDMI PLL input to the tv mux is supposed to be 3, not 2. Fix
-the code so that we can properly select the HDMI PLL.
+The control register is at offset 0x10, not 0x0. This is wreckaged
+since commit 5df33a62c (SPEAr: Switch to common clock framework).
 
-Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia clock controller (MMCC)"
-Reported-by: Rob Clark <robdclark@gmail.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/mmcc-msm8960.c |    2 +-
+ drivers/clk/spear/spear3xx_clock.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/clk/qcom/mmcc-msm8960.c
-+++ b/drivers/clk/qcom/mmcc-msm8960.c
-@@ -1208,7 +1208,7 @@ static struct clk_branch rot_clk = {
+--- a/drivers/clk/spear/spear3xx_clock.c
++++ b/drivers/clk/spear/spear3xx_clock.c
+@@ -211,7 +211,7 @@ static inline void spear310_clk_init(voi
+ /* array of all spear 320 clock lookups */
+ #ifdef CONFIG_MACH_SPEAR320
  
- static u8 mmcc_pxo_hdmi_map[] = {
- 	[P_PXO]		= 0,
--	[P_HDMI_PLL]	= 2,
-+	[P_HDMI_PLL]	= 3,
- };
+-#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0000)
++#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0010)
+ #define SPEAR320_EXT_CTRL_REG		(soc_config_base + 0x0018)
  
- static const char *mmcc_pxo_hdmi[] = {
+ 	#define SPEAR320_UARTX_PCLK_MASK		0x1
 
 
