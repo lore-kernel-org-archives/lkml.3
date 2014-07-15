@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760933AbaGOX6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:58:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759990AbaGOXNn (ORCPT
+	id S1760959AbaGOX7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:59:05 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:46704 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760058AbaGOX64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 34/66] clk: s2mps11: Fix double free corruption during driver unbind
-Date: Tue, 15 Jul 2014 16:17:28 -0700
-Message-Id: <20140715231703.608294099@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 19:58:56 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140715142524.GI9918@twins.programming.kicks-ass.net>
+References: <1405384304-26816-1-git-send-email-eranian@google.com>
+	<1405384304-26816-2-git-send-email-eranian@google.com>
+	<20140715142524.GI9918@twins.programming.kicks-ass.net>
+Date: Wed, 16 Jul 2014 01:58:55 +0200
+Message-ID: <CABPqkBQ1dRnTTW7=8XCRUDoeZM0UqgtLnXE0CJEZbeCD8qo1KA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] perf: add ability to sample machine state on interrupt
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 15, 2014 at 4:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jul 15, 2014 at 02:31:40AM +0200, Stephane Eranian wrote:
+>> @@ -618,6 +619,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+>>       data->weight = 0;
+>>       data->data_src.val = 0;
+>>       data->txn = 0;
+>> +     data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
+>> +     data->regs_intr.regs = NULL;
+>>  }
+>
+>> +static void perf_sample_regs_intr(struct perf_regs *regs_intr,
+>> +                               struct pt_regs *regs)
+>> +{
+>> +     regs_intr->regs = regs;
+>> +     regs_intr->abi  = perf_reg_abi(current);
+>> +}
+>
+>> @@ -4800,6 +4824,20 @@ void perf_prepare_sample(struct perf_event_header *header,
+>>               data->stack_user_size = stack_size;
+>>               header->size += size;
+>>       }
+>> +
+>> +     if (sample_type & PERF_SAMPLE_REGS_INTR) {
+>> +             /* regs dump ABI info */
+>> +             int size = sizeof(u64);
+>> +
+>> +             perf_sample_regs_intr(&data->regs_intr, regs);
+>> +
+>> +             if (data->regs_intr.regs) {
+>> +                     u64 mask = event->attr.sample_regs_intr;
+>> +                     size += hweight64(mask) * sizeof(u64);
+>> +             }
+>> +
+>> +             header->size += size;
+>> +     }
+>
+> Given that the prepare_sample hunk sets both regs_intr fields, the
+> addition to perf_sample_data_init() is entirely superfluous, no?
 
-------------------
-
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-
-commit 2a96dfa49c83a2a7cbdb11382976aaa6b2636764 upstream.
-
-After unbinding the driver memory was corrupted by double free of
-clk_lookup structure. This lead to OOPS when re-binding the driver
-again.
-
-The driver allocated memory for 'clk_lookup' with devm_kzalloc. During
-driver removal this memory was freed twice: once by clkdev_drop() and
-second by devm code.
-
-Kernel panic log:
-[   30.839284] Unable to handle kernel paging request at virtual address 5f343173
-[   30.846476] pgd = dee14000
-[   30.849165] [5f343173] *pgd=00000000
-[   30.852703] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
-[   30.858166] Modules linked in:
-[   30.861208] CPU: 0 PID: 1 Comm: bash Not tainted 3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-[   30.869364] task: df478000 ti: df480000 task.ti: df480000
-[   30.874752] PC is at clkdev_add+0x2c/0x38
-[   30.878738] LR is at clkdev_add+0x18/0x38
-[   30.882732] pc : [<c0350908>]    lr : [<c03508f4>]    psr: 60000013
-[   30.882732] sp : df481e78  ip : 00000001  fp : c0700ed8
-[   30.894187] r10: 0000000c  r9 : 00000000  r8 : c07b0e3c
-[   30.899396] r7 : 00000002  r6 : df45f9d0  r5 : df421390  r4 : c0700d6c
-[   30.905906] r3 : 5f343173  r2 : c0700d84  r1 : 60000013  r0 : c0700d6c
-[   30.912417] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   30.919534] Control: 10c53c7d  Table: 5ee1406a  DAC: 00000015
-[   30.925262] Process bash (pid: 1, stack limit = 0xdf480240)
-[   30.930817] Stack: (0xdf481e78 to 0xdf482000)
-[   30.935159] 1e60:                                                       00001000 df6de610
-[   30.943321] 1e80: df7f4558 c0355650 c05ec6ec c0700eb0 df6de600 df7f4510 dec9d69c 00000014
-[   30.951480] 1ea0: 00167b48 df6de610 c0700e30 c0713518 00000000 c0700e30 dec9d69c 00000006
-[   30.959639] 1ec0: 00167b48 c02c1b7c c02c1b64 df6de610 c07aff48 c02c0420 c06fb150 c047cc20
-[   30.967798] 1ee0: df6de610 df6de610 c0700e30 df6de644 c06fb150 0000000c dec9d690 c02bef90
-[   30.975957] 1f00: dec9c6c0 dece4c00 df481f80 dece4c00 0000000c c02be73c 0000000c c016ca8c
-[   30.984116] 1f20: c016ca48 00000000 00000000 c016c1f4 00000000 00000000 b6f18000 df481f80
-[   30.992276] 1f40: df7f66c0 0000000c df480000 df480000 b6f18000 c011094c df47839c 60000013
-[   31.000435] 1f60: 00000000 00000000 df7f66c0 df7f66c0 0000000c df480000 b6f18000 c0110dd4
-[   31.008594] 1f80: 00000000 00000000 0000000c b6ec05d8 0000000c b6f18000 00000004 c000f2a8
-[   31.016753] 1fa0: 00001000 c000f0e0 b6ec05d8 0000000c 00000001 b6f18000 0000000c 00000000
-[   31.024912] 1fc0: b6ec05d8 0000000c b6f18000 00000004 0000000c 00000001 00000000 00167b48
-[   31.033071] 1fe0: 00000000 bed83a80 b6e004f0 b6e5122c 60000010 00000001 ffffffff ffffffff
-[   31.041248] [<c0350908>] (clkdev_add) from [<c0355650>] (s2mps11_clk_probe+0x2b4/0x3b4)
-[   31.049223] [<c0355650>] (s2mps11_clk_probe) from [<c02c1b7c>] (platform_drv_probe+0x18/0x48)
-[   31.057728] [<c02c1b7c>] (platform_drv_probe) from [<c02c0420>] (driver_probe_device+0x13c/0x384)
-[   31.066579] [<c02c0420>] (driver_probe_device) from [<c02bef90>] (bind_store+0x88/0xd8)
-[   31.074564] [<c02bef90>] (bind_store) from [<c02be73c>] (drv_attr_store+0x20/0x2c)
-[   31.082118] [<c02be73c>] (drv_attr_store) from [<c016ca8c>] (sysfs_kf_write+0x44/0x48)
-[   31.090016] [<c016ca8c>] (sysfs_kf_write) from [<c016c1f4>] (kernfs_fop_write+0xc0/0x17c)
-[   31.098176] [<c016c1f4>] (kernfs_fop_write) from [<c011094c>] (vfs_write+0xa0/0x1c4)
-[   31.105899] [<c011094c>] (vfs_write) from [<c0110dd4>] (SyS_write+0x40/0x8c)
-[   31.112931] [<c0110dd4>] (SyS_write) from [<c000f0e0>] (ret_fast_syscall+0x0/0x3c)
-[   31.120481] Code: e2842018 e584501c e1a00004 e885000c (e5835000)
-[   31.126596] ---[ end trace efad45bfa3a61b05 ]---
-[   31.131181] Kernel panic - not syncing: Fatal exception
-[   31.136368] CPU1: stopping
-[   31.139054] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D       3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-[   31.148697] [<c0016480>] (unwind_backtrace) from [<c0012950>] (show_stack+0x10/0x14)
-[   31.156419] [<c0012950>] (show_stack) from [<c0480db8>] (dump_stack+0x80/0xcc)
-[   31.163622] [<c0480db8>] (dump_stack) from [<c001499c>] (handle_IPI+0x130/0x15c)
-[   31.170998] [<c001499c>] (handle_IPI) from [<c000862c>] (gic_handle_irq+0x60/0x68)
-[   31.178549] [<c000862c>] (gic_handle_irq) from [<c0013480>] (__irq_svc+0x40/0x70)
-[   31.186009] Exception stack(0xdf4bdf88 to 0xdf4bdfd0)
-[   31.191046] df80:                   ffffffed 00000000 00000000 00000000 df4bc000 c06d042c
-[   31.199207] dfa0: 00000000 ffffffed c06d03c0 00000000 c070c288 00000000 00000000 df4bdfd0
-[   31.207363] dfc0: c0010324 c0010328 60000013 ffffffff
-[   31.212402] [<c0013480>] (__irq_svc) from [<c0010328>] (arch_cpu_idle+0x28/0x30)
-[   31.219783] [<c0010328>] (arch_cpu_idle) from [<c005f150>] (cpu_startup_entry+0x2c4/0x3f0)
-[   31.228027] [<c005f150>] (cpu_startup_entry) from [<400086c4>] (0x400086c4)
-[   31.234968] ---[ end Kernel panic - not syncing: Fatal exception
-
-Fixes: 7cc560dea415 ("clk: s2mps11: Add support for s2mps11")
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/clk/clk-s2mps11.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -190,16 +190,13 @@ static int s2mps11_clk_probe(struct plat
- 			goto err_reg;
- 		}
- 
--		s2mps11_clk->lookup = devm_kzalloc(&pdev->dev,
--					sizeof(struct clk_lookup), GFP_KERNEL);
-+		s2mps11_clk->lookup = clkdev_alloc(s2mps11_clk->clk,
-+					s2mps11_name(s2mps11_clk), NULL);
- 		if (!s2mps11_clk->lookup) {
- 			ret = -ENOMEM;
- 			goto err_lup;
- 		}
- 
--		s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
--		s2mps11_clk->lookup->clk = s2mps11_clk->clk;
--
- 		clkdev_add(s2mps11_clk->lookup);
- 	}
- 
-
-
+Yes, looks like it, though having an initialization there prevents
+any random values for the two fields, in case code tries to check
+without first testing the sample_format bitmask. So yes, it is redundant
+but may  prevent future errors.
