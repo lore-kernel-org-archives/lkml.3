@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885AbaGOMk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:40:56 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33680 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757676AbaGOMkx (ORCPT
+	id S1758937AbaGOMln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:41:43 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:29170
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758652AbaGOMlk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:40:53 -0400
-Date: Tue, 15 Jul 2014 15:40:48 +0300
-From: Gleb Natapov <gleb@minantech.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Jan Kiszka <jan.kiszka@web.de>, mtosatti@redhat.com, nadav.amit@gmail.com,
-        kvm@vger.kernel.org, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page in
- memory.
-Message-ID: <20140715124048.GU18167@minantech.com>
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
- <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com>
- <20140712080442.GH4399@minantech.com>
- <53C38D55.2040307@cn.fujitsu.com>
- <20140714145822.GK4399@minantech.com>
- <53C51608.4080109@web.de>
- <20140715120921.GT18167@minantech.com>
- <53C51E66.7030208@cn.fujitsu.com>
+	Tue, 15 Jul 2014 08:41:40 -0400
+From: "Satterwhite, Theresa" <ThSatterwhite@stanfordchildrens.org>
+To: "info@webprt.org" <info@webprt.org>
+Subject: =?iso-8859-1?Q?Mensaje_Buz=F3n?=
+Thread-Topic: =?iso-8859-1?Q?Mensaje_Buz=F3n?=
+Thread-Index: Ac+gKPXlDfau8CqVQ6yc583iLm0fxQ==
+Date: Tue, 15 Jul 2014 12:40:59 +0000
+Message-ID: <75A71ACEECCED94081A2723D11FFEBDA469B4A28@LPPTCPMXMBX01.LPCH.NET>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.230.3.242]
+x-ems-proccessed: 
+x-ems-stamp: 8FWWjgLIpiLEWdj5mUiJaw==
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C51E66.7030208@cn.fujitsu.com>
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:160.109.123.155;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(85714005)(81342001)(45126002)(74662001)(87936001)(74502001)(101416001)(15202345003)(110136001)(83072002)(4396001)(2656002)(104016003)(107046002)(33656002)(107886001)(229853001)(2351001)(20776003)(97736001)(92566001)(64706001)(47776003)(92726001)(44976005)(85852003)(84676001)(15975445006)(68736004)(69596002)(54356999)(31966008)(106466001)(19580395003)(99396002)(50986999)(86362001)(50466002)(224313004)(63266004)(21056001)(76482001)(81156004)(80022001)(566704002)(83322001)(46102001)(55846006)(95666004)(79102001)(85306003)(81542001)(105586002)(23756003)(224303003)(77982001)(80792004);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR06MB173;H:lpchp-ironport1.lpch.org;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027367F73D
+Authentication-Results: spf=none (sender IP is 160.109.123.155)
+ smtp.mailfrom=ThSatterwhite@stanfordchildrens.org; 
+X-OriginatorOrg: stanfordchildrens.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 08:28:22PM +0800, Tang Chen wrote:
-> On 07/15/2014 08:09 PM, Gleb Natapov wrote:
-> >On Tue, Jul 15, 2014 at 01:52:40PM +0200, Jan Kiszka wrote:
-> ......
-> >>
-> >>I cannot follow your concerns yet. Specifically, how should
-> >>APIC_ACCESS_ADDR (the VMCS field, right?) change while L2 is running? We
-> >>currently pin/unpin on L1->L2/L2->L1, respectively. Or what do you mean?
-> >>
-> >I am talking about this case:
-> >          if (cpu_has_secondary_exec_ctrls()) {a
-> >          } else {
-> >              exec_control |=
-> >                 SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
-> >             vmcs_write64(APIC_ACCESS_ADDR,
-> >                 page_to_phys(vcpu->kvm->arch.apic_access_page));
-> >          }
-> >We do not pin here.
-> >
-> 
-> Hi Gleb,
-> 
-> 
-> 7905                 if (exec_control &
-> SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
-> ......
-> 7912                         if (vmx->nested.apic_access_page) /* shouldn't
-> happen */
-> 7913 nested_release_page(vmx->nested.apic_access_page);
-> 7914                         vmx->nested.apic_access_page =
-> 7915                                 nested_get_page(vcpu,
-> vmcs12->apic_access_addr);
-> 
-> I thought you were talking about the problem here. We pin
-> vmcs12->apic_access_addr
-> in memory. And I think we should do the same thing to this page as to L1 vm.
-> Right ?
-Nested kvm pins a lot of pages, it will probably be not easy to handle all of them,
-so for now I am concerned with non nested case only (but nested should continue to
-work obviously, just pin pages like it does now).
+Su cuenta de Outlook Web Access / App ha superado su límite de almacenamiento. Usted no será capaz de recibir o enviar mensajes. Con el fin de restaurar la cuenta por favor clickhere: http://mweebserv.edicy.co/en y al acceso a su información de webmail requerida.
 
-> 
-> ......
-> 7922                         if (!vmx->nested.apic_access_page)
-> 7923                                 exec_control &=
-> 7924 ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
-> 7925                         else
-> 7926                                 vmcs_write64(APIC_ACCESS_ADDR,
-> 7927 page_to_phys(vmx->nested.apic_access_page));
-> 7928                 } else if
-> (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
-> 7929                         exec_control |=
-> 7930 SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
-> 7931                         vmcs_write64(APIC_ACCESS_ADDR,
-> 7932 page_to_phys(vcpu->kvm->arch.apic_access_page));
-> 7933                 }
-> 
-> And yes, we have the problem you said here. We can migrate the page while L2
-> vm is running.
-> So I think we should enforce L2 vm to exit to L1. Right ?
-> 
-We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, so
-if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for L1 too.
+Gracias.
+Servicio de seguridad de TI de escritorio 2014
 
---
-			Gleb.
+CONFIDENTIALITY NOTICE: This communication and any attachments may contain confidential or privileged information for the use by the designated recipient(s) named above.   If you are not the intended recipient, you are hereby notified that you have received this communication in error and that any review, disclosure, dissemination, distribution or copying of it or the attachments is strictly prohibited.  If you have received this communication in error, please contact the sender  and destroy all copies of the communication and attachments.  Thank you. MSG:104-123
+
