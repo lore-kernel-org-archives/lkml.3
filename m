@@ -1,58 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaGOPTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:19:20 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:45664 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaGOPTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:19:18 -0400
-Date: Tue, 15 Jul 2014 19:19:07 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Remove "memcg/slab: reintroduce dead cache self-destruction" from
- mmotm
-Message-ID: <20140715151907.GA23103@esperanza>
+	id S1754028AbaGOPUP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:20:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35350 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751932AbaGOPUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:20:10 -0400
+Date: Tue, 15 Jul 2014 12:20:03 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 39/41] perf tools: Allow TSC conversion on any arch
+Message-ID: <20140715152003.GB6312@kernel.org>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-40-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1405332185-4050-40-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Em Mon, Jul 14, 2014 at 01:03:03PM +0300, Adrian Hunter escreveu:
+> It is possible to record a perf.data file on
+> one architecture and process it on another.
+> Consequently, TSC conversion functions need
+> to be moved out of the arch directory.
 
-Could you drop the following patches please?
+Can you state where a TSC is stored in perf.data, and how in the !x86
+arch this will be detected so that those functions will be used?
 
-slub-kmem_cache_shrink-check-if-partial-list-is-empty-under-list_lock.patch
-slab-set-free_limit-for-dead-caches-to-0.patch
-slab-do-not-keep-free-objects-slabs-on-dead-memcg-caches.patch
-slub-make-dead-memcg-caches-discard-free-slabs-immediately.patch
-memcg-wait-for-kfrees-to-finish-before-destroying-cache.patch
-slub-make-slab_free-non-preemptable.patch
-slub-dont-fail-kmem_cache_shrink-if-slab-placement-optimization-fails.patch
-memcg-mark-caches-that-belong-to-offline-memcgs-as-dead.patch
-memcg-destroy-kmem-caches-when-last-slab-is-freed.patch
-memcg-cleanup-memcg_cache_params-refcnt-usage.patch
-
-The patches implement self-destruction of kmem caches that belong to
-dead memory cgroups (see https://lkml.org/lkml/2014/6/12/681). They were
-needed for re-parenting kmem charges on memcg offline.
-
-However, as Johannes explained, recent changes to the cgroup core made
-re-parenting of memcg charges unnecessary, because now we can iterate
-over offline css's on memory pressure and reclaim their charges, just as
-we do with online css's (see https://lkml.org/lkml/2014/7/7/335). As a
-result, it isn't strictly necessary to destroy dead kmem caches as soon
-as the last object is freed, because we can add a per memcg slab
-shrinker for them.
-
-Since the implementation of kmem cache self-destruction is quite
-intrusive to the slab core and, what is worse, degrades kfree
-performance for dead caches noticeably (especially for SLAB, see
-https://lkml.org/lkml/2014/6/25/520), I propose to drop it.
-
-Thanks.
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/Makefile.perf            |  2 ++
+>  tools/perf/arch/x86/util/tsc.c      | 22 +---------------------
+>  tools/perf/arch/x86/util/tsc.h      |  3 ---
+>  tools/perf/tests/perf-time-to-tsc.c |  3 +--
+>  tools/perf/util/tsc.c               | 25 +++++++++++++++++++++++++
+>  tools/perf/util/tsc.h               | 11 +++++++++++
+>  6 files changed, 40 insertions(+), 26 deletions(-)
+>  create mode 100644 tools/perf/util/tsc.c
+>  create mode 100644 tools/perf/util/tsc.h
+> 
+> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> index 9670a16..abca577 100644
+> --- a/tools/perf/Makefile.perf
+> +++ b/tools/perf/Makefile.perf
+> @@ -295,6 +295,7 @@ LIB_H += util/intlist.h
+>  LIB_H += util/perf_regs.h
+>  LIB_H += util/unwind.h
+>  LIB_H += util/vdso.h
+> +LIB_H += util/tsc.h
+>  LIB_H += ui/helpline.h
+>  LIB_H += ui/progress.h
+>  LIB_H += ui/util.h
+> @@ -373,6 +374,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
+>  LIB_OBJS += $(OUTPUT)util/record.o
+>  LIB_OBJS += $(OUTPUT)util/srcline.o
+>  LIB_OBJS += $(OUTPUT)util/data.o
+> +LIB_OBJS += $(OUTPUT)util/tsc.o
+>  
+>  LIB_OBJS += $(OUTPUT)ui/setup.o
+>  LIB_OBJS += $(OUTPUT)ui/helpline.o
+> diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
+> index 40021fa..3655f24 100644
+> --- a/tools/perf/arch/x86/util/tsc.c
+> +++ b/tools/perf/arch/x86/util/tsc.c
+> @@ -6,29 +6,9 @@
+>  #include "../../perf.h"
+>  #include <linux/types.h>
+>  #include "../../util/debug.h"
+> +#include "../../util/tsc.h"
+>  #include "tsc.h"
+>  
+> -u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
+> -{
+> -	u64 t, quot, rem;
+> -
+> -	t = ns - tc->time_zero;
+> -	quot = t / tc->time_mult;
+> -	rem  = t % tc->time_mult;
+> -	return (quot << tc->time_shift) +
+> -	       (rem << tc->time_shift) / tc->time_mult;
+> -}
+> -
+> -u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
+> -{
+> -	u64 quot, rem;
+> -
+> -	quot = cyc >> tc->time_shift;
+> -	rem  = cyc & ((1 << tc->time_shift) - 1);
+> -	return tc->time_zero + quot * tc->time_mult +
+> -	       ((rem * tc->time_mult) >> tc->time_shift);
+> -}
+> -
+>  int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
+>  			     struct perf_tsc_conversion *tc)
+>  {
+> diff --git a/tools/perf/arch/x86/util/tsc.h b/tools/perf/arch/x86/util/tsc.h
+> index 2affe03..2edc4d3 100644
+> --- a/tools/perf/arch/x86/util/tsc.h
+> +++ b/tools/perf/arch/x86/util/tsc.h
+> @@ -14,7 +14,4 @@ struct perf_event_mmap_page;
+>  int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
+>  			     struct perf_tsc_conversion *tc);
+>  
+> -u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
+> -u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
+> -
+>  #endif /* TOOLS_PERF_ARCH_X86_UTIL_TSC_H__ */
+> diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
+> index 3b7cd4d..0372f6e 100644
+> --- a/tools/perf/tests/perf-time-to-tsc.c
+> +++ b/tools/perf/tests/perf-time-to-tsc.c
+> @@ -8,10 +8,9 @@
+>  #include "evsel.h"
+>  #include "thread_map.h"
+>  #include "cpumap.h"
+> +#include "tsc.h"
+>  #include "tests.h"
+>  
+> -#include "../arch/x86/util/tsc.h"
+> -
+>  #define CHECK__(x) {				\
+>  	while ((x) < 0) {			\
+>  		pr_debug(#x " failed!\n");	\
+> diff --git a/tools/perf/util/tsc.c b/tools/perf/util/tsc.c
+> new file mode 100644
+> index 0000000..ef4749836
+> --- /dev/null
+> +++ b/tools/perf/util/tsc.c
+> @@ -0,0 +1,25 @@
+> +#include <linux/compiler.h>
+> +#include <linux/types.h>
+> +
+> +#include "tsc.h"
+> +
+> +u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
+> +{
+> +	u64 t, quot, rem;
+> +
+> +	t = ns - tc->time_zero;
+> +	quot = t / tc->time_mult;
+> +	rem  = t % tc->time_mult;
+> +	return (quot << tc->time_shift) +
+> +	       (rem << tc->time_shift) / tc->time_mult;
+> +}
+> +
+> +u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
+> +{
+> +	u64 quot, rem;
+> +
+> +	quot = cyc >> tc->time_shift;
+> +	rem  = cyc & ((1 << tc->time_shift) - 1);
+> +	return tc->time_zero + quot * tc->time_mult +
+> +	       ((rem * tc->time_mult) >> tc->time_shift);
+> +}
+> diff --git a/tools/perf/util/tsc.h b/tools/perf/util/tsc.h
+> new file mode 100644
+> index 0000000..4eca848
+> --- /dev/null
+> +++ b/tools/perf/util/tsc.h
+> @@ -0,0 +1,11 @@
+> +#ifndef __PERF_TSC_H
+> +#define __PERF_TSC_H
+> +
+> +#include <linux/types.h>
+> +
+> +#include "../arch/x86/util/tsc.h"
+> +
+> +u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
+> +u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
+> +
+> +#endif
+> -- 
+> 1.8.3.2
