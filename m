@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030201AbaGOXQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:16:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45668 "EHLO
+	id S1030231AbaGOXQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:16:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45703 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760035AbaGOXOY (ORCPT
+	with ESMTP id S1758588AbaGOXQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3.15 81/84] x86, espfix: Make espfix64 a Kconfig option, fix UML
-Date: Tue, 15 Jul 2014 16:18:18 -0700
-Message-Id: <20140715231715.605332916@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Jul 2014 19:16:01 -0400
+Date: Tue, 15 Jul 2014 16:15:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: rtc-linux@googlegroups.com
+Cc: Roman Fietze <roman.fietze@telemotive.de>, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [rtc-linux] [PATCH 2/2] Allow to override the hctosys RTC using
+ a kernel parameter
+Message-Id: <20140715161559.c142128556ce4ade8bcdc514@linux-foundation.org>
+In-Reply-To: <2398890.hEQ05gdLB8@rfietze>
+References: <5132579.sMfE4ssjXf@rfietze>
+	<2398890.hEQ05gdLB8@rfietze>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 07 Jul 2014 13:50:12 +0200 Roman Fietze <roman.fietze@telemotive.de> wrote:
 
-------------------
+> This change allows to overwrite the default of the hctosys RTC
+> specified in the kernnel configuration by using a kernel parameter in
+> the form of
+> 
+>   hctosys=rtc<n>
+> 
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+Seems reasonable to me, but...
 
-commit 197725de65477bc8509b41388157c1a2283542bb upstream.
+> +char rtc_hctosys_device[RTC_HCTOSYS_DEVICE_SIZE] = CONFIG_RTC_HCTOSYS_DEVICE;
+> +
+> +static int __init parse_hctosys(char *str)
+> +{
+> +	if (!str)
+> +		return -EINVAL;
+> +
+> +	if (strlen(str) >= RTC_HCTOSYS_DEVICE_SIZE)
+> +		return -ENOMEM;
+> +
+> +	strcpy(rtc_hctosys_device, str);
 
-Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
-build which had broken due to the non-existence of init_espfix_bsp()
-in UML: since UML uses its own Kconfig, this option does not appear in
-the UML build.
+Can we just strdup() this thing and do away with all this futzing around
+with the maximum string length?
 
-This also makes it possible to make support for 16-bit segments a
-configuration option, for the people who want to minimize the size of
-the kernel.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Richard Weinberger <richard@nod.at>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/Kconfig          |    4 ++++
- arch/x86/kernel/Makefile  |    2 +-
- arch/x86/kernel/smpboot.c |    2 +-
- init/main.c               |    2 +-
- 4 files changed, 7 insertions(+), 3 deletions(-)
-
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -914,6 +914,10 @@ config VM86
- 	  XFree86 to initialize some video cards via BIOS. Disabling this
- 	  option saves about 6k.
- 
-+config X86_ESPFIX64
-+	def_bool y
-+	depends on X86_64
-+
- config TOSHIBA
- 	tristate "Toshiba Laptop support"
- 	depends on X86_32
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -29,7 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x86
- obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
- obj-$(CONFIG_X86_64)	+= vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
--obj-$(CONFIG_X86_64)	+= espfix_64.o
-+obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
- obj-$(CONFIG_SYSFS)	+= ksysfs.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -246,7 +246,7 @@ static void notrace start_secondary(void
- 	/*
- 	 * Enable the espfix hack for this CPU
- 	 */
--#ifdef CONFIG_X86_64
-+#ifdef CONFIG_X86_ESPFIX64
- 	init_espfix_ap();
- #endif
- 
---- a/init/main.c
-+++ b/init/main.c
-@@ -617,7 +617,7 @@ asmlinkage __visible void __init start_k
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
- #endif
--#ifdef CONFIG_X86_64
-+#ifdef CONFIG_X86_ESPFIX64
- 	/* Should be run before the first non-init thread is created */
- 	init_espfix_bsp();
- #endif
-
+> +	return 0;
+> +}
 
