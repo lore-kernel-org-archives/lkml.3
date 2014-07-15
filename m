@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587AbaGORMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:12:01 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:36392 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897AbaGORCT (ORCPT
+	id S1757634AbaGORMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:12:05 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:42325 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904AbaGORCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 13:02:19 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
         sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 63/94] ARM: EXYNOS: Register cpuidle device only on exynos4210 and 5250
-Date: Tue, 15 Jul 2014 20:01:18 +0300
-Message-Id: <1405443709-15288-63-git-send-email-asadi.samuel@gmail.com>
+Subject: [PATCH 65/94] serial: arc_uart: Use uart_circ_empty() for open-coded comparison
+Date: Tue, 15 Jul 2014 20:01:20 +0300
+Message-Id: <1405443709-15288-65-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -22,39 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-Currently, the exynos cpuidle driver works correctly only on exynos4210
-and 5250. Trying to use it with just one CPU online on any other exynos
-SoCs will lead to system failure, due to unsupported AFTR mode on other
-SoCs. This patch fixes the problem by registering the driver only on
-supported SoCs and letting others simply use default WFI mode until
-support for them is added.
+Replace open-coded test for empty tx ring buffer with equivalent
+helper function, uart_circ_empty(). No functional change.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- arch/arm/mach-exynos/exynos.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/tty/serial/arc_uart.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index 95cad25..46d893f 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -173,10 +173,8 @@ static struct platform_device exynos_cpuidle = {
- 
- void __init exynos_cpuidle_init(void)
- {
--	if (soc_is_exynos5440())
--		return;
--
--	platform_device_register(&exynos_cpuidle);
-+	if (soc_is_exynos4210() || soc_is_exynos5250())
-+		platform_device_register(&exynos_cpuidle);
- }
- 
- void __init exynos_cpufreq_init(void)
+diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
+index c9f5c9d..008c223 100644
+--- a/drivers/tty/serial/arc_uart.c
++++ b/drivers/tty/serial/arc_uart.c
+@@ -177,7 +177,7 @@ static void arc_serial_tx_chars(struct arc_uart_port *uart)
+ 		uart->port.icount.tx++;
+ 		uart->port.x_char = 0;
+ 		sent = 1;
+-	} else if (xmit->tail != xmit->head) {	/* TODO: uart_circ_empty */
++	} else if (!uart_circ_empty(xmit)) {
+ 		ch = xmit->buf[xmit->tail];
+ 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+ 		uart->port.icount.tx++;
 -- 
 1.7.10.4
 
