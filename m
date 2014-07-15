@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760297AbaGOX7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:59:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S1760974AbaGOX7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:59:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759960AbaGOXNm (ORCPT
+	with ESMTP id S1759953AbaGOXNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.14 31/66] arm64: implement TASK_SIZE_OF
-Date: Tue, 15 Jul 2014 16:17:25 -0700
-Message-Id: <20140715231703.406578578@linuxfoundation.org>
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 30/66] crypto: caam - fix memleak in caam_jr module
+Date: Tue, 15 Jul 2014 16:17:24 -0700
+Message-Id: <20140715231703.368430405@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,39 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-commit fa2ec3ea10bd377f9d55772b1dab65178425a1a2 upstream.
+commit 0378c9a855bfa395f595fbfb049707093e270f69 upstream.
 
-include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
-is not set by the architecture headers.  TASK_SIZE uses the
-current task to determine the size of the virtual address space.
-On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
-64-bit process from a 32-bit process to return EOF when it reads
-past 0xffffffff.
+This patch fixes a memory leak that appears when caam_jr module is unloaded.
 
-Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
-test_tsk_thread_flag instead of test_thread_flag.
-
-Signed-off-by: Colin Cross <ccross@android.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/memory.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/crypto/caam/jr.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -56,6 +56,8 @@
- #define TASK_SIZE_32		UL(0x100000000)
- #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
- 				TASK_SIZE_32 : TASK_SIZE_64)
-+#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
-+				TASK_SIZE_32 : TASK_SIZE_64)
- #else
- #define TASK_SIZE		TASK_SIZE_64
- #endif /* CONFIG_COMPAT */
+--- a/drivers/crypto/caam/jr.c
++++ b/drivers/crypto/caam/jr.c
+@@ -453,8 +453,8 @@ static int caam_jr_probe(struct platform
+ 	int error;
+ 
+ 	jrdev = &pdev->dev;
+-	jrpriv = kmalloc(sizeof(struct caam_drv_private_jr),
+-			 GFP_KERNEL);
++	jrpriv = devm_kmalloc(jrdev, sizeof(struct caam_drv_private_jr),
++			      GFP_KERNEL);
+ 	if (!jrpriv)
+ 		return -ENOMEM;
+ 
+@@ -487,10 +487,8 @@ static int caam_jr_probe(struct platform
+ 
+ 	/* Now do the platform independent part */
+ 	error = caam_jr_init(jrdev); /* now turn on hardware */
+-	if (error) {
+-		kfree(jrpriv);
++	if (error)
+ 		return error;
+-	}
+ 
+ 	jrpriv->dev = jrdev;
+ 	spin_lock(&driver_data.jr_alloc_lock);
 
 
