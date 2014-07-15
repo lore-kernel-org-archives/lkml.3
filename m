@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113AbaGOG2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:28:12 -0400
-Received: from mail.net13.info ([94.19.113.221]:47838 "EHLO mail.net13.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758096AbaGOG2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:28:08 -0400
-From: Alexey Asemov <alex@alex-at.ru>
-To: linux-ide@vger.kernel.org
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Asemov <alex@alex-at.ru>
-Subject: [PATCH] libata-eh.c should handle AMNF error condition (error byte bit 0, usually code 0x01) in libata-eh.c along with UNC as a media error so SCSI stack can handle it properly (translation code 0x01 is already present in libata-scsi.c) but was never passed down due to lack of handling in EH.
-Date: Tue, 15 Jul 2014 10:28:42 +0400
-Message-Id: <1405405722-12470-1-git-send-email-alex@alex-at.ru>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20140714161010.GE31610@htj.dyndns.org>
-References: <20140714161010.GE31610@htj.dyndns.org>
+	id S1758131AbaGOG2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:28:45 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38609 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757767AbaGOGZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 02:25:54 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53C4C96C.3050104@lge.com>
+Date: Tue, 15 Jul 2014 15:25:48 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        Gi-Oh Kim <gurugio@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] [RFC] CMA: clear buffer-head lru before page migration
+References: <53B664E5.5060102@lge.com>	<20140707155252.15e81dff6683393ba3590478@linux-foundation.org>	<xa1tpphf4x3s.fsf@mina86.com>	<20140714070225.GE11317@js1304-P5Q-DELUXE> <20140714133714.343ff0be6ea2bae651dc6f57@linux-foundation.org>
+In-Reply-To: <20140714133714.343ff0be6ea2bae651dc6f57@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While using linux-based machine (AMD 6550M-based notebook, PCI IDs for the
-controller are 1022:7801 subsys 1025:059d) and ddrescue to salvage data
-from failing hard drive (WD7500BPVT 2.5" 750G SATA2), I've found that pure
-AMNF 0x01 error code generates generic "device error" that is retried
-several times by SCSI stack instead of "media error" that is passed up to
-software.
 
-So we may assume deprecated AMNF error code is surely not dead yet, and
-it's better for it to be handled properly. As we may see it is used by
-modern enough devices, and used properly: drive returned AMNF only when IDs
-for track cannot be read completely due to dying head or positioning,
-otherwise it returned UNC(orrectables).
 
-Not handling it causes wrong generic error code ("device error") reporting
-down the stack, can damage failing drives further because of excessive
-retries, and slows salvaging down a lot. Also, there is handling code in
-libata-scsi.c for 0x01 AMNF error already.
+2014-07-15 오전 5:37, Andrew Morton 쓴 글:
+> On Mon, 14 Jul 2014 16:02:25 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>
+>> On Tue, Jul 08, 2014 at 06:46:31PM +0200, Michal Nazarewicz wrote:
+>>> On Mon, Jul 07 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>>> What I proposed is that CMA call invalidate_bh_lrus() right at the
+>>>> outset.  Something along the lines of
+>>>>
+>>>> --- a/mm/page_alloc.c~a
+>>>> +++ a/mm/page_alloc.c
+>>>> @@ -6329,6 +6329,14 @@ int alloc_contig_range(unsigned long sta
+>>>>   	};
+>>>>   	INIT_LIST_HEAD(&cc.migratepages);
+>>>>
+>>>> +#ifdef CONFIG_CMA
+>>>> +	/*
+>>>> +	 * Comment goes here
+>>>> +	 */
+>>>> +	if (migratetype == MIGRATE_CMA)
+>>>> +		invalidate_bh_lrus();
+>>>> +#endif
+>>>> +
+>>>
+>>> This seems reasonable, except I think it should go after
+>>> start_isolate_page_range call because otherwise there's no guarantee
+>>> that someone won't grab those pages back.
+>>>
+>>> Also to avoid the #ifdef perhaps we want this as well:
+>>
+>> I think that we just want to remove ifdef CONFIG_CMA on above code
+>> snippet, because invalidate_bh_lrus() would also help user of
+>> alloc_contig_range() with MIGRATE_MOVABLE.
+>
+> That's what I believe also.  I pinged Mel and Johannes off-list and Mel
+> said "I hit it, the invalidation cost wasn't worth it for a THP alloc".
+>
+> So hm.  I do think it's worth additional investigation but some careful
+> testing would be needed to demonstrate that it's worthwhile.  If the
+> invalidation cost is hurting then perhaps additional logic will be
+> needed to perform the invalidation only as a last-resort thing.
+>
+>
+>
+Adding invalidate_bh_lrus() between start_isolate_page_range and
+__alloc_contig_migrate_range is working well on my platform.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=80031
+But I'd like to test performance before sending patch.
+Would anybody recommend me a benchmark tool?
 
-Signed-off-by: Alexey Asemov <alex@alex-at.ru>
----
- drivers/ata/libata-eh.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 6760fc4..dad83df 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1811,7 +1811,7 @@ static unsigned int ata_eh_analyze_tf(struct ata_queued_cmd *qc,
- 	case ATA_DEV_ATA:
- 		if (err & ATA_ICRC)
- 			qc->err_mask |= AC_ERR_ATA_BUS;
--		if (err & ATA_UNC)
-+		if (err & (ATA_UNC | ATA_AMNF))
- 			qc->err_mask |= AC_ERR_MEDIA;
- 		if (err & ATA_IDNF)
- 			qc->err_mask |= AC_ERR_INVALID;
-@@ -2556,11 +2556,12 @@ static void ata_eh_link_report(struct ata_link *link)
- 		}
- 
- 		if (cmd->command != ATA_CMD_PACKET &&
--		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_IDNF |
--				     ATA_ABORTED)))
--			ata_dev_err(qc->dev, "error: { %s%s%s%s}\n",
-+		    (res->feature & (ATA_ICRC | ATA_UNC | ATA_AMNF |
-+				     ATA_IDNF | ATA_ABORTED)))
-+			ata_dev_err(qc->dev, "error: { %s%s%s%s%s}\n",
- 			  res->feature & ATA_ICRC ? "ICRC " : "",
- 			  res->feature & ATA_UNC ? "UNC " : "",
-+			  res->feature & ATA_AMNF ? "AMNF " : "",
- 			  res->feature & ATA_IDNF ? "IDNF " : "",
- 			  res->feature & ATA_ABORTED ? "ABRT " : "");
- #endif
--- 
-1.7.1
 
