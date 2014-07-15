@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934391AbaGPAPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:15:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45032 "EHLO
+	id S1760991AbaGPAPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:15:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759710AbaGOXNW (ORCPT
+	with ESMTP id S1759703AbaGOXNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.10 21/44] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
-Date: Tue, 15 Jul 2014 16:17:19 -0700
-Message-Id: <20140715231647.330233867@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.10 20/44] clk: spear3xx: Use proper control register offset
+Date: Tue, 15 Jul 2014 16:17:18 -0700
+Message-Id: <20140715231647.302102178@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -28,41 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit affb1aff300ddee54df307812b38f166e8a865ef upstream.
+commit 15ebb05248d025534773c9ef64915bd888f04e4b upstream.
 
-Starting with Win8, we have implemented several optimizations to improve the
-scalability and performance of the VMBUS transport between the Host and the
-Guest. Some of the non-performance critical services cannot leverage these
-optimization since they only read and process one message at a time.
-Make adjustments to the callback dispatch code to account for the way
-non-performance critical drivers handle reading of the channel.
+The control register is at offset 0x10, not 0x0. This is wreckaged
+since commit 5df33a62c (SPEAr: Switch to common clock framework).
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/connection.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/clk/spear/spear3xx_clock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -304,9 +304,13 @@ static void process_chn_event(u32 relid)
- 		 */
+--- a/drivers/clk/spear/spear3xx_clock.c
++++ b/drivers/clk/spear/spear3xx_clock.c
+@@ -211,7 +211,7 @@ static inline void spear310_clk_init(voi
+ /* array of all spear 320 clock lookups */
+ #ifdef CONFIG_MACH_SPEAR320
  
- 		do {
--			hv_begin_read(&channel->inbound);
-+			if (read_state)
-+				hv_begin_read(&channel->inbound);
- 			channel->onchannel_callback(arg);
--			bytes_to_read = hv_end_read(&channel->inbound);
-+			if (read_state)
-+				bytes_to_read = hv_end_read(&channel->inbound);
-+			else
-+				bytes_to_read = 0;
- 		} while (read_state && (bytes_to_read != 0));
- 	} else {
- 		pr_err("no channel callback for relid - %u\n", relid);
+-#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0000)
++#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0010)
+ #define SPEAR320_EXT_CTRL_REG		(soc_config_base + 0x0018)
+ 
+ 	#define SPEAR320_UARTX_PCLK_MASK		0x1
 
 
