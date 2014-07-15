@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaGOQZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:25:10 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:55712 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932AbaGOQZH (ORCPT
+	id S1753626AbaGOQ3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:29:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45656 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaGOQ3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:25:07 -0400
-Date: Tue, 15 Jul 2014 20:25:01 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [patch 0/4] timerfd c/r support, v4
-Message-ID: <20140715162501.GK23835@moon>
-References: <20140623185431.396309193@openvz.org>
- <20140630194354.GB2305@moon>
- <20140715135445.GJ23835@moon>
- <alpine.DEB.2.10.1407151811050.24854@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1407151811050.24854@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 15 Jul 2014 12:29:18 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>, Tejun Heo <tj@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v6 2/2] phy: qcom: Add device tree bindings for IPQ806x SATA PHY
+Date: Tue, 15 Jul 2014 11:29:13 -0500
+Message-Id: <1405441753-18511-2-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1405441753-18511-1-git-send-email-galak@codeaurora.org>
+References: <1405441753-18511-1-git-send-email-galak@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 06:11:58PM +0200, Thomas Gleixner wrote:
-> > 
-> > Dear sirs, ping?
-> 
-> Hmm, I was waiting for a V5, but it seems you just updated that single
-> patch according to the review. I'll pick it up
+Add binding spec for Qualcomm SoC PHYs, starting with the SATA PHY on
+the IPQ806x family of SoCs.
 
-Thanks a lot, Thomas!
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+v6:
+* Moved binding to qcom-ipq806x-sata-phy.txt instead of qcom-phy.txt
+
+ .../bindings/phy/qcom-ipq806x-sata-phy.txt         | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+
+diff --git a/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt b/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+new file mode 100644
+index 0000000..76bfbd0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+@@ -0,0 +1,23 @@
++Qualcomm IPQ806x SATA PHY Controller
++------------------------------------
++
++SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
++Each SATA PHY controller should have its own node.
++
++Required properties:
++- compatible: compatible list, contains "qcom,ipq806x-sata-phy"
++- reg: offset and length of the SATA PHY register set;
++- #phy-cells: must be zero
++- clocks: must be exactly one entry
++- clock-names: must be "cfg"
++
++Example:
++	sata_phy: sata-phy@1b400000 {
++		compatible = "qcom,ipq806x-sata-phy";
++		reg = <0x1b400000 0x200>;
++
++		clocks = <&gcc SATA_PHY_CFG_CLK>;
++		clock-names = "cfg";
++
++		#phy-cells = <0>;
++	};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
