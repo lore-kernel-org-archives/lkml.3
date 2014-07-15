@@ -1,193 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaGOPXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:23:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41223 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112AbaGOPX2 (ORCPT
+	id S1755084AbaGOPXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:23:12 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:51732 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754733AbaGOPW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:23:28 -0400
-Date: Tue, 15 Jul 2014 11:23:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and
- shutdown
-Message-ID: <20140715152309.GQ3403@laptop.dumpdata.com>
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
- <1405431640-649-4-git-send-email-vkuznets@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405431640-649-4-git-send-email-vkuznets@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 15 Jul 2014 11:22:58 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH v3 01/15] clk: st: Update ST clock binding documentation
+Date: Tue, 15 Jul 2014 17:20:17 +0200
+Message-Id: <1405437631-23623-2-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-15_05:2014-07-15,2014-07-15,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 03:40:39PM +0200, Vitaly Kuznetsov wrote:
-> When kexec is being run PIRQs from Qemu-emulated devices are still
-> mapped to old event channels and new kernel has no information about
-> that. Trying to map them twice results in the following in Xen's dmesg:
-> 
->  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
->  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
->  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
->  ...
-> 
->  and the following in new kernel's dmesg:
-> 
->  [   92.286796] xen:events: Failed to obtain physical IRQ 4
-> 
-> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
-> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
-> when kexec was requested and on every kernel startup. We need to do this
-> twice to deal with the following issues:
-> - startup-time unmapping is required to make kdump work;
-> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
-> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
->   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
->   is being performed).
+Naming convention was changed in dts file but the
+clock binding documentation hasn't been updated.
 
-How does this work when you boot the guest under Xen 4.4 where the FIFO events
-are used? Does it still work correctly?
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ .../bindings/clock/st/st,clkgen-divmux.txt         | 28 +++++------
+ .../devicetree/bindings/clock/st/st,clkgen-mux.txt |  6 +--
+ .../devicetree/bindings/clock/st/st,clkgen-pll.txt | 17 ++++---
+ .../bindings/clock/st/st,clkgen-prediv.txt         |  8 ++--
+ .../devicetree/bindings/clock/st/st,clkgen-vcc.txt | 34 ++++++++------
+ .../devicetree/bindings/clock/st/st,clkgen.txt     | 54 +++++++++++++---------
+ .../devicetree/bindings/clock/st/st,quadfs.txt     | 15 +++---
+ 7 files changed, 94 insertions(+), 68 deletions(-)
 
-Thanks.
-> 
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> ---
->  arch/x86/xen/smp.c               |  1 +
->  drivers/xen/events/events_base.c | 76 ++++++++++++++++++++++++++++++++++++++++
->  include/xen/events.h             |  3 ++
->  3 files changed, 80 insertions(+)
-> 
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 35dcf39..e2b4deb 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -768,6 +768,7 @@ void xen_kexec_shutdown(void)
->  #ifdef CONFIG_KEXEC
->  	if (!kexec_in_progress)
->  		return;
-> +	xen_unmap_all_pirqs();
->  #endif
->  }
->  
-> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-> index c919d3d..7701c7f 100644
-> --- a/drivers/xen/events/events_base.c
-> +++ b/drivers/xen/events/events_base.c
-> @@ -1643,6 +1643,80 @@ void xen_callback_vector(void) {}
->  static bool fifo_events = true;
->  module_param(fifo_events, bool, 0);
->  
-> +void xen_unmap_all_pirqs(void)
-> +{
-> +	int pirq, rc, gsi, irq, evtchn;
-> +	struct physdev_unmap_pirq unmap_irq;
-> +	struct irq_info *info;
-> +	struct evtchn_close close;
-> +
-> +	mutex_lock(&irq_mapping_update_lock);
-> +
-> +	list_for_each_entry(info, &xen_irq_list_head, list) {
-> +		if (info->type != IRQT_PIRQ)
-> +			continue;
-> +
-> +		pirq = info->u.pirq.pirq;
-> +		gsi = info->u.pirq.gsi;
-> +		evtchn = info->evtchn;
-> +		irq = info->irq;
-> +
-> +		pr_debug("unmapping pirq gsi=%d pirq=%d irq=%d evtchn=%d\n",
-> +			gsi, pirq, irq, evtchn);
-> +
-> +		if (evtchn > 0) {
-> +			close.port = evtchn;
-> +			if (HYPERVISOR_event_channel_op(EVTCHNOP_close,
-> +							&close) != 0)
-> +				pr_warn("close evtchn %d failed\n", evtchn);
-> +		}
-> +
-> +		unmap_irq.pirq = pirq;
-> +		unmap_irq.domid = DOMID_SELF;
-> +
-> +		rc = HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq, &unmap_irq);
-> +		if (rc)
-> +			pr_warn("unmap pirq failed gsi=%d pirq=%d irq=%d rc=%d\n",
-> +				gsi, pirq, irq, rc);
-> +	}
-> +
-> +	mutex_unlock(&irq_mapping_update_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(xen_unmap_all_pirqs);
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
+index ae56315..6247652 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
+@@ -24,26 +24,26 @@ Required properties:
+ 
+ Example:
+ 
+-	clockgenA@fd345000 {
++	clockgen-a@fd345000 {
+ 		reg = <0xfd345000 0xb50>;
+ 
+-		CLK_M_A1_DIV1: CLK_M_A1_DIV1 {
++		clk_m_a1_div1: clk-m-a1-div1 {
+ 			#clock-cells = <1>;
+ 			compatible = "st,clkgena-divmux-c32-odf1",
+ 				     "st,clkgena-divmux";
+ 
+-			clocks = <&CLK_M_A1_OSC_PREDIV>,
+-				 <&CLK_M_A1_PLL0 1>, /* PLL0 PHI1 */
+-				 <&CLK_M_A1_PLL1 1>; /* PLL1 PHI1 */
+-
+-			clock-output-names = "CLK_M_RX_ICN_TS",
+-					     "CLK_M_RX_ICN_VDP_0",
+-					     "", /* Unused */
+-					     "CLK_M_PRV_T1_BUS",
+-					     "CLK_M_ICN_REG_12",
+-					     "CLK_M_ICN_REG_10",
+-					     "", /* Unused */
+-					     "CLK_M_ICN_ST231";
++			clocks = <&clk_m_a1_osc_prediv>,
++				 <&clk_m_a1_pll0 1>, /* PLL0 PHI1 */
++				 <&clk_m_a1_pll1 1>; /* PLL1 PHI1 */
++
++			clock-output-names = "clk-m-rx-icn-ts",
++					     "clk-m-rx-icn-vdp-0",
++					     "", /* unused */
++					     "clk-m-prv-t1-bus",
++					     "clk-m-icn-reg-12",
++					     "clk-m-icn-reg-10",
++					     "", /* unused */
++					     "clk-m-icn-st231";
+ 		};
+ 	};
+ 
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
+index 943e080..f1fa91c 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
+@@ -17,7 +17,7 @@ Required properties:
+ 	"st,stih416-clkgenf-vcc-sd",	"st,clkgen-mux"
+ 	"st,stih415-clkgen-a9-mux",	"st,clkgen-mux"
+ 	"st,stih416-clkgen-a9-mux",	"st,clkgen-mux"
+-
++	"st,stih407-clkgen-a9-mux",	"st,clkgen-mux"
+ 
+ - #clock-cells : from common clock binding; shall be set to 0.
+ 
+@@ -27,10 +27,10 @@ Required properties:
+ 
+ Example:
+ 
+-	CLK_M_HVA: CLK_M_HVA {
++	clk_m_hva: clk-m-hva@fd690868 {
+ 		#clock-cells = <0>;
+ 		compatible = "st,stih416-clkgenf-vcc-hva", "st,clkgen-mux";
+ 		reg = <0xfd690868 4>;
+ 
+-		clocks = <&CLOCKGEN_F 1>, <&CLK_M_A1_DIV0 3>;
++		clocks = <&clockgen_f 1>, <&clk_m_a1_div0 3>;
+ 	};
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
+index 81eb385..efb51cf 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
+@@ -19,11 +19,14 @@ Required properties:
+ 	"st,stih415-plls-c32-ddr",	"st,clkgen-plls-c32"
+ 	"st,stih416-plls-c32-a9",	"st,clkgen-plls-c32"
+ 	"st,stih416-plls-c32-ddr",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-a0",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-a9",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-c0_0",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-c0_1",	"st,clkgen-plls-c32"
+ 
+ 	"st,stih415-gpu-pll-c32",	"st,clkgengpu-pll-c32"
+ 	"st,stih416-gpu-pll-c32",	"st,clkgengpu-pll-c32"
+ 
+-
+ - #clock-cells : From common clock binding; shall be set to 1.
+ 
+ - clocks : From common clock binding
+@@ -32,17 +35,17 @@ Required properties:
+ 
+ Example:
+ 
+-	clockgenA@fee62000 {
++	clockgen-a@fee62000 {
+ 		reg = <0xfee62000 0xb48>;
+ 
+-		CLK_S_A0_PLL: CLK_S_A0_PLL {
++		clk_s_a0_pll: clk-s-a0-pll {
+ 			#clock-cells = <1>;
+ 			compatible = "st,clkgena-plls-c65";
+ 
+-			clocks = <&CLK_SYSIN>;
++			clocks = <&clk_sysin>;
+ 
+-			clock-output-names = "CLK_S_A0_PLL0_HS",
+-					     "CLK_S_A0_PLL0_LS",
+-					     "CLK_S_A0_PLL1";
++			clock-output-names = "clk-s-a0-pll0-hs",
++					     "clk-s-a0-pll0-ls",
++					     "clk-s-a0-pll1";
+ 		};
+ 	};
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
+index 566c9d7..604766c 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
+@@ -20,17 +20,17 @@ Required properties:
+ 
+ Example:
+ 
+-	clockgenA@fd345000 {
++	clockgen-a@fd345000 {
+ 		reg = <0xfd345000 0xb50>;
+ 
+-		CLK_M_A2_OSC_PREDIV: CLK_M_A2_OSC_PREDIV {
++		clk_m_a2_osc_prediv: clk-m-a2-osc-prediv {
+ 			#clock-cells = <0>;
+ 			compatible = "st,clkgena-prediv-c32",
+ 				     "st,clkgena-prediv";
+ 
+-			clocks = <&CLK_SYSIN>;
++			clocks = <&clk_sysin>;
+ 
+-			clock-output-names = "CLK_M_A2_OSC_PREDIV";
++			clock-output-names = "clk-m-a2-osc-prediv";
+ 		};
+ 	};
+ 
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
+index 4e3ff28..109b3ed 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
+@@ -32,22 +32,30 @@ Required properties:
+ 
+ Example:
+ 
+-	CLOCKGEN_C_VCC: CLOCKGEN_C_VCC {
++	clockgen_c_vcc: clockgen-c-vcc@0xfe8308ac {
+ 		#clock-cells = <1>;
+ 		compatible = "st,stih416-clkgenc", "st,clkgen-vcc";
+ 		reg = <0xfe8308ac 12>;
+ 
+-		clocks = <&CLK_S_VCC_HD>, <&CLOCKGEN_C 1>,
+-			<&CLK_S_TMDS_FROMPHY>, <&CLOCKGEN_C 2>;
+-
+-		clock-output-names  =
+-			"CLK_S_PIX_HDMI",  "CLK_S_PIX_DVO",
+-			"CLK_S_OUT_DVO",   "CLK_S_PIX_HD",
+-			"CLK_S_HDDAC",     "CLK_S_DENC",
+-			"CLK_S_SDDAC",     "CLK_S_PIX_MAIN",
+-			"CLK_S_PIX_AUX",   "CLK_S_STFE_FRC_0",
+-			"CLK_S_REF_MCRU",  "CLK_S_SLAVE_MCRU",
+-			"CLK_S_TMDS_HDMI", "CLK_S_HDMI_REJECT_PLL",
+-			"CLK_S_THSENS";
++		clocks = <&clk_s_vcc_hd>,
++			 <&clockgen_c 1>,
++			 <&clk_s_tmds_fromphy>,
++			 <&clockgen_c 2>;
++
++		clock-output-names  = "clk-s-pix-hdmi",
++				      "clk-s-pix-dvo",
++				      "clk-s-out-dvo",
++				      "clk-s-pix-hd",
++				      "clk-s-hddac",
++				      "clk-s-denc",
++				      "clk-s-sddac",
++				      "clk-s-pix-main",
++				      "clk-s-pix-aux",
++				      "clk-s-stfe-frc-0",
++				      "clk-s-ref-mcru",
++				      "clk-s-slave-mcru",
++				      "clk-s-tmds-hdmi",
++				      "clk-s-hdmi-reject-pll",
++				      "clk-s-thsens";
+ 	};
+ 
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+index 49ec5ae..427bad8 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+@@ -24,60 +24,72 @@ address is common of all subnode.
+ 		quadfs_node {
+ 			...
+ 		};
++
++		mux_node {
++			...
++		};
++
++		vcc_node {
++			...
++		};
+ 		...
+ 	};
+ 
+ This binding uses the common clock binding[1].
+-Each subnode should use the binding discribe in [2]..[4]
++Each subnode should use the binding discribe in [2]..[7]
+ 
+ [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+-[2] Documentation/devicetree/bindings/clock/st,quadfs.txt
+-[3] Documentation/devicetree/bindings/clock/st,quadfs.txt
+-[4] Documentation/devicetree/bindings/clock/st,quadfs.txt
++[2] Documentation/devicetree/bindings/clock/st,clkgen-divmux.txt
++[3] Documentation/devicetree/bindings/clock/st,clkgen-mux.txt
++[4] Documentation/devicetree/bindings/clock/st,clkgen-pll.txt
++[5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
++[6] Documentation/devicetree/bindings/clock/st,vcc.txt
++[7] Documentation/devicetree/bindings/clock/st,quadfs.txt
++
+ 
+ Required properties:
+ - reg : A Base address and length of the register set.
+ 
+ Example:
+ 
+-	clockgenA@fee62000 {
++	clockgen-a@fee62000 {
+ 
+ 		reg = <0xfee62000 0xb48>;
+ 
+-		CLK_S_A0_PLL: CLK_S_A0_PLL {
++		clk_s_a0_pll: clk-s-a0-pll {
+ 			#clock-cells = <1>;
+ 			compatible = "st,clkgena-plls-c65";
+ 
+-			clocks = <&CLK_SYSIN>;
++			clocks = <&clk-sysin>;
+ 
+-			clock-output-names = "CLK_S_A0_PLL0_HS",
+-					     "CLK_S_A0_PLL0_LS",
+-					     "CLK_S_A0_PLL1";
++			clock-output-names = "clk-s-a0-pll0-hs",
++					     "clk-s-a0-pll0-ls",
++					     "clk-s-a0-pll1";
+ 		};
+ 
+-		CLK_S_A0_OSC_PREDIV: CLK_S_A0_OSC_PREDIV {
++		clk_s_a0_osc_prediv: clk-s-a0-osc-prediv {
+ 			#clock-cells = <0>;
+ 			compatible = "st,clkgena-prediv-c65",
+ 				     "st,clkgena-prediv";
+ 
+-			clocks = <&CLK_SYSIN>;
++			clocks = <&clk_sysin>;
+ 
+-			clock-output-names = "CLK_S_A0_OSC_PREDIV";
++			clock-output-names = "clk-s-a0-osc-prediv";
+ 		};
+ 
+-		CLK_S_A0_HS: CLK_S_A0_HS {
++		clk_s_a0_hs: clk-s-a0-hs {
+ 			#clock-cells = <1>;
+ 			compatible = "st,clkgena-divmux-c65-hs",
+ 				     "st,clkgena-divmux";
+ 
+-			clocks = <&CLK_S_A0_OSC_PREDIV>,
+-				 <&CLK_S_A0_PLL 0>, /* PLL0 HS */
+-				 <&CLK_S_A0_PLL 2>; /* PLL1 */
++			clocks = <&clk-s_a0_osc_prediv>,
++				 <&clk-s_a0_pll 0>, /* pll0 hs */
++				 <&clk-s_a0_pll 2>; /* pll1 */
+ 
+-			clock-output-names = "CLK_S_FDMA_0",
+-					     "CLK_S_FDMA_1",
+-					     ""; /* CLK_S_JIT_SENSE */
+-					     /* Fourth output unused */
++			clock-output-names = "clk-s-fdma-0",
++					     "clk-s-fdma-1",
++					     ""; /* clk-s-jit-sense */
++					     /* fourth output unused */
+ 		};
+ 	};
+ 
+diff --git a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
+index ec86d62..cedeb9c 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
+@@ -15,6 +15,9 @@ Required properties:
+   "st,stih416-quadfs432",	"st,quadfs"
+   "st,stih416-quadfs660-E",	"st,quadfs"
+   "st,stih416-quadfs660-F",	"st,quadfs"
++  "st,stih407-quadfs660-C",	"st,quadfs"
++  "st,stih407-quadfs660-D",	"st,quadfs"
++
+ 
+ - #clock-cells : from common clock binding; shall be set to 1.
+ 
+@@ -32,14 +35,14 @@ Required properties:
+ 
+ Example:
+ 
+-	CLOCKGEN_E: CLOCKGEN_E {
++	clockgen_e: clockgen-e@fd3208bc {
+                 #clock-cells = <1>;
+                 compatible = "st,stih416-quadfs660-E", "st,quadfs";
+                 reg = <0xfd3208bc 0xB0>;
+ 
+-                clocks = <&CLK_SYSIN>;
+-                clock-output-names = "CLK_M_PIX_MDTP_0",
+-                                        "CLK_M_PIX_MDTP_1",
+-                                        "CLK_M_PIX_MDTP_2",
+-                                        "CLK_M_MPELPC";
++                clocks = <&clk_sysin>;
++                clock-output-names = "clk-m-pix-mdtp-0",
++				     "clk-m-pix-mdtp-1",
++				     "clk-m-pix-mdtp-2",
++				     "clk-m-mpelpc";
+         };
+-- 
+1.9.1
 
-Why the EXPORT? Is this used by modules?
-> +
-> +static void xen_startup_unmap_pirqs(void)
-> +{
-> +	struct evtchn_status status;
-> +	int port, rc = -ENOENT;
-> +	struct physdev_unmap_pirq unmap_irq;
-> +	struct evtchn_close close;
-> +
-> +	memset(&status, 0, sizeof(status));
-> +	for (port = 0; port < xen_evtchn_max_channels(); port++) {
-> +		status.dom = DOMID_SELF;
-> +		status.port = port;
-> +		rc = HYPERVISOR_event_channel_op(EVTCHNOP_status, &status);
-> +		if (rc < 0)
-> +			continue;
-> +		if (status.status == EVTCHNSTAT_pirq) {
-> +			close.port = port;
-> +			if (HYPERVISOR_event_channel_op(EVTCHNOP_close,
-> +							&close) != 0)
-> +				pr_warn("xen: failed to close evtchn %d\n",
-> +					port);
-> +			unmap_irq.pirq = status.u.pirq;
-> +			unmap_irq.domid = DOMID_SELF;
-> +			pr_warn("xen: unmapping previously mapped pirq %d\n",
-> +				unmap_irq.pirq);
-> +			if (HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq,
-> +						  &unmap_irq) != 0)
-> +				pr_warn("xen: failed to unmap pirq %d\n",
-> +					unmap_irq.pirq);
-> +		}
-> +	}
-> +}
-> +
-> +
->  void __init xen_init_IRQ(void)
->  {
->  	int ret = -EINVAL;
-> @@ -1671,6 +1745,8 @@ void __init xen_init_IRQ(void)
->  		xen_callback_vector();
->  
->  	if (xen_hvm_domain()) {
-> +		xen_startup_unmap_pirqs();
-> +
->  		native_init_IRQ();
->  		/* pci_xen_hvm_init must be called after native_init_IRQ so that
->  		 * __acpi_register_gsi can point at the right function */
-> diff --git a/include/xen/events.h b/include/xen/events.h
-> index 8bee7a7..3f9f428 100644
-> --- a/include/xen/events.h
-> +++ b/include/xen/events.h
-> @@ -122,6 +122,9 @@ int xen_irq_from_gsi(unsigned gsi);
->  /* Determine whether to ignore this IRQ if it is passed to a guest. */
->  int xen_test_irq_shared(int irq);
->  
-> +/* Unmap all PIRQs and close event channels */
-> +void xen_unmap_all_pirqs(void);
-> +
->  /* initialize Xen IRQ subsystem */
->  void xen_init_IRQ(void);
->  #endif	/* _XEN_EVENTS_H */
-> -- 
-> 1.9.3
-> 
