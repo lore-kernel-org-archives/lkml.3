@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612AbaGOW0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:26:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53938 "EHLO
+	id S932380AbaGOVbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:31:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53864 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932816AbaGOVbq (ORCPT
+	with ESMTP id S1757952AbaGOVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:31:46 -0400
+	Tue, 15 Jul 2014 17:31:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Luck <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, Takashi Iwai <tiwai@suse.de>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 095/198] mm/memory-failure.c: don't let collect_procs() skip over processes for MF_ACTION_REQUIRED
-Date: Tue, 15 Jul 2014 14:29:25 -0700
-Message-Id: <1405459868-15089-96-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 002/198] ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while DEBUG not defined
+Date: Tue, 15 Jul 2014 14:27:52 -0700
+Message-Id: <1405459868-15089-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -32,125 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Sander Eikelenboom <linux@eikelenboom.it>
 
-commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
+commit b7a7723513dc89f83d6df13206df55d4dc26e825 upstream.
 
-When Linux sees an "action optional" machine check (where h/w has reported
-an error that is not in the current execution path) we generally do not
-want to signal a process, since most processes do not have a SIGBUS
-handler - we'd just prematurely terminate the process for a problem that
-they might never actually see.
+BugLink: http://bugs.launchpad.net/bugs/1319457
 
-task_early_kill() decides whether to consider a process - and it checks
-whether this specific process has been marked for early signals with
-"prctl", or if the system administrator has requested early signals for
-all processes using /proc/sys/vm/memory_failure_early_kill.
+This (widely used) construction:
 
-But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
-execution path of the current thread so we must send the SIGBUS
-immediatley.
+if(printk_ratelimit())
+	dev_dbg()
 
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must take action.
+Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
+message below, even while the dev_dbg it is supposed to rate limit wouldn't
+print anything because DEBUG is not defined for this device.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Chen Gong <gong.chen@linux.jf.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[  533.803964] retire_playback_urb: 852 callbacks suppressed
+[  538.807930] retire_playback_urb: 852 callbacks suppressed
+[  543.811897] retire_playback_urb: 852 callbacks suppressed
+[  548.815745] retire_playback_urb: 852 callbacks suppressed
+[  553.819826] retire_playback_urb: 852 callbacks suppressed
+
+So use dev_dbg_ratelimited() instead of this construction.
+
+Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+(backported from commit b7a7723513dc89f83d6df13206df55d4dc26e825)
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory-failure.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ sound/usb/pcm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 2b5da71..e5f7031 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -384,10 +384,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -397,7 +399,7 @@ static int task_early_kill(struct task_struct *tsk)
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -413,7 +415,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -432,7 +434,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -443,7 +445,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -469,7 +471,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -480,9 +483,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -967,7 +970,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
+diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+index ca3256d..ede4b92 100644
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -1488,7 +1488,8 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
+ 	 * on two reads of a counter updated every ms.
  	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ 	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
+-		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
++		dev_dbg_ratelimited(&subs->dev->dev,
++			"delay: estimated %d, actual %d\n",
+ 			est_delay, subs->last_delay);
  
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
+ 	if (!subs->running) {
 -- 
 1.9.1
 
