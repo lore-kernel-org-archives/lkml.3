@@ -1,126 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801AbaGOIM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:12:59 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58221 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467AbaGOIMx (ORCPT
+	id S1757954AbaGOIO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:14:58 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60179 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757100AbaGOIOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:12:53 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 15 Jul 2014 17:18:52 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Alexey Preobrazhensky <preobr@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC/PATCH RESEND -next 14/21] mm: slub: kasan: disable kasan
- when touching unaccessible memory
-Message-ID: <20140715081852.GL11317@js1304-P5Q-DELUXE>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1404905415-9046-15-git-send-email-a.ryabinin@samsung.com>
- <20140715060405.GI11317@js1304-P5Q-DELUXE>
- <53C4DA54.3010502@samsung.com>
+	Tue, 15 Jul 2014 04:14:55 -0400
+Message-ID: <53C4E2F0.8000307@linux.vnet.ibm.com>
+Date: Tue, 15 Jul 2014 16:14:40 +0800
+From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C4DA54.3010502@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: mlombard@redhat.com, ming.lei@canonical.com, dongsu.park@profitbricks.com,
+        jet.chen@intel.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        kmo@daterainc.com, axboe@kernel.dk, akpm@linux-foundation.org,
+        axboe@fb.com
+Subject: Bug_ON with patch: bio: modify __bio_add_page() to accept pages that
+ don't start a new segment
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071508-8256-0000-0000-00000E7E6EBC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 11:37:56AM +0400, Andrey Ryabinin wrote:
-> On 07/15/14 10:04, Joonsoo Kim wrote:
-> > On Wed, Jul 09, 2014 at 03:30:08PM +0400, Andrey Ryabinin wrote:
-> >> Some code in slub could validly touch memory marked by kasan as unaccessible.
-> >> Even though slub.c doesn't instrumented, functions called in it are instrumented,
-> >> so to avoid false positive reports such places are protected by
-> >> kasan_disable_local()/kasan_enable_local() calls.
-> >>
-> >> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> >> ---
-> >>  mm/slub.c | 21 +++++++++++++++++++--
-> >>  1 file changed, 19 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/mm/slub.c b/mm/slub.c
-> >> index 6ddedf9..c8dbea7 100644
-> >> --- a/mm/slub.c
-> >> +++ b/mm/slub.c
-> >> @@ -560,8 +560,10 @@ static void print_tracking(struct kmem_cache *s, void *object)
-> >>  	if (!(s->flags & SLAB_STORE_USER))
-> >>  		return;
-> >>  
-> >> +	kasan_disable_local();
-> >>  	print_track("Allocated", get_track(s, object, TRACK_ALLOC));
-> >>  	print_track("Freed", get_track(s, object, TRACK_FREE));
-> >> +	kasan_enable_local();
-> > 
-> > I don't think that this is needed since print_track() doesn't call
-> > external function with object pointer. print_track() call pr_err(), but,
-> > before calling, it retrieve t->addrs[i] so memory access only occurs
-> > in slub.c.
-> > 
-> Agree.
-> 
-> >>  }
-> >>  
-> >>  static void print_page_info(struct page *page)
-> >> @@ -604,6 +606,8 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
-> >>  	unsigned int off;	/* Offset of last byte */
-> >>  	u8 *addr = page_address(page);
-> >>  
-> >> +	kasan_disable_local();
-> >> +
-> >>  	print_tracking(s, p);
-> >>  
-> >>  	print_page_info(page);
-> >> @@ -632,6 +636,8 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
-> >>  		/* Beginning of the filler is the free pointer */
-> >>  		print_section("Padding ", p + off, s->size - off);
-> >>  
-> >> +	kasan_enable_local();
-> >> +
-> >>  	dump_stack();
-> >>  }
-> > 
-> > And, I recommend that you put this hook on right place.
-> > At a glance, the problematic function is print_section() which have
-> > external function call, print_hex_dump(), with object pointer.
-> > If you disable kasan in print_section, all the below thing won't be
-> > needed, I guess.
-> > 
-> 
-> Nope, at least memchr_inv() call in slab_pad_check will be a problem.
-> 
-> I think putting disable/enable only where we strictly need them might be a problem for future maintenance of slub.
-> If someone is going to add a new function call somewhere, he must ensure that it this call won't be a problem
-> for kasan.
+My Power7 box boot fail with commit:
 
-I don't agree with this.
+254c4407cb84a6dec90336054615b0f0e996bb7c
+bio: modify __bio_add_page() to accept pages that don't start a new segment
 
-If someone is going to add a slab_pad_check() in other places in
-slub.c, we should disable/enable kasan there, too. This looks same
-maintenance problem to me. Putting disable/enable only where we
-strictly need at least ensures that we don't need to care when using
-slub internal functions.
+Just revert it will works for me.
 
-And, if memchr_inv() is problem, I think that you also need to add hook
-into validate_slab_cache().
+See below:
 
-validate_slab_cache() -> validate_slab_slab() -> validate_slab() ->
-check_object() -> check_bytes_and_report() -> memchr_inv()
+[   22.659431] ------------[ cut here ]------------
+[   22.659437] kernel BUG at fs/direct-io.c:747!
+[   22.659501] Oops: Exception in kernel mode, sig: 5 [#1]
+[   22.659528] SMP NR_CPUS=1024 NUMA PowerNV
+[   22.659533] Modules linked in: e1000e vhost_net tun ses(+) macvtap 
+macvlan enclosure ptp pps_core vhost be2net(+) shpchp kvm binfmt_misc 
+uinput lpfc scsi_transport_fc ipr
+[   22.659688] CPU: 8 PID: 772 Comm: lvm Not tainted 
+3.16.0-rc5-next-20140714+ #76
+[   22.659755] task: c0000003b0a7dc20 ti: c0000003b0afc000 task.ti: 
+c0000003b0afc000
+[   22.659823] NIP: c0000000002ba854 LR: c0000000002bad80 CTR: 
+0000000000000010
+[   22.659890] REGS: c0000003b0aff450 TRAP: 0700   Not tainted 
+(3.16.0-rc5-next-20140714+)
+[   22.659957] MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI> CR: 
+24222844  XER: 20000000
+[   22.660114] CFAR: c0000000002bad90 SOFTE: 1
+GPR00: c0000000002bad80 c0000003b0aff6d0 c00000000145c148 0000000000000000
+GPR04: 0000000000000000 0000000000000000 c000000000b6e7c8 0000000000000001
+GPR08: 0000000000000000 0000000000010000 0000000000100000 f000000000000000
+GPR12: 0000000024222844 c00000000fee2400 0000000000000010 c0000003b9140000
+GPR16: 0000000000010000 c0000003b9140000 0000000000047bff 0000000000010000
+GPR20: 0000000000000000 f000000000cb0fdc 0000000000010000 0000000000010000
+GPR24: 0000000000000000 0000000000010000 0000000000000000 c0000003b0afc000
+GPR28: 0000000000000000 00000000023dff80 c0000003fcb10380 c0000003b9140028
+[   22.660980] NIP [c0000000002ba854] .__blockdev_direct_IO+0x1584/0x3960
+[   22.661036] LR [c0000000002bad80] .__blockdev_direct_IO+0x1ab0/0x3960
+[   22.661092] Call Trace:
+[   22.661116] [c0000003b0aff6d0] [c0000000002bad80] 
+.__blockdev_direct_IO+0x1ab0/0x3960 (unreliable)
+[   22.661208] [c0000003b0aff980] [c0000000002b6114] 
+.blkdev_direct_IO+0x64/0x80
+[   22.661276] [c0000003b0affa20] [c0000000001dd430] 
+.generic_file_read_iter+0x5b0/0x690
+[   22.661355] [c0000003b0affb50] [c0000000002b5a40] 
+.blkdev_read_iter+0x60/0x90
+[   22.661423] [c0000003b0affbd0] [c000000000269d28] 
+.new_sync_read+0xa8/0x120
+[   22.661491] [c0000003b0affcf0] [c00000000026b280] .vfs_read+0xc0/0x1f0
+[   22.661559] [c0000003b0affd90] [c00000000026b674] .SyS_read+0x64/0x110
+[   22.661628] [c0000003b0affe30] [c00000000000a158] syscall_exit+0x0/0x98
+[   22.661695] Instruction dump:
+[   22.661729] e88100d8 80a100e4 80c100e0 f92100c0 39200000 912100a8 
+4814fe15 60000000
+[   22.661841] 812100e4 78630020 7f891800 419ef880 <0fe00000> 60000000 
+60420000 e9410118
+[   22.661955] ---[ end trace 6248a5bb36020fd2 ]---
 
-Thanks.
+Thanks,
+Mike
+
+
+
+
