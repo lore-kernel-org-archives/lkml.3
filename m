@@ -1,177 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaGONmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:42:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027AbaGONl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:41:59 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: xen-devel@lists.xenproject.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
-Date: Tue, 15 Jul 2014 15:40:39 +0200
-Message-Id: <1405431640-649-4-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+	id S1754191AbaGONmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:42:43 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51067 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751027AbaGONmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 09:42:39 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18MfiQnPAsCiMBUDbIXRESv
+Date: Tue, 15 Jul 2014 06:41:14 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pascal Huerst <pascal.huerst@gmail.com>
+Cc: santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
+        linus.walleij@linaro.org, gnurou@gmail.com, linux-omap@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Mack <daniel@zonque.org>
+Subject: Re: gpio-omap: wakeup mask
+Message-ID: <20140715134113.GB2605@atomide.com>
+References: <53B3F687.5050502@gmail.com>
+ <20140704072752.GC28884@atomide.com>
+ <53BD1683.9030505@gmail.com>
+ <20140709104142.GO28884@atomide.com>
+ <53BD3950.60000@gmail.com>
+ <20140709152441.GZ28884@atomide.com>
+ <53C52C46.60207@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C52C46.60207@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When kexec is being run PIRQs from Qemu-emulated devices are still
-mapped to old event channels and new kernel has no information about
-that. Trying to map them twice results in the following in Xen's dmesg:
+* Pascal Huerst <pascal.huerst@gmail.com> [140715 06:29]:
+> 
+> 
+> On 09.07.2014 17:24, Tony Lindgren wrote:
+> > * Pascal Huerst <pascal.huerst@gmail.com> [140709 05:47]:
+> >> On 09.07.2014 12:41, Tony Lindgren wrote:
+> >> 
+> >>> If you just comment out the _gpio_rmw part above do things work
+> >>> as expected?
+> >> 
+> >> Yes. It only wakes up on gpio 6 not on gpio 11 anymore.
+> >> 
+> >>> Then if that works as expected, maybe write only some unused
+> >>> bits into wkup_en register and see if it still wakes to all
+> >>> events while it should not?
+> >> 
+> >> If I use the following testcode, everything works as expected:
+> >> 
+> >> //WARN(true, "WARN: bank->base = %08X\n", bank->base);
+> >> 
+> >> if (likely(!(bank->non_wakeup_gpios & gpio_bit))) { 
+> >> //_gpio_rmw(base, bank->regs->wkup_en, gpio_bit, trigger != 0); 
+> >> writel(0xABC00000, base + bank->regs->wkup_en);
+> >> 
+> >> bank->context.wake_en = readl_relaxed(bank->base + 
+> >> bank->regs->wkup_en); printk("bank->base = %08X gpio = %i
+> >> bank->context->wake_en = %08X\n", bank->base, gpio,
+> >> bank->context.wake_en); }
+> > 
+> > Hmm weird. It sounds like something like the following is
+> > happening:
+> > 
+> > 1. The first GPIO bank is always powered, and does not need to set 
+> > wake-up events
+> 
+> I dont think so. If I apply my hack (commenting the _gpio_rmw() call)
+> and don't have a wakeup source in the dt, I have to reboot the system,
+> sonce im not able to wake it up anymore. Or did I miss something?
 
- (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
- (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
- (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
- ...
+Well this just from my head without looking at the code, so please
+check..
 
- and the following in new kernel's dmesg:
+When you comment out the _gpio_rmw() call you are not configuring
+any GPIO bank wake-up events.
 
- [   92.286796] xen:events: Failed to obtain physical IRQ 4
-
-The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
-devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
-when kexec was requested and on every kernel startup. We need to do this
-twice to deal with the following issues:
-- startup-time unmapping is required to make kdump work;
-- shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
-- shutdown-time unmapping is required to make Qemu-emulated NICs work after
-  kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
-  is being performed).
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- arch/x86/xen/smp.c               |  1 +
- drivers/xen/events/events_base.c | 76 ++++++++++++++++++++++++++++++++++++++++
- include/xen/events.h             |  3 ++
- 3 files changed, 80 insertions(+)
-
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 35dcf39..e2b4deb 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -768,6 +768,7 @@ void xen_kexec_shutdown(void)
- #ifdef CONFIG_KEXEC
- 	if (!kexec_in_progress)
- 		return;
-+	xen_unmap_all_pirqs();
- #endif
- }
+And the .dts entry just manages the keypad wake-up event for
+suspend and resume and does not affect the GPIO bank after you
+commented out the _gpio_rmw().
  
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index c919d3d..7701c7f 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -1643,6 +1643,80 @@ void xen_callback_vector(void) {}
- static bool fifo_events = true;
- module_param(fifo_events, bool, 0);
- 
-+void xen_unmap_all_pirqs(void)
-+{
-+	int pirq, rc, gsi, irq, evtchn;
-+	struct physdev_unmap_pirq unmap_irq;
-+	struct irq_info *info;
-+	struct evtchn_close close;
-+
-+	mutex_lock(&irq_mapping_update_lock);
-+
-+	list_for_each_entry(info, &xen_irq_list_head, list) {
-+		if (info->type != IRQT_PIRQ)
-+			continue;
-+
-+		pirq = info->u.pirq.pirq;
-+		gsi = info->u.pirq.gsi;
-+		evtchn = info->evtchn;
-+		irq = info->irq;
-+
-+		pr_debug("unmapping pirq gsi=%d pirq=%d irq=%d evtchn=%d\n",
-+			gsi, pirq, irq, evtchn);
-+
-+		if (evtchn > 0) {
-+			close.port = evtchn;
-+			if (HYPERVISOR_event_channel_op(EVTCHNOP_close,
-+							&close) != 0)
-+				pr_warn("close evtchn %d failed\n", evtchn);
-+		}
-+
-+		unmap_irq.pirq = pirq;
-+		unmap_irq.domid = DOMID_SELF;
-+
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq, &unmap_irq);
-+		if (rc)
-+			pr_warn("unmap pirq failed gsi=%d pirq=%d irq=%d rc=%d\n",
-+				gsi, pirq, irq, rc);
-+	}
-+
-+	mutex_unlock(&irq_mapping_update_lock);
-+}
-+EXPORT_SYMBOL_GPL(xen_unmap_all_pirqs);
-+
-+static void xen_startup_unmap_pirqs(void)
-+{
-+	struct evtchn_status status;
-+	int port, rc = -ENOENT;
-+	struct physdev_unmap_pirq unmap_irq;
-+	struct evtchn_close close;
-+
-+	memset(&status, 0, sizeof(status));
-+	for (port = 0; port < xen_evtchn_max_channels(); port++) {
-+		status.dom = DOMID_SELF;
-+		status.port = port;
-+		rc = HYPERVISOR_event_channel_op(EVTCHNOP_status, &status);
-+		if (rc < 0)
-+			continue;
-+		if (status.status == EVTCHNSTAT_pirq) {
-+			close.port = port;
-+			if (HYPERVISOR_event_channel_op(EVTCHNOP_close,
-+							&close) != 0)
-+				pr_warn("xen: failed to close evtchn %d\n",
-+					port);
-+			unmap_irq.pirq = status.u.pirq;
-+			unmap_irq.domid = DOMID_SELF;
-+			pr_warn("xen: unmapping previously mapped pirq %d\n",
-+				unmap_irq.pirq);
-+			if (HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq,
-+						  &unmap_irq) != 0)
-+				pr_warn("xen: failed to unmap pirq %d\n",
-+					unmap_irq.pirq);
-+		}
-+	}
-+}
-+
-+
- void __init xen_init_IRQ(void)
- {
- 	int ret = -EINVAL;
-@@ -1671,6 +1745,8 @@ void __init xen_init_IRQ(void)
- 		xen_callback_vector();
- 
- 	if (xen_hvm_domain()) {
-+		xen_startup_unmap_pirqs();
-+
- 		native_init_IRQ();
- 		/* pci_xen_hvm_init must be called after native_init_IRQ so that
- 		 * __acpi_register_gsi can point at the right function */
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 8bee7a7..3f9f428 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -122,6 +122,9 @@ int xen_irq_from_gsi(unsigned gsi);
- /* Determine whether to ignore this IRQ if it is passed to a guest. */
- int xen_test_irq_shared(int irq);
- 
-+/* Unmap all PIRQs and close event channels */
-+void xen_unmap_all_pirqs(void);
-+
- /* initialize Xen IRQ subsystem */
- void xen_init_IRQ(void);
- #endif	/* _XEN_EVENTS_H */
--- 
-1.9.3
+> > 2. When setting the GPIO wake-up events it seems that enabling any 
+> > wake-up event for the first (16?) bits wakes up the system
+> > 
+> > You might want to check this with some spare GPIOs not in the first
+> > bank and see if you need the wake-up events and if enabling some
+> > bits enables more than one GPIO for wake-up events.
+> 
+> Im not sure if this makes sense, since only the first gpio bank can
+> act as a wakeup source. So it should not be possible.
 
+Usually on omaps the first GPIO bank is always powered but also
+the other banks can provide wake-up events for most GPIOs
+via the IO chain path. I think on am335x, there is no IO chain
+path, maybe because of the support for dual voltage IO? So yeah
+it could be that only the first GPIO bank can wake up the system
+on am335x.
+
+Regards,
+
+Tony
