@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760722AbaGPALQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:11:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S1760760AbaGPALS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:11:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759832AbaGOXN1 (ORCPT
+	with ESMTP id S1759814AbaGOXN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lennox Wu <lennox.wu@gmail.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 35/44] Score: The commit is for compiling successfully.
-Date: Tue, 15 Jul 2014 16:17:33 -0700
-Message-Id: <20140715231647.737134057@linuxfoundation.org>
+        Jiang Liu <jiang.liu@huawei.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 33/44] score: normalize global variables exported by vmlinux.lds
+Date: Tue, 15 Jul 2014 16:17:31 -0700
+Message-Id: <20140715231647.679570636@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -28,89 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lennox Wu <lennox.wu@gmail.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 5fbbf8a1a93452b26e7791cf32cefce62b0a480b upstream.
+commit ae49b83dcacfb69e22092cab688c415c2f2d870c upstream.
 
-The modifications include:
- 1. Kconfig of Score: we don't support ioremap
- 2. Missed headfile including
- 3. There are some errors in other people's commit not checked by us, we fix it now
- 3.1 arch/score/kernel/entry.S: wrong instructions
- 3.2 arch/score/kernel/process.c : just some typos
+Generate mandatory global variables _sdata in file vmlinux.lds.
 
-Signed-off-by: Lennox Wu <lennox.wu@gmail.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/score/Kconfig               |    3 +++
- arch/score/include/asm/io.h      |    1 -
- arch/score/include/asm/pgalloc.h |    2 +-
- arch/score/kernel/entry.S        |    4 ++--
- arch/score/kernel/process.c      |    4 ++--
- 5 files changed, 8 insertions(+), 6 deletions(-)
+ arch/score/kernel/vmlinux.lds.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -109,3 +109,6 @@ source "security/Kconfig"
- source "crypto/Kconfig"
+--- a/arch/score/kernel/vmlinux.lds.S
++++ b/arch/score/kernel/vmlinux.lds.S
+@@ -49,6 +49,7 @@ SECTIONS
+ 	}
  
- source "lib/Kconfig"
-+
-+config NO_IOMEM
-+       def_bool y
---- a/arch/score/include/asm/io.h
-+++ b/arch/score/include/asm/io.h
-@@ -5,5 +5,4 @@
+ 	. = ALIGN(16);
++	_sdata =  .;			/* Start of data section */
+ 	RODATA
  
- #define virt_to_bus	virt_to_phys
- #define bus_to_virt	phys_to_virt
--
- #endif /* _ASM_SCORE_IO_H */
---- a/arch/score/include/asm/pgalloc.h
-+++ b/arch/score/include/asm/pgalloc.h
-@@ -2,7 +2,7 @@
- #define _ASM_SCORE_PGALLOC_H
- 
- #include <linux/mm.h>
--
-+#include <linux/highmem.h>
- static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
- 	pte_t *pte)
- {
---- a/arch/score/kernel/entry.S
-+++ b/arch/score/kernel/entry.S
-@@ -264,7 +264,7 @@ resume_kernel:
- 	disable_irq
- 	lw	r8, [r28, TI_PRE_COUNT]
- 	cmpz.c	r8
--	bne	r8, restore_all
-+	bne	restore_all
- need_resched:
- 	lw	r8, [r28, TI_FLAGS]
- 	andri.c	r9, r8, _TIF_NEED_RESCHED
-@@ -415,7 +415,7 @@ ENTRY(handle_sys)
- 	sw	r9, [r0, PT_EPC]
- 
- 	cmpi.c	r27, __NR_syscalls 	# check syscall number
--	bgeu	illegal_syscall
-+	bcs	illegal_syscall
- 
- 	slli	r8, r27, 2		# get syscall routine
- 	la	r11, sys_call_table
---- a/arch/score/kernel/process.c
-+++ b/arch/score/kernel/process.c
-@@ -78,8 +78,8 @@ int copy_thread(unsigned long clone_flag
- 	p->thread.reg0 = (unsigned long) childregs;
- 	if (unlikely(p->flags & PF_KTHREAD)) {
- 		memset(childregs, 0, sizeof(struct pt_regs));
--		p->thread->reg12 = usp;
--		p->thread->reg13 = arg;
-+		p->thread.reg12 = usp;
-+		p->thread.reg13 = arg;
- 		p->thread.reg3 = (unsigned long) ret_from_kernel_thread;
- 	} else {
- 		*childregs = *current_pt_regs();
+ 	EXCEPTION_TABLE(16)
 
 
