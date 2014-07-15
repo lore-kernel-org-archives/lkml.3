@@ -1,120 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932865AbaGOSoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:44:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46821 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932760AbaGOSo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:44:29 -0400
-Date: Tue, 15 Jul 2014 14:43:58 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715184358.GA31550@nhori.bos.redhat.com>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715155537.GA19454@nhori.bos.redhat.com>
- <20140715160735.GB29269@dhcp22.suse.cz>
- <20140715173439.GU29639@cmpxchg.org>
+	id S932882AbaGOSpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:45:13 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:39990 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932760AbaGOSpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:45:10 -0400
+X-Auth-Info: L1JM2HiATvxS6SRnsm6nQyvmB6DA7j52DYcc3pNOCGk=
+From: Marek Vasut <marex@denx.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
+Date: Tue, 15 Jul 2014 20:45:06 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Harro Haan <hrhaan@gmail.com>, linaro-kernel@lists.linaro.org,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Fabio Estevam <festevam@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, kernel-team@android.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Martin <Dave.Martin@arm.com>, Detlev Zundel <dzu@denx.de>
+References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org> <CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com> <53C4F745.3070701@linaro.org>
+In-Reply-To: <53C4F745.3070701@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715173439.GU29639@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407152045.06517.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 01:34:39PM -0400, Johannes Weiner wrote:
-> On Tue, Jul 15, 2014 at 06:07:35PM +0200, Michal Hocko wrote:
-> > On Tue 15-07-14 11:55:37, Naoya Horiguchi wrote:
-> > > On Wed, Jun 18, 2014 at 04:40:45PM -0400, Johannes Weiner wrote:
-> > > ...
-> > > > diff --git a/mm/swap.c b/mm/swap.c
-> > > > index a98f48626359..3074210f245d 100644
-> > > > --- a/mm/swap.c
-> > > > +++ b/mm/swap.c
-> > > > @@ -62,6 +62,7 @@ static void __page_cache_release(struct page *page)
-> > > >  		del_page_from_lru_list(page, lruvec, page_off_lru(page));
-> > > >  		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > > >  	}
-> > > > +	mem_cgroup_uncharge(page);
-> > > >  }
-> > > >  
-> > > >  static void __put_single_page(struct page *page)
-> > > 
-> > > This seems to cause a list breakage in hstate->hugepage_activelist
-> > > when freeing a hugetlbfs page.
+On Tuesday, July 15, 2014 at 11:41:25 AM, Daniel Thompson wrote:
+> On 14/07/14 14:51, Harro Haan wrote:
+> > On 10 July 2014 10:03, Daniel Thompson <daniel.thompson@linaro.org> wrote:
+> >> This patchset makes it possible to use kgdb's NMI infrastructure on ARM
+> >> platforms.
+> >> 
+> >> The patches have been previously circulated as part of a large patchset
+> >> mixing together ARM architecture code and driver changes
+> >> (http://thread.gmane.org/gmane.linux.ports.arm.kernel/333901 ). This
+> >> patchset is dramatically cut down to include only the arch/arm code. The
+> >> driver code (irqchip and tty/serial) will follow when/if the arch code
+> >> is accepted.
+> >> 
+> >> The first two patches modify the FIQ infrastructure to allow interrupt
+> >> controller drivers to register callbacks (the fiq_chip structure) to
+> >> manage FIQ routings and to ACK and EOI the FIQ. This makes it possible
+> >> to use FIQ in multi-platform kernels and with recent ARM interrupt
+> >> controllers.
 > > 
-> > This looks like a fall out from
-> > http://marc.info/?l=linux-mm&m=140475936311294&w=2
+> > Daniel,
 > > 
-> > I didn't get to review this one but the easiest fix seems to be check
-> > HugePage and do not call uncharge.
+> > Thanks for the patches. I have tested the fiq and irq-gic patches on
+> > an i.MX6 (SabreSD board) for a different purpose:
+> > A FIQ timer interrupt at 1 kHz. The TWD watchdog block is used in
+> > timer mode for this (interrupt ID 30). The GIC affinity is set to CPU
+> > core 0 only for this interrupt ID.
+> > 
+> > I was surprised by the following behavior:
+> > $ cat /proc/interrupts
+> > 
+> >            CPU0       CPU1       CPU2       CPU3
+> >  
+> >  29:       5459       3381       3175       3029       GIC  29  twd
+> >  30:         11          0          0          0       GIC  30  fake-fiq
+> > 
+> > Once every few seconds is interrupt ID 30 handled by the regular GIC
+> > handler instead of the FIQ exception path (which causes for example a
+> > bit more latencies). The other thousands of FIQ's are handled by the
+> > FIQ exception path. The problem is also confirmed by the following
+> > stackframe of the Lauterbach tooling:
+> > fake_fiq_handler(irq = 30, ...)
+> > handle_percpu_devid_irq(irq = 30, ...)
+> > generic_handle_irq(irq = 30)
+> > handle_IRQ(irq = 30, ...)
+> > gic_handle_irq
+> > __irq_svc
+> > -->exception
+> > 
+> > Notes:
+> > 
+> > - The problem will occur more often by executing the following command:
+> >   $ while true; do hackbench 20; done &
+> > 
+> > - Reading the GIC_CPU_INTACK register returns the interrupt ID of the
+> > highest priority pending interrupt.
+> > - The GIC_CPU_INTACK register (used by fiq_ack) will return spurious
+> > interrupt ID 0x3FF when read in fake_fiq_handler, because
+> > GIC_CPU_INTACK is already read by gic_handle_irq.
+> > - The FIQ exception will not occur anymore after gic_handle_irq
+> > read/acknowledges the FIQ by reading the GIC_CPU_INTACK register
+> > 
+> > From the behavior above I conclude that the GIC_CPU_INTACK register is
+> > first updated before the FIQ exception is generated, so there is a
+> > small period of time that gic_handle_irq can read/acknowledge the FIQ.
 > 
-> Yes, that makes sense.  I'm also moving the uncharge call into
-> __put_single_page() and __put_compound_page() so that PageHuge(), a
-> function call, only needs to be checked for compound pages.
+> Makes sense.
 > 
-> > > For hugetlbfs, we uncharge in free_huge_page() which is called after
-> > > __page_cache_release(), so I think that we don't have to uncharge here.
-> > > 
-> > > In my testing, moving mem_cgroup_uncharge() inside if (PageLRU) block
-> > > fixed the problem, so if that works for you, could you fold the change
-> > > into your patch?
+> Avoiding this problem on GICv2 is easy (thanks to the aliased intack
+> register) but on iMX.6 we have only a GICv1.
+
+Yep.
+
+> > I can reduce the number of occurrences (not prevent it) by adding the
+> > following hack to irq-gic.c
+> > @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
+> > gic_handle_irq(struct pt_regs *regs
+> > 
+> >   u32 irqstat, irqnr;
+> >   struct gic_chip_data *gic = &gic_data[0];
+> >   void __iomem *cpu_base = gic_data_cpu_base(gic);
+> >   
+> >   do {
+> > 
+> > + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
+> > & (1 << 30))
+> > +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
+> > 
+> >   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+> >   irqnr = irqstat & ~0x1c00;
 > 
-> Memcg pages that *do* need uncharging might not necessarily be on the
-> LRU list.
+> I've made a more complete attempt to fix this. Could you test the
+> following? (and be prepared to fuzz the line numbers)
 
-OK.
+There's also another workaround, look at [1], but it's really a perverse hack 
+thus far (blush). What I did there is I got hinted that an L1 page table can 
+have this NS bit set. If this bit is set for a mapping, all accesses to memory 
+area via that mapping will be non-secure. And then, in turn, by doing a non-
+secure read of the INTACK register, it will not ever happen that the FIQ number 
+will pop up in the INTACK. I only do a non-secure read of the INTACK register,
+all other registers of the GICv1 are read via regular secure-mode accesses.
 
-> Does the following work for you?
-
-Unfortunately, with this change I saw the following bug message when
-stressing with hugepage migration.
-move_to_new_page() is called by unmap_and_move_huge_page() too, so
-we need some hugetlb related code around mem_cgroup_migrate().
-
-[   76.753994] page:ffffea0000d18000 count:2 mapcount:0 mapping:ffff88003dc2c738 index:0x8
-[   76.755171] page flags: 0x1fffff80004019(locked|uptodate|dirty|head)
-[   76.756195] page dumped because: VM_BUG_ON_PAGE(PageCgroupUsed(pc))
-[   76.758869] pc:ffff88003ebc6000 pc->flags:1 pc->mem_cgroup:ffff88011e19a800
-[   76.760158] ------------[ cut here ]------------
-[   76.760878] kernel BUG at /src/linux-dev/mm/memcontrol.c:2707!
-[   76.761119] invalid opcode: 0000 [#1] SMP
-[   76.761119] Modules linked in: bnep bluetooth ip6t_rpfilter cfg80211 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 rfkill xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw ppdev parport_pc parport serio_raw microcode i2c_piix4 virtio_balloon floppy pcspkr nfsd auth_rpcgss oid_registry nfs_acl lockd sunrpc virtio_blk virtio_net ata_generic pata_acpi
-[   76.761119] CPU: 1 PID: 1536 Comm: mbind_fuzz Not tainted 3.15.0-140715-1353-00016-g8d61f2a989c8 #263
-[   76.761119] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   76.761119] task: ffff88011d6e8000 ti: ffff8800bbd84000 task.ti: ffff8800bbd84000
-[   76.761119] RIP: 0010:[<ffffffff811fee3b>]  [<ffffffff811fee3b>] commit_charge+0x28b/0x2b0
-[   76.761119] RSP: 0018:ffff8800bbd87ce8  EFLAGS: 00010292
-[   76.761119] RAX: 000000000000003f RBX: ffffea0000d18000 RCX: 0000000000000000
-[   76.761119] RDX: 0000000000000001 RSI: ffff88007ec0d318 RDI: ffff88007ec0d318
-[   76.761119] RBP: ffff8800bbd87d28 R08: 000000000000000a R09: 0000000000000000
-[   76.761119] R10: 0000000000000000 R11: ffff8800bbd879be R12: ffff88011e19a800
-[   76.761119] R13: 0000000000000000 R14: 0000000000000000 R15: ffff88003ebc6000
-[   76.761119] FS:  00007f7441c3a740(0000) GS:ffff88007ec00000(0000) knlGS:0000000000000000
-[   76.761119] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   76.761119] CR2: 00007ffffb5b8950 CR3: 000000003740e000 CR4: 00000000000006e0
-[   76.761119] Stack:
-[   76.761119]  0000000000000002 0000000000000001 00000200bbd87d28 ffffea0002b70000
-[   76.761119]  ffffea0000d18000 0000000000000000 0000000000000001 0000000000000000
-[   76.761119]  ffff8800bbd87d50 ffffffff81202380 ffffea0000d18000 ffffea0002b70000
-[   76.761119] Call Trace:
-[   76.761119]  [<ffffffff81202380>] mem_cgroup_migrate+0x100/0x1d0
-[   76.761119]  [<ffffffff811f3e4d>] move_to_new_page+0xbd/0x110
-[   76.761119]  [<ffffffff811f40d3>] unmap_and_move_huge_page+0x233/0x290
-[   76.761119]  [<ffffffff811f477d>] migrate_pages+0xad/0x1e0
-[   76.761119]  [<ffffffff811e43f0>] ? alloc_pages_vma+0x1a0/0x1a0
-[   76.761119]  [<ffffffff811e4cea>] do_mbind+0x2ea/0x380
-[   76.761119]  [<ffffffff811e4e1b>] SyS_mbind+0x9b/0xb0
-[   76.761119]  [<ffffffff81742a12>] system_call_fastpath+0x16/0x1b
-[   76.761119] Code: 13 45 19 c0 41 83 e0 02 48 c1 ea 06 83 e2 01 48 83 fa 01 41 83 d8 ff e9 30 ff ff ff 48 c7 c6 20 d0 a8 81 48 89 df e8 55 fb f9 ff <0f> 0b 48 c7 c6 f3 e2 a8 81 48 89 df e8 44 fb f9 ff 0f 0b 48 c7
-[   76.761119] RIP  [<ffffffff811fee3b>] commit_charge+0x28b/0x2b0
-[   76.761119]  RSP <ffff8800bbd87ce8>
-[   76.801726] ---[ end trace ddfccaa1a6a58baa ]---
-
+[1] http://git.denx.de/?p=linux-denx/linux-denx-
+marex.git;a=shortlog;h=refs/heads/topic/socfpga/fiq-2014-07-10_01
