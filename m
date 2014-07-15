@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759896AbaGOVtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:49:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54964 "EHLO
+	id S1759911AbaGOVtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:49:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54959 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964793AbaGOVix (ORCPT
+	with ESMTP id S964788AbaGOVix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 17:38:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 145/198] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
-Date: Tue, 15 Jul 2014 14:30:15 -0700
-Message-Id: <1405459868-15089-146-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 159/198] ALSA: control: Fix replacing user controls
+Date: Tue, 15 Jul 2014 14:30:29 -0700
+Message-Id: <1405459868-15089-160-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,79 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
+commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
 
-at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
-a positive u8 and that doesn't work.  I've changed it to int and
-refactored it to preserve the error code.
+There are two issues with the current implementation for replacing user
+controls. The first is that the code does not check if the control is actually a
+user control and neither does it check if the control is owned by the process
+that tries to remove it. That allows userspace applications to remove arbitrary
+controls, which can cause a user after free if a for example a driver does not
+expect a control to be removed from under its feed.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+The second issue is that on one hand when a control is replaced the
+user_ctl_count limit is not checked and on the other hand the user_ctl_count is
+increased (even though the number of user controls does not change). This allows
+userspace, once the user_ctl_count limit as been reached, to repeatedly replace
+a control until user_ctl_count overflows. Once that happens new controls can be
+added effectively bypassing the user_ctl_count limit.
+
+Both issues can be fixed by instead of open-coding the removal of the control
+that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
+proper permission checks as well as decrements user_ctl_count after the control
+has been removed.
+
+Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
+beginning of the function if the control already exists is removed. This is not
+a problem though since the check is quite useless, because the lock that is
+protecting the control list is released between the check and before adding the
+new control to the list, which means that it is possible that a different
+control with the same settings is added to the list after the check. Luckily
+there is another check that is done while holding the lock in snd_ctl_add(), so
+we'll rely on that to make sure that the same control is not added twice.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/adc/at91_adc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ sound/core/control.c | 25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-index bbba014..e6bf77d 100644
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -322,12 +322,11 @@ static int at91_adc_channel_init(struct iio_dev *idev)
- 	return idev->num_channels;
- }
+diff --git a/sound/core/control.c b/sound/core/control.c
+index 183fab2..15bc844 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1155,8 +1155,6 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
+ 	struct user_element *ue;
+ 	int idx, err;
  
--static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
-+static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 					     struct at91_adc_trigger *triggers,
- 					     const char *trigger_name)
- {
- 	struct at91_adc_state *st = iio_priv(idev);
--	u8 value = 0;
- 	int i;
- 
- 	for (i = 0; i < st->trigger_number; i++) {
-@@ -340,15 +339,16 @@ static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 			return -ENOMEM;
- 
- 		if (strcmp(trigger_name, name) == 0) {
--			value = triggers[i].value;
- 			kfree(name);
--			break;
-+			if (triggers[i].value == 0)
-+				return -EINVAL;
-+			return triggers[i].value;
- 		}
- 
- 		kfree(name);
+-	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
+-		return -ENOMEM;
+ 	if (info->count < 1)
+ 		return -EINVAL;
+ 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
+@@ -1165,21 +1163,16 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
+ 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
+ 	info->id.numid = 0;
+ 	memset(&kctl, 0, sizeof(kctl));
+-	down_write(&card->controls_rwsem);
+-	_kctl = snd_ctl_find_id(card, &info->id);
+-	err = 0;
+-	if (_kctl) {
+-		if (replace)
+-			err = snd_ctl_remove(card, _kctl);
+-		else
+-			err = -EBUSY;
+-	} else {
+-		if (replace)
+-			err = -ENOENT;
++
++	if (replace) {
++		err = snd_ctl_remove_user_ctl(file, &info->id);
++		if (err)
++			return err;
  	}
- 
--	return value;
-+	return -EINVAL;
- }
- 
- static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
-@@ -358,14 +358,14 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
- 	struct iio_buffer *buffer = idev->buffer;
- 	struct at91_adc_reg_desc *reg = st->registers;
- 	u32 status = at91_adc_readl(st, reg->trigger_register);
--	u8 value;
-+	int value;
- 	u8 bit;
- 
- 	value = at91_adc_get_trigger_value_by_name(idev,
- 						   st->trigger_list,
- 						   idev->trig->name);
--	if (value == 0)
--		return -EINVAL;
-+	if (value < 0)
-+		return value;
- 
- 	if (state) {
- 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
+-	up_write(&card->controls_rwsem);
+-	if (err < 0)
+-		return err;
++
++	if (card->user_ctl_count >= MAX_USER_CONTROLS)
++		return -ENOMEM;
++
+ 	memcpy(&kctl.id, &info->id, sizeof(info->id));
+ 	kctl.count = info->owner ? info->owner : 1;
+ 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
 -- 
 1.9.1
 
