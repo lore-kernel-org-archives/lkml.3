@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671AbaGOTrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:47:31 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:38540 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933346AbaGOTph (ORCPT
+	id S933740AbaGOTrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:47:48 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:7578 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933638AbaGOTpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:45:37 -0400
+	Tue, 15 Jul 2014 15:45:32 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
         akpm@linux-foundation.org, arnd@arndb.de, konrad.wilk@oracle.com,
@@ -14,9 +14,9 @@ To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         stefan.bader@canonical.com, luto@amacapital.net, airlied@gmail.com,
         bp@alien8.de, Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH 5/11] x86, mm: Add set_memory[_array]_wt() for setting WT
-Date: Tue, 15 Jul 2014 13:34:38 -0600
-Message-Id: <1405452884-25688-6-git-send-email-toshi.kani@hp.com>
+Subject: [RFC PATCH 6/11] x86, mm, pat: Add pgprot_writethrough() for WT
+Date: Tue, 15 Jul 2014 13:34:39 -0600
+Message-Id: <1405452884-25688-7-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
 References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
@@ -24,114 +24,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces set_memory_wt() and set_memory_array_wt()
-for setting a given range of the memory attribute to WT.
-
-Note that reserve_memtype() only supports tracking of WT for
-non-RAM ranges at this point.
+This patch introduces pgprot_writethrough() for setting the WT type
+for a given pgprot_t.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- arch/x86/include/asm/cacheflush.h |    6 ++++-
- arch/x86/mm/pageattr.c            |   43 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/pgtable_types.h |    3 +++
+ arch/x86/mm/pat.c                    |    9 +++++++++
+ include/asm-generic/pgtable.h        |    4 ++++
+ 3 files changed, 16 insertions(+)
 
-diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
-index c80a3a1..050504b 100644
---- a/arch/x86/include/asm/cacheflush.h
-+++ b/arch/x86/include/asm/cacheflush.h
-@@ -69,7 +69,7 @@ static inline void set_page_memtype(struct page *pg, unsigned long memtype) { }
- /*
-  * The set_memory_* API can be used to change various attributes of a virtual
-  * address range. The attributes include:
-- * Cachability   : UnCached, WriteCombining, WriteBack
-+ * Cachability   : UnCached, WriteCombining, WriteThrough, WriteBack
-  * Executability : eXeutable, NoteXecutable
-  * Read/Write    : ReadOnly, ReadWrite
-  * Presence      : NotPresent
-@@ -96,9 +96,11 @@ static inline void set_page_memtype(struct page *pg, unsigned long memtype) { }
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 7b905cb..1fe8af7 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -343,6 +343,9 @@ extern int nx_enabled;
+ #define pgprot_writecombine	pgprot_writecombine
+ extern pgprot_t pgprot_writecombine(pgprot_t prot);
  
- int _set_memory_uc(unsigned long addr, int numpages);
- int _set_memory_wc(unsigned long addr, int numpages);
-+int _set_memory_wt(unsigned long addr, int numpages);
- int _set_memory_wb(unsigned long addr, int numpages);
- int set_memory_uc(unsigned long addr, int numpages);
- int set_memory_wc(unsigned long addr, int numpages);
-+int set_memory_wt(unsigned long addr, int numpages);
- int set_memory_wb(unsigned long addr, int numpages);
- int set_memory_x(unsigned long addr, int numpages);
- int set_memory_nx(unsigned long addr, int numpages);
-@@ -109,10 +111,12 @@ int set_memory_4k(unsigned long addr, int numpages);
++#define pgprot_writethrough	pgprot_writethrough
++extern pgprot_t pgprot_writethrough(pgprot_t prot);
++
+ /* Indicate that x86 has its own track and untrack pfn vma functions */
+ #define __HAVE_PFNMAP_TRACKING
  
- int set_memory_array_uc(unsigned long *addr, int addrinarray);
- int set_memory_array_wc(unsigned long *addr, int addrinarray);
-+int set_memory_array_wt(unsigned long *addr, int addrinarray);
- int set_memory_array_wb(unsigned long *addr, int addrinarray);
- 
- int set_pages_array_uc(struct page **pages, int addrinarray);
- int set_pages_array_wc(struct page **pages, int addrinarray);
-+int set_pages_array_wt(struct page **pages, int addrinarray);
- int set_pages_array_wb(struct page **pages, int addrinarray);
- 
- /*
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index ae242a7..a2a1e70 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1562,6 +1562,43 @@ out_err:
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 8a8be17..a987071 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -796,6 +796,15 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
  }
- EXPORT_SYMBOL(set_memory_wc);
+ EXPORT_SYMBOL_GPL(pgprot_writecombine);
  
-+int set_memory_array_wt(unsigned long *addr, int addrinarray)
++pgprot_t pgprot_writethrough(pgprot_t prot)
 +{
-+	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_WT);
++	if (pat_enabled)
++		return __pgprot(pgprot_val(prot) | _PAGE_CACHE_WT);
++	else
++		return pgprot_noncached(prot);
 +}
-+EXPORT_SYMBOL(set_memory_array_wt);
++EXPORT_SYMBOL_GPL(pgprot_writethrough);
 +
-+int _set_memory_wt(unsigned long addr, int numpages)
-+{
-+	return change_page_attr_set(&addr, numpages,
-+				    __pgprot(_PAGE_CACHE_WT), 0);
-+}
-+
-+int set_memory_wt(unsigned long addr, int numpages)
-+{
-+	int ret;
-+
-+	if (!pat_enabled)
-+		return set_memory_uc(addr, numpages);
-+
-+	ret = reserve_memtype(__pa(addr), __pa(addr) + numpages * PAGE_SIZE,
-+		_PAGE_CACHE_WT, NULL);
-+	if (ret)
-+		goto out_err;
-+
-+	ret = _set_memory_wt(addr, numpages);
-+	if (ret)
-+		goto out_free;
-+
-+	return 0;
-+
-+out_free:
-+	free_memtype(__pa(addr), __pa(addr) + numpages * PAGE_SIZE);
-+out_err:
-+	return ret;
-+}
-+EXPORT_SYMBOL(set_memory_wt);
-+
- int _set_memory_wb(unsigned long addr, int numpages)
- {
- 	return change_page_attr_clear(&addr, numpages,
-@@ -1699,6 +1736,12 @@ int set_pages_array_wc(struct page **pages, int addrinarray)
- }
- EXPORT_SYMBOL(set_pages_array_wc);
+ #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_X86_PAT)
  
-+int set_pages_array_wt(struct page **pages, int addrinarray)
-+{
-+	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_WT);
-+}
-+EXPORT_SYMBOL(set_pages_array_wt);
+ static struct memtype *memtype_get_idx(loff_t pos)
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 53b2acc..1af0ed9 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -249,6 +249,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
+ #define pgprot_writecombine pgprot_noncached
+ #endif
+ 
++#ifndef pgprot_writethrough
++#define pgprot_writethrough pgprot_noncached
++#endif
 +
- int set_pages_wb(struct page *page, int numpages)
- {
- 	unsigned long addr = (unsigned long)page_address(page);
+ /*
+  * When walking page tables, get the address of the next boundary,
+  * or the end address of the range if that comes earlier.  Although no
