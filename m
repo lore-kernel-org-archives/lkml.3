@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149AbaGOA4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:56:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36484 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280AbaGOA4H (ORCPT
+	id S1754177AbaGOBFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 21:05:38 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62213 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241AbaGOBFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:56:07 -0400
-Date: Mon, 14 Jul 2014 18:00:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 00/94] 3.14.12-stable review
-Message-ID: <20140715010039.GB9474@kroah.com>
-References: <20140707235756.780319003@linuxfoundation.org>
- <53BBF102.6000507@roeck-us.net>
+	Mon, 14 Jul 2014 21:05:34 -0400
+Message-ID: <53C47E59.8030502@gmail.com>
+Date: Tue, 15 Jul 2014 09:05:29 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BBF102.6000507@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+CC: linux-ext4@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fs/ext4/super.c: Let 'counters' switched by SMP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 06:24:18AM -0700, Guenter Roeck wrote:
-> On 07/07/2014 04:56 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.14.12 release.
-> >There are 94 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Wed Jul  9 23:57:44 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 140 pass: 137 fail: 3
-> Failed builds:
-> 	powerpc:allmodconfig (binutils 2.23)
-> 	powerpc:allmodconfig (binutils 2.24)
-> 	unicore32:defconfig
-> 
-> Qemu tests all passed.
-> 
-> Results are as expected.
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
-> 
-> For the unicore32 build to pass in this release, the following
-> additional patches would be needed.
-> 
-> 73fa540618 drivers/rtc/rtc-puv3.c: remove "&dev->" for typo issue MIME-Version: 1.0
-> c863810cef drivers/rtc/rtc-puv3.c: use dev_dbg() instead of dev_debug() for typo issue
+When SMP is disabled, 'struct percpu_counter' has no 'counters' member,
+so need skip it when in !SMP.
 
-Now applied, thanks.
+The related git commit:
 
-greg k-h
+  "feab139 ext4: rearrange initialization to fix EXT4FS_DEBUG".
+
+The related error (with allmodconfig under score):
+
+    CC [M]  fs/ext4/super.o
+  fs/ext4/super.c: In function 'ext4_commit_super':
+  fs/ext4/super.c:4546:41: error: 'struct percpu_counter' has no member named 'counters'
+    if (EXT4_SB(sb)->s_freeclusters_counter.counters)
+                                           ^
+  fs/ext4/super.c:4550:39: error: 'struct percpu_counter' has no member named 'counters'
+    if (EXT4_SB(sb)->s_freeinodes_counter.counters)
+                                         ^
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ fs/ext4/super.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 30767cd..3cd4fe1 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4543,11 +4543,15 @@ static int ext4_commit_super(struct super_block *sb, int sync)
+ 	else
+ 		es->s_kbytes_written =
+ 			cpu_to_le64(EXT4_SB(sb)->s_kbytes_written);
++#ifdef CONFIG_SMP
+ 	if (EXT4_SB(sb)->s_freeclusters_counter.counters)
++#endif
+ 		ext4_free_blocks_count_set(es,
+ 			EXT4_C2B(EXT4_SB(sb), percpu_counter_sum_positive(
+ 				&EXT4_SB(sb)->s_freeclusters_counter)));
++#ifdef CONFIG_SMP
+ 	if (EXT4_SB(sb)->s_freeinodes_counter.counters)
++#endif
+ 		es->s_free_inodes_count =
+ 			cpu_to_le32(percpu_counter_sum_positive(
+ 				&EXT4_SB(sb)->s_freeinodes_counter));
+-- 
+1.9.2.459.g68773ac
