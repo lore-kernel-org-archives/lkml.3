@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933838AbaGOVfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:35:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54367 "EHLO
+	id S1759326AbaGOVfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:35:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54396 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933801AbaGOVfZ (ORCPT
+	with ESMTP id S933831AbaGOVfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:25 -0400
+	Tue, 15 Jul 2014 17:35:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Mateusz Guzik <mguzik@redhat.com>, linux-nfs@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 194/198] iscsi-target: Explicily clear login response PDU in exception path
-Date: Tue, 15 Jul 2014 14:31:04 -0700
-Message-Id: <1405459868-15089-195-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 118/198] NFS: populate ->net in mount data when remounting
+Date: Tue, 15 Jul 2014 14:29:48 -0700
+Message-Id: <1405459868-15089-119-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Mateusz Guzik <mguzik@redhat.com>
 
-commit 683497566d48f86e04d026de1ee658dd74fc1077 upstream.
+commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
 
-This patch adds a explicit memset to the login response PDU
-exception path in iscsit_tx_login_rsp().
+Otherwise the kernel oopses when remounting with IPv6 server because
+net is dereferenced in dev_get_by_name.
 
-This addresses a regression bug introduced in commit baa4d64b
-where the initiator would end up not receiving the login
-response and associated status class + detail, before closing
-the login connection.
+Use net ns of current thread so that dev_get_by_name does not operate on
+foreign ns. Changing the address is prohibited anyway so this should not
+affect anything.
 
-Reported-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Cc: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_util.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfs/super.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index 5477eca..ffa0eba 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1296,6 +1296,8 @@ int iscsit_tx_login_rsp(struct iscsi_conn *conn, u8 status_class, u8 status_deta
- 	login->login_failed = 1;
- 	iscsit_collect_login_stats(conn, status_class, status_detail);
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 910ed90..05c3a6e 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2246,6 +2246,7 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
+ 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
+ 	data->version = nfsvers;
+ 	data->minorversion = nfss->nfs_client->cl_minorversion;
++	data->net = current->nsproxy->net_ns;
+ 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
+ 		data->nfs_server.addrlen);
  
-+	memset(&login->rsp[0], 0, ISCSI_HDR_LEN);
-+
- 	hdr	= (struct iscsi_login_rsp *)&login->rsp[0];
- 	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
- 	hdr->status_class	= status_class;
 -- 
 1.9.1
 
