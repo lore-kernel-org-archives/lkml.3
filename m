@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaGOPpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:45:04 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:52116 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbaGOPpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:45:02 -0400
+	id S1753692AbaGOPq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:46:56 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:47061 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540AbaGOPqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:46:55 -0400
+Date: Tue, 15 Jul 2014 11:46:43 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140715154643.GT29639@cmpxchg.org>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+ <20140715082545.GA9366@dhcp22.suse.cz>
+ <20140715142350.GD9366@dhcp22.suse.cz>
+ <20140715150937.GS29639@cmpxchg.org>
+ <20140715151818.GE9366@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140715153801.GX3403@laptop.dumpdata.com>
-References: <195642a5e9fd4515ad8ca4cd8bcffd4900df5790.1405437568.git.luto@amacapital.net>
- <20140715153801.GX3403@laptop.dumpdata.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 15 Jul 2014 08:44:39 -0700
-Message-ID: <CALCETrUsjMkQfwhwAvsJz0gNXaH-OOz0qCUJ5q1me3=4zpP7Ew@mail.gmail.com>
-Subject: Re: [PATCH] x86_64,xen,espfix: Initialize espfix on secondary CPUs
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715151818.GE9366@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 8:38 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Tue, Jul 15, 2014 at 08:26:41AM -0700, Andy Lutomirski wrote:
->> Xen doesn't call start_secondary.
->
-> Duh!
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> espfix still doesn't seem to work on Xen (it goes boom in some way that
->> I don't understand right now), but initializing all CPUs instead of just
->> one of them seems like a good start.
->>
->> ISTM the right fix is probably to shove the espfix logic into
->> native_iret and to tweak the paravirt logic so that native_iret always
->> gets invoked.  I suspect that Xen will need its own implementation of
->> espfix64 in the hypervisor and that, ultimately, someone may want to
->> stop initializing espfix64 at all on Xen guests.
->
-> I think just disallowing would be preferrable.
+On Tue, Jul 15, 2014 at 05:18:18PM +0200, Michal Hocko wrote:
+> On Tue 15-07-14 11:09:37, Johannes Weiner wrote:
+> > On Tue, Jul 15, 2014 at 04:23:50PM +0200, Michal Hocko wrote:
+> > > On Tue 15-07-14 10:25:45, Michal Hocko wrote:
+> [...]
+> > > > @@ -2760,15 +2752,15 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+> > > >  		spin_unlock_irq(&zone->lru_lock);
+> > > >  	}
+> > > >  
+> > > > -	mem_cgroup_charge_statistics(memcg, page, anon, nr_pages);
+> > > > -	unlock_page_cgroup(pc);
+> > > > -
+> > > > +	local_irq_disable();
+> > > > +	mem_cgroup_charge_statistics(memcg, page, nr_pages);
+> > > >  	/*
+> > > >  	 * "charge_statistics" updated event counter. Then, check it.
+> > > >  	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
+> > > >  	 * if they exceeds softlimit.
+> > > >  	 */
+> > > >  	memcg_check_events(memcg, page);
+> > > > +	local_irq_enable();
+> > > 
+> > > preempt_{enable,disbale} should be sufficient for
+> > > mem_cgroup_charge_statistics and memcg_check_events no?
+> > > The first one is about per-cpu accounting (and that should be atomic
+> > > wrt. IRQ on the same CPU) and the later one uses IRQ safe locks down in
+> > > mem_cgroup_update_tree.
+> > 
+> > How could it be atomic wrt. IRQ on the local CPU when IRQs that modify
+> > the counters can fire on the local CPU?
+> 
+> I meant that __this_atomic_add and __this_cpu_inc should be atomic wrt. IRQ.
+> We do not care that an IRQ might jump in between two per-cpu operations.
+> This is racy from other CPUs anyway.
 
-Disabling what?
+It's really about a single RMW (+=) being interrupted by an IRQ.
+this_cpu_ guarantees IRQ-atomicity, but __this_cpu_ does not.
 
-Sorry, my flu-addled brain needs more clarity.  I'm currently working
-on a patch on top of this one to move all of the espfix64 invocation
-logic into native_iret, which will have the effect of preventing it
-from being used on Xen.
-
-Is that what you mean?
-
---Andy
-
->
-> Thanks for posting this patch!
->>
->>  arch/x86/xen/smp.c | 8 ++++++++
->>  1 file changed, 8 insertions(+)
->>
->> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
->> index 7005974..eea9bcc 100644
->> --- a/arch/x86/xen/smp.c
->> +++ b/arch/x86/xen/smp.c
->> @@ -23,6 +23,7 @@
->>  #include <asm/desc.h>
->>  #include <asm/pgtable.h>
->>  #include <asm/cpu.h>
->> +#include <asm/espfix.h>
->>
->>  #include <xen/interface/xen.h>
->>  #include <xen/interface/vcpu.h>
->> @@ -85,6 +86,13 @@ static void cpu_bringup(void)
->>
->>       xen_setup_cpu_clockevents();
->>
->> +     /*
->> +      * Enable the espfix hack for this CPU
->> +      */
->> +#ifdef CONFIG_X86_ESPFIX64
->> +     init_espfix_ap();
->> +#endif
->> +
->>       notify_cpu_starting(cpu);
->>
->>       set_cpu_online(cpu, true);
->> --
->> 1.9.3
->>
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+We could probably migrate this code over to this_cpu and get rid of
+the IRQ disabling later, because, as you said, we don't care about
+being interrupted between separate counter updates.
