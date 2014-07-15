@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732AbaGOAyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:54:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36474 "EHLO
+	id S1756149AbaGOA4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 20:56:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36484 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459AbaGOAyh (ORCPT
+	with ESMTP id S1753280AbaGOA4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:54:37 -0400
-Date: Mon, 14 Jul 2014 17:59:10 -0700
+	Mon, 14 Jul 2014 20:56:07 -0400
+Date: Mon, 14 Jul 2014 18:00:39 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
         shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/53] 3.10.48-stable review
-Message-ID: <20140715005910.GA9474@kroah.com>
-References: <20140707235829.281783607@linuxfoundation.org>
- <53BBEFE9.7030508@roeck-us.net>
- <20140708221517.GD29964@kroah.com>
+Subject: Re: [PATCH 3.14 00/94] 3.14.12-stable review
+Message-ID: <20140715010039.GB9474@kroah.com>
+References: <20140707235756.780319003@linuxfoundation.org>
+ <53BBF102.6000507@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140708221517.GD29964@kroah.com>
+In-Reply-To: <53BBF102.6000507@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 03:15:17PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 08, 2014 at 06:19:37AM -0700, Guenter Roeck wrote:
-> > On 07/07/2014 04:57 PM, Greg Kroah-Hartman wrote:
-> > >This is the start of the stable review cycle for the 3.10.48 release.
-> > >There are 53 patches in this series, all will be posted as a response
-> > >to this one.  If anyone has any issues with these being applied, please
-> > >let me know.
-> > >
-> > >Responses should be made by Wed Jul  9 23:58:20 UTC 2014.
-> > >Anything received after that time might be too late.
-> > >
-> > 
-> > Build results:
-> > 	total: 138 pass: 137 fail: 1
-> > Failed builds:
-> > 	score:defconfig
-> > 
-> > Qemu tests all passed.
-> > 
-> > This is an improvement over 3.10.47, as the unicore32 build now passes.
+On Tue, Jul 08, 2014 at 06:24:18AM -0700, Guenter Roeck wrote:
+> On 07/07/2014 04:56 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.14.12 release.
+> >There are 94 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Wed Jul  9 23:57:44 UTC 2014.
+> >Anything received after that time might be too late.
+> >
 > 
-> Yeah!
+> Build results:
+> 	total: 140 pass: 137 fail: 3
+> Failed builds:
+> 	powerpc:allmodconfig (binutils 2.23)
+> 	powerpc:allmodconfig (binutils 2.24)
+> 	unicore32:defconfig
 > 
-> > Details are available at http://server.roeck-us.net:8010/builders.
-> > 
-> > The following patches would fix the remaining build failure.
-> > 
-> > ae49b83dca score: normalize global variables exported by vmlinux.lds
-> > 1ed62ca648 Score: Implement the function csum_ipv6_magic
-> > 5fbbf8a1a9 Score: The commit is for compiling successfully
-> > df9e4d1c39 Score: Modify the Makefile of Score, remove -mlong-calls for compiling
+> Qemu tests all passed.
 > 
-> Ok, will do that for the next stable release, thanks.
+> Results are as expected.
+> 
+> Details are available at http://server.roeck-us.net:8010/builders.
+> 
+> For the unicore32 build to pass in this release, the following
+> additional patches would be needed.
+> 
+> 73fa540618 drivers/rtc/rtc-puv3.c: remove "&dev->" for typo issue MIME-Version: 1.0
+> c863810cef drivers/rtc/rtc-puv3.c: use dev_dbg() instead of dev_debug() for typo issue
 
-All now applied, thanks.
+Now applied, thanks.
 
 greg k-h
