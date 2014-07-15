@@ -1,205 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075AbaGOSr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:47:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3669 "EHLO mx1.redhat.com"
+	id S933104AbaGOSs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:48:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932964AbaGOSqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:46:09 -0400
+	id S932732AbaGOSsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:48:24 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 22/23] Input - wacom: keep wacom_ids ordered
-Date: Tue, 15 Jul 2014 14:45:45 -0400
-Message-Id: <1405449946-11515-23-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 13/23] Input - wacom: compute the HID report size to get the actual packet size
+Date: Tue, 15 Jul 2014 14:45:36 -0400
+Message-Id: <1405449946-11515-14-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No Functional changes, just some reordering.
+This removes an USB dependency and is more accurate: the computed pktlen
+is the actual maximum size of the reports forwarded by the device.
+
+Given that the pktlen is correctly computed/validated, we can store it now
+in the features struct instead of having a special handling in the rest of
+the code.
+
+Likewise, this information is not mandatory anymore in the description
+of devices in wacom_wac.c. They will be removed in a separate patch.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 Tested-by: Jason Gerecke <killertofu@gmail.com>
 ---
 
-changes in v2:
-- fix 0x0307/0x307 and 0x0309/0x309
+no changes in v2
 
- drivers/input/tablet/wacom_wac.c | 79 ++++++++++++++++++++--------------------
- 1 file changed, 39 insertions(+), 40 deletions(-)
+ drivers/input/tablet/wacom_sys.c | 58 ++++++++++++++++++----------------------
+ 1 file changed, 26 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index 66668b8..d62e320 100644
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -2385,11 +2385,11 @@ static const struct wacom_features wacom_features_0x30E =
- static const struct wacom_features wacom_features_0x6004 =
- 	{ "ISD-V4", 12800, 8000, 255, 0,
- 	  TABLETPC, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
--static const struct wacom_features wacom_features_0x0307 =
-+static const struct wacom_features wacom_features_0x307 =
- 	{ "Wacom ISDv5 307", 59352, 33648, 2047, 63,
- 	  CINTIQ_HYBRID, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES, 200, 200,
- 	  .oVid = USB_VENDOR_ID_WACOM, .oPid = 0x309 };
--static const struct wacom_features wacom_features_0x0309 =
-+static const struct wacom_features wacom_features_0x309 =
- 	{ "Wacom ISDv5 309", .type = WACOM_24HDT, /* Touch */
- 	  .oVid = USB_VENDOR_ID_WACOM, .oPid = 0x0307, .touch_max = 10,
- 	  .check_for_hid_type = true, .hid_type = HID_TYPE_USBNONE };
-@@ -2404,6 +2404,7 @@ static const struct wacom_features wacom_features_0x0309 =
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 2c0983b..ce76e1e 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -149,7 +149,6 @@ static int wacom_parse_logical_collection(unsigned char *report,
+ 	if (features->type == BAMBOO_PT) {
  
- const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0x00) },
-+	{ USB_DEVICE_WACOM(0x03) },
- 	{ USB_DEVICE_WACOM(0x10) },
- 	{ USB_DEVICE_WACOM(0x11) },
- 	{ USB_DEVICE_WACOM(0x12) },
-@@ -2414,20 +2415,16 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0x17) },
- 	{ USB_DEVICE_WACOM(0x18) },
- 	{ USB_DEVICE_WACOM(0x19) },
--	{ USB_DEVICE_WACOM(0x60) },
--	{ USB_DEVICE_WACOM(0x61) },
--	{ USB_DEVICE_WACOM(0x62) },
--	{ USB_DEVICE_WACOM(0x63) },
--	{ USB_DEVICE_WACOM(0x64) },
--	{ USB_DEVICE_WACOM(0x65) },
--	{ USB_DEVICE_WACOM(0x69) },
--	{ USB_DEVICE_WACOM(0x6A) },
--	{ USB_DEVICE_WACOM(0x6B) },
- 	{ USB_DEVICE_WACOM(0x20) },
- 	{ USB_DEVICE_WACOM(0x21) },
- 	{ USB_DEVICE_WACOM(0x22) },
- 	{ USB_DEVICE_WACOM(0x23) },
- 	{ USB_DEVICE_WACOM(0x24) },
-+	{ USB_DEVICE_WACOM(0x26) },
-+	{ USB_DEVICE_WACOM(0x27) },
-+	{ USB_DEVICE_WACOM(0x28) },
-+	{ USB_DEVICE_WACOM(0x29) },
-+	{ USB_DEVICE_WACOM(0x2A) },
- 	{ USB_DEVICE_WACOM(0x30) },
- 	{ USB_DEVICE_WACOM(0x31) },
- 	{ USB_DEVICE_WACOM(0x32) },
-@@ -2437,20 +2434,33 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0x37) },
- 	{ USB_DEVICE_WACOM(0x38) },
- 	{ USB_DEVICE_WACOM(0x39) },
--	{ USB_DEVICE_WACOM(0xC4) },
--	{ USB_DEVICE_WACOM(0xC0) },
--	{ USB_DEVICE_WACOM(0xC2) },
--	{ USB_DEVICE_WACOM(0x03) },
-+	{ USB_DEVICE_WACOM(0x3F) },
- 	{ USB_DEVICE_WACOM(0x41) },
- 	{ USB_DEVICE_WACOM(0x42) },
- 	{ USB_DEVICE_WACOM(0x43) },
- 	{ USB_DEVICE_WACOM(0x44) },
- 	{ USB_DEVICE_WACOM(0x45) },
-+	{ USB_DEVICE_WACOM(0x47) },
- 	{ USB_DEVICE_WACOM(0x57) },
- 	{ USB_DEVICE_WACOM(0x59) },
--	{ USB_DEVICE_WACOM(0x5D) },
- 	{ USB_DEVICE_WACOM(0x5B) },
-+	{ USB_DEVICE_WACOM(0x5D) },
- 	{ USB_DEVICE_WACOM(0x5E) },
-+	{ USB_DEVICE_WACOM(0x60) },
-+	{ USB_DEVICE_WACOM(0x61) },
-+	{ USB_DEVICE_WACOM(0x62) },
-+	{ USB_DEVICE_WACOM(0x63) },
-+	{ USB_DEVICE_WACOM(0x64) },
-+	{ USB_DEVICE_WACOM(0x65) },
-+	{ USB_DEVICE_WACOM(0x69) },
-+	{ USB_DEVICE_WACOM(0x6A) },
-+	{ USB_DEVICE_WACOM(0x6B) },
-+	{ USB_DEVICE_WACOM(0x84) },
-+	{ USB_DEVICE_WACOM(0x90) },
-+	{ USB_DEVICE_WACOM(0x93) },
-+	{ USB_DEVICE_WACOM(0x97) },
-+	{ USB_DEVICE_WACOM(0x9A) },
-+	{ USB_DEVICE_WACOM(0x9F) },
- 	{ USB_DEVICE_WACOM(0xB0) },
- 	{ USB_DEVICE_WACOM(0xB1) },
- 	{ USB_DEVICE_WACOM(0xB2) },
-@@ -2463,17 +2473,14 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0xBA) },
- 	{ USB_DEVICE_WACOM(0xBB) },
- 	{ USB_DEVICE_WACOM(0xBC) },
--	{ USB_DEVICE_WACOM(0x26) },
--	{ USB_DEVICE_WACOM(0x27) },
--	{ USB_DEVICE_WACOM(0x28) },
--	{ USB_DEVICE_WACOM(0x29) },
--	{ USB_DEVICE_WACOM(0x2A) },
--	{ USB_DEVICE_WACOM(0x3F) },
-+	{ USB_DEVICE_WACOM(0xC0) },
-+	{ USB_DEVICE_WACOM(0xC2) },
-+	{ USB_DEVICE_WACOM(0xC4) },
- 	{ USB_DEVICE_WACOM(0xC5) },
- 	{ USB_DEVICE_WACOM(0xC6) },
- 	{ USB_DEVICE_WACOM(0xC7) },
-+	{ USB_DEVICE_WACOM(0xCC) },
- 	{ USB_DEVICE_WACOM(0xCE) },
--	{ USB_DEVICE_WACOM(0x84) },
- 	{ USB_DEVICE_WACOM(0xD0) },
- 	{ USB_DEVICE_WACOM(0xD1) },
- 	{ USB_DEVICE_WACOM(0xD2) },
-@@ -2488,13 +2495,6 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0xDD) },
- 	{ USB_DEVICE_WACOM(0xDE) },
- 	{ USB_DEVICE_WACOM(0xDF) },
--	{ USB_DEVICE_WACOM(0xF0) },
--	{ USB_DEVICE_WACOM(0xCC) },
--	{ USB_DEVICE_WACOM(0x90) },
--	{ USB_DEVICE_WACOM(0x93) },
--	{ USB_DEVICE_WACOM(0x97) },
--	{ USB_DEVICE_WACOM(0x9A) },
--	{ USB_DEVICE_WACOM(0x9F) },
- 	{ USB_DEVICE_WACOM(0xE2) },
- 	{ USB_DEVICE_WACOM(0xE3) },
- 	{ USB_DEVICE_WACOM(0xE5) },
-@@ -2502,6 +2502,12 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0xEC) },
- 	{ USB_DEVICE_WACOM(0xED) },
- 	{ USB_DEVICE_WACOM(0xEF) },
-+	{ USB_DEVICE_WACOM(0xF0) },
-+	{ USB_DEVICE_WACOM(0xF4) },
-+	{ USB_DEVICE_WACOM(0xF6) },
-+	{ USB_DEVICE_WACOM(0xF8) },
-+	{ USB_DEVICE_WACOM(0xFA) },
-+	{ USB_DEVICE_WACOM(0xFB) },
- 	{ USB_DEVICE_WACOM(0x100) },
- 	{ USB_DEVICE_WACOM(0x101) },
- 	{ USB_DEVICE_WACOM(0x10D) },
-@@ -2512,8 +2518,10 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0x301) },
- 	{ USB_DEVICE_WACOM(0x302) },
- 	{ USB_DEVICE_WACOM(0x303) },
--	{ USB_DEVICE_WACOM(0x30E) },
- 	{ USB_DEVICE_WACOM(0x304) },
-+	{ USB_DEVICE_WACOM(0x307) },
-+	{ USB_DEVICE_WACOM(0x309) },
-+	{ USB_DEVICE_WACOM(0x30E) },
- 	{ USB_DEVICE_WACOM(0x314) },
- 	{ USB_DEVICE_WACOM(0x315) },
- 	{ USB_DEVICE_WACOM(0x317) },
-@@ -2521,15 +2529,6 @@ const struct hid_device_id wacom_ids[] = {
- 	{ USB_DEVICE_WACOM(0x4004) },
- 	{ USB_DEVICE_WACOM(0x5000) },
- 	{ USB_DEVICE_WACOM(0x5002) },
--	{ USB_DEVICE_WACOM(0x47) },
--	{ USB_DEVICE_WACOM(0xF4) },
--	{ USB_DEVICE_WACOM(0xF8) },
--	{ USB_DEVICE_WACOM(0xF6) },
--	{ USB_DEVICE_WACOM(0xFA) },
--	{ USB_DEVICE_WACOM(0xFB) },
--	{ USB_DEVICE_WACOM(0x0307) },
--	{ USB_DEVICE_WACOM(0x0309) },
--	{ USB_DEVICE_LENOVO(0x6004) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, wacom_ids);
+ 		/* Logical collection is only used by 3rd gen Bamboo Touch */
+-		features->pktlen = WACOM_PKGLEN_BBTOUCH3;
+ 		features->device_type = BTN_TOOL_FINGER;
+ 
+ 		features->x_max = features->y_max =
+@@ -240,29 +239,6 @@ static int wacom_parse_hid(struct hid_device *hdev,
+ 					features->device_type = BTN_TOOL_FINGER;
+ 					/* touch device at least supports one touch point */
+ 					touch_max = 1;
+-					switch (features->type) {
+-					case TABLETPC2FG:
+-						features->pktlen = WACOM_PKGLEN_TPC2FG;
+-						break;
+-
+-					case MTSCREEN:
+-					case WACOM_24HDT:
+-						features->pktlen = WACOM_PKGLEN_MTOUCH;
+-						break;
+-
+-					case MTTPC:
+-					case MTTPC_B:
+-						features->pktlen = WACOM_PKGLEN_MTTPC;
+-						break;
+-
+-					case BAMBOO_PT:
+-						features->pktlen = WACOM_PKGLEN_BBTOUCH;
+-						break;
+-
+-					default:
+-						features->pktlen = WACOM_PKGLEN_GRAPHIRE;
+-						break;
+-					}
+ 
+ 					switch (features->type) {
+ 					case BAMBOO_PT:
+@@ -305,8 +281,6 @@ static int wacom_parse_hid(struct hid_device *hdev,
+ 					}
+ 				} else if (pen) {
+ 					/* penabled only accepts exact bytes of data */
+-					if (features->type >= TABLETPC)
+-						features->pktlen = WACOM_PKGLEN_GRAPHIRE;
+ 					features->device_type = BTN_TOOL_PEN;
+ 					features->x_max =
+ 						get_unaligned_le16(&report[i + 3]);
+@@ -1224,12 +1198,34 @@ static void wacom_calculate_res(struct wacom_features *features)
+ 						    features->unitExpo);
+ }
+ 
++static int wacom_hid_report_len(struct hid_report *report)
++{
++	/* equivalent to DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) */
++	return ((report->size - 1) >> 3) + 1 + (report->id > 0);
++}
++
++static size_t wacom_compute_pktlen(struct hid_device *hdev)
++{
++	struct hid_report_enum *report_enum;
++	struct hid_report *report;
++	size_t size = 0;
++
++	report_enum = hdev->report_enum + HID_INPUT_REPORT;
++
++	list_for_each_entry(report, &report_enum->report_list, list) {
++		size_t report_size = wacom_hid_report_len(report);
++		if (report_size > size)
++			size = report_size;
++	}
++
++	return size;
++}
++
+ static int wacom_probe(struct hid_device *hdev,
+ 		const struct hid_device_id *id)
+ {
+ 	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
+ 	struct usb_device *dev = interface_to_usbdev(intf);
+-	struct usb_endpoint_descriptor *endpoint;
+ 	struct wacom *wacom;
+ 	struct wacom_wac *wacom_wac;
+ 	struct wacom_features *features;
+@@ -1255,6 +1251,7 @@ static int wacom_probe(struct hid_device *hdev,
+ 	wacom_wac = &wacom->wacom_wac;
+ 	wacom_wac->features = *((struct wacom_features *)id->driver_data);
+ 	features = &wacom_wac->features;
++	features->pktlen = wacom_compute_pktlen(hdev);
+ 	if (features->pktlen > WACOM_PKGLEN_MAX) {
+ 		error = -EINVAL;
+ 		goto fail1;
+@@ -1272,8 +1269,6 @@ static int wacom_probe(struct hid_device *hdev,
+ 	usb_make_path(dev, wacom->phys, sizeof(wacom->phys));
+ 	strlcat(wacom->phys, "/input0", sizeof(wacom->phys));
+ 
+-	endpoint = &intf->cur_altsetting->endpoint[0].desc;
+-
+ 	/* set the default size in case we do not get them from hid */
+ 	wacom_set_default_phy(features);
+ 
+@@ -1284,13 +1279,12 @@ static int wacom_probe(struct hid_device *hdev,
+ 
+ 	/*
+ 	 * Intuos5 has no useful data about its touch interface in its
+-	 * HID descriptor. If this is the touch interface (wMaxPacketSize
++	 * HID descriptor. If this is the touch interface (PacketSize
+ 	 * of WACOM_PKGLEN_BBTOUCH3), override the table values.
+ 	 */
+ 	if (features->type >= INTUOS5S && features->type <= INTUOSHT) {
+-		if (endpoint->wMaxPacketSize == WACOM_PKGLEN_BBTOUCH3) {
++		if (features->pktlen == WACOM_PKGLEN_BBTOUCH3) {
+ 			features->device_type = BTN_TOOL_FINGER;
+-			features->pktlen = WACOM_PKGLEN_BBTOUCH3;
+ 
+ 			features->x_max = 4096;
+ 			features->y_max = 4096;
 -- 
 2.0.0
 
