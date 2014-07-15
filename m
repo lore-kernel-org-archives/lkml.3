@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934457AbaGOXjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:39:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45503 "EHLO
+	id S934442AbaGOXjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:39:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933937AbaGOXOK (ORCPT
+	with ESMTP id S933941AbaGOXOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.15 41/84] dm mpath: fix IO hang due to logic bug in multipath_busy
-Date: Tue, 15 Jul 2014 16:17:38 -0700
-Message-Id: <20140715231714.428197443@linuxfoundation.org>
+        Minfei Huang <huangminfei@ucloud.cn>,
+        Joe Thornber <thornber@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [PATCH 3.15 42/84] dm io: fix a race condition in the wake up code for sync_io
+Date: Tue, 15 Jul 2014 16:17:39 -0700
+Message-Id: <20140715231714.461216059@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -30,62 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+From: Joe Thornber <thornber@redhat.com>
 
-commit 7a7a3b45fed9a144dbf766ee842a4c5d0632b81d upstream.
+commit 10f1d5d111e8aed46a0f1179faf9a3cf422f689e upstream.
 
-Commit e80991773 ("dm mpath: push back requests instead of queueing")
-modified multipath_busy() to return true if !pg_ready().  pg_ready()
-checks the current state of the multipath device and may return false
-even if a new IO is needed to change the state.
+There's a race condition between the atomic_dec_and_test(&io->count)
+in dec_count() and the waking of the sync_io() thread.  If the thread
+is spuriously woken immediately after the decrement it may exit,
+making the on stack io struct invalid, yet the dec_count could still
+be using it.
 
-Bart Van Assche reported that he had multipath IO lockup when he was
-performing cable pull tests.  Analysis showed that the multipath
-device had a single path group with both paths active, but that the
-path group itself was not active.  During the multipath device state
-transitions 'queue_io' got set but nothing could clear it.  Clearing
-'queue_io' only happens in __choose_pgpath(), but it won't be called
-if multipath_busy() returns true due to pg_ready() returning false
-when 'queue_io' is set.
+Fix this race by using a completion in sync_io() and dec_count().
 
-As such the !pg_ready() check in multipath_busy() is wrong because new
-IO will not be sent to multipath target and the multipath state change
-won't happen.  That results in multipath IO lockup.
-
-The intent of multipath_busy() is to avoid unnecessary cycles of
-dequeue + request_fn + requeue if it is known that the multipath
-device will requeue.
-
-Such "busy" situations would be:
-  - path group is being activated
-  - there is no path and the multipath is setup to requeue if no path
-
-Fix multipath_busy() to return "busy" early only for these specific
-situations.
-
-Reported-by: Bart Van Assche <bvanassche@acm.org>
-Tested-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Reported-by: Minfei Huang <huangminfei@ucloud.cn>
+Signed-off-by: Joe Thornber <thornber@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-mpath.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/md/dm-io.c |   22 ++++++++--------------
+ 1 file changed, 8 insertions(+), 14 deletions(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1620,8 +1620,9 @@ static int multipath_busy(struct dm_targ
+--- a/drivers/md/dm-io.c
++++ b/drivers/md/dm-io.c
+@@ -10,6 +10,7 @@
+ #include <linux/device-mapper.h>
  
- 	spin_lock_irqsave(&m->lock, flags);
+ #include <linux/bio.h>
++#include <linux/completion.h>
+ #include <linux/mempool.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
+@@ -32,7 +33,7 @@ struct dm_io_client {
+ struct io {
+ 	unsigned long error_bits;
+ 	atomic_t count;
+-	struct task_struct *sleeper;
++	struct completion *wait;
+ 	struct dm_io_client *client;
+ 	io_notify_fn callback;
+ 	void *context;
+@@ -121,8 +122,8 @@ static void dec_count(struct io *io, uns
+ 			invalidate_kernel_vmap_range(io->vma_invalidate_address,
+ 						     io->vma_invalidate_size);
  
--	/* pg_init in progress, requeue until done */
--	if (!pg_ready(m)) {
-+	/* pg_init in progress or no paths available */
-+	if (m->pg_init_in_progress ||
-+	    (!m->nr_valid_paths && m->queue_if_no_path)) {
- 		busy = 1;
- 		goto out;
- 	}
+-		if (io->sleeper)
+-			wake_up_process(io->sleeper);
++		if (io->wait)
++			complete(io->wait);
+ 
+ 		else {
+ 			unsigned long r = io->error_bits;
+@@ -387,6 +388,7 @@ static int sync_io(struct dm_io_client *
+ 	 */
+ 	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
+ 	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
++	DECLARE_COMPLETION_ONSTACK(wait);
+ 
+ 	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
+ 		WARN_ON(1);
+@@ -395,7 +397,7 @@ static int sync_io(struct dm_io_client *
+ 
+ 	io->error_bits = 0;
+ 	atomic_set(&io->count, 1); /* see dispatch_io() */
+-	io->sleeper = current;
++	io->wait = &wait;
+ 	io->client = client;
+ 
+ 	io->vma_invalidate_address = dp->vma_invalidate_address;
+@@ -403,15 +405,7 @@ static int sync_io(struct dm_io_client *
+ 
+ 	dispatch_io(rw, num_regions, where, dp, io, 1);
+ 
+-	while (1) {
+-		set_current_state(TASK_UNINTERRUPTIBLE);
+-
+-		if (!atomic_read(&io->count))
+-			break;
+-
+-		io_schedule();
+-	}
+-	set_current_state(TASK_RUNNING);
++	wait_for_completion_io(&wait);
+ 
+ 	if (error_bits)
+ 		*error_bits = io->error_bits;
+@@ -434,7 +428,7 @@ static int async_io(struct dm_io_client
+ 	io = mempool_alloc(client->pool, GFP_NOIO);
+ 	io->error_bits = 0;
+ 	atomic_set(&io->count, 1); /* see dispatch_io() */
+-	io->sleeper = NULL;
++	io->wait = NULL;
+ 	io->client = client;
+ 	io->callback = fn;
+ 	io->context = context;
 
 
