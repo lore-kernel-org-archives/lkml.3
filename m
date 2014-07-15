@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761274AbaGPAML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:12:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
+	id S933785AbaGPAMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:12:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759803AbaGOXN0 (ORCPT
+	with ESMTP id S1759760AbaGOXNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:26 -0400
+	Tue, 15 Jul 2014 19:13:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>
-Subject: [PATCH 3.10 29/44] rtmutex: Fix deadlock detector for real
-Date: Tue, 15 Jul 2014 16:17:27 -0700
-Message-Id: <20140715231647.559614715@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 26/44] drm/radeon: fix typo in golden register setup on evergreen
+Date: Tue, 15 Jul 2014 16:17:24 -0700
+Message-Id: <20140715231647.473104936@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -32,106 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 397335f004f41e5fcf7a795e94eb3ab83411a17c upstream.
+commit 6abafb78f9881b4891baf74ab4e9f090ae45230e upstream.
 
-The current deadlock detection logic does not work reliably due to the
-following early exit path:
+Fixes hangs on driver load on some cards.
 
-	/*
-	 * Drop out, when the task has no waiters. Note,
-	 * top_waiter can be NULL, when we are in the deboosting
-	 * mode!
-	 */
-	if (top_waiter && (!task_has_pi_waiters(task) ||
-			   top_waiter != task_top_pi_waiter(task)))
-		goto out_unlock_pi;
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=76998
 
-So this not only exits when the task has no waiters, it also exits
-unconditionally when the current waiter is not the top priority waiter
-of the task.
-
-So in a nested locking scenario, it might abort the lock chain walk
-and therefor miss a potential deadlock.
-
-Simple fix: Continue the chain walk, when deadlock detection is
-enabled.
-
-We also avoid the whole enqueue, if we detect the deadlock right away
-(A-A). It's an optimization, but also prevents that another waiter who
-comes in after the detection and before the task has undone the damage
-observes the situation and detects the deadlock and returns
--EDEADLOCK, which is wrong as the other task is not in a deadlock
-situation.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/20140522031949.725272460@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/rtmutex.c |   32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -212,9 +212,16 @@ static int rt_mutex_adjust_prio_chain(st
- 	 * top_waiter can be NULL, when we are in the deboosting
- 	 * mode!
- 	 */
--	if (top_waiter && (!task_has_pi_waiters(task) ||
--			   top_waiter != task_top_pi_waiter(task)))
--		goto out_unlock_pi;
-+	if (top_waiter) {
-+		if (!task_has_pi_waiters(task))
-+			goto out_unlock_pi;
-+		/*
-+		 * If deadlock detection is off, we stop here if we
-+		 * are not the top pi waiter of the task.
-+		 */
-+		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
-+			goto out_unlock_pi;
-+	}
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -94,7 +94,7 @@ static const u32 evergreen_golden_regist
+ 	0x8c1c, 0xffffffff, 0x00001010,
+ 	0x28350, 0xffffffff, 0x00000000,
+ 	0xa008, 0xffffffff, 0x00010000,
+-	0x5cc, 0xffffffff, 0x00000001,
++	0x5c4, 0xffffffff, 0x00000001,
+ 	0x9508, 0xffffffff, 0x00000002,
+ 	0x913c, 0x0000000f, 0x0000000a
+ };
+@@ -381,7 +381,7 @@ static const u32 cedar_golden_registers[
+ 	0x8c1c, 0xffffffff, 0x00001010,
+ 	0x28350, 0xffffffff, 0x00000000,
+ 	0xa008, 0xffffffff, 0x00010000,
+-	0x5cc, 0xffffffff, 0x00000001,
++	0x5c4, 0xffffffff, 0x00000001,
+ 	0x9508, 0xffffffff, 0x00000002
+ };
  
- 	/*
- 	 * When deadlock detection is off then we check, if further
-@@ -230,7 +237,12 @@ static int rt_mutex_adjust_prio_chain(st
- 		goto retry;
- 	}
- 
--	/* Deadlock detection */
-+	/*
-+	 * Deadlock detection. If the lock is the same as the original
-+	 * lock which caused us to walk the lock chain or if the
-+	 * current lock is owned by the task which initiated the chain
-+	 * walk, we detected a deadlock.
-+	 */
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
-@@ -399,6 +411,18 @@ static int task_blocks_on_rt_mutex(struc
- 	unsigned long flags;
- 	int chain_walk = 0, res;
- 
-+	/*
-+	 * Early deadlock detection. We really don't want the task to
-+	 * enqueue on itself just to untangle the mess later. It's not
-+	 * only an optimization. We drop the locks, so another waiter
-+	 * can come in before the chain walk detects the deadlock. So
-+	 * the other will detect the deadlock and return -EDEADLOCK,
-+	 * which is wrong, as the other waiter is not in a deadlock
-+	 * situation.
-+	 */
-+	if (detect_deadlock && owner == task)
-+		return -EDEADLK;
-+
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 	__rt_mutex_adjust_prio(task);
- 	waiter->task = task;
+@@ -540,7 +540,7 @@ static const u32 juniper_mgcg_init[] =
+ static const u32 supersumo_golden_registers[] =
+ {
+ 	0x5eb4, 0xffffffff, 0x00000002,
+-	0x5cc, 0xffffffff, 0x00000001,
++	0x5c4, 0xffffffff, 0x00000001,
+ 	0x7030, 0xffffffff, 0x00000011,
+ 	0x7c30, 0xffffffff, 0x00000011,
+ 	0x6104, 0x01000300, 0x00000000,
+@@ -624,7 +624,7 @@ static const u32 sumo_golden_registers[]
+ static const u32 wrestler_golden_registers[] =
+ {
+ 	0x5eb4, 0xffffffff, 0x00000002,
+-	0x5cc, 0xffffffff, 0x00000001,
++	0x5c4, 0xffffffff, 0x00000001,
+ 	0x7030, 0xffffffff, 0x00000011,
+ 	0x7c30, 0xffffffff, 0x00000011,
+ 	0x6104, 0x01000300, 0x00000000,
 
 
