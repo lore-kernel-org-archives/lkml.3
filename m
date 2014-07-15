@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759911AbaGOVtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:49:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54959 "EHLO
+	id S934016AbaGOVit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:38:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54920 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964788AbaGOVix (ORCPT
+	with ESMTP id S933981AbaGOVio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:53 -0400
+	Tue, 15 Jul 2014 17:38:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 159/198] ALSA: control: Fix replacing user controls
-Date: Tue, 15 Jul 2014 14:30:29 -0700
-Message-Id: <1405459868-15089-160-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 028/198] UBIFS: fix an mmap and fsync race condition
+Date: Tue, 15 Jul 2014 14:28:18 -0700
+Message-Id: <1405459868-15089-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,90 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: hujianyang <hujianyang@huawei.com>
 
-commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
+commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
 
-There are two issues with the current implementation for replacing user
-controls. The first is that the code does not check if the control is actually a
-user control and neither does it check if the control is owned by the process
-that tries to remove it. That allows userspace applications to remove arbitrary
-controls, which can cause a user after free if a for example a driver does not
-expect a control to be removed from under its feed.
+There is a race condition in UBIFS:
 
-The second issue is that on one hand when a control is replaced the
-user_ctl_count limit is not checked and on the other hand the user_ctl_count is
-increased (even though the number of user controls does not change). This allows
-userspace, once the user_ctl_count limit as been reached, to repeatedly replace
-a control until user_ctl_count overflows. Once that happens new controls can be
-added effectively bypassing the user_ctl_count limit.
+Thread A (mmap)                        Thread B (fsync)
 
-Both issues can be fixed by instead of open-coding the removal of the control
-that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
-proper permission checks as well as decrements user_ctl_count after the control
-has been removed.
+->__do_fault                           ->write_cache_pages
+   -> ubifs_vm_page_mkwrite
+       -> budget_space
+       -> lock_page
+       -> release/convert_page_budget
+       -> SetPagePrivate
+       -> TestSetPageDirty
+       -> unlock_page
+                                       -> lock_page
+                                           -> TestClearPageDirty
+                                           -> ubifs_writepage
+                                               -> do_writepage
+                                                   -> release_budget
+                                                   -> ClearPagePrivate
+                                                   -> unlock_page
+   -> !(ret & VM_FAULT_LOCKED)
+   -> lock_page
+   -> set_page_dirty
+       -> ubifs_set_page_dirty
+           -> TestSetPageDirty (set page dirty without budgeting)
+   -> unlock_page
 
-Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
-beginning of the function if the control already exists is removed. This is not
-a problem though since the check is quite useless, because the lock that is
-protecting the control list is released between the check and before adding the
-new control to the list, which means that it is possible that a different
-control with the same settings is added to the list after the check. Luckily
-there is another check that is done while holding the lock in snd_ctl_add(), so
-we'll rely on that to make sure that the same control is not added twice.
+This leads to situation where we have a diry page but no budget allocated for
+this page, so further write-back may fail with -ENOSPC.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+In this fix we return from page_mkwrite without performing unlock_page. We
+return VM_FAULT_LOCKED instead. After doing this, the race above will not
+happen.
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Tested-by: Laurence Withers <lwithers@guralp.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/control.c | 25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+ fs/ubifs/file.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index 183fab2..15bc844 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -1155,8 +1155,6 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
- 	struct user_element *ue;
- 	int idx, err;
- 
--	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
--		return -ENOMEM;
- 	if (info->count < 1)
- 		return -EINVAL;
- 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
-@@ -1165,21 +1163,16 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
- 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
- 	info->id.numid = 0;
- 	memset(&kctl, 0, sizeof(kctl));
--	down_write(&card->controls_rwsem);
--	_kctl = snd_ctl_find_id(card, &info->id);
--	err = 0;
--	if (_kctl) {
--		if (replace)
--			err = snd_ctl_remove(card, _kctl);
--		else
--			err = -EBUSY;
--	} else {
--		if (replace)
--			err = -ENOENT;
-+
-+	if (replace) {
-+		err = snd_ctl_remove_user_ctl(file, &info->id);
-+		if (err)
-+			return err;
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 123c79b..b56eb62 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1525,8 +1525,7 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
  	}
--	up_write(&card->controls_rwsem);
--	if (err < 0)
--		return err;
-+
-+	if (card->user_ctl_count >= MAX_USER_CONTROLS)
-+		return -ENOMEM;
-+
- 	memcpy(&kctl.id, &info->id, sizeof(info->id));
- 	kctl.count = info->owner ? info->owner : 1;
- 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
+ 
+ 	wait_for_stable_page(page);
+-	unlock_page(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
+ 
+ out_unlock:
+ 	unlock_page(page);
 -- 
 1.9.1
 
