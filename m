@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246AbaGOJpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:45:20 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:36041 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaGOJpS (ORCPT
+	id S1758542AbaGOJpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:45:32 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:56814 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758260AbaGOJp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:45:18 -0400
+	Tue, 15 Jul 2014 05:45:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH v2 19/29] nios2: Time keeping
+Date: Tue, 15 Jul 2014 11:45:17 +0200
+Message-ID: <5348663.eHVXUR5shS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405413956-2772-20-git-send-email-lftan@altera.com>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <1405413956-2772-20-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-In-Reply-To: <20140715092059.GW25880@mwanda>
-References: <20140715030456.GA14420@devel.8.8.4.4>
-	<20140715065116.GS25880@mwanda>
-	<CAHb8M2CS4wVKjP-Ur2UtkXA9KLMudS7+LbmnzpOFxq6hXqy2OQ@mail.gmail.com>
-	<20140715092059.GW25880@mwanda>
-Date: Tue, 15 Jul 2014 18:45:18 +0900
-Message-ID: <CAHb8M2C5QApn-GQYs05C1=5_G7Na+395uAkgJpgL2XgzVifwjg@mail.gmail.com>
-Subject: Re: [PATCH 8/8] staging: dgap: fix memory leak in dgap_parsefile()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:VcnHCoAP9azxvk8S3H/Dk4YvRu/P/Url1EVzKPSLKN7
+ h/U7nFzoMXQib+dsIdtQ9HhL23wdtTVFPGNPviLXVDY3tN685X
+ 2ANT2XpGquVb9y5cwHfFkGpJdDwsoBgtHEY/i6ylAW8FaCvAeQ
+ poriAX7U/NYSokZ1ic4V1ZNi04l2giW7scnc9p/MvvdiWQ2fJC
+ yMfIZklYxFwAORmsBReO9SRx62aQl1AkRxcXJ7DoDcZW+KX4T8
+ P+fWGb9rHeGyhUVeW/K05YmxSotsTI7QE59uwWBYIqi3NR8EYp
+ Bv8jS6IFkBSBq0s8/3BDv45WP1kniLjJaUBVNxcGBK/LwY+fN5
+ CD/PRud5N91qJaoAEzdM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-15 18:21 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Tue, Jul 15, 2014 at 06:05:35PM +0900, DaeSeok Youn wrote:
->> 2014-07-15 15:51 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
->> > On Tue, Jul 15, 2014 at 12:05:14PM +0900, Daeseok Youn wrote:
->> >> The p->u.board.status is allocated and set a string as
->> >> "No" once within allocating a node of BNODE type.
->> >> But it also set again with kstrdup() in case of "STATUS"
->> >> or "ID". If it is not allocated yet, use kstrdup().
->> >> If not, use just memcpy().
->> >
->> > I don't think a 2 char buffer is always large enough to hold the new
->> > strings.
->> >
->> > Just free it and allocate again.
->> Yes, I will send this again.
->>
->
-> Actually, please just send the whole set again.  I really want Mark on
-> the CC list so he's reviewing these.
-OK. I already sent 6/8, 7/8 and 8/8 again. I just resend rest of them.
+On Tuesday 15 July 2014 16:45:46 Ley Foon Tan wrote:
+> +
+> +static inline void __delay(unsigned long loops)
+> +{
+> +	int dummy;
+> +
+> +	__asm__ __volatile__(
+> +	"1:\n\t"
+> +	"    beq    %0,zero,2f\n\t"
+> +	"    addi   %0, %0, -1\n\t"
+> +	"    br     1b\n\t"
+> +	"2:\n\t"
+> +	:  "=r" (dummy)		/* Need output for optimizer */
+> +	:  "0" (loops));	/* %0  Input */
+> +}
 
-thanks.
+Do you have a reliable clock source? If you do, it would be better
+to replace the delay loop with an implementation that waits for
+the exact time to pass instead. This will also avoid the loop
+calibration during boot and give you better boot times.
 
-regards,
-Daeseok Youn
->
-> regards,
-> dan carpenter
->
+> +#ifndef _ASM_NIOS2_TIMEX_H
+> +#define _ASM_NIOS2_TIMEX_H
+> +
+> +/* Supply dummy tick-rate. Real value will be read from devicetree */
+> +#define CLOCK_TICK_RATE		(HZ * 100000UL)
+> +
+> +#include <asm-generic/timex.h>
+> +
+> +#endif
+
+CLOCK_TICK_RATE is no longer used anywhere, no need for this file.
+
+> diff --git a/arch/nios2/kernel/time.c b/arch/nios2/kernel/time.c
+> new file mode 100644
+> index 0000000..111ade1
+> --- /dev/null
+> +++ b/arch/nios2/kernel/time.c
+
+Maybe move this to drivers/clocksource? Same argument as for the
+irqchip driver, so either move both or neither.
+
+	Arnd
