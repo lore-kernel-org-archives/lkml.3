@@ -1,227 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935AbaGODP5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:15:57 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:37160 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757901AbaGODPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:15:52 -0400
-From: sam-the-6 <asadi.samuel@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sam Asadi <asadi.samuel@gmail.com>
-Subject: [PATCH 92/93] Staging: comedi: 8255: fixed by adding an empthy line
-Date: Tue, 15 Jul 2014 06:15:44 +0300
-Message-Id: <1405394144-26007-1-git-send-email-asadi.samuel@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757839AbaGODPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:15:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37903 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757802AbaGODPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:15:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
+   d="scan'208";a="561822846"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 06/10] ACPI/EC: Add a warning message to indicate event storms.
+Date: Tue, 15 Jul 2014 11:15:00 +0800
+Message-Id: <c22b03a036ea97a94cfe7a2d878ff63c93174d43.1405391679.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1405391678.git.lv.zheng@intel.com>
+References: <cover.1403060601.git.lv.zheng@intel.com> <cover.1405391678.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Asadi <asadi.samuel@gmail.com>
+This patch splits query handler scheduling into a new seperate function
+acpi_ec_notify_query_handlers() and adds a warning message in it to
+indicate a BIOS bug. It is reported that EC event storm can happen in case
+there is no handler prepared for the event. No functional changes.
 
-fixed a coding style issue.
-
-Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
-	modified:   drivers/staging/comedi/drivers/8255.c
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=78091
+Reported-by: Steffen Weber <steffen.weber@gmail.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- drivers/staging/comedi/drivers/8255.c |  150 ++++++++++++++++-----------------
- 1 file changed, 74 insertions(+), 76 deletions(-)
+ drivers/acpi/ec.c |   29 ++++++++++++++++++-----------
+ 1 file changed, 18 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/8255.c b/drivers/staging/comedi/drivers/8255.c
-index 46113a3..de273c7 100644
---- a/drivers/staging/comedi/drivers/8255.c
-+++ b/drivers/staging/comedi/drivers/8255.c
-@@ -1,77 +1,73 @@
- /*
--    comedi/drivers/8255.c
--    Driver for 8255
--
--    COMEDI - Linux Control and Measurement Device Interface
--    Copyright (C) 1998 David A. Schleef <ds@schleef.org>
--
--    This program is free software; you can redistribute it and/or modify
--    it under the terms of the GNU General Public License as published by
--    the Free Software Foundation; either version 2 of the License, or
--    (at your option) any later version.
--
--    This program is distributed in the hope that it will be useful,
--    but WITHOUT ANY WARRANTY; without even the implied warranty of
--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    GNU General Public License for more details.
-+	comedi/drivers/8255.c
-+	Driver for 8255
-+
-+	COMEDI - Linux Control and Measurement Device Interface
-+	Copyright (C) 1998 David A. Schleef <ds@schleef.org>
-+
-+	This program is free software; you can redistribute it and/or modify
-+	it under the terms of the GNU General Public License as published by
-+	the Free Software Foundation; either version 2 of the License, or
-+	(at your option) any later version.
-+
-+	This program is distributed in the hope that it will be useful,
-+	but WITHOUT ANY WARRANTY; without even the implied warranty of
-+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+	GNU General Public License for more details.
-+
-+	Driver: 8255
-+	Description: generic 8255 support
-+	Devices: [standard] 8255 (8255)
-+	Author: ds
-+	Status: works
-+	Updated: Fri,  7 Jun 2002 12:56:45 -0700
-+
-+	The classic in digital I/O.  The 8255 appears in Comedi as a single
-+	digital I/O subdevice with 24 channels.  The channel 0 corresponds
-+	to the 8255's port A, bit 0; channel 23 corresponds to port C, bit
-+	7.  Direction configuration is done in blocks, with channels 0-7,
-+	8-15, 16-19, and 20-23 making up the 4 blocks.  The only 8255 mode
-+	supported is mode 0.
-+
-+	You should enable compilation this driver if you plan to use a board
-+	that has an 8255 chip.  For multifunction boards, the main driver will
-+	configure the 8255 subdevice automatically.
-+
-+	This driver also works independently with ISA and PCI cards that
-+	directly map the 8255 registers to I/O ports, including cards with
-+	multiple 8255 chips.  To configure the driver for such a card, the
-+	option list should be a list of the I/O port bases for each of the
-+	8255 chips.  For example,
-+
-+	comedi_config /dev/comedi0 8255 0x200,0x204,0x208,0x20c
-+
-+	Note that most PCI 8255 boards do NOT work with this driver, and
-+	need a separate driver as a wrapper.  For those that do work, the
-+	I/O port base address can be found in the output of 'lspci -v'.
-+
-+	This file contains an exported subdevice for driving an 8255.
-+
-+	To use this subdevice as part of another driver, you need to
-+	set up the subdevice in the attach function of the driver by
-+	calling:
-+
-+	subdev_8255_init(device, subdevice, io_function, iobase)
-+
-+	device and subdevice are pointers to the device and subdevice
-+	structures.  io_function will be called to provide the
-+	low-level input/output to the device, i.e., actual register
-+	access.  io_function will be called with the value of iobase
-+	as the last parameter.  If the 8255 device is mapped as 4
-+	consecutive I/O ports, you can use NULL for io_function
-+	and the I/O port base for iobase, and an internal function will
-+	handle the register access.
-+
-+	In addition, if the main driver handles interrupts, you can
-+	enable commands on the subdevice by calling subdev_8255_init_irq()
-+	instead.  Then, when you get an interrupt that is likely to be
-+	from the 8255, you should call subdev_8255_interrupt(), which
-+	will copy the latched value to a Comedi buffer.
- */
--/*
--Driver: 8255
--Description: generic 8255 support
--Devices: [standard] 8255 (8255)
--Author: ds
--Status: works
--Updated: Fri,  7 Jun 2002 12:56:45 -0700
--
--The classic in digital I/O.  The 8255 appears in Comedi as a single
--digital I/O subdevice with 24 channels.  The channel 0 corresponds
--to the 8255's port A, bit 0; channel 23 corresponds to port C, bit
--7.  Direction configuration is done in blocks, with channels 0-7,
--8-15, 16-19, and 20-23 making up the 4 blocks.  The only 8255 mode
--supported is mode 0.
--
--You should enable compilation this driver if you plan to use a board
--that has an 8255 chip.  For multifunction boards, the main driver will
--configure the 8255 subdevice automatically.
--
--This driver also works independently with ISA and PCI cards that
--directly map the 8255 registers to I/O ports, including cards with
--multiple 8255 chips.  To configure the driver for such a card, the
--option list should be a list of the I/O port bases for each of the
--8255 chips.  For example,
--
--  comedi_config /dev/comedi0 8255 0x200,0x204,0x208,0x20c
--
--Note that most PCI 8255 boards do NOT work with this driver, and
--need a separate driver as a wrapper.  For those that do work, the
--I/O port base address can be found in the output of 'lspci -v'.
--
--*/
--
--/*
--   This file contains an exported subdevice for driving an 8255.
--
--   To use this subdevice as part of another driver, you need to
--   set up the subdevice in the attach function of the driver by
--   calling:
--
--     subdev_8255_init(device, subdevice, io_function, iobase)
--
--   device and subdevice are pointers to the device and subdevice
--   structures.  io_function will be called to provide the
--   low-level input/output to the device, i.e., actual register
--   access.  io_function will be called with the value of iobase
--   as the last parameter.  If the 8255 device is mapped as 4
--   consecutive I/O ports, you can use NULL for io_function
--   and the I/O port base for iobase, and an internal function will
--   handle the register access.
--
--   In addition, if the main driver handles interrupts, you can
--   enable commands on the subdevice by calling subdev_8255_init_irq()
--   instead.  Then, when you get an interrupt that is likely to be
--   from the 8255, you should call subdev_8255_interrupt(), which
--   will copy the latched value to a Comedi buffer.
-- */
- 
- #include <linux/module.h>
- #include "../comedidev.h"
-@@ -94,6 +90,7 @@ I/O port base address can be found in the output of 'lspci -v'.
- 
- struct subdev_8255_private {
- 	unsigned long iobase;
-+
- 	int (*io)(int, int, int, unsigned long);
- };
- 
-@@ -102,9 +99,8 @@ static int subdev_8255_io(int dir, int port, int data, unsigned long iobase)
- 	if (dir) {
- 		outb(data, iobase + port);
- 		return 0;
--	} else {
-+	} else
- 		return inb(iobase + port);
--	}
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index cf83872..8817836 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -669,32 +669,39 @@ static void acpi_ec_run(void *cxt)
+ 	acpi_ec_put_query_handler(handler);
  }
  
- void subdev_8255_interrupt(struct comedi_device *dev,
-@@ -309,9 +305,9 @@ EXPORT_SYMBOL_GPL(subdev_8255_init_irq);
+-static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
++static int acpi_ec_notify_query_handlers(struct acpi_ec *ec, u8 query_bit)
+ {
+-	u8 value = 0;
+-	int status;
+ 	struct acpi_ec_query_handler *handler;
  
- /*
+-	status = acpi_ec_query_unlocked(ec, &value);
+-	if (data)
+-		*data = value;
+-	if (status)
+-		return status;
+-
+ 	list_for_each_entry(handler, &ec->list, node) {
+-		if (value == handler->query_bit) {
++		if (query_bit == handler->query_bit) {
+ 			/* have custom handler for this bit */
+ 			handler = acpi_ec_get_query_handler(handler);
+ 			pr_debug("push query execution (0x%2x) on queue\n",
+-				value);
++				 query_bit);
+ 			return acpi_os_execute((handler->func) ?
+ 				OSL_NOTIFY_HANDLER : OSL_GPE_HANDLER,
+ 				acpi_ec_run, handler);
+ 		}
+ 	}
++	pr_warn_once("BIOS bug: no handler for query (0x%02x)\n", query_bit);
+ 	return 0;
+ }
  
--   Start of the 8255 standalone device
-+	Start of the 8255 standalone device
- 
-- */
-+*/
- 
- static int dev_8255_attach(struct comedi_device *dev,
- 			   struct comedi_devconfig *it)
-@@ -373,8 +369,10 @@ static struct comedi_driver dev_8255_driver = {
- 	.attach		= dev_8255_attach,
- 	.detach		= dev_8255_detach,
- };
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
++{
++	u8 value = 0;
++	int status;
 +
- module_comedi_driver(dev_8255_driver);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
++	status = acpi_ec_query_unlocked(ec, &value);
++	if (data)
++		*data = value;
++	if (status)
++		return status;
 +
++	return acpi_ec_notify_query_handlers(ec, value);
++}
++
+ static void acpi_ec_gpe_query(void *ec_cxt)
+ {
+ 	struct acpi_ec *ec = ec_cxt;
 -- 
-1.7.10.4
+1.7.10
 
