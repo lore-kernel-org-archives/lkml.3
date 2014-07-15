@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030391AbaGOXpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:45:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S934527AbaGOXqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:46:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933747AbaGOXN7 (ORCPT
+	with ESMTP id S933736AbaGOXN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:59 -0400
+	Tue, 15 Jul 2014 19:13:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Bos <jim876@xs4all.nl>, Guenter Roeck <linux@roeck-us.net>,
-        Andreas Mohr <andi@lisas.de>
-Subject: [PATCH 3.15 13/84] i8k: Fix non-SMP operation
-Date: Tue, 15 Jul 2014 16:17:10 -0700
-Message-Id: <20140715231713.593403378@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.15 12/84] ahci: imx: manage only sata_ref_clk in imx_sata_enable[disable]
+Date: Tue, 15 Jul 2014 16:17:09 -0700
+Message-Id: <20140715231713.557998579@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,42 +30,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Shawn Guo <shawn.guo@freescale.com>
 
-commit 6d827fbcc370ca259a2905309f64161ab7b10596 upstream.
+commit e6dd42a917e62d916c6e513dbf87a4dec8cf3a1c upstream.
 
-Commit f36fdb9f0266 (i8k: Force SMM to run on CPU 0) adds support
-for multi-core CPUs to the driver. Unfortunately, that causes it
-to fail loading if compiled without SMP support, at least on
-32 bit kernels. Kernel log shows "i8k: unable to get SMM Dell
-signature", and function i8k_smm is found to return -EINVAL.
+Doing suspend/resume on imx6q and imx53 boards with no SATA disk
+attached will trigger the following warning.
 
-Testing revealed that the culprit is the missing return value check
-of set_cpus_allowed_ptr.
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 661 at drivers/ata/libahci.c:224 ahci_enable_ahci+0x74/0x8)
+Modules linked in:
+CPU: 0 PID: 661 Comm: sh Tainted: G        W     3.15.0-rc5-next-20140521-000027
+Backtrace:
+[<80011c90>] (dump_backtrace) from [<80011e2c>] (show_stack+0x18/0x1c)
+ r6:803a22f4 r5:00000000 r4:00000000 r3:00000000
+[<80011e14>] (show_stack) from [<80661e60>] (dump_stack+0x88/0xa4)
+[<80661dd8>] (dump_stack) from [<80028fdc>] (warn_slowpath_common+0x70/0x94)
+ r5:00000009 r4:00000000
+[<80028f6c>] (warn_slowpath_common) from [<80029024>] (warn_slowpath_null+0x24/)
+ r8:808f68c4 r7:00000000 r6:00000000 r5:00000000 r4:e0810004
+[<80029000>] (warn_slowpath_null) from [<803a22f4>] (ahci_enable_ahci+0x74/0x80)
+[<803a2280>] (ahci_enable_ahci) from [<803a2324>] (ahci_reset_controller+0x24/0)
+ r8:ddcd9410 r7:80351178 r6:ddcd9444 r5:dde8b850 r4:e0810000 r3:ddf35e90
+[<803a2300>] (ahci_reset_controller) from [<803a2c68>] (ahci_platform_resume_ho)
+ r7:80351178 r6:ddcd9444 r5:dde8b850 r4:ddcd9410
+[<803a2c30>] (ahci_platform_resume_host) from [<803a38f0>] (imx_ahci_resume+0x2)
+ r5:00000000 r4:ddcd9410
+[<803a38c4>] (imx_ahci_resume) from [<803511ac>] (platform_pm_resume+0x34/0x54)
+....
 
-Fixes: f36fdb9f0266 (i8k: Force SMM to run on CPU 0)
-Reported-by: Jim Bos <jim876@xs4all.nl>
-Tested-by: Jim Bos <jim876@xs4all.nl>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Andreas Mohr <andi@lisas.de>
+The reason is that the SATA controller has no working clock at this
+point, and thus ahci_enable_ahci() fails to enable the controller.  In
+case that there is no SATA disk attached, the imx_sata_disable() gets
+called in ahci_imx_error_handler(), and both sata_clk and sata_ref_clk
+will be disabled there.  Because all the imx_sata_enable() calls
+afterward will return immediately due to imxpriv->no_device check, the
+SATA controller working clock sata_clk will never get any chance to be
+enabled again.
+
+This is a regression caused by commit 90870d79d4f2 (ahci-imx: Port to
+library-ised ahci_platform).  Before the commit, only sata_ref_clk is
+managed by the driver in enable/disable function.  But after the commit,
+all the clocks are enabled/disabled in a row by ahci platform helpers
+ahci_platform_enable[disable]_clks.  Since ahb_clk is a bus clock which
+does not have gate at all, and i.MX low-power hardware module already
+manages sata_clk across suspend/resume cycle, the only clock that needs
+to be managed by software is sata_ref_clk.
+
+So instead of using ahci_platform_enable[disable]_clks to manage all
+the clocks in a row from imx_sata_enable[disable], we should manage
+only sata_ref_clk in there.
+
+Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
+Fixes: 90870d79d4f2 (ahci-imx: Port to library-ised ahci_platform)
+Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/i8k.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/ata/ahci_imx.c |   35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
 
---- a/drivers/char/i8k.c
-+++ b/drivers/char/i8k.c
-@@ -138,7 +138,9 @@ static int i8k_smm(struct smm_regs *regs
- 	if (!alloc_cpumask_var(&old_mask, GFP_KERNEL))
- 		return -ENOMEM;
- 	cpumask_copy(old_mask, &current->cpus_allowed);
--	set_cpus_allowed_ptr(current, cpumask_of(0));
-+	rc = set_cpus_allowed_ptr(current, cpumask_of(0));
-+	if (rc)
-+		goto out;
- 	if (smp_processor_id() != 0) {
- 		rc = -EBUSY;
- 		goto out;
+--- a/drivers/ata/ahci_imx.c
++++ b/drivers/ata/ahci_imx.c
+@@ -58,6 +58,8 @@ enum ahci_imx_type {
+ struct imx_ahci_priv {
+ 	struct platform_device *ahci_pdev;
+ 	enum ahci_imx_type type;
++	struct clk *sata_clk;
++	struct clk *sata_ref_clk;
+ 	struct clk *ahb_clk;
+ 	struct regmap *gpr;
+ 	bool no_device;
+@@ -224,7 +226,7 @@ static int imx_sata_enable(struct ahci_h
+ 			return ret;
+ 	}
+ 
+-	ret = ahci_platform_enable_clks(hpriv);
++	ret = clk_prepare_enable(imxpriv->sata_ref_clk);
+ 	if (ret < 0)
+ 		goto disable_regulator;
+ 
+@@ -291,7 +293,7 @@ static void imx_sata_disable(struct ahci
+ 				   !IMX6Q_GPR13_SATA_MPLL_CLK_EN);
+ 	}
+ 
+-	ahci_platform_disable_clks(hpriv);
++	clk_disable_unprepare(imxpriv->sata_ref_clk);
+ 
+ 	if (hpriv->target_pwr)
+ 		regulator_disable(hpriv->target_pwr);
+@@ -385,6 +387,19 @@ static int imx_ahci_probe(struct platfor
+ 	imxpriv->no_device = false;
+ 	imxpriv->first_time = true;
+ 	imxpriv->type = (enum ahci_imx_type)of_id->data;
++
++	imxpriv->sata_clk = devm_clk_get(dev, "sata");
++	if (IS_ERR(imxpriv->sata_clk)) {
++		dev_err(dev, "can't get sata clock.\n");
++		return PTR_ERR(imxpriv->sata_clk);
++	}
++
++	imxpriv->sata_ref_clk = devm_clk_get(dev, "sata_ref");
++	if (IS_ERR(imxpriv->sata_ref_clk)) {
++		dev_err(dev, "can't get sata_ref clock.\n");
++		return PTR_ERR(imxpriv->sata_ref_clk);
++	}
++
+ 	imxpriv->ahb_clk = devm_clk_get(dev, "ahb");
+ 	if (IS_ERR(imxpriv->ahb_clk)) {
+ 		dev_err(dev, "can't get ahb clock.\n");
+@@ -407,10 +422,14 @@ static int imx_ahci_probe(struct platfor
+ 
+ 	hpriv->plat_data = imxpriv;
+ 
+-	ret = imx_sata_enable(hpriv);
++	ret = clk_prepare_enable(imxpriv->sata_clk);
+ 	if (ret)
+ 		return ret;
+ 
++	ret = imx_sata_enable(hpriv);
++	if (ret)
++		goto disable_clk;
++
+ 	/*
+ 	 * Configure the HWINIT bits of the HOST_CAP and HOST_PORTS_IMPL,
+ 	 * and IP vendor specific register IMX_TIMER1MS.
+@@ -434,16 +453,24 @@ static int imx_ahci_probe(struct platfor
+ 
+ 	ret = ahci_platform_init_host(pdev, hpriv, &ahci_imx_port_info, 0, 0);
+ 	if (ret)
+-		imx_sata_disable(hpriv);
++		goto disable_sata;
++
++	return 0;
+ 
++disable_sata:
++	imx_sata_disable(hpriv);
++disable_clk:
++	clk_disable_unprepare(imxpriv->sata_clk);
+ 	return ret;
+ }
+ 
+ static void ahci_imx_host_stop(struct ata_host *host)
+ {
+ 	struct ahci_host_priv *hpriv = host->private_data;
++	struct imx_ahci_priv *imxpriv = hpriv->plat_data;
+ 
+ 	imx_sata_disable(hpriv);
++	clk_disable_unprepare(imxpriv->sata_clk);
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
 
 
