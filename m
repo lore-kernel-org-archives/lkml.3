@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326AbaGOVfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:35:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54396 "EHLO
+	id S1759356AbaGOVgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:36:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54422 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933831AbaGOVfd (ORCPT
+	with ESMTP id S933831AbaGOVf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:33 -0400
+	Tue, 15 Jul 2014 17:35:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mateusz Guzik <mguzik@redhat.com>, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Per Gundberg <per.gundberg@icomera.com>, Wim Van Sebroeck <wim@iguana.be>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 118/198] NFS: populate ->net in mount data when remounting
-Date: Tue, 15 Jul 2014 14:29:48 -0700
-Message-Id: <1405459868-15089-119-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 120/198] watchdog: kempld-wdt: Use the correct value when configuring the prescaler with the watchdog
+Date: Tue, 15 Jul 2014 14:29:50 -0700
+Message-Id: <1405459868-15089-121-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mateusz Guzik <mguzik@redhat.com>
+From: gundberg <per.gundberg@icomera.com>
 
-commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
+commit a9e0436b303e94ba57d3bd4b1fcbeaa744b7ebeb upstream.
 
-Otherwise the kernel oopses when remounting with IPv6 server because
-net is dereferenced in dev_get_by_name.
+Use the prescaler index, rather than its value, to configure the watchdog.
+This will prevent a mismatch with the prescaler used to calculate the cycles.
 
-Use net ns of current thread so that dev_get_by_name does not operate on
-foreign ns. Changing the address is prohibited anyway so this should not
-affect anything.
-
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Per Gundberg <per.gundberg@icomera.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
+Tested-by: Michael Brunner <michael.brunner@kontron.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/super.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/watchdog/kempld_wdt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 910ed90..05c3a6e 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2246,6 +2246,7 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
- 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
- 	data->version = nfsvers;
- 	data->minorversion = nfss->nfs_client->cl_minorversion;
-+	data->net = current->nsproxy->net_ns;
- 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
- 		data->nfs_server.addrlen);
- 
+diff --git a/drivers/watchdog/kempld_wdt.c b/drivers/watchdog/kempld_wdt.c
+index 20dc738..d9c1a16 100644
+--- a/drivers/watchdog/kempld_wdt.c
++++ b/drivers/watchdog/kempld_wdt.c
+@@ -162,7 +162,7 @@ static int kempld_wdt_set_stage_timeout(struct kempld_wdt_data *wdt_data,
+ 	kempld_get_mutex(pld);
+ 	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->id));
+ 	stage_cfg &= ~STAGE_CFG_PRESCALER_MASK;
+-	stage_cfg |= STAGE_CFG_SET_PRESCALER(prescaler);
++	stage_cfg |= STAGE_CFG_SET_PRESCALER(PRESCALER_21);
+ 	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->id), stage_cfg);
+ 	kempld_write32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->id),
+ 			stage_timeout);
 -- 
 1.9.1
 
