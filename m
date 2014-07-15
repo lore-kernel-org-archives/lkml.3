@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735AbaGOR6R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:58:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11316 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932523AbaGOR6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:58:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,667,1400050800"; 
-   d="scan'208";a="573565978"
-Message-ID: <53C56BB0.7000805@intel.com>
-Date: Tue, 15 Jul 2014 20:58:08 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757936AbaGOR7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:59:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30592 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456AbaGOR73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 13:59:29 -0400
+To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
+Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
+        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
+        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
+        <hch@infradead.org>, <martin.petersen@oracle.com>
+Subject: Re: [RESEND][PATCH 08/10][SCSI]mpt2sas: Get IOC_FACTS information using handshake protocol only after HBA card gets into READY or Operational state
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140625103532.GA12953@avagotech.com>
+Date: Tue, 15 Jul 2014 13:58:57 -0400
+In-Reply-To: <20140625103532.GA12953@avagotech.com> (Sreekanth Reddy's message
+	of "Wed, 25 Jun 2014 16:05:32 +0530")
+Message-ID: <yq1wqbetsf2.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 24/41] perf tools: Add cpu to struct thread
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-25-git-send-email-adrian.hunter@intel.com> <20140715142421.GD3301@kernel.org>
-In-Reply-To: <20140715142421.GD3301@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/2014 5:24 p.m., Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jul 14, 2014 at 01:02:48PM +0300, Adrian Hunter escreveu:
->> Tools may wish to track on which cpu a thread
->> is running.  Add 'cpu' to struct thread for
->> that purpose.
->>
->> This will be used to determine the cpu when
->> decoding a per-thread Instruction Trace.
->
-> Humm, is this the last cpu we got some event telling the cpu was running
-> on? Continuing looking at the patches...
+>>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
 
-Yes.  Intel PT decoding uses sched_switch events to determine which
-task is running on which cpu.  The Intel PT data comes straight
-from the hardware which doesn't know about linux threads.
+Sreekanth> The driver would send IOC facts only if HBA is in operational
+Sreekanth> or ready state. If it is in fault state, a diagnostic reset
+Sreekanth> would be issued. It would wait for 10 seconds to exit out of
+Sreekanth> reset state. If the HBA continues to be in reset state, then
+Sreekanth> the HBA wouldn't be claimed by the driver.
 
->
-> - Arnaldo
->
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>   tools/perf/util/thread.c | 1 +
->>   tools/perf/util/thread.h | 1 +
->>   2 files changed, 2 insertions(+)
->>
->> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
->> index b9a3ee4..2f8c0c1 100644
->> --- a/tools/perf/util/thread.c
->> +++ b/tools/perf/util/thread.c
->> @@ -69,6 +69,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
->>   		thread->pid_ = pid;
->>   		thread->tid = tid;
->>   		thread->ppid = -1;
->> +		thread->cpu = -1;
->>   		INIT_LIST_HEAD(&thread->comm_list);
->>
->>   		comm_str = malloc(32);
->> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
->> index b4269af..e4920ff 100644
->> --- a/tools/perf/util/thread.h
->> +++ b/tools/perf/util/thread.h
->> @@ -17,6 +17,7 @@ struct thread {
->>   	pid_t			pid_; /* Not all tools update this */
->>   	pid_t			tid;
->>   	pid_t			ppid;
->> +	int			cpu;
->>   	char			shortname[3];
->>   	bool			comm_set;
->>   	bool			dead; /* if set thread has exited */
->> --
->> 1.8.3.2
+Your patch header describes what used to happen. What does the patched
+code do?
+
+Also, several of your patches move large functions around within the
+file. That makes it really hard to figure out what the actual code
+changes are. Please split changes like that in two: One patch that moves
+stuff around in bulk without any functional changes and a second that
+addresses the issue at hand. That makes reviewing much easier.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
