@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934514AbaGOXnd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:43:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S1030360AbaGOXnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:43:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933856AbaGOXOD (ORCPT
+	with ESMTP id S933863AbaGOXOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:03 -0400
+	Tue, 15 Jul 2014 19:14:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Steffen Weber <steffen.weber@gmail.com>,
         Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 24/84] ACPI / EC: Avoid race condition related to advance_transaction()
-Date: Tue, 15 Jul 2014 16:17:21 -0700
-Message-Id: <20140715231713.932276289@linuxfoundation.org>
+Subject: [PATCH 3.15 26/84] ACPI / EC: Remove duplicated ec_wait_ibf0() waiter
+Date: Tue, 15 Jul 2014 16:17:23 -0700
+Message-Id: <20140715231713.995265908@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -33,33 +33,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lv Zheng <lv.zheng@intel.com>
 
-commit 66b42b78bc1e816f92b662e8888c89195e4199e1 upstream.
+commit 9b80f0f73ae1583c22325ede341c74195847618c upstream.
 
-The advance_transaction() will be invoked from the IRQ context GPE handler
-and the task context ec_poll(). The handling of this function is locked so
-that the EC state machine are ensured to be advanced sequentially.
+After we've added the first command byte write into advance_transaction(),
+the IBF=0 waiter is duplicated with the command completion waiter
+implemented in the ec_poll() because:
+   If IBF=1 blocked the first command byte write invoked in the task
+   context ec_poll(), it would be kicked off upon IBF=0 interrupt or timed
+   out and retried again in the task context.
 
-But there is a problem. Before invoking advance_transaction(), EC_SC(R) is
-read. Then for advance_transaction(), there could be race condition around
-the lock from both contexts. The first one reading the register could fail
-this race and when it passes the stale register value to the state machine
-advancement code, the hardware condition is totally different from when
-the register is read. And the hardware accesses determined from the wrong
-hardware status can break the EC state machine. And there could be cases
-that the functionalities of the platform firmware are seriously affected.
-For example:
- 1. When 2 EC_DATA(W) writes compete the IBF=0, the 2nd EC_DATA(W) write may
-    be invalid due to IBF=1 after the 1st EC_DATA(W) write. Then the
-    hardware will either refuse to respond a next EC_SC(W) write of the next
-    command or discard the current WR_EC command when it receives a EC_SC(W)
-    write of the next command.
- 2. When 1 EC_SC(W) write and 1 EC_DATA(W) write compete the IBF=0, the
-    EC_DATA(W) write may be invalid due to IBF=1 after the EC_SC(W) write.
-    The next EC_DATA(R) could never be responded by the hardware. This is
-    the root cause of the reported issue.
-
-Fix this issue by moving the EC_SC(R) access into the lock so that we can
-ensure that the state machine is advanced consistently.
+Remove this seperate and duplicate IBF=0 waiter.  By doing so we can
+reduce the overall number of times to access the EC_SC(R) status
+register.
 
 Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
 Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
@@ -74,49 +59,65 @@ Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/acpi/ec.c |   27 +--------------------------
+ 1 file changed, 1 insertion(+), 26 deletions(-)
 
 --- a/drivers/acpi/ec.c
 +++ b/drivers/acpi/ec.c
-@@ -168,12 +168,15 @@ static void start_transaction(struct acp
- 	acpi_ec_write_cmd(ec, ec->curr->command);
+@@ -281,23 +281,6 @@ static int acpi_ec_transaction_unlocked(
+ 	return ret;
  }
  
--static void advance_transaction(struct acpi_ec *ec, u8 status)
-+static void advance_transaction(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	struct transaction *t;
-+	u8 status;
- 
- 	spin_lock_irqsave(&ec->lock, flags);
-+	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
-+	status = acpi_ec_read_status(ec);
- 	t = ec->curr;
- 	if (!t)
- 		goto unlock;
-@@ -236,7 +239,7 @@ static int ec_poll(struct acpi_ec *ec)
- 						msecs_to_jiffies(1)))
- 					return 0;
- 			}
--			advance_transaction(ec, acpi_ec_read_status(ec));
-+			advance_transaction(ec);
- 		} while (time_before(jiffies, delay));
- 		pr_debug("controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->lock, flags);
-@@ -635,11 +638,8 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	u32 gpe_number, void *data)
- {
- 	struct acpi_ec *ec = data;
+-static int ec_check_ibf0(struct acpi_ec *ec)
+-{
 -	u8 status = acpi_ec_read_status(ec);
+-	return (status & ACPI_EC_FLAG_IBF) == 0;
+-}
 -
--	pr_debug("~~~> interrupt, status:0x%02x\n", status);
- 
--	advance_transaction(ec, status);
-+	advance_transaction(ec);
- 	if (ec_transaction_done(ec) &&
- 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
+-static int ec_wait_ibf0(struct acpi_ec *ec)
+-{
+-	unsigned long delay = jiffies + msecs_to_jiffies(ec_delay);
+-	/* interrupt wait manually if GPE mode is not active */
+-	while (time_before(jiffies, delay))
+-		if (wait_event_timeout(ec->wait, ec_check_ibf0(ec),
+-					msecs_to_jiffies(1)))
+-			return 0;
+-	return -ETIME;
+-}
+-
+ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ {
+ 	int status;
+@@ -318,12 +301,6 @@ static int acpi_ec_transaction(struct ac
+ 			goto unlock;
+ 		}
+ 	}
+-	if (ec_wait_ibf0(ec)) {
+-		pr_err("input buffer is not empty, "
+-				"aborting transaction\n");
+-		status = -ETIME;
+-		goto end;
+-	}
+ 	pr_debug("transaction start (cmd=0x%02x, addr=0x%02x)\n",
+ 			t->command, t->wdata ? t->wdata[0] : 0);
+ 	/* disable GPE during transaction if storm is detected */
+@@ -347,7 +324,6 @@ static int acpi_ec_transaction(struct ac
+ 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
+ 	}
+ 	pr_debug("transaction end\n");
+-end:
+ 	if (ec->global_lock)
+ 		acpi_release_global_lock(glk);
+ unlock:
+@@ -653,8 +629,7 @@ static u32 acpi_ec_gpe_handler(acpi_hand
+ 	spin_lock_irqsave(&ec->lock, flags);
+ 	advance_transaction(ec);
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+-	if (ec_transaction_completed(ec) &&
+-	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
++	if (ec_transaction_completed(ec)) {
  		wake_up(&ec->wait);
+ 		ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	}
 
 
