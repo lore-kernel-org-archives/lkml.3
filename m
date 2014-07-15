@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964903AbaGOVrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:47:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55024 "EHLO
+	id S965020AbaGOVrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:47:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55026 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964833AbaGOVjD (ORCPT
+	with ESMTP id S964834AbaGOVjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 17:39:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Peter Meerwald <pmeerw@pmeerw.net>, Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 162/198] ALSA: control: Make sure that id->index does not overflow
-Date: Tue, 15 Jul 2014 14:30:32 -0700
-Message-Id: <1405459868-15089-163-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 139/198] iio: Fix endianness issue in ak8975_read_axis()
+Date: Tue, 15 Jul 2014 14:30:09 -0700
+Message-Id: <1405459868-15089-140-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Peter Meerwald <pmeerw@pmeerw.net>
 
-commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
+commit 8ba42fb7b17649c9ab5b5e79d4e90370a0b4645e upstream.
 
-The ALSA control code expects that the range of assigned indices to a control is
-continuous and does not overflow. Currently there are no checks to enforce this.
-If a control with a overflowing index range is created that control becomes
-effectively inaccessible and unremovable since snd_ctl_find_id() will not be
-able to find it. This patch adds a check that makes sure that controls with a
-overflowing index range can not be created.
+i2c_smbus_read_word_data() does host endian conversion already,
+no need for le16_to_cpu()
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/control.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/iio/magnetometer/ak8975.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index 93215b4..98a29b2 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -343,6 +343,9 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
- 	if (snd_BUG_ON(!card || !kcontrol->info))
- 		goto error;
- 	id = kcontrol->id;
-+	if (id.index > UINT_MAX - kcontrol->count)
-+		goto error;
-+
- 	down_write(&card->controls_rwsem);
- 	if (snd_ctl_find_id(card, &id)) {
- 		up_write(&card->controls_rwsem);
+diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
+index 0542354..053117c 100644
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -352,8 +352,6 @@ static int ak8975_read_axis(struct iio_dev *indio_dev, int index, int *val)
+ {
+ 	struct ak8975_data *data = iio_priv(indio_dev);
+ 	struct i2c_client *client = data->client;
+-	u16 meas_reg;
+-	s16 raw;
+ 	int ret;
+ 
+ 	mutex_lock(&data->lock);
+@@ -401,16 +399,11 @@ static int ak8975_read_axis(struct iio_dev *indio_dev, int index, int *val)
+ 		dev_err(&client->dev, "Read axis data fails\n");
+ 		goto exit;
+ 	}
+-	meas_reg = ret;
+ 
+ 	mutex_unlock(&data->lock);
+ 
+-	/* Endian conversion of the measured values. */
+-	raw = (s16) (le16_to_cpu(meas_reg));
+-
+ 	/* Clamp to valid range. */
+-	raw = clamp_t(s16, raw, -4096, 4095);
+-	*val = raw;
++	*val = clamp_t(s16, ret, -4096, 4095);
+ 	return IIO_VAL_INT;
+ 
+ exit:
 -- 
 1.9.1
 
