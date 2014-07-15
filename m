@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906AbaGOV7X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:59:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54780 "EHLO
+	id S934196AbaGOV7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:59:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54773 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759559AbaGOViG (ORCPT
+	with ESMTP id S1759545AbaGOViA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:06 -0400
+	Tue, 15 Jul 2014 17:38:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 172/198] rbd: handle parent_overlap on writes correctly
-Date: Tue, 15 Jul 2014 14:30:42 -0700
-Message-Id: <1405459868-15089-173-git-send-email-kamal@canonical.com>
+Cc: Mario Kleiner <mario.kleiner.de@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 150/198] drm/nouveau/kms: reference vblank for crtc during pageflip.
+Date: Tue, 15 Jul 2014 14:30:20 -0700
+Message-Id: <1405459868-15089-151-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,72 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Mario Kleiner <mario.kleiner.de@gmail.com>
 
-commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
+commit ba124a41058b300a5464206d2d33803cc3dc82ec upstream.
 
-The following check in rbd_img_obj_request_submit()
+Need to drm_vblank_get/put() the crtc involved in a
+pending pageflip, or we might not get vblank irqs and
+updates of vblank counts and timestamps for pageflip
+events and flip completion.
 
-    rbd_dev->parent_overlap <= obj_request->img_offset
-
-allows the fall through to the non-layered write case even if both
-parent_overlap and obj_request->img_offset belong to the same RADOS
-object.  This leads to data corruption, because the area to the left of
-parent_overlap ends up unconditionally zero-filled instead of being
-populated with parent data.  Suppose we want to write 1M to offset 6M
-of image bar, which is a clone of foo@snap; object_size is 4M,
-parent_overlap is 5M:
-
-    rbd_data.<id>.0000000000000001
-     ---------------------|----------------------|------------
-    | should be copyup'ed | should be zeroed out | write ...
-     ---------------------|----------------------|------------
-   4M                    5M                     6M
-                    parent_overlap    obj_request->img_offset
-
-4..5M should be copyup'ed from foo, yet it is zero-filled, just like
-5..6M is.
-
-Given that the only striping mode kernel client currently supports is
-chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
-parent_overlap up to the next object boundary for the purposes of the
-overlap check.
-
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/rbd.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_display.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 7e37f90..a1455cc 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1379,6 +1379,14 @@ static bool obj_request_exists_test(struct rbd_obj_request *obj_request)
- 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
- }
+diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
+index cdaee13..91999bc 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -630,6 +630,9 @@ nouveau_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+ 		  fb->bits_per_pixel, fb->pitches[0], crtc->x, crtc->y,
+ 		  new_bo->bo.offset };
  
-+static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
-+{
-+	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
++	/* Keep vblanks on during flip, for the target crtc of this flip */
++	drm_vblank_get(dev, nouveau_crtc(crtc)->index);
 +
-+	return obj_request->img_offset <
-+	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
-+}
-+
- static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
- {
- 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
-@@ -2675,7 +2683,7 @@ static int rbd_img_obj_request_submit(struct rbd_obj_request *obj_request)
- 	 */
- 	if (!img_request_write_test(img_request) ||
- 		!img_request_layered_test(img_request) ||
--		rbd_dev->parent_overlap <= obj_request->img_offset ||
-+		!obj_request_overlaps_parent(obj_request) ||
- 		((known = obj_request_known_test(obj_request)) &&
- 			obj_request_exists_test(obj_request))) {
+ 	/* Emit a page flip */
+ 	if (nv_device(drm->device)->card_type >= NV_50) {
+ 		ret = nv50_display_flip_next(crtc, fb, chan, swap_interval);
+@@ -673,6 +676,7 @@ nouveau_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+ 	return 0;
  
+ fail_unreserve:
++	drm_vblank_put(dev, nouveau_crtc(crtc)->index);
+ 	ttm_bo_unreserve(&old_bo->bo);
+ fail_unpin:
+ 	mutex_unlock(&chan->cli->mutex);
+@@ -711,6 +715,9 @@ nouveau_finish_page_flip(struct nouveau_channel *chan,
+ 		drm_send_vblank_event(dev, crtcid, s->event);
+ 	}
+ 
++	/* Give up ownership of vblank for page-flipped crtc */
++	drm_vblank_put(dev, s->crtc);
++
+ 	list_del(&s->head);
+ 	if (ps)
+ 		*ps = *s;
 -- 
 1.9.1
 
