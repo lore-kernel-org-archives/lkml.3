@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283AbaGOUkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 16:40:24 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13313 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932882AbaGOUkU (ORCPT
+	id S933478AbaGOUmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 16:42:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43943 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933269AbaGOUmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 16:40:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 15 Jul 2014 13:32:55 -0700
-Message-ID: <53C591B1.4080302@nvidia.com>
-Date: Tue, 15 Jul 2014 16:40:17 -0400
-From: Rhyland Klein <rklein@nvidia.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/6] clk: tegra: Add Tegra132 ccplex clocks
-References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com> <1405437890-6468-7-git-send-email-pdeschrijver@nvidia.com> <53C5908C.5000009@nvidia.com>
-In-Reply-To: <53C5908C.5000009@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 15 Jul 2014 16:42:08 -0400
+Date: Tue, 15 Jul 2014 13:42:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Ingo Korb <ingo.korb@tu-dortmund.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Dave Jones <davej@redhat.com>, Ning Qu <quning@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [PATCH] mm: do not call do_fault_around for non-linear fault
+Message-Id: <20140715134206.5d4964569fe0c64e39873416@linux-foundation.org>
+In-Reply-To: <20140715115832.18997.90349.stgit@buzz>
+References: <CALYGNiM9Fu9-i7hXMQNTUP69RfydN+2NqO29wZYd+4Gn25GbCQ@mail.gmail.com>
+	<20140715115832.18997.90349.stgit@buzz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/15/2014 4:35 PM, Rhyland Klein wrote:
-> On 7/15/2014 11:24 AM, Peter De Schrijver wrote:
->> Add support for the ccplex clocks in Tegra132.
->>
->> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
->> ---
->>  drivers/clk/tegra/Makefile |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
->> index f7dfb72..4231865 100644
->> --- a/drivers/clk/tegra/Makefile
->> +++ b/drivers/clk/tegra/Makefile
->> @@ -15,3 +15,5 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
->>  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
->>  obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
->>  obj-$(CONFIG_ARCH_TEGRA_124_SOC)	+= clk-tegra124.o
->> +obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra124.c
->> +obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra132-ccplex.c
+On Tue, 15 Jul 2014 15:58:32 +0400 Konstantin Khlebnikov <k.khlebnikov@samsung.com> wrote:
 
-Also, shouldn't both these be .o not .c ?
-
--rhyland
-
->>
+> From: Konstantin Khlebnikov <koct9i@gmail.com>
 > 
-> This doesn't seem to actually add the clk-tegra132-ccplex.c file.
-> 
-> -rhyland
+> Faulting around non-linear page-fault has no sense and
+> breaks logic in do_fault_around because pgoff is shifted.
 > 
 
+Please be a lot more careful with the changelogs?  This one failed to
+describe the effects of the bug, failed to adequately describe the bug
+itself, failed to describe the offending commits and failed to identify
+which kernel versions need the patch.
 
--- 
-nvpublic
+Sigh.  I went back and assembled the necessary information, below. 
+Please check it.
+
+
+
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: mm: do not call do_fault_around for non-linear fault
+
+Ingo Korb reported that "repeated mapping of the same file on tmpfs using
+remap_file_pages sometimes triggers a BUG at mm/filemap.c:202 when the
+process exits".  He bisected the bug to d7c1755179b82d ("mm: implement
+->map_pages for shmem/tmpfs"), although the bug was actually added by
+8c6e50b0290c4 ("mm: introduce vm_ops->map_pages()").
+
+Problem is caused by calling do_fault_around for _non-linear_ faiult.  In
+this case pgoff is shifted and might become negative during calculation.
+
+Faulting around non-linear page-fault has no sense and breaks logic in
+do_fault_around because pgoff is shifted.
+
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reported-by: "Ingo Korb" <ingo.korb@tu-dortmund.de>
+Tested-by: "Ingo Korb" <ingo.korb@tu-dortmund.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Ning Qu <quning@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: <stable@vger.kernel.org>	[3.15.x]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ mm/memory.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff -puN mm/memory.c~mm-do-not-call-do_fault_around-for-non-linear-fault mm/memory.c
+--- a/mm/memory.c~mm-do-not-call-do_fault_around-for-non-linear-fault
++++ a/mm/memory.c
+@@ -2882,7 +2882,8 @@ static int do_read_fault(struct mm_struc
+ 	 * if page by the offset is not ready to be mapped (cold cache or
+ 	 * something).
+ 	 */
+-	if (vma->vm_ops->map_pages && fault_around_pages() > 1) {
++	if (vma->vm_ops->map_pages && !(flags & FAULT_FLAG_NONLINEAR) &&
++	    fault_around_pages() > 1) {
+ 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		do_fault_around(vma, address, pte, pgoff, flags);
+ 		if (!pte_same(*pte, orig_pte))
+_
+
