@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728AbaGOCLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 22:11:10 -0400
-Received: from ozlabs.org ([103.22.144.67]:36450 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241AbaGOCLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 22:11:06 -0400
-Message-ID: <1405390262.17767.5.camel@concordia>
-Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
-        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Tue, 15 Jul 2014 12:11:02 +1000
-In-Reply-To: <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
-References: <1404276081.7254.1.camel@concordia>
-	 <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
-	 <53BBDEE6.1080800@hitachi.com>
-	 <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757006AbaGOCNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 22:13:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:62532 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753506AbaGOCNn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 22:13:43 -0400
+Date: Mon, 14 Jul 2014 22:13:34 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        Anton Blanchard <anton@samba.org>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] powerpc: Revert removing of _INIT_GLOBAL(), _STATIC()
+ and _INIT_STATIC()
+Message-ID: <20140714221334.4b6109e0@gandalf.local.home>
+In-Reply-To: <1405389955.9343.48.camel@pasglop>
+References: <20140714201204.7b6fcd8e@gandalf.local.home>
+	<1405389955.9343.48.camel@pasglop>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-14 at 10:17 -0700, Tony Luck wrote:
-> On Tue, Jul 8, 2014 at 5:07 AM, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
-> > Ping?
-> >
-> > This patch can be applied without 1/2, and will fix ia64/ppc64 problem.
+On Tue, 15 Jul 2014 12:05:55 +1000
+Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+
+> On Mon, 2014-07-14 at 20:12 -0400, Steven Rostedt wrote:
+> > I wanted to test some new ftrace code on my PASemi electra powerpc box.
+> > But unfortunately it failed to build. It failed with this:
+> > 
+> >   LD      init/built-in.o
+> > arch/powerpc/kernel/head_64.o:arch/powerpc/kernel/exceptions-64s.S:874:
+> >   relocation truncated to fit: R_PPC64_REL14 against `.text'+1c90
+> > Makefile:864: recipe for target 'vmlinux' failed
 > 
-> Is somebody going to push this upstream? Another week has gone by,
-> we are at -rc5, and I'm still seeing the
+> Weird ... what are your gcc and binutils versions ? Smells like a
+> toolchain issue to me but I need to dig a bit more. Doesn't hit any
+> of my test configs here.
 > 
->   Failed to find blacklist a00000010133b150
-> 
-> messages on ia64.
 
-I don't see those messages on ppc64, I don't know where the original report
-that it was broken on ppc64 came from. So I'm a bit lukewarm on the patch.
+I built it from scratch from the mainline source repos.
 
-cheers
+dist-ppc-gcc (GCC) 4.6.0
+Copyright (C) 2011 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 
+GNU assembler (GNU Binutils) 2.21
+Copyright 2010 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or later.
+This program has absolutely no warranty.
+This assembler was configured for a target of `powerpc64-unknown-linux'.
+
+
+-- Steve
