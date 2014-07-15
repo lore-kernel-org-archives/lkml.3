@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301AbaGOP3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:29:36 -0400
-Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:60796 "EHLO
-	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115AbaGOP3c (ORCPT
+	id S932085AbaGOP3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:29:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42107 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341AbaGOP3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:29:32 -0400
-Message-ID: <ec017fca7d5ebeaa35b3bd94e494683f.squirrel@webmail.tu-dortmund.de>
-In-Reply-To: <20140715115832.18997.90349.stgit@buzz>
-References: <CALYGNiM9Fu9-i7hXMQNTUP69RfydN+2NqO29wZYd+4Gn25GbCQ@mail.gmail.com>
-    <20140715115832.18997.90349.stgit@buzz>
-Date: Tue, 15 Jul 2014 17:29:06 +0200
-Subject: Re: [PATCH] mm: do not call do_fault_around for non-linear fault
-From: "Ingo Korb" <ingo.korb@tu-dortmund.de>
-To: "Konstantin Khlebnikov" <k.khlebnikov@samsung.com>
-Cc: linux-mm@kvack.org, "Hugh Dickins" <hughd@google.com>,
-        linux-kernel@vger.kernel.org, "Sasha Levin" <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "Dave Jones" <davej@redhat.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Ning Qu" <quning@google.com>,
-        "Konstantin Khlebnikov" <koct9i@gmail.com>
-User-Agent: SquirrelMail/1.4.23 [SVN]
+	Tue, 15 Jul 2014 11:29:51 -0400
+Date: Tue, 15 Jul 2014 08:29:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, markh@compro.net, devel@driverdev.osuosl.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8 V2] staging: dgap: remove unneeded dgap_err()
+Message-ID: <20140715152929.GA8844@kroah.com>
+References: <20140715091144.GA19080@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715091144.GA19080@devel.8.8.4.4>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Faulting around non-linear page-fault has no sense and
-> breaks logic in do_fault_around because pgoff is shifted.
+On Tue, Jul 15, 2014 at 06:11:44PM +0900, Daeseok Youn wrote:
+> The dgap_err() is printing a message with pr_err(),
+> so all those are replaced.
+> 
+> Use definition "pr_fmt" and then all of "dgap:" in
+> the beginning of print messages are removed.
+> 
+> And also removed "out of memory" message because
+> the kernel has own message for that.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+> V2: use pr_fmt "dgap:" prefix on print message on dgap.
+>     remove "out of memory" message.
+> 
+>     Adds Mark to TO list and CC list for checking send
+>     this email properly to him.
+> 
+>  drivers/staging/dgap/dgap.c |  306 +++++++++++++++++++------------------------
+>  1 files changed, 133 insertions(+), 173 deletions(-)
+> 
+> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> index 06c55cb..9e750fb 100644
+> --- a/drivers/staging/dgap/dgap.c
+> +++ b/drivers/staging/dgap/dgap.c
+> @@ -41,6 +41,8 @@
+>   */
+>  #undef DIGI_CONCENTRATORS_SUPPORTED
+>  
+> +#define pr_fmt(fmt) "dgap: " fmt
+> +
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/pci.h>
+> @@ -153,7 +155,6 @@ static void dgap_firmware_reset_port(struct channel_t *ch);
+>  static int dgap_gettok(char **in);
+>  static char *dgap_getword(char **in);
+>  static int dgap_checknode(struct cnode *p);
+> -static void dgap_err(char *s);
+>  
+>  /*
+>   * Function prototypes from dgap_sysfs.h
+> @@ -815,7 +816,7 @@ static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
+>  	if (ret)
+>  		goto free_brd;
+>  
+> -	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+> +	pr_info("board %d: %s (rev %d), irq %ld\n",
+>  		boardnum, brd->name, brd->rev, brd->irq);
 
-I can confirm that this patches fixes the bug here not just for the test
-program but also the application where I originally noticed it.
+Almost all of the pr_*() calls in this driver should be converted over
+to use dev_*() calls instead.  And some of them, like this one, should
+be removed entirely (no need for a driver to be "noisy" when a device
+for it is found, it should be quiet if at all possible, unless something
+went wrong.)
 
--ik
+So can you do that here instead?  I've applied the earlier patches in
+this series, and stopped here.
 
+thanks,
 
+greg k-h
