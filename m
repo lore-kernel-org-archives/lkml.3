@@ -1,138 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030317AbaGOXkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:40:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933923AbaGOXOI (ORCPT
+	id S934473AbaGOXkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:40:15 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:38641 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933923AbaGOXkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.15 38/84] clk: s2mps11: Fix double free corruption during driver unbind
-Date: Tue, 15 Jul 2014 16:17:35 -0700
-Message-Id: <20140715231714.343249753@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 19:40:08 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com>
+References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
+	<CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
+	<20140710200527.GA15190@google.com>
+	<3524198.dm6HbYTJqK@calvin>
+	<CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
+	<CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com>
+Date: Tue, 15 Jul 2014 16:40:07 -0700
+X-Google-Sender-Auth: fufG2avVUcvmZ6G2XxjHOCWoxHo
+Message-ID: <CAE9FiQVN1WLigYt7YGHsd1f+BreApubYbjC9j9tzrCe-p5f=HA@mail.gmail.com>
+Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fabio Coatti <fabio.coatti@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 15, 2014 at 1:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Yinghai, Rafael]
+>
 
-------------------
+>>> http://pastebin.com/FiL7N64b
+>>
+>> I opened this bugzilla:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=80041 and attached your
+>> dmesg to it.  I see what the problem is, but I don't have a good idea
+>> yet for how to fix it.
+>>
+>> The problem is that we don't handle e820 and PNP device resource
+>> information correctly.  From the attached dmesg, we have this:
+>>
+>>   BIOS-e820: [mem 0x00000000fed10000-0x00000000fed13fff] reserved
+>>   system 00:00: [mem 0xfed10000-0xfed17fff] could not be reserved
+>>
+>> The 00:00 PNP device describes the correct 32K range for the Intel MCH
+>> (see [1] for details).  But the [mem 0xfed10000-0xfed13fff] entry from
+>> e820 was added to the resource map first, and it covers only the first
+>> 16K of the MCH range.  This caused the subsequent PNP reservation to
+>> fail.  Then the snb_uncore_imc_init_box() reservation caused the
+>> warning, because it would be a child of the e820 entry but it covers
+>> more space.
+>>
+>> [1] fixed a similar issue where the PNP device described only the
+>> first 16K of the MCH range.  This case is slightly different because
+>> here it's the e820 entry that is incorrect.
+>>
+>> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
+>
+> One of the reasons for iomem_resource is so we don't hand out the same
+> address space to two different devices.  We *could* do that by keeping
+> track of the union of all devices and reserved areas that we know
+> about.
+>
+> But the current resource code is more strict: it enforces a hierarchy.
+> For example, in this case, it rejects the 00:00 PNP resource because
+> it is larger than the e820 entry.  The problem with rejecting it is
+> that we might hand out [mem 0xfed14000-0xfed17fff] to another device
+> even though PNP told us that it's in use.
+>
+> I'm about to head out for a few weeks of vacation, so I won't be able
+> to do anything with this.
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+In that case, we could reserve the whole MCH range in e820 from
+trim_snb_memory() instead.
 
-commit 2a96dfa49c83a2a7cbdb11382976aaa6b2636764 upstream.
+HPA, what is your idea about it?
 
-After unbinding the driver memory was corrupted by double free of
-clk_lookup structure. This lead to OOPS when re-binding the driver
-again.
-
-The driver allocated memory for 'clk_lookup' with devm_kzalloc. During
-driver removal this memory was freed twice: once by clkdev_drop() and
-second by devm code.
-
-Kernel panic log:
-[   30.839284] Unable to handle kernel paging request at virtual address 5f343173
-[   30.846476] pgd = dee14000
-[   30.849165] [5f343173] *pgd=00000000
-[   30.852703] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
-[   30.858166] Modules linked in:
-[   30.861208] CPU: 0 PID: 1 Comm: bash Not tainted 3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-[   30.869364] task: df478000 ti: df480000 task.ti: df480000
-[   30.874752] PC is at clkdev_add+0x2c/0x38
-[   30.878738] LR is at clkdev_add+0x18/0x38
-[   30.882732] pc : [<c0350908>]    lr : [<c03508f4>]    psr: 60000013
-[   30.882732] sp : df481e78  ip : 00000001  fp : c0700ed8
-[   30.894187] r10: 0000000c  r9 : 00000000  r8 : c07b0e3c
-[   30.899396] r7 : 00000002  r6 : df45f9d0  r5 : df421390  r4 : c0700d6c
-[   30.905906] r3 : 5f343173  r2 : c0700d84  r1 : 60000013  r0 : c0700d6c
-[   30.912417] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   30.919534] Control: 10c53c7d  Table: 5ee1406a  DAC: 00000015
-[   30.925262] Process bash (pid: 1, stack limit = 0xdf480240)
-[   30.930817] Stack: (0xdf481e78 to 0xdf482000)
-[   30.935159] 1e60:                                                       00001000 df6de610
-[   30.943321] 1e80: df7f4558 c0355650 c05ec6ec c0700eb0 df6de600 df7f4510 dec9d69c 00000014
-[   30.951480] 1ea0: 00167b48 df6de610 c0700e30 c0713518 00000000 c0700e30 dec9d69c 00000006
-[   30.959639] 1ec0: 00167b48 c02c1b7c c02c1b64 df6de610 c07aff48 c02c0420 c06fb150 c047cc20
-[   30.967798] 1ee0: df6de610 df6de610 c0700e30 df6de644 c06fb150 0000000c dec9d690 c02bef90
-[   30.975957] 1f00: dec9c6c0 dece4c00 df481f80 dece4c00 0000000c c02be73c 0000000c c016ca8c
-[   30.984116] 1f20: c016ca48 00000000 00000000 c016c1f4 00000000 00000000 b6f18000 df481f80
-[   30.992276] 1f40: df7f66c0 0000000c df480000 df480000 b6f18000 c011094c df47839c 60000013
-[   31.000435] 1f60: 00000000 00000000 df7f66c0 df7f66c0 0000000c df480000 b6f18000 c0110dd4
-[   31.008594] 1f80: 00000000 00000000 0000000c b6ec05d8 0000000c b6f18000 00000004 c000f2a8
-[   31.016753] 1fa0: 00001000 c000f0e0 b6ec05d8 0000000c 00000001 b6f18000 0000000c 00000000
-[   31.024912] 1fc0: b6ec05d8 0000000c b6f18000 00000004 0000000c 00000001 00000000 00167b48
-[   31.033071] 1fe0: 00000000 bed83a80 b6e004f0 b6e5122c 60000010 00000001 ffffffff ffffffff
-[   31.041248] [<c0350908>] (clkdev_add) from [<c0355650>] (s2mps11_clk_probe+0x2b4/0x3b4)
-[   31.049223] [<c0355650>] (s2mps11_clk_probe) from [<c02c1b7c>] (platform_drv_probe+0x18/0x48)
-[   31.057728] [<c02c1b7c>] (platform_drv_probe) from [<c02c0420>] (driver_probe_device+0x13c/0x384)
-[   31.066579] [<c02c0420>] (driver_probe_device) from [<c02bef90>] (bind_store+0x88/0xd8)
-[   31.074564] [<c02bef90>] (bind_store) from [<c02be73c>] (drv_attr_store+0x20/0x2c)
-[   31.082118] [<c02be73c>] (drv_attr_store) from [<c016ca8c>] (sysfs_kf_write+0x44/0x48)
-[   31.090016] [<c016ca8c>] (sysfs_kf_write) from [<c016c1f4>] (kernfs_fop_write+0xc0/0x17c)
-[   31.098176] [<c016c1f4>] (kernfs_fop_write) from [<c011094c>] (vfs_write+0xa0/0x1c4)
-[   31.105899] [<c011094c>] (vfs_write) from [<c0110dd4>] (SyS_write+0x40/0x8c)
-[   31.112931] [<c0110dd4>] (SyS_write) from [<c000f0e0>] (ret_fast_syscall+0x0/0x3c)
-[   31.120481] Code: e2842018 e584501c e1a00004 e885000c (e5835000)
-[   31.126596] ---[ end trace efad45bfa3a61b05 ]---
-[   31.131181] Kernel panic - not syncing: Fatal exception
-[   31.136368] CPU1: stopping
-[   31.139054] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D       3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-[   31.148697] [<c0016480>] (unwind_backtrace) from [<c0012950>] (show_stack+0x10/0x14)
-[   31.156419] [<c0012950>] (show_stack) from [<c0480db8>] (dump_stack+0x80/0xcc)
-[   31.163622] [<c0480db8>] (dump_stack) from [<c001499c>] (handle_IPI+0x130/0x15c)
-[   31.170998] [<c001499c>] (handle_IPI) from [<c000862c>] (gic_handle_irq+0x60/0x68)
-[   31.178549] [<c000862c>] (gic_handle_irq) from [<c0013480>] (__irq_svc+0x40/0x70)
-[   31.186009] Exception stack(0xdf4bdf88 to 0xdf4bdfd0)
-[   31.191046] df80:                   ffffffed 00000000 00000000 00000000 df4bc000 c06d042c
-[   31.199207] dfa0: 00000000 ffffffed c06d03c0 00000000 c070c288 00000000 00000000 df4bdfd0
-[   31.207363] dfc0: c0010324 c0010328 60000013 ffffffff
-[   31.212402] [<c0013480>] (__irq_svc) from [<c0010328>] (arch_cpu_idle+0x28/0x30)
-[   31.219783] [<c0010328>] (arch_cpu_idle) from [<c005f150>] (cpu_startup_entry+0x2c4/0x3f0)
-[   31.228027] [<c005f150>] (cpu_startup_entry) from [<400086c4>] (0x400086c4)
-[   31.234968] ---[ end Kernel panic - not syncing: Fatal exception
-
-Fixes: 7cc560dea415 ("clk: s2mps11: Add support for s2mps11")
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/clk/clk-s2mps11.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -206,16 +206,13 @@ static int s2mps11_clk_probe(struct plat
- 			goto err_reg;
- 		}
- 
--		s2mps11_clk->lookup = devm_kzalloc(&pdev->dev,
--					sizeof(struct clk_lookup), GFP_KERNEL);
-+		s2mps11_clk->lookup = clkdev_alloc(s2mps11_clk->clk,
-+					s2mps11_name(s2mps11_clk), NULL);
- 		if (!s2mps11_clk->lookup) {
- 			ret = -ENOMEM;
- 			goto err_lup;
- 		}
- 
--		s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
--		s2mps11_clk->lookup->clk = s2mps11_clk->clk;
--
- 		clkdev_add(s2mps11_clk->lookup);
- 	}
- 
-
-
+Yinghai
