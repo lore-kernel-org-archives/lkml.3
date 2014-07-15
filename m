@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306AbaGOTUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:20:04 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:42966 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760AbaGOTUD (ORCPT
+	id S933323AbaGOTUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:20:25 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:44653 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932760AbaGOTUW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:20:03 -0400
-Message-ID: <53C57EDF.2090107@hp.com>
-Date: Tue, 15 Jul 2014 15:19:59 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 15 Jul 2014 15:20:22 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH v5 0/2] lockdep: add support for queued rwlock
-References: <1403804351-405-1-git-send-email-Waiman.Long@hp.com> <20140707125012.GP6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140707125012.GP6758@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPDOMVgJN5wC0yUQrRi8p7dyBz711_ZLFS+op78HsUaCj2U8eA@mail.gmail.com>
+References: <1405448304-3724-1-git-send-email-xerofoify@gmail.com>
+	<1405448304-3724-6-git-send-email-xerofoify@gmail.com>
+	<yw1xzjgaa1vg.fsf@unicorn.mansr.com>
+	<CAPDOMVgJN5wC0yUQrRi8p7dyBz711_ZLFS+op78HsUaCj2U8eA@mail.gmail.com>
+Date: Tue, 15 Jul 2014 15:20:21 -0400
+Message-ID: <CAPDOMVhHmJegeAmMYO9dnd6Um3o8uodmfFViQohsz3eyGG2+zg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] alpha: Join lines 90 and 91
+From: Nick Krause <xerofoify@gmail.com>
+To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
+Cc: Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 08:50 AM, Peter Zijlstra wrote:
-> On Thu, Jun 26, 2014 at 01:39:09PM -0400, Waiman Long wrote:
->> v4->v5:
->>   - Add patch 2 to update the locking selftest code to handle recursive
->>     read_lock correctly. Patch 1 has no change.
-> I removed all CONFIG_QUEUE_RWLOCK dependencies and made lockdep
-> unconditionally assume the stronger constraints.
+On Tue, Jul 15, 2014 at 3:19 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Tue, Jul 15, 2014 at 2:54 PM, Måns Rullgård <mans@mansr.com> wrote:
+>> Nicholas Krause <xerofoify@gmail.com> writes:
+>>
+>>> This fixes the checkpatch error I get in this file relating to a
+>>> quoted string needed to be joined to the line above it.
+>>> ---
+>>>  arch/alpha/boot/bootpz.c | 3 +--
+>>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/alpha/boot/bootpz.c b/arch/alpha/boot/bootpz.c
+>>> index 6fc840d..a9e127b 100644
+>>> --- a/arch/alpha/boot/bootpz.c
+>>> +++ b/arch/alpha/boot/bootpz.c
+>>> @@ -87,8 +87,7 @@ check_range(unsigned long vstart, unsigned long vend,
+>>>               kaddr = (find_pa(vaddr) | PAGE_OFFSET);
+>>>               if (kaddr >= kstart && kaddr <= kend) {
+>>>  #ifdef DEBUG_CHECK_RANGE
+>>> -                     srm_printk("OVERLAP: vaddr 0x%lx kaddr 0x%lx"
+>>> -                                " [0x%lx:0x%lx]\n",
+>>> +                     srm_printk("OVERLAP: vaddr 0x%lx kaddr 0x%lx" " [0x%lx:0x%lx]\n",
+>>>                                  vaddr, kaddr, kstart, kend);
+>>>  #endif
+>>
+>> If you're doing this, you should merge the strings too.
+>>
+>> --
+>> Måns Rullgård
+>> mans@mansr.com
 >
-> Since we want all code 'clean' for the strongest possible
-> implementation, everybody should run with those semantics, it doesn't
-> make sense to have that configurable.
->
-> Eg. someone on (say ARM, which doesn't -- yet -- have QUEUE_RWLOCK)
-> could unwittingly introduce faulty code.
-
-I think this is a better way to go. I didn't take this way in my patch 
-for fear that I may be pushing too much.
-
--Longman
+> Very well,
+> I will merge the strings for this statement.
+> Nick
+Our my other patches Ok through? Please let me know.
+Thanks Nick
