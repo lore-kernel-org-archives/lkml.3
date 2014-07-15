@@ -1,183 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaGOPJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:09:54 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:44850 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472AbaGOPJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:09:49 -0400
-Date: Tue, 15 Jul 2014 11:09:37 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715150937.GS29639@cmpxchg.org>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715082545.GA9366@dhcp22.suse.cz>
- <20140715142350.GD9366@dhcp22.suse.cz>
+	id S1754503AbaGOPKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:10:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32033 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342AbaGOPJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:09:52 -0400
+Date: Tue, 15 Jul 2014 11:09:38 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
+Message-ID: <20140715150938.GO3403@laptop.dumpdata.com>
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+ <1405431640-649-3-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140715142350.GD9366@dhcp22.suse.cz>
+In-Reply-To: <1405431640-649-3-git-send-email-vkuznets@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 04:23:50PM +0200, Michal Hocko wrote:
-> On Tue 15-07-14 10:25:45, Michal Hocko wrote:
-> [...]
-> > diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
-> > index bcf750d3cecd..8870b0212150 100644
-> > --- a/Documentation/cgroups/memcg_test.txt
-> > +++ b/Documentation/cgroups/memcg_test.txt
-> [...]
-> >  6. Shmem(tmpfs) Page Cache
-> > -	Memcg's charge/uncharge have special handlers of shmem. The best way
-> > -	to understand shmem's page state transition is to read mm/shmem.c.
-> > +	The best way to understand shmem's page state transition is to read
-> > +	mm/shmem.c.
+On Tue, Jul 15, 2014 at 03:40:38PM +0200, Vitaly Kuznetsov wrote:
+> PVHVM guest requires special actions before kexec. Register specific
+> xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
 > 
-> :D
+
+This looks close to what I had sent as an RFC to you?
+
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> ---
+>  arch/x86/xen/enlighten.c | 9 +++++++++
+>  arch/x86/xen/smp.c       | 9 +++++++++
+>  arch/x86/xen/smp.h       | 1 +
+>  3 files changed, 19 insertions(+)
 > 
-> [...]
-> >  7. Page Migration
-> > -   	One of the most complicated functions is page-migration-handler.
-> > -	Memcg has 2 routines. Assume that we are migrating a page's contents
-> > -	from OLDPAGE to NEWPAGE.
-> > -
-> > -	Usual migration logic is..
-> > -	(a) remove the page from LRU.
-> > -	(b) allocate NEWPAGE (migration target)
-> > -	(c) lock by lock_page().
-> > -	(d) unmap all mappings.
-> > -	(e-1) If necessary, replace entry in radix-tree.
-> > -	(e-2) move contents of a page.
-> > -	(f) map all mappings again.
-> > -	(g) pushback the page to LRU.
-> > -	(-) OLDPAGE will be freed.
-> > -
-> > -	Before (g), memcg should complete all necessary charge/uncharge to
-> > -	NEWPAGE/OLDPAGE.
-> > -
-> > -	The point is....
-> > -	- If OLDPAGE is anonymous, all charges will be dropped at (d) because
-> > -          try_to_unmap() drops all mapcount and the page will not be
-> > -	  SwapCache.
-> > -
-> > -	- If OLDPAGE is SwapCache, charges will be kept at (g) because
-> > -	  __delete_from_swap_cache() isn't called at (e-1)
-> > -
-> > -	- If OLDPAGE is page-cache, charges will be kept at (g) because
-> > -	  remove_from_swap_cache() isn't called at (e-1)
-> > -
-> > -	memcg provides following hooks.
-> > -
-> > -	- mem_cgroup_prepare_migration(OLDPAGE)
-> > -	  Called after (b) to account a charge (usage += PAGE_SIZE) against
-> > -	  memcg which OLDPAGE belongs to.
-> > -
-> > -        - mem_cgroup_end_migration(OLDPAGE, NEWPAGE)
-> > -	  Called after (f) before (g).
-> > -	  If OLDPAGE is used, commit OLDPAGE again. If OLDPAGE is already
-> > -	  charged, a charge by prepare_migration() is automatically canceled.
-> > -	  If NEWPAGE is used, commit NEWPAGE and uncharge OLDPAGE.
-> > -
-> > -	  But zap_pte() (by exit or munmap) can be called while migration,
-> > -	  we have to check if OLDPAGE/NEWPAGE is a valid page after commit().
-> > +
-> > +	mem_cgroup_migrate()
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index a11af62..8074e4a 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
+>  	.notifier_call	= xen_hvm_cpu_notify,
+>  };
+>  
+> +static void xen_pvhvm_kexec_shutdown(void)
+> +{
+> +	xen_kexec_shutdown();
+> +	native_machine_shutdown();
+> +}
+> +
+>  static void __init xen_hvm_guest_init(void)
+>  {
+>  	init_hvm_pv_info();
+> @@ -1849,6 +1855,9 @@ static void __init xen_hvm_guest_init(void)
+>  	x86_init.irqs.intr_init = xen_init_IRQ;
+>  	xen_hvm_init_time_ops();
+>  	xen_hvm_init_mmu_ops();
+> +#ifdef CONFIG_KEXEC
+> +	machine_ops.shutdown = xen_pvhvm_kexec_shutdown;
+> +#endif
+>  }
+>  
+>  static uint32_t __init xen_hvm_platform(void)
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 7005974..35dcf39 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/smp.h>
+>  #include <linux/irq_work.h>
+>  #include <linux/tick.h>
+> +#include <linux/kexec.h>
+>  
+>  #include <asm/paravirt.h>
+>  #include <asm/desc.h>
+> @@ -762,6 +763,14 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+>  	native_cpu_die(cpu);
+>  }
+>  
+> +void xen_kexec_shutdown(void)
+> +{
+> +#ifdef CONFIG_KEXEC
+> +	if (!kexec_in_progress)
+> +		return;
+> +#endif
+> +}
+> +
+>  void __init xen_hvm_smp_init(void)
+>  {
+>  	if (!xen_have_vector_callback)
+> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+> index c7c2d89..1af0493 100644
+> --- a/arch/x86/xen/smp.h
+> +++ b/arch/x86/xen/smp.h
+> @@ -8,4 +8,5 @@ extern void xen_send_IPI_allbutself(int vector);
+>  extern void xen_send_IPI_all(int vector);
+>  extern void xen_send_IPI_self(int vector);
+>  
+> +extern void xen_kexec_shutdown(void);
+>  #endif
+> -- 
+> 1.9.3
 > 
-> This doesn't tell us anything abouta the page migration. On the other
-> hand I am not entirely sure the documentation here is very much helpful.
-> There is some outdated information. I wouldn't be opposed to remove
-> everything up to "9. Typical Tests." section which should be the primary
-> target of the file anyway.
-
-Yeah, documentation of the implementation should be directly in the
-source code and this file is kind of pointless.  So all I did there
-was remove things that were wrong after my changes.  But I agree it
-can probably be removed completely.
-
-> > @@ -382,9 +382,13 @@ static inline int mem_cgroup_swappiness(struct mem_cgroup *mem)
-> >  }
-> >  #endif
-> >  #ifdef CONFIG_MEMCG_SWAP
-> > -extern void mem_cgroup_uncharge_swap(swp_entry_t ent);
-> > +extern void mem_cgroup_swapout(struct page *page, swp_entry_t entry);
-> > +extern void mem_cgroup_uncharge_swap(swp_entry_t entry);
-> 
-> Wouldn't it be nicer to have those two with symmetric names?
-> mem_cgroup_{un}charge_swap?
-
-I thought about that when I wrote them, but their operation is not
-actually symmetrical.  The first one migrates a memsw charge from a
-page to a swap entry when the page gets reclaimed - rather than when
-the swap entry is allocated, the second one uncharges the swap entry
-once the swap entry is released.
-
-> > @@ -2760,15 +2752,15 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
-> >  		spin_unlock_irq(&zone->lru_lock);
-> >  	}
-> >  
-> > -	mem_cgroup_charge_statistics(memcg, page, anon, nr_pages);
-> > -	unlock_page_cgroup(pc);
-> > -
-> > +	local_irq_disable();
-> > +	mem_cgroup_charge_statistics(memcg, page, nr_pages);
-> >  	/*
-> >  	 * "charge_statistics" updated event counter. Then, check it.
-> >  	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
-> >  	 * if they exceeds softlimit.
-> >  	 */
-> >  	memcg_check_events(memcg, page);
-> > +	local_irq_enable();
-> 
-> preempt_{enable,disbale} should be sufficient for
-> mem_cgroup_charge_statistics and memcg_check_events no?
-> The first one is about per-cpu accounting (and that should be atomic
-> wrt. IRQ on the same CPU) and the later one uses IRQ safe locks down in
-> mem_cgroup_update_tree.
-
-How could it be atomic wrt. IRQ on the local CPU when IRQs that modify
-the counters can fire on the local CPU?
-
-> > @@ -780,11 +780,14 @@ static int move_to_new_page(struct page *newpage, struct page *page,
-> >  		rc = fallback_migrate_page(mapping, newpage, page, mode);
-> >  
-> >  	if (rc != MIGRATEPAGE_SUCCESS) {
-> > -		newpage->mapping = NULL;
-> > +		if (!PageAnon(newpage))
-> > +			newpage->mapping = NULL;
-> 
-> OK, I am probably washed out from looking into this for too long but I
-> cannot figure why have you done this...
-
-mem_cgroup_uncharge() relies on PageAnon() working.  Usually, anon
-pages retain their page->mapping until they hit the page allocator,
-the exception was old migration pages.
-
-> >  	} else {
-> > +		mem_cgroup_migrate(page, newpage, false);
-> >  		if (remap_swapcache)
-> >  			remove_migration_ptes(page, newpage);
-> > -		page->mapping = NULL;
-> > +		if (!PageAnon(page))
-> > +			page->mapping = NULL;
-> >  	}
-> >  
-> >  	unlock_page(newpage);
-> 
-> [...]
-> 
-> The semantic is much cleaner now. I have to digest details about the
-> patch because it is really huge. But nothing really jumped at me during
-> the review (except for few minor things mentioned here and one mentioned
-> in other email regarding USED flag).
-> 
-> Good work! 
-
-Thanks!
