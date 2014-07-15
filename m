@@ -1,165 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaGOOpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:45:49 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43113 "EHLO zene.cmpxchg.org"
+	id S1752953AbaGOOtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:49:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43050 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753304AbaGOOpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:45:47 -0400
-Date: Tue, 15 Jul 2014 10:45:39 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] mm: memcontrol: rewrite uncharge API fix - double
- migration
-Message-ID: <20140715144539.GR29639@cmpxchg.org>
-References: <1404759133-29218-1-git-send-email-hannes@cmpxchg.org>
- <1404759133-29218-3-git-send-email-hannes@cmpxchg.org>
- <alpine.LSU.2.11.1407141246340.17669@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1407141246340.17669@eggly.anvils>
+	id S1751395AbaGOOtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 10:49:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,665,1400050800"; 
+   d="scan'208";a="570132646"
+Message-ID: <1405435735.28592.50.camel@rzhang1-toshiba>
+Subject: Re: [PATCH 05/13] thermal: rcar: Document SoC-specific bindings
+From: Zhang Rui <rui.zhang@intel.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org,
+        kuninori.morimoto.gx@renesas.com
+Date: Tue, 15 Jul 2014 22:48:55 +0800
+In-Reply-To: <20140711091358.GK12420@verge.net.au>
+References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+	 <1404908623-909-6-git-send-email-geert+renesas@glider.be>
+	 <20140711091358.GK12420@verge.net.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-
-On Mon, Jul 14, 2014 at 12:57:33PM -0700, Hugh Dickins wrote:
-> On Mon, 7 Jul 2014, Johannes Weiner wrote:
+On Fri, 2014-07-11 at 11:13 +0200, Simon Horman wrote:
+> On Wed, Jul 09, 2014 at 02:23:35PM +0200, Geert Uytterhoeven wrote:
+> > The documentation only mentioned the generic fallback compatible property.
+> > Add the missing SoC-specific compatible properties, some of which are
+> > already in use.
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+> > Cc: linux-pm@vger.kernel.org
 > 
-> > Hugh reports:
-> > 
-> > VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-> > mm/memcontrol.c:6680!
-> > page had count 1 mapcount 0 mapping anon index 0x196
-> > flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-> > mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-> > compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-> > __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-> > handle_mm_fault < __do_page_fault
-> > 
-> > mem_cgroup_migrate() assumes that a page is only migrated once and
-> > then freed immediately after.
-> > 
-> > However, putting the page back on the LRU list and dropping the
-> > isolation refcount is not done atomically.  This allows a PFN-based
-> > migrator like compaction to isolate the page, see the expected
-> > anonymous page refcount of 1, and migrate the page once more.
-> > 
-> > Catch pages that have already been migrated and abort migration
-> > gracefully.
-> > 
-> > Reported-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
+
+Kuninori,
+
+what' your opinion of this patch?
+
+thanks,
+rui
+> 
 > > ---
-> >  mm/memcontrol.c | 5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> >  .../devicetree/bindings/thermal/rcar-thermal.txt       | 18 ++++++++++++------
+> >  1 file changed, 12 insertions(+), 6 deletions(-)
 > > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 1e3b27f8dc2f..e4afdbdda0a7 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -6653,7 +6653,10 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
-> >  	if (!PageCgroupUsed(pc))
-> >  		return;
+> > diff --git a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
+> > index 28ef498a66e5..0ef00be44b01 100644
+> > --- a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
+> > +++ b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
+> > @@ -1,7 +1,13 @@
+> >  * Renesas R-Car Thermal
 > >  
-> > -	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
-> > +	/* Already migrated */
-> > +	if (!(pc->flags & PCG_MEM))
-> > +		return;
-> > +
-> 
-> I am curious why you chose to fix the BUG in this way, instead of
-> -	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
-> +	pc->flags = 0;
-> a few lines further down.
-> 
-> The page that gets left behind with just PCG_USED is anomalous (for an
-> LRU page, maybe not for a kmem page), isn'it it?  And liable to cause
-> other problems.
-> 
-> For example, won't it go the wrong way in the "Surreptitiously" test
-> in mem_cgroup_page_lruvec(): the page no longer has a hold on any
-> memcg, so is in a danger of being placed on a gone-memcg's LRU?
+> >  Required properties:
+> > -- compatible		: "renesas,rcar-thermal"
+> > +- compatible		: "renesas,thermal-<soctype>", "renesas,rcar-thermal"
+> > +			  as fallback.
+> > +			  Examples with soctypes are:
+> > +			    - "renesas,thermal-r8a73a4" (R-Mobile AP6)
+> > +			    - "renesas,thermal-r8a7779" (R-Car H1)
+> > +			    - "renesas,thermal-r8a7790" (R-Car H2)
+> > +			    - "renesas,thermal-r8a7791" (R-Car M2)
+> >  - reg			: Address range of the thermal registers.
+> >  			  The 1st reg will be recognized as common register
+> >  			  if it has "interrupts".
+> > @@ -12,18 +18,18 @@ Option properties:
+> >  
+> >  Example (non interrupt support):
+> >  
+> > -thermal@e61f0100 {
+> > -	compatible = "renesas,rcar-thermal";
+> > -	reg = <0xe61f0100 0x38>;
+> > +thermal@ffc48000 {
+> > +	compatible = "renesas,thermal-r8a7779", "renesas,rcar-thermal";
+> > +	reg = <0xffc48000 0x38>;
+> >  };
+> >  
+> >  Example (interrupt support):
+> >  
+> >  thermal@e61f0000 {
+> > -	compatible = "renesas,rcar-thermal";
+> > +	compatible = "renesas,thermal-r8a73a4", "renesas,rcar-thermal";
+> >  	reg = <0xe61f0000 0x14
+> >  		0xe61f0100 0x38
+> >  		0xe61f0200 0x38
+> >  		0xe61f0300 0x38>;
+> > -	interrupts = <0 69 4>;
+> > +	interrupts = <0 69 IRQ_TYPE_LEVEL_HIGH>;
+> >  };
+> > -- 
+> > 1.9.1
+> > 
 
-I was worried about unusing the page before we have exclusive access
-to it (migration_entry_to_page() can still work at this point, though
-the current situation seems safe).
-
-But you are right, with the charge belonging to the new page, the old
-page no longer pins the memcg and we have to prevent use-after-free.
-
-How about this as a drop-in replacement?
-
----
->From 274b94ad83b38fe7dc1707a8eb4015b3ab1673c5 Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Thu, 10 Jul 2014 01:02:11 +0000
-Subject: [patch] mm: memcontrol: rewrite uncharge API fix - double migration
-
-Hugh reports:
-
-VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-mm/memcontrol.c:6680!
-page had count 1 mapcount 0 mapping anon index 0x196
-flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-__alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-handle_mm_fault < __do_page_fault
-
-mem_cgroup_migrate() assumes that a page is only migrated once and
-then freed immediately after.
-
-However, putting the page back on the LRU list and dropping the
-isolation refcount is not done atomically.  This allows a PFN-based
-migrator like compaction to isolate the page, see the expected
-anonymous page refcount of 1, and migrate the page once more.
-
-Furthermore, once the charges are transferred to the new page, the old
-page no longer has a pin on the memcg, which might get released before
-the page itself now.  pc->mem_cgroup is invalid at this point, but
-PCG_USED suggests otherwise, provoking use-after-free.
-
-Properly uncharge the page after it's been migrated, including the
-clearing of PCG_USED, so that a subsequent charge migration attempt
-will be able to detect it and bail out.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Hugh Dickins <hughd@google.com>
----
- mm/memcontrol.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1e3b27f8dc2f..1439537fe7c9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6655,7 +6655,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 
- 	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
- 	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
--	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
- 
- 	if (PageTransHuge(oldpage)) {
- 		nr_pages <<= compound_order(oldpage);
-@@ -6663,6 +6662,13 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
- 	}
- 
-+	pc->flags = 0;
-+
-+	local_irq_disable();
-+	mem_cgroup_charge_statistics(pc->mem_cgroup, oldpage, -nr_pages);
-+	memcg_check_events(pc->mem_cgroup, oldpage);
-+	local_irq_enable();
-+
- 	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
- }
- 
--- 
-2.0.0
 
