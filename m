@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284AbaGOIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:48:09 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:3996
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1758332AbaGOIs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:48:29 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:51443
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758252AbaGOIry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:47:54 -0400
+	id S1758292AbaGOIsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:48:21 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 07/29] nios2: MMU Fault handling
-Date: Tue, 15 Jul 2014 16:45:34 +0800
-Message-ID: <1405413956-2772-8-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 17/29] nios2: Library functions
+Date: Tue, 15 Jul 2014 16:45:44 +0800
+Message-ID: <1405413956-2772-18-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(22564002)(189002)(199002)(44976005)(36756003)(102836001)(19580395003)(77156001)(229853001)(77096002)(46102001)(76482001)(4396001)(97736001)(107046002)(42186005)(21056001)(99396002)(62966002)(48376002)(86362001)(83322001)(95666004)(68736004)(84676001)(92566001)(85306003)(20776003)(79102001)(81542001)(6806004)(2201001)(106466001)(31966008)(19580405001)(50986999)(92726001)(76176999)(47776003)(74662001)(87286001)(50226001)(81342001)(104166001)(74502001)(77982001)(80022001)(93916002)(64706001)(89996001)(85852003)(83072002)(88136002)(87936001)(105596002)(33646002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB048;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(22564002)(199002)(189002)(6806004)(19580395003)(87936001)(88136002)(87286001)(85306003)(575784001)(44976005)(36756003)(83322001)(77096002)(77982001)(76482001)(85852003)(77156001)(83072002)(81342001)(48376002)(47776003)(64706001)(21056001)(84676001)(68736004)(74662001)(19580405001)(74502001)(79102001)(102836001)(81542001)(20776003)(15975445006)(229853001)(97736001)(80022001)(4396001)(76176999)(46102001)(106466001)(105596002)(50226001)(93916002)(86362001)(15202345003)(62966002)(31966008)(2201001)(42186005)(95666004)(104166001)(92566001)(99396002)(92726001)(107046002)(50986999)(89996001)(33646002)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB311;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,299 +31,516 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the handling of the MMU faults (exception
-entry code introduced by a previous patch, kernel/entry.S).
+Add optimised library functions for nios2.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/mm/extable.c |  25 +++++
- arch/nios2/mm/fault.c   | 245 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 270 insertions(+)
- create mode 100644 arch/nios2/mm/extable.c
- create mode 100644 arch/nios2/mm/fault.c
+ arch/nios2/include/asm/checksum.h |  78 +++++++++++++++
+ arch/nios2/include/asm/string.h   |  24 +++++
+ arch/nios2/lib/memcpy.c           | 199 ++++++++++++++++++++++++++++++++++++++
+ arch/nios2/lib/memmove.c          |  82 ++++++++++++++++
+ arch/nios2/lib/memset.c           |  81 ++++++++++++++++
+ 5 files changed, 464 insertions(+)
+ create mode 100644 arch/nios2/include/asm/checksum.h
+ create mode 100644 arch/nios2/include/asm/string.h
+ create mode 100644 arch/nios2/lib/memcpy.c
+ create mode 100644 arch/nios2/lib/memmove.c
+ create mode 100644 arch/nios2/lib/memset.c
 
-diff --git a/arch/nios2/mm/extable.c b/arch/nios2/mm/extable.c
+diff --git a/arch/nios2/include/asm/checksum.h b/arch/nios2/include/asm/checksum.h
 new file mode 100644
-index 0000000..4d2fc5a
+index 0000000..6bc1f0d
 --- /dev/null
-+++ b/arch/nios2/mm/extable.c
-@@ -0,0 +1,25 @@
++++ b/arch/nios2/include/asm/checksum.h
+@@ -0,0 +1,78 @@
 +/*
-+ * Copyright (C) 2010, Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
++ * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
++#ifndef _ASM_NIOS_CHECKSUM_H
++#define _ASM_NIOS_CHECKSUM_H
 +
-+int fixup_exception(struct pt_regs *regs)
++/* Take these from lib/checksum.c */
++extern __wsum csum_partial(const void *buff, int len, __wsum sum);
++extern __wsum csum_partial_copy(const void *src, void *dst, int len,
++				__wsum sum);
++extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
++					int len, __wsum sum, int *csum_err);
++#define csum_partial_copy_nocheck(src, dst, len, sum)	\
++	csum_partial_copy((src), (dst), (len), (sum))
++
++extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
++extern __sum16 ip_compute_csum(const void *buff, int len);
++
++/*
++ * Fold a partial checksum
++ */
++static inline __sum16 csum_fold(__wsum sum)
 +{
-+	const struct exception_table_entry *fixup;
-+
-+	fixup = search_exception_tables(regs->ea);
-+	if (fixup) {
-+		regs->ea = fixup->fixup;
-+		return 1;
-+	}
-+
-+	return 0;
++	__asm__ __volatile__(
++		"add	%0, %1, %0\n"
++		"cmpltu	r8, %0, %1\n"
++		"srli	%0, %0, 16\n"
++		"add	%0, %0, r8\n"
++		"nor	%0, %0, %0\n"
++		: "=r" (sum)
++		: "r" (sum << 16), "0" (sum)
++		: "r8");
++	return (__force __sum16) sum;
 +}
-diff --git a/arch/nios2/mm/fault.c b/arch/nios2/mm/fault.c
-new file mode 100644
-index 0000000..a12098d
---- /dev/null
-+++ b/arch/nios2/mm/fault.c
-@@ -0,0 +1,245 @@
++
 +/*
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * based on arch/mips/mm/fault.c which is:
-+ *
-+ * Copyright (C) 1995-2000 Ralf Baechle
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++#define csum_tcpudp_nofold csum_tcpudp_nofold
++static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
++					unsigned short len,
++					unsigned short proto,
++					__wsum sum)
++{
++	__asm__ __volatile__(
++		"add	%0, %1, %0\n"
++		"cmpltu	r8, %0, %1\n"
++		"add	%0, %0, r8\n"	/* add carry */
++		"add	%0, %2, %0\n"
++		"cmpltu	r8, %0, %2\n"
++		"add	%0, %0, r8\n"	/* add carry */
++		"add	%0, %3, %0\n"
++		"cmpltu	r8, %0, %3\n"
++		"add	%0, %0, r8\n"	/* add carry */
++		: "=r" (sum), "=r" (saddr)
++		: "r" (daddr), "r" ((ntohs(len) << 16) + (proto * 256)),
++		  "0" (sum),
++		  "1" (saddr)
++		: "r8");
++
++	return sum;
++}
++
++static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
++					unsigned short len,
++					unsigned short proto, __wsum sum)
++{
++	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
++}
++
++#endif /* _ASM_NIOS_CHECKSUM_H */
+diff --git a/arch/nios2/include/asm/string.h b/arch/nios2/include/asm/string.h
+new file mode 100644
+index 0000000..14dd570
+--- /dev/null
++++ b/arch/nios2/include/asm/string.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/signal.h>
-+#include <linux/sched.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
++#ifndef _ASM_NIOS2_STRING_H
++#define _ASM_NIOS2_STRING_H
++
++#ifdef __KERNEL__
++
++#define __HAVE_ARCH_MEMSET
++#define __HAVE_ARCH_MEMCPY
++#define __HAVE_ARCH_MEMMOVE
++
++extern void *memset(void *s, int c, size_t count);
++extern void *memcpy(void *d, const void *s, size_t count);
++extern void *memmove(void *d, const void *s, size_t count);
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_NIOS2_STRING_H */
+diff --git a/arch/nios2/lib/memcpy.c b/arch/nios2/lib/memcpy.c
+new file mode 100644
+index 0000000..ac7eec4
+--- /dev/null
++++ b/arch/nios2/lib/memcpy.c
+@@ -0,0 +1,199 @@
++/* Extracted from GLIBC memcpy.c and memcopy.h, which is:
++   Copyright (C) 1991, 1992, 1993, 1997, 2004 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++   Contributed by Torbjorn Granlund (tege@sics.se).
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <http://www.gnu.org/licenses/>.  */
++
 +#include <linux/types.h>
-+#include <linux/ptrace.h>
-+#include <linux/mman.h>
-+#include <linux/mm.h>
-+#include <linux/uaccess.h>
-+#include <linux/ptrace.h>
 +
-+#include <asm/mmu_context.h>
-+#include <asm/traps.h>
++/* Type to use for aligned memory operations.
++   This should normally be the biggest type supported by a single load
++   and store.  */
++#define	op_t	unsigned long int
++#define OPSIZ	(sizeof(op_t))
 +
-+#define EXC_SUPERV_INSN_ACCESS	9  /* Supervisor only instruction address */
-+#define EXC_SUPERV_DATA_ACCESS	11 /* Supervisor only data address */
-+#define EXC_X_PROTECTION_FAULT	13 /* TLB permission violation (x) */
-+#define EXC_R_PROTECTION_FAULT	14 /* TLB permission violation (r) */
-+#define EXC_W_PROTECTION_FAULT	15 /* TLB permission violation (w) */
++/* Optimal type for storing bytes in registers.  */
++#define	reg_char	char
 +
-+/*
-+ * This routine handles page faults.  It determines the address,
-+ * and the problem, and then passes it off to one of the appropriate
-+ * routines.
-+ */
-+asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long cause,
-+				unsigned long address)
++#define MERGE(w0, sh_1, w1, sh_2) (((w0) >> (sh_1)) | ((w1) << (sh_2)))
++
++/* Copy exactly NBYTES bytes from SRC_BP to DST_BP,
++   without any assumptions about alignment of the pointers.  */
++#define BYTE_COPY_FWD(dst_bp, src_bp, nbytes)				\
++do {									\
++	size_t __nbytes = (nbytes);					\
++	while (__nbytes > 0) {						\
++		unsigned char __x = ((unsigned char *) src_bp)[0];	\
++		src_bp += 1;						\
++		__nbytes -= 1;						\
++		((unsigned char *) dst_bp)[0] = __x;			\
++		dst_bp += 1;						\
++	}								\
++} while (0)
++
++/* Copy *up to* NBYTES bytes from SRC_BP to DST_BP, with
++   the assumption that DST_BP is aligned on an OPSIZ multiple.  If
++   not all bytes could be easily copied, store remaining number of bytes
++   in NBYTES_LEFT, otherwise store 0.  */
++/* extern void _wordcopy_fwd_aligned __P ((long int, long int, size_t)); */
++/* extern void _wordcopy_fwd_dest_aligned __P ((long int, long int, size_t)); */
++#define WORD_COPY_FWD(dst_bp, src_bp, nbytes_left, nbytes)		\
++do {									\
++	if (src_bp % OPSIZ == 0)					\
++		_wordcopy_fwd_aligned(dst_bp, src_bp, (nbytes) / OPSIZ);\
++	else								\
++		_wordcopy_fwd_dest_aligned(dst_bp, src_bp, (nbytes) / OPSIZ);\
++	src_bp += (nbytes) & -OPSIZ;					\
++	dst_bp += (nbytes) & -OPSIZ;					\
++	(nbytes_left) = (nbytes) % OPSIZ;				\
++} while (0)
++
++
++/* Threshold value for when to enter the unrolled loops.  */
++#define	OP_T_THRES	16
++
++/* _wordcopy_fwd_aligned -- Copy block beginning at SRCP to
++   block beginning at DSTP with LEN `op_t' words (not LEN bytes!).
++   Both SRCP and DSTP should be aligned for memory operations on `op_t's.  */
++/* stream-lined (read x8 + write x8) */
++static void _wordcopy_fwd_aligned(long int dstp, long int srcp, size_t len)
 +{
-+	struct vm_area_struct *vma = NULL;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
-+	int code = SEGV_MAPERR;
-+	int fault;
-+	unsigned int flags = 0;
++	while (len > 7) {
++		register op_t a0, a1, a2, a3, a4, a5, a6, a7;
++		a0 = ((op_t *) srcp)[0];
++		a1 = ((op_t *) srcp)[1];
++		a2 = ((op_t *) srcp)[2];
++		a3 = ((op_t *) srcp)[3];
++		a4 = ((op_t *) srcp)[4];
++		a5 = ((op_t *) srcp)[5];
++		a6 = ((op_t *) srcp)[6];
++		a7 = ((op_t *) srcp)[7];
++		((op_t *) dstp)[0] = a0;
++		((op_t *) dstp)[1] = a1;
++		((op_t *) dstp)[2] = a2;
++		((op_t *) dstp)[3] = a3;
++		((op_t *) dstp)[4] = a4;
++		((op_t *) dstp)[5] = a5;
++		((op_t *) dstp)[6] = a6;
++		((op_t *) dstp)[7] = a7;
 +
-+	cause >>= 2;
-+
-+	/* Restart the instruction */
-+	regs->ea -= 4;
-+
-+	/*
-+	 * We fault-in kernel-space virtual memory on-demand. The
-+	 * 'reference' page table is init_mm.pgd.
-+	 *
-+	 * NOTE! We MUST NOT take any locks for this case. We may
-+	 * be in an interrupt or a critical region, and should
-+	 * only copy the information from the master page table,
-+	 * nothing more.
-+	 */
-+	if (unlikely(address >= VMALLOC_START && address <= VMALLOC_END)) {
-+		if (user_mode(regs))
-+			goto bad_area_nosemaphore;
-+		else
-+			goto vmalloc_fault;
++		srcp += 8 * OPSIZ;
++		dstp += 8 * OPSIZ;
++		len -= 8;
 +	}
++	while (len > 0) {
++		*(op_t *)dstp = *(op_t *)srcp;
 +
-+	if (unlikely(address >= TASK_SIZE))
-+		goto bad_area_nosemaphore;
-+
-+	/*
-+	 * If we're in an interrupt or have no user
-+	 * context, we must not take the fault..
-+	 */
-+	if (in_atomic() || !mm)
-+		goto bad_area_nosemaphore;
-+
-+	if (user_mode(regs))
-+		flags |= FAULT_FLAG_USER;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
-+	if (vma->vm_start <= address)
-+		goto good_area;
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
-+	if (expand_stack(vma, address))
-+		goto bad_area;
-+/*
-+ * Ok, we have a good vm_area for this memory access, so
-+ * we can handle it..
-+ */
-+good_area:
-+	code = SEGV_ACCERR;
-+
-+	switch (cause) {
-+	case EXC_SUPERV_INSN_ACCESS:
-+		goto bad_area;
-+	case EXC_SUPERV_DATA_ACCESS:
-+		goto bad_area;
-+	case EXC_X_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_EXEC))
-+			goto bad_area;
-+		break;
-+	case EXC_R_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_READ))
-+			goto bad_area;
-+		break;
-+	case EXC_W_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+		flags = FAULT_FLAG_WRITE;
-+		break;
-+	}
-+
-+survive:
-+	/*
-+	 * If for any reason at all we couldn't handle the fault,
-+	 * make sure we exit gracefully rather than endlessly redo
-+	 * the fault.
-+	 */
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+	if (unlikely(fault & VM_FAULT_ERROR)) {
-+		if (fault & VM_FAULT_OOM)
-+			goto out_of_memory;
-+		else if (fault & VM_FAULT_SIGBUS)
-+			goto do_sigbus;
-+		BUG();
-+	}
-+	if (fault & VM_FAULT_MAJOR)
-+		tsk->maj_flt++;
-+	else
-+		tsk->min_flt++;
-+
-+	up_read(&mm->mmap_sem);
-+	return;
-+
-+/*
-+ * Something tried to access memory that isn't in our memory map..
-+ * Fix it, but check if it's kernel or user first..
-+ */
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+bad_area_nosemaphore:
-+	/* User mode accesses just cause a SIGSEGV */
-+	if (user_mode(regs)) {
-+		pr_alert("%s: unhandled page fault (%d) at 0x%08lx, "
-+			"cause %ld\n", current->comm, SIGSEGV, address, cause);
-+		show_regs(regs);
-+		_exception(SIGSEGV, regs, code, address);
-+		return;
-+	}
-+
-+no_context:
-+	/* Are we prepared to handle this kernel fault? */
-+	if (fixup_exception(regs))
-+		return;
-+
-+	/*
-+	 * Oops. The kernel tried to access some bad page. We'll have to
-+	 * terminate things with extreme prejudice.
-+	 */
-+	bust_spinlocks(1);
-+
-+	pr_alert("Unable to handle kernel %s at virtual address %08lx",
-+		address < PAGE_SIZE ? "NULL pointer dereference" :
-+		"paging request", address);
-+	pr_alert("ea = %08lx, ra = %08lx, cause = %ld\n", regs->ea, regs->ra,
-+		cause);
-+	panic("Oops");
-+	return;
-+
-+/*
-+ * We ran out of memory, or some other thing happened to us that made
-+ * us unable to handle the page fault gracefully.
-+ */
-+out_of_memory:
-+	up_read(&mm->mmap_sem);
-+	if (is_global_init(tsk)) {
-+		yield();
-+		down_read(&mm->mmap_sem);
-+		goto survive;
-+	}
-+	if (!user_mode(regs))
-+		goto no_context;
-+	pagefault_out_of_memory();
-+	return;
-+
-+do_sigbus:
-+	up_read(&mm->mmap_sem);
-+
-+	/* Kernel mode? Handle exceptions or die */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	_exception(SIGBUS, regs, BUS_ADRERR, address);
-+	return;
-+
-+vmalloc_fault:
-+	{
-+		/*
-+		 * Synchronize this task's top level page-table
-+		 * with the 'reference' page table.
-+		 *
-+		 * Do _not_ use "tsk" here. We might be inside
-+		 * an interrupt in the middle of a task switch..
-+		 */
-+		int offset = pgd_index(address);
-+		pgd_t *pgd, *pgd_k;
-+		pud_t *pud, *pud_k;
-+		pmd_t *pmd, *pmd_k;
-+		pte_t *pte_k;
-+
-+		pgd = pgd_current + offset;
-+		pgd_k = init_mm.pgd + offset;
-+
-+		if (!pgd_present(*pgd_k))
-+			goto no_context;
-+		set_pgd(pgd, *pgd_k);
-+
-+		pud = pud_offset(pgd, address);
-+		pud_k = pud_offset(pgd_k, address);
-+		if (!pud_present(*pud_k))
-+			goto no_context;
-+		pmd = pmd_offset(pud, address);
-+		pmd_k = pmd_offset(pud_k, address);
-+		if (!pmd_present(*pmd_k))
-+			goto no_context;
-+		set_pmd(pmd, *pmd_k);
-+
-+		pte_k = pte_offset_kernel(pmd_k, address);
-+		if (!pte_present(*pte_k))
-+			goto no_context;
-+
-+		flush_tlb_one(address);
-+		return;
++		srcp += OPSIZ;
++		dstp += OPSIZ;
++		len -= 1;
 +	}
 +}
++
++/* _wordcopy_fwd_dest_aligned -- Copy block beginning at SRCP to
++   block beginning at DSTP with LEN `op_t' words (not LEN bytes!).
++   DSTP should be aligned for memory operations on `op_t's, but SRCP must
++   *not* be aligned.  */
++/* stream-lined (read x4 + write x4) */
++static void _wordcopy_fwd_dest_aligned(long int dstp, long int srcp,
++					size_t len)
++{
++	op_t ap;
++	int sh_1, sh_2;
++
++	/* Calculate how to shift a word read at the memory operation
++	aligned srcp to make it aligned for copy. */
++
++	sh_1 = 8 * (srcp % OPSIZ);
++	sh_2 = 8 * OPSIZ - sh_1;
++
++	/* Make SRCP aligned by rounding it down to the beginning of the `op_t'
++	it points in the middle of. */
++	srcp &= -OPSIZ;
++	ap = ((op_t *) srcp)[0];
++	srcp += OPSIZ;
++
++	while (len > 3) {
++		op_t a0, a1, a2, a3;
++		a0 = ((op_t *) srcp)[0];
++		a1 = ((op_t *) srcp)[1];
++		a2 = ((op_t *) srcp)[2];
++		a3 = ((op_t *) srcp)[3];
++		((op_t *) dstp)[0] = MERGE(ap, sh_1, a0, sh_2);
++		((op_t *) dstp)[1] = MERGE(a0, sh_1, a1, sh_2);
++		((op_t *) dstp)[2] = MERGE(a1, sh_1, a2, sh_2);
++		((op_t *) dstp)[3] = MERGE(a2, sh_1, a3, sh_2);
++
++		ap = a3;
++		srcp += 4 * OPSIZ;
++		dstp += 4 * OPSIZ;
++		len -= 4;
++	}
++	while (len > 0) {
++		register op_t a0;
++		a0 = ((op_t *) srcp)[0];
++		((op_t *) dstp)[0] = MERGE(ap, sh_1, a0, sh_2);
++
++		ap = a0;
++		srcp += OPSIZ;
++		dstp += OPSIZ;
++		len -= 1;
++	}
++}
++
++void *memcpy(void *dstpp, const void *srcpp, size_t len)
++{
++	unsigned long int dstp = (long int) dstpp;
++	unsigned long int srcp = (long int) srcpp;
++
++	/* Copy from the beginning to the end.  */
++
++	/* If there not too few bytes to copy, use word copy.  */
++	if (len >= OP_T_THRES) {
++		/* Copy just a few bytes to make DSTP aligned.  */
++		len -= (-dstp) % OPSIZ;
++		BYTE_COPY_FWD(dstp, srcp, (-dstp) % OPSIZ);
++
++		/* Copy whole pages from SRCP to DSTP by virtual address
++		   manipulation, as much as possible.  */
++
++		/* PAGE_COPY_FWD_MAYBE (dstp, srcp, len, len); */
++
++		/* Copy from SRCP to DSTP taking advantage of the known
++		   alignment of DSTP. Number of bytes remaining is put in the
++		   third argument, i.e. in LEN.  This number may vary from
++		   machine to machine. */
++
++		WORD_COPY_FWD(dstp, srcp, len, len);
++
++		/* Fall out and copy the tail. */
++	}
++
++	/* There are just a few bytes to copy.  Use byte memory operations. */
++	BYTE_COPY_FWD(dstp, srcp, len);
++
++	return dstpp;
++}
++
++void *memcpyb(void *dstpp, const void *srcpp, unsigned len)
++{
++	unsigned long int dstp = (long int) dstpp;
++	unsigned long int srcp = (long int) srcpp;
++
++	BYTE_COPY_FWD(dstp, srcp, len);
++
++	return dstpp;
++}
+diff --git a/arch/nios2/lib/memmove.c b/arch/nios2/lib/memmove.c
+new file mode 100644
+index 0000000..c65ef51
+--- /dev/null
++++ b/arch/nios2/lib/memmove.c
+@@ -0,0 +1,82 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++
++#ifdef __HAVE_ARCH_MEMMOVE
++void *memmove(void *d, const void *s, size_t count)
++{
++	unsigned long dst, src;
++
++	if (!count)
++		return d;
++
++	if (d < s) {
++		dst = (unsigned long) d;
++		src = (unsigned long) s;
++
++		if ((count < 8) || ((dst ^ src) & 3))
++			goto restup;
++
++		if (dst & 1) {
++			*(char *)dst++ = *(char *)src++;
++			count--;
++		}
++		if (dst & 2) {
++			*(short *)dst = *(short *)src;
++			src += 2;
++			dst += 2;
++			count -= 2;
++		}
++		while (count > 3) {
++			*(long *)dst = *(long *)src;
++			src += 4;
++			dst += 4;
++			count -= 4;
++		}
++restup:
++		while (count--)
++			*(char *)dst++ = *(char *)src++;
++	} else {
++		dst = (unsigned long) d + count;
++		src = (unsigned long) s + count;
++
++		if ((count < 8) || ((dst ^ src) & 3))
++			goto restdown;
++
++		if (dst & 1) {
++			src--;
++			dst--;
++			count--;
++			*(char *)dst = *(char *)src;
++		}
++		if (dst & 2) {
++			src -= 2;
++			dst -= 2;
++			count -= 2;
++			*(short *)dst = *(short *)src;
++		}
++		while (count > 3) {
++			src -= 4;
++			dst -= 4;
++			count -= 4;
++			*(long *)dst = *(long *)src;
++		}
++restdown:
++		while (count--) {
++			src--;
++			dst--;
++			*(char *)dst = *(char *)src;
++		}
++	}
++
++	return d;
++}
++#endif /* __HAVE_ARCH_MEMMOVE */
+diff --git a/arch/nios2/lib/memset.c b/arch/nios2/lib/memset.c
+new file mode 100644
+index 0000000..65e9780
+--- /dev/null
++++ b/arch/nios2/lib/memset.c
+@@ -0,0 +1,81 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++
++#ifdef __HAVE_ARCH_MEMSET
++void *memset(void *s, int c, size_t count)
++{
++	int destptr, charcnt, dwordcnt, fill8reg, wrkrega;
++
++	if (!count)
++		return s;
++
++	c &= 0xFF;
++
++	if (count <= 8) {
++		char *xs = (char *) s;
++
++		while (count--)
++			*xs++ = c;
++		return s;
++	}
++
++	__asm__ __volatile__ (
++		/* fill8 %3, %5 (c & 0xff) */
++		"	slli	%4, %5, 8\n"
++		"	or	%4, %4, %5\n"
++		"	slli    %3, %4, 16\n"
++		"	or	%3, %3, %4\n"
++		/* Word-align %0 (s) if necessary */
++		"	andi	%4, %0, 0x01\n"
++		"	beq	%4, zero, 1f\n"
++		"	addi	%1, %1, -1\n"
++		"	stb	%3, 0(%0)\n"
++		"	addi	%0, %0, 1\n"
++		"1:	mov	%2, %1\n"
++		/* Dword-align %0 (s) if necessary */
++		"	andi	%4, %0, 0x02\n"
++		"	beq	%4, zero, 2f\n"
++		"	addi	%1, %1, -2\n"
++		"	sth	%3, 0(%0)\n"
++		"	addi	%0, %0, 2\n"
++		"	mov	%2, %1\n"
++		/* %1 and %2 are how many more bytes to set */
++		"2:	srli	%2, %2, 2\n"
++		/* %2 is how many dwords to set */
++		"3:	stw	%3, 0(%0)\n"
++		"	addi	%0, %0, 4\n"
++		"	addi    %2, %2, -1\n"
++		"	bne	%2, zero, 3b\n"
++		/* store residual word and/or byte if necessary */
++		"	andi	%4, %1, 0x02\n"
++		"	beq	%4, zero, 4f\n"
++		"	sth	%3, 0(%0)\n"
++		"	addi	%0, %0, 2\n"
++		/* store residual byte if necessary */
++		"4:	andi	%4, %1, 0x01\n"
++		"	beq	%4, zero, 5f\n"
++		"	stb	%3, 0(%0)\n"
++		"5:\n"
++		: "=r" (destptr),	/* %0  Output */
++		  "=r" (charcnt),	/* %1  Output */
++		  "=r" (dwordcnt),	/* %2  Output */
++		  "=r" (fill8reg),	/* %3  Output */
++		  "=r" (wrkrega)	/* %4  Output */
++		: "r" (c),		/* %5  Input */
++		  "0" (s),		/* %0  Input/Output */
++		  "1" (count)		/* %1  Input/Output */
++		: "memory"		/* clobbered */
++	);
++
++	return s;
++}
++#endif /* __HAVE_ARCH_MEMSET */
 -- 
 1.8.2.1
 
