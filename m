@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908AbaGOGoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:44:01 -0400
-Received: from ozlabs.org ([103.22.144.67]:39833 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757279AbaGOGn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:43:58 -0400
-Date: Tue, 15 Jul 2014 16:43:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Noever <andreas.noever@gmail.com>
-Subject: linux-next: manual merge of the char-misc tree with the ia64 tree
-Message-ID: <20140715164349.5807b892@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1757881AbaGOGri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:47:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16385 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757279AbaGOGrf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 02:47:35 -0400
+Date: Tue, 15 Jul 2014 09:47:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, Mark Hounschell <markh@compro.net>
+Subject: Re: [PATCH 6/8] staging: dgap: remove unneeded dgap_err()
+Message-ID: <20140715064716.GR25880@mwanda>
+References: <20140715030223.GA14406@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/aecLEYhkRiEar43u.35Gn4o"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715030223.GA14406@devel.8.8.4.4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/aecLEYhkRiEar43u.35Gn4o
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 15, 2014 at 12:02:23PM +0900, Daeseok Youn wrote:
+> The dgap_err() is printing a message with pr_err(),
+> so all those are replaced.
+> 
 
-Hi all,
+Take a look at how pr_fmt works.
 
-Today's linux-next merge of the char-misc tree got conflicts in
-drivers/Kconfig and drivers/Makefile between commit 76ac8275f296
-("trace, RAS: Add basic RAS trace event") from the ia64 tree and commit
-16603153666d ("thunderbolt: Add initial cactus ridge NHI support") from
-the char-misc tree.
+#define pr_fmt(fmt) "dgap: " fmt
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Then you can remove the "dgap: " from the beginning of each line.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Also all the "out of memory" messages can be removed because the kernel
+prints its own message for that.
 
-diff --cc drivers/Kconfig
-index 4e6e66c3c8d6,9b2dcc2ea663..000000000000
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@@ -176,6 -176,6 +176,8 @@@ source "drivers/powercap/Kconfig
- =20
-  source "drivers/mcb/Kconfig"
- =20
- +source "drivers/ras/Kconfig"
- +
-+ source "drivers/thunderbolt/Kconfig"
-+=20
-  endmenu
-diff --cc drivers/Makefile
-index 8a72e1cc2afa,37b9ed4cd2d6..000000000000
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@@ -159,4 -158,4 +159,5 @@@ obj-$(CONFIG_NTB)		+=3D ntb
-  obj-$(CONFIG_FMC)		+=3D fmc/
-  obj-$(CONFIG_POWERCAP)		+=3D powercap/
-  obj-$(CONFIG_MCB)		+=3D mcb/
- +obj-$(CONFIG_RAS)		+=3D ras/
-+ obj-$(CONFIG_THUNDERBOLT)	+=3D thunderbolt/
+regards,
+dan carpenter
 
---Sig_/aecLEYhkRiEar43u.35Gn4o
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTxM2sAAoJEMDTa8Ir7ZwVAigP/A/48YsM7rCg9Xzx+Tn+BGMU
-sBjgbU9yUfNRO1oTwz+vXXSUG54X3t3jP9Qrt1V4wNV20aAFQYe6yicI+RooVZJM
-27DxrYYhj1+c/IitOfb4wzo5BV4SEaH2Gm3ISZTlmMYTiMKdBCMoIoctQvdK/xVe
-KCDrCMtIDZL1gIdARvRzqyzC9WWV+5YQSdusRWpc+1BBXuxvAf7rjh5hEh6VkMPC
-YUs+QzaqB/DqxDoQWLnWFsY37ky3wTlNzPmWAWmoV9Ub/EcWZNuyfr9TFnHoLZAU
-z/L8Dv1eMqLS0c7R0Tflu4RDypL6ayH5yCv8W1mvgg6rjnF6reKYffe1bFRlAert
-kRgOrc9W9ZESeBMNwOH8PCuQ6v/IHTxd5S4dYTvUxYwYzK+dOntqJRs1uxVXccda
-6t1umT2lShUSCOGYvZATfdRc57GXL0zqpZIMIuSuuuIdgihubV0+vDnNqFVQ7VC/
-73iPGYBdZwZdmHweWRIGc2+XuJrdPChOPthok9GgXMyelFHwdrZlD9oQGUSy7y5I
-A/5ioW/GW/qngfYEwHlbN/CqkRSTwugLVF1DroSGyMm8UGq2CdSgfTvqsSIWXRVu
-BbijJ3/WT754j2bhj+F6q3XIrkX5ZWBfD4yZj1Yi9SSXrYNUwaG1yX9FN8u2L+lS
-WetFN3xDfQBI6Jx0PKEY
-=I5ri
------END PGP SIGNATURE-----
-
---Sig_/aecLEYhkRiEar43u.35Gn4o--
