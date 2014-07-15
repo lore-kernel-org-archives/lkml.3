@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759814AbaGOVtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:49:03 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60919 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759791AbaGOVs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:48:58 -0400
-Date: Tue, 15 Jul 2014 17:48:43 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715214843.GX29639@cmpxchg.org>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715155537.GA19454@nhori.bos.redhat.com>
- <20140715160735.GB29269@dhcp22.suse.cz>
- <20140715173439.GU29639@cmpxchg.org>
- <20140715184358.GA31550@nhori.bos.redhat.com>
- <20140715190454.GW29639@cmpxchg.org>
- <20140715204953.GA21016@nhori.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715204953.GA21016@nhori.bos.redhat.com>
+	id S1759859AbaGOVtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:49:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54976 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964796AbaGOViz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 17:38:55 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 155/198] arm64: uid16: fix __kernel_old_{gid,uid}_t definitions
+Date: Tue, 15 Jul 2014 14:30:25 -0700
+Message-Id: <1405459868-15089-156-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 04:49:53PM -0400, Naoya Horiguchi wrote:
-> I feel that these 2 messages have the same cause (just appear differently).
-> __add_to_page_cache_locked() (and mem_cgroup_try_charge()) can be called
-> for hugetlb, while we avoid calling mem_cgroup_migrate()/mem_cgroup_uncharge()
-> for hugetlb. This seems to make page_cgroup of the hugepage inconsistent,
-> and results in the bad page bug ("page dumped because: cgroup check failed").
-> So maybe some more PageHuge check is necessary around the charging code.
+3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
 
-This struck me as odd because I don't remember removing a PageHuge()
-call in the charge path and wondered how it worked before my changes:
-apparently it just checked PageCompound() in mem_cgroup_charge_file().
+------------------
 
-So it's not fallout of the new uncharge batching code, but was already
-broken during the rewrite of the charge API because then hugetlb pages
-entered the charging code.
+From: Will Deacon <will.deacon@arm.com>
 
-Anyway, we don't have file-specific charging code anymore, and the
-PageCompound() check would have required changing anyway for THP
-cache.  So I guess the solution is checking PageHuge() in charge,
-uncharge, and migrate for now.  Oh well.
+commit 34c65c43f1518bf85f93526ad373adc6a683b4c5 upstream.
 
-How about this?
+Whilst native arm64 applications don't have the 16-bit UID/GID syscalls
+wired up, compat tasks can still access them. The 16-bit wrappers for
+these syscalls use __kernel_old_uid_t and __kernel_old_gid_t, which must
+be 16-bit data types to maintain compatibility with the 16-bit UIDs used
+by compat applications.
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 9c99d6868a5e..b61194273b56 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -564,9 +564,12 @@ static int __add_to_page_cache_locked(struct page *page,
- 	VM_BUG_ON_PAGE(!PageLocked(page), page);
- 	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
- 
--	error = mem_cgroup_try_charge(page, current->mm, gfp_mask, &memcg);
--	if (error)
--		return error;
-+	if (!PageHuge(page)) {
-+		error = mem_cgroup_try_charge(page, current->mm,
-+					      gfp_mask, &memcg);
-+		if (error)
-+			return error;
-+	}
- 
- 	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (error) {
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 7f5a42403fae..dabed2f08609 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -781,7 +781,8 @@ static int move_to_new_page(struct page *newpage, struct page *page,
- 		if (!PageAnon(newpage))
- 			newpage->mapping = NULL;
- 	} else {
--		mem_cgroup_migrate(page, newpage, false);
-+		if (!PageHuge(page))
-+			mem_cgroup_migrate(page, newpage, false);
- 		if (remap_swapcache)
- 			remove_migration_ptes(page, newpage);
- 		if (!PageAnon(page))
-diff --git a/mm/swap.c b/mm/swap.c
-index 3461f2f5be20..97b6ec132398 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -62,12 +62,12 @@ static void __page_cache_release(struct page *page)
- 		del_page_from_lru_list(page, lruvec, page_off_lru(page));
- 		spin_unlock_irqrestore(&zone->lru_lock, flags);
- 	}
--	mem_cgroup_uncharge(page);
- }
- 
- static void __put_single_page(struct page *page)
- {
- 	__page_cache_release(page);
-+	mem_cgroup_uncharge_page(page);
- 	free_hot_cold_page(page, false);
- }
- 
-@@ -75,7 +75,10 @@ static void __put_compound_page(struct page *page)
- {
- 	compound_page_dtor *dtor;
- 
--	__page_cache_release(page);
-+	if (!PageHuge(page)) {
-+		__page_cache_release(page);
-+		mem_cgroup_uncharge_page(page);
-+	}
- 	dtor = get_compound_page_dtor(page);
- 	(*dtor)(page);
- }
+This patch defines 16-bit __kernel_old_{gid,uid}_t types for arm64
+instead of using the 32-bit types provided by asm-generic.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm64/include/asm/Kbuild             |  1 -
+ arch/arm64/include/uapi/asm/posix_types.h | 10 ++++++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/include/uapi/asm/posix_types.h
+
+diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
+index 519f89f..0d41221 100644
+--- a/arch/arm64/include/asm/Kbuild
++++ b/arch/arm64/include/asm/Kbuild
+@@ -28,7 +28,6 @@ generic-y += mutex.h
+ generic-y += pci.h
+ generic-y += percpu.h
+ generic-y += poll.h
+-generic-y += posix_types.h
+ generic-y += resource.h
+ generic-y += scatterlist.h
+ generic-y += sections.h
+diff --git a/arch/arm64/include/uapi/asm/posix_types.h b/arch/arm64/include/uapi/asm/posix_types.h
+new file mode 100644
+index 0000000..7985ff6
+--- /dev/null
++++ b/arch/arm64/include/uapi/asm/posix_types.h
+@@ -0,0 +1,10 @@
++#ifndef __ASM_POSIX_TYPES_H
++#define __ASM_POSIX_TYPES_H
++
++typedef unsigned short __kernel_old_uid_t;
++typedef unsigned short __kernel_old_gid_t;
++#define __kernel_old_uid_t __kernel_old_uid_t
++
++#include <asm-generic/posix_types.h>
++
++#endif /*  __ASM_POSIX_TYPES_H */
+-- 
+1.9.1
+
