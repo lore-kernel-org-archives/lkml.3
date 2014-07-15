@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760947AbaGPAOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:14:07 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:49497 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759420AbaGPAOB (ORCPT
+	id S1761303AbaGPAOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:14:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45038 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759722AbaGOXNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:14:01 -0400
-Date: Tue, 15 Jul 2014 17:13:57 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch v2] mm, tmp: only collapse hugepages to nodes with affinity
- for zone_reclaim_mode
-In-Reply-To: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 15 Jul 2014 19:13:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.10 23/44] ext4: fix unjournalled bg descriptor while initializing inode bitmap
+Date: Tue, 15 Jul 2014 16:17:21 -0700
+Message-Id: <20140715231647.387317677@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target 
-node") improved the previous khugepaged logic which allocated a 
-transparent hugepages from the node of the first page being collapsed.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-However, it is still possible to collapse pages to remote memory which may 
-suffer from additional access latency.  With the current policy, it is 
-possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed remotely 
-if the majority are allocated from that node.
+------------------
 
-When zone_reclaim_mode is enabled, it means the VM should make every attempt
-to allocate locally to prevent NUMA performance degradation.  In this case,
-we do not want to collapse hugepages to remote nodes that would suffer from
-increased access latency.  Thus, when zone_reclaim_mode is enabled, only
-allow collapsing to nodes with RECLAIM_DISTANCE or less.
+From: Theodore Ts'o <tytso@mit.edu>
 
-There is no functional change for systems that disable zone_reclaim_mode.
+commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+The first time that we allocate from an uninitialized inode allocation
+bitmap, if the block allocation bitmap is also uninitalized, we need
+to get write access to the block group descriptor before we start
+modifying the block group descriptor flags and updating the free block
+count, etc.  Otherwise, there is the potential of a bad journal
+checksum (if journal checksums are enabled), and of the file system
+becoming inconsistent if we crash at exactly the wrong time.
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- v2: only change behavior for zone_reclaim_mode per Dave Hansen
+ fs/ext4/ialloc.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
- mm/huge_memory.c | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2234,6 +2234,26 @@ static void khugepaged_alloc_sleep(void)
- static int khugepaged_node_load[MAX_NUMNODES];
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -780,6 +780,13 @@ got:
+ 		goto out;
+ 	}
  
- #ifdef CONFIG_NUMA
-+static bool khugepaged_scan_abort(int nid)
-+{
-+	int i;
-+
-+	/*
-+	 * If zone_reclaim_mode is disabled, then no extra effort is made to
-+	 * allocate memory locally.
-+	 */
-+	if (!zone_reclaim_mode)
-+		return false;
-+
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		if (!khugepaged_node_load[i])
-+			continue;
-+		if (node_distance(nid, i) > RECLAIM_DISTANCE)
-+			return true;
++	BUFFER_TRACE(group_desc_bh, "get_write_access");
++	err = ext4_journal_get_write_access(handle, group_desc_bh);
++	if (err) {
++		ext4_std_error(sb, err);
++		goto out;
 +	}
-+	return false;
-+}
 +
- static int khugepaged_find_target_node(void)
- {
- 	static int last_khugepaged_target_node = NUMA_NO_NODE;
-@@ -2309,6 +2329,11 @@ static struct page
- 	return *hpage;
- }
- #else
-+static bool khugepaged_scan_abort(int nid)
-+{
-+	return false;
-+}
-+
- static int khugepaged_find_target_node(void)
- {
- 	return 0;
-@@ -2515,6 +2540,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 	unsigned long _address;
- 	spinlock_t *ptl;
- 	int node = NUMA_NO_NODE;
-+	int last_node = node;
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+@@ -816,13 +823,6 @@ got:
+ 		}
+ 	}
  
- 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
- 
-@@ -2545,6 +2571,11 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 		 * hit record.
- 		 */
- 		node = page_to_nid(page);
-+		if (node != last_node) {
-+			if (khugepaged_scan_abort(node))
-+				goto out_unmap;
-+			last_node = node;
-+		}
- 		khugepaged_node_load[node]++;
- 		VM_BUG_ON_PAGE(PageCompound(page), page);
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+-	BUFFER_TRACE(group_desc_bh, "get_write_access");
+-	err = ext4_journal_get_write_access(handle, group_desc_bh);
+-	if (err) {
+-		ext4_std_error(sb, err);
+-		goto out;
+-	}
+-
+ 	/* Update the relevant bg descriptor fields */
+ 	if (ext4_has_group_desc_csum(sb)) {
+ 		int free;
+
+
