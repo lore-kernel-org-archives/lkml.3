@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887AbaGOVcB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:32:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53842 "EHLO
+	id S1758814AbaGOVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:31:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53856 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757922AbaGOVbY (ORCPT
+	with ESMTP id S1757930AbaGOVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 17:31:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Todd Fujinaka <todd.fujinaka@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 009/198] NFS: Don't declare inode uptodate unless all attributes were checked
-Date: Tue, 15 Jul 2014 14:27:59 -0700
-Message-Id: <1405459868-15089-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 006/198] igb: fix stats for i210 rx_fifo_errors
+Date: Tue, 15 Jul 2014 14:27:56 -0700
+Message-Id: <1405459868-15089-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,111 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
-commit 43b6535e717d2f656f71d9bd16022136b781c934 upstream.
+commit e66c083aab32842f225bae2a2c30744bf96abaec upstream.
 
-Fix a bug, whereby nfs_update_inode() was declaring the inode to be
-up to date despite not having checked all the attributes.
-The bug occurs because the temporary variable in which we cache
-the validity information is 'sanitised' before reapplying to
-nfsi->cache_validity.
+RQDPC on i210/i211 is R/W not ReadClear. Clear after reading.
 
-Reported-by: Kinglong Mee <kinglongmee@gmail.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/inode.c | 26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 5d94c02..25063e1 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1503,18 +1503,20 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_version = fattr->change_attr;
- 		}
- 	} else if (server->caps & NFS_CAP_CHANGE_ATTR)
--		invalid |= save_cache_validity;
-+		nfsi->cache_validity |= save_cache_validity;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 025e5f4..0f42ce8 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -4909,8 +4909,10 @@ void igb_update_stats(struct igb_adapter *adapter,
  
- 	if (fattr->valid & NFS_ATTR_FATTR_MTIME) {
- 		memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
- 	} else if (server->caps & NFS_CAP_MTIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
+ 	rcu_read_lock();
+ 	for (i = 0; i < adapter->num_rx_queues; i++) {
+-		u32 rqdpc = rd32(E1000_RQDPC(i));
+ 		struct igb_ring *ring = adapter->rx_ring[i];
++		u32 rqdpc = rd32(E1000_RQDPC(i));
++		if (hw->mac.type >= e1000_i210)
++			wr32(E1000_RQDPC(i), 0);
  
- 	if (fattr->valid & NFS_ATTR_FATTR_CTIME) {
- 		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
- 	} else if (server->caps & NFS_CAP_CTIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	/* Check if our cached file size is stale */
-@@ -1537,7 +1539,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 					(long long)new_isize);
- 		}
- 	} else
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_PAGECACHE
- 				| NFS_INO_REVAL_FORCED);
- 
-@@ -1545,7 +1548,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 	if (fattr->valid & NFS_ATTR_FATTR_ATIME)
- 		memcpy(&inode->i_atime, &fattr->atime, sizeof(inode->i_atime));
- 	else if (server->caps & NFS_CAP_ATIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATIME
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATIME
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_MODE) {
-@@ -1556,7 +1560,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL;
- 		}
- 	} else if (server->caps & NFS_CAP_MODE)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1567,7 +1572,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_uid = fattr->uid;
- 		}
- 	} else if (server->caps & NFS_CAP_OWNER)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1578,7 +1584,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_gid = fattr->gid;
- 		}
- 	} else if (server->caps & NFS_CAP_OWNER_GROUP)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1591,7 +1598,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			set_nlink(inode, fattr->nlink);
- 		}
- 	} else if (server->caps & NFS_CAP_NLINK)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_SPACE_USED) {
+ 		if (rqdpc) {
+ 			ring->rx_stats.drops += rqdpc;
 -- 
 1.9.1
 
