@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076AbaGOXOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:14:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S965323AbaGOX2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:28:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45623 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760035AbaGOXNq (ORCPT
+	with ESMTP id S1760077AbaGOXOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:46 -0400
+	Tue, 15 Jul 2014 19:14:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, linux-metag@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>
-Subject: [PATCH 3.14 08/66] parisc,metag: Do not hardcode maximum userspace stack size
-Date: Tue, 15 Jul 2014 16:17:02 -0700
-Message-Id: <20140715231702.440835453@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.15 80/84] x86, espfix: Fix broken header guard
+Date: Tue, 15 Jul 2014 16:18:17 -0700
+Message-Id: <20140715231715.577171425@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,105 +25,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 042d27acb64924a0e8a43e972485913a32407beb upstream.
+commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
 
-This patch affects only architectures where the stack grows upwards
-(currently parisc and metag only). On those do not hardcode the maximum
-initial stack size to 1GB for 32-bit processes, but make it configurable
-via a config option.
+Header guard is #ifndef, not #ifdef...
 
-The main problem with the hardcoded stack size is, that we have two
-memory regions which grow upwards: stack and heap. To keep most of the
-memory available for heap in a flexmap memory layout, it makes no sense
-to hard allocate up to 1GB of the memory for stack which can't be used
-as heap then.
-
-This patch makes the stack size for 32-bit processes configurable and
-uses 80MB as default value which has been in use during the last few
-years on parisc and which hasn't showed any problems yet.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: linux-parisc@vger.kernel.org
-Cc: linux-metag@vger.kernel.org
-Cc: John David Anglin <dave.anglin@bell.net>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/metag/include/asm/processor.h  |    2 +-
- arch/parisc/include/asm/processor.h |    5 ++++-
- arch/parisc/kernel/sys_parisc.c     |    6 +++---
- mm/Kconfig                          |   15 +++++++++++++++
- 4 files changed, 23 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/espfix.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/metag/include/asm/processor.h
-+++ b/arch/metag/include/asm/processor.h
-@@ -23,7 +23,7 @@
- #define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
- #define STACK_TOP_MAX	STACK_TOP
- /* Maximum virtual space for stack */
--#define STACK_SIZE_MAX	(1 << 28)	/* 256 MB */
-+#define STACK_SIZE_MAX	(CONFIG_MAX_STACK_SIZE_MB*1024*1024)
+--- a/arch/x86/include/asm/espfix.h
++++ b/arch/x86/include/asm/espfix.h
+@@ -1,4 +1,4 @@
+-#ifdef _ASM_X86_ESPFIX_H
++#ifndef _ASM_X86_ESPFIX_H
+ #define _ASM_X86_ESPFIX_H
  
- /* This decides where the kernel will search for a free chunk of vm
-  * space during mmap's.
---- a/arch/parisc/include/asm/processor.h
-+++ b/arch/parisc/include/asm/processor.h
-@@ -55,7 +55,10 @@
- #define STACK_TOP	TASK_SIZE
- #define STACK_TOP_MAX	DEFAULT_TASK_SIZE
- 
--#define STACK_SIZE_MAX	(1 << 30)	/* 1 GB */
-+/* Allow bigger stacks for 64-bit processes */
-+#define STACK_SIZE_MAX	(USER_WIDE_MODE					\
-+			 ? (1 << 30)	/* 1 GB */			\
-+			 : (CONFIG_MAX_STACK_SIZE_MB*1024*1024))
- 
- #endif
- 
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -72,10 +72,10 @@ static unsigned long mmap_upper_limit(vo
- {
- 	unsigned long stack_base;
- 
--	/* Limit stack size to 1GB - see setup_arg_pages() in fs/exec.c */
-+	/* Limit stack size - see setup_arg_pages() in fs/exec.c */
- 	stack_base = rlimit_max(RLIMIT_STACK);
--	if (stack_base > (1 << 30))
--		stack_base = 1 << 30;
-+	if (stack_base > STACK_SIZE_MAX)
-+		stack_base = STACK_SIZE_MAX;
- 
- 	return PAGE_ALIGN(STACK_TOP - stack_base);
- }
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -580,3 +580,18 @@ config PGTABLE_MAPPING
- 
- 	  You can check speed with zsmalloc benchmark:
- 	  https://github.com/spartacus06/zsmapbench
-+
-+config MAX_STACK_SIZE_MB
-+	int "Maximum user stack size for 32-bit processes (MB)"
-+	default 80
-+	range 8 256 if METAG
-+	range 8 2048
-+	depends on STACK_GROWSUP && (!64BIT || COMPAT)
-+	help
-+	  This is the maximum stack size in Megabytes in the VM layout of 32-bit
-+	  user processes when the stack grows upwards (currently only on parisc
-+	  and metag arch). The stack will be located at the highest memory
-+	  address minus the given value, unless the RLIMIT_STACK hard limit is
-+	  changed to a smaller value in which case that is used.
-+
-+	  A sane initial value is 80 MB.
+ #ifdef CONFIG_X86_64
 
 
