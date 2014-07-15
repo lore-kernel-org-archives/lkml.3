@@ -1,62 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759562AbaGOVqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:46:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55035 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964847AbaGOVjF (ORCPT
+	id S1759671AbaGOVrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:47:09 -0400
+Received: from frost.carfax.org.uk ([85.119.82.111]:45759 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759571AbaGOVrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:05 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: ChiaHao <andy.jhshiu@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 153/198] arm64: Bug fix in stack alignment exception
-Date: Tue, 15 Jul 2014 14:30:23 -0700
-Message-Id: <1405459868-15089-154-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+	Tue, 15 Jul 2014 17:47:04 -0400
+Date: Tue, 15 Jul 2014 22:47:01 +0100
+From: Hugo Mills <hugo-lkml@carfax.org.uk>
+To: Norbert Preining <preining@logic.at>
+Cc: Btrfs mailing list <linux-btrfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: btrfs hanging since 3.16-rc3 or so
+Message-ID: <20140715214701.GD4834@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+	Norbert Preining <preining@logic.at>,
+	Btrfs mailing list <linux-btrfs@vger.kernel.org>,
+	linux-kernel@vger.kernel.org
+References: <20140715134046.GX23620@auth.logic.tuwien.ac.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DiL7RhKs8rK9YGuF"
+Content-Disposition: inline
+In-Reply-To: <20140715134046.GX23620@auth.logic.tuwien.ac.at>
+X-GPG-Fingerprint: B25A 5A66 69D3 1E15 2DD8  0998 BF73 F4E5 65E7 4AC0
+X-GPG-Key: 65E74AC0
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--DiL7RhKs8rK9YGuF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: ChiaHao <andy.jhshiu@gmail.com>
+cc linux-btrfs list
 
-commit 3906c2b53cd23c2ae03e6ce41432c8e7f0a3cbbb upstream.
+On Tue, Jul 15, 2014 at 10:40:46PM +0900, Norbert Preining wrote:
+> Dear all
+> 
+> (please keep Cc)
+> 
+> Since 3.16-rc3 or so I regularly get btrfs hanging in some transations.
+> 
+> Usually during apt-get upgrade or some other large file operations
+> (cowbuilder building of packages).
+> 
+> The log files give me for loads of processes things like:
+> [ 6236.746546] INFO: task aptitude:22775 blocked for more than 120 seconds.
+> [ 6236.746547]       Tainted: G        W  O  3.16.0-rc5 #27
+> [ 6236.746548] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 6236.746549] aptitude        D ffff8800b21a3868     0 22775  22709 0x00000000
+> [ 6236.746550]  ffff88003644fd10 0000000000000082 ffffffff81a15500 ffff88003644ffd8
+> [ 6236.746552]  ffff8800b21a3430 0000000000011c00 ffff880147da9c30 ffff880147da9c30
+> [ 6236.746553]  ffff88003644fd58 ffff880034b3ed48 ffff880034b3ed38 ffff88003644fd20
+> [ 6236.746555] Call Trace:
+> [ 6236.746557]  [<ffffffff81585b4a>] schedule+0x64/0x66
+> [ 6236.746560]  [<ffffffff811bb22e>] btrfs_wait_logged_extents+0xa4/0xdc
+> [ 6236.746561]  [<ffffffff810635c1>] ? finish_wait+0x5d/0x5d
+> [ 6236.746564]  [<ffffffff811d9489>] btrfs_sync_log+0x5ef/0x8a2
+> [ 6236.746567]  [<ffffffff811b43cf>] btrfs_sync_file+0x21b/0x24d
+> [ 6236.746569]  [<ffffffff811b43cf>] ? btrfs_sync_file+0x21b/0x24d
+> [ 6236.746571]  [<ffffffff8110db8a>] vfs_fsync_range+0x1c/0x1e
+> [ 6236.746574]  [<ffffffff810d1681>] SyS_msync+0x15d/0x1ea
+> [ 6236.746575]  [<ffffffff81588712>] system_call_fastpath+0x16/0x1b
+> 
+> THis is aptitude, but I have all the other tasks accessing the disk
+> hanging, too.
+> 
+> This time, issueing a Sysrq-s for emergency syncing did the laptop
+> out of the hang.
+> 
+> Hardware: Sonly VAIO Pro 13
+> Distribution: Debian/sid
+> self compiled kernel, config on request.
+> 
+> Please let me know if there is anything else I can provide.
+> 
+> Thanks a lot
+> 
+> Norbert
+> 
+> ------------------------------------------------------------------------
+> PREINING, Norbert                               http://www.preining.info
+> JAIST, Japan                                 TeX Live & Debian Developer
+> GPG: 0x860CDC13   fp: F7D8 A928 26E3 16A1 9FA0  ACF0 6CAC A448 860C DC13
+> ------------------------------------------------------------------------
 
-The value of ESR has been stored into x1, and should be directly pass to
-do_sp_pc_abort function, "MOV x1, x25" is an extra operation and do_sp_pc_abort
-will get the wrong value of ESR.
-
-Signed-off-by: ChiaHao <andy.jhshiu@gmail.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/arm64/kernel/entry.S | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 4d2c6f3..013baa0 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -275,7 +275,6 @@ el1_sp_pc:
- 	 * Stack or PC alignment exception handling
- 	 */
- 	mrs	x0, far_el1
--	mov	x1, x25
- 	mov	x2, sp
- 	b	do_sp_pc_abort
- el1_undef:
 -- 
-1.9.1
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+      --- Normaliser unix c'est comme pasteuriser le Camembert ---       
 
+--DiL7RhKs8rK9YGuF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUBU8WhVFheFHXiqx3kAQLpDA/+LwB+ZZW22GlcWaUlTkNxkVWGGQ7UmOS7
+SZNzDvwdl2edBE2E4gbiHjJwXU0DL7EKPZqRmvIotXd+h6MAq+CW97MPj4kVp+sW
+Cwgq2C6RyAuzkjoovnxO7GLOkW8Fyj/4Vq61x1kKCBGhLYWBrZMEM+PKr63YMRED
+Pa9ng++bK8D522pMlZ/i66GRmuezpJH5oHCGv8zexAQ+GxwisfHn5iiDs4RMnK8I
+v/dirWaZLkssIZzDSGDiI6lRv5EPorrndWu/4VMMQ07W4lIRQKhbiJPzCKu+WrOf
+POM9dnjkxu7agzajIDXPwEwo96G6edBES+JRPrmSG5cy+bP/tF+lhQi73Drnc6YK
+54sDiI8fTB7++AJBh+0GJGz0jh2ww3u6zmfZItN5nkgPzzZh1kWcG/de7VQ//9/f
+varn0myUKUAVtroZ9SITnp01sMUB2r1ae0SEp/9DeRLb8psFxkmcDCGEx9tdiogc
+Uny37zrfmI1BKhuylErqKEuMiEjFi1VsswtI+F5IXRFA4wsEUB40MiIzNYaJjxvf
+pLJohPt1oCtZStc7lj/dwRcia95a4+T4+cVo+YrAVbBx30P4RExTcfRyLfIEDizK
+iir+mJyJSPJ26GwfurQUo8nsew3IaAMmbL4u1HmFglJzw1PmgeRJ6/GLgscHIsez
+E0/Auva6KNw=
+=ml6g
+-----END PGP SIGNATURE-----
+
+--DiL7RhKs8rK9YGuF--
