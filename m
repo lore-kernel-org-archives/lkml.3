@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760164AbaGOWSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:18:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54197 "EHLO
+	id S1760185AbaGOWTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:19:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54185 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933620AbaGOVeg (ORCPT
+	with ESMTP id S933396AbaGOVeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:34:36 -0400
+	Tue, 15 Jul 2014 17:34:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Aleksander Morgado <aleksander@aleksander.es>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 084/198] drm/radeon/dp: fix lane/clock setup for dp 1.2 capable devices
-Date: Tue, 15 Jul 2014 14:29:14 -0700
-Message-Id: <1405459868-15089-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 072/198] usb: qcserial: add Netgear AirCard 341U
+Date: Tue, 15 Jul 2014 14:29:02 -0700
+Message-Id: <1405459868-15089-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,62 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit 3b6d9fd23e015b5397c438fd3cd74147d2c805b6 upstream.
+commit ff1fcd50bc2459744e6f948310bc18eb7d6e8c72 upstream.
 
-Only DCE5+ asics support DP 1.2.
-
-Noticed by ArtForz on IRC.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ Aleksander: backport to 3.13-stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_dp.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/usb/serial/qcserial.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
-index fb3ae07..a1a0350 100644
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -384,6 +384,19 @@ static int dp_get_max_dp_pix_clock(int link_rate,
- 
- /***** radeon specific DP functions *****/
- 
-+static int radeon_dp_get_max_link_rate(struct drm_connector *connector,
-+				       u8 dpcd[DP_DPCD_SIZE])
-+{
-+	int max_link_rate;
-+
-+	if (radeon_connector_is_dp12_capable(connector))
-+		max_link_rate = min(drm_dp_max_link_rate(dpcd), 540000);
-+	else
-+		max_link_rate = min(drm_dp_max_link_rate(dpcd), 270000);
-+
-+	return max_link_rate;
-+}
-+
- /* First get the min lane# when low rate is used according to pixel clock
-  * (prefer low rate), second check max lane# supported by DP panel,
-  * if the max lane# < low rate lane# then use max lane# instead.
-@@ -393,7 +406,7 @@ static int radeon_dp_get_dp_lane_number(struct drm_connector *connector,
- 					int pix_clock)
- {
- 	int bpp = convert_bpc_to_bpp(radeon_get_monitor_bpc(connector));
--	int max_link_rate = drm_dp_max_link_rate(dpcd);
-+	int max_link_rate = radeon_dp_get_max_link_rate(connector, dpcd);
- 	int max_lane_num = drm_dp_max_lane_count(dpcd);
- 	int lane_num;
- 	int max_dp_pix_clock;
-@@ -431,7 +444,7 @@ static int radeon_dp_get_dp_link_clock(struct drm_connector *connector,
- 			return 540000;
- 	}
- 
--	return drm_dp_max_link_rate(dpcd);
-+	return radeon_dp_get_max_link_rate(connector, dpcd);
- }
- 
- static u8 radeon_dp_encoder_service(struct radeon_device *rdev,
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 6c0a542..781e4db 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -151,6 +151,9 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
 -- 
 1.9.1
 
