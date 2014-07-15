@@ -1,176 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaGOP2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:28:22 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:50661 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754475AbaGOPWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:22:49 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v3 02/15] drivers: clk: st: use static const for stm_fs tables
-Date: Tue, 15 Jul 2014 17:20:18 +0200
-Message-Id: <1405437631-23623-3-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-15_05:2014-07-15,2014-07-15,1970-01-01 signatures=0
+	id S1755991AbaGOP2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:28:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36266 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754972AbaGOP2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:28:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,666,1400050800"; 
+   d="scan'208";a="570151461"
+Message-ID: <53C54876.5090606@linux.intel.com>
+Date: Tue, 15 Jul 2014 23:27:50 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 00/16] Enable support of IOAPIC hotplug on x86 platforms
+References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com> <20140714172642.GA12920@laptop.dumpdata.com> <20140714194133.GA22857@laptop.dumpdata.com>
+In-Reply-To: <20140714194133.GA22857@laptop.dumpdata.com>
+Content-Type: multipart/mixed;
+ boundary="------------000209040300010602040808"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-converts stm_fs tables into static const
+This is a multi-part message in MIME format.
+--------------000209040300010602040808
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- drivers/clk/st/clkgen-fsyn.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+Hi Konrad,
+	Thanks for testing the patch set! After analyzing the log
+files, I feel something is wrong with the Radeon driver. With good
+configuration, IRQ18 is shared by OHCI controllers and Radeon GPU
+card. With bad configuration, only OHCI controllers are bound to
+IRQ18. Radeon GPU card may have been bound to another wrong IRQ,
+which then causes the interrupt storm.
+	But I have no hardware available to verify the hypothesis,
+so could you please help to apply the attached patch and run the
+test again?
+	Thanks!
+	Gerry
 
-diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
-index 4f53ee0..a7e5db4 100644
---- a/drivers/clk/st/clkgen-fsyn.c
-+++ b/drivers/clk/st/clkgen-fsyn.c
-@@ -41,7 +41,7 @@ struct stm_fs {
- 	unsigned long nsdiv;
- };
- 
--static struct stm_fs fs216c65_rtbl[] = {
-+static const struct stm_fs fs216c65_rtbl[] = {
- 	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 312.5 Khz */
- 	{ .mdiv = 0x17, .pe = 0x25ed,	.sdiv = 0x1,	.nsdiv = 0 },	/* 27    MHz */
- 	{ .mdiv = 0x1a, .pe = 0x7b36,	.sdiv = 0x2,	.nsdiv = 1 },	/* 36.87 MHz */
-@@ -49,13 +49,13 @@ static struct stm_fs fs216c65_rtbl[] = {
- 	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x1,	.nsdiv = 1 },	/* 108   MHz */
- };
- 
--static struct stm_fs fs432c65_rtbl[] = {
-+static const struct stm_fs fs432c65_rtbl[] = {
- 	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 625   Khz */
- 	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108   MHz */
- 	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   MHz */
- };
- 
--static struct stm_fs fs660c32_rtbl[] = {
-+static const struct stm_fs fs660c32_rtbl[] = {
- 	{ .mdiv = 0x01, .pe = 0x2aaa,	.sdiv = 0x8,	.nsdiv = 0 },	/* 600   KHz */
- 	{ .mdiv = 0x02, .pe = 0x3d33,	.sdiv = 0x0,	.nsdiv = 0 },	/* 148.5 Mhz */
- 	{ .mdiv = 0x13, .pe = 0x5bcc,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   Mhz */
-@@ -82,9 +82,9 @@ struct clkgen_quadfs_data {
- 	struct clkgen_field nsdiv[QUADFS_MAX_CHAN];
- 
- 	const struct clk_ops *pll_ops;
--	struct stm_fs *rtbl;
-+	const struct stm_fs *rtbl;
- 	u8 rtbl_cnt;
--	int  (*get_rate)(unsigned long , struct stm_fs *,
-+	int  (*get_rate)(unsigned long , const struct stm_fs *,
- 			unsigned long *);
- };
- 
-@@ -94,11 +94,11 @@ static const struct clk_ops st_quadfs_fs216c65_ops;
- static const struct clk_ops st_quadfs_fs432c65_ops;
- static const struct clk_ops st_quadfs_fs660c32_ops;
- 
--static int clk_fs216c65_get_rate(unsigned long, struct stm_fs *,
-+static int clk_fs216c65_get_rate(unsigned long, const struct stm_fs *,
- 		unsigned long *);
--static int clk_fs432c65_get_rate(unsigned long, struct stm_fs *,
-+static int clk_fs432c65_get_rate(unsigned long, const struct stm_fs *,
- 		unsigned long *);
--static int clk_fs660c32_dig_get_rate(unsigned long, struct stm_fs *,
-+static int clk_fs660c32_dig_get_rate(unsigned long, const struct stm_fs *,
- 		unsigned long *);
- /*
-  * Values for all of the standalone instances of this clock
-@@ -106,7 +106,7 @@ static int clk_fs660c32_dig_get_rate(unsigned long, struct stm_fs *,
-  * that the individual channel standby control bits (nsb) are in the
-  * first register along with the PLL control bits.
-  */
--static struct clkgen_quadfs_data st_fs216c65_416 = {
-+static const struct clkgen_quadfs_data st_fs216c65_416 = {
- 	/* 416 specific */
- 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
- 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
-@@ -143,7 +143,7 @@ static struct clkgen_quadfs_data st_fs216c65_416 = {
- 	.get_rate	= clk_fs216c65_get_rate,
- };
- 
--static struct clkgen_quadfs_data st_fs432c65_416 = {
-+static const struct clkgen_quadfs_data st_fs432c65_416 = {
- 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
- 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
- 		    CLKGEN_FIELD(0x0, 0x1, 11),
-@@ -179,7 +179,7 @@ static struct clkgen_quadfs_data st_fs432c65_416 = {
- 	.get_rate	= clk_fs432c65_get_rate,
- };
- 
--static struct clkgen_quadfs_data st_fs660c32_E_416 = {
-+static const struct clkgen_quadfs_data st_fs660c32_E_416 = {
- 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
- 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
- 		    CLKGEN_FIELD(0x0, 0x1, 11),
-@@ -215,7 +215,7 @@ static struct clkgen_quadfs_data st_fs660c32_E_416 = {
- 	.get_rate	= clk_fs660c32_dig_get_rate,
- };
- 
--static struct clkgen_quadfs_data st_fs660c32_F_416 = {
-+static const struct clkgen_quadfs_data st_fs660c32_F_416 = {
- 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
- 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
- 		    CLKGEN_FIELD(0x0, 0x1, 11),
-@@ -650,7 +650,7 @@ static int quadfs_fsynth_is_enabled(struct clk_hw *hw)
- 
- #define P15			(uint64_t)(1 << 15)
- 
--static int clk_fs216c65_get_rate(unsigned long input, struct stm_fs *fs,
-+static int clk_fs216c65_get_rate(unsigned long input, const struct stm_fs *fs,
- 		unsigned long *rate)
- {
- 	uint64_t res;
-@@ -670,7 +670,7 @@ static int clk_fs216c65_get_rate(unsigned long input, struct stm_fs *fs,
- 	return 0;
- }
- 
--static int clk_fs432c65_get_rate(unsigned long input, struct stm_fs *fs,
-+static int clk_fs432c65_get_rate(unsigned long input, const struct stm_fs *fs,
- 		unsigned long *rate)
- {
- 	uint64_t res;
-@@ -693,7 +693,7 @@ static int clk_fs432c65_get_rate(unsigned long input, struct stm_fs *fs,
- #define P20		(uint64_t)(1 << 20)
- 
- static int clk_fs660c32_dig_get_rate(unsigned long input,
--				struct stm_fs *fs, unsigned long *rate)
-+				const struct stm_fs *fs, unsigned long *rate)
- {
- 	unsigned long s = (1 << fs->sdiv);
- 	unsigned long ns;
-@@ -749,7 +749,7 @@ static long quadfs_find_best_rate(struct clk_hw *hw, unsigned long drate,
- {
- 	struct st_clk_quadfs_fsynth *fs = to_quadfs_fsynth(hw);
- 	int (*clk_fs_get_rate)(unsigned long ,
--				struct stm_fs *, unsigned long *);
-+				const struct stm_fs *, unsigned long *);
- 	struct stm_fs prev_params;
- 	unsigned long prev_rate, rate = 0;
- 	unsigned long diff_rate, prev_diff_rate = ~0;
-@@ -793,7 +793,7 @@ static unsigned long quadfs_recalc_rate(struct clk_hw *hw,
- 	unsigned long rate = 0;
- 	struct stm_fs params;
- 	int (*clk_fs_get_rate)(unsigned long ,
--				struct stm_fs *, unsigned long *);
-+				const struct stm_fs *, unsigned long *);
- 
- 	clk_fs_get_rate = fs->data->get_rate;
- 
--- 
-1.9.1
+On 2014/7/15 3:41, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jul 14, 2014 at 01:26:42PM -0400, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Jun 25, 2014 at 04:40:31PM +0800, Jiang Liu wrote:
+>>> This patch set enhances IOAPIC core and ACPI drivers to support IOAPIC
+>>> hotplug on x86 platforms. It's based on tip/x86/apic.
+>>>
+>>> You may pull it from 
+>>> https://github.com/jiangliu/linux.git ioapic/hotplug_v3
+>>
+>> With this patchset (on top of 3.16-rc5) my USB driver gets notified
+>> it has interrupts but it thinks it does not have to acknowledge any.
+>> I can only reproduce this under a 32-bit arch so far.
+>>
+>> Please see the good.log and the bad.log 
+> 
+> tglx asked for apic=debug on the line, so here they are again with
+> those parameters.
+> 
+> Please note that the 'good.log' this time is
+>  3.16-rc6 + tip/master + tip/x86/apic
+> 
+> And 'bad.log' is:
+> 
+>  3.16-rc6 + tip/master + tip/x86/apic + ioapic/hotplug_v3
+> 
 
+--------------000209040300010602040808
+Content-Type: text/plain; charset=gb18030;
+ name="tmp2.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="tmp2.patch"
+
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 9d2ebd5fd9aa..4b30023ccefe 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -404,6 +404,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 	char *link = NULL;
+ 	char link_desc[16];
+ 	int rc;
++	int irq = 0;
+ 
+ 	pin = dev->pin;
+ 	if (!pin) {
+@@ -413,8 +414,11 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 		return 0;
+ 	}
+ 
+-	if (dev->irq > 0)
+-		return 0;
++	if (dev->irq > 0) {
++		dev_warn(&dev->dev, "already assigned IRQ%d\n", dev->irq);
++		irq = dev->irq;
++		//return 0;
++	}
+ 
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry) {
+@@ -459,6 +463,8 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 		return rc;
+ 	}
+ 	dev->irq = rc;
++	if (irq != dev->irq)
++		dev_warn(&dev->dev, "assigned new IRQ%d\n", dev->irq);
+ 
+ 	if (link)
+ 		snprintf(link_desc, sizeof(link_desc), " -> Link[%s]", link);
+diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+index 16807afab362..be1c133eac5b 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -287,6 +287,8 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
+ 	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
+ 
+ 	rdev->irq.installed = true;
++	dev_warn(&rdev->ddev->pdev->dev, "Radeon device interrupt IRQ%d\n",
++		 rdev->ddev->pdev->irq);
+ 	r = drm_irq_install(rdev->ddev, rdev->ddev->pdev->irq);
+ 	if (r) {
+ 		rdev->irq.installed = false;
+
+--------------000209040300010602040808--
