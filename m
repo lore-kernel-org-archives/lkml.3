@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998AbaGOW1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:27:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53904 "EHLO
+	id S965029AbaGOW15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:27:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758107AbaGOVbZ (ORCPT
+	with ESMTP id S1758074AbaGOVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:31:25 -0400
+	Tue, 15 Jul 2014 17:31:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sven Wegener <sven.wegener@stealer.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Tim Gardner <tim.gardner@canonical.com>,
+Cc: Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 003/198] ipv6: Fix regression caused by efe4208 in udp_v6_mcast_next()
-Date: Tue, 15 Jul 2014 14:27:53 -0700
-Message-Id: <1405459868-15089-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 020/198] PCI: Add new ID for Intel GPU "spurious interrupt" quirk
+Date: Tue, 15 Jul 2014 14:28:10 -0700
+Message-Id: <1405459868-15089-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,53 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-commit 3bfdc59a6c24608ed23e903f670aaf5f58c7a6f3 upstream.
+commit 7c82126a94e69bbbac586f0249e7ef11e681246c upstream.
 
-Commit efe4208 ("ipv6: make lookups simpler and faster") introduced a
-regression in udp_v6_mcast_next(), resulting in multicast packets not
-reaching the destination sockets under certain conditions.
+After a CPU upgrade while keeping the same mainboard, we faced "spurious
+interrupt" problems again.
 
-The packet's IPv6 addresses are wrongly compared to the IPv6 addresses
-from the function's socket argument, which indicates the starting point
-for looping, instead of the loop variable. If the addresses from the
-first socket do not match the packet's addresses, no socket in the list
-will match.
+It turned out that the new CPU also featured a new GPU with a different PCI
+ID.
 
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Tim Gardner <tim.gardner@canonical.com>
+Add this PCI ID to the quirk table.  Probably all other Intel GPU PCI IDs
+are affected, too, but I don't want to add them without a test system.
+
+See f67fd55fa96f ("PCI: Add quirk for still enabled interrupts on Intel
+Sandy Bridge GPUs") for some history.
+
+[bhelgaas: add f67fd55fa96f reference, stable tag]
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/udp.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/pci/quirks.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 089c741..6028bc74 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -711,15 +711,15 @@ static struct sock *udp_v6_mcast_next(struct net *net, struct sock *sk,
- 				if (inet->inet_dport != rmt_port)
- 					continue;
- 			}
--			if (!ipv6_addr_any(&sk->sk_v6_daddr) &&
--			    !ipv6_addr_equal(&sk->sk_v6_daddr, rmt_addr))
-+			if (!ipv6_addr_any(&s->sk_v6_daddr) &&
-+			    !ipv6_addr_equal(&s->sk_v6_daddr, rmt_addr))
- 				continue;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 3a02717..fbc066d 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2949,6 +2949,7 @@ static void disable_igfx_irq(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
  
- 			if (s->sk_bound_dev_if && s->sk_bound_dev_if != dif)
- 				continue;
- 
--			if (!ipv6_addr_any(&sk->sk_v6_rcv_saddr)) {
--				if (!ipv6_addr_equal(&sk->sk_v6_rcv_saddr, loc_addr))
-+			if (!ipv6_addr_any(&s->sk_v6_rcv_saddr)) {
-+				if (!ipv6_addr_equal(&s->sk_v6_rcv_saddr, loc_addr))
- 					continue;
- 			}
- 			if (!inet6_mc_check(s, loc_addr, rmt_addr))
+ /*
+  * PCI devices which are on Intel chips can skip the 10ms delay
 -- 
 1.9.1
 
