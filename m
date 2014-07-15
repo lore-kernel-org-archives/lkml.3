@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760152AbaGOX3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:29:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	id S1760104AbaGOX3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:29:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759402AbaGOXOW (ORCPT
+	with ESMTP id S1760044AbaGOXOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.15 75/84] drivers/rtc/rtc-puv3.c: use dev_dbg() instead of dev_debug() for typo issue
-Date: Tue, 15 Jul 2014 16:18:12 -0700
-Message-Id: <20140715231715.423786550@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.15 76/84] powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+Date: Tue, 15 Jul 2014 16:18:13 -0700
+Message-Id: <20140715231715.458686856@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,40 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit c863810cefc7ffd782e5648a21bfb36a32c8b081 upstream.
+commit fb43e8477ed9006c4f397f904c691a120503038c upstream.
 
-It is only a typo issue, the related commit:
+powerpc:allmodconfig has been failing for some time with the following
+error.
 
-  "1fbc4c4 drivers/rtc/rtc-puv3.c: use dev_dbg() instead of pr_debug()"
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
 
-The related error (unicore32 with allmodconfig):
+A number of attempts to fix the problem by moving around code have been
+unsuccessful and resulted in failed builds for some configurations and
+the discovery of toolchain bugs.
 
-    CC [M]  drivers/rtc/rtc-puv3.o
-  drivers/rtc/rtc-puv3.c: In function 'puv3_rtc_setpie':
-  drivers/rtc/rtc-puv3.c:74: error: implicit declaration of function 'dev_debug'
+Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
+While this is less than perfect, it avoids substantial code changes
+which would otherwise be necessary just to make COMPILE_TEST builds
+happy and might have undesired side effects.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-puv3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-puv3.c
-+++ b/drivers/rtc/rtc-puv3.c
-@@ -71,7 +71,7 @@ static int puv3_rtc_setpie(struct device
- {
- 	unsigned int tmp;
- 
--	dev_debug(dev, "%s: pie=%d\n", __func__, enabled);
-+	dev_dbg(dev, "%s: pie=%d\n", __func__, enabled);
- 
- 	spin_lock_irq(&puv3_rtc_pie_lock);
- 	tmp = readl(RTC_RTSR) & ~RTC_RTSR_HZE;
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -414,7 +414,7 @@ config KEXEC
+ config CRASH_DUMP
+ 	bool "Build a kdump crash kernel"
+ 	depends on PPC64 || 6xx || FSL_BOOKE || (44x && !SMP)
+-	select RELOCATABLE if PPC64 || 44x || FSL_BOOKE
++	select RELOCATABLE if (PPC64 && !COMPILE_TEST) || 44x || FSL_BOOKE
+ 	help
+ 	  Build a kernel suitable for use as a kdump capture kernel.
+ 	  The same kernel binary can be used as production kernel and dump
+@@ -1009,6 +1009,7 @@ endmenu
+ if PPC64
+ config RELOCATABLE
+ 	bool "Build a relocatable kernel"
++	depends on !COMPILE_TEST
+ 	select NONSTATIC_KERNEL
+ 	help
+ 	  This builds a kernel image that is capable of running anywhere
 
 
