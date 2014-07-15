@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaGONs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:48:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21730 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaGONsz (ORCPT
+	id S1752198AbaGONtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:49:45 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40300 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750899AbaGONtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:48:55 -0400
-X-IronPort-AV: E=Sophos;i="5.01,665,1400025600"; 
-   d="scan'208";a="152988517"
-Message-ID: <1405432129.1749.5.camel@hamster.uk.xensource.com>
-Subject: xen: Fix possible page fault in fifo events
-From: Frediano Ziglio <frediano.ziglio@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 14:48:49 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Tue, 15 Jul 2014 09:49:43 -0400
+X-Sasl-enc: On/LEHmpsy/nySBOQ81zTJUPTb5QN/S7MUVNtkNsRxeK 1405432182
+Date: Tue, 15 Jul 2014 06:49:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Chen, Gong" <gong.chen@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Noever <andreas.noever@gmail.com>
+Subject: Re: linux-next: manual merge of the char-misc tree with the ia64 tree
+Message-ID: <20140715134920.GC17795@kroah.com>
+References: <20140715164349.5807b892@canb.auug.org.au>
+ <20140715134458.GB17795@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715134458.GB17795@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sync_test_bit function require a long* read access to pointer.
-This is a problem if the you are using last entry in the page causing
-an access to next page. If this page is not readable you get a memory
-access failure (page fault).
-All other x64 bit functions access memory using 32 bit operations.
-For processors different than x64 long aligned operations are used.
+On Tue, Jul 15, 2014 at 06:44:58AM -0700, Greg KH wrote:
+> On Tue, Jul 15, 2014 at 04:43:49PM +1000, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Today's linux-next merge of the char-misc tree got conflicts in
+> > drivers/Kconfig and drivers/Makefile between commit 76ac8275f296
+> > ("trace, RAS: Add basic RAS trace event") from the ia64 tree and commit
+> > 16603153666d ("thunderbolt: Add initial cactus ridge NHI support") from
+> > the char-misc tree.
+> > 
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+> 
+> Looks good, thanks.
 
-Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
----
- drivers/xen/events/events_fifo.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Wait, do we really need a drivers/ras directory for one single driver?
+Why not put it in drivers/misc/ instead?  A whole subdir at the top of
+drivers seems overkill and odd.
 
-diff --git a/drivers/xen/events/events_fifo.c b/drivers/xen/events/events_fifo.c
-index d302639..af4672d 100644
---- a/drivers/xen/events/events_fifo.c
-+++ b/drivers/xen/events/events_fifo.c
-@@ -168,6 +168,11 @@ static int evtchn_fifo_setup(struct irq_info *info)
- 	return ret;
- }
- 
-+static __always_inline int test_fifo_bit(int nr, event_word_t *word)
-+{
-+	return (ACCESS_ONCE(*word) & (((event_word_t) 1) << nr)) != 0;
-+}
-+
- static void evtchn_fifo_bind_to_cpu(struct irq_info *info, unsigned cpu)
- {
- 	/* no-op */
-@@ -188,7 +193,7 @@ static void evtchn_fifo_set_pending(unsigned port)
- static bool evtchn_fifo_is_pending(unsigned port)
- {
- 	event_word_t *word = event_word_from_port(port);
--	return sync_test_bit(EVTCHN_FIFO_BIT(PENDING, word), BM(word));
-+	return test_fifo_bit(EVTCHN_FIFO_PENDING, word);
- }
- 
- static bool evtchn_fifo_test_and_set_mask(unsigned port)
-@@ -206,7 +211,7 @@ static void evtchn_fifo_mask(unsigned port)
- static bool evtchn_fifo_is_masked(unsigned port)
- {
- 	event_word_t *word = event_word_from_port(port);
--	return sync_test_bit(EVTCHN_FIFO_BIT(MASKED, word), BM(word));
-+	return test_fifo_bit(EVTCHN_FIFO_MASKED, word);
- }
- /*
-  * Clear MASKED, spinning if BUSY is set.
--- 
-1.9.1
+As it's a memory driver, what about drivers/firmware/ or drivers/edac/
+or drivers/platform?
 
+thanks,
 
+greg k-h
