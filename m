@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111AbaGOHDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 03:03:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:56357 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaGOHDG (ORCPT
+	id S1758094AbaGOHGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 03:06:06 -0400
+Received: from dmz-mailsec-scanner-4.mit.edu ([18.9.25.15]:42651 "EHLO
+	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757843AbaGOHGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 03:03:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 38/38] asm-generic: introduc Kbuild.generic
-Date: Tue, 15 Jul 2014 09:03 +0200
-Message-ID: <4667634.oiTEQ4v5vj@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405350546-28467-38-git-send-email-sam@ravnborg.org>
-References: <20140714150609.GA28358@ravnborg.org> <1405350546-28467-1-git-send-email-sam@ravnborg.org> <1405350546-28467-38-git-send-email-sam@ravnborg.org>
+	Tue, 15 Jul 2014 03:06:04 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jul 2014 03:06:04 EDT
+X-AuditID: 1209190f-f79f86d0000061c8-c2-53c4d1ad2183
+Message-ID: <53C4D12E.3040807@mit.edu>
+Date: Tue, 15 Jul 2014 12:28:54 +0530
+From: "Srivatsa S. Bhat" <srivatsa@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Gx18eqHNcwLu992BDGgkUQhfH6qHIqC6Cz6iLGcsztv
- CKWsvqJ8eg4cMcvk6ZOGwgsyPdVhlpMikGKAZfaIlsSdQJ4WTr
- Kha+/JK+8NB+rTNqllhJvJa/JCNh69JxsMGGoFh94uQXIk46b8
- eqMmrHLGaajxhw8Z+rSgM5Gprk1QoggmznTHvIFnxLLqYtfU+Y
- EDZnE9J/9S7M4BErqG3feyeEbK0S34jBn6hu8gbawUcRNXiHOv
- 5MKxX8GIaOMtSxQoFtazgs8jlILipKnvEdZIECIADMOxWfXESt
- mzrg76+rSVZ3Eq7RcZRtQbuHxCTpHicOOUsaZmxr74I20UZtJ/
- Zm14iw9J3/H+2xCGxNG4=
+To: Saravana Kannan <skannan@codeaurora.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org> <1405052287-4744-1-git-send-email-skannan@codeaurora.org> <CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com> <2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org> <CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com> <53C0A12A.2060204@codeaurora.org> <CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com> <53C42AA8.8010107@codeaurora.org> <CAKohpomkqbHZo9KrJMSwsEKGt6+Ac2Fg2X0+S7ZAo=OzhAc45g@mail.gmail.com> <53C4BDFB.70707@codeaurora.org>
+In-Reply-To: <53C4BDFB.70707@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsUixG6nrrv24pFggwM9ihabHl9jtZi4/yy7
+	xeVdc9gsPvceYbQ4c/oSq8WPM90sFgcuTmSzOLu8mc1i41cPB06Py329TB4LNpV63Lm2h81j
+	85J6jy1X21k8Pm+SC2CL4rJJSc3JLEst0rdL4Mr4vm0Oa8F+0Yqe3RfYGhg7BbsYOTkkBEwk
+	rl85ygJhi0lcuLeerYuRi0NIYDaTxLH3fxghnI2MEreajrBAONuZJBrPPQFr4RVQkzixcAJQ
+	FQcHi4CqxN/eFBCTTUBbYtlGSZAKUYE4icbj3xkhqgUlTs4E6eTgEBGIlbjUyQ8ykVlgLbPE
+	g2/TWEFqhAXCJGZuWMcEtYpFov3fYbBmTgEdid+XJ7ODNDMLqEusnycEEmYWkJfY/nYO8wRG
+	wVlIVsxCqJqFpGoBI/MqRtmU3Crd3MTMnOLUZN3i5MS8vNQiXRO93MwSvdSU0k2MoBjhlOTf
+	wfjtoNIhRgEORiUeXol3h4OFWBPLiitzDzFKcjApifJ+WXMkWIgvKT+lMiOxOCO+qDQntfgQ
+	owQHs5IIr8dioBxvSmJlVWpRPkxKmoNFSZz3rbVVsJBAemJJanZqakFqEUxWhoNDSYKXAZgK
+	hASLUtNTK9Iyc0oQ0kwcnCDDeYCGv78AMry4IDG3ODMdIn+KUVFKnPf/eaCEAEgiozQPrheW
+	wl4xigO9Isz7BqSdB5j+4LpfAQ1mAhpcXnMYZHBJIkJKqoFR8qjC5O/l9cfvHfp5rPfi2vZc
+	1rnVP1JtthzfbdotLVzrdveaRdbJXwe8n7yRfmvH8zHd+UhliMfsoidrNv/1ynFcszRDavq6
+	GAWTilX9Hiu3fPq6+06XnXwC201WoywRpoTN01nE/qjaRNp1/1f0bdO+KaL4UuP6368yF5fw
+	8m07MFvoyKWFSizFGYmGWsxFxYkANsNRuzwDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 July 2014 17:09:06 Sam Ravnborg wrote:
-> Kbuild.generic is for asm-generic files that are used
-> by all architectures.
-> So rather than adding the file to the individual Kbuild files
-> it is enough to add it to this file
+On 07/15/2014 11:06 AM, Saravana Kannan wrote:
+> On 07/14/2014 09:35 PM, Viresh Kumar wrote:
+>> On 15 July 2014 00:38, Saravana Kannan <skannan@codeaurora.org> wrote:
+>>> Yeah, it definitely crashes if policy->cpu if an offline cpu. Because
+>>> the
+>>> mutex would be uninitialized if it's stopped after boot or it would
+>>> never
+>>> have been initialized (depending on how you fix policy->cpu at boot).
+>>>
+>>> Look at this snippet on the actual tree and it should be pretty evident.
+>>
+>> Yeah, I missed it. So the problem is we initialize timer_mutex's for
+>> policy->cpus. So we need to do that just for policy->cpu and also we
+>> don't
+>> need a per-cpu timer_mutex anymore.
+>>
 > 
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+> Btw, I tried to take a stab at removing any assumption in cpufreq code
+> about policy->cpu being ONLINE.
 
-This has been suggested in the past, and I remember there being some
-controversy around it, but I don't really mind it, so you have my
-ok in principle. Two points though that we have to work out first:
+Wait, allowing an offline CPU to be the policy->cpu (i.e., the CPU which is
+considered as the master of the policy/group) is just absurd. If there is
+no leader, there is no army. We should NOT sacrifice sane semantics for the
+sake of simplifying the code.
 
-> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-> index 96e54be..e09f8e7 100644
-> --- a/arch/alpha/include/asm/Kbuild
-> +++ b/arch/alpha/include/asm/Kbuild
-> @@ -1,9 +1,9 @@
-> -
-> +# Generic wrappers from include/asm-generic
-> +include include/asm-generic/Kbuild.generic
+> There are 160 instances of those of with
+> 23 are in cpufreq.c
+>
 
-We have the same kind of header for the uapi files, it's called 
-include/uapi/asm-generic/Kbuild.asm. I don't know why I picked that
-name back then, Kbuild.generic seems more appropriate, but I think
-either way it would be good to be consistent.
+And that explains why. It is just *natural* to assume that the CPUs governed
+by a policy are online. Especially so for the CPU which is supposed to be
+the policy leader. Let us please not change that - it will become
+counter-intuitive if we do so. [ The other reason is that physical hotplug
+is also possible on some systems... in that case your code might make a CPU
+which is not even present (but possible) as the policy->cpu.. and great 'fun'
+will ensue after that ;-( ]
 
-Can you either rename the existing file to Kbuild.generic, or call
-the new one Kbuild.asm as well?
+The goal of this patchset should be to just de-couple the sysfs files/ownership
+from the policy->cpu to an extent where it doesn't matter who owns those
+files, and probably make it easier to do CPU hotplug without having to
+destroy and recreate the files on every hotplug operation.
 
-> diff --git a/include/asm-generic/Kbuild.generic b/include/asm-generic/Kbuild.generic
-> new file mode 100644
-> index 0000000..f44815b
-> --- /dev/null
-> +++ b/include/asm-generic/Kbuild.generic
-> @@ -0,0 +1,6 @@
-> +# List of generic header files that is used by all architectures
-> +# This file is included by arch/*/include/asm/Kbuild
-> +#
-> +# Keep the list sorted alphabetically
-> +
-> +generic-y += mcs_spinlock.h
+This is exactly why the _implementation_ matters in this particular case -
+if we can't achieve the simplification by keeping sane semantics, then we
+shouldn't do the simplification!
 
-We have to make up our minds what we want from this list. At the moment,
-you list only one file because that is the only file that is shared across
-all architectures. The idea for this file is that architectures /can/
-provide their own (according to the comments in this file), but no
-architecture actually does.  A few thoughts on this:
+That said, I think we should keep trying - we haven't exhausted all ideas
+yet :-)
 
-* Normally we just delete any header file that is common across all
-  architectures, and change the files including it (only one is present
-  in this case) not to include it. If we do that, your new file becomes
-  pointless.
+Regards,
+Srivatsa S. Bhat
 
-* If one architecture actually starts providing its own version of this
-  file, we'd have to revert your patch first, which really defeats the
-  purpose of doing it in the first place.
-
-* We could improve the situation if the definition of this list is
-  changed so we only generate the generic header files that are not
-  already provided by an architecture. If we do this, we can consolidate
-  a lot more here, which is nice, but the cost would be equivalent to
-  another level of indirection and a potential for subtle bugs if it's
-  not done very careful.
-
-	Arnd
+> So, even if we are sure cpufreq.c is fine, it's 137 other uses spread
+> across all the other files. I definitely don't want to try and fix those
+> as part of this patch. Way too risky and hard to get the test coverage
+> it would need. Even some of the acpi cpufreq drivers seem to be making
+> this assumption.
+> 
+> Btw, I think v3 is done. I did some testing and it was fine. But made
+> some minor changes. Will test tomorrow to make sure I didn't break
+> anything with the minor changes and then send them out.
+> 
