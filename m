@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593AbaGOQHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:07:42 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:37436 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474AbaGOQHj (ORCPT
+	id S1752530AbaGOQMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:12:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49732 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaGOQMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:07:39 -0400
-Date: Tue, 15 Jul 2014 18:07:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
+	Tue, 15 Jul 2014 12:12:06 -0400
+Date: Tue, 15 Jul 2014 18:11:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715160735.GB29269@dhcp22.suse.cz>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715155537.GA19454@nhori.bos.redhat.com>
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [patch 0/4] timerfd c/r support, v4
+In-Reply-To: <20140715135445.GJ23835@moon>
+Message-ID: <alpine.DEB.2.10.1407151811050.24854@nanos>
+References: <20140623185431.396309193@openvz.org> <20140630194354.GB2305@moon> <20140715135445.GJ23835@moon>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715155537.GA19454@nhori.bos.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-07-14 11:55:37, Naoya Horiguchi wrote:
-> On Wed, Jun 18, 2014 at 04:40:45PM -0400, Johannes Weiner wrote:
-> ...
-> > diff --git a/mm/swap.c b/mm/swap.c
-> > index a98f48626359..3074210f245d 100644
-> > --- a/mm/swap.c
-> > +++ b/mm/swap.c
-> > @@ -62,6 +62,7 @@ static void __page_cache_release(struct page *page)
-> >  		del_page_from_lru_list(page, lruvec, page_off_lru(page));
-> >  		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> >  	}
-> > +	mem_cgroup_uncharge(page);
-> >  }
-> >  
-> >  static void __put_single_page(struct page *page)
-> 
-> This seems to cause a list breakage in hstate->hugepage_activelist
-> when freeing a hugetlbfs page.
+On Tue, 15 Jul 2014, Cyrill Gorcunov wrote:
 
-This looks like a fall out from
-http://marc.info/?l=linux-mm&m=140475936311294&w=2
-
-I didn't get to review this one but the easiest fix seems to be check
-HugePage and do not call uncharge.
-
-> For hugetlbfs, we uncharge in free_huge_page() which is called after
-> __page_cache_release(), so I think that we don't have to uncharge here.
+> On Mon, Jun 30, 2014 at 11:43:54PM +0400, Cyrill Gorcunov wrote:
+> > On Mon, Jun 23, 2014 at 10:54:31PM +0400, Cyrill Gorcunov wrote:
+> > >
+> > > Hi guys, here is an updated version of c/r support for timerfd files. The main change
+> > > is in how @ticks are restored in patch 3 -- I switched to ioctl code, which is wrapped
+> > > with CONFIG because I still think that while there is only one ioctl designated
+> > > solely for c/r needs no need to build it all the time until explicitly requested.
+> > > Please take a look once time permit. Comments are highly appreciated.
+> > > Also note the last patch is for man-page git repo, not for kernel.
+> > 
+> > Gentlemen, could you please point me if there something preventing the
+> > series from being picked up? Or there some way to improve the series?
 > 
-> In my testing, moving mem_cgroup_uncharge() inside if (PageLRU) block
-> fixed the problem, so if that works for you, could you fold the change
-> into your patch?
-> 
-> Thanks,
-> Naoya Horiguchi
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Dear sirs, ping?
 
--- 
-Michal Hocko
-SUSE Labs
+Hmm, I was waiting for a V5, but it seems you just updated that single
+patch according to the review. I'll pick it up
+
+
+
+
