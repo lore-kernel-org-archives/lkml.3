@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674AbaGOVbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:31:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53888 "EHLO
+	id S1758887AbaGOVcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:32:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53842 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031AbaGOVbY (ORCPT
+	with ESMTP id S1757922AbaGOVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 17:31:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 005/198] Bluetooth: Fix check for connection encryption
-Date: Tue, 15 Jul 2014 14:27:55 -0700
-Message-Id: <1405459868-15089-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 009/198] NFS: Don't declare inode uptodate unless all attributes were checked
+Date: Tue, 15 Jul 2014 14:27:59 -0700
+Message-Id: <1405459868-15089-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,45 +27,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e694788d73efe139b24f78b036deb97fe57fa8cb upstream.
+commit 43b6535e717d2f656f71d9bd16022136b781c934 upstream.
 
-The conn->link_key variable tracks the type of link key in use. It is
-set whenever we respond to a link key request as well as when we get a
-link key notification event.
+Fix a bug, whereby nfs_update_inode() was declaring the inode to be
+up to date despite not having checked all the attributes.
+The bug occurs because the temporary variable in which we cache
+the validity information is 'sanitised' before reapplying to
+nfsi->cache_validity.
 
-These two events do not however always guarantee that encryption is
-enabled: getting a link key request and responding to it may only mean
-that the remote side has requested authentication but not encryption. On
-the other hand, the encrypt change event is a certain guarantee that
-encryption is enabled. The real encryption state is already tracked in
-the conn->link_mode variable through the HCI_LM_ENCRYPT bit.
-
-This patch fixes a check for encryption in the hci_conn_auth function to
-use the proper conn->link_mode value and thereby eliminates the chance
-of a false positive result.
-
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Reported-by: Kinglong Mee <kinglongmee@gmail.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_conn.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/inode.c | 26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index 9a6bc9d..1c6e950 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -759,7 +759,7 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
- 		/* If we're already encrypted set the REAUTH_PEND flag,
- 		 * otherwise set the ENCRYPT_PEND.
- 		 */
--		if (conn->key_type != 0xff)
-+		if (conn->link_mode & HCI_LM_ENCRYPT)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
- 		else
- 			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 5d94c02..25063e1 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -1503,18 +1503,20 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 			inode->i_version = fattr->change_attr;
+ 		}
+ 	} else if (server->caps & NFS_CAP_CHANGE_ATTR)
+-		invalid |= save_cache_validity;
++		nfsi->cache_validity |= save_cache_validity;
+ 
+ 	if (fattr->valid & NFS_ATTR_FATTR_MTIME) {
+ 		memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
+ 	} else if (server->caps & NFS_CAP_MTIME)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_REVAL_FORCED);
+ 
+ 	if (fattr->valid & NFS_ATTR_FATTR_CTIME) {
+ 		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
+ 	} else if (server->caps & NFS_CAP_CTIME)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_REVAL_FORCED);
+ 
+ 	/* Check if our cached file size is stale */
+@@ -1537,7 +1539,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 					(long long)new_isize);
+ 		}
+ 	} else
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_REVAL_PAGECACHE
+ 				| NFS_INO_REVAL_FORCED);
+ 
+@@ -1545,7 +1548,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 	if (fattr->valid & NFS_ATTR_FATTR_ATIME)
+ 		memcpy(&inode->i_atime, &fattr->atime, sizeof(inode->i_atime));
+ 	else if (server->caps & NFS_CAP_ATIME)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATIME
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATIME
+ 				| NFS_INO_REVAL_FORCED);
+ 
+ 	if (fattr->valid & NFS_ATTR_FATTR_MODE) {
+@@ -1556,7 +1560,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 			invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL;
+ 		}
+ 	} else if (server->caps & NFS_CAP_MODE)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_INVALID_ACCESS
+ 				| NFS_INO_INVALID_ACL
+ 				| NFS_INO_REVAL_FORCED);
+@@ -1567,7 +1572,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 			inode->i_uid = fattr->uid;
+ 		}
+ 	} else if (server->caps & NFS_CAP_OWNER)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_INVALID_ACCESS
+ 				| NFS_INO_INVALID_ACL
+ 				| NFS_INO_REVAL_FORCED);
+@@ -1578,7 +1584,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 			inode->i_gid = fattr->gid;
+ 		}
+ 	} else if (server->caps & NFS_CAP_OWNER_GROUP)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_INVALID_ACCESS
+ 				| NFS_INO_INVALID_ACL
+ 				| NFS_INO_REVAL_FORCED);
+@@ -1591,7 +1598,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 			set_nlink(inode, fattr->nlink);
+ 		}
+ 	} else if (server->caps & NFS_CAP_NLINK)
+-		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
++		nfsi->cache_validity |= save_cache_validity &
++				(NFS_INO_INVALID_ATTR
+ 				| NFS_INO_REVAL_FORCED);
+ 
+ 	if (fattr->valid & NFS_ATTR_FATTR_SPACE_USED) {
 -- 
 1.9.1
 
