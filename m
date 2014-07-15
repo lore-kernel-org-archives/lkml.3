@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090AbaGOUeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 16:34:07 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:53073 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932797AbaGOUeE convert rfc822-to-8bit (ORCPT
+	id S933219AbaGOUf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 16:35:29 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:2105 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932797AbaGOUf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 16:34:04 -0400
+	Tue, 15 Jul 2014 16:35:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 15 Jul 2014 13:28:02 -0700
+Message-ID: <53C5908C.5000009@nvidia.com>
+Date: Tue, 15 Jul 2014 16:35:24 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
-References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
- <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
- <20140710200527.GA15190@google.com> <3524198.dm6HbYTJqK@calvin> <CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 15 Jul 2014 14:33:41 -0600
-Message-ID: <CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com>
-Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] clk: tegra: Add Tegra132 ccplex clocks
+References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com> <1405437890-6468-7-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1405437890-6468-7-git-send-email-pdeschrijver@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Yinghai, Rafael]
+On 7/15/2014 11:24 AM, Peter De Schrijver wrote:
+> Add support for the ccplex clocks in Tegra132.
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  drivers/clk/tegra/Makefile |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+> index f7dfb72..4231865 100644
+> --- a/drivers/clk/tegra/Makefile
+> +++ b/drivers/clk/tegra/Makefile
+> @@ -15,3 +15,5 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
+>  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
+>  obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
+>  obj-$(CONFIG_ARCH_TEGRA_124_SOC)	+= clk-tegra124.o
+> +obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra124.c
+> +obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra132-ccplex.c
+> 
 
-On Fri, Jul 11, 2014 at 12:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Jul 11, 2014 at 1:38 AM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
->> In data giovedì 10 luglio 2014 14:05:27, Bjorn Helgaas ha scritto:
->>> ...
->>> Fabio, can you pastebin your complete dmesg log?
->>
->> Sure, here you go:
->>
->> http://pastebin.com/FiL7N64b
->
-> I opened this bugzilla:
-> https://bugzilla.kernel.org/show_bug.cgi?id=80041 and attached your
-> dmesg to it.  I see what the problem is, but I don't have a good idea
-> yet for how to fix it.
->
-> The problem is that we don't handle e820 and PNP device resource
-> information correctly.  From the attached dmesg, we have this:
->
->   BIOS-e820: [mem 0x00000000fed10000-0x00000000fed13fff] reserved
->   system 00:00: [mem 0xfed10000-0xfed17fff] could not be reserved
->
-> The 00:00 PNP device describes the correct 32K range for the Intel MCH
-> (see [1] for details).  But the [mem 0xfed10000-0xfed13fff] entry from
-> e820 was added to the resource map first, and it covers only the first
-> 16K of the MCH range.  This caused the subsequent PNP reservation to
-> fail.  Then the snb_uncore_imc_init_box() reservation caused the
-> warning, because it would be a child of the e820 entry but it covers
-> more space.
->
-> [1] fixed a similar issue where the PNP device described only the
-> first 16K of the MCH range.  This case is slightly different because
-> here it's the e820 entry that is incorrect.
->
-> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
+This doesn't seem to actually add the clk-tegra132-ccplex.c file.
 
-One of the reasons for iomem_resource is so we don't hand out the same
-address space to two different devices.  We *could* do that by keeping
-track of the union of all devices and reserved areas that we know
-about.
+-rhyland
 
-But the current resource code is more strict: it enforces a hierarchy.
-For example, in this case, it rejects the 00:00 PNP resource because
-it is larger than the e820 entry.  The problem with rejecting it is
-that we might hand out [mem 0xfed14000-0xfed17fff] to another device
-even though PNP told us that it's in use.
-
-I'm about to head out for a few weeks of vacation, so I won't be able
-to do anything with this.
-
-Bjorn
+-- 
+nvpublic
