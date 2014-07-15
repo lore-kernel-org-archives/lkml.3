@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934410AbaGOXYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:24:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45609 "EHLO
+	id S965136AbaGOX01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:26:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934180AbaGOXO1 (ORCPT
+	with ESMTP id S1760092AbaGOXOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:27 -0400
+	Tue, 15 Jul 2014 19:14:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 45/84] intel_pstate: dont touch turbo bit if turbo disabled or unavailable.
-Date: Tue, 15 Jul 2014 16:17:42 -0700
-Message-Id: <20140715231714.560168567@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.15 49/84] ext4: fix unjournalled bg descriptor while initializing inode bitmap
+Date: Tue, 15 Jul 2014 16:17:46 -0700
+Message-Id: <20140715231714.679806016@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,104 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit dd5fbf70f96dbfd7ee432096a1f979b2b3267856 upstream.
+commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
 
-If turbo is disabled in the BIOS bit 38 should be set in
-MSR_IA32_MISC_ENABLE register per section 14.3.2.1 of the SDM Vol 3
-document 325384-050US Feb 2014.  If this bit is set do *not* attempt
-to disable trubo via the MSR_IA32_PERF_CTL register.  On some systems
-trying to disable turbo via MSR_IA32_PERF_CTL will cause subsequent
-writes to MSR_IA32_PERF_CTL not take affect, in fact reading
-MSR_IA32_PERF_CTL will not show the IDA/Turbo DISENGAGE bit(32) as
-set. A write of bit 32 to zero returns to normal operation.
+The first time that we allocate from an uninitialized inode allocation
+bitmap, if the block allocation bitmap is also uninitalized, we need
+to get write access to the block group descriptor before we start
+modifying the block group descriptor flags and updating the free block
+count, etc.  Otherwise, there is the potential of a bad journal
+checksum (if journal checksums are enabled), and of the file system
+becoming inconsistent if we crash at exactly the wrong time.
 
-Also deal with the case where the processor does not support
-turbo and the BIOS does not report the fact in MSR_IA32_MISC_ENABLE
-but does report the max and turbo P states as the same value.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=64251
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ fs/ext4/ialloc.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -132,6 +132,7 @@ static struct pstate_funcs pstate_funcs;
- 
- struct perf_limits {
- 	int no_turbo;
-+	int turbo_disabled;
- 	int max_perf_pct;
- 	int min_perf_pct;
- 	int32_t max_perf;
-@@ -291,7 +292,10 @@ static ssize_t store_no_turbo(struct kob
- 	if (ret != 1)
- 		return -EINVAL;
- 	limits.no_turbo = clamp_t(int, input, 0 , 1);
--
-+	if (limits.turbo_disabled) {
-+		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
-+		limits.no_turbo = limits.turbo_disabled;
-+	}
- 	return count;
- }
- 
-@@ -385,7 +389,7 @@ static void byt_set_pstate(struct cpudat
- 	u32 vid;
- 
- 	val = pstate << 8;
--	if (limits.no_turbo)
-+	if (limits.no_turbo && !limits.turbo_disabled)
- 		val |= (u64)1 << 32;
- 
- 	vid_fp = cpudata->vid.min + mul_fp(
-@@ -452,7 +456,7 @@ static void core_set_pstate(struct cpuda
- 	u64 val;
- 
- 	val = pstate << 8;
--	if (limits.no_turbo)
-+	if (limits.no_turbo && !limits.turbo_disabled)
- 		val |= (u64)1 << 32;
- 
- 	wrmsrl_on_cpu(cpudata->cpu, MSR_IA32_PERF_CTL, val);
-@@ -750,7 +754,7 @@ static int intel_pstate_set_policy(struc
- 		limits.min_perf = int_tofp(1);
- 		limits.max_perf_pct = 100;
- 		limits.max_perf = int_tofp(1);
--		limits.no_turbo = 0;
-+		limits.no_turbo = limits.turbo_disabled;
- 		return 0;
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -851,6 +851,13 @@ got:
+ 		goto out;
  	}
- 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
-@@ -793,6 +797,7 @@ static int intel_pstate_cpu_init(struct
- {
- 	struct cpudata *cpu;
- 	int rc;
-+	u64 misc_en;
  
- 	rc = intel_pstate_init_cpu(policy->cpu);
- 	if (rc)
-@@ -800,8 +805,13 @@ static int intel_pstate_cpu_init(struct
- 
- 	cpu = all_cpu_data[policy->cpu];
- 
--	if (!limits.no_turbo &&
--		limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
-+	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
-+	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
-+		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
-+		limits.turbo_disabled = 1;
-+		limits.no_turbo = 1;
++	BUFFER_TRACE(group_desc_bh, "get_write_access");
++	err = ext4_journal_get_write_access(handle, group_desc_bh);
++	if (err) {
++		ext4_std_error(sb, err);
++		goto out;
 +	}
-+	if (limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
- 		policy->policy = CPUFREQ_POLICY_PERFORMANCE;
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
++
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+@@ -887,13 +894,6 @@ got:
+ 		}
+ 	}
+ 
+-	BUFFER_TRACE(group_desc_bh, "get_write_access");
+-	err = ext4_journal_get_write_access(handle, group_desc_bh);
+-	if (err) {
+-		ext4_std_error(sb, err);
+-		goto out;
+-	}
+-
+ 	/* Update the relevant bg descriptor fields */
+ 	if (ext4_has_group_desc_csum(sb)) {
+ 		int free;
 
 
