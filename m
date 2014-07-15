@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059AbaGOVv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:51:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54918 "EHLO
+	id S933962AbaGOVik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:38:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54870 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933978AbaGOVin (ORCPT
+	with ESMTP id S1759653AbaGOVi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:43 -0400
+	Tue, 15 Jul 2014 17:38:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 166/198] Bluetooth: Fix locking of hdev when calling into SMP code
-Date: Tue, 15 Jul 2014 14:30:36 -0700
-Message-Id: <1405459868-15089-167-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 174/198] lzo: properly check for overruns
+Date: Tue, 15 Jul 2014 14:30:44 -0700
+Message-Id: <1405459868-15089-175-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,42 +27,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit c73f94b8c093a615ce80eabbde0ac6eb9abfe31a upstream.
+commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
 
-The SMP code expects hdev to be unlocked since e.g. crypto functions
-will try to (re)lock it. Therefore, we need to release the lock before
-calling into smp.c from mgmt.c. Without this we risk a deadlock whenever
-the smp_user_confirm_reply() function is called.
+The lzo decompressor can, if given some really crazy data, possibly
+overrun some variable types.  Modify the checking logic to properly
+detect overruns before they happen.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Tested-by: Lukasz Rymanowski <lukasz.rymanowski@tieto.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Tested-by: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/mgmt.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ lib/lzo/lzo1x_decompress_safe.c | 62 +++++++++++++++++++++++++++--------------
+ 1 file changed, 41 insertions(+), 21 deletions(-)
 
-diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
-index 074d836..75c2ecb 100644
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -2826,8 +2826,13 @@ static int user_pairing_resp(struct sock *sk, struct hci_dev *hdev,
- 	}
+diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
+index 569985d..8563081 100644
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,11 +19,31 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
- 	if (addr->type == BDADDR_LE_PUBLIC || addr->type == BDADDR_LE_RANDOM) {
--		/* Continue with pairing via SMP */
-+		/* Continue with pairing via SMP. The hdev lock must be
-+		 * released as SMP may try to recquire it for crypto
-+		 * purposes.
-+		 */
-+		hci_dev_unlock(hdev);
- 		err = smp_user_confirm_reply(conn, mgmt_op, passkey);
-+		hci_dev_lock(hdev);
+-#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
+-#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
+-#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
+-#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+-#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
++#define HAVE_IP(t, x)					\
++	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define HAVE_OP(t, x)					\
++	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define NEED_IP(t, x)					\
++	do {						\
++		if (!HAVE_IP(t, x))			\
++			goto input_overrun;		\
++	} while (0)
++
++#define NEED_OP(t, x)					\
++	do {						\
++		if (!HAVE_OP(t, x))			\
++			goto output_overrun;		\
++	} while (0)
++
++#define TEST_LB(m_pos)					\
++	do {						\
++		if ((m_pos) < out)			\
++			goto lookbehind_overrun;	\
++	} while (0)
  
- 		if (!err)
- 			err = cmd_complete(sk, hdev->id, mgmt_op,
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1);
++						NEED_IP(1, 0);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
++				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -81,8 +101,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t);
+-					NEED_IP(t + 3);
++					NEED_OP(t, 0);
++					NEED_IP(t, 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -95,7 +115,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2);
++				NEED_OP(2, 0);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -119,10 +139,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -137,10 +157,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -154,7 +174,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t + 15))) {
++			if (likely(HAVE_OP(t, 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -164,7 +184,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6)) {
++				if (HAVE_IP(6, 0)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -172,7 +192,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t);
++				NEED_OP(t, 0);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -181,7 +201,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t);
++			NEED_OP(t, 0);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -194,15 +214,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
++		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t + 3);
+-			NEED_OP(t);
++			NEED_IP(t, 3);
++			NEED_OP(t, 0);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 -- 
 1.9.1
 
