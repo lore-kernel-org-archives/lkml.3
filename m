@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588AbaGOFhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 01:37:03 -0400
-Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:55890
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751087AbaGOFhA convert rfc822-to-8bit (ORCPT
+	id S932422AbaGOFhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 01:37:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56064 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004AbaGOFhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 01:37:00 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Varka Bhadram <varkabhadram@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>
-CC: "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCHv6 2/2] dt/bindings: Add the DT binding documentation for
- endianness
-Thread-Topic: [PATCHv6 2/2] dt/bindings: Add the DT binding documentation for
- endianness
-Thread-Index: AQHPn+T/m+2KM2DGoEGfjXOtBU3an5ugnM0AgAAAogA=
-Date: Tue, 15 Jul 2014 05:36:54 +0000
-Message-ID: <54b4550212bb402f957f75bded781e5e@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1405398183-31345-1-git-send-email-Li.Xiubo@freescale.com>
- <1405398183-31345-3-git-send-email-Li.Xiubo@freescale.com>
- <53C4BD24.9000503@gmail.com>
-In-Reply-To: <53C4BD24.9000503@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 027367F73D
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(189002)(164054003)(199002)(74316001)(101416001)(21056001)(2201001)(99286002)(77982001)(92566001)(74502001)(74662001)(77096002)(64706001)(66066001)(33646002)(2656002)(83322001)(85306003)(107046002)(46102001)(99396002)(76576001)(80022001)(95666004)(54356999)(81542001)(85852003)(79102001)(31966008)(76482001)(4396001)(106356001)(86362001)(19580405001)(76176999)(105586002)(50986999)(106116001)(87936001)(81342001)(20776003)(83072002)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0615;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Jul 2014 01:37:01 -0400
+Message-ID: <53C4BDFB.70707@codeaurora.org>
+Date: Mon, 14 Jul 2014 22:36:59 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org> <1405052287-4744-1-git-send-email-skannan@codeaurora.org> <CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com> <2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org> <CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com> <53C0A12A.2060204@codeaurora.org> <CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com> <53C42AA8.8010107@codeaurora.org> <CAKohpomkqbHZo9KrJMSwsEKGt6+Ac2Fg2X0+S7ZAo=OzhAc45g@mail.gmail.com>
+In-Reply-To: <CAKohpomkqbHZo9KrJMSwsEKGt6+Ac2Fg2X0+S7ZAo=OzhAc45g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +For one device driver, which will run in different scenarios above
-> > +on different SoCs using the devicetree, we need one way to simplify
-> > +this.
-> > +
-> > +Required properties:
-> > +- {big,little}-endian: these are boolean properties, if absent
-> > +  meaning that the CPU and the Device are in the same endianness mode,
-> > +  these properties are for register values and all the buffers only.
-> > +
-> 
-> It would be more readable if its like this:
-> Required properties:
-> - {big,little}-endian:	These are boolean properties, if absent meaning
-> 			that the CPU and the Device are in the same
-> 			endianness mode, these propperties are for
-> 			values and all the buffers only.
-> 
+On 07/14/2014 09:35 PM, Viresh Kumar wrote:
+> On 15 July 2014 00:38, Saravana Kannan <skannan@codeaurora.org> wrote:
+>> Yeah, it definitely crashes if policy->cpu if an offline cpu. Because the
+>> mutex would be uninitialized if it's stopped after boot or it would never
+>> have been initialized (depending on how you fix policy->cpu at boot).
+>>
+>> Look at this snippet on the actual tree and it should be pretty evident.
+>
+> Yeah, I missed it. So the problem is we initialize timer_mutex's for
+> policy->cpus. So we need to do that just for policy->cpu and also we don't
+> need a per-cpu timer_mutex anymore.
+>
 
-Yes, it is.
+Btw, I tried to take a stab at removing any assumption in cpufreq code 
+about policy->cpu being ONLINE. There are 160 instances of those of with 
+23 are in cpufreq.c
 
-See the next verison.
+So, even if we are sure cpufreq.c is fine, it's 137 other uses spread 
+across all the other files. I definitely don't want to try and fix those 
+as part of this patch. Way too risky and hard to get the test coverage 
+it would need. Even some of the acpi cpufreq drivers seem to be making 
+this assumption.
 
-Thanks,
+Btw, I think v3 is done. I did some testing and it was fine. But made 
+some minor changes. Will test tomorrow to make sure I didn't break 
+anything with the minor changes and then send them out.
 
-BRs
-Xiubo
+-Saravana
 
-
-
-> > +Examples:
-> > +Scenario 1 : CPU in LE mode & device in LE mode.
-> > +dev: dev@40031000 {
-> > +	      compatible = "name";
-> > +	      reg = <0x40031000 0x1000>;
-> > +	      ...
-> > +};
-> > +
-> > +Scenario 2 : CPU in LE mode & device in BE mode.
-> > +dev: dev@40031000 {
-> > +	      compatible = "name";
-> > +	      reg = <0x40031000 0x1000>;
-> > +	      ...
-> > +	      big-endian;
-> > +};
-> > +
-> > +Scenario 3 : CPU in BE mode & device in BE mode.
-> > +dev: dev@40031000 {
-> > +	      compatible = "name";
-> > +	      reg = <0x40031000 0x1000>;
-> > +	      ...
-> > +};
-> > +
-> > +Scenario 4 : CPU in BE mode & device in LE mode.
-> > +dev: dev@40031000 {
-> > +	      compatible = "name";
-> > +	      reg = <0x40031000 0x1000>;
-> > +	      ...
-> > +	      little-endian;
-> > +};
-> 
-> 
-> --
-> Regards,
-> Varka Bhadram.
-
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
