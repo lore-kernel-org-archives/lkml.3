@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964977AbaGOW1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:27:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53890 "EHLO
+	id S965162AbaGOW2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:28:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53901 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758064AbaGOVbY (ORCPT
+	with ESMTP id S1758105AbaGOVbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:31:24 -0400
+	Tue, 15 Jul 2014 17:31:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Chris J Arges <chris.j.arges@canonical.com>,
+Cc: David Binderman <dcb314@hotmail.com>, Bob Moore <robert.moore@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 007/198] netfilter: nf_nat: fix oops on netns removal
-Date: Tue, 15 Jul 2014 14:27:57 -0700
-Message-Id: <1405459868-15089-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 011/198] ACPICA: utstring: Check array index bound before use.
+Date: Tue, 15 Jul 2014 14:28:01 -0700
+Message-Id: <1405459868-15089-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,99 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: David Binderman <dcb314@hotmail.com>
 
-commit 945b2b2d259d1a4364a2799e80e8ff32f8c6ee6f upstream.
+commit 5d42b0fa25df7ef2f575107597c1aaebe2407d10 upstream.
 
-Quoting Samu Kallio:
+ACPICA BZ 1077. David Binderman.
 
- Basically what's happening is, during netns cleanup,
- nf_nat_net_exit gets called before ipv4_net_exit. As I understand
- it, nf_nat_net_exit is supposed to kill any conntrack entries which
- have NAT context (through nf_ct_iterate_cleanup), but for some
- reason this doesn't happen (perhaps something else is still holding
- refs to those entries?).
-
- When ipv4_net_exit is called, conntrack entries (including those
- with NAT context) are cleaned up, but the
- nat_bysource hashtable is long gone - freed in nf_nat_net_exit. The
- bug happens when attempting to free a conntrack entry whose NAT hash
- 'prev' field points to a slot in the freed hash table (head for that
- bin).
-
-We ignore conntracks with null nat bindings.  But this is wrong,
-as these are in bysource hash table as well.
-
-Restore nat-cleaning for the netns-is-being-removed case.
-
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=65191
-
-Fixes: c2d421e1718 ('netfilter: nf_nat: fix race when unloading protocol modules')
-Reported-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Debugged-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Tested-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+References: https://bugs.acpica.org/show_bug.cgi?id=1077
+Signed-off-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netfilter/nf_nat_core.c | 35 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 34 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/utstring.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/netfilter/nf_nat_core.c b/net/netfilter/nf_nat_core.c
-index 63a8154..14f5968 100644
---- a/net/netfilter/nf_nat_core.c
-+++ b/net/netfilter/nf_nat_core.c
-@@ -511,6 +511,39 @@ static int nf_nat_proto_remove(struct nf_conn *i, void *data)
- 	return i->status & IPS_NAT_MASK ? 1 : 0;
- }
+diff --git a/drivers/acpi/acpica/utstring.c b/drivers/acpi/acpica/utstring.c
+index 45c0eb2..cd2047a 100644
+--- a/drivers/acpi/acpica/utstring.c
++++ b/drivers/acpi/acpica/utstring.c
+@@ -353,7 +353,7 @@ void acpi_ut_print_string(char *string, u16 max_length)
+ 	}
  
-+static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
-+{
-+	struct nf_conn_nat *nat = nfct_nat(ct);
-+
-+	if (nf_nat_proto_remove(ct, data))
-+		return 1;
-+
-+	if (!nat || !nat->ct)
-+		return 0;
-+
-+	/* This netns is being destroyed, and conntrack has nat null binding.
-+	 * Remove it from bysource hash, as the table will be freed soon.
-+	 *
-+	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
-+	 * will delete entry from already-freed table.
-+	 */
-+	if (!del_timer(&ct->timeout))
-+		return 1;
-+
-+	spin_lock_bh(&nf_nat_lock);
-+	hlist_del_rcu(&nat->bysource);
-+	ct->status &= ~IPS_NAT_DONE_MASK;
-+	nat->ct = NULL;
-+	spin_unlock_bh(&nf_nat_lock);
-+
-+	add_timer(&ct->timeout);
-+
-+	/* don't delete conntrack.  Although that would make things a lot
-+	 * simpler, we'd end up flushing all conntracks on nat rmmod.
-+	 */
-+	return 0;
-+}
-+
- static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
- {
- 	struct nf_nat_proto_clean clean = {
-@@ -773,7 +806,7 @@ static void __net_exit nf_nat_net_exit(struct net *net)
- {
- 	struct nf_nat_proto_clean clean = {};
+ 	acpi_os_printf("\"");
+-	for (i = 0; string[i] && (i < max_length); i++) {
++	for (i = 0; (i < max_length) && string[i]; i++) {
  
--	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean, 0, 0);
-+	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean, 0, 0);
- 	synchronize_rcu();
- 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
- }
+ 		/* Escape sequences */
+ 
 -- 
 1.9.1
 
