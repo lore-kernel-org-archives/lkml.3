@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030210AbaGOXWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:22:11 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53123 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933219AbaGOXWH (ORCPT
+	id S964794AbaGOXOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:14:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759890AbaGOXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:22:07 -0400
+	Tue, 15 Jul 2014 19:13:57 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bernd Wachter <bernd.wachter@jolla.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.15 01/84] usb: option: Add ID for Telewell TW-LTE 4G v2
+Date: Tue, 15 Jul 2014 16:16:58 -0700
+Message-Id: <20140715231713.237710584@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Tue, 15 Jul 2014 16:21:46 -0700
-Message-ID: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
-Subject: DO NOT APPLY: x86-64, espfix: Don't leak bits 31:16 of %esp returning
- to 16-bit stack
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 2:28 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> 3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
->
-> commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Do not apply to any -stable release yet.  This causes nasty regressions on Xen.
+------------------
 
---Andy
+From: Bernd Wachter <bernd.wachter@jolla.com>
+
+commit 3d28bd840b2d3981cd28caf5fe1df38f1344dd60 upstream.
+
+Add ID of the Telewell 4G v2 hardware to option driver to get legacy
+serial interface working
+
+Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1487,6 +1487,8 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1428, 0xff, 0xff, 0xff),  /* Telewell TW-LTE 4G v2 */
++		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
+
+
