@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296AbaGONAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:00:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48260 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758798AbaGONAJ (ORCPT
+	id S1759002AbaGONDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:03:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36665 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757665AbaGONDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:00:09 -0400
-Date: Tue, 15 Jul 2014 14:59:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Chandramouli Narayanan <mouli@linux.intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
- number of tasks running on cpu
-In-Reply-To: <20140715120728.GR3588@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1407151452370.24854@nanos>
-References: <1405110784.2970.655.camel@schen9-DESK> <20140714101611.GS9918@twins.programming.kicks-ass.net> <1405354214.2970.663.camel@schen9-DESK> <20140714161432.GC9918@twins.programming.kicks-ass.net> <1405357534.2970.701.camel@schen9-DESK>
- <20140714181738.GI9918@twins.programming.kicks-ass.net> <1405364908.2970.729.camel@schen9-DESK> <20140714191504.GO9918@twins.programming.kicks-ass.net> <1405367450.2970.750.camel@schen9-DESK> <20140715095045.GV9918@twins.programming.kicks-ass.net>
- <20140715120728.GR3588@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 15 Jul 2014 09:03:10 -0400
+Date: Tue, 15 Jul 2014 15:03:08 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: IMA: kernel reading files opened with O_DIRECT
+Message-ID: <20140715130308.GA4109@amd.pavel.ucw.cz>
+References: <53B3D3AA.3000408@samsung.com>
+ <x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
+ <20140702184050.GA24583@infradead.org>
+ <20140711201054.GB18033@amd.pavel.ucw.cz>
+ <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Peter Zijlstra wrote:
-
-> On Tue, Jul 15, 2014 at 11:50:45AM +0200, Peter Zijlstra wrote:
-> > So you already have an idle notifier (which is x86 only, we should fix
-> > that I suppose), and you then double check there really isn't anything
-> > else running.
+On Sat 2014-07-12 01:22:04, Dmitry Kasatkin wrote:
+> On 11 July 2014 23:10, Pavel Machek <pavel@ucw.cz> wrote:
+> > On Wed 2014-07-02 11:40:50, Christoph Hellwig wrote:
+> >> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
+> >> > It's acceptable.
+> >>
+> >> It's not because it will then also affect other reads going on at the
+> >> same time.
+> >>
+> >> The whole concept of ima is just broken, and if you want to do these
+> >> sort of verification they need to happen inside the filesystem and not
+> >> above it.
+> >
+> > ...and doing it at filesystem layer would also permit verification of
+> > per-block (64KB? 1MB?) hashes.
 > 
-> Note that we've already done a large part of the expense of going idle
-> by the time we call that idle notifier -- in specific, we've
-> reprogrammed the clock to stop the tick.
-> 
-> Its really wasteful to then generate work again, which means we have to
-> again reprogram the clock etc.
+> Please design one single and the best universal filesystem which
+> does it.
 
-Doing anything which is not related to idle itself in the idle
-notifier is just plain wrong.
+Given the overhead whole-file hashing has, you don't need single best
+operating system. All you need it either ext4 or btrfs.. depending on
+when you want it in production.
 
-If that stuff wants to utilize idle slots, we really need to come up
-with a generic and general solution. Otherwise we'll grow those warts
-all over the architecture space, with slightly different ways of
-wreckaging the world an some more.
+									Pavel
 
-This whole attidute of people thinking that they need their own
-specialized scheduling around the real scheduler is a PITA. All this
-stuff is just damanging any sensible approach of power saving, load
-balancing, etc.
-
-What we really want is infrastructure, which allows the scheduler to
-actively query the async work situation and based on the results
-actively decide when to process it and where.
-
-Thanks,
-
-	tglx
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
