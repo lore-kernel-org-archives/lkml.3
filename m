@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964848AbaGOVjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:39:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54968 "EHLO
+	id S1759562AbaGOVqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:46:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55035 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964794AbaGOVix (ORCPT
+	with ESMTP id S964847AbaGOVjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:53 -0400
+	Tue, 15 Jul 2014 17:39:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: ChiaHao <andy.jhshiu@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 181/198] mm: fix crashes from mbind() merging vmas
-Date: Tue, 15 Jul 2014 14:30:51 -0700
-Message-Id: <1405459868-15089-182-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 153/198] arm64: Bug fix in stack alignment exception
+Date: Tue, 15 Jul 2014 14:30:23 -0700
+Message-Id: <1405459868-15089-154-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,157 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: ChiaHao <andy.jhshiu@gmail.com>
 
-commit d05f0cdcbe6388723f1900c549b4850360545201 upstream.
+commit 3906c2b53cd23c2ae03e6ce41432c8e7f0a3cbbb upstream.
 
-In v2.6.34 commit 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-introduced vma merging to mbind(), but it should have also changed the
-convention of passing start vma from queue_pages_range() (formerly
-check_range()) to new_vma_page(): vma merging may have already freed
-that structure, resulting in BUG at mm/mempolicy.c:1738 and probably
-worse crashes.
+The value of ESR has been stored into x1, and should be directly pass to
+do_sp_pc_abort function, "MOV x1, x25" is an extra operation and do_sp_pc_abort
+will get the wrong value of ESR.
 
-Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: ChiaHao <andy.jhshiu@gmail.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mempolicy.c | 46 ++++++++++++++++++++--------------------------
- 1 file changed, 20 insertions(+), 26 deletions(-)
+ arch/arm64/kernel/entry.S | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index e980746..65c7674 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -654,19 +654,18 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
-  * @nodes and @flags,) it's isolated and queued to the pagelist which is
-  * passed via @private.)
-  */
--static struct vm_area_struct *
-+static int
- queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags, void *private)
- {
--	int err;
--	struct vm_area_struct *first, *vma, *prev;
--
-+	int err = 0;
-+	struct vm_area_struct *vma, *prev;
- 
--	first = find_vma(mm, start);
--	if (!first)
--		return ERR_PTR(-EFAULT);
-+	vma = find_vma(mm, start);
-+	if (!vma)
-+		return -EFAULT;
- 	prev = NULL;
--	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
- 		unsigned long endvma = vma->vm_end;
- 
- 		if (endvma > end)
-@@ -676,9 +675,9 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 			if (prev && prev->vm_end < vma->vm_start)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 		}
- 
- 		if (flags & MPOL_MF_LAZY) {
-@@ -692,15 +691,13 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 
- 			err = queue_pages_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
--			if (err) {
--				first = ERR_PTR(err);
-+			if (err)
- 				break;
--			}
- 		}
- next:
- 		prev = vma;
- 	}
--	return first;
-+	return err;
- }
- 
- /*
-@@ -1185,16 +1182,17 @@ out:
- 
- /*
-  * Allocate a new page for page migration based on vma policy.
-- * Start assuming that page is mapped by vma pointed to by @private.
-+ * Start by assuming the page is mapped by the same vma as contains @start.
-  * Search forward from there, if not.  N.B., this assumes that the
-  * list of pages handed to migrate_pages()--which is how we get here--
-  * is in virtual address order.
-  */
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
--	struct vm_area_struct *vma = (struct vm_area_struct *)private;
-+	struct vm_area_struct *vma;
- 	unsigned long uninitialized_var(address);
- 
-+	vma = find_vma(current->mm, start);
- 	while (vma) {
- 		address = page_address_in_vma(page, vma);
- 		if (address != -EFAULT)
-@@ -1226,7 +1224,7 @@ int do_migrate_pages(struct mm_struct *mm, const nodemask_t *from,
- 	return -ENOSYS;
- }
- 
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
- 	return NULL;
- }
-@@ -1236,7 +1234,6 @@ static long do_mbind(unsigned long start, unsigned long len,
- 		     unsigned short mode, unsigned short mode_flags,
- 		     nodemask_t *nmask, unsigned long flags)
- {
--	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 	struct mempolicy *new;
- 	unsigned long end;
-@@ -1302,11 +1299,9 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (err)
- 		goto mpol_out;
- 
--	vma = queue_pages_range(mm, start, end, nmask,
-+	err = queue_pages_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
--
--	err = PTR_ERR(vma);	/* maybe ... */
--	if (!IS_ERR(vma))
-+	if (!err)
- 		err = mbind_range(mm, start, end, new);
- 
- 	if (!err) {
-@@ -1314,9 +1309,8 @@ static long do_mbind(unsigned long start, unsigned long len,
- 
- 		if (!list_empty(&pagelist)) {
- 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
--			nr_failed = migrate_pages(&pagelist, new_vma_page,
--					(unsigned long)vma,
--					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
-+			nr_failed = migrate_pages(&pagelist, new_page,
-+				start, MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
- 				putback_movable_pages(&pagelist);
- 		}
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 4d2c6f3..013baa0 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -275,7 +275,6 @@ el1_sp_pc:
+ 	 * Stack or PC alignment exception handling
+ 	 */
+ 	mrs	x0, far_el1
+-	mov	x1, x25
+ 	mov	x2, sp
+ 	b	do_sp_pc_abort
+ el1_undef:
 -- 
 1.9.1
 
