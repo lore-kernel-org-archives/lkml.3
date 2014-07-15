@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaGOErT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 00:47:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47563 "EHLO mga09.intel.com"
+	id S1757561AbaGOEtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 00:49:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaGOErQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 00:47:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
-   d="scan'208";a="543404267"
-Message-ID: <53C4B251.5000505@intel.com>
-Date: Mon, 14 Jul 2014 21:47:13 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1750972AbaGOEtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 00:49:52 -0400
+Date: Tue, 15 Jul 2014 10:19:13 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, keescook@chromium.org,
+        jason@lakedaemon.net
+Subject: Re: [PATCH v3 0/2] hwrng, virtio-rng: init-time fixes
+Message-ID: <20140715044913.GB26186@grmbl.mre>
+References: <cover.1404987133.git.amit.shah@redhat.com>
+ <20140714125006.GA9958@gondor.apana.org.au>
+ <20140715044028.GA26186@grmbl.mre>
+ <20140715044556.GA18469@gondor.apana.org.au>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, thp: only collapse hugepages to nodes with affinity
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715044556.GA18469@gondor.apana.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 06:09 PM, David Rientjes wrote:
-> +		if (node == NUMA_NO_NODE) {
-> +			node = page_to_nid(page);
-> +		} else {
-> +			int distance = node_distance(page_to_nid(page), node);
-> +
-> +			/*
-> +			 * Do not migrate to memory that would not be reclaimed
-> +			 * from.
-> +			 */
-> +			if (distance > RECLAIM_DISTANCE)
-> +				goto out_unmap;
-> +		}
+On (Tue) 15 Jul 2014 [12:45:56], Herbert Xu wrote:
+> On Tue, Jul 15, 2014 at 10:10:28AM +0530, Amit Shah wrote:
+> > On (Mon) 14 Jul 2014 [20:50:06], Herbert Xu wrote:
+> > > On Thu, Jul 10, 2014 at 03:42:33PM +0530, Amit Shah wrote:
+> > > > v3:
+> > > >  - Kees Cook pointed out a weird side-effect: devices which have
+> > > >    ->init() registered get their randomness added to the system each
+> > > >    time they're switched in, but devices that don't have the init
+> > > >    callback don't contribute to system randomness more than once.  The
+> > > >    weirdness is resolved here by using the randomness each time
+> > > >    hwrng_init() is attempted, irrespective of the existence of the
+> > > >    device's ->init() callback.
+> > > 
+> > > All applied to crypto.  Thanks!
+> > 
+> > Thanks, Herbert.  I didn't mention it, but pls queue it up for 3.16.
+> 
+> Yes that's why it's in crypto as opposed to cryptodev.
 
-Isn't the reclaim behavior based on zone_reclaim_mode and not
-RECLAIM_DISTANCE directly?  And isn't that reclaim behavior disabled by
-default?
+Ah; thanks!
 
-I think you should at least be consulting zone_reclaim_mode.
+		Amit
