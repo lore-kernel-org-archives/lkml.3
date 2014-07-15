@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759996AbaGOVyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:54:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54836 "EHLO
+	id S1759786AbaGOVz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:55:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54822 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759618AbaGOViT (ORCPT
+	with ESMTP id S1759602AbaGOViP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:19 -0400
+	Tue, 15 Jul 2014 17:38:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/198] [media] rtl28xxu: add 1b80:d395 Peak DVB-T USB
-Date: Tue, 15 Jul 2014 14:28:20 -0700
-Message-Id: <1405459868-15089-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 040/198] IB/srp: Fix a sporadic crash triggered by cable pulling
+Date: Tue, 15 Jul 2014 14:28:30 -0700
+Message-Id: <1405459868-15089-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,35 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Healy <healybrian@gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-Add USB ID for Peak DVB-T USB.
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
-[crope@iki.fi: fix Brian email address and indentation]
-Signed-off-by: Brian Healy <healybrian@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/infiniband/ulp/srp/ib_srp.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index 70dd3c8..1bb3030 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1429,6 +1429,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
-+		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index a886319..c74d8b6 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1575,6 +1575,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
++
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
+ 
 -- 
 1.9.1
 
