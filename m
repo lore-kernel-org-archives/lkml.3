@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688AbaGOSTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:19:16 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:44456 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757051AbaGOSSc (ORCPT
+	id S932861AbaGOSTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:19:35 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:39695 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932715AbaGOSTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:18:32 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: rth@twiddle.net
-Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] alpha: Remove all errors for checkpatch foo* bar
-Date: Tue, 15 Jul 2014 14:18:21 -0400
-Message-Id: <1405448304-3724-3-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405448304-3724-1-git-send-email-xerofoify@gmail.com>
-References: <1405448304-3724-1-git-send-email-xerofoify@gmail.com>
+	Tue, 15 Jul 2014 14:19:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140715085901.GS9918@twins.programming.kicks-ass.net>
+References: <1405123285-23544-1-git-send-email-andi@firstfloor.org>
+	<1405123285-23544-2-git-send-email-andi@firstfloor.org>
+	<CABPqkBScNfoK4a9BZkZxB-gAj3Ew2f7Ox3351YKWVt7cN-1EEw@mail.gmail.com>
+	<20140714192451.GC5803@tassilo.jf.intel.com>
+	<CABPqkBS=PB9tp78Y12ZRG9KLjd=DLY=3yrXeRdqCbZ4gnsdJ7A@mail.gmail.com>
+	<20140714223918.GE5803@tassilo.jf.intel.com>
+	<CABPqkBTYfc6CLJNzRqxDnQPr_sdv+yE9sLq717rg0sYzHhxssg@mail.gmail.com>
+	<CABPqkBSVRuyOH8bTU4pjLNZMZdHoWFB4y-HJzVWTVowrO2Q+tg@mail.gmail.com>
+	<20140715040542.GF5803@tassilo.jf.intel.com>
+	<20140715085901.GS9918@twins.programming.kicks-ass.net>
+Date: Tue, 15 Jul 2014 20:19:31 +0200
+Message-ID: <CABPqkBTMg_DM40LpgKisx-9GHpgxXxU96g3BEo_=JTLGyqYBVw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf, x86: Don't mark DataLA addresses as store
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes all issues with checkpatch relating to the asterisk
-not being put next to the variable or structrue name and rather the
-type of the declaring statement.
----
- arch/alpha/boot/bootpz.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+On Tue, Jul 15, 2014 at 10:59 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Jul 14, 2014 at 09:05:42PM -0700, Andi Kleen wrote:
+>
+>> Yes, there are only three store events:
+>>
+>> MEM_UOPS_RETIRED.STLB_MISS_STORES
+>> MEM_UOPS_RETIRED.SPLIT_STORES
+>> MEM_UOPS_RETIRED.ALL_STORES
+>>
+>> These can be added.
+>>
+>> But most others are loads, so if you wanted loads too (besides mem-loads)
+>> it would be nearly a full list.
+>
+> Of that list you had earlier:
+>
+> MEM_UOPS_RETIRED.STLB_MISS_LOADS
+> MEM_UOPS_RETIRED.STLB_MISS_STORES
+> MEM_UOPS_RETIRED.LOCK_LOADS
+> MEM_UOPS_RETIRED.SPLIT_LOADS
+> MEM_UOPS_RETIRED.SPLIT_STORES
+> MEM_UOPS_RETIRED.ALL_LOADS
+> MEM_UOPS_RETIRED.ALL_STORES
+>
+> There's only 4 loads and (as you already said) 3 stores.
+>
+> That's 7 events total, that's not nearly a full list.
+>
+> The other events:
+>
+> UOPS_RETIRED.ALL
+> MEM_LOAD_UOPS_RETIRED.L1_HIT
+> MEM_LOAD_UOPS_RETIRED.L2_HIT
+> MEM_LOAD_UOPS_RETIRED.L3_HIT
+> MEM_LOAD_UOPS_RETIRED.L1_MISS
+> MEM_LOAD_UOPS_RETIRED.L2_MISS
+> MEM_LOAD_UOPS_RETIRED.L3_MISS
+> MEM_LOAD_UOPS_RETIRED.HIT_LFB
+> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_MISS
+> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HIT
+> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HITM
+> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_NONE
+> MEM_LOAD_UOPS_L3_MISS_RETIRED.LOCAL_DRAM
+>
+Those are loads uops.
 
-diff --git a/arch/alpha/boot/bootpz.c b/arch/alpha/boot/bootpz.c
-index 15c16fe..0b5c978 100644
---- a/arch/alpha/boot/bootpz.c
-+++ b/arch/alpha/boot/bootpz.c
-@@ -42,10 +42,10 @@
- #undef DEBUG_LAST_STEPS
- 
- extern unsigned long switch_to_osf_pal(unsigned long nr,
--	struct pcb_struct * pcb_va, struct pcb_struct * pcb_pa,
-+	struct pcb_struct *pcb_va, struct pcb_struct *pcb_pa,
- 	unsigned long *vptb);
- 
--extern int decompress_kernel(void* destination, void *source,
-+extern int decompress_kernel(void *destination, void *source,
- 			     size_t ksize, size_t kzsize);
- 
- extern void move_stack(unsigned long new_stack);
-@@ -116,8 +116,8 @@ void
- pal_init(void)
- {
- 	unsigned long i, rev;
--	struct percpu_struct * percpu;
--	struct pcb_struct * pcb_pa;
-+	struct percpu_struct *percpu;
-+	struct pcb_struct *pcb_pa;
- 
- 	/* Create the dummy PCB.  */
- 	pcb_va->ksp = 0;
-@@ -448,8 +448,8 @@ start_kernel(void)
- #ifdef DEBUG_LAST_STEPS
- 	srm_printk("Preparing ZERO_PGE...\n");
- #endif
--	memset((char*)ZERO_PGE, 0, PAGE_SIZE);
--	strcpy((char*)ZERO_PGE, envval);
-+	memset((char *)ZERO_PGE, 0, PAGE_SIZE);
-+	strcpy((char *)ZERO_PGE, envval);
- 
- #ifdef INITRD_IMAGE_SIZE
- 
--- 
-1.9.1
-
+> are unclear on their type and should indeed be NA.
