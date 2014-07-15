@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906AbaGOVjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:39:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55137 "EHLO
+	id S964934AbaGOVjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:39:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55195 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964896AbaGOVjd (ORCPT
+	with ESMTP id S934117AbaGOVjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:33 -0400
+	Tue, 15 Jul 2014 17:39:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 067/198] s390/lowcore: reserve 96 bytes for IRB in lowcore
-Date: Tue, 15 Jul 2014 14:28:57 -0700
-Message-Id: <1405459868-15089-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 057/198] ext4: fix zeroing of page during writeback
+Date: Tue, 15 Jul 2014 14:28:47 -0700
+Message-Id: <1405459868-15089-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -31,65 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
+commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
 
-The IRB might be 96 bytes if the extended-I/O-measurement facility is
-used. This feature is currently not used by Linux, but struct irb
-already has the emw defined. So let's make the irb in lowcore match the
-size of the internal data structure to be future proof.
-We also have to add a pad, to correctly align the paste.
+Tail of a page straddling inode size must be zeroed when being written
+out due to POSIX requirement that modifications of mmaped page beyond
+inode size must not be written to the file. ext4_bio_write_page() did
+this only for blocks fully beyond inode size but didn't properly zero
+blocks partially beyond inode size. Fix this.
 
-The bigger irb field also circumvents a bug in some QEMU versions that
-always write the emw field on test subchannel and therefore destroy the
-paste definitions of this CPU. Running under these QEMU version broke
-some timing functions in the VDSO and all users of these functions,
-e.g. some JREs.
+The problem has been uncovered by mmap_11-4 test in openposix test suite
+(part of LTP).
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
+Fixes: 5a0dc7365c240
+Fixes: bd2d0210cf22f
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/include/asm/lowcore.h | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/ext4/page-io.c | 24 +++++++++++-------------
+ 1 file changed, 11 insertions(+), 13 deletions(-)
 
-diff --git a/arch/s390/include/asm/lowcore.h b/arch/s390/include/asm/lowcore.h
-index bbf8141..2bed4f0 100644
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
- 
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
- 
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index d84cc95..598c4c6 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -422,6 +422,17 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
+ 	ClearPageError(page);
  
  	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
- 
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
++	 * Comments copied from block_write_full_page_endio:
++	 *
++	 * The page straddles i_size.  It must be zeroed out on each and every
++	 * writepage invocation because it may be mmapped.  "A file is mapped
++	 * in multiples of the page size.  For a file that is not a multiple of
++	 * the page size, the remaining memory is zeroed when mapped, and
++	 * writes to that region are not written out to the file."
++	 */
++	if (len < PAGE_CACHE_SIZE)
++		zero_user_segment(page, len, PAGE_CACHE_SIZE);
++	/*
+ 	 * In the first loop we prepare and mark buffers to submit. We have to
+ 	 * mark all buffers in the page before submitting so that
+ 	 * end_page_writeback() cannot be called from ext4_bio_end_io() when IO
+@@ -432,19 +443,6 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
+ 	do {
+ 		block_start = bh_offset(bh);
+ 		if (block_start >= len) {
+-			/*
+-			 * Comments copied from block_write_full_page_endio:
+-			 *
+-			 * The page straddles i_size.  It must be zeroed out on
+-			 * each and every writepage invocation because it may
+-			 * be mmapped.  "A file is mapped in multiples of the
+-			 * page size.  For a file that is not a multiple of
+-			 * the  page size, the remaining memory is zeroed when
+-			 * mapped, and writes to that region are not written
+-			 * out to the file."
+-			 */
+-			zero_user_segment(page, block_start,
+-					  block_start + blocksize);
+ 			clear_buffer_dirty(bh);
+ 			set_buffer_uptodate(bh);
+ 			continue;
 -- 
 1.9.1
 
