@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760762AbaGOXzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:55:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933406AbaGOXNr (ORCPT
+	id S1760779AbaGOXzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:55:13 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:41372 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760764AbaGOXzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:47 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 38/66] dm: allocate a special workqueue for deferred device removal
-Date: Tue, 15 Jul 2014 16:17:32 -0700
-Message-Id: <20140715231703.808785593@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 19:55:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <53C5BD3E.2010600@zytor.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+ <1405452884-25688-4-git-send-email-toshi.kani@hp.com> <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
+ <1405465801.28702.34.camel@misato.fc.hp.com> <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com>
+ <53C5BD3E.2010600@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 15 Jul 2014 16:54:45 -0700
+Message-ID: <CALCETrUV2NseM8u6YqQ3trqLy+10_A6sd7nmfkgO3Rnw3GSxiQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to handle
+ WT type
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 15, 2014 at 4:46 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/15/2014 04:36 PM, Andy Lutomirski wrote:
+>> On Tue, Jul 15, 2014 at 4:10 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>>> On Tue, 2014-07-15 at 12:56 -0700, Andy Lutomirski wrote:
+>>>> On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>>>>> This patch changes reserve_memtype() to handle the new WT type.
+>>>>> When (!pat_enabled && new_type), it continues to set either WB
+>>>>> or UC- to *new_type.  When pat_enabled, it can reserve a given
+>>>>> non-RAM range for WT.  At this point, it may not reserve a RAM
+>>>>> range for WT since reserve_ram_pages_type() uses the page flags
+>>>>> limited to three memory types, WB, WC and UC.
+>>>>
+>>>> FWIW, last time I looked at this, it seemed like all the fancy
+>>>> reserve_ram_pages stuff was unnecessary: shouldn't the RAM type be
+>>>> easy to track in the direct map page tables?
+>>>
+>>> Are you referring the direct map page tables as the kernel page
+>>> directory tables (pgd/pud/..)?
+>>>
+>>> I think it needs to be able to keep track of the memory type per a
+>>> physical memory range, not per a translation, in order to prevent
+>>> aliasing of the memory type.
+>>
+>> Actual RAM (the lowmem kind, which is all of it on x86_64) is mapped
+>> linearly somewhere in kernel address space.  The pagetables for that
+>> mapping could be used as the canonical source of the memory type for
+>> the ram range in question.
+>>
+>> This only works for lowmem, so maybe it's not a good idea to rely on it.
+>>
+>
+> We could do that, but would it be better?
 
-------------------
+>From vague memory, the current mechanism for tracking RAM memtypes (as
+opposed to memtypes for everything that isn't RAM) is limited to a
+very small number of types, leading to oddities like not being able to
+create WT ram with this patchset.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+Using the pagetables directly would be simpler (no extra data
+structure) and would automatically exactly track the set of memtypes
+that can fit in the pagetable structures.
 
-commit acfe0ad74d2e1bfc81d1d7bf5e15b043985d3650 upstream.
-
-The commit 2c140a246dc ("dm: allow remove to be deferred") introduced a
-deferred removal feature for the device mapper.  When this feature is
-used (by passing a flag DM_DEFERRED_REMOVE to DM_DEV_REMOVE_CMD ioctl)
-and the user tries to remove a device that is currently in use, the
-device will be removed automatically in the future when the last user
-closes it.
-
-Device mapper used the system workqueue to perform deferred removals.
-However, some targets (dm-raid1, dm-mpath, dm-stripe) flush work items
-scheduled for the system workqueue from their destructor.  If the
-destructor itself is called from the system workqueue during deferred
-removal, it introduces a possible deadlock - the workqueue tries to flush
-itself.
-
-Fix this possible deadlock by introducing a new workqueue for deferred
-removals.  We allocate just one workqueue for all dm targets.  The
-ability of dm targets to process IOs isn't dependent on deferred removal
-of unused targets, so a deadlock due to shared workqueue isn't possible.
-
-Also, cleanup local_init() to eliminate potential for returning success
-on failure.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/dm.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
-
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -54,6 +54,8 @@ static void do_deferred_remove(struct wo
- 
- static DECLARE_WORK(deferred_remove_work, do_deferred_remove);
- 
-+static struct workqueue_struct *deferred_remove_workqueue;
-+
- /*
-  * For bio-based dm.
-  * One of these is allocated per bio.
-@@ -283,16 +285,24 @@ static int __init local_init(void)
- 	if (r)
- 		goto out_free_rq_tio_cache;
- 
-+	deferred_remove_workqueue = alloc_workqueue("kdmremove", WQ_UNBOUND, 1);
-+	if (!deferred_remove_workqueue) {
-+		r = -ENOMEM;
-+		goto out_uevent_exit;
-+	}
-+
- 	_major = major;
- 	r = register_blkdev(_major, _name);
- 	if (r < 0)
--		goto out_uevent_exit;
-+		goto out_free_workqueue;
- 
- 	if (!_major)
- 		_major = r;
- 
- 	return 0;
- 
-+out_free_workqueue:
-+	destroy_workqueue(deferred_remove_workqueue);
- out_uevent_exit:
- 	dm_uevent_exit();
- out_free_rq_tio_cache:
-@@ -306,6 +316,7 @@ out_free_io_cache:
- static void local_exit(void)
- {
- 	flush_scheduled_work();
-+	destroy_workqueue(deferred_remove_workqueue);
- 
- 	kmem_cache_destroy(_rq_tio_cache);
- 	kmem_cache_destroy(_io_cache);
-@@ -414,7 +425,7 @@ static void dm_blk_close(struct gendisk
- 
- 	if (atomic_dec_and_test(&md->open_count) &&
- 	    (test_bit(DMF_DEFERRED_REMOVE, &md->flags)))
--		schedule_work(&deferred_remove_work);
-+		queue_work(deferred_remove_workqueue, &deferred_remove_work);
- 
- 	dm_put(md);
- 
-
-
+--Andy
