@@ -1,184 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256AbaGOSxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:53:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29914 "EHLO mx1.redhat.com"
+	id S933262AbaGOSxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:53:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53978 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932921AbaGOSp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:45:58 -0400
+	id S932909AbaGOSp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:45:57 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 09/23] Input - wacom: include and use linux/hid.h
-Date: Tue, 15 Jul 2014 14:45:32 -0400
-Message-Id: <1405449946-11515-10-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 08/23] Input - wacom: split out the pad device for the wireless receiver
+Date: Tue, 15 Jul 2014 14:45:31 -0400
+Message-Id: <1405449946-11515-9-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current wacom code redefines constants that are already in linux/hid.h
-This patch includes the official implementation and use it accross the code.
+The Wireless Receiver should also behave in the same way than regular
+USB devices.
 
-There is a conflict with HID_USAGE and others at the same level:
-- in the wacom.ko implementation, those are the #define regarding the
-  value of the field in the report descriptor
-- in the hid.h, those are bitmask
-So add HDESC_ in their current definition.
-
-Also, the struct hid_descriptor slightly differs from the linux/hid.h
-point of view, so mark it as custom for this driver.
+To simplify the unregistering of the different devices,
+wacom_unregister_inputs() is introduced.
+For consistency, the function wacom_register_input() is renamed into
+wacom_register_inputs().
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Reviewed-by: Ping Cheng <pingc@wacom.com>
 Reviewed-by: Jason Gerecke <killertofu@gmail.com>
-Tested-by: Jason Gerecke <killertofu@gmail.com>
 ---
 
 no changes in v2
 
- drivers/input/tablet/wacom_sys.c | 53 +++++++++++++++++-----------------------
- 1 file changed, 22 insertions(+), 31 deletions(-)
+ drivers/input/tablet/wacom_sys.c | 46 ++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index dd0dbc2..c34791e 100644
+index b258485..dd0dbc2 100644
 --- a/drivers/input/tablet/wacom_sys.c
 +++ b/drivers/input/tablet/wacom_sys.c
-@@ -13,28 +13,19 @@
+@@ -1142,7 +1142,17 @@ static struct input_dev *wacom_allocate_input(struct wacom *wacom)
+ 	return input_dev;
+ }
  
- #include "wacom_wac.h"
- #include "wacom.h"
-+#include <linux/hid.h>
- 
- /* defines to get HID report descriptor */
- #define HID_DEVICET_HID		(USB_TYPE_CLASS | 0x01)
- #define HID_DEVICET_REPORT	(USB_TYPE_CLASS | 0x02)
--#define HID_USAGE_UNDEFINED		0x00
--#define HID_USAGE_PAGE			0x05
--#define HID_USAGE_PAGE_DIGITIZER	0x0d
--#define HID_USAGE_PAGE_DESKTOP		0x01
--#define HID_USAGE			0x09
--#define HID_USAGE_X			((HID_USAGE_PAGE_DESKTOP << 16) | 0x30)
--#define HID_USAGE_Y			((HID_USAGE_PAGE_DESKTOP << 16) | 0x31)
--#define HID_USAGE_PRESSURE		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x30)
--#define HID_USAGE_X_TILT		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x3d)
--#define HID_USAGE_Y_TILT		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x3e)
--#define HID_USAGE_FINGER		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x22)
--#define HID_USAGE_STYLUS		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x20)
--#define HID_USAGE_CONTACTMAX		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x55)
--#define HID_COLLECTION			0xa1
--#define HID_COLLECTION_LOGICAL		0x02
--#define HID_COLLECTION_END		0xc0
--
--struct hid_descriptor {
-+#define HID_HDESC_USAGE_UNDEFINED	0x00
-+#define HID_HDESC_USAGE_PAGE		0x05
-+#define HID_HDESC_USAGE			0x09
-+#define HID_HDESC_COLLECTION		0xa1
-+#define HID_HDESC_COLLECTION_LOGICAL	0x02
-+#define HID_HDESC_COLLECTION_END	0xc0
+-static int wacom_register_input(struct wacom *wacom)
++static void wacom_unregister_inputs(struct wacom *wacom)
++{
++	if (wacom->wacom_wac.input)
++		input_unregister_device(wacom->wacom_wac.input);
++	if (wacom->wacom_wac.pad_input)
++		input_unregister_device(wacom->wacom_wac.pad_input);
++	wacom->wacom_wac.input = NULL;
++	wacom->wacom_wac.pad_input = NULL;
++}
 +
-+struct wac_hid_descriptor {
- 	struct usb_descriptor_header header;
- 	__le16   bcdHID;
- 	u8       bCountryCode;
-@@ -301,7 +292,7 @@ static void wacom_retrieve_report_data(struct usb_interface *intf,
-  * this after returning from this function.
-  */
- static int wacom_parse_hid(struct usb_interface *intf,
--			   struct hid_descriptor *hid_desc,
-+			   struct wac_hid_descriptor *hid_desc,
- 			   struct wacom_features *features)
++static int wacom_register_inputs(struct wacom *wacom)
  {
- 	struct usb_device *dev = interface_to_usbdev(intf);
-@@ -334,14 +325,14 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 	for (i = 0; i < hid_desc->wDescriptorLength; i++) {
+ 	struct input_dev *input_dev, *pad_input_dev;
+ 	struct wacom_wac *wacom_wac = &(wacom->wacom_wac);
+@@ -1214,16 +1224,12 @@ static void wacom_wireless_work(struct work_struct *work)
+ 	/* Stylus interface */
+ 	wacom1 = usb_get_intfdata(usbdev->config->interface[1]);
+ 	wacom_wac1 = &(wacom1->wacom_wac);
+-	if (wacom_wac1->input)
+-		input_unregister_device(wacom_wac1->input);
+-	wacom_wac1->input = NULL;
++	wacom_unregister_inputs(wacom1);
  
- 		switch (report[i]) {
--		case HID_USAGE_PAGE:
-+		case HID_HDESC_USAGE_PAGE:
- 			page = report[i + 1];
- 			i++;
- 			break;
+ 	/* Touch interface */
+ 	wacom2 = usb_get_intfdata(usbdev->config->interface[2]);
+ 	wacom_wac2 = &(wacom2->wacom_wac);
+-	if (wacom_wac2->input)
+-		input_unregister_device(wacom_wac2->input);
+-	wacom_wac2->input = NULL;
++	wacom_unregister_inputs(wacom2);
  
--		case HID_USAGE:
-+		case HID_HDESC_USAGE:
- 			switch (page << 16 | report[i + 1]) {
--			case HID_USAGE_X:
-+			case HID_GD_X:
- 				if (finger) {
- 					features->device_type = BTN_TOOL_FINGER;
- 					/* touch device at least supports one touch point */
-@@ -420,7 +411,7 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 				}
- 				break;
+ 	if (wacom_wac->pid == 0) {
+ 		dev_info(&wacom->intf->dev, "wireless tablet disconnected\n");
+@@ -1253,9 +1259,11 @@ static void wacom_wireless_work(struct work_struct *work)
+ 		wacom_wac1->features.device_type = BTN_TOOL_PEN;
+ 		snprintf(wacom_wac1->name, WACOM_NAME_MAX, "%s (WL) Pen",
+ 			 wacom_wac1->features.name);
++		snprintf(wacom_wac1->pad_name, WACOM_NAME_MAX, "%s (WL) Pad",
++			 wacom_wac1->features.name);
+ 		wacom_wac1->shared->touch_max = wacom_wac1->features.touch_max;
+ 		wacom_wac1->shared->type = wacom_wac1->features.type;
+-		error = wacom_register_input(wacom1);
++		error = wacom_register_inputs(wacom1);
+ 		if (error)
+ 			goto fail;
  
--			case HID_USAGE_Y:
-+			case HID_GD_Y:
- 				if (finger) {
- 					switch (features->type) {
- 					case TABLETPC2FG:
-@@ -472,7 +463,7 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 				}
- 				break;
+@@ -1273,7 +1281,9 @@ static void wacom_wireless_work(struct work_struct *work)
+ 			else
+ 				snprintf(wacom_wac2->name, WACOM_NAME_MAX,
+ 					 "%s (WL) Pad",wacom_wac2->features.name);
+-			error = wacom_register_input(wacom2);
++			snprintf(wacom_wac2->pad_name, WACOM_NAME_MAX,
++				 "%s (WL) Pad", wacom_wac2->features.name);
++			error = wacom_register_inputs(wacom2);
+ 			if (error)
+ 				goto fail;
  
--			case HID_USAGE_FINGER:
-+			case HID_DG_FINGER:
- 				finger = 1;
- 				i++;
- 				break;
-@@ -482,19 +473,19 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 			 * X/Y values and some cases of invalid Digitizer X/Y
- 			 * values commonly reported.
- 			 */
--			case HID_USAGE_STYLUS:
-+			case HID_DG_STYLUS:
- 				pen = 1;
- 				i++;
- 				break;
+@@ -1290,15 +1300,8 @@ static void wacom_wireless_work(struct work_struct *work)
+ 	return;
  
--			case HID_USAGE_CONTACTMAX:
-+			case HID_DG_CONTACTMAX:
- 				/* leave touch_max as is if predefined */
- 				if (!features->touch_max)
- 					wacom_retrieve_report_data(intf, features);
- 				i++;
- 				break;
+ fail:
+-	if (wacom_wac2->input) {
+-		input_unregister_device(wacom_wac2->input);
+-		wacom_wac2->input = NULL;
+-	}
+-
+-	if (wacom_wac1->input) {
+-		input_unregister_device(wacom_wac1->input);
+-		wacom_wac1->input = NULL;
+-	}
++	wacom_unregister_inputs(wacom1);
++	wacom_unregister_inputs(wacom2);
+ 	return;
+ }
  
--			case HID_USAGE_PRESSURE:
-+			case HID_DG_TIPPRESSURE:
- 				if (pen) {
- 					features->pressure_max =
- 						get_unaligned_le16(&report[i + 3]);
-@@ -504,15 +495,15 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 			}
- 			break;
+@@ -1444,7 +1447,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
+ 		goto fail4;
  
--		case HID_COLLECTION_END:
-+		case HID_HDESC_COLLECTION_END:
- 			/* reset UsagePage and Finger */
- 			finger = page = 0;
- 			break;
+ 	if (!(features->quirks & WACOM_QUIRK_NO_INPUT)) {
+-		error = wacom_register_input(wacom);
++		error = wacom_register_inputs(wacom);
+ 		if (error)
+ 			goto fail5;
+ 	}
+@@ -1484,10 +1487,7 @@ static void wacom_disconnect(struct usb_interface *intf)
  
--		case HID_COLLECTION:
-+		case HID_HDESC_COLLECTION:
- 			i++;
- 			switch (report[i]) {
--			case HID_COLLECTION_LOGICAL:
-+			case HID_HDESC_COLLECTION_LOGICAL:
- 				i += wacom_parse_logical_collection(&report[i],
- 								    features);
- 				break;
-@@ -585,7 +576,7 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
- {
- 	int error = 0;
- 	struct usb_host_interface *interface = intf->cur_altsetting;
--	struct hid_descriptor *hid_desc;
-+	struct wac_hid_descriptor *hid_desc;
- 
- 	/* default features */
- 	features->device_type = BTN_TOOL_PEN;
+ 	usb_kill_urb(wacom->irq);
+ 	cancel_work_sync(&wacom->work);
+-	if (wacom->wacom_wac.input)
+-		input_unregister_device(wacom->wacom_wac.input);
+-	if (wacom->wacom_wac.pad_input)
+-		input_unregister_device(wacom->wacom_wac.pad_input);
++	wacom_unregister_inputs(wacom);
+ 	wacom_destroy_battery(wacom);
+ 	wacom_destroy_leds(wacom);
+ 	usb_free_urb(wacom->irq);
 -- 
 2.0.0
 
