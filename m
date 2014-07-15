@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965403AbaGOXlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:41:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S933880AbaGOXOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:14:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933897AbaGOXOH (ORCPT
+	with ESMTP id S933000AbaGOXNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:07 -0400
+	Tue, 15 Jul 2014 19:13:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.15 33/84] crypto: sha512_ssse3 - fix byte count to bit count conversion
-Date: Tue, 15 Jul 2014 16:17:30 -0700
-Message-Id: <20140715231714.194661117@linuxfoundation.org>
+        Jim Bos <jim876@xs4all.nl>, Guenter Roeck <linux@roeck-us.net>,
+        Andreas Mohr <andi@lisas.de>
+Subject: [PATCH 3.14 12/66] i8k: Fix non-SMP operation
+Date: Tue, 15 Jul 2014 16:17:06 -0700
+Message-Id: <20140715231702.615440815@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,42 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit cfe82d4f45c7cc39332a2be7c4c1d3bf279bbd3d upstream.
+commit 6d827fbcc370ca259a2905309f64161ab7b10596 upstream.
 
-Byte-to-bit-count computation is only partly converted to big-endian and is
-mixing in CPU-endian values. Problem was noticed by sparce with warning:
+Commit f36fdb9f0266 (i8k: Force SMM to run on CPU 0) adds support
+for multi-core CPUs to the driver. Unfortunately, that causes it
+to fail loading if compiled without SMP support, at least on
+32 bit kernels. Kernel log shows "i8k: unable to get SMM Dell
+signature", and function i8k_smm is found to return -EINVAL.
 
-  CHECK   arch/x86/crypto/sha512_ssse3_glue.c
-arch/x86/crypto/sha512_ssse3_glue.c:144:19: warning: restricted __be64 degrades to integer
-arch/x86/crypto/sha512_ssse3_glue.c:144:17: warning: incorrect type in assignment (different base types)
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    expected restricted __be64 <noident>
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    got unsigned long long
+Testing revealed that the culprit is the missing return value check
+of set_cpus_allowed_ptr.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Fixes: f36fdb9f0266 (i8k: Force SMM to run on CPU 0)
+Reported-by: Jim Bos <jim876@xs4all.nl>
+Tested-by: Jim Bos <jim876@xs4all.nl>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Andreas Mohr <andi@lisas.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/crypto/sha512_ssse3_glue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/i8k.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/crypto/sha512_ssse3_glue.c
-+++ b/arch/x86/crypto/sha512_ssse3_glue.c
-@@ -141,7 +141,7 @@ static int sha512_ssse3_final(struct sha
- 
- 	/* save number of bits */
- 	bits[1] = cpu_to_be64(sctx->count[0] << 3);
--	bits[0] = cpu_to_be64(sctx->count[1] << 3) | sctx->count[0] >> 61;
-+	bits[0] = cpu_to_be64(sctx->count[1] << 3 | sctx->count[0] >> 61);
- 
- 	/* Pad out to 112 mod 128 and append length */
- 	index = sctx->count[0] & 0x7f;
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -138,7 +138,9 @@ static int i8k_smm(struct smm_regs *regs
+ 	if (!alloc_cpumask_var(&old_mask, GFP_KERNEL))
+ 		return -ENOMEM;
+ 	cpumask_copy(old_mask, &current->cpus_allowed);
+-	set_cpus_allowed_ptr(current, cpumask_of(0));
++	rc = set_cpus_allowed_ptr(current, cpumask_of(0));
++	if (rc)
++		goto out;
+ 	if (smp_processor_id() != 0) {
+ 		rc = -EBUSY;
+ 		goto out;
 
 
