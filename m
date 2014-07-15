@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934353AbaGOXPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45499 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933930AbaGOXOK (ORCPT
+	id S934009AbaGOXSn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:18:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45479 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908AbaGOXSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:10 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.15 40/84] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
-Date: Tue, 15 Jul 2014 16:17:37 -0700
-Message-Id: <20140715231714.400393606@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Jul 2014 19:18:39 -0400
+Date: Tue, 15 Jul 2014 16:18:38 -0700 (PDT)
+Message-Id: <20140715.161838.488578760446734001.davem@davemloft.net>
+To: teg@jklm.no
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/4] net: add name_assign_type netdev attribute
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1405348645-1995-1-git-send-email-teg@jklm.no>
+References: <1405348645-1995-1-git-send-email-teg@jklm.no>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 15 Jul 2014 16:18:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+From: Tom Gundersen <teg@jklm.no>
+Date: Mon, 14 Jul 2014 16:37:22 +0200
 
-------------------
+> Based on a patch by David Herrmann.
+> 
+> The name_assign_type attribute gives hints where the interface name of a
+> given net-device comes from. These values are currently defined:
+ ...
+> The aim of these patches is to improve user-space renaming of interfaces. As
+> a general rule, userspace must rename interfaces to guarantee that names stay
+> the same every time a given piece of hardware appears (at boot, or when
+> attaching it). However, there are several situations where userspace should
+> not perform the renaming, and that depends on both the policy of the local
+> admin, but crucially also on the nature of the current interface name.
+> 
+> If an interface was created in repsonse to a userspace request, and userspace
+> already provided a name, we most probably want to leave that name alone. The
+> main instance of this is wifi-P2P devices created over nl80211, which currently
+> have a long-standing bug where they are getting renamed by udev. We label such
+> names NET_NAME_USER.
+> 
+> If an interface, unbeknown to us, has already been renamed from userspace, we
+> most probably want to leave also that alone. This will typically happen when
+> third-party plugins (for instance to udev, but the interface is generic so could
+> be from anywhere) renames the interface without informing udev about it. A
+> typical situation is when you switch root from an installer or an initrd to the
+> real system and the new instance of udev does not know what happened before
+> the switch. These types of problems have caused repeated issues in the past. To
+> solve this, once an interface has been renamed, its name is labelled
+> NET_NAME_RENAMED.
+> 
+> In many cases, the kernel is actually able to name interfaces in such a
+> way that there is no need for userspace to rename them. This is the case when
+> the enumeration order of devices, or in fact any other (non-parent) device on
+> the system, can not influence the name of the interface. Examples include
+> statically created devices, or any naming schemes based on hardware properties
+> of the interface. In this case the admin may prefer to use the kernel-provided
+> names, and to make that possible we label such names NET_NAME_PREDICTABLE.
+> We want the kernel to have tho possibilty of performing predictable interface
+> naming itself (and exposing to userspace that it has), as the information
+> necessary for a proper naming scheme for a certain class of devices may not
+> be exposed to userspace.
+> 
+> The case where renaming is almost certainly desired, is when the kernel has
+> given the interface a name using global device enumeration based on order of
+> discovery (ethX, wlanY, etc). These naming schemes are labelled NET_NAME_ENUM.
+> 
+> Lastly, a fallback is left as NET_NAME_UNKNOWN, to indicate that a driver has
+> not yet been ported. This is mostly useful as a transitionary measure, allowing
+> us to label the various naming schemes bit by bit.
+> 
+> v8: minor documentation fixes
+> v9: move comment to the right commit
+> 
+> Signed-off-by: Tom Gundersen <teg@jklm.no>
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> Reviewed-by: Kay Sievers <kay@vrfy.org>
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-
-commit affb1aff300ddee54df307812b38f166e8a865ef upstream.
-
-Starting with Win8, we have implemented several optimizations to improve the
-scalability and performance of the VMBUS transport between the Host and the
-Guest. Some of the non-performance critical services cannot leverage these
-optimization since they only read and process one message at a time.
-Make adjustments to the callback dispatch code to account for the way
-non-performance critical drivers handle reading of the channel.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/hv/connection.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -319,9 +319,13 @@ static void process_chn_event(u32 relid)
- 		 */
- 
- 		do {
--			hv_begin_read(&channel->inbound);
-+			if (read_state)
-+				hv_begin_read(&channel->inbound);
- 			channel->onchannel_callback(arg);
--			bytes_to_read = hv_end_read(&channel->inbound);
-+			if (read_state)
-+				bytes_to_read = hv_end_read(&channel->inbound);
-+			else
-+				bytes_to_read = 0;
- 		} while (read_state && (bytes_to_read != 0));
- 	} else {
- 		pr_err("no channel callback for relid - %u\n", relid);
-
-
+Applied.
