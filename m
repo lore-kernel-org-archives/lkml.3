@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965417AbaGOXmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:42:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45437 "EHLO
+	id S1030343AbaGOXnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:43:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881AbaGOXOF (ORCPT
+	with ESMTP id S933869AbaGOXOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:05 -0400
+	Tue, 15 Jul 2014 19:14:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bert Vermeulen <bert@biot.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.15 03/84] USB: ftdi_sio: Add extra PID.
-Date: Tue, 15 Jul 2014 16:17:00 -0700
-Message-Id: <20140715231713.293842542@linuxfoundation.org>
+        Barton Xu <tank.xuhan@gmail.com>,
+        Steffen Weber <steffen.weber@gmail.com>,
+        Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 27/84] ACPI / EC: Fix race condition in ec_transaction_completed()
+Date: Tue, 15 Jul 2014 16:17:24 -0700
+Message-Id: <20140715231714.023596589@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,45 +31,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bert Vermeulen <bert@biot.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 5a7fbe7e9ea0b1b9d7ffdba64db1faa3a259164c upstream.
+commit c0d653412fc8450370167a3268b78fc772ff9c87 upstream.
 
-This patch adds PID 0x0003 to the VID 0x128d (Testo). At least the
-Testo 435-4 uses this, likely other gear as well.
+There is a race condition in ec_transaction_completed().
 
-Signed-off-by: Bert Vermeulen <bert@biot.com>
-Cc: Johan Hovold <johan@kernel.org>
+When ec_transaction_completed() is called in the GPE handler, it could
+return true because of (ec->curr == NULL). Then the wake_up() invocation
+could complete the next command unexpectedly since there is no lock between
+the 2 invocations. With the previous cleanup, the IBF=0 waiter race need
+not be handled any more. It's now safe to return a flag from
+advance_condition() to indicate the requirement of wakeup, the flag is
+returned from a locked context.
+
+The ec_transaction_completed() is now only invoked by the ec_poll() where
+the ec->curr is ensured to be different from NULL.
+
+After cleaning up, the EVT_SCI=1 check should be moved out of the wakeup
+condition so that an EVT_SCI raised with (ec->curr == NULL) can trigger a
+QR_SC command.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
+Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
+Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
+Reported-by: Barton Xu <tank.xuhan@gmail.com>
+Tested-by: Steffen Weber <steffen.weber@gmail.com>
+Tested-by: Arthur Chen <axchen@nvidia.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    3 ++-
- drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/acpi/ec.c |   30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -720,7 +720,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
--	{ USB_DEVICE(TESTO_VID, TESTO_USB_INTERFACE_PID) },
-+	{ USB_DEVICE(TESTO_VID, TESTO_1_PID) },
-+	{ USB_DEVICE(TESTO_VID, TESTO_3_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_GAMMA_SCOUT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13M_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13S_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -798,7 +798,8 @@
-  * Submitted by Colin Leroy
-  */
- #define TESTO_VID			0x128D
--#define TESTO_USB_INTERFACE_PID		0x0001
-+#define TESTO_1_PID			0x0001
-+#define TESTO_3_PID			0x0003
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -158,16 +158,17 @@ static int ec_transaction_completed(stru
+ 	unsigned long flags;
+ 	int ret = 0;
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
++	if (ec->curr && (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
+ 		ret = 1;
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ 	return ret;
+ }
  
- /*
-  * Mobility Electronics products.
+-static void advance_transaction(struct acpi_ec *ec)
++static bool advance_transaction(struct acpi_ec *ec)
+ {
+ 	struct transaction *t;
+ 	u8 status;
++	bool wakeup = false;
+ 
+ 	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
+ 	status = acpi_ec_read_status(ec);
+@@ -183,21 +184,25 @@ static void advance_transaction(struct a
+ 		} else if (t->rlen > t->ri) {
+ 			if ((status & ACPI_EC_FLAG_OBF) == 1) {
+ 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
+-				if (t->rlen == t->ri)
++				if (t->rlen == t->ri) {
+ 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
++					wakeup = true;
++				}
+ 			} else
+ 				goto err;
+ 		} else if (t->wlen == t->wi &&
+-			   (status & ACPI_EC_FLAG_IBF) == 0)
++			   (status & ACPI_EC_FLAG_IBF) == 0) {
+ 			t->flags |= ACPI_EC_COMMAND_COMPLETE;
+-		return;
++			wakeup = true;
++		}
++		return wakeup;
+ 	} else {
+ 		if ((status & ACPI_EC_FLAG_IBF) == 0) {
+ 			acpi_ec_write_cmd(ec, t->command);
+ 			t->flags |= ACPI_EC_COMMAND_POLL;
+ 		} else
+ 			goto err;
+-		return;
++		return wakeup;
+ 	}
+ err:
+ 	/*
+@@ -208,13 +213,14 @@ err:
+ 		if (in_interrupt() && t)
+ 			++t->irq_count;
+ 	}
++	return wakeup;
+ }
+ 
+ static void start_transaction(struct acpi_ec *ec)
+ {
+ 	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
+ 	ec->curr->flags = 0;
+-	advance_transaction(ec);
++	(void)advance_transaction(ec);
+ }
+ 
+ static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+@@ -248,7 +254,7 @@ static int ec_poll(struct acpi_ec *ec)
+ 					return 0;
+ 			}
+ 			spin_lock_irqsave(&ec->lock, flags);
+-			advance_transaction(ec);
++			(void)advance_transaction(ec);
+ 			spin_unlock_irqrestore(&ec->lock, flags);
+ 		} while (time_before(jiffies, delay));
+ 		pr_debug("controller reset, restart transaction\n");
+@@ -627,12 +633,10 @@ static u32 acpi_ec_gpe_handler(acpi_hand
+ 	struct acpi_ec *ec = data;
+ 
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	advance_transaction(ec);
+-	spin_unlock_irqrestore(&ec->lock, flags);
+-	if (ec_transaction_completed(ec)) {
++	if (advance_transaction(ec))
+ 		wake_up(&ec->wait);
+-		ec_check_sci(ec, acpi_ec_read_status(ec));
+-	}
++	spin_unlock_irqrestore(&ec->lock, flags);
++	ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
+ }
+ 
 
 
