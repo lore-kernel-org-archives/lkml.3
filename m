@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605AbaGON1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:27:46 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:45844 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758881AbaGON1i (ORCPT
+	id S1759167AbaGON2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:28:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57498 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647AbaGON2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:27:38 -0400
-Message-ID: <53C52C46.60207@gmail.com>
-Date: Tue, 15 Jul 2014 15:27:34 +0200
-From: Pascal Huerst <pascal.huerst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 15 Jul 2014 09:28:16 -0400
+Date: Tue, 15 Jul 2014 15:28:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: sched, timers: use after free in __lock_task_sighand when
+ exiting a process
+Message-ID: <20140715132804.GG9918@twins.programming.kicks-ass.net>
+References: <53C2FF4D.3020606@oracle.com>
+ <53C31A34.8030500@oracle.com>
+ <20140714090449.GL9918@twins.programming.kicks-ass.net>
+ <20140714144953.GA8173@redhat.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
-        linus.walleij@linaro.org, gnurou@gmail.com, linux-omap@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>
-Subject: Re: gpio-omap: wakeup mask
-References: <53B3F687.5050502@gmail.com> <20140704072752.GC28884@atomide.com> <53BD1683.9030505@gmail.com> <20140709104142.GO28884@atomide.com> <53BD3950.60000@gmail.com> <20140709152441.GZ28884@atomide.com>
-In-Reply-To: <20140709152441.GZ28884@atomide.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7DP64HymKb+JCWvF"
+Content-Disposition: inline
+In-Reply-To: <20140714144953.GA8173@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
+--7DP64HymKb+JCWvF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Jul 14, 2014 at 04:49:53PM +0200, Oleg Nesterov wrote:
+> > Oleg, what guarantees the RCU free of task-struct and sighand?
+>=20
+> > The only RCU I can find is delayed_put_task_struct() but that's not
+> > often used.
+>=20
+> Yes, usually the code uses put_task_struct(). delayed_put_task_struct()
+> acts almost as "if (dec_and_test(usage)) kfree_rcu(), but allows to use
+> get_task_struct() if you observe this task under rcu_read_lock().
+>=20
+> Say,
+> 	rcu_read_lock();
+> 	task =3D find_task_by_vpid(...);
+> 	if (task)
+> 		get_task_struct(task);
+> 	rcu_read_unlock();
+>=20
+> If release_task() used dec_and_test + kfree_rcu, the code above could
+> not work.
 
-On 09.07.2014 17:24, Tony Lindgren wrote:
-> * Pascal Huerst <pascal.huerst@gmail.com> [140709 05:47]:
->> On 09.07.2014 12:41, Tony Lindgren wrote:
->> 
->>> If you just comment out the _gpio_rmw part above do things work
->>> as expected?
->> 
->> Yes. It only wakes up on gpio 6 not on gpio 11 anymore.
->> 
->>> Then if that works as expected, maybe write only some unused
->>> bits into wkup_en register and see if it still wakes to all
->>> events while it should not?
->> 
->> If I use the following testcode, everything works as expected:
->> 
->> //WARN(true, "WARN: bank->base = %08X\n", bank->base);
->> 
->> if (likely(!(bank->non_wakeup_gpios & gpio_bit))) { 
->> //_gpio_rmw(base, bank->regs->wkup_en, gpio_bit, trigger != 0); 
->> writel(0xABC00000, base + bank->regs->wkup_en);
->> 
->> bank->context.wake_en = readl_relaxed(bank->base + 
->> bank->regs->wkup_en); printk("bank->base = %08X gpio = %i
->> bank->context->wake_en = %08X\n", bank->base, gpio,
->> bank->context.wake_en); }
-> 
-> Hmm weird. It sounds like something like the following is
-> happening:
-> 
-> 1. The first GPIO bank is always powered, and does not need to set 
-> wake-up events
+Agreed.
 
-I dont think so. If I apply my hack (commenting the _gpio_rmw() call)
-and don't have a wakeup source in the dt, I have to reboot the system,
-sonce im not able to wake it up anymore. Or did I miss something?
+> > TASK_DEAD etc. use regular put_task_struct() and that
+> > doesn't seem to involve RCU.
+>=20
+> Yes, the task itself (or, depending ob pov, scheduler) has a reference.
+> copy_process() does
+>=20
+> 	/*
+> 	 * One for us, one for whoever does the "release_task()" (usually
+> 	 * parent)
+> 	 */
+> 	atomic_set(&tsk->usage, 2);
+>=20
+> "us" actually means that put_task_struct(TASK_DEAD).
 
-> 2. When setting the GPIO wake-up events it seems that enabling any 
-> wake-up event for the first (16?) bits wakes up the system
-> 
-> You might want to check this with some spare GPIOs not in the first
-> bank and see if you need the wake-up events and if enabling some
-> bits enables more than one GPIO for wake-up events.
+Right, that's it. I got confused in the exit code. Thanks!
 
-Im not sure if this makes sense, since only the first gpio bank can
-act as a wakeup source. So it should not be possible.
+--7DP64HymKb+JCWvF
+Content-Type: application/pgp-signature
 
-
-thanks!
-pascal
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlPFLEYACgkQo7eFcXQQ8U1NcACbBzQiKoU5MO/MLSdrjeg5CaAc
-YJcAn3bSthD4ByFOQ31jjOFI1F/HP4Lr
-=o4r2
+iQIcBAEBAgAGBQJTxSxkAAoJEHZH4aRLwOS6hEYQAKqSUNDs03jeh3ZugzxLJkAA
+0Ot80vWsqVSwSd7enDFRC87KGFdZiYOxB8aGTUsx3elE55mPj27OIg7AqLJGkVEF
+jD6lccokGJrEFS84kaGwmljoSnv3Os+XbZbOeeiZ4ajOMcfH63/cS6hX1UdyHI6i
+RvnEYrNgtJNkJw5Jvmh4Jw81jPT/QEW0xcBh3cio2CB58qMh15Y1JBVYKGDDLkNw
+eMeGKVaBCD7DH1eoCKwYio4vZLDVQf/08mEvlD34JblrjNyKZJi/UG3jS3IEVmG/
+1IiOxTey19XJ0+aYraFSC+b2BSfgIGEjaCQpHiISS1HAH1F3YjEFlhrtdRacepCX
+2o2GNNubT3m6R6orVqexY5/bB/0EEpxnJMDGf8R4dNQ5pY+rrhZsV25rBOeznMm5
+/DeVBT/C170niMyavzeKv1OsUxOefxt3TOu/QLckZ7gfHG6elqP+W7w0QArvVi1W
+pMR4R/NsJAB9k14vsbqLd3zS37LiCc3kLix2wUsD5FEzSMhOuXpZIb/O4hcXpK74
+1KpjMAn18elMtT/smVT+Yli3SmQNlW+zI1EiNKo9RuVqanyobuUYcyHVfzrR0IC/
+r2DxiPxo0p6pf4uulpc3SlPONG/6W0Y5reVh/dMN6QB6q+Z2MCDz6aOx0zjsiGeB
+LDsSop0RfPNa+A82+BGc
+=/zM0
 -----END PGP SIGNATURE-----
+
+--7DP64HymKb+JCWvF--
