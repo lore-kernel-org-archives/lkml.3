@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801AbaGOSND (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:13:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45296 "EHLO mail.kernel.org"
+	id S932715AbaGOSOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:14:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:45330 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932306AbaGOSM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:12:59 -0400
-Message-ID: <53C56FB1.2040700@kernel.org>
-Date: Tue, 15 Jul 2014 19:15:13 +0100
+	id S1752536AbaGOSOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:14:42 -0400
+Message-ID: <53C5701A.6000507@kernel.org>
+Date: Tue, 15 Jul 2014 19:16:58 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
-        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
-        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 0/4] iio: exynos-adc: use syscon instead of ioremap
-References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com> <53C56F40.1070304@kernel.org>
-In-Reply-To: <53C56F40.1070304@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Reyad Attiyat <reyad.attiyat@gmail.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] iio: Add support for rotation from north
+References: <1404934213-2733-1-git-send-email-reyad.attiyat@gmail.com> <53BD9BD5.5030204@linux.intel.com> <CA+BWVUSLtG9pH245ofyGsrST5H_5W_EbvOXZ_YkCxmg4DX09_A@mail.gmail.com>
+In-Reply-To: <CA+BWVUSLtG9pH245ofyGsrST5H_5W_EbvOXZ_YkCxmg4DX09_A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/14 19:13, Jonathan Cameron wrote:
-> On 11/07/14 10:06, Naveen Krishna Chatradhi wrote:
->> This patch does the following
->> 1. Use the syscon and Regmap API instead of ioremappaing the
->>     ADC_PHY register from PMU.
->> 2. Moves the exynos-adc.txt from bindings/arm/samsung/
->>     to bindings/iio/adc/.
->> 3. Updates the Documentation in exynos-adc.txt with syscon phandle
->>     for the ADC nodes.
->> 4. Updates the Dts files for Exynos3250, Exynos4x12, Exynos5250,
->>     Exynos5420 with the syscon phandle.
->>
->> Tested on Exynos5420 based Peach PIT and Exynos5800 based Peach PI
->> by verifying sysfs entries provided by HWMON based NTC thermistors.
->>
->> Tested-By for Exynos3250, Exynos4x12 would be appreciated.
->>
-> This series all looks fine to me.  Took me a minute to work out what the point
-> of the syscon change was (perhaps a little description in the cover letter
-> would have been nice ;)
+On 09/07/14 23:12, Reyad Attiyat wrote:
+> Hey Srinivas,
 >
-> Anyhow, with the device tree changes in here we'll have to let it sit for
-> a while.  I'll also definitely want an ack from
-> Kukjin Kim <kgene.kim@samsung.com> for the device tree changes.
-Although I haven't tried it, I'd imagine this might cause a little bit
-of merging fun with the other exynos series waiting for Kukjin to
-ack...
-[PATCHv5 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and code clean
+> I did look into the panic you sent. I wasn't sure exactly what caused
+> the NULL pointer.
+> I tested it with out applying the last rotation from north patch, so
+> no hid usages are found, my device only has rotation_from_north, and
+> hid_parse_report() would return -EINVAL.
+> I added another check to make sure a iio channel were set up, and
+> return -EINVAL if not, but couldn't think of anything else.
 >
-> Jonathan
->> Naveen Krishna Chatradhi (4):
->>    iio: exyno-adc: use syscon for PMU register access
->>    Documentation: dt-bindings: move exynos-adc.txt to more iio/adc/
->>    Documentation: dt-bindings: update exynos-adc.txt with syscon handle
->>    ARM: dts: exynos: Add sysreg phandle to ADC node
->>
->>   .../devicetree/bindings/arm/samsung/exynos-adc.txt |   82 ------------------
->>   .../devicetree/bindings/iio/adc/exynos-adc.txt     |   87 ++++++++++++++++++++
->>   arch/arm/boot/dts/exynos3250.dtsi                  |    3 +-
->>   arch/arm/boot/dts/exynos4x12.dtsi                  |    3 +-
->>   arch/arm/boot/dts/exynos5250.dtsi                  |    3 +-
->>   arch/arm/boot/dts/exynos5420.dtsi                  |    3 +-
->>   drivers/iio/adc/exynos_adc.c                       |   29 +++++--
->>   7 files changed, 115 insertions(+), 95 deletions(-)
->>   delete mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->>   create mode 100644 Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
->>
+> Could you test this version with dynamic debugging and see if it is
+> finding any hid usage attributes.
+> Any ideas what could cause this? I think I'm handling errors properly
+> by returning what parse_report returns (-EINVAL or -ENOMEM) in probe
 >
+> Thanks,
+> Reyad Attiyat
+Just to confirm what you may suspect...  I'm holding this series until
+Srinivas and Reyad have confirmed the cause of Srinivas' panic.
+
+Jonathan
+>
+> On Wed, Jul 9, 2014 at 2:45 PM, Srinivas Pandruvada
+> <srinivas.pandruvada@linux.intel.com> wrote:
+>> On 07/09/2014 12:30 PM, Reyad Attiyat wrote:
+>>>
+>>> This series of patches modifies magn-3d driver to handle the rotation
+>>> from north usage. This is done by scanning the report and then building
+>>> the iio arrays (vals and channels) dynamically.
+>>>
+>>> Changes from V4
+>>> I use the address field of struct iio_chan_spec to hold the array index
+>>> of the usage attribute. The scan_index field is generated when creating
+>>> an iio channel.
+>>>
+>>> Reyad Attiyat (4):
+>>>     iio: Documentation: Add documentation for rotation from north sensor
+>>>       usage attributes
+>>>     iio: types: Added support for rotation from north usage attributes
+>>>     iio: hid-sensor-magn-3d: Scan for usage attributes before setting up
+>>>       iio channels
+>>>     iio: hid-sensor-magn-3d: Add support for rotation from north
+>>>
+>>>    Documentation/ABI/testing/sysfs-bus-iio       |  82 +++++++++++
+>>>    drivers/iio/industrialio-core.c               |   4 +
+>>>    drivers/iio/magnetometer/hid-sensor-magn-3d.c | 199
+>>> ++++++++++++++++++++------
+>>>    include/linux/iio/types.h                     |   4 +
+>>>    4 files changed, 245 insertions(+), 44 deletions(-)
+>>>
+>> Did you get chance to look at the cause of panic?
+>>
+>> Thanks,
+>> Srinivas
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-iio" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
