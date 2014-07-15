@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaGOXxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:53:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
+	id S1757438AbaGOXxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:53:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933510AbaGOXNs (ORCPT
+	with ESMTP id S933485AbaGOXNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexandre Demers <alexandre.f.demers@gmail.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 51/66] drm/radeon: fix typo in golden register setup on evergreen
-Date: Tue, 15 Jul 2014 16:17:45 -0700
-Message-Id: <20140715231704.336152278@linuxfoundation.org>
+Subject: [PATCH 3.14 49/66] drm/radeon/dpm: Reenabling SS on Cayman
+Date: Tue, 15 Jul 2014 16:17:43 -0700
+Message-Id: <20140715231704.247869915@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,59 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
 
-commit 6abafb78f9881b4891baf74ab4e9f090ae45230e upstream.
+commit 41959341ac7e33dd360c7a881d13566f9eca37b2 upstream.
 
-Fixes hangs on driver load on some cards.
+It reverts commit c745fe611ca42295c9d91d8e305d27983e9132ef now that
+Cayman is stable since VDDCI fix. Spread spectrum was not the culprit.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=76998
+This depends on b0880e87c1fd038b84498944f52e52c3e86ebe59
+(drm/radeon/dpm: fix vddci setup typo on cayman).
 
+Signed-off-by: Alexandre Demers <alexandre.f.demers@gmail.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/rv770_dpm.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -189,7 +189,7 @@ static const u32 evergreen_golden_regist
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002,
- 	0x913c, 0x0000000f, 0x0000000a
- };
-@@ -476,7 +476,7 @@ static const u32 cedar_golden_registers[
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002
- };
+--- a/drivers/gpu/drm/radeon/rv770_dpm.c
++++ b/drivers/gpu/drm/radeon/rv770_dpm.c
+@@ -2332,12 +2332,6 @@ void rv770_get_engine_memory_ss(struct r
+ 	pi->mclk_ss = radeon_atombios_get_asic_ss_info(rdev, &ss,
+ 						       ASIC_INTERNAL_MEMORY_SS, 0);
  
-@@ -635,7 +635,7 @@ static const u32 juniper_mgcg_init[] =
- static const u32 supersumo_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
-@@ -719,7 +719,7 @@ static const u32 sumo_golden_registers[]
- static const u32 wrestler_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
+-	/* disable ss, causes hangs on some cayman boards */
+-	if (rdev->family == CHIP_CAYMAN) {
+-		pi->sclk_ss = false;
+-		pi->mclk_ss = false;
+-	}
+-
+ 	if (pi->sclk_ss || pi->mclk_ss)
+ 		pi->dynamic_ss = true;
+ 	else
 
 
