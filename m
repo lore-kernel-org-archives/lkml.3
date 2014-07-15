@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760179AbaGOX35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:29:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
+	id S1760226AbaGOXaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:30:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758716AbaGOXOV (ORCPT
+	with ESMTP id S934131AbaGOXOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>
-Subject: [PATCH 3.15 48/84] PCI: Fix unaligned access in AF transaction pending test
-Date: Tue, 15 Jul 2014 16:17:45 -0700
-Message-Id: <20140715231714.651394351@linuxfoundation.org>
+        Brian Chadwick <brianchad@westnet.com.au>,
+        Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 3.15 73/84] f2fs: check bdi->dirty_exceeded when trying to skip data writes
+Date: Tue, 15 Jul 2014 16:18:10 -0700
+Message-Id: <20140715231715.366917437@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -31,43 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Jaegeuk Kim <jaegeuk@kernel.org>
 
-commit d066c946a866268c14a120b33e7226e899981998 upstream.
+commit 2743f865543c0c4a5e12fc13edb2bf89a6e9687c upstream.
 
-pci_wait_for_pending() uses word access, so we shouldn't be passing
-an offset that is only byte aligned.  Use the control register offset
-instead, shifting the mask to match.
+If we don't check the current backing device status, balance_dirty_pages can
+fall into infinite pausing routine.
 
-Fixes: d0b4cc4e3270 ("PCI: Wrong register used to check pending traffic")
-Fixes: 157e876ffe0b ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+This can be occurred when a lot of directories make a small number of dirty
+dentry pages including files.
+
+Reported-by: Brian Chadwick <brianchad@westnet.com.au>
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/f2fs/node.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3109,8 +3109,13 @@ static int pci_af_flr(struct pci_dev *de
- 	if (probe)
- 		return 0;
- 
--	/* Wait for Transaction Pending bit clean */
--	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
-+	/*
-+	 * Wait for Transaction Pending bit to clear.  A word-aligned test
-+	 * is used, so we use the conrol offset rather than status and shift
-+	 * the test bit to match.
-+	 */
-+	if (pci_wait_for_pending(dev, pos + PCI_AF_CTRL,
-+				 PCI_AF_STATUS_TP << 8))
- 		goto clear;
- 
- 	dev_err(&dev->dev, "transaction is not cleared; "
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -42,6 +42,8 @@ bool available_free_memory(struct f2fs_s
+ 		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
+ 		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
+ 	} else if (type == DIRTY_DENTS) {
++		if (sbi->sb->s_bdi->dirty_exceeded)
++			return false;
+ 		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
+ 		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
+ 	}
 
 
