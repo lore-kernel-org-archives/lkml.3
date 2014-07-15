@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965261AbaGOXYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:24:45 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:37477 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934349AbaGOXYl (ORCPT
+	id S1030228AbaGOXYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:24:52 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:57125 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965264AbaGOXYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:24:41 -0400
-Subject: [PATCH] dmaengine: jz4740: Fix GPL v2 license string typo
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
+	Tue, 15 Jul 2014 19:24:48 -0400
+Subject: [PATCH] Input: sirfsoc-onkey - fix GPL v2 license string typo
+To: Barry Song <baohua@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+Cc: Binghua Duan <Binghua.Duan@csr.com>, Xianglong Du <Xianglong.Du@csr.com>,
         linux-kernel@vger.kernel.org
-Date: Tue, 15 Jul 2014 17:24:38 -0600
-Message-ID: <20140715232438.24028.90309.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Tue, 15 Jul 2014 17:24:45 -0600
+Message-ID: <20140715232445.24052.13767.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,17 +29,20 @@ kernel.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/dma/dma-jz4740.c |    2 +-
+ drivers/input/misc/sirfsoc-onkey.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
-index 94c380f07538..bfbce6b07902 100644
---- a/drivers/dma/dma-jz4740.c
-+++ b/drivers/dma/dma-jz4740.c
-@@ -614,4 +614,4 @@ module_platform_driver(jz4740_dma_driver);
+diff --git a/drivers/input/misc/sirfsoc-onkey.c b/drivers/input/misc/sirfsoc-onkey.c
+index e4104f9b2e6d..fed5102e1802 100644
+--- a/drivers/input/misc/sirfsoc-onkey.c
++++ b/drivers/input/misc/sirfsoc-onkey.c
+@@ -213,7 +213,7 @@ static struct platform_driver sirfsoc_pwrc_driver = {
  
- MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
- MODULE_DESCRIPTION("JZ4740 DMA driver");
+ module_platform_driver(sirfsoc_pwrc_driver);
+ 
 -MODULE_LICENSE("GPLv2");
 +MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Binghua Duan <Binghua.Duan@csr.com>, Xianglong Du <Xianglong.Du@csr.com>");
+ MODULE_DESCRIPTION("CSR Prima2 PWRC Driver");
+ MODULE_ALIAS("platform:sirfsoc-pwrc");
 
