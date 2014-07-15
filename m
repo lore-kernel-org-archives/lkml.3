@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902AbaGOGAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:00:41 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:50467 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790AbaGOGAh (ORCPT
+	id S932279AbaGOGAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:00:48 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39564 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757668AbaGOGAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:00:37 -0400
-Subject: [PATCH ftrace/core v3 2/3] ftrace,
- kprobes: Support IPMODIFY flag to find IP modify conflict
+	Tue, 15 Jul 2014 02:00:44 -0400
+Subject: [PATCH ftrace/core v3 3/3] kprobes: Set IPMODIFY flag only if the
+ probe can change regs->ip
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 06:00:28 +0000
-Message-ID: <20140715060028.12195.33527.stgit@kbuild-fedora.novalocal>
+Date: Tue, 15 Jul 2014 06:00:35 +0000
+Message-ID: <20140715060035.12195.47782.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal>
 References: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -26,32 +26,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
-ftrace users who may modify regs->ip to change the execution
-path. This also adds the flag to kprobe_ftrace_ops, since
-ftrace-based kprobes already modifies regs->ip. Thus, if
-another user modifies the regs->ip on the same function entry,
-one of them will be broken. So both should add IPMODIFY flag
-and make sure that ftrace_set_filter_ip() succeeds.
+Set FTRACE_OPS_FL_IPMODIFY flag only for the probes which can change
+regs->ip, which has kprobe->break_handler.
+Currently we can not put jprobe and another ftrace handler which
+changes regs->ip on the same function because all kprobes have
+FTRACE_OPS_FL_IPMODIFY flag. This removes FTRACE_OPS_FL_IPMODIFY
+flag from kprobes and only when the user uses jprobe (or the
+kprobe.break_handler != NULL) we add additinal ftrace_ops with
+FTRACE_OPS_FL_IPMODIFY on target function.
 
-Note that currently conflicts of IPMODIFY are detected on the
-filter hash. It does NOT care about the notrace hash. This means
-that if you set filter hash all functions and notrace(mask)
-some of them, the IPMODIFY flag will be applied to all
-functions.
+Note about the implementation: This uses a dummy ftrace_ops to
+reserve IPMODIFY flag on the given ftrace address, for the case
+that we have a enabled kprobe on a function entry and a jprobe
+is added on the same point. In that case, we already have a
+ftrace_ops without IPMODIFY flag on the entry, and we have to
+add another ftrace_ops with IPMODIFY on the same address.
+If we put a same handler on both ftrace_ops, the handler can
+be called twice on that entry until the first one is removed.
+This means that the kprobe and the jprobe are called twice too,
+and that will not what kprobes expected.
+Thus I added a dummy ftrace_ops just for reserving IPMODIFY flag.
 
 Changes in v3:
- - Update for the latest ftrace/core.
- - Add a comment about FTRACE_OPS_FL_* attribute flags.
- - Don't check FTRACE_OPS_FL_SAVE_REGS in
-   __ftrace_hash_update_ipmodify().
- - Fix comments.
-
-Changes in v2:
- - Add a description how __ftrace_hash_update_ipmodify() will
-   handle the given hashes (NULL and EMPTY_HASH cases).
- - Clear FTRACE_OPS_FL_ENABLED after calling
-   __unregister_ftrace_function() in error path.
+ - Update __ftrace_add/remove_filter_ip() according to
+   Namhyng's comments (thanks!)
+ - Split out regs->ip recovering code from this patch.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
@@ -59,282 +58,211 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Josh Poimboeuf <jpoimboe@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- Documentation/trace/ftrace.txt |    5 ++
- include/linux/ftrace.h         |   15 ++++-
- kernel/kprobes.c               |    2 -
- kernel/trace/ftrace.c          |  132 +++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 149 insertions(+), 5 deletions(-)
+ Documentation/kprobes.txt |   12 ++--
+ kernel/kprobes.c          |  124 +++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 113 insertions(+), 23 deletions(-)
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 2479b2a..0fcad7d 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -234,6 +234,11 @@ of ftrace. Here is a list of some of the key files:
- 	will be displayed on the same line as the function that
- 	is returning registers.
+diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+index 4bbeca8..177f051 100644
+--- a/Documentation/kprobes.txt
++++ b/Documentation/kprobes.txt
+@@ -264,15 +264,13 @@ stop-machine method that ksplice uses for supporting a CONFIG_PREEMPT=y
+ kernel.
  
-+	If the callback registered to be traced by a function with
-+	the "ip modify" attribute (thus the regs->ip can be changed),
-+	a 'I' will be displayed on the same line as the function that
-+	can be overridden.
-+
-   function_profile_enabled:
+ NOTE for geeks:
+-The jump optimization changes the kprobe's pre_handler behavior.
+-Without optimization, the pre_handler can change the kernel's execution
++The jump optimization (and ftrace-based kprobes) changes the kprobe's
++pre_handler behavior.
++Without optimizations, the pre_handler can change the kernel's execution
+ path by changing regs->ip and returning 1.  However, when the probe
+ is optimized, that modification is ignored.  Thus, if you want to
+-tweak the kernel's execution path, you need to suppress optimization,
+-using one of the following techniques:
+-- Specify an empty function for the kprobe's post_handler or break_handler.
+- or
+-- Execute 'sysctl -w debug.kprobes_optimization=n'
++tweak the kernel's execution path, you need to suppress optimization or
++notify your handler will modify regs->ip by setting p->break_handler.
  
- 	When set it will enable all functions with either the function
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 11e18fd..daa0f7f 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -60,6 +60,11 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
- /*
-  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
-  * set in the flags member.
-+ * CONTROL, SAVE_REGS, SAVE_REGS_IF_SUPPORTED, RECURSION_SAFE, STUB and
-+ * IPMODIFY are a kind of attribute flags which can set only before
-+ * registering the ftrace_ops, and not able to update while registered.
-+ * Changint those attribute flags after regsitering ftrace_ops will
-+ * cause unexpected results.
-  *
-  * ENABLED - set/unset when ftrace_ops is registered/unregistered
-  * DYNAMIC - set when ftrace_ops is registered to denote dynamically
-@@ -90,6 +95,9 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-  * INITIALIZED - The ftrace_ops has already been initialized (first use time
-  *            register_ftrace_function() is called, it will initialized the ops)
-  * DELETED - The ops are being deleted, do not let them be registered again.
-+ * IPMODIFY - The ops can modify IP register. This must be set with SAVE_REGS
-+ *            and if the other ops has been set this on same function, filter
-+ *            update must be failed.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-@@ -101,6 +109,7 @@ enum {
- 	FTRACE_OPS_FL_STUB			= 1 << 6,
- 	FTRACE_OPS_FL_INITIALIZED		= 1 << 7,
- 	FTRACE_OPS_FL_DELETED			= 1 << 8,
-+	FTRACE_OPS_FL_IPMODIFY			= 1 << 9,
- };
+ 1.5 Blacklist
  
- /*
-@@ -312,6 +321,7 @@ extern int ftrace_nr_registered_ops(void);
-  *  ENABLED - the function is being traced
-  *  REGS    - the record wants the function to save regs
-  *  REGS_EN - the function is set up to save regs.
-+ *  IPMODIFY - the record wants to change IP address.
-  *
-  * When a new ftrace_ops is registered and wants a function to save
-  * pt_regs, the rec->flag REGS is set. When the function has been
-@@ -325,10 +335,11 @@ enum {
- 	FTRACE_FL_REGS_EN	= (1UL << 29),
- 	FTRACE_FL_TRAMP		= (1UL << 28),
- 	FTRACE_FL_TRAMP_EN	= (1UL << 27),
-+	FTRACE_FL_IPMODIFY	= (1UL << 26),
- };
- 
--#define FTRACE_REF_MAX_SHIFT	27
--#define FTRACE_FL_BITS		5
-+#define FTRACE_REF_MAX_SHIFT	26
-+#define FTRACE_FL_BITS		6
- #define FTRACE_FL_MASKED_BITS	((1UL << FTRACE_FL_BITS) - 1)
- #define FTRACE_FL_MASK		(FTRACE_FL_MASKED_BITS << FTRACE_REF_MAX_SHIFT)
- #define FTRACE_REF_MAX		((1UL << FTRACE_REF_MAX_SHIFT) - 1)
 diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3214289..e52d86f 100644
+index e52d86f..7d05bb0 100644
 --- a/kernel/kprobes.c
 +++ b/kernel/kprobes.c
-@@ -915,7 +915,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+@@ -915,10 +915,92 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
  #ifdef CONFIG_KPROBES_ON_FTRACE
  static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
  	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
+-	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
++	.flags = FTRACE_OPS_FL_SAVE_REGS,
  };
  static int kprobe_ftrace_enabled;
  
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 45aac1a..c12a6de 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1295,6 +1295,9 @@ ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
- static void
- ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
- 
-+static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
-+				       struct ftrace_hash *new_hash);
++static void kprobe_ftrace_stub(unsigned long a0, unsigned long a1,
++			struct ftrace_ops *op, struct pt_regs *regs)
++{
++	/* Do nothing. This is just a dummy handler */
++}
 +
- static int
- ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 		 struct ftrace_hash **dst, struct ftrace_hash *src)
-@@ -1306,6 +1309,7 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 	struct ftrace_hash *new_hash;
- 	int size = src->count;
- 	int bits = 0;
++/* This is only for checking conflict with other ftrace users */
++static struct ftrace_ops kprobe_ipmod_ftrace_ops __read_mostly = {
++	.func = kprobe_ftrace_stub,
++	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
++};
++static int kprobe_ipmod_ftrace_enabled;
++
++static int __ftrace_add_filter_ip(struct ftrace_ops *ops, unsigned long ip,
++				  int *ref)
++{
 +	int ret;
- 	int i;
- 
- 	/*
-@@ -1341,6 +1345,16 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 	}
- 
- update:
-+	/* Before everything, make sure this can be applied */
-+	if (enable) {
-+		/* IPMODIFY should be updated only when filter_hash updating */
-+		ret = ftrace_hash_ipmodify_update(ops, new_hash);
++
++	/* Try to set given ip to filter */
++	ret = ftrace_set_filter_ip(ops, ip, 0, 0);
++	if (ret < 0)
++		return ret;
++
++	(*ref)++;
++	if (*ref == 1) {
++		ret = register_ftrace_function(ops);
 +		if (ret < 0) {
-+			free_ftrace_hash(new_hash);
-+			return ret;
++			/* Rollback refcounter and filter */
++			(*ref)--;
++			ftrace_set_filter_ip(ops, ip, 1, 0);
 +		}
 +	}
 +
- 	/*
- 	 * Remove the current set, update the hash and add
- 	 * them back.
-@@ -1685,6 +1699,108 @@ static void ftrace_hash_rec_enable(struct ftrace_ops *ops,
- 	__ftrace_hash_rec_update(ops, filter_hash, 1);
- }
- 
-+/*
-+ * Try to update IPMODIFY flag on each ftrace_rec. Return 0 if it is OK
-+ * or no-needed to update, -EBUSY if it detects a conflict of the flag
-+ * on a ftrace_rec.
-+ * Note that old_hash and new_hash has below meanings
-+ *  - If the hash is NULL, it hits all recs
-+ *  - If the hash is EMPTY_HASH, it hits nothing
-+ *  - Anything else hits the recs which match the hash entries.
-+ */
-+static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
-+					 struct ftrace_hash *old_hash,
-+					 struct ftrace_hash *new_hash)
-+{
-+	struct ftrace_page *pg;
-+	struct dyn_ftrace *rec, *end = NULL;
-+	int in_old, in_new;
-+
-+	/* Only update if the ops has been registered */
-+	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
-+		return 0;
-+
-+	if (!(ops->flags & FTRACE_OPS_FL_IPMODIFY))
-+		return 0;
-+
-+	/* Update rec->flags */
-+	do_for_each_ftrace_rec(pg, rec) {
-+		/* We need to update only differences of filter_hash */
-+		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
-+		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
-+		if (in_old == in_new)
-+			continue;
-+
-+		if (in_new) {
-+			/* New entries must ensure no others are using it */
-+			if (rec->flags & FTRACE_FL_IPMODIFY)
-+				goto rollback;
-+			rec->flags |= FTRACE_FL_IPMODIFY;
-+		} else /* Removed entry */
-+			rec->flags &= ~FTRACE_FL_IPMODIFY;
-+	} while_for_each_ftrace_rec();
-+
-+	return 0;
-+
-+rollback:
-+	end = rec;
-+
-+	/* Roll back what we did above */
-+	do_for_each_ftrace_rec(pg, rec) {
-+		if (rec == end)
-+			goto err_out;
-+
-+		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
-+		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
-+		if (in_old == in_new)
-+			continue;
-+
-+		if (in_new)
-+			rec->flags &= ~FTRACE_FL_IPMODIFY;
-+		else
-+			rec->flags |= FTRACE_FL_IPMODIFY;
-+	} while_for_each_ftrace_rec();
-+
-+err_out:
-+	return -EBUSY;
++	return ret;
 +}
 +
-+static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
++static int __ftrace_remove_filter_ip(struct ftrace_ops *ops, unsigned long ip,
++				     int *ref)
 +{
-+	struct ftrace_hash *hash = ops->filter_hash;
++	int ret;
 +
-+	if (ftrace_hash_empty(hash))
-+		hash = NULL;
-+
-+	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
-+}
-+
-+/* Disabling always succeeds */
-+static void ftrace_hash_ipmodify_disable(struct ftrace_ops *ops)
-+{
-+	struct ftrace_hash *hash = ops->filter_hash;
-+
-+	if (ftrace_hash_empty(hash))
-+		hash = NULL;
-+
-+	__ftrace_hash_update_ipmodify(ops, hash, EMPTY_HASH);
-+}
-+
-+static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
-+				       struct ftrace_hash *new_hash)
-+{
-+	struct ftrace_hash *old_hash = ops->filter_hash;
-+
-+	if (ftrace_hash_empty(old_hash))
-+		old_hash = NULL;
-+
-+	if (ftrace_hash_empty(new_hash))
-+		new_hash = NULL;
-+
-+	return __ftrace_hash_update_ipmodify(ops, old_hash, new_hash);
-+}
-+
-+
- static void print_ip_ins(const char *fmt, unsigned char *p)
- {
- 	int i;
-@@ -2321,6 +2437,15 @@ static int ftrace_startup(struct ftrace_ops *ops, int command)
- 
- 	ops->flags |= FTRACE_OPS_FL_ENABLED;
- 
-+	ret = ftrace_hash_ipmodify_enable(ops);
-+	if (ret < 0) {
-+		/* Rollback registration process */
-+		__unregister_ftrace_function(ops);
-+		ftrace_start_up--;
-+		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-+		return ret;
++	if (*ref == 1) {
++		ret = unregister_ftrace_function(ops);
++		if (ret < 0)
++			return ret;
++		/*Ignore failure, because it is already unregistered */
++		ftrace_set_filter_ip(ops, ip, 1, 0);
++	} else {
++		/* Try to remove given ip to filter */
++		ret = ftrace_set_filter_ip(ops, ip, 1, 0);
++		if (ret < 0)
++			return ret;
 +	}
 +
- 	ftrace_hash_rec_enable(ops, 1);
++	(*ref)--;
++
++	return 0;
++}
++
++static int try_reserve_ftrace_ipmodify(struct kprobe *p)
++{
++	if (!p->break_handler)
++		return 0;
++
++	return __ftrace_add_filter_ip(&kprobe_ipmod_ftrace_ops,
++				      (unsigned long)p->addr,
++				      &kprobe_ipmod_ftrace_enabled);
++}
++
++static void release_ftrace_ipmodify(struct kprobe *p)
++{
++	int ret;
++
++	if (p->break_handler) {
++		ret = __ftrace_remove_filter_ip(&kprobe_ipmod_ftrace_ops,
++						(unsigned long)p->addr,
++						&kprobe_ipmod_ftrace_enabled);
++		WARN(ret < 0, "Failed to release ftrace at %p (%d)\n",
++		     p->addr, ret);
++	}
++}
++
+ /* Must ensure p->addr is really on ftrace */
+ static int prepare_kprobe(struct kprobe *p)
+ {
+@@ -933,14 +1015,10 @@ static void arm_kprobe_ftrace(struct kprobe *p)
+ {
+ 	int ret;
  
- 	ftrace_startup_enable(command);
-@@ -2347,6 +2472,8 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 	 */
- 	WARN_ON_ONCE(ftrace_start_up < 0);
+-	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
+-				   (unsigned long)p->addr, 0, 0);
++	ret = __ftrace_add_filter_ip(&kprobe_ftrace_ops,
++				     (unsigned long)p->addr,
++				     &kprobe_ftrace_enabled);
+ 	WARN(ret < 0, "Failed to arm kprobe-ftrace at %p (%d)\n", p->addr, ret);
+-	kprobe_ftrace_enabled++;
+-	if (kprobe_ftrace_enabled == 1) {
+-		ret = register_ftrace_function(&kprobe_ftrace_ops);
+-		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
+-	}
+ }
  
-+	/* Disabling ipmodify never fails */
-+	ftrace_hash_ipmodify_disable(ops);
- 	ftrace_hash_rec_disable(ops, 1);
+ /* Caller must lock kprobe_mutex */
+@@ -948,17 +1026,16 @@ static void disarm_kprobe_ftrace(struct kprobe *p)
+ {
+ 	int ret;
  
- 	ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-@@ -2897,9 +3024,10 @@ static int t_show(struct seq_file *m, void *v)
+-	kprobe_ftrace_enabled--;
+-	if (kprobe_ftrace_enabled == 0) {
+-		ret = unregister_ftrace_function(&kprobe_ftrace_ops);
+-		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
+-	}
+-	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
+-			   (unsigned long)p->addr, 1, 0);
+-	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
++	ret = __ftrace_remove_filter_ip(&kprobe_ftrace_ops,
++					(unsigned long)p->addr,
++					&kprobe_ftrace_enabled);
++	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n",
++	     p->addr, ret);
+ }
+ #else	/* !CONFIG_KPROBES_ON_FTRACE */
+ #define prepare_kprobe(p)	arch_prepare_kprobe(p)
++#define try_reserve_ftrace_ipmodify(p)	(0)
++#define release_ftrace_ipmodify(p)	do {} while (0)
+ #define arm_kprobe_ftrace(p)	do {} while (0)
+ #define disarm_kprobe_ftrace(p)	do {} while (0)
+ #endif
+@@ -1502,6 +1579,14 @@ int register_kprobe(struct kprobe *p)
+ 	mutex_lock(&kprobe_mutex);
  
- 	seq_printf(m, "%ps", (void *)rec->ip);
- 	if (iter->flags & FTRACE_ITER_ENABLED) {
--		seq_printf(m, " (%ld)%s",
-+		seq_printf(m, " (%ld)%s%s",
- 			   ftrace_rec_count(rec),
--			   rec->flags & FTRACE_FL_REGS ? " R" : "  ");
-+			   rec->flags & FTRACE_FL_REGS ? " R" : "  ",
-+			   rec->flags & FTRACE_FL_IPMODIFY ? " I" : "  ");
- 		if (rec->flags & FTRACE_FL_TRAMP_EN) {
- 			struct ftrace_ops *ops;
+ 	old_p = get_kprobe(p->addr);
++
++	/* Try to reserve ftrace ipmodify if needed */
++	if (kprobe_ftrace(p) && (!old_p || !old_p->break_handler)) {
++		ret = try_reserve_ftrace_ipmodify(p);
++		if (ret < 0)
++			goto out_noreserve;
++	}
++
+ 	if (old_p) {
+ 		/* Since this may unoptimize old_p, locking text_mutex. */
+ 		ret = register_aggr_kprobe(old_p, p);
+@@ -1525,6 +1610,9 @@ int register_kprobe(struct kprobe *p)
+ 	try_to_optimize_kprobe(p);
  
+ out:
++	if (ret < 0 && kprobe_ftrace(p))
++		release_ftrace_ipmodify(p);
++out_noreserve:
+ 	mutex_unlock(&kprobe_mutex);
+ 
+ 	if (probed_mod)
+@@ -1639,6 +1727,10 @@ static void __unregister_kprobe_bottom(struct kprobe *p)
+ {
+ 	struct kprobe *ap;
+ 
++	/* Release reserved ftrace ipmodify if needed */
++	if (kprobe_ftrace(p))
++		release_ftrace_ipmodify(p);
++
+ 	if (list_empty(&p->list))
+ 		/* This is an independent kprobe */
+ 		arch_remove_kprobe(p);
 
 
