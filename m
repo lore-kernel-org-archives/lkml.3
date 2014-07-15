@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658AbaGOK1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 06:27:33 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41461 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038AbaGOK1a (ORCPT
+	id S1758494AbaGOKal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 06:30:41 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:54533 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758040AbaGOKah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 06:27:30 -0400
-Message-ID: <53C5020B.60303@huawei.com>
-Date: Tue, 15 Jul 2014 18:27:23 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 15 Jul 2014 06:30:37 -0400
+Date: Tue, 15 Jul 2014 03:28:53 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Sasha Levin <sasha.levin@oracle.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] shmem: fix faulting into a hole while it's punched, take
+ 3
+Message-ID: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET v2 cgroup/for-3.17] cgroup: distinguish the default
- and legacy hierarchies when handling cftypes
-References: <1405352648-4279-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1405352648-4279-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÓÚ 2014/7/14 23:44, Tejun Heo Ð´µÀ:
-> Hello,
-> 
-> This is v2 of dfl_files patchset.  Changes from the last version [1]
-> are
-> 
-> * Rebased on top of cgroup/for-3.17.
-> 
-> * 0004 updated so that CFTYPE_ONLY_ON_DFL and CFTYPE_INSANE are
->   cleared when cfts are removed as suggested by Li.
-> 
-> Until now, cftype arrays carried files for both the default and legacy
-> hierarchies and the files which needed to be used on only one of them
-> were flagged with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE.  This
-> gets confusing very quickly and we may end up exposing interface files
-> to the default hierarchy without thinking it through.
-> 
-> This patchset makes cgroup core provide separate sets of interfaces
-> for cftype handling so that the cftypes for the default and legacy
-> hierarchies are clearly distinguished.  This makes all the existing
-> subsystem interface files legacy-only by default and all subsystems
-> will have no interface file created when enabled on the default
-> hierarchy.  Each subsystem should explicitly review and compose the
-> interface for the default hierarchy.
-> 
-> This patchset contains the following six patches.
-> 
->  0001-cgroup-split-cgroup_base_files-into-cgroup_-dfl-lega.patch
->  0002-cgroup-rename-cgroup_subsys-base_cftypes-to-legacy_c.patch
->  0003-cgroup-replace-cgroup_add_cftypes-with-cgroup_add_le.patch
->  0004-cgroup-distinguish-the-default-and-legacy-hierarchie.patch
->  0005-cgroup-make-CFTYPE_ONLY_ON_DFL-and-CFTYPE_NO_-intern.patch
->  0006-cgroup-initialize-cgrp_dfl_root_inhibit_ss_mask-from.patch
-> 
-> This patchset is on top of afd1a8b3e0bc ("cpuset: export effective
-> masks to userspace")
-> 
-> and available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-dfl_files-v2
-> 
-> diffstat follows.  Thanks.
-> 
->  Documentation/cgroups/unified-hierarchy.txt |   18 ++-
->  block/blk-cgroup.c                          |    5
->  include/linux/cgroup.h                      |   17 ++
->  kernel/cgroup.c                             |  160 +++++++++++++++++++++-------
->  kernel/cgroup_freezer.c                     |    2
->  kernel/cpuset.c                             |    2
->  kernel/sched/core.c                         |    2
->  kernel/sched/cpuacct.c                      |    2
->  mm/hugetlb_cgroup.c                         |    5
->  mm/memcontrol.c                             |    6 -
->  net/core/netclassid_cgroup.c                |    2
->  net/core/netprio_cgroup.c                   |    2
->  net/ipv4/tcp_memcontrol.c                   |    2
->  security/device_cgroup.c                    |    2
->  14 files changed, 160 insertions(+), 67 deletions(-)
-> 
+Hi Andrew,
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+Here's my latest and hopefully last stab at fixing the trinity
+hole-punch starvation issue that became known as CVE-2014-4171.
 
+You may prefer to hear a testing update from Sasha and Vlastimil before
+paying any attention to these, or you may prefer to add them into mmotm
+for wider testing now: whichever you think appropriate.
+
+Please throw away mmotm's
+revert-shmem-fix-faulting-into-a-hole-while-its-punched.patch
+and replace it by 1/2, which fixes that commit instead of reverting it.
+
+Please throw away mmotm's
+shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
+and replace it by 2/2, which reworks the commit message and adds a fix.
+
+Please keep the 3/3 I sent last time in mmotm
+mm-fs-fix-pessimization-in-hole-punching-pagecache.patch
+which remains valid.
+
+In the end I decided that we had better look at it as two problems,
+the trinity faulting starvation, and the indefinite punching loop,
+so 1/2 and 2/2 present both solutions: belt and braces.
+
+Which may be the best for fixing, but the worst for ease of backporting.
+Vlastimil, I have prepared (and lightly tested) a 3.2.61-based version
+of the combination of f00cdc6df7d7 and 1/2 and 2/2 (basically, I moved
+vmtruncate_range from mm/truncate.c to mm/shmem.c, since nothing but
+shmem ever implemented the truncate_range method).  It should give a
+good hint for backports earlier and later: I'll send it privately to
+you now, but keep in mind that it may need to be revised if today's
+patches for 3.16 get revised again (I'll send it to Ben Hutchings
+only when that's settled).
+
+Thanks,
+Hugh
