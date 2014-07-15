@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965040AbaGOXPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S934322AbaGOXPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933846AbaGOXOD (ORCPT
+	with ESMTP id S933825AbaGOXOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:03 -0400
+	Tue, 15 Jul 2014 19:14:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 22/84] Revert "ACPI / AC: Remove ACs proc directory."
-Date: Tue, 15 Jul 2014 16:17:19 -0700
-Message-Id: <20140715231713.868659775@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.15 21/84] hwmon: (adm1021) Fix cache problem when writing temperature limits
+Date: Tue, 15 Jul 2014 16:17:18 -0700
+Message-Id: <20140715231713.833139607@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,228 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit e63f6e28dda6de3de2392ddca321e211fd860925 upstream.
+commit c024044d4da2c9c3b32933b4235df1e409293b84 upstream.
 
-Revert commit ab0fd674d6ce (ACPI / AC: Remove AC's proc directory.),
-because some old tools (e.g. kpowersave from kde 3.5.10) are still
-using /proc/acpi/ac_adapter.
+The module test script for the adm1021 driver exposes a cache problem
+when writing temperature limits. temp_min and temp_max are expected
+to be stored in milli-degrees C but are stored in degrees C.
 
-Fixes: ab0fd674d6ce (ACPI / AC: Remove AC's proc directory.)
-Reported-and-tested-by: Sorin Manolache <sorinm@gmail.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ac.c |  130 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 128 insertions(+), 2 deletions(-)
+ drivers/hwmon/adm1021.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -30,6 +30,10 @@
- #include <linux/types.h>
- #include <linux/dmi.h>
- #include <linux/delay.h>
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
-+#endif
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <linux/acpi.h>
-@@ -52,6 +56,7 @@ MODULE_AUTHOR("Paul Diefenbaugh");
- MODULE_DESCRIPTION("ACPI AC Adapter Driver");
- MODULE_LICENSE("GPL");
+--- a/drivers/hwmon/adm1021.c
++++ b/drivers/hwmon/adm1021.c
+@@ -185,7 +185,7 @@ static ssize_t set_temp_max(struct devic
+ 	struct adm1021_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+ 	long temp;
+-	int err;
++	int reg_val, err;
  
-+
- static int acpi_ac_add(struct acpi_device *device);
- static int acpi_ac_remove(struct acpi_device *device);
- static void acpi_ac_notify(struct acpi_device *device, u32 event);
-@@ -67,6 +72,13 @@ static int acpi_ac_resume(struct device
- #endif
- static SIMPLE_DEV_PM_OPS(acpi_ac_pm, NULL, acpi_ac_resume);
+ 	err = kstrtol(buf, 10, &temp);
+ 	if (err)
+@@ -193,10 +193,11 @@ static ssize_t set_temp_max(struct devic
+ 	temp /= 1000;
  
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+extern struct proc_dir_entry *acpi_lock_ac_dir(void);
-+extern void *acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir);
-+static int acpi_ac_open_fs(struct inode *inode, struct file *file);
-+#endif
-+
-+
- static int ac_sleep_before_get_state_ms;
+ 	mutex_lock(&data->update_lock);
+-	data->temp_max[index] = clamp_val(temp, -128, 127);
++	reg_val = clamp_val(temp, -128, 127);
++	data->temp_max[index] = reg_val * 1000;
+ 	if (!read_only)
+ 		i2c_smbus_write_byte_data(client, ADM1021_REG_TOS_W(index),
+-					  data->temp_max[index]);
++					  reg_val);
+ 	mutex_unlock(&data->update_lock);
  
- static struct acpi_driver acpi_ac_driver = {
-@@ -91,6 +103,16 @@ struct acpi_ac {
+ 	return count;
+@@ -210,7 +211,7 @@ static ssize_t set_temp_min(struct devic
+ 	struct adm1021_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+ 	long temp;
+-	int err;
++	int reg_val, err;
  
- #define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
+ 	err = kstrtol(buf, 10, &temp);
+ 	if (err)
+@@ -218,10 +219,11 @@ static ssize_t set_temp_min(struct devic
+ 	temp /= 1000;
  
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+static const struct file_operations acpi_ac_fops = {
-+	.owner = THIS_MODULE,
-+	.open = acpi_ac_open_fs,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+#endif
-+
- /* --------------------------------------------------------------------------
-                                AC Adapter Management
-    -------------------------------------------------------------------------- */
-@@ -143,6 +165,83 @@ static enum power_supply_property ac_pro
- 	POWER_SUPPLY_PROP_ONLINE,
- };
+ 	mutex_lock(&data->update_lock);
+-	data->temp_min[index] = clamp_val(temp, -128, 127);
++	reg_val = clamp_val(temp, -128, 127);
++	data->temp_min[index] = reg_val * 1000;
+ 	if (!read_only)
+ 		i2c_smbus_write_byte_data(client, ADM1021_REG_THYST_W(index),
+-					  data->temp_min[index]);
++					  reg_val);
+ 	mutex_unlock(&data->update_lock);
  
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+/* --------------------------------------------------------------------------
-+                              FS Interface (/proc)
-+   -------------------------------------------------------------------------- */
-+
-+static struct proc_dir_entry *acpi_ac_dir;
-+
-+static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
-+{
-+	struct acpi_ac *ac = seq->private;
-+
-+
-+	if (!ac)
-+		return 0;
-+
-+	if (acpi_ac_get_state(ac)) {
-+		seq_puts(seq, "ERROR: Unable to read AC Adapter state\n");
-+		return 0;
-+	}
-+
-+	seq_puts(seq, "state:                   ");
-+	switch (ac->state) {
-+	case ACPI_AC_STATUS_OFFLINE:
-+		seq_puts(seq, "off-line\n");
-+		break;
-+	case ACPI_AC_STATUS_ONLINE:
-+		seq_puts(seq, "on-line\n");
-+		break;
-+	default:
-+		seq_puts(seq, "unknown\n");
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int acpi_ac_open_fs(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, acpi_ac_seq_show, PDE_DATA(inode));
-+}
-+
-+static int acpi_ac_add_fs(struct acpi_ac *ac)
-+{
-+	struct proc_dir_entry *entry = NULL;
-+
-+	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
-+			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
-+	if (!acpi_device_dir(ac->device)) {
-+		acpi_device_dir(ac->device) =
-+			proc_mkdir(acpi_device_bid(ac->device), acpi_ac_dir);
-+		if (!acpi_device_dir(ac->device))
-+			return -ENODEV;
-+	}
-+
-+	/* 'state' [R] */
-+	entry = proc_create_data(ACPI_AC_FILE_STATE,
-+				 S_IRUGO, acpi_device_dir(ac->device),
-+				 &acpi_ac_fops, ac);
-+	if (!entry)
-+		return -ENODEV;
-+	return 0;
-+}
-+
-+static int acpi_ac_remove_fs(struct acpi_ac *ac)
-+{
-+
-+	if (acpi_device_dir(ac->device)) {
-+		remove_proc_entry(ACPI_AC_FILE_STATE,
-+				  acpi_device_dir(ac->device));
-+		remove_proc_entry(acpi_device_bid(ac->device), acpi_ac_dir);
-+		acpi_device_dir(ac->device) = NULL;
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
- /* --------------------------------------------------------------------------
-                                    Driver Model
-    -------------------------------------------------------------------------- */
-@@ -243,6 +342,11 @@ static int acpi_ac_add(struct acpi_devic
- 		goto end;
- 
- 	ac->charger.name = acpi_device_bid(device);
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	result = acpi_ac_add_fs(ac);
-+	if (result)
-+		goto end;
-+#endif
- 	ac->charger.type = POWER_SUPPLY_TYPE_MAINS;
- 	ac->charger.properties = ac_props;
- 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
-@@ -258,8 +362,12 @@ static int acpi_ac_add(struct acpi_devic
- 	ac->battery_nb.notifier_call = acpi_ac_battery_notify;
- 	register_acpi_notifier(&ac->battery_nb);
- end:
--	if (result)
-+	if (result) {
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+		acpi_ac_remove_fs(ac);
-+#endif
- 		kfree(ac);
-+	}
- 
- 	dmi_check_system(ac_dmi_table);
- 	return result;
-@@ -303,6 +411,10 @@ static int acpi_ac_remove(struct acpi_de
- 		power_supply_unregister(&ac->charger);
- 	unregister_acpi_notifier(&ac->battery_nb);
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	acpi_ac_remove_fs(ac);
-+#endif
-+
- 	kfree(ac);
- 
- 	return 0;
-@@ -315,9 +427,20 @@ static int __init acpi_ac_init(void)
- 	if (acpi_disabled)
- 		return -ENODEV;
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	acpi_ac_dir = acpi_lock_ac_dir();
-+	if (!acpi_ac_dir)
-+		return -ENODEV;
-+#endif
-+
-+
- 	result = acpi_bus_register_driver(&acpi_ac_driver);
--	if (result < 0)
-+	if (result < 0) {
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+		acpi_unlock_ac_dir(acpi_ac_dir);
-+#endif
- 		return -ENODEV;
-+	}
- 
- 	return 0;
- }
-@@ -325,6 +448,9 @@ static int __init acpi_ac_init(void)
- static void __exit acpi_ac_exit(void)
- {
- 	acpi_bus_unregister_driver(&acpi_ac_driver);
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	acpi_unlock_ac_dir(acpi_ac_dir);
-+#endif
- }
- module_init(acpi_ac_init);
- module_exit(acpi_ac_exit);
+ 	return count;
 
 
