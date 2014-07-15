@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaGONk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:40:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60729 "EHLO mx1.redhat.com"
+	id S1753984AbaGONlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:41:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63041 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211AbaGONky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:40:54 -0400
+	id S1753252AbaGONk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 09:40:56 -0400
 From: Vitaly Kuznetsov <vkuznets@redhat.com>
 To: xen-devel@lists.xenproject.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
@@ -13,197 +13,89 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         David Vrabel <david.vrabel@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC 1/4] xen PVonHVM: use E820_Reserved area for shared_info
-Date: Tue, 15 Jul 2014 15:40:37 +0200
-Message-Id: <1405431640-649-2-git-send-email-vkuznets@redhat.com>
+Subject: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
+Date: Tue, 15 Jul 2014 15:40:38 +0200
+Message-Id: <1405431640-649-3-git-send-email-vkuznets@redhat.com>
 In-Reply-To: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
 References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de>
-
-This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
-("xen PVonHVM: move shared_info to MMIO before kexec").
-
-Currently kexec in a PVonHVM guest fails with a triple fault because the
-new kernel overwrites the shared info page. The exact failure depends on
-the size of the kernel image. This patch moves the pfn from RAM into an
-E820 reserved memory area.
-
-The pfn containing the shared_info is located somewhere in RAM. This will
-cause trouble if the current kernel is doing a kexec boot into a new
-kernel. The new kernel (and its startup code) can not know where the pfn
-is, so it can not reserve the page. The hypervisor will continue to update
-the pfn, and as a result memory corruption occours in the new kernel.
-
-The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
-E820 map. Within that range newer toolstacks (4.3+) will keep 1MB
-starting from FE700000 as reserved for guest use. Older Xen4 toolstacks
-will usually not allocate areas up to FE700000, so FE700000 is expected
-to work also with older toolstacks.
-
-In Xen3 there is no reserved area at a fixed location. If the guest is
-started on such old hosts the shared_info page will be placed in RAM. As
-a result kexec can not be used.
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-(cherry picked from commit 9d02b43dee0d7fb18dfb13a00915550b1a3daa9f)
-
-[On resume we need to reset the xen_vcpu_info, which the original
-patch did not do]
+PVHVM guest requires special actions before kexec. Register specific
+xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
 
 Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
 ---
- arch/x86/xen/enlighten.c | 74 ++++++++++++++++++++++++++++++++++++------------
- arch/x86/xen/suspend.c   |  2 +-
- arch/x86/xen/xen-ops.h   |  2 +-
- 3 files changed, 58 insertions(+), 20 deletions(-)
+ arch/x86/xen/enlighten.c | 9 +++++++++
+ arch/x86/xen/smp.c       | 9 +++++++++
+ arch/x86/xen/smp.h       | 1 +
+ 3 files changed, 19 insertions(+)
 
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index ffb101e..a11af62 100644
+index a11af62..8074e4a 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -1726,23 +1726,29 @@ asmlinkage __visible void __init xen_start_kernel(void)
- #endif
- }
+@@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
+ 	.notifier_call	= xen_hvm_cpu_notify,
+ };
  
--void __ref xen_hvm_init_shared_info(void)
-+#ifdef CONFIG_XEN_PVHVM
-+#define HVM_SHARED_INFO_ADDR 0xFE700000UL
-+static struct shared_info *xen_hvm_shared_info;
-+static unsigned long xen_hvm_sip_phys;
-+static int xen_major, xen_minor;
++static void xen_pvhvm_kexec_shutdown(void)
++{
++	xen_kexec_shutdown();
++	native_machine_shutdown();
++}
 +
-+static void xen_hvm_connect_shared_info(unsigned long pfn)
+ static void __init xen_hvm_guest_init(void)
  {
--	int cpu;
- 	struct xen_add_to_physmap xatp;
--	static struct shared_info *shared_info_page = 0;
- 
--	if (!shared_info_page)
--		shared_info_page = (struct shared_info *)
--			extend_brk(PAGE_SIZE, PAGE_SIZE);
- 	xatp.domid = DOMID_SELF;
- 	xatp.idx = 0;
- 	xatp.space = XENMAPSPACE_shared_info;
--	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-+	xatp.gpfn = pfn;
- 	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
- 		BUG();
- 
--	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-+}
-+static void __init xen_hvm_set_shared_info(struct shared_info *sip)
-+{
-+	int cpu;
-+
-+	HYPERVISOR_shared_info = sip;
- 
- 	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
- 	 * page, we use it in the event channel upcall and in some pvclock
-@@ -1760,20 +1766,39 @@ void __ref xen_hvm_init_shared_info(void)
- 	}
+ 	init_hvm_pv_info();
+@@ -1849,6 +1855,9 @@ static void __init xen_hvm_guest_init(void)
+ 	x86_init.irqs.intr_init = xen_init_IRQ;
+ 	xen_hvm_init_time_ops();
+ 	xen_hvm_init_mmu_ops();
++#ifdef CONFIG_KEXEC
++	machine_ops.shutdown = xen_pvhvm_kexec_shutdown;
++#endif
  }
- 
--#ifdef CONFIG_XEN_PVHVM
-+/* Reconnect the shared_info pfn to a (new) mfn */
-+void xen_hvm_resume_shared_info(void)
-+{
-+	xen_hvm_connect_shared_info(xen_hvm_sip_phys >> PAGE_SHIFT);
-+	xen_hvm_set_shared_info(xen_hvm_shared_info);
-+}
-+
-+/* Xen tools prior to Xen 4 do not provide a E820_Reserved area for guest usage.
-+ * On these old tools the shared info page will be placed in E820_Ram.
-+ * Xen 4 provides a E820_Reserved area at 0xFC000000, and this code expects
-+ * that nothing is mapped up to HVM_SHARED_INFO_ADDR.
-+ * Xen 4.3+ provides an explicit 1MB area at HVM_SHARED_INFO_ADDR which is used
-+ * here for the shared info page. */
-+static void __init xen_hvm_init_shared_info(void)
-+{
-+	if (xen_major < 4) {
-+		xen_hvm_shared_info = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+		xen_hvm_sip_phys = __pa(xen_hvm_shared_info);
-+	} else {
-+		xen_hvm_sip_phys = HVM_SHARED_INFO_ADDR;
-+		set_fixmap(FIX_PARAVIRT_BOOTMAP, xen_hvm_sip_phys);
-+		xen_hvm_shared_info =
-+		(struct shared_info *)fix_to_virt(FIX_PARAVIRT_BOOTMAP);
-+	}
-+	xen_hvm_resume_shared_info();
-+}
-+
- static void __init init_hvm_pv_info(void)
- {
--	int major, minor;
--	uint32_t eax, ebx, ecx, edx, pages, msr, base;
-+	uint32_t  ecx, edx, pages, msr, base;
- 	u64 pfn;
- 
- 	base = xen_cpuid_base();
--	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
--
--	major = eax >> 16;
--	minor = eax & 0xffff;
--	printk(KERN_INFO "Xen version %d.%d.\n", major, minor);
--
- 	cpuid(base + 2, &pages, &msr, &ecx, &edx);
- 
- 	pfn = __pa(hypercall_page);
-@@ -1828,10 +1853,23 @@ static void __init xen_hvm_guest_init(void)
  
  static uint32_t __init xen_hvm_platform(void)
- {
-+	uint32_t eax, ebx, ecx, edx, base;
-+
- 	if (xen_pv_domain())
- 		return 0;
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 7005974..35dcf39 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -18,6 +18,7 @@
+ #include <linux/smp.h>
+ #include <linux/irq_work.h>
+ #include <linux/tick.h>
++#include <linux/kexec.h>
  
--	return xen_cpuid_base();
-+	base = xen_cpuid_base();
-+	if (!base)
-+		return 0;
-+
-+	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
-+
-+	xen_major = eax >> 16;
-+	xen_minor = eax & 0xffff;
-+
-+	printk(KERN_INFO "Xen version %d.%d.\n", xen_major, xen_minor);
-+
-+	return 1;
+ #include <asm/paravirt.h>
+ #include <asm/desc.h>
+@@ -762,6 +763,14 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+ 	native_cpu_die(cpu);
  }
  
- bool xen_hvm_need_lapic(void)
-diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
-index c4df9db..8d6793e 100644
---- a/arch/x86/xen/suspend.c
-+++ b/arch/x86/xen/suspend.c
-@@ -32,7 +32,7 @@ static void xen_hvm_post_suspend(int suspend_cancelled)
++void xen_kexec_shutdown(void)
++{
++#ifdef CONFIG_KEXEC
++	if (!kexec_in_progress)
++		return;
++#endif
++}
++
+ void __init xen_hvm_smp_init(void)
  {
- #ifdef CONFIG_XEN_PVHVM
- 	int cpu;
--	xen_hvm_init_shared_info();
-+	xen_hvm_resume_shared_info();
- 	xen_callback_vector();
- 	xen_unplug_emulated_devices();
- 	if (xen_feature(XENFEAT_hvm_safe_pvclock)) {
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 97d8765..d083e82 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -43,7 +43,7 @@ void xen_enable_syscall(void);
- void xen_vcpu_restore(void);
+ 	if (!xen_have_vector_callback)
+diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+index c7c2d89..1af0493 100644
+--- a/arch/x86/xen/smp.h
++++ b/arch/x86/xen/smp.h
+@@ -8,4 +8,5 @@ extern void xen_send_IPI_allbutself(int vector);
+ extern void xen_send_IPI_all(int vector);
+ extern void xen_send_IPI_self(int vector);
  
- void xen_callback_vector(void);
--void xen_hvm_init_shared_info(void);
-+void xen_hvm_resume_shared_info(void);
- void xen_unplug_emulated_devices(void);
- 
- void __init xen_build_dynamic_phys_to_machine(void);
++extern void xen_kexec_shutdown(void);
+ #endif
 -- 
 1.9.3
 
