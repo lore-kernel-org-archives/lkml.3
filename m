@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030231AbaGOXQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:16:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45703 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588AbaGOXQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:16:01 -0400
-Date: Tue, 15 Jul 2014 16:15:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rtc-linux@googlegroups.com
-Cc: Roman Fietze <roman.fietze@telemotive.de>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] [PATCH 2/2] Allow to override the hctosys RTC using
- a kernel parameter
-Message-Id: <20140715161559.c142128556ce4ade8bcdc514@linux-foundation.org>
-In-Reply-To: <2398890.hEQ05gdLB8@rfietze>
-References: <5132579.sMfE4ssjXf@rfietze>
-	<2398890.hEQ05gdLB8@rfietze>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760049AbaGOXRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:17:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13406 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755932AbaGOXRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:17:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,668,1400050800"; 
+   d="scan'208";a="573734246"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/2] Kbuild: Add a option to enable dwarf4
+Date: Wed, 16 Jul 2014 01:16:12 +0200
+Message-Id: <1405466172-17055-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1405466172-17055-1-git-send-email-andi@firstfloor.org>
+References: <1405466172-17055-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Jul 2014 13:50:12 +0200 Roman Fietze <roman.fietze@telemotive.de> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> This change allows to overwrite the default of the hctosys RTC
-> specified in the kernnel configuration by using a kernel parameter in
-> the form of
-> 
->   hctosys=rtc<n>
-> 
+I found that a lot of unresolvable variables when using gdb on the kernel
+become resolvable when dwarf4 is enabled. So add a Kconfig flag to enable it.
 
-Seems reasonable to me, but...
+It definitely increases the debug information size, but on the other
+hand this isn't so bad when debug fusion is used.
 
-> +char rtc_hctosys_device[RTC_HCTOSYS_DEVICE_SIZE] = CONFIG_RTC_HCTOSYS_DEVICE;
-> +
-> +static int __init parse_hctosys(char *str)
-> +{
-> +	if (!str)
-> +		return -EINVAL;
-> +
-> +	if (strlen(str) >= RTC_HCTOSYS_DEVICE_SIZE)
-> +		return -ENOMEM;
-> +
-> +	strcpy(rtc_hctosys_device, str);
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ Makefile          | 3 +++
+ lib/Kconfig.debug | 9 +++++++++
+ 2 files changed, 12 insertions(+)
 
-Can we just strdup() this thing and do away with all this futzing around
-with the maximum string length?
-
-> +	return 0;
-> +}
+diff --git a/Makefile b/Makefile
+index 953659e..9c4080b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -690,6 +690,9 @@ KBUILD_CFLAGS	+= -g
+ KBUILD_AFLAGS	+= -Wa,-gdwarf-2
+ endif
+ endif
++ifdef CONFIG_DEBUG_INFO_DWARF4
++KBUILD_CFLAGS	+= -gdwarf-4
++endif
+ 
+ ifdef CONFIG_DEBUG_INFO_REDUCED
+ KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly) \
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index fb07c33..1af4d96 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -156,6 +156,15 @@ config DEBUG_INFO_SPLIT
+ 	  to know about the .dwo files and include them.
+ 	  Incompatible with older versions of ccache.
+ 
++config DEBUG_INFO_DWARF4
++	bool "Generate dwarf4 debuginfo"
++	depends on DEBUG_INFO
++	help
++	  Generate dwarf4 debug info. This requires recent versions
++	  of gcc and gdb. It makes the debug information larger.
++	  But it significantly improves the success of resolving
++	  variables in gdb on optimized code.
++
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
+ 	default y
+-- 
+1.8.5.2
 
