@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760112AbaGOWRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:17:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54234 "EHLO
+	id S1760135AbaGOWSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:18:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54215 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933672AbaGOVes (ORCPT
+	with ESMTP id S933644AbaGOVen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:34:48 -0400
+	Tue, 15 Jul 2014 17:34:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 192/198] ALSA: hda - restore BCLK M/N values when resuming HSW/BDW display controller
-Date: Tue, 15 Jul 2014 14:31:02 -0700
-Message-Id: <1405459868-15089-193-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 189/198] ALSA: usb-audio: Fix races at disconnection and PCM closing
+Date: Tue, 15 Jul 2014 14:30:59 -0700
+Message-Id: <1405459868-15089-190-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,176 +26,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mengdong Lin <mengdong.lin@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a07187c992be945ab561b370cbb49cfd72064c3c upstream.
+commit 92a586bdc06de6629dae1b357dac221253f55ff8 upstream.
 
-For Intel Haswell/Broadwell display HD-A controller, the 24MHz HD-A link BCLK
-is converted from Core Display Clock (CDCLK): BCLK = CDCLK * M / N
-And there are two registers EM4 and EM5 to program M, N value respectively.
-The EM4/EM5 values will be lost and when the display power well is disabled.
+When a USB-audio device is disconnected while PCM is still running, we
+still see some race: the disconnect callback calls
+snd_usb_endpoint_free() that calls release_urbs() and then kfree()
+while a PCM stream would be closed at the same time and calls
+stop_endpoints() that leads to wait_clear_urbs().  That is, the EP
+object might be deallocated while a PCM stream is syncing with
+wait_clear_urbs() with the same EP.
 
-BIOS programs CDCLK selected by OEM and EM4/EM5, but BIOS has no idea about
-display power well on/off at runtime. So the M/N can be wrong if non-default
-CDCLK is used when the audio controller resumes, which results in an invalid
-BCLK and abnormal audio playback rate. So this patch saves and restores valid
-M/N values on controller suspend/resume.
+Basically calling multiple wait_clear_urbs() would work fine, also
+calling wait_clear_urbs() and release_urbs() would work, too, as
+wait_clear_urbs() just reads some fields in ep.  The problem is the
+succeeding kfree() in snd_pcm_endpoint_free().
 
-And 'struct hda_intel' is defined to contain standard HD-A 'struct azx' and
-Intel specific fields, as Takashi suggested.
+This patch moves out the EP deallocation into the later point, the
+destructor callback.  At this stage, all PCMs must have been already
+closed, so it's safe to free the objects.
 
-Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/hda_intel.c | 63 +++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 56 insertions(+), 7 deletions(-)
+ sound/usb/card.c     | 13 ++++++++++---
+ sound/usb/endpoint.c | 17 ++++++++++++++---
+ sound/usb/endpoint.h |  1 +
+ 3 files changed, 25 insertions(+), 6 deletions(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 619d9a3..eab13e2 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -663,6 +663,22 @@ static char *driver_short_names[] = {
- 	[AZX_DRIVER_GENERIC] = "HD-Audio Generic",
- };
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index d979050..af19560 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -304,6 +304,11 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
  
-+/* Intel HSW/BDW display HDA controller Extended Mode registers.
-+ * EM4 (M value) and EM5 (N Value) are used to convert CDClk (Core Display
-+ * Clock) to 24MHz BCLK: BCLK = CDCLK * M / N
-+ * The values will be lost when the display power well is disabled.
-+ */
-+#define ICH6_REG_EM4			0x100c
-+#define ICH6_REG_EM5			0x1010
-+
-+struct hda_intel {
-+	struct azx chip;
-+
-+	/* HSW/BDW display HDA controller to restore BCLK from CDCLK */
-+	unsigned int bclk_m;
-+	unsigned int bclk_n;
-+};
-+
- /*
-  * macros for easy use
-  */
-@@ -2906,6 +2922,22 @@ static int param_set_xint(const char *val, const struct kernel_param *kp)
- #define azx_del_card_list(chip) /* NOP */
- #endif /* CONFIG_PM */
- 
-+static void haswell_save_bclk(struct azx *chip)
-+{
-+	struct hda_intel *hda = container_of(chip, struct hda_intel, chip);
-+
-+	hda->bclk_m = azx_readw(chip, EM4);
-+	hda->bclk_n = azx_readw(chip, EM5);
-+}
-+
-+static void haswell_restore_bclk(struct azx *chip)
-+{
-+	struct hda_intel *hda = container_of(chip, struct hda_intel, chip);
-+
-+	azx_writew(chip, EM4, hda->bclk_m);
-+	azx_writew(chip, EM5, hda->bclk_n);
-+}
-+
- #if defined(CONFIG_PM_SLEEP) || defined(SUPPORT_VGA_SWITCHEROO)
- /*
-  * power management
-@@ -2932,6 +2964,13 @@ static int azx_suspend(struct device *dev)
- 		free_irq(chip->irq, chip);
- 		chip->irq = -1;
- 	}
-+
-+	/* Save BCLK M/N values before they become invalid in D3.
-+	 * Will test if display power well can be released now.
-+	 */
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+		haswell_save_bclk(chip);
-+
- 	if (chip->msi)
- 		pci_disable_msi(chip->pci);
- 	pci_disable_device(pci);
-@@ -2951,8 +2990,10 @@ static int azx_resume(struct device *dev)
- 	if (chip->disabled)
- 		return 0;
- 
--	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
- 		hda_display_power(true);
-+		haswell_restore_bclk(chip);
-+	}
- 	pci_set_power_state(pci, PCI_D0);
- 	pci_restore_state(pci);
- 	if (pci_enable_device(pci) < 0) {
-@@ -2996,8 +3037,10 @@ static int azx_runtime_suspend(struct device *dev)
- 	azx_stop_chip(chip);
- 	azx_enter_link_reset(chip);
- 	azx_clear_irq_pending(chip);
--	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
-+		haswell_save_bclk(chip);
- 		hda_display_power(false);
-+	}
- 	return 0;
- }
- 
-@@ -3015,8 +3058,10 @@ static int azx_runtime_resume(struct device *dev)
- 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
- 		return 0;
- 
--	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
- 		hda_display_power(true);
-+		haswell_restore_bclk(chip);
-+	}
- 
- 	/* Read STATESTS before controller reset */
- 	status = azx_readw(chip, STATESTS);
-@@ -3213,6 +3258,8 @@ static int register_vga_switcheroo(struct azx *chip)
- static int azx_free(struct azx *chip)
+ static int snd_usb_audio_free(struct snd_usb_audio *chip)
  {
- 	struct pci_dev *pci = chip->pci;
-+	struct hda_intel *hda = container_of(chip, struct hda_intel, chip);
++	struct list_head *p, *n;
 +
- 	int i;
- 
- 	if ((chip->driver_caps & AZX_DCAPS_PM_RUNTIME)
-@@ -3274,7 +3321,7 @@ static int azx_free(struct azx *chip)
- 		hda_display_power(false);
- 		hda_i915_exit();
- 	}
--	kfree(chip);
-+	kfree(hda);
- 
++	list_for_each_safe(p, n, &chip->ep_list)
++		snd_usb_endpoint_free(p);
++
+ 	mutex_destroy(&chip->mutex);
+ 	kfree(chip);
  	return 0;
+@@ -580,7 +585,7 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+ 				     struct snd_usb_audio *chip)
+ {
+ 	struct snd_card *card;
+-	struct list_head *p, *n;
++	struct list_head *p;
+ 
+ 	if (chip == (void *)-1L)
+ 		return;
+@@ -593,14 +598,16 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+ 	mutex_lock(&register_mutex);
+ 	chip->num_interfaces--;
+ 	if (chip->num_interfaces <= 0) {
++		struct snd_usb_endpoint *ep;
++
+ 		snd_card_disconnect(card);
+ 		/* release the pcm resources */
+ 		list_for_each(p, &chip->pcm_list) {
+ 			snd_usb_stream_disconnect(p);
+ 		}
+ 		/* release the endpoint resources */
+-		list_for_each_safe(p, n, &chip->ep_list) {
+-			snd_usb_endpoint_free(p);
++		list_for_each_entry(ep, &chip->ep_list, list) {
++			snd_usb_endpoint_release(ep);
+ 		}
+ 		/* release the midi resources */
+ 		list_for_each(p, &chip->midi_list) {
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index 814430f..105ece3 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -981,19 +981,30 @@ void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep)
  }
-@@ -3521,6 +3568,7 @@ static int azx_create(struct snd_card *card, struct pci_dev *pci,
- 	static struct snd_device_ops ops = {
- 		.dev_free = azx_dev_free,
- 	};
-+	struct hda_intel *hda;
- 	struct azx *chip;
- 	int err;
  
-@@ -3530,13 +3578,14 @@ static int azx_create(struct snd_card *card, struct pci_dev *pci,
- 	if (err < 0)
- 		return err;
+ /**
++ * snd_usb_endpoint_release: Tear down an snd_usb_endpoint
++ *
++ * @ep: the endpoint to release
++ *
++ * This function does not care for the endpoint's use count but will tear
++ * down all the streaming URBs immediately.
++ */
++void snd_usb_endpoint_release(struct snd_usb_endpoint *ep)
++{
++	release_urbs(ep, 1);
++}
++
++/**
+  * snd_usb_endpoint_free: Free the resources of an snd_usb_endpoint
+  *
+  * @ep: the list header of the endpoint to free
+  *
+- * This function does not care for the endpoint's use count but will tear
+- * down all the streaming URBs immediately and free all resources.
++ * This free all resources of the given ep.
+  */
+ void snd_usb_endpoint_free(struct list_head *head)
+ {
+ 	struct snd_usb_endpoint *ep;
  
--	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
--	if (!chip) {
--		snd_printk(KERN_ERR SFX "%s: Cannot allocate chip\n", pci_name(pci));
-+	hda = kzalloc(sizeof(*hda), GFP_KERNEL);
-+	if (!hda) {
-+		snd_printk(KERN_ERR SFX "%s: Cannot allocate hda\n", pci_name(pci));
- 		pci_disable_device(pci);
- 		return -ENOMEM;
- 	}
+ 	ep = list_entry(head, struct snd_usb_endpoint, list);
+-	release_urbs(ep, 1);
+ 	kfree(ep);
+ }
  
-+	chip = &hda->chip;
- 	spin_lock_init(&chip->reg_lock);
- 	mutex_init(&chip->open_mutex);
- 	chip->card = card;
+diff --git a/sound/usb/endpoint.h b/sound/usb/endpoint.h
+index 1c7e8ee..e61ee5c 100644
+--- a/sound/usb/endpoint.h
++++ b/sound/usb/endpoint.h
+@@ -23,6 +23,7 @@ void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_sync_pending_stop(struct snd_usb_endpoint *ep);
+ int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep);
++void snd_usb_endpoint_release(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_free(struct list_head *head);
+ 
+ int snd_usb_endpoint_implicit_feedback_sink(struct snd_usb_endpoint *ep);
 -- 
 1.9.1
 
