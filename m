@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760898AbaGOX5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:57:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S1760883AbaGOX5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:57:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759614AbaGOXNo (ORCPT
+	with ESMTP id S1760004AbaGOXNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.14 36/66] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
-Date: Tue, 15 Jul 2014 16:17:30 -0700
-Message-Id: <20140715231703.711516914@linuxfoundation.org>
+        Michal Sojka <sojkam1@fel.cvut.cz>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 04/66] USB: serial: ftdi_sio: Add Infineon Triboard
+Date: Tue, 15 Jul 2014 16:16:58 -0700
+Message-Id: <20140715231702.313579000@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,41 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Michal Sojka <sojkam1@fel.cvut.cz>
 
-commit affb1aff300ddee54df307812b38f166e8a865ef upstream.
+commit d8279a40e50ad55539780aa617a32a53d7f0953e upstream.
 
-Starting with Win8, we have implemented several optimizations to improve the
-scalability and performance of the VMBUS transport between the Host and the
-Guest. Some of the non-performance critical services cannot leverage these
-optimization since they only read and process one message at a time.
-Make adjustments to the callback dispatch code to account for the way
-non-performance critical drivers handle reading of the channel.
+This adds support for Infineon TriBoard TC1798 [1]. Only interface 1
+is used as serial line (see [2], Figure 8-6).
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+[1] http://www.infineon.com/cms/de/product/microcontroller/development-tools-software-and-kits/tricore-tm-development-tools-software-and-kits/starterkits-and-evaluation-boards/starter-kit-tc1798/channel.html?channel=db3a304333b8a7ca0133cfa3d73e4268
+[2] http://www.infineon.com/dgdl/TriBoardManual-TC1798-V10.pdf?folderId=db3a304412b407950112b409ae7c0343&fileId=db3a304333b8a7ca0133cfae99fe426a
+
+Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/connection.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -319,9 +319,13 @@ static void process_chn_event(u32 relid)
- 		 */
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -945,6 +945,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
++	/* Infineon Devices */
++	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
+ 	{ }					/* Terminating entry */
+ };
  
- 		do {
--			hv_begin_read(&channel->inbound);
-+			if (read_state)
-+				hv_begin_read(&channel->inbound);
- 			channel->onchannel_callback(arg);
--			bytes_to_read = hv_end_read(&channel->inbound);
-+			if (read_state)
-+				bytes_to_read = hv_end_read(&channel->inbound);
-+			else
-+				bytes_to_read = 0;
- 		} while (read_state && (bytes_to_read != 0));
- 	} else {
- 		pr_err("no channel callback for relid - %u\n", relid);
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -584,6 +584,12 @@
+ #define RATOC_PRODUCT_ID_USB60F	0xb020
+ 
+ /*
++ * Infineon Technologies
++ */
++#define INFINEON_VID		0x058b
++#define INFINEON_TRIBOARD_PID	0x0028 /* DAS JTAG TriBoard TC1798 V1.0 */
++
++/*
+  * Acton Research Corp.
+  */
+ #define ACTON_VID		0x0647	/* Vendor ID */
 
 
