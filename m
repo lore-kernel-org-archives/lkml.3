@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759859AbaGOVtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:49:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54976 "EHLO
+	id S1759896AbaGOVtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:49:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54964 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964796AbaGOViz (ORCPT
+	with ESMTP id S964793AbaGOVix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:55 -0400
+	Tue, 15 Jul 2014 17:38:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 155/198] arm64: uid16: fix __kernel_old_{gid,uid}_t definitions
-Date: Tue, 15 Jul 2014 14:30:25 -0700
-Message-Id: <1405459868-15089-156-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 145/198] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+Date: Tue, 15 Jul 2014 14:30:15 -0700
+Message-Id: <1405459868-15089-146-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,57 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 34c65c43f1518bf85f93526ad373adc6a683b4c5 upstream.
+commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
 
-Whilst native arm64 applications don't have the 16-bit UID/GID syscalls
-wired up, compat tasks can still access them. The 16-bit wrappers for
-these syscalls use __kernel_old_uid_t and __kernel_old_gid_t, which must
-be 16-bit data types to maintain compatibility with the 16-bit UIDs used
-by compat applications.
+at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
+a positive u8 and that doesn't work.  I've changed it to int and
+refactored it to preserve the error code.
 
-This patch defines 16-bit __kernel_old_{gid,uid}_t types for arm64
-instead of using the 32-bit types provided by asm-generic.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/include/asm/Kbuild             |  1 -
- arch/arm64/include/uapi/asm/posix_types.h | 10 ++++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm64/include/uapi/asm/posix_types.h
+ drivers/iio/adc/at91_adc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index 519f89f..0d41221 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -28,7 +28,6 @@ generic-y += mutex.h
- generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
--generic-y += posix_types.h
- generic-y += resource.h
- generic-y += scatterlist.h
- generic-y += sections.h
-diff --git a/arch/arm64/include/uapi/asm/posix_types.h b/arch/arm64/include/uapi/asm/posix_types.h
-new file mode 100644
-index 0000000..7985ff6
---- /dev/null
-+++ b/arch/arm64/include/uapi/asm/posix_types.h
-@@ -0,0 +1,10 @@
-+#ifndef __ASM_POSIX_TYPES_H
-+#define __ASM_POSIX_TYPES_H
-+
-+typedef unsigned short __kernel_old_uid_t;
-+typedef unsigned short __kernel_old_gid_t;
-+#define __kernel_old_uid_t __kernel_old_uid_t
-+
-+#include <asm-generic/posix_types.h>
-+
-+#endif /*  __ASM_POSIX_TYPES_H */
+diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+index bbba014..e6bf77d 100644
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -322,12 +322,11 @@ static int at91_adc_channel_init(struct iio_dev *idev)
+ 	return idev->num_channels;
+ }
+ 
+-static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
++static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 					     struct at91_adc_trigger *triggers,
+ 					     const char *trigger_name)
+ {
+ 	struct at91_adc_state *st = iio_priv(idev);
+-	u8 value = 0;
+ 	int i;
+ 
+ 	for (i = 0; i < st->trigger_number; i++) {
+@@ -340,15 +339,16 @@ static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 			return -ENOMEM;
+ 
+ 		if (strcmp(trigger_name, name) == 0) {
+-			value = triggers[i].value;
+ 			kfree(name);
+-			break;
++			if (triggers[i].value == 0)
++				return -EINVAL;
++			return triggers[i].value;
+ 		}
+ 
+ 		kfree(name);
+ 	}
+ 
+-	return value;
++	return -EINVAL;
+ }
+ 
+ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+@@ -358,14 +358,14 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+ 	struct iio_buffer *buffer = idev->buffer;
+ 	struct at91_adc_reg_desc *reg = st->registers;
+ 	u32 status = at91_adc_readl(st, reg->trigger_register);
+-	u8 value;
++	int value;
+ 	u8 bit;
+ 
+ 	value = at91_adc_get_trigger_value_by_name(idev,
+ 						   st->trigger_list,
+ 						   idev->trig->name);
+-	if (value == 0)
+-		return -EINVAL;
++	if (value < 0)
++		return value;
+ 
+ 	if (state) {
+ 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 -- 
 1.9.1
 
