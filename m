@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964815AbaGOXcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:32:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45609 "EHLO
+	id S965049AbaGOXch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:32:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934096AbaGOXOT (ORCPT
+	with ESMTP id S934046AbaGOXOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:19 -0400
+	Tue, 15 Jul 2014 19:14:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.15 68/84] cgroup: fix mount failure in a corner case
-Date: Tue, 15 Jul 2014 16:18:05 -0700
-Message-Id: <20140715231715.225164244@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.15 65/84] ring-buffer: Check if buffer exists before polling
+Date: Tue, 15 Jul 2014 16:18:02 -0700
+Message-Id: <20140715231715.139696543@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,93 +29,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 970317aa48c6ef66cd023c039c2650c897bad927 upstream.
+commit 8b8b36834d0fff67fc8668093f4312dd04dcf21d upstream.
 
-  # cat test.sh
-  #! /bin/bash
+The per_cpu buffers are created one per possible CPU. But these do
+not mean that those CPUs are online, nor do they even exist.
 
-  mount -t cgroup -o cpu xxx /cgroup
-  umount /cgroup
+With the addition of the ring buffer polling, it assumes that the
+caller polls on an existing buffer. But this is not the case if
+the user reads trace_pipe from a CPU that does not exist, and this
+causes the kernel to crash.
 
-  mount -t cgroup -o cpu,cpuacct xxx /cgroup
-  umount /cgroup
-  # ./test.sh
-  mount: xxx already mounted or /cgroup busy
-  mount: according to mtab, xxx is already mounted on /cgroup
+Simple fix is to check the cpu against buffer bitmask against to see
+if the buffer was allocated or not and return -ENODEV if it is
+not.
 
-It's because the cgroupfs_root of the first mount was under destruction
-asynchronously.
+More updates were done to pass the -ENODEV back up to userspace.
 
-Fix this by delaying and then retrying mount for this case.
+Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
 
-v3:
-- put the refcnt immediately after getting it. (Tejun)
-
-v2:
-- use percpu_ref_tryget_live() rather that introducing
-  percpu_ref_alive(). (Tejun)
-- adjust comment.
-
-tj: Updated the comment a bit.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[lizf: Backported to 3.15:
- - s/percpu_ref_tryget_live/atomic_inc_not_zero/
- - Use goto instead of calling restart_syscall()
- - Add cgroup_tree_mutex]
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ include/linux/ring_buffer.h |    2 +-
+ kernel/trace/ring_buffer.c  |    5 ++++-
+ kernel/trace/trace.c        |   25 ++++++++++++++++++-------
+ kernel/trace/trace.h        |    4 ++--
+ 4 files changed, 25 insertions(+), 11 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1484,10 +1484,12 @@ static struct dentry *cgroup_mount(struc
- 			 int flags, const char *unused_dev_name,
- 			 void *data)
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size,
+ 	__ring_buffer_alloc((size), (flags), &__key);	\
+ })
+ 
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
+ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 			  struct file *filp, poll_table *poll_table);
+ 
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct ir
+  * as data is added to any of the @buffer's cpu buffers. Otherwise
+  * it will wait for data to be added to a specific cpu buffer.
+  */
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
  {
-+	struct cgroup_subsys *ss;
- 	struct cgroup_root *root;
- 	struct cgroup_sb_opts opts;
- 	struct dentry *dentry;
- 	int ret;
-+	int i;
- 	bool new_sb;
- 
- 	/*
-@@ -1514,6 +1516,29 @@ retry:
- 		goto out_unlock;
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	DEFINE_WAIT(wait);
+@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
++		if (!cpumask_test_cpu(cpu, buffer->cpumask))
++			return -ENODEV;
+ 		cpu_buffer = buffer->buffers[cpu];
+ 		work = &cpu_buffer->irq_work;
  	}
+@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer
+ 		schedule();
  
-+	/*
-+	 * Destruction of cgroup root is asynchronous, so subsystems may
-+	 * still be dying after the previous unmount.  Let's drain the
-+	 * dying subsystems.  We just need to ensure that the ones
-+	 * unmounted previously finish dying and don't care about new ones
-+	 * starting.  Testing ref liveliness is good enough.
-+	 */
-+	for_each_subsys(ss, i) {
-+		if (!(opts.subsys_mask & (1 << i)) ||
-+		    ss->root == &cgrp_dfl_root)
-+			continue;
-+
-+		if (!atomic_inc_not_zero(&ss->root->cgrp.refcnt)) {
-+			mutex_unlock(&cgroup_mutex);
-+			mutex_unlock(&cgroup_tree_mutex);
-+			msleep(10);
-+			mutex_lock(&cgroup_tree_mutex);
-+			mutex_lock(&cgroup_mutex);
-+			goto retry;
-+		}
-+		cgroup_put(&ss->root->cgrp);
-+	}
-+
- 	for_each_root(root) {
- 		bool name_match = false;
+ 	finish_wait(&work->waiters, &wait);
++	return 0;
+ }
  
+ /**
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1103,13 +1103,13 @@ update_max_tr_single(struct trace_array
+ }
+ #endif /* CONFIG_TRACER_MAX_TRACE */
+ 
+-static void default_wait_pipe(struct trace_iterator *iter)
++static int default_wait_pipe(struct trace_iterator *iter)
+ {
+ 	/* Iterators are static, they should be filled or empty */
+ 	if (trace_buffer_iter(iter, iter->cpu_file))
+-		return;
++		return 0;
+ 
+-	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
++	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
+ }
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+@@ -4236,17 +4236,19 @@ tracing_poll_pipe(struct file *filp, pol
+  *
+  *     Anyway, this is really very primitive wakeup.
+  */
+-void poll_wait_pipe(struct trace_iterator *iter)
++int poll_wait_pipe(struct trace_iterator *iter)
+ {
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	/* sleep for 100 msecs, and try again. */
+ 	schedule_timeout(HZ / 10);
++	return 0;
+ }
+ 
+ /* Must be called with trace_types_lock mutex held. */
+ static int tracing_wait_pipe(struct file *filp)
+ {
+ 	struct trace_iterator *iter = filp->private_data;
++	int ret;
+ 
+ 	while (trace_empty(iter)) {
+ 
+@@ -4256,10 +4258,13 @@ static int tracing_wait_pipe(struct file
+ 
+ 		mutex_unlock(&iter->mutex);
+ 
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 
+ 		mutex_lock(&iter->mutex);
+ 
++		if (ret)
++			return ret;
++
+ 		if (signal_pending(current))
+ 			return -EINTR;
+ 
+@@ -5196,8 +5201,12 @@ tracing_buffers_read(struct file *filp,
+ 				goto out_unlock;
+ 			}
+ 			mutex_unlock(&trace_types_lock);
+-			iter->trace->wait_pipe(iter);
++			ret = iter->trace->wait_pipe(iter);
+ 			mutex_lock(&trace_types_lock);
++			if (ret) {
++				size = ret;
++				goto out_unlock;
++			}
+ 			if (signal_pending(current)) {
+ 				size = -EINTR;
+ 				goto out_unlock;
+@@ -5407,8 +5416,10 @@ tracing_buffers_splice_read(struct file
+ 			goto out;
+ 		}
+ 		mutex_unlock(&trace_types_lock);
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 		mutex_lock(&trace_types_lock);
++		if (ret)
++			goto out;
+ 		if (signal_pending(current)) {
+ 			ret = -EINTR;
+ 			goto out;
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -342,7 +342,7 @@ struct tracer {
+ 	void			(*stop)(struct trace_array *tr);
+ 	void			(*open)(struct trace_iterator *iter);
+ 	void			(*pipe_open)(struct trace_iterator *iter);
+-	void			(*wait_pipe)(struct trace_iterator *iter);
++	int			(*wait_pipe)(struct trace_iterator *iter);
+ 	void			(*close)(struct trace_iterator *iter);
+ 	void			(*pipe_close)(struct trace_iterator *iter);
+ 	ssize_t			(*read)(struct trace_iterator *iter,
+@@ -560,7 +560,7 @@ void trace_init_global_iter(struct trace
+ 
+ void tracing_iter_reset(struct trace_iterator *iter, int cpu);
+ 
+-void poll_wait_pipe(struct trace_iterator *iter);
++int poll_wait_pipe(struct trace_iterator *iter);
+ 
+ void tracing_sched_switch_trace(struct trace_array *tr,
+ 				struct task_struct *prev,
 
 
