@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760855AbaGPATt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:19:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44926 "EHLO
+	id S934684AbaGPAUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:20:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759369AbaGOXNJ (ORCPT
+	with ESMTP id S1759066AbaGOXNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:09 -0400
+	Tue, 15 Jul 2014 19:13:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>
-Subject: [PATCH 3.4 13/22] rtmutex: Handle deadlock detection smarter
-Date: Tue, 15 Jul 2014 16:17:18 -0700
-Message-Id: <20140715231622.511964874@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.4 22/22] ACPI / battery: Retry to get battery information if failed during probing
+Date: Tue, 15 Jul 2014 16:17:27 -0700
+Message-Id: <20140715231622.801802705@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -31,136 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
+commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
 
-Even in the case when deadlock detection is not requested by the
-caller, we can detect deadlocks. Right now the code stops the lock
-chain walk and keeps the waiter enqueued, even on itself. Silly not to
-yell when such a scenario is detected and to keep the waiter enqueued.
+Some machines (eg. Lenovo Z480) ECs are not stable during boot up
+and causes battery driver fails to be loaded due to failure of getting
+battery information from EC sometimes. After several retries, the
+operation will work. This patch is to retry to get battery information 5
+times if the first try fails.
 
-Return -EDEADLK unconditionally and handle it at the call sites.
+[ backport to 3.14.5: removed second parameter in acpi_battery_update(),
+introduced by the commit 9e50bc14a7f58b5d8a55973b2d69355852ae2dae (ACPI /
+battery: Accelerate battery resume callback)]
 
-The futex calls return -EDEADLK. The non futex ones dequeue the
-waiter, throw a warning and put the task into a schedule loop.
-
-Tagged for stable as it makes the code more robust.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Brad Mouring <bmouring@ni.com>
-Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+[naszar <naszar@ya.ru>: backport to 3.14.5]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+Reported-and-tested-by: naszar <naszar@ya.ru>
+Cc: All applicable <stable@vger.kernel.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/rtmutex-debug.h |    5 +++++
- kernel/rtmutex.c       |   33 ++++++++++++++++++++++++++++-----
- kernel/rtmutex.h       |    5 +++++
- 3 files changed, 38 insertions(+), 5 deletions(-)
+ drivers/acpi/battery.c |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
---- a/kernel/rtmutex-debug.h
-+++ b/kernel/rtmutex-debug.h
-@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <linux/delay.h>
+ #include <asm/unaligned.h>
+ 
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+@@ -1055,6 +1056,28 @@ static int battery_notify(struct notifie
+ 	return 0;
+ }
+ 
++/*
++ * Some machines'(E,G Lenovo Z480) ECs are not stable
++ * during boot up and this causes battery driver fails to be
++ * probed due to failure of getting battery information
++ * from EC sometimes. After several retries, the operation
++ * may work. So add retry code here and 20ms sleep between
++ * every retries.
++ */
++static int acpi_battery_update_retry(struct acpi_battery *battery)
++{
++	int retry, ret;
++
++	for (retry = 5; retry; retry--) {
++		ret = acpi_battery_update(battery);
++		if (!ret)
++			break;
++
++		msleep(20);
++	}
++	return ret;
++}
++
+ static int acpi_battery_add(struct acpi_device *device)
  {
- 	return (waiter != NULL);
- }
+ 	int result = 0;
+@@ -1074,9 +1097,11 @@ static int acpi_battery_add(struct acpi_
+ 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+ 			"_BIX", &handle)))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	result = acpi_battery_update(battery);
 +
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	debug_rt_mutex_print_deadlock(w);
-+}
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -188,7 +188,7 @@ static int rt_mutex_adjust_prio_chain(st
- 		}
- 		put_task_struct(task);
- 
--		return deadlock_detect ? -EDEADLK : 0;
-+		return -EDEADLK;
- 	}
-  retry:
- 	/*
-@@ -263,7 +263,7 @@ static int rt_mutex_adjust_prio_chain(st
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
--		ret = deadlock_detect ? -EDEADLK : 0;
-+		ret = -EDEADLK;
- 		goto out_unlock_pi;
- 	}
- 
-@@ -453,7 +453,7 @@ static int task_blocks_on_rt_mutex(struc
- 	 * which is wrong, as the other waiter is not in a deadlock
- 	 * situation.
- 	 */
--	if (detect_deadlock && owner == task)
-+	if (owner == task)
- 		return -EDEADLK;
- 
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -680,6 +680,26 @@ __rt_mutex_slowlock(struct rt_mutex *loc
- 	return ret;
- }
- 
-+static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
-+				     struct rt_mutex_waiter *w)
-+{
-+	/*
-+	 * If the result is not -EDEADLOCK or the caller requested
-+	 * deadlock detection, nothing to do here.
-+	 */
-+	if (res != -EDEADLOCK || detect_deadlock)
-+		return;
++	result = acpi_battery_update_retry(battery);
+ 	if (result)
+ 		goto fail;
 +
-+	/*
-+	 * Yell lowdly and stop the task right here.
-+	 */
-+	rt_mutex_print_deadlock(w);
-+	while (1) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		schedule();
-+	}
-+}
-+
- /*
-  * Slow path lock function:
-  */
-@@ -717,8 +737,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
- 
- 	set_current_state(TASK_RUNNING);
- 
--	if (unlikely(ret))
-+	if (unlikely(ret)) {
- 		remove_waiter(lock, &waiter);
-+		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
-+	}
- 
- 	/*
- 	 * try_to_take_rt_mutex() sets the waiter bit
-@@ -1026,7 +1048,8 @@ int rt_mutex_start_proxy_lock(struct rt_
- 		return 1;
- 	}
- 
--	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
-+	/* We enforce deadlock detection for futexes */
-+	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
- 
- 	if (ret && !rt_mutex_owner(lock)) {
- 		/*
---- a/kernel/rtmutex.h
-+++ b/kernel/rtmutex.h
-@@ -24,3 +24,8 @@
- #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
- #define debug_rt_mutex_detect_deadlock(w,d)		(d)
- #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	WARN(1, "rtmutex deadlock detected\n");
-+}
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 	result = acpi_battery_add_fs(device);
+ #endif
 
 
