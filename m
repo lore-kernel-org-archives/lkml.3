@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934368AbaGOXPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S965158AbaGOXPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933973AbaGOXOM (ORCPT
+	with ESMTP id S933994AbaGOXOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:12 -0400
+	Tue, 15 Jul 2014 19:14:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.15 08/84] parisc: fix fanotify_mark() syscall on 32bit compat kernel
-Date: Tue, 15 Jul 2014 16:17:05 -0700
-Message-Id: <20140715231713.442659766@linuxfoundation.org>
+        Alexandre Demers <alexandre.f.demers@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.15 55/84] drm/radeon/dpm: Reenabling SS on Cayman
+Date: Tue, 15 Jul 2014 16:17:52 -0700
+Message-Id: <20140715231714.851891847@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,78 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
 
-commit ab8a261ba5e2dd9206da640de5870cc31d568a7c upstream.
+commit 41959341ac7e33dd360c7a881d13566f9eca37b2 upstream.
 
-On parisc we can not use the existing compat implementation for fanotify_mark()
-because for the 64bit mask parameter the higher and lower 32bits are ordered
-differently than what the compat function expects from big endian
-architectures.
+It reverts commit c745fe611ca42295c9d91d8e305d27983e9132ef now that
+Cayman is stable since VDDCI fix. Spread spectrum was not the culprit.
 
-Specifically:
-It finally turned out, that on hppa we end up with different assignments
-of parameters to kernel arguments depending on if we call the glibc
-wrapper function
- int fanotify_mark (int __fanotify_fd, unsigned int __flags,
-                    uint64_t __mask, int __dfd, const char *__pathname);
-or directly calling the syscall manually
- syscall(__NR_fanotify_mark, ...)
+This depends on b0880e87c1fd038b84498944f52e52c3e86ebe59
+(drm/radeon/dpm: fix vddci setup typo on cayman).
 
-Reason is, that the syscall() function is implemented as C-function and
-because we now have the sysno as first parameter in front of the other
-parameters the compiler will unexpectedly add an empty paramenter in
-front of the u64 value to ensure the correct calling alignment for 64bit
-values.
-This means, on hppa you can't simply use syscall() to call the kernel
-fanotify_mark() function directly, but you have to use the glibc
-function instead.
-
-This patch fixes the kernel in the hppa-arch specifc coding to adjust
-the parameters in a way as if userspace calls the glibc wrapper function
-fanotify_mark().
-
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Alexandre Demers <alexandre.f.demers@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/sys_parisc32.c  |   10 ++++++++++
- arch/parisc/kernel/syscall_table.S |    2 +-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/rv770_dpm.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/arch/parisc/kernel/sys_parisc32.c
-+++ b/arch/parisc/kernel/sys_parisc32.c
-@@ -4,6 +4,7 @@
-  * Copyright (C) 2000-2001 Hewlett Packard Company
-  * Copyright (C) 2000 John Marvin
-  * Copyright (C) 2001 Matthew Wilcox
-+ * Copyright (C) 2014 Helge Deller <deller@gmx.de>
-  *
-  * These routines maintain argument size conversion between 32bit and 64bit
-  * environment. Based heavily on sys_ia32.c and sys_sparc32.c.
-@@ -57,3 +58,12 @@ asmlinkage long sys32_unimplemented(int
-     	current->comm, current->pid, r20);
-     return -ENOSYS;
- }
-+
-+asmlinkage long sys32_fanotify_mark(compat_int_t fanotify_fd, compat_uint_t flags,
-+	compat_uint_t mask0, compat_uint_t mask1, compat_int_t dfd,
-+	const char  __user * pathname)
-+{
-+	return sys_fanotify_mark(fanotify_fd, flags,
-+			((__u64)mask1 << 32) | mask0,
-+			 dfd, pathname);
-+}
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -418,7 +418,7 @@
- 	ENTRY_SAME(accept4)		/* 320 */
- 	ENTRY_SAME(prlimit64)
- 	ENTRY_SAME(fanotify_init)
--	ENTRY_COMP(fanotify_mark)
-+	ENTRY_DIFF(fanotify_mark)
- 	ENTRY_COMP(clock_adjtime)
- 	ENTRY_SAME(name_to_handle_at)	/* 325 */
- 	ENTRY_COMP(open_by_handle_at)
+--- a/drivers/gpu/drm/radeon/rv770_dpm.c
++++ b/drivers/gpu/drm/radeon/rv770_dpm.c
+@@ -2329,12 +2329,6 @@ void rv770_get_engine_memory_ss(struct r
+ 	pi->mclk_ss = radeon_atombios_get_asic_ss_info(rdev, &ss,
+ 						       ASIC_INTERNAL_MEMORY_SS, 0);
+ 
+-	/* disable ss, causes hangs on some cayman boards */
+-	if (rdev->family == CHIP_CAYMAN) {
+-		pi->sclk_ss = false;
+-		pi->mclk_ss = false;
+-	}
+-
+ 	if (pi->sclk_ss || pi->mclk_ss)
+ 		pi->dynamic_ss = true;
+ 	else
 
 
