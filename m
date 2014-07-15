@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230AbaGOSvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:51:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28256 "EHLO mx1.redhat.com"
+	id S933237AbaGOSvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:51:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61863 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932843AbaGOSuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:50:21 -0400
-Date: Tue, 15 Jul 2014 20:48:24 +0200
+	id S932876AbaGOSuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:50:10 -0400
+Date: Tue, 15 Jul 2014 20:48:16 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -15,9 +15,8 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/7] tracing/uprobes: kill the dead
-	TRACE_EVENT_FL_USE_CALL_FILTER logic
-Message-ID: <20140715184824.GA20505@redhat.com>
+Subject: [PATCH v2 2/7] tracing: kill destroy_call_preds()
+Message-ID: <20140715184816.GA20495@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,40 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_trace_uprobe() sets TRACE_EVENT_FL_USE_CALL_FILTER for unknown
-reason and this is simply wrong. Fortunately this has no effect because
-register_uprobe_event() clears call->flags after that.
+Remove destroy_call_preds(). Its only caller, __trace_remove_event_call(),
+can use free_event_filter() and nullify ->filter by hand.
 
-Kill both. This trace_uprobe was kzalloc'ed and we rely on this fact
-anyway.
+Perhaps we could keep this trivial helper although imo it is pointless, but
+then it should be static in trace_events.c.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- kernel/trace/trace_uprobe.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ include/linux/ftrace_event.h       |    1 -
+ kernel/trace/trace_events.c        |    3 ++-
+ kernel/trace/trace_events_filter.c |    6 ------
+ 3 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 3c9b97e..33ff6a2 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -265,7 +265,6 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
- 	if (is_ret)
- 		tu->consumer.ret_handler = uretprobe_dispatcher;
- 	init_trace_uprobe_filter(&tu->filter);
--	tu->tp.call.flags |= TRACE_EVENT_FL_USE_CALL_FILTER;
- 	return tu;
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 738d465..f434d75 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -404,7 +404,6 @@ enum event_trigger_type {
+ 	ETT_EVENT_ENABLE	= (1 << 3),
+ };
  
- error:
-@@ -1292,7 +1291,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
- 		kfree(call->print_fmt);
- 		return -ENODEV;
- 	}
--	call->flags = 0;
-+
- 	call->class->reg = trace_uprobe_register;
- 	call->data = tu;
- 	ret = trace_add_event_call(call);
+-extern void destroy_call_preds(struct ftrace_event_call *call);
+ extern int filter_match_preds(struct event_filter *filter, void *rec);
+ 
+ extern int filter_check_discard(struct ftrace_event_file *file, void *rec,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index d049a5e..8690a3f 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1748,7 +1748,8 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
+ {
+ 	event_remove(call);
+ 	trace_destroy_fields(call);
+-	destroy_call_preds(call);
++	free_event_filter(call->filter);
++	call->filter = NULL;
+ }
+ 
+ static int probe_remove_event_call(struct ftrace_event_call *call)
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 30fc66f..1edec32 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -804,12 +804,6 @@ void free_event_filter(struct event_filter *filter)
+ 	__free_filter(filter);
+ }
+ 
+-void destroy_call_preds(struct ftrace_event_call *call)
+-{
+-	__free_filter(call->filter);
+-	call->filter = NULL;
+-}
+-
+ static struct event_filter *__alloc_filter(void)
+ {
+ 	struct event_filter *filter;
 -- 
 1.5.5.1
 
