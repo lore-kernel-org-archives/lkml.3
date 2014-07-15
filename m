@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121AbaGOJQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:16:10 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:58021 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758082AbaGOJQI (ORCPT
+	id S1758142AbaGOJSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:18:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52674 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753497AbaGOJSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:16:08 -0400
-Message-ID: <53C4F154.3000009@suse.cz>
-Date: Tue, 15 Jul 2014 11:16:04 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 15 Jul 2014 05:18:14 -0400
+Date: Tue, 15 Jul 2014 11:18:09 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Barry Song <baohua@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Larry Bassel <larry.bassel@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 11/15] irqchip: sun4i: convert to handle_domain_irq
+Message-ID: <20140715091809.GD1011@kwain>
+References: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
+ <1404825038-547-12-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
-To: "Li, ZhenHua" <zhen-hual@hp.com>, Peter Hurley <peter@hurleysoftware.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] driver/tty: Fix a warning in check_tty_count
-References: <1405317257-5491-1-git-send-email-zhen-hual@hp.com> <53C3CC4E.9010000@hurleysoftware.com> <53C4EFA8.3080308@hp.com>
-In-Reply-To: <53C4EFA8.3080308@hp.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404825038-547-12-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Marc,
 
-On 07/15/2014 11:08 AM, Li, ZhenHua wrote:
-> This bug  was founded in RHEL 6, kernel version 2.6.32.
+On Tue, Jul 08, 2014 at 02:10:34PM +0100, Marc Zyngier wrote:
+> Use the new handle_domain_irq method to handle interrupts.
 > 
-> But I also checked the file tty_io.c in  latest kernel, not all the code
-> protected by tty_lock(tty).
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+
+I tested this one on an A13 olinuxino. It worked well. I also tested
+with CONFIG_PROVE_RCU enabled.
+
+Antoine
+
+> ---
+>  drivers/irqchip/irq-sun4i.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> For example,  in function tty_del_file,
+> diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+> index 6fcef4a..64155b6 100644
+> --- a/drivers/irqchip/irq-sun4i.c
+> +++ b/drivers/irqchip/irq-sun4i.c
+> @@ -136,7 +136,7 @@ IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-a10-ic", sun4i_of_init);
+>  
+>  static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
+>  {
+> -	u32 irq, hwirq;
+> +	u32 hwirq;
+>  
+>  	/*
+>  	 * hwirq == 0 can mean one of 3 things:
+> @@ -154,8 +154,7 @@ static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
+>  		return;
+>  
+>  	do {
+> -		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
+> -		handle_IRQ(irq, regs);
+> +		handle_domain_irq(sun4i_irq_domain, hwirq, regs);
+>  		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
+>  	} while (hwirq != 0);
+>  }
+> -- 
+> 2.0.0
 > 
->     if (--tty->count < 0) {
->     }
-> and
->     tty_del_file(filp);
-> are not surrounded by tty_lock(tty).
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Sure, but there is tty_lock_pair instead.
-
-> So I think the new lock is necessary.
-
-Nope, sorry, you have to complain to RedHat about this kernel. Unless
-you can reproduce this with the vanilla kernel.
-
-thanks,
 -- 
-js
-suse labs
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
