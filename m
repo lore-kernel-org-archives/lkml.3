@@ -1,217 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaGOOxP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:53:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:57936 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaGOOxM (ORCPT
+	id S1753741AbaGOOxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:53:25 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:49400 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaGOOxU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:53:12 -0400
-Message-ID: <53C54042.2030507@linaro.org>
-Date: Tue, 15 Jul 2014 15:52:50 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Harro Haan <hrhaan@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
-        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
-References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>	<1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>	<CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com>	<53C4F745.3070701@linaro.org> <CAB5oZtBSZJVqyO8GKdKqh0+3=GDkCyuqrAOQhMRxN0JFBnmZ6w@mail.gmail.com>
-In-Reply-To: <CAB5oZtBSZJVqyO8GKdKqh0+3=GDkCyuqrAOQhMRxN0JFBnmZ6w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jul 2014 10:53:20 -0400
+Subject: Re: [PATCH v6 2/7] arm64: Introduce VA_BITS and translation level options
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Jungseok Lee <jungseoklee85@gmail.com>
+In-Reply-To: <20140714224159.GA9829@arm.com>
+Date: Tue, 15 Jul 2014 23:53:12 +0900
+Cc: Joel Schopp <joel.schopp@amd.com>, Timur Tabi <timur@codeaurora.org>,
+        steve.capper@linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, barami97@gmail.com,
+        kvmarm@lists.cs.columbia.edu,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3AF98E68-6818-416A-BC33-57148F1EC246@gmail.com>
+References: <000101cf6dc6$3b93d510$b2bb7f30$@samsung.com> <CAOZdJXWCu-zHuQoAUdiieqsKqCfG9BsZariFqQP=NCgQP-zpNA@mail.gmail.com> <53C43FE3.1050008@amd.com> <20140714224159.GA9829@arm.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/14 14:04, Harro Haan wrote:
->> Makes sense.
->>
->> Avoiding this problem on GICv2 is easy (thanks to the aliased intack
->> register) but on iMX.6 we have only a GICv1.
->>
->>
->>> I can reduce the number of occurrences (not prevent it) by adding the
->>> following hack to irq-gic.c
->>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
->>> gic_handle_irq(struct pt_regs *regs
->>>   u32 irqstat, irqnr;
->>>   struct gic_chip_data *gic = &gic_data[0];
->>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
->>>
->>>   do {
->>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
->>> & (1 << 30))
->>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
->>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->>>   irqnr = irqstat & ~0x1c00;
->>
->> I've made a more complete attempt to fix this. Could you test the
->> following? (and be prepared to fuzz the line numbers)
+On Jul 15, 2014, at 7:41 AM, Catalin Marinas wrote:
+> On Mon, Jul 14, 2014 at 09:38:59PM +0100, Joel Schopp wrote:
+>> I agree that these patches would be very useful.  I just rebased my fix
+>> for a VTTBR_BADDR_MASK bug on one of these patches that could be pulled
+>> out independently.  See
+>> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-July/010480.html
+>> 
+>> The original author Jungseok Lee is no longer available to work on
+>> future versions of these patches.  I was thinking that if they didn't
+>> get picked up as they are that with the original author's blessing I
+>> would pick them up and keep them forward ported/resubmitted.  I have an
+>> SOC to test them on.
 > 
-> Thanks Daniel, I have tested it, see the comments below.
-> 
->>
->> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->> index 73ae896..309bf2c 100644
->> --- a/drivers/irqchip/irq-gic.c
->> +++ b/drivers/irqchip/irq-gic.c
->> @@ -303,6 +303,28 @@ static int gic_set_wake(struct irq_data *d,
->> unsigned int on)
->>  #define gic_set_wake   NULL
->>  #endif
->>
->> +/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
->> + * workaround will only work for level triggered interrupts (and in
->> + * its current form is actively harmful on systems that don't support
->> + * FIQ).
->> + */
->> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32
->> irqstat)
->> +{
->> +       u32 irqnr = irqstat & GICC_IAR_INT_ID_MASK;
->> +
->> +       if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
->> +               return irqnr;
->> +
->> +       if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
->> +                         (irqnr / 32 * 4)) &
->> +           BIT(irqnr % 32))
->> +               return irqnr;
->> +
->> +       /* this interrupt was spurious (needs to be handled as FIQ) */
->> +       writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
-> 
-> This will NOT work, because of the note I mentioned above:
-> "The FIQ exception will not occur anymore after gic_handle_irq
-> read/acknowledges the FIQ by reading the GIC_CPU_INTACK register"
-> So with this code you will say End Of Interrupt at the GIC level,
-> without actually handling the interrupt, so you are missing an
-> interrupt.
-> I did the following test to confirm the missing interrupt:
-> I have changed the periodic timer interrupt by an one-shot timer
-> interrupt. The one-shot timer interrupt is programmed by the FIQ
-> handler for the next FIQ interrupt. As expected: When the problem
-> occurs, no more FIQ interrupts are generated.
+> The patches are pretty good. I'll give them a try tomorrow and if there
+> isn't something fundamental missing I'll consider taking them for 3.17.
 
-Can you confirm whether your timer interrupts are configured level or
-edge triggered? Or whether EOIing the GIC causes them to be cleared by
-some other means.
+Hi All,
 
-A level triggered interrupt that hasn't been serviced should return the
-pending state (shouldn't it?).
+If only stage1 side is taken and merged, KVM should be disabled under 4 level
+lookups with the following configuration adjustment. I've tested it on top of
+arm64/for-next/core branch and it works fine.
 
+--- a/arch/arm64/kvm/Kconfig
++++ b/arch/arm64/kvm/Kconfig
+@@ -18,6 +18,7 @@ if VIRTUALIZATION
+ 
+ config KVM
+        bool "Kernel-based Virtual Machine (KVM) support"
++       depends on !ARM64_4_LEVELS
+        select MMU_NOTIFIER
+        select PREEMPT_NOTIFIERS
+        select ANON_INODES
 
->> +       return 1023;
->> +}
->> +
->>  static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
->>  {
->>         u32 irqstat, irqnr;
->> @@ -310,8 +332,10 @@ static void __exception_irq_entry
->> gic_handle_irq(struct pt_regs *regs)
->>         void __iomem *cpu_base = gic_data_cpu_base(gic);
->>
->>         do {
->> +               local_fiq_disable();
-> 
-> It is a bit weird to disable the "Non-Maskable Interrupt" at every
-> interrupt, because of a problem that occurs once every few thousand
-> interrupts
+However, I don't know whether it does make sense or not.
+In other words, stage2 side should be prepared to fully support 4 level lookups.
 
-Given that simply reading from GIC_CPU_INTACK has significantly
-interferes with FIQ reception means that I'm not too worried about this.
+In order to cover all combinations of host and guest, VTTBR_X should be determined
+dynamically as referring to hardware capability. At this point, the patches have
+been revised many times, but they don't have got ACKs from Christoffer and Marc yet.
 
-Note also that leaving the FIQ unmasked increases worst case latency
-here because once we get a group 0 interrupt back from intack then
-spurious entry to the FIQ handler (which would see an ACK of 1023) just
-wastes cycles.
+That is why the patches are pending now in the author's point of view.
 
-
->>                 irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->> -               irqnr = irqstat & GICC_IAR_INT_ID_MASK;
->> +               irqnr = gic_handle_spurious_group_0(gic, irqstat);
->> +               local_fiq_enable();
->>
->>                 if (likely(irqnr > 15 && irqnr < 1021)) {
->>                         irqnr = irq_find_mapping(gic->domain, irqnr);
-> 
-> 
-> The following type of changes could fix the problem for me:
-> 
-> @@ -290,19 +290,66 @@ static int gic_set_wake(struct irq_data *d,
-> unsigned int on)
-> 
->  #else
->  #define gic_set_wake NULL
->  #endif
-> 
-> +extern void (*fiq_handler)(void);
-> +
-> +/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
-> + * workaround will only work for level triggered interrupts (and in
-> + * its current form is actively harmful on systems that don't support
-> + * FIQ).
-> + */
-> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32 irqstat)
-> +{
-> + u32 irqnr = irqstat & ~0x1c00;
-> +
-> + if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
-> + return irqnr;
-> +
-> + if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
-> +  (irqnr / 32 * 4)) & BIT(irqnr % 32))
-> + return irqnr;
-> +
-> + /*
-> + * The FIQ should be disabled before the next FIQ interrupt occurs,
-> + * so this only works when the next FIQ interrupt is not "too fast"
-> + * after the previous one.
-> + */
-> + local_fiq_disable();
-> +
-> + /*
-> + * Notes:
-> + * - The FIQ exception will not occur anymore for this current
-> + *   interrupt, because gic_handle_irq has already read/acknowledged
-> + *   the GIC_CPU_INTACK register. So handle the FIQ here.
-> + * - The fiq_handler below should not call ack_fiq and eoi_fiq,
-> + *   because rereading the GIC_CPU_INTACK register returns spurious
-> + *   interrupt ID 0x3FF. So probably you will have to add sometime like
-> + *   the following to fiq_handler:
-> + *   u32 cpsr, irqstat;
-> + *   __asm__("mrs %0, cpsr" : "=r" (cpsr));
-> + *   if ((cpsr & MODE_MASK) == FIQ_MODE)
-> + *   irqstat = ack_fiq();
-> + */
-> + (*fiq_handler)();
-
-Any portable approach would have to switch to FIQ mode to run the
-handler in order to provide the proper register banks for FIQ handlers
-written in assembler.
-
-If we can't get level triggering to work then we have to:
-
-1. Write code to jump correctly into FIQ mode.
-
-2. Modify the gic's ack_fiq() callback to automatically avoid reading
-   intack when the workaround is deployed.
-
-The above is why I wanted to see if we can make do with level triggering
-(and automatic re-triggering for interrupts such as SGIs that are
-cleared by EOI).
-
-
+- Jungseok Lee
