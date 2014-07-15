@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaGONkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:40:35 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:45638 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751713AbaGONkd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:40:33 -0400
-Date: Tue, 15 Jul 2014 09:40:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ring-buffer: Race when writing and swapping cpu
- buffer in parallel
-Message-ID: <20140715094030.4b3c6314@gandalf.local.home>
-In-Reply-To: <20140715090712.GI6774@pathway.suse.cz>
-References: <1405348378-10370-1-git-send-email-pmladek@suse.cz>
-	<20140714120840.1fb65a7d@gandalf.local.home>
-	<20140715090712.GI6774@pathway.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1753554AbaGONlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:41:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189AbaGONky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 09:40:54 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: xen-devel@lists.xenproject.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC 0/4] xen/pvhvm: fix shared_info and pirq issues with kexec
+Date: Tue, 15 Jul 2014 15:40:36 +0200
+Message-Id: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014 11:07:35 +0200
-Petr Mládek <pmladek@suse.cz> wrote:
+With this patch series I'm trying to address several issues with kexec on pvhvm:
+- shared_info issue (1st patch, just sending Olaf's work with Konrad's fix)
+- create specific pvhvm shutdown handler for kexec (2nd patch)
+- GSI PIRQ issue (3rd patch, I'm pretty confident that it does the right thing)
+- MSI PIRQ issue (4th patch, and I'm not sure it doesn't break anything -> RFC)
 
- 
-> Just to be sure. Should I remove RING_BUFFER_ALLOW_SWAP config
-> option completely?
+This patch series can be tested on single vCPU guest. We still have SMP issues with
+pvhvm guests and kexec which require additional fixes.
 
-No. Just that one #if block. The per cpu swap is still a bit icky in my
-humble opinion, and should stay a config for now.
+Olaf Hering (1):
+  xen PVonHVM: use E820_Reserved area for shared_info
 
-> 
-> > Although your above comment is wrong. We can most
-> > definitely be in the middle of a swap operation. You forget that
-> > tracing is NMI safe.
-> > 
-> > But the swap does disable tracing, then if a NMI were to preempt the
-> > swap, it will either be outside the critical part where it is still safe
-> > to perform the trace or it will be where the swap is happening and the
-> > tracing will be disabled.
-> 
-> I probably did not use precise enough sentence. I wanted to explain
-> why we do not check for "cpu_buffer->record_disabled" here. I added
-> this test in the 1st version of the patch but then I realized that it
-> was not needed.
-> 
-> As you say, there are two possibilities when swap is interrupted by
-> NMI. Either it is outside of the critical section and then the write is
-> completed before we continue with swapping. Or the interrupt is inside
-> the critical section and then the nested write fails early in
-> ring_buffer_write() or ring_buffer_lock_reserve() before this
-> code is called.
-> 
-> A better comment might be:
-> 
-> 	* Note that we will never be in the middle of a swap critical
-> 	* section here. If the swapping is interrupted when recording
-> 	* is disabled, the nested write will fail earlier in
-> 	* ring_buffer_write() or ring_buffer_lock_reserve().
-> 	*/
-> 
-> 
-> Note that I am still learning about the preferred practice with comments inside
-> the kernel code. I have spent a lot of time trying to understand the
-> ring buffer. I think that more comments like this would have
-> helped me to get the picture faster. Another possibility would be to
-> create Documentation/trace/ring-buffer.txt.
+Vitaly Kuznetsov (3):
+  xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
+  xen/pvhvm: Unmap all PIRQs on startup and shutdown
+  xen/pvhvm: Make MSI IRQs work after kexec
 
-Well there is a Documentation/trace/ring-buffer-design.txt doc ;-)
+ arch/x86/pci/xen.c               |  3 +-
+ arch/x86/xen/enlighten.c         | 83 +++++++++++++++++++++++++++++++---------
+ arch/x86/xen/smp.c               | 10 +++++
+ arch/x86/xen/smp.h               |  1 +
+ arch/x86/xen/suspend.c           |  2 +-
+ arch/x86/xen/xen-ops.h           |  2 +-
+ drivers/xen/events/events_base.c | 76 ++++++++++++++++++++++++++++++++++++
+ include/xen/events.h             |  3 ++
+ 8 files changed, 158 insertions(+), 22 deletions(-)
 
-> 
-> I have more notes here. Let me know if I should cook up some patches
-> that would extend the ring buffer documentation according to my
-> experience.
-
-I have no problems with adding documentation to the code.
-
--- Steve
+-- 
+1.9.3
 
