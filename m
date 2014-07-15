@@ -1,90 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691AbaGOLCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 07:02:04 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23420 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932675AbaGOLB7 (ORCPT
+	id S1758801AbaGOLDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 07:03:12 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:49288 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758775AbaGOLDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 07:01:59 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-11-53c509f48a8c
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Daniel Drake <drake@endlessm.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v3 0/4] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
- secure firmware enabled
-Date: Tue, 15 Jul 2014 13:00:30 +0200
-Message-id: <12227526.hKTn2dDzxP@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <CAD8Lp46mp-tHcwGpFd0YHRDE4pKWDoPpUvu-Y0QzxSi-jnYtWg@mail.gmail.com>
-References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
- <CAD8Lp46mp-tHcwGpFd0YHRDE4pKWDoPpUvu-Y0QzxSi-jnYtWg@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=UTF-8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xoO4XzqPBBicPqlrM+yxr8Wj+Y2aL
-	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
-	fvVw4PVY9D3L4861PWwem5fUe9z+95jZY8vVdhaPvi2rGD0+b5ILYI/isklJzcksSy3St0vg
-	ylj5qoG54ChPxY5Fu9kbGP9xdjFyckgImEhs3fqACcIWk7hwbz1bFyMXh5DAdEaJT39PsUM4
-	LUwS++/sYgOpYhOwkpjYvooRxBYRUJX4tbyZFaSIWeAus0TT833MIAlhgQyJDfMWsYPYLEBF
-	TycuZQGxeQW0JDY/eAE2SFTAU2LH9pVgNqdAsMTzVVdZIbb1M0p8WPqTEaJBUOLH5HtgzcwC
-	8hL79k9lhbDVJSbNW8Q8gVFgFpKyWUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
-	dxMjOGaeSe9gXNVgcYhRgINRiYdX4t3hYCHWxLLiytxDjBIczEoivPX/jgQL8aYkVlalFuXH
-	F5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYDRMqirJOry2ZWXSq/stF+7M
-	+fz0U+tGR4s79r7HgrdPXZ0b2PL4tI9WZ9RbicMdD4JbgmvT7eVXTNg2by/jZ/F5dfFem38X
-	6jA/frWpmzf99AfeRZPzJG/vOeWg8eHltiuNYasKXDNW1vcvm1Dxurr1p9prOZ9Vq67KrZ3/
-	ol8upEZdM/DoqilKLMUZiYZazEXFiQBg/pFHlQIAAA==
+	Tue, 15 Jul 2014 07:03:08 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH v2 2/3] regulator: s2mpa01: Optimize the regulator description macro
+Date: Tue, 15 Jul 2014 16:32:52 +0530
+Message-Id: <1405422173-15050-2-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405422173-15050-1-git-send-email-amit.daniel@samsung.com>
+References: <1405422173-15050-1-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 14, 2014 04:41:25 PM Daniel Drake wrote:
-> Hi Bartlomiej,
+This patch makes the regulator description macro take minimum and
+steps voltage as parameter. In this way many repeated macros can be
+removed. Now these macros are repeated only if the the LDO/BUCK ctrl
+registers have non-linear positions. The good thing is these ctrl registers
+are mostly linear so they are not passed as parameters.
 
-Hi,
+This patch reduces the code size and also allow easy addition of more
+s2mpxxx PMIC drivers which differs a lot in minimum/step voltages.
 
-> On Wed, Jul 9, 2014 at 6:17 PM, Bartlomiej Zolnierkiewicz
-> <b.zolnierkie@samsung.com> wrote:
-> > This patch series adds support for AFTR idle mode on boards with
-> > secure firmware enabled and allows EXYNOS cpuidle driver usage on
-> > Exynos4x12 SoCs.
-> >
-> > It has been tested on Trats2 board (using Exynos4412 SoC with secure
-> > firmware enabled) on which AFTR mode reduces power consumption by ~12%
-> > when EXYNOS cpuidle driver is enabled (in both cases the default
-> > exynos_defconfig config is used and CPU1-3 are offlined).
-> 
-> Thanks for this, I have tested it on ODROID-U2.
-> 
-> I don't have any equipment to measure the power usage, but after
-> offlining CPUs 1,2,3 via sysfs "online" file, a printk I added
-> confirms that the system is going to enter aftr mode, and system
-> stability seems as good as ever.
+Cc: Sangbeom Kim <sbkim73@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+Changes since v1:
+* Removed min parameter from regulator_desc_ldo1 as pointed by Krzysztof
+* Added Cc to maintainers.
+* Added Krzysztof reviewed-by.
 
-Thank you for testing!
+ drivers/regulator/s2mpa01.c | 134 ++++++++++++--------------------------------
+ 1 file changed, 36 insertions(+), 98 deletions(-)
 
-> Is there any automatic way that the cpus should be offlined, or is the
-> intention that it must be done "by hand" like this?
-
-AFAIK Android kernel disables unused CPUs by itself.  There is also
-ongoing work on Exynos coupled cpuidle driver for upstream kernels
-which will handle offlining of CPUs for AFTR mode transparently to
-the kernel (currently only Exynos4210 SoC is supported by the driver
-posted by Daniel Lezcano, we are working on Exynos3250 SoC support
-and once it is done we might try to also do Exynos4x12 SoCs version).
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+index 962c5f1..89fe32c 100644
+--- a/drivers/regulator/s2mpa01.c
++++ b/drivers/regulator/s2mpa01.c
+@@ -235,28 +235,14 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.set_ramp_delay		= s2mpa01_set_ramp_delay,
+ };
+ 
+-#define regulator_desc_ldo1(num)	{		\
++#define regulator_desc_ldo(num, step) {			\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPA01_LDO##num,		\
+ 	.ops		= &s2mpa01_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+ 	.min_uV		= MIN_800_MV,			\
+-	.uV_step	= STEP_50_MV,			\
+-	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
+-	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+-	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
+-	.enable_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+-	.enable_mask	= S2MPA01_ENABLE_MASK		\
+-}
+-#define regulator_desc_ldo2(num)	{		\
+-	.name		= "LDO"#num,			\
+-	.id		= S2MPA01_LDO##num,		\
+-	.ops		= &s2mpa01_ldo_ops,		\
+-	.type		= REGULATOR_VOLTAGE,		\
+-	.owner		= THIS_MODULE,			\
+-	.min_uV		= MIN_800_MV,			\
+-	.uV_step	= STEP_25_MV,			\
++	.uV_step	= step,				\
+ 	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
+@@ -296,14 +282,14 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.enable_mask	= S2MPA01_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_buck6_7(num)	{			\
++#define regulator_desc_buck6_10(num, min, step) {			\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPA01_BUCK##num,			\
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_600_MV,				\
+-	.uV_step	= STEP_6_25_MV,				\
++	.min_uV		= min,					\
++	.uV_step	= step,					\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B6CTRL2 + (num - 6) * 2,	\
+@@ -312,91 +298,43 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.enable_mask	= S2MPA01_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_buck8	{				\
+-	.name		= "BUCK8",				\
+-	.id		= S2MPA01_BUCK8,			\
+-	.ops		= &s2mpa01_buck_ops,			\
+-	.type		= REGULATOR_VOLTAGE,			\
+-	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_800_MV,				\
+-	.uV_step	= STEP_12_5_MV,				\
+-	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+-	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+-	.vsel_reg	= S2MPA01_REG_B8CTRL2,			\
+-	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPA01_REG_B8CTRL1,			\
+-	.enable_mask	= S2MPA01_ENABLE_MASK			\
+-}
+-
+-#define regulator_desc_buck9	{				\
+-	.name		= "BUCK9",				\
+-	.id		= S2MPA01_BUCK9,			\
+-	.ops		= &s2mpa01_buck_ops,			\
+-	.type		= REGULATOR_VOLTAGE,			\
+-	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_1500_MV,				\
+-	.uV_step	= STEP_12_5_MV,				\
+-	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+-	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+-	.vsel_reg	= S2MPA01_REG_B9CTRL2,			\
+-	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPA01_REG_B9CTRL1,			\
+-	.enable_mask	= S2MPA01_ENABLE_MASK			\
+-}
+-
+-#define regulator_desc_buck10	{				\
+-	.name		= "BUCK10",				\
+-	.id		= S2MPA01_BUCK10,			\
+-	.ops		= &s2mpa01_buck_ops,			\
+-	.type		= REGULATOR_VOLTAGE,			\
+-	.owner		= THIS_MODULE,				\
+-	.min_uV		= MIN_1000_MV,				\
+-	.uV_step	= STEP_12_5_MV,				\
+-	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+-	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+-	.vsel_reg	= S2MPA01_REG_B10CTRL2,			\
+-	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
+-	.enable_reg	= S2MPA01_REG_B10CTRL1,			\
+-	.enable_mask	= S2MPA01_ENABLE_MASK			\
+-}
+-
+ static struct regulator_desc regulators[] = {
+-	regulator_desc_ldo2(1),
+-	regulator_desc_ldo1(2),
+-	regulator_desc_ldo1(3),
+-	regulator_desc_ldo1(4),
+-	regulator_desc_ldo1(5),
+-	regulator_desc_ldo2(6),
+-	regulator_desc_ldo1(7),
+-	regulator_desc_ldo1(8),
+-	regulator_desc_ldo1(9),
+-	regulator_desc_ldo1(10),
+-	regulator_desc_ldo2(11),
+-	regulator_desc_ldo1(12),
+-	regulator_desc_ldo1(13),
+-	regulator_desc_ldo1(14),
+-	regulator_desc_ldo1(15),
+-	regulator_desc_ldo1(16),
+-	regulator_desc_ldo1(17),
+-	regulator_desc_ldo1(18),
+-	regulator_desc_ldo1(19),
+-	regulator_desc_ldo1(20),
+-	regulator_desc_ldo1(21),
+-	regulator_desc_ldo2(22),
+-	regulator_desc_ldo2(23),
+-	regulator_desc_ldo1(24),
+-	regulator_desc_ldo1(25),
+-	regulator_desc_ldo1(26),
++	regulator_desc_ldo(1, STEP_25_MV),
++	regulator_desc_ldo(2, STEP_50_MV),
++	regulator_desc_ldo(3, STEP_50_MV),
++	regulator_desc_ldo(4, STEP_50_MV),
++	regulator_desc_ldo(5, STEP_50_MV),
++	regulator_desc_ldo(6, STEP_25_MV),
++	regulator_desc_ldo(7, STEP_50_MV),
++	regulator_desc_ldo(8, STEP_50_MV),
++	regulator_desc_ldo(9, STEP_50_MV),
++	regulator_desc_ldo(10, STEP_50_MV),
++	regulator_desc_ldo(11, STEP_25_MV),
++	regulator_desc_ldo(12, STEP_50_MV),
++	regulator_desc_ldo(13, STEP_50_MV),
++	regulator_desc_ldo(14, STEP_50_MV),
++	regulator_desc_ldo(15, STEP_50_MV),
++	regulator_desc_ldo(16, STEP_50_MV),
++	regulator_desc_ldo(17, STEP_50_MV),
++	regulator_desc_ldo(18, STEP_50_MV),
++	regulator_desc_ldo(19, STEP_50_MV),
++	regulator_desc_ldo(20, STEP_50_MV),
++	regulator_desc_ldo(21, STEP_50_MV),
++	regulator_desc_ldo(22, STEP_25_MV),
++	regulator_desc_ldo(23, STEP_25_MV),
++	regulator_desc_ldo(24, STEP_50_MV),
++	regulator_desc_ldo(25, STEP_50_MV),
++	regulator_desc_ldo(26, STEP_50_MV),
+ 	regulator_desc_buck1_4(1),
+ 	regulator_desc_buck1_4(2),
+ 	regulator_desc_buck1_4(3),
+ 	regulator_desc_buck1_4(4),
+ 	regulator_desc_buck5,
+-	regulator_desc_buck6_7(6),
+-	regulator_desc_buck6_7(7),
+-	regulator_desc_buck8,
+-	regulator_desc_buck9,
+-	regulator_desc_buck10,
++	regulator_desc_buck6_10(6, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_buck6_10(7, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_buck6_10(8, MIN_800_MV, STEP_12_5_MV),
++	regulator_desc_buck6_10(9, MIN_1500_MV, STEP_12_5_MV),
++	regulator_desc_buck6_10(10, MIN_1000_MV, STEP_12_5_MV),
+ };
+ 
+ static int s2mpa01_pmic_probe(struct platform_device *pdev)
+-- 
+1.9.1
 
