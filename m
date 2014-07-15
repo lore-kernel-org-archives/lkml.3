@@ -1,237 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020AbaGODRv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:17:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59361 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757655AbaGODOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:14:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
-   d="scan'208";a="561822734"
-From: kan.liang@intel.com
-To: peterz@infradead.org
-Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V6 1/2] perf ignore LBR and extra_rsp
-Date: Mon, 14 Jul 2014 12:25:56 -0700
-Message-Id: <1405365957-20202-1-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1757678AbaGODSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:18:09 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:43510 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007AbaGODSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:18:06 -0400
+From: sam-the-6 <asadi.samuel@gmail.com>
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sam Asadi <asadi.samuel@gmail.com>
+Subject: [PATCH 93/93] Staging: comedi: adl_pci9118: fixed style issues
+Date: Tue, 15 Jul 2014 06:17:59 +0300
+Message-Id: <1405394279-26061-1-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+From: Sam Asadi <asadi.samuel@gmail.com>
 
-x86, perf: Protect LBR and extra_regs against KVM lying
+several style issues fixed.
 
-With -cpu host, KVM reports LBR and extra_regs support, if the host has
-support.
-When the guest perf driver tries to access LBR or extra_regs MSR,
-it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
-So check the related MSRs access right once at initialization time to avoid
-the error access at runtime.
+Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
 
-For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y
-(for host kernel).
-And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
-Start the guest with -cpu host.
-Run perf record with --branch-any or --branch-filter in guest to trigger LBR
-Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to
-trigger offcore_rsp #GP
-
-Signed-off-by: Kan Liang <kan.liang@intel.com>
-
+	modified:   drivers/staging/comedi/drivers/adl_pci9118.c
 ---
-V2: Move the check code to initialization time.
-V3: Add flag for each extra register.
-    Check all LBR MSRs at initialization time.
-V4: Remove lbr_msr_access.
-    For LBR msr, simply set lbr_nr to 0 if check_msr failed.
-    Disable all extra msrs in creation places if check_msr failed.
-V5: Fix check_msr broken
-    Don't check any more MSRs after the first fail
-    Return error when checking fail to stop creating the event
-    Remove the checking code path which never get
-V6: Move extra_msr_access to struct extra_reg
-    Modify and move check_msr function to perf_event_intel.c
-    Other minor code changes
+ drivers/staging/comedi/drivers/adl_pci9118.c |  124 +++++++++++++-------------
+ 1 file changed, 62 insertions(+), 62 deletions(-)
 
- arch/x86/kernel/cpu/perf_event.c              |  3 ++
- arch/x86/kernel/cpu/perf_event.h              | 20 ++++----
- arch/x86/kernel/cpu/perf_event_intel.c        | 66 ++++++++++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |  4 +-
- 4 files changed, 81 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2bdfbff..2879ecd 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -118,6 +118,9 @@ static int x86_pmu_extra_regs(u64 config, struct perf_event *event)
- 			continue;
- 		if (event->attr.config1 & ~er->valid_mask)
- 			return -EINVAL;
-+		/* Check if the extra msrs can be safely accessed*/
-+		if (!er->extra_msr_access)
-+			return -ENXIO;
- 
- 		reg->idx = er->idx;
- 		reg->config = event->attr.config1;
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3b2f9bd..2e613b2 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -295,22 +295,24 @@ struct extra_reg {
- 	u64			config_mask;
- 	u64			valid_mask;
- 	int			idx;  /* per_xxx->regs[] reg index */
-+	bool			extra_msr_access;
- };
- 
--#define EVENT_EXTRA_REG(e, ms, m, vm, i) {	\
--	.event = (e),		\
--	.msr = (ms),		\
--	.config_mask = (m),	\
--	.valid_mask = (vm),	\
--	.idx = EXTRA_REG_##i,	\
-+#define EVENT_EXTRA_REG(e, ms, m, vm, i, a) {	\
-+	.event = (e),			\
-+	.msr = (ms),			\
-+	.config_mask = (m),		\
-+	.valid_mask = (vm),		\
-+	.idx = EXTRA_REG_##i,		\
-+	.extra_msr_access = (a),	\
- 	}
- 
- #define INTEL_EVENT_EXTRA_REG(event, msr, vm, idx)	\
--	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm, idx)
-+	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm, idx, true)
- 
- #define INTEL_UEVENT_EXTRA_REG(event, msr, vm, idx) \
- 	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT | \
--			ARCH_PERFMON_EVENTSEL_UMASK, vm, idx)
-+			ARCH_PERFMON_EVENTSEL_UMASK, vm, idx, true)
- 
- #define INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(c) \
- 	INTEL_UEVENT_EXTRA_REG(c, \
-@@ -318,7 +320,7 @@ struct extra_reg {
- 			       0xffff, \
- 			       LDLAT)
- 
--#define EVENT_EXTRA_END EVENT_EXTRA_REG(0, 0, 0, 0, RSP_0)
-+#define EVENT_EXTRA_END EVENT_EXTRA_REG(0, 0, 0, 0, RSP_0, false)
- 
- union perf_capabilities {
- 	struct {
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index adb02aa..9c234d1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2173,6 +2173,40 @@ static void intel_snb_check_microcode(void)
- 	}
- }
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 59a65cb..7139f87 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -8,59 +8,63 @@
+  * Author: Michal Dobes <dobes@tesnet.cz>
+  *
+ */
+-/*
+-Driver: adl_pci9118
+-Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
+-Author: Michal Dobes <dobes@tesnet.cz>
+-Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
+-  PCI-9118HR (pci9118hr)
+-Status: works
+-
+-This driver supports AI, AO, DI and DO subdevices.
+-AI subdevice supports cmd and insn interface,
+-other subdevices support only insn interface.
+-For AI:
+-- If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
+-- If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
+-- If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
+-- It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
+-  cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
+-- If return value of cmdtest is 5 then you've bad channel list
+-  (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
+-  ranges).
+-
+-There are some hardware limitations:
+-a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
+-   ended inputs.
+-b) DMA transfers must have the length aligned to two samples (32 bit),
+-   so there is some problems if cmd->chanlist_len is odd. This driver tries
+-   bypass this with adding one sample to the end of the every scan and discard
+-   it on output but this cann't be used if cmd->scan_begin_src=TRIG_FOLLOW
+-   and is used flag TRIG_WAKE_EOS, then driver switch to interrupt driven mode
+-   with interrupt after every sample.
+-c) If isn't used DMA then you can use only mode where
+-   cmd->scan_begin_src=TRIG_FOLLOW.
+-
+-Configuration options:
+-  [0] - PCI bus of device (optional)
+-  [1] - PCI slot of device (optional)
+-	If bus/slot is not specified, then first available PCI
+-	card will be used.
+-  [2] - 0= standard 8 DIFF/16 SE channels configuration
+-	n = external multiplexer connected, 1 <= n <= 256
+-  [3] - 0=autoselect DMA or EOC interrupts operation
+-	1 = disable DMA mode
+-	3 = disable DMA and INT, only insn interface will work
+-  [4] - sample&hold signal - card can generate signal for external S&H board
+-	0 = use SSHO(pin 45) signal is generated in onboard hardware S&H logic
+-	0 != use ADCHN7(pin 23) signal is generated from driver, number say how
+-		long delay is requested in ns and sign polarity of the hold
+-		(in this case external multiplexor can serve only 128 channels)
+-  [5] - 0=stop measure on all hardware errors
+-	2 | = ignore ADOR - A/D Overrun status
+-	8|=ignore Bover - A/D Burst Mode Overrun status
+-	256|=ignore nFull - A/D FIFO Full status
  
 +/*
-+ * Under certain circumstances, access certain MSR may cause #GP.
-+ * The function tests if the input MSR can be safely accessed.
-+ */
-+static bool check_msr(unsigned long msr, u64 mask)
-+{
-+	u64 val_old, val_new, val_tmp;
++     Driver: adl_pci9118
++     Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
++     Author: Michal Dobes <dobes@tesnet.cz>
++     Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
++     PCI-9118HR (pci9118hr)
++     Status: works
 +
-+	/*
-+	 * Read the current value, change it and read it back to see if it
-+	 * matches, this is needed to detect certain hardware emulators
-+	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
-+	 */
-+	if (rdmsrl_safe(msr, &val_old))
-+		return false;
-+	/*
-+	 * Only chagne the bits which can be updated by wrmsrl.
-+	 */
-+	val_tmp = val_old ^ mask;
-+	if (wrmsrl_safe(msr, val_tmp) ||
-+	rdmsrl_safe(msr, &val_new))
-+		return false;
++     This driver supports AI, AO, DI and DO subdevices.
++     AI subdevice supports cmd and insn interface,
++     other subdevices support only insn interface.
++     For AI:
++     - If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
++     - If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
++     - If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
++     - It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
++       cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
++     - If return value of cmdtest is 5 then you've bad channel list
++       (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
++       ranges).
 +
-+	if (val_new != val_tmp)
-+		return false;
++     There are some hardware limitations:
++     a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
++	ended inputs.
++     b) DMA transfers must have the length aligned to two samples (32 bit),
++	so there is some problems if cmd->chanlist_len is odd. This driver
++	tries bypass this with adding one sample to the end of the every scan
++	and discard it on output but this cann't be used if
++	cmd->scan_begin_src=TRIG_FOLLOW and is used flag TRIG_WAKE_EOS, then
++	driver switch to interrupt driven mode with interrupt after every
++	sample.
++     c) If isn't used DMA then you can use only mode where
++	cmd->scan_begin_src=TRIG_FOLLOW.
 +
-+	/* Here it's sure that the MSR can be safely accessed.
-+	 * Restore the old value and return.
-+	 */
-+	wrmsrl(msr, val_old);
-+
-+	return true;
-+}
-+
- static __init void intel_sandybridge_quirk(void)
- {
- 	x86_pmu.check_microcode = intel_snb_check_microcode;
-@@ -2262,7 +2296,8 @@ __init int intel_pmu_init(void)
- 	union cpuid10_ebx ebx;
- 	struct event_constraint *c;
- 	unsigned int unused;
--	int version;
-+	int version, i;
-+	struct extra_reg *er;
++     Configuration options:
++       [0] - PCI bus of device (optional)
++       [1] - PCI slot of device (optional)
++	     If bus/slot is not specified, then first available PCI
++	     card will be used.
++       [2] - 0= standard 8 DIFF/16 SE channels configuration
++	     n = external multiplexer connected, 1 <= n <= 256
++       [3] - 0=autoselect DMA or EOC interrupts operation
++	     1 = disable DMA mode
++	     3 = disable DMA and INT, only insn interface will work
++       [4] - sample&hold signal - card can generate signal for external
++	     S&H board
++	     0 = use SSHO(pin 45) signal is generated in onboard hardware
++		 S&H logic
++	     0 != use ADCHN7(pin 23) signal is generated from driver, number
++		  say how long delay is requested in ns and sign polarity of
++		  the hold (in this case external multiplexor can serve only
++		  128 channels)
++       [5] - 0=stop measure on all hardware errors
++	     2 | = ignore ADOR - A/D Overrun status
++	     8|=ignore Bover - A/D Burst Mode Overrun status
++	     256|=ignore nFull - A/D FIFO Full status
+ */
  
- 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
- 		switch (boot_cpu_data.x86) {
-@@ -2565,6 +2600,35 @@ __init int intel_pmu_init(void)
- 		}
+ /*
+@@ -346,7 +350,7 @@ struct pci9118_private {
+ 						 * on external start
+ 						 */
+ 	unsigned short ao_data[2];		/* data output buffer */
+-	char dma_doublebuf;			/* we can use double buffering */
++	char dma_doublebuf;		/* we can use double buffering */
+ 	unsigned int dma_actbuf;		/* which buffer is used now */
+ 	unsigned short *dmabuf_virt[2];		/*
+ 						 * pointers to begin of
+@@ -399,7 +403,7 @@ static int check_channel_list(struct comedi_device *dev,
+ 	}
+ 	if ((frontadd + n_chan + backadd) > s->len_chanlist) {
+ 		comedi_error(dev,
+-			    "range/channel list is too long for actual configuration!\n");
++		"range/channel list is too long for actual configuration!\n");
+ 		return 0;
  	}
  
-+	/*
-+	 * Access LBR MSR may cause #GP under certain circumstances.
-+	 * E.g. KVM doesn't support LBR MSR
-+	 * Check all LBT MSR here.
-+	 * Disable LBR access if any LBR MSRs can not be accessed.
-+	 */
-+	if (x86_pmu.lbr_nr && !check_msr(x86_pmu.lbr_tos, 0x3UL))
-+		x86_pmu.lbr_nr = 0;
-+	for (i = 0; i < x86_pmu.lbr_nr; i++) {
-+		if (!(check_msr(x86_pmu.lbr_from + i, 0xffffUL) &&
-+		      check_msr(x86_pmu.lbr_to + i, 0xffffUL)))
-+			x86_pmu.lbr_nr = 0;
-+	}
-+	/*
-+	 * Access extra MSR may cause #GP under certain circumstances.
-+	 * E.g. KVM doesn't support offcore event
-+	 * Check all extra_regs here.
-+	 */
-+	if (x86_pmu.extra_regs) {
-+		for (er = x86_pmu.extra_regs; er->msr; er++) {
-+			er->extra_msr_access =
-+				check_msr(er->msr, 0x1ffUL);
-+			/* Disable LBR select mapping */
-+			if ((er->idx == EXTRA_REG_LBR) &&
-+			!er->extra_msr_access)
-+				x86_pmu.lbr_sel_map = NULL;
-+		}
-+	}
-+
- 	/* Support full width counters using alternative MSR range */
- 	if (x86_pmu.intel_cap.full_width_write) {
- 		x86_pmu.max_period = x86_pmu.cntval_mask;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 90236f0..d860e26 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -366,11 +366,11 @@
- 				NHMEX_M_PMON_CTL_FLAG_MODE)
- #define MBOX_INC_SEL_EXTAR_REG(c, r) \
- 		EVENT_EXTRA_REG(MBOX_INC_SEL(c), NHMEX_M0_MSR_PMU_##r, \
--				MBOX_INC_SEL_MASK, (u64)-1, NHMEX_M_##r)
-+				MBOX_INC_SEL_MASK, (u64)-1, NHMEX_M_##r, true)
- #define MBOX_SET_FLAG_SEL_EXTRA_REG(c, r) \
- 		EVENT_EXTRA_REG(MBOX_SET_FLAG_SEL(c), NHMEX_M0_MSR_PMU_##r, \
- 				MBOX_SET_FLAG_SEL_MASK, \
--				(u64)-1, NHMEX_M_##r)
-+				(u64)-1, NHMEX_M_##r, true)
+@@ -412,22 +416,19 @@ static int check_channel_list(struct comedi_device *dev,
+ 			if ((CR_AREF(chanlist[i]) == AREF_DIFF) !=
+ 			    (differencial)) {
+ 				comedi_error(dev,
+-					     "Differencial and single ended "
+-						"inputs can't be mixtured!");
++						"Differencial and single ended inputs can't be mixtured!");
+ 				return 0;
+ 			}
+ 			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
+ 			    (bipolar)) {
+ 				comedi_error(dev,
+-					     "Bipolar and unipolar ranges "
+-							"can't be mixtured!");
++						"Bipolar and unipolar ranges can't be mixtured!");
+ 				return 0;
+ 			}
+ 			if (!devpriv->usemux && differencial &&
+ 			    (CR_CHAN(chanlist[i]) >= this_board->n_aichand)) {
+ 				comedi_error(dev,
+-					     "If AREF_DIFF is used then is "
+-					"available only first 8 channels!");
++						"If AREF_DIFF is used then is available only first 8 channels!");
+ 				return 0;
+ 			}
+ 		}
+@@ -1678,8 +1679,7 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 						/* double timed action */
+ 		if (!devpriv->usedma) {
+ 			comedi_error(dev,
+-				     "cmd->scan_begin_src=TRIG_TIMER works "
+-						"only with bus mastering!");
++					"cmd->scan_begin_src=TRIG_TIMER works only with bus mastering!");
+ 			return -EIO;
+ 		}
  
- /* NHM-EX Rbox */
- #define NHMEX_R_MSR_GLOBAL_CTL			0xe00
 -- 
-1.8.3.1
+1.7.10.4
 
