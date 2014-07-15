@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaGOOYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:24:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49550 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752463AbaGOOYs (ORCPT
+	id S1753539AbaGOOZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:25:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57770 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856AbaGOOZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:24:48 -0400
-Date: Tue, 15 Jul 2014 10:24:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Gavin Guo <gavin.guo@canonical.com>
-cc: sarah.a.sharp@linux.intel.com, <mathias.nyman@intel.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <yk@canonical.com>, <anthony.wong@canonical.com>,
-        <gerald.yang@canonical.com>
-Subject: Re: [PATCH 1/1] usb: Check if port status is equal to RxDetect
-In-Reply-To: <1405059756-11983-2-git-send-email-gavin.guo@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1407151020060.1206-100000@iolanthe.rowland.org>
+	Tue, 15 Jul 2014 10:25:33 -0400
+Date: Tue, 15 Jul 2014 16:25:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        jolsa@redhat.com, acme@redhat.com, namhyung@kernel.org
+Subject: Re: [PATCH v2 1/5] perf: add ability to sample machine state on
+ interrupt
+Message-ID: <20140715142524.GI9918@twins.programming.kicks-ass.net>
+References: <1405384304-26816-1-git-send-email-eranian@google.com>
+ <1405384304-26816-2-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TOcCsfss/f1fJPnO"
+Content-Disposition: inline
+In-Reply-To: <1405384304-26816-2-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Gavin Guo wrote:
 
-> When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
-> [1022:7814], the second hotplugging will experience the USB 3.0 pen
-> drive is recognized as high-speed device. After bisecting the kernel,
-> I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
-> (USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
-> some experiments, the bug can be fixed by avoiding executing the function
-> hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
-> XHCI Controlleris [1022:7814] is already in RxDetect
-> (I tried printing out the port status before setting to Disabled state),
-> it's reasonable to check the port status before really executing
-> hub_usb3_port_disable().
+--TOcCsfss/f1fJPnO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This seems like a race.  Even if the port isn't in RxDetect when you 
-check it, it could switch to RxDetect before the kernel sets it to 
-Disabled.
+On Tue, Jul 15, 2014 at 02:31:40AM +0200, Stephane Eranian wrote:
+> @@ -618,6 +619,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+>  	data->weight = 0;
+>  	data->data_src.val = 0;
+>  	data->txn = 0;
+> +	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
+> +	data->regs_intr.regs = NULL;
+>  }
 
-But maybe this is the best we can do.
+> +static void perf_sample_regs_intr(struct perf_regs *regs_intr,
+> +				  struct pt_regs *regs)
+> +{
+> +	regs_intr->regs = regs;
+> +	regs_intr->abi  = perf_reg_abi(current);
+> +}
 
-> Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
-> Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
-> ---
->  drivers/usb/core/hub.c | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
-> 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index 21b99b4..e02ab62 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -889,6 +889,25 @@ static int hub_usb3_port_disable(struct usb_hub *hub, int port1)
->  	if (!hub_is_superspeed(hub->hdev))
->  		return -EINVAL;
->  
-> +	ret = hub_port_status(hub, port1, &portstatus, &portchange);
-> +	if (ret < 0)
-> +		return ret;
+> @@ -4800,6 +4824,20 @@ void perf_prepare_sample(struct perf_event_header *header,
+>  		data->stack_user_size = stack_size;
+>  		header->size += size;
+>  	}
 > +
-> +	/*
-> +	 * USB controller Advanced Micro Devices,
-> +	 * Inc. [AMD] FCH USB XHCI Controller [1022:7814] will have spurious result
-> +	 * making the following usb 3.0 device hotplugging route to the 2.0 root hub
-> +	 * and recognized as high-speed device if we set the usb 3.0 port link state
-> +	 *  to Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
-> +	 *  check the state here to avoid the bug.
-> +	 */
-
-Comments should not extend beyond column 80.  And there should be only 
-one space, not two, after the '*' in the 6th and 7th lines.
-
-> +	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-> +				USB_SS_PORT_LS_RX_DETECT) {
-> +		dev_dbg(&hub->ports[port1 - 1]->dev,
-> +			 "The link state is already in USB_SS_PORT_LS_RX_DETECT\n");
-
-This message does not explain what has happened.  It should say
-something like "Not disabling port; link state is RxDetect".
-
-> +		return ret;
+> +	if (sample_type & PERF_SAMPLE_REGS_INTR) {
+> +		/* regs dump ABI info */
+> +		int size = sizeof(u64);
+> +
+> +		perf_sample_regs_intr(&data->regs_intr, regs);
+> +
+> +		if (data->regs_intr.regs) {
+> +			u64 mask = event->attr.sample_regs_intr;
+> +			size += hweight64(mask) * sizeof(u64);
+> +		}
+> +
+> +		header->size += size;
 > +	}
-> +
->  	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
->  	if (ret)
->  		return ret;
 
-Alan Stern
+Given that the prepare_sample hunk sets both regs_intr fields, the
+addition to perf_sample_data_init() is entirely superfluous, no?
 
+--TOcCsfss/f1fJPnO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTxTnUAAoJEHZH4aRLwOS6hagP/2Dwhi5apwZLURHAj050Gqkg
+5ERApt0B5t/nNZvOSWX/AYCdaqa7VsFNUzf0VhxoTWNAuRLq1Ar2Z5SbNMjylMfK
+Q4QwzHczxoLtFBaOBnDZQ6oZFA9HsNHh5Gyw8t87vzbhLoIHme/8cRDZ5nnK5QH1
+OW7ILrh16PDRGf+YabUSLMzlIEAE2XFB5gOGwXJj++ZY1ty9SsybrQCu0JWzhSYX
+k+uINMB6jj3gC1lS/aCBhO3zd57SltxB+zTUUlfa/8iBjbj40+emXVD9MeFF6/bk
+OT52wBbgxHgF6hJXCcxzbhh1Hubiy3g4TnnV5ya0bq99NGbzpQRuxdSBWadZXZIn
+4jtRhzpicACN40MVuxdWZ44Nb9p2Y1GDw29hg6PtJPIsJrAoDYDC6064zKz2zbgK
+Gt/bXgo3SoPeNJJZfB5By+irN+wCF8Wz0yMim9/sCwrV+Fc8/6xRGtO9VUshQdmN
+M5z8UHATyD9voTsUQEcwoO8mIlElgZie/bbtyc654uWqpgL1dOyXopevekjiQe+h
+Epv4n+3MTVr7s0E/ZXxwKrdAGS0FiOCOmHNYtocOK5RPItGnHeQ3rvKan+AjnA/u
+R/D+g5ND92w6pWCOZlh4KBNt4u+3zQx4w2liOyYXbCt1U3F28ZW4WYYPsf9kGBdv
+MXG0zHzipT50sf4LkuBH
+=r0Nx
+-----END PGP SIGNATURE-----
+
+--TOcCsfss/f1fJPnO--
