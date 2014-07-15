@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281AbaGOXa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:30:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45618 "EHLO
+	id S1760328AbaGOXbD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:31:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45588 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934128AbaGOXOU (ORCPT
+	with ESMTP id S934119AbaGOXOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.15 71/84] cgroup: fix a race between cgroup_mount() and cgroup_kill_sb()
-Date: Tue, 15 Jul 2014 16:18:08 -0700
-Message-Id: <20140715231715.310198631@linuxfoundation.org>
+Subject: [PATCH 3.15 70/84] kernfs: introduce kernfs_pin_sb()
+Date: Tue, 15 Jul 2014 16:18:07 -0700
+Message-Id: <20140715231715.282104690@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -30,101 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li Zefan <lizefan@huawei.com>
 
-commit 3a32bd72d77058d768dbb38183ad517f720dd1bc upstream.
+commit 4e26445faad366d67d7723622bf6a60a6f0f5993 upstream.
 
-We've converted cgroup to kernfs so cgroup won't be intertwined with
-vfs objects and locking, but there are dark areas.
+kernfs_pin_sb() tries to get a refcnt of the superblock.
 
-Run two instances of this script concurrently:
-
-    for ((; ;))
-    {
-    	mount -t cgroup -o cpuacct xxx /cgroup
-    	umount /cgroup
-    }
-
-After a while, I saw two mount processes were stuck at retrying, because
-they were waiting for a subsystem to become free, but the root associated
-with this subsystem never got freed.
-
-This can happen, if thread A is in the process of killing superblock but
-hasn't called percpu_ref_kill(), and at this time thread B is mounting
-the same cgroup root and finds the root in the root list and performs
-percpu_ref_try_get().
-
-To fix this, we try to increase both the refcnt of the superblock and the
-percpu refcnt of cgroup root.
+This will be used by cgroupfs.
 
 v2:
-- we should try to get both the superblock refcnt and cgroup_root refcnt,
-  because cgroup_root may have no superblock assosiated with it.
-- adjust/add comments.
+- make kernfs_pin_sb() return the superblock.
+- drop kernfs_drop_sb().
 
-tj: Updated comments.  Renamed @sb to @pinned_sb.
+tj: Updated the comment a bit.
 
+[ This is a prerequisite for a bugfix. ]
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-[lizf: Backported to 3.15:
- - Adjust context
- - s/percpu_tryget_live/atomic_inc_not_zero/]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- kernel/cgroup.c |   28 +++++++++++++++++++++++++++-
- 1 file changed, 27 insertions(+), 1 deletion(-)
+ fs/kernfs/mount.c      |   30 ++++++++++++++++++++++++++++++
+ include/linux/kernfs.h |    1 +
+ 2 files changed, 31 insertions(+)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1484,6 +1484,7 @@ static struct dentry *cgroup_mount(struc
- 			 int flags, const char *unused_dev_name,
- 			 void *data)
- {
-+	struct super_block *pinned_sb = NULL;
- 	struct cgroup_subsys *ss;
- 	struct cgroup_root *root;
- 	struct cgroup_sb_opts opts;
-@@ -1584,10 +1585,25 @@ retry:
- 		 * destruction to complete so that the subsystems are free.
- 		 * We can use wait_queue for the wait but this path is
- 		 * super cold.  Let's just sleep for a bit and retry.
-+
-+		 * We want to reuse @root whose lifetime is governed by its
-+		 * ->cgrp.  Let's check whether @root is alive and keep it
-+		 * that way.  As cgroup_kill_sb() can happen anytime, we
-+		 * want to block it by pinning the sb so that @root doesn't
-+		 * get killed before mount is complete.
-+		 *
-+		 * With the sb pinned, inc_not_zero can reliably indicate
-+		 * whether @root can be reused.  If it's being killed,
-+		 * drain it.  We can use wait_queue for the wait but this
-+		 * path is super cold.  Let's just sleep a bit and retry.
- 		 */
--		if (!atomic_inc_not_zero(&root->cgrp.refcnt)) {
-+		pinned_sb = kernfs_pin_sb(root->kf_root, NULL);
-+		if (IS_ERR(pinned_sb) ||
-+		    !atomic_inc_not_zero(&root->cgrp.refcnt)) {
- 			mutex_unlock(&cgroup_mutex);
- 			mutex_unlock(&cgroup_tree_mutex);
-+			if (!IS_ERR_OR_NULL(pinned_sb))
-+				deactivate_super(pinned_sb);
- 			msleep(10);
- 			mutex_lock(&cgroup_tree_mutex);
- 			mutex_lock(&cgroup_mutex);
-@@ -1634,6 +1650,16 @@ out_unlock:
- 				CGROUP_SUPER_MAGIC, &new_sb);
- 	if (IS_ERR(dentry) || !new_sb)
- 		cgroup_put(&root->cgrp);
-+
-+	/*
-+	 * If @pinned_sb, we're reusing an existing root and holding an
-+	 * extra ref on its sb.  Mount is complete.  Put the extra ref.
-+	 */
-+	if (pinned_sb) {
-+		WARN_ON(new_sb);
-+		deactivate_super(pinned_sb);
-+	}
-+
- 	return dentry;
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -211,6 +211,36 @@ void kernfs_kill_sb(struct super_block *
+ 	kernfs_put(root_kn);
  }
+ 
++/**
++ * kernfs_pin_sb: try to pin the superblock associated with a kernfs_root
++ * @kernfs_root: the kernfs_root in question
++ * @ns: the namespace tag
++ *
++ * Pin the superblock so the superblock won't be destroyed in subsequent
++ * operations.  This can be used to block ->kill_sb() which may be useful
++ * for kernfs users which dynamically manage superblocks.
++ *
++ * Returns NULL if there's no superblock associated to this kernfs_root, or
++ * -EINVAL if the superblock is being freed.
++ */
++struct super_block *kernfs_pin_sb(struct kernfs_root *root, const void *ns)
++{
++	struct kernfs_super_info *info;
++	struct super_block *sb = NULL;
++
++	mutex_lock(&kernfs_mutex);
++	list_for_each_entry(info, &root->supers, node) {
++		if (info->ns == ns) {
++			sb = info->sb;
++			if (!atomic_inc_not_zero(&info->sb->s_active))
++				sb = ERR_PTR(-EINVAL);
++			break;
++		}
++	}
++	mutex_unlock(&kernfs_mutex);
++	return sb;
++}
++
+ void __init kernfs_init(void)
+ {
+ 	kernfs_node_cache = kmem_cache_create("kernfs_node_cache",
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -304,6 +304,7 @@ struct dentry *kernfs_mount_ns(struct fi
+ 			       struct kernfs_root *root, unsigned long magic,
+ 			       bool *new_sb_created, const void *ns);
+ void kernfs_kill_sb(struct super_block *sb);
++struct super_block *kernfs_pin_sb(struct kernfs_root *root, const void *ns);
+ 
+ void kernfs_init(void);
  
 
 
