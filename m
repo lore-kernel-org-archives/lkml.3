@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934398AbaGOX0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:26:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45598 "EHLO
+	id S965207AbaGOX0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:26:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760095AbaGOXO0 (ORCPT
+	with ESMTP id S1760090AbaGOXOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:26 -0400
+	Tue, 15 Jul 2014 19:14:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, Theodore Tso <tytso@mit.edu>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: [PATCH 3.15 50/84] ext4: clarify error count warning messages
-Date: Tue, 15 Jul 2014 16:17:47 -0700
-Message-Id: <20140715231714.707847021@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 84/84] ACPI / battery: Retry to get battery information if failed during probing
+Date: Tue, 15 Jul 2014 16:18:21 -0700
+Message-Id: <20140715231715.690888281@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,46 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
+commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
 
-Make it clear that values printed are times, and that it is error
-since last fsck. Also add note about fsck version required.
+Some machines (eg. Lenovo Z480) ECs are not stable during boot up
+and causes battery driver fails to be loaded due to failure of getting
+battery information from EC sometimes. After several retries, the
+operation will work. This patch is to retry to get battery information 5
+times if the first try fails.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+[ backport to 3.14.5: removed second parameter in acpi_battery_update(),
+introduced by the commit 9e50bc14a7f58b5d8a55973b2d69355852ae2dae (ACPI /
+battery: Accelerate battery resume callback)]
+
+[naszar <naszar@ya.ru>: backport to 3.14.5]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+Reported-and-tested-by: naszar <naszar@ya.ru>
+Cc: All applicable <stable@vger.kernel.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/super.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/acpi/battery.c |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2798,10 +2798,11 @@ static void print_daily_error_info(unsig
- 	es = sbi->s_es;
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <linux/delay.h>
+ #include <asm/unaligned.h>
  
- 	if (es->s_error_count)
--		ext4_msg(sb, KERN_NOTICE, "error count: %u",
-+		/* fsck newer than v1.41.13 is needed to clean this condition. */
-+		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
- 			 le32_to_cpu(es->s_error_count));
- 	if (es->s_first_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
- 		       (int) sizeof(es->s_first_error_func),
- 		       es->s_first_error_func,
-@@ -2815,7 +2816,7 @@ static void print_daily_error_info(unsig
- 		printk("\n");
- 	}
- 	if (es->s_last_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
- 		       (int) sizeof(es->s_last_error_func),
- 		       es->s_last_error_func,
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+@@ -1069,6 +1070,28 @@ static struct dmi_system_id bat_dmi_tabl
+ 	{},
+ };
+ 
++/*
++ * Some machines'(E,G Lenovo Z480) ECs are not stable
++ * during boot up and this causes battery driver fails to be
++ * probed due to failure of getting battery information
++ * from EC sometimes. After several retries, the operation
++ * may work. So add retry code here and 20ms sleep between
++ * every retries.
++ */
++static int acpi_battery_update_retry(struct acpi_battery *battery)
++{
++	int retry, ret;
++
++	for (retry = 5; retry; retry--) {
++		ret = acpi_battery_update(battery);
++		if (!ret)
++			break;
++
++		msleep(20);
++	}
++	return ret;
++}
++
+ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1087,9 +1110,11 @@ static int acpi_battery_add(struct acpi_
+ 	mutex_init(&battery->sysfs_lock);
+ 	if (acpi_has_method(battery->device->handle, "_BIX"))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	result = acpi_battery_update(battery);
++
++	result = acpi_battery_update_retry(battery);
+ 	if (result)
+ 		goto fail;
++
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 	result = acpi_battery_add_fs(device);
+ #endif
 
 
