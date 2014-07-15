@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497AbaGORTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:19:23 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33236 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196AbaGORTS (ORCPT
+	id S1758081AbaGOROg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:14:36 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45217 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715AbaGORCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:19:18 -0400
-Date: Tue, 15 Jul 2014 22:49:11 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] WMI: Remove unnecessary null test
-Message-ID: <20140715171911.GA3038@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Jul 2014 13:02:13 -0400
+From: Sam Asadi <asadi.samuel@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
+        sam-the-6 <asadi.samuel@gmail.com>
+Subject: [PATCH 44/94] ARM: OMAP2+: create dsp device only on OMAP3 SoCs
+Date: Tue, 15 Jul 2014 20:00:59 +0300
+Message-Id: <1405443709-15288-44-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
+References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the null test on block. block is initialized at the
-beginning of the function to &wblock->gblock. Since wblock is
-dereferenced prior to the null test, wblock must be a valid pointer,
-and &wblock->gblock cannot be null.
+From: Suman Anna <s-anna@ti.com>
 
-The following Coccinelle script is used for detecting the change:
+The DSP platform device for TI DSP/Bridge is currently
+created unconditionally whenever CONFIG_TIDSPBRIDGE is
+enabled. This device should only be created on OMAP34xx/
+OMAP36xx SoCs, and not for other OMAP3 derived SoCs or when
+booting multi-arch images on other SoCs. So, add a check for
+the SoC family both before creating the device and allocating
+the carveout memory for the device.
 
-@r@
-expression e,f;
-identifier g,y;
-statement S1,S2;
-@@
-
-*e = &f->g
-<+...
- f->y
- ...+>
-*if (e != NULL || ...)
- S1 else S2
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
-To send to: Matthew Garrett <matthew.garrett@nebula.com>,platform-driver-x86@vger.kernel.org,linux-kernel@vger.kernel.org
- drivers/platform/x86/wmi.c | 4 ----
- 1 file changed, 4 deletions(-)
+ arch/arm/mach-omap2/dsp.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
-index 43d1329..737e56d 100644
---- a/drivers/platform/x86/wmi.c
-+++ b/drivers/platform/x86/wmi.c
-@@ -256,10 +256,6 @@ static acpi_status wmi_method_enable(struct wmi_block *wblock, int enable)
- 	block = &wblock->gblock;
- 	handle = wblock->handle;
+diff --git a/arch/arm/mach-omap2/dsp.c b/arch/arm/mach-omap2/dsp.c
+index b8208b4..f7492df 100644
+--- a/arch/arm/mach-omap2/dsp.c
++++ b/arch/arm/mach-omap2/dsp.c
+@@ -29,6 +29,7 @@
+ #ifdef CONFIG_TIDSPBRIDGE_DVFS
+ #include "omap-pm.h"
+ #endif
++#include "soc.h"
  
--	if (!block)
--		return AE_NOT_EXIST;
--
--
- 	snprintf(method, 5, "WE%02X", block->notify_id);
- 	status = acpi_execute_simple_method(handle, method, enable);
+ #include <linux/platform_data/dsp-omap.h>
  
+@@ -59,6 +60,9 @@ void __init omap_dsp_reserve_sdram_memblock(void)
+ 	phys_addr_t size = CONFIG_TIDSPBRIDGE_MEMPOOL_SIZE;
+ 	phys_addr_t paddr;
+ 
++	if (!cpu_is_omap34xx())
++		return;
++
+ 	if (!size)
+ 		return;
+ 
+@@ -83,6 +87,9 @@ static int __init omap_dsp_init(void)
+ 	int err = -ENOMEM;
+ 	struct omap_dsp_platform_data *pdata = &omap_dsp_pdata;
+ 
++	if (!cpu_is_omap34xx())
++		return 0;
++
+ 	pdata->phys_mempool_base = omap_dsp_get_mempool_base();
+ 
+ 	if (pdata->phys_mempool_base) {
+@@ -115,6 +122,9 @@ module_init(omap_dsp_init);
+ 
+ static void __exit omap_dsp_exit(void)
+ {
++	if (!cpu_is_omap34xx())
++		return;
++
+ 	platform_device_unregister(omap_dsp_pdev);
+ }
+ module_exit(omap_dsp_exit);
 -- 
-1.9.1
+1.7.10.4
 
