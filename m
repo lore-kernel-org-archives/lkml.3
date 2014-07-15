@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206AbaGOVdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:33:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54108 "EHLO
+	id S933269AbaGOVdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:33:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54123 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108AbaGOVdd (ORCPT
+	with ESMTP id S933108AbaGOVdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:33:33 -0400
+	Tue, 15 Jul 2014 17:33:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
+Cc: Matthew Dempsky <mdempsky@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 105/198] mm: vmscan: clear kswapd's special reclaim powers before exiting
-Date: Tue, 15 Jul 2014 14:29:35 -0700
-Message-Id: <1405459868-15089-106-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 107/198] ptrace: fix fork event messages across pid namespaces
+Date: Tue, 15 Jul 2014 14:29:37 -0700
+Message-Id: <1405459868-15089-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -31,96 +32,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Matthew Dempsky <mdempsky@chromium.org>
 
-commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
+commit 4e52365f279564cef0ddd41db5237f0471381093 upstream.
 
-When kswapd exits, it can end up taking locks that were previously held
-by allocating tasks while they waited for reclaim.  Lockdep currently
-warns about this:
+When tracing a process in another pid namespace, it's important for fork
+event messages to contain the child's pid as seen from the tracer's pid
+namespace, not the parent's.  Otherwise, the tracer won't be able to
+correlate the fork event with later SIGTRAP signals it receives from the
+child.
 
-On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
->  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
->   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
->  {RECLAIM_FS-ON-W} state was registered at:
->     mark_held_locks+0xb9/0x140
->     lockdep_trace_alloc+0x7a/0xe0
->     kmem_cache_alloc_trace+0x37/0x240
->     flex_array_alloc+0x99/0x1a0
->     cgroup_attach_task+0x63/0x430
->     attach_task_by_pid+0x210/0x280
->     cgroup_procs_write+0x16/0x20
->     cgroup_file_write+0x120/0x2c0
->     vfs_write+0xc0/0x1f0
->     SyS_write+0x4c/0xa0
->     tracesys+0xdd/0xe2
->  irq event stamp: 49
->  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
->  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
->  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
->  softirqs last disabled at (0):            (null)
->
->  other info that might help us debug this:
->   Possible unsafe locking scenario:
->
->         CPU0
->         ----
->    lock(&sig->group_rwsem);
->    <Interrupt>
->      lock(&sig->group_rwsem);
->
->   *** DEADLOCK ***
->
->  no locks held by kswapd2/1151.
->
->  stack backtrace:
->  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
->  Call Trace:
->    dump_stack+0x19/0x1b
->    print_usage_bug+0x1f7/0x208
->    mark_lock+0x21d/0x2a0
->    __lock_acquire+0x52a/0xb60
->    lock_acquire+0xa2/0x140
->    down_read+0x51/0xa0
->    exit_signals+0x24/0x130
->    do_exit+0xb5/0xa50
->    kthread+0xdb/0x100
->    ret_from_fork+0x7c/0xb0
+We still risk a race condition if a ptracer from a different pid
+namespace attaches after we compute the pid_t value.  However, sending a
+bogus fork event message in this unlikely scenario is still a vast
+improvement over the status quo where we always send bogus fork event
+messages to debuggers in a different pid namespace than the forking
+process.
 
-This is because the kswapd thread is still marked as a reclaimer at the
-time of exit.  But because it is exiting, nobody is actually waiting on
-it to make reclaim progress anymore, and it's nothing but a regular
-thread at this point.  Be tidy and strip it of all its powers
-(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
-before returning from the thread function.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Julien Tinnes <jln@chromium.org>
+Cc: Roland McGrath <mcgrathr@chromium.org>
+Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/vmscan.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/ptrace.h | 32 ++++++++++++++++++++++++++++++++
+ kernel/fork.c          | 10 +++++++---
+ 2 files changed, 39 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d873137..1d891f4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3298,7 +3298,10 @@ static int kswapd(void *p)
- 		}
- 	}
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 07d0df6..077904c 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -5,6 +5,7 @@
+ #include <linux/sched.h>		/* For struct task_struct.  */
+ #include <linux/err.h>			/* for IS_ERR_VALUE */
+ #include <linux/bug.h>			/* For BUG_ON.  */
++#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
+ #include <uapi/linux/ptrace.h>
  
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
-+
- 	return 0;
+ /*
+@@ -129,6 +130,37 @@ static inline void ptrace_event(int event, unsigned long message)
  }
  
+ /**
++ * ptrace_event_pid - possibly stop for a ptrace event notification
++ * @event:	%PTRACE_EVENT_* value to report
++ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
++ *
++ * Check whether @event is enabled and, if so, report @event and @pid
++ * to the ptrace parent.  @pid is reported as the pid_t seen from the
++ * the ptrace parent's pid namespace.
++ *
++ * Called without locks.
++ */
++static inline void ptrace_event_pid(int event, struct pid *pid)
++{
++	/*
++	 * FIXME: There's a potential race if a ptracer in a different pid
++	 * namespace than parent attaches between computing message below and
++	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
++	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
++	 */
++	unsigned long message = 0;
++	struct pid_namespace *ns;
++
++	rcu_read_lock();
++	ns = task_active_pid_ns(rcu_dereference(current->parent));
++	if (ns)
++		message = pid_nr_ns(pid, ns);
++	rcu_read_unlock();
++
++	ptrace_event(event, message);
++}
++
++/**
+  * ptrace_init_task - initialize ptrace state for a new child
+  * @child:		new child task
+  * @ptrace:		true if child should be ptrace'd by parent's tracer
+diff --git a/kernel/fork.c b/kernel/fork.c
+index f330664..d0ca776 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1606,10 +1606,12 @@ long do_fork(unsigned long clone_flags,
+ 	 */
+ 	if (!IS_ERR(p)) {
+ 		struct completion vfork;
++		struct pid *pid;
+ 
+ 		trace_sched_process_fork(current, p);
+ 
+-		nr = task_pid_vnr(p);
++		pid = get_task_pid(p, PIDTYPE_PID);
++		nr = pid_vnr(pid);
+ 
+ 		if (clone_flags & CLONE_PARENT_SETTID)
+ 			put_user(nr, parent_tidptr);
+@@ -1624,12 +1626,14 @@ long do_fork(unsigned long clone_flags,
+ 
+ 		/* forking complete and child started to run, tell ptracer */
+ 		if (unlikely(trace))
+-			ptrace_event(trace, nr);
++			ptrace_event_pid(trace, pid);
+ 
+ 		if (clone_flags & CLONE_VFORK) {
+ 			if (!wait_for_vfork_done(p, &vfork))
+-				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
++				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
+ 		}
++
++		put_pid(pid);
+ 	} else {
+ 		nr = PTR_ERR(p);
+ 	}
 -- 
 1.9.1
 
