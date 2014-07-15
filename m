@@ -1,238 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577AbaGOE1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 00:27:14 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:16249
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751659AbaGOE0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 00:26:48 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <mark.rutland@arm.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv6 1/2] regmap: add DT endianness binding support.
-Date: Tue, 15 Jul 2014 12:23:02 +0800
-Message-ID: <1405398183-31345-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.5
-In-Reply-To: <1405398183-31345-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1405398183-31345-1-git-send-email-Li.Xiubo@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(74662001)(84676001)(87286001)(79102001)(64706001)(87936001)(36756003)(6806004)(105606002)(85852003)(85306003)(83072002)(74502001)(48376002)(26826002)(99396002)(95666004)(81342001)(89996001)(81542001)(50986999)(76176999)(88136002)(92566001)(77156001)(92726001)(106466001)(19580395003)(46102001)(50466002)(83322001)(19580405001)(86362001)(107046002)(229853001)(4396001)(21056001)(50226001)(31966008)(104016003)(44976005)(80022001)(97736001)(104166001)(68736004)(77982001)(102836001)(47776003)(76482001)(93916002)(62966002)(20776003)(69596002)(81156004);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0619;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1754116AbaGOE21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 00:28:27 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43046 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaGOE2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 00:28:24 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53C4AD96.3030303@jp.fujitsu.com>
+Date: Tue, 15 Jul 2014 13:27:02 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 027367F73D
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Borislav Petkov <bp@alien8.de>
+CC: Igor Mammedov <imammedo@redhat.com>, <tglx@linutronix.de>,
+        <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>,
+        <toshi.kani@hp.com>, <huawei.libin@huawei.com>,
+        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
+        <peterz@infradead.org>
+Subject: Re: [PATCH] x86,cpu-hotplug: assign same CPU number to readded CPU
+References: <53BE51CE.40208@jp.fujitsu.com> <20140710112609.0b0eb294@nial.usersys.redhat.com> <53BF345B.8000107@jp.fujitsu.com> <20140711105920.GC17083@pd.tnic>
+In-Reply-To: <20140711105920.GC17083@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For many drivers which will support rich endianness of Devices
-need define DT properties by itself with the binding support.
+Hi Borislav,
 
-The endianness using regmap:
-Index      Device     Properties if needs bytes-swap,
-                      or just ignore it
--------------------------------------------------------------
-1          BE         'big-endian'
-2          LE         'little-endian'
+(2014/07/11 19:59), Borislav Petkov wrote:
+> On Fri, Jul 11, 2014 at 09:48:27AM +0900, Yasuaki Ishimatsu wrote:
+>>>> +static int get_cpuid(int apicid)
+>
+> Btw this "cpuid" is misleading. Call it "cpu_num" or so.
 
-The properties include all the register values and the buffers.
-And these properties are very usful for the MMIO devices:
+O.K.
+I'll update it.
 
-Such as: a memory-mapped device, on one SoC is in BE mode, while
-in another SoC will be in LE mode, and the CPU will always in LE
-mode.
+>
+>>>> +{
+>>>> +	int cpuid;
+>>>> +
+>>>> +	cpuid = apicid_to_cpuid[apicid];
+>>>> +	if (cpuid < 0)
+>>>> +		cpuid = cpumask_next_zero(-1, cpu_used_mask);
+>>> Why do you need additional cpu bitmask?
+>>
+>> To assing new CPU number, I prepared new cpu bitmask.
+>>
+>> The following two steps are necessary to assign CPU number to APIC ID.
+>>   1. Check whether APIC ID has been assigned CPU number
+>>   2. Assign new CPU number if ACPI ID has not been assigned CPU number (it
+>>      means apicid_to_cpuid[] returns -1)
+>>
+>> Step 1. is checked by apicid_to_cpuid[]. And step 2. assigns new CPU
+>> number by using cpu_used_mask.
+>>
+>> To keep cpu number, cpumask must not be cleared by hot removing CPU.
+>> If cpumask is cleared by hot removing CPU, the cpumask cannot be used
+>> to keep CPU number.
+>>
+>> Currently, cpu_present_map is used to assign CPU number. But the cpumask
+>> is cleared by hot removing CPU since the mask is prepared to remember
+>> existed CPUs in the system. So the cpu_present_map must be cleared
+>> at CPU hot remove.
+>>
+>> I confirmed whether present cpumasks (cpu_possible_map, cpu_online_map
+>> et al) is usable or not for this purpose. But there is no cpumask that
+>> can be used to keep CPU number. So I prepared new cpu bitmask.
+>>
+>>> How about just finding the first apicid_to_cpuid[apicid] < 0
+>>> and dropping not needed anymore bitmask.
+>>
+>> When apicid_to_cpuid[] return -1, kernel assigns new CPU number. For
+>> this, the cpu_used_mask is necessary.
+>
+> And we can't have that - we cannot have cores which had number X get
+> number Y after hotplug.
+>
 
-For the first case, we must use cpu_to_be32/be32_to_cpu for
-32-bit registers accessing, so the 'big-endian' property is needed.
+> Can you send a full dmesg after you've done a physical node hotplug on a
+> machine? Privately is fine too.
 
-For the second case, we can just ignore the bytes-swap
-functions like cpu_to_le32/le32_to_cpu, so the 'little-endian'
-property could be abscent.
+O.K.
+I'll send dmesg.
 
-And vice versa...
+Thanks,
+Yasuaki Ishimatsu
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/base/regmap/regmap-i2c.c |   2 +
- drivers/base/regmap/regmap-spi.c |   2 +
- drivers/base/regmap/regmap.c     | 117 +++++++++++++++++++++++++++++++++++----
- 3 files changed, 110 insertions(+), 11 deletions(-)
+>
+> Boot with
+>
+> 	"ignore_loglevel log_buf_len=10M debug apic=debug show_lapic=all"
+>
+> please.
+>
+> Thanks.
+>
 
-diff --git a/drivers/base/regmap/regmap-i2c.c b/drivers/base/regmap/regmap-i2c.c
-index ca193d1..053150a 100644
---- a/drivers/base/regmap/regmap-i2c.c
-+++ b/drivers/base/regmap/regmap-i2c.c
-@@ -168,6 +168,8 @@ static struct regmap_bus regmap_i2c = {
- 	.write = regmap_i2c_write,
- 	.gather_write = regmap_i2c_gather_write,
- 	.read = regmap_i2c_read,
-+	.reg_format_endian_default = REGMAP_ENDIAN_BIG,
-+	.val_format_endian_default = REGMAP_ENDIAN_BIG,
- };
- 
- static const struct regmap_bus *regmap_get_i2c_bus(struct i2c_client *i2c,
-diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
-index 0eb3097..53d1148 100644
---- a/drivers/base/regmap/regmap-spi.c
-+++ b/drivers/base/regmap/regmap-spi.c
-@@ -109,6 +109,8 @@ static struct regmap_bus regmap_spi = {
- 	.async_alloc = regmap_spi_async_alloc,
- 	.read = regmap_spi_read,
- 	.read_flag_mask = 0x80,
-+	.reg_format_endian_default = REGMAP_ENDIAN_BIG,
-+	.val_format_endian_default = REGMAP_ENDIAN_BIG,
- };
- 
- /**
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 74d8c06..c033766 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -15,6 +15,7 @@
- #include <linux/export.h>
- #include <linux/mutex.h>
- #include <linux/err.h>
-+#include <linux/of.h>
- #include <linux/rbtree.h>
- #include <linux/sched.h>
- 
-@@ -448,6 +449,102 @@ int regmap_attach_dev(struct device *dev, struct regmap *map,
- }
- EXPORT_SYMBOL_GPL(regmap_attach_dev);
- 
-+enum regmap_endian_type {
-+	REGMAP_ENDIAN_REG,
-+	REGMAP_ENDIAN_VAL,
-+};
-+
-+static int of_regmap_get_endian(struct device *dev,
-+				const struct regmap_bus *bus,
-+				const struct regmap_config *config,
-+				enum regmap_endian_type type,
-+				enum regmap_endian *endian)
-+{
-+	struct device_node *np = dev->of_node;
-+
-+	if (!endian || !config)
-+		return -EINVAL;
-+
-+	/*
-+	 * Firstly, try to parse the endianness from driver's config,
-+	 * this is to be compatible with the none DT or the old drivers.
-+	 * From the driver's config the endianness value maybe:
-+	 *   REGMAP_ENDIAN_BIG,
-+	 *   REGMAP_ENDIAN_LITTLE,
-+	 *   REGMAP_ENDIAN_NATIVE,
-+	 *   REGMAP_ENDIAN_DEFAULT.
-+	 */
-+	switch (type) {
-+	case REGMAP_ENDIAN_REG:
-+		*endian = config->reg_format_endian;
-+		break;
-+	case REGMAP_ENDIAN_VAL:
-+		*endian = config->val_format_endian;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * If the endianness parsed from driver config is
-+	 * REGMAP_ENDIAN_DEFAULT, that means maybe we are using the DT
-+	 * node to specify the endianness information.
-+	 */
-+	if (*endian != REGMAP_ENDIAN_DEFAULT)
-+		return 0;
-+
-+	/*
-+	 * Secondly, try to parse the endianness from DT node if the
-+	 * driver config does not specify it.
-+	 * From the DT node the endianness value maybe:
-+	 *   REGMAP_ENDIAN_BIG,
-+	 *   REGMAP_ENDIAN_LITTLE,
-+	 *   REGMAP_ENDIAN_NATIVE,
-+	 */
-+	switch (type) {
-+	case REGMAP_ENDIAN_VAL:
-+		if (of_property_read_bool(np, "big-endian"))
-+			*endian = REGMAP_ENDIAN_BIG;
-+		else if (of_property_read_bool(np, "little-endian"))
-+			*endian = REGMAP_ENDIAN_LITTLE;
-+		else
-+			*endian = REGMAP_ENDIAN_NATIVE;
-+		break;
-+	case REGMAP_ENDIAN_REG:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * If the endianness parsed from DT node is REGMAP_ENDIAN_NATIVE, that
-+	 * maybe means the DT does not care the endianness or it should use
-+	 * the regmap bus's default endianness, then we should try to check
-+	 * whether the regmap bus has specified the default endianness.
-+	 */
-+	if (*endian != REGMAP_ENDIAN_NATIVE)
-+		return 0;
-+
-+	/*
-+	 * Finally, try to parse the endianness from regmap bus config
-+	 * if in device's DT node the endianness property is absent.
-+	 */
-+	switch (type) {
-+	case REGMAP_ENDIAN_REG:
-+		if (bus && bus->reg_format_endian_default)
-+			*endian = bus->reg_format_endian_default;
-+		break;
-+	case REGMAP_ENDIAN_VAL:
-+		if (bus && bus->val_format_endian_default)
-+			*endian = bus->val_format_endian_default;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  * regmap_init(): Initialise register map
-  *
-@@ -551,17 +648,15 @@ struct regmap *regmap_init(struct device *dev,
- 		map->reg_read  = _regmap_bus_read;
- 	}
- 
--	reg_endian = config->reg_format_endian;
--	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
--		reg_endian = bus->reg_format_endian_default;
--	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
--		reg_endian = REGMAP_ENDIAN_BIG;
--
--	val_endian = config->val_format_endian;
--	if (val_endian == REGMAP_ENDIAN_DEFAULT)
--		val_endian = bus->val_format_endian_default;
--	if (val_endian == REGMAP_ENDIAN_DEFAULT)
--		val_endian = REGMAP_ENDIAN_BIG;
-+	ret = of_regmap_get_endian(dev, bus, config, REGMAP_ENDIAN_REG,
-+				   &reg_endian);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_regmap_get_endian(dev, bus, config, REGMAP_ENDIAN_VAL,
-+				   &val_endian);
-+	if (ret)
-+		return ERR_PTR(ret);
- 
- 	switch (config->reg_bits + map->reg_shift) {
- 	case 2:
--- 
-1.8.5
 
