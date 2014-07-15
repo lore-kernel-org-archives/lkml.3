@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030445AbaGOXrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:47:45 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34336 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965031AbaGOXrk (ORCPT
+	id S1759591AbaGOXsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:48:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933707AbaGOXN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:47:40 -0400
-X-Sasl-enc: we2FDoeYmhsIZJaejOZ6tOMcHU3Lcvlq0zYQxMeZiW2S 1405468059
-Date: Tue, 15 Jul 2014 16:52:12 -0700
-From: Greg KH <greg@kroah.com>
-To: Andrew Lutomirski <amluto@gmail.com>
-Cc: Kamal Mostafa <kamal@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: DO NOT APPLY: x86-64, espfix: Don't leak bits 31:16 of %esp
- returning to 16-bit stack
-Message-ID: <20140715235212.GC32651@kroah.com>
-References: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
+	Tue, 15 Jul 2014 19:13:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 44/66] ext4: fix unjournalled bg descriptor while initializing inode bitmap
+Date: Tue, 15 Jul 2014 16:17:38 -0700
+Message-Id: <20140715231704.102786025@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 04:21:46PM -0700, Andrew Lutomirski wrote:
-> On Tue, Jul 15, 2014 at 2:28 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> > 3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > From: "H. Peter Anvin" <hpa@linux.intel.com>
-> >
-> > commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
-> 
-> Do not apply to any -stable release yet.  This causes nasty regressions on Xen.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-I thought you all found the Xen-regression-fix patch a few hours ago,
-right?
+------------------
 
-This means that Linus's tree is also broken?
+From: Theodore Ts'o <tytso@mit.edu>
 
-thanks,
+commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
 
-greg k-h
+The first time that we allocate from an uninitialized inode allocation
+bitmap, if the block allocation bitmap is also uninitalized, we need
+to get write access to the block group descriptor before we start
+modifying the block group descriptor flags and updating the free block
+count, etc.  Otherwise, there is the potential of a bad journal
+checksum (if journal checksums are enabled), and of the file system
+becoming inconsistent if we crash at exactly the wrong time.
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/ialloc.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -851,6 +851,13 @@ got:
+ 		goto out;
+ 	}
+ 
++	BUFFER_TRACE(group_desc_bh, "get_write_access");
++	err = ext4_journal_get_write_access(handle, group_desc_bh);
++	if (err) {
++		ext4_std_error(sb, err);
++		goto out;
++	}
++
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+@@ -887,13 +894,6 @@ got:
+ 		}
+ 	}
+ 
+-	BUFFER_TRACE(group_desc_bh, "get_write_access");
+-	err = ext4_journal_get_write_access(handle, group_desc_bh);
+-	if (err) {
+-		ext4_std_error(sb, err);
+-		goto out;
+-	}
+-
+ 	/* Update the relevant bg descriptor fields */
+ 	if (ext4_has_group_desc_csum(sb)) {
+ 		int free;
+
+
