@@ -1,181 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710AbaGORXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:23:50 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34498 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932727AbaGORWf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:22:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <53C562B4.3030709@oracle.com>
-References: <08bf951548224b92c0316c93cf0064d90e392578.1405441297.git.luto@amacapital.net>
- <53C562B4.3030709@oracle.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 15 Jul 2014 10:22:12 -0700
-Message-ID: <CALCETrVU=y_ym9ZGwSDy1bwpx+qxga8V=kEi4g9Pubnv0A91nw@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86_64,entry,xen: Do not invoke espfix64 on Xen
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
+	id S1756875AbaGORYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:24:06 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:56050
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755777AbaGORXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 13:23:48 -0400
+X-WSS-ID: 0N8RKBF-08-YF8-02
+X-M-MSG: 
+From: "Bridgman, John" <John.Bridgman@amd.com>
+To: Dave Airlie <airlied@gmail.com>,
+        =?utf-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+CC: "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: RE: [PATCH 00/83] AMD HSA kernel driver
+Thread-Topic: [PATCH 00/83] AMD HSA kernel driver
+Thread-Index: AQHPnIhRgu4cBSEvqEGszfo01ez7ZpuaJWaAgAAHkICAAXhzgIABnKmAgABkh4CAAHT6oIAAYx0AgAEJCoCAAU6ggIAAixtAgAAH1QA=
+Date: Tue, 15 Jul 2014 17:23:39 +0000
+Message-ID: <D89D60253BB73A4E8C62F9FD18A939CA01050199@storexdag02.amd.com>
+References: <1405028727-5276-1-git-send-email-oded.gabbay@amd.com>
+ <20140710222423.GA14219@gmail.com>
+ <019CCE693E457142B37B791721487FD91809E4C2@storexdag01.amd.com>
+ <20140711211850.GU1870@gmail.com>
+ <019CCE693E457142B37B791721487FD9180A193B@storexdag01.amd.com>
+ <20140713035535.GB5301@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
+ <20140713164901.GB10624@gmail.com>	<53C396D3.9000600@vodafone.de>
+ <CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
+In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.34.48]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(13464003)(24454002)(377454003)(199002)(51704005)(105586002)(106116001)(92566001)(81342001)(31966008)(92726001)(83072002)(87936001)(19580395003)(83322001)(81542001)(21056001)(74662001)(19580405001)(101416001)(33656002)(44976005)(74502001)(86362001)(80022001)(68736004)(15202345003)(79102001)(50466002)(47776003)(55846006)(20776003)(54356999)(15975445006)(84676001)(77982001)(95666004)(64706001)(4396001)(85306003)(76482001)(106466001)(107046002)(85852003)(93886003)(2656002)(99396002)(23676002)(46102001)(76176999)(53416004)(97736001)(50986999)(77096002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB037;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027367F73D
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=John.Bridgman@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Tue, Jul 15, 2014 at 10:19 AM, Boris Ostrovsky
-<boris.ostrovsky@oracle.com> wrote:
-> On 07/15/2014 12:23 PM, Andy Lutomirski wrote:
->>
->> This moves the espfix64 logic into native_iret.  To make this work,
->> it gets rid of the native patch for INTERRUPT_RETURN:
->> INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
->>
->> This changes the 16-bit SS behavior on Xen from OOPSing to leaking
->> some bits of the Xen hypervisor's RSP (I think).
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> I just pushed this to kernel.org, so the kbuild robot should be pounding
->> on it soon.  It passes all my tests on bare metal, and it fails them
->> without crashing on Xen.
->>
->> It's not exactly beautiful, but I think it's an improvement.
->>
->>   arch/x86/include/asm/irqflags.h     |  2 +-
->>   arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
->>   arch/x86/kernel/paravirt_patch_64.c |  2 --
->>   3 files changed, 11 insertions(+), 21 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/irqflags.h
->> b/arch/x86/include/asm/irqflags.h
->> index bba3cf8..0a8b519 100644
->> --- a/arch/x86/include/asm/irqflags.h
->> +++ b/arch/x86/include/asm/irqflags.h
->> @@ -129,7 +129,7 @@ static inline notrace unsigned long
->> arch_local_irq_save(void)
->>     #define PARAVIRT_ADJUST_EXCEPTION_FRAME     /*  */
->>   -#define INTERRUPT_RETURN     iretq
->> +#define INTERRUPT_RETURN       jmp native_iret
->>   #define USERGS_SYSRET64                               \
->>         swapgs;                                 \
->>         sysretq;
->> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
->> index b25ca96..c844f08 100644
->> --- a/arch/x86/kernel/entry_64.S
->> +++ b/arch/x86/kernel/entry_64.S
->> @@ -830,27 +830,24 @@ restore_args:
->>         RESTORE_ARGS 1,8,1
->>     irq_return:
->> +       INTERRUPT_RETURN
->> +
->> +ENTRY(native_iret)
->>         /*
->>          * Are we returning to a stack segment from the LDT?  Note: in
->>          * 64-bit mode SS:RSP on the exception stack is always valid.
->>          */
->>   #ifdef CONFIG_X86_ESPFIX64
->>         testb $4,(SS-RIP)(%rsp)
->> -       jnz irq_return_ldt
->> +       jnz native_irq_return_ldt
->>   #endif
->>   -irq_return_iret:
->> -       INTERRUPT_RETURN
->> -       _ASM_EXTABLE(irq_return_iret, bad_iret)
->> -
->> -#ifdef CONFIG_PARAVIRT
->> -ENTRY(native_iret)
->> +native_irq_return_iret:
->>         iretq
->> -       _ASM_EXTABLE(native_iret, bad_iret)
->> -#endif
->> +       _ASM_EXTABLE(native_irq_return_iret, bad_iret)
->>     #ifdef CONFIG_X86_ESPFIX64
->> -irq_return_ldt:
->> +native_irq_return_ldt:
->>         pushq_cfi %rax
->>         pushq_cfi %rdi
->>         SWAPGS
->> @@ -872,7 +869,7 @@ irq_return_ldt:
->>         SWAPGS
->>         movq %rax,%rsp
->>         popq_cfi %rax
->> -       jmp irq_return_iret
->> +       jmp native_irq_return_iret
->>   #endif
->>         .section .fixup,"ax"
->> @@ -956,13 +953,8 @@ __do_double_fault:
->>         cmpl $__KERNEL_CS,CS(%rdi)
->>         jne do_double_fault
->>         movq RIP(%rdi),%rax
->> -       cmpq $irq_return_iret,%rax
->> -#ifdef CONFIG_PARAVIRT
->> -       je 1f
->> -       cmpq $native_iret,%rax
->> -#endif
->> +       cmpq $native_irq_return_iret,%rax
->>         jne do_double_fault             /* This shouldn't happen... */
->> -1:
->>         movq PER_CPU_VAR(kernel_stack),%rax
->>         subq $(6*8-KERNEL_STACK_OFFSET),%rax    /* Reset to original stack
->> */
->>         movq %rax,RSP(%rdi)
->> @@ -1428,7 +1420,7 @@ error_sti:
->>    */
->>   error_kernelspace:
->>         incl %ebx
->> -       leaq irq_return_iret(%rip),%rcx
->> +       leaq native_irq_return_iret(%rip),%rcx
->>         cmpq %rcx,RIP+8(%rsp)
->>         je error_swapgs
->>         movl %ecx,%eax  /* zero extend */
->> diff --git a/arch/x86/kernel/paravirt_patch_64.c
->> b/arch/x86/kernel/paravirt_patch_64.c
->> index 3f08f34..a1da673 100644
->> --- a/arch/x86/kernel/paravirt_patch_64.c
->> +++ b/arch/x86/kernel/paravirt_patch_64.c
->> @@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
->>   DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
->>   DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
->>   DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
->> -DEF_NATIVE(pv_cpu_ops, iret, "iretq");
->>   DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
->>   DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
->>   DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
->> @@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
->>                 PATCH_SITE(pv_irq_ops, save_fl);
->>                 PATCH_SITE(pv_irq_ops, irq_enable);
->>                 PATCH_SITE(pv_irq_ops, irq_disable);
->> -               PATCH_SITE(pv_cpu_ops, iret);
->
->
->
-> Does this mean that we are no longer patching IRET with a jump to a
-> hypercall?
->
-
-IIUC this means that, on native, we are no longer patching
-INTERRUPT_RETURN with an "iretq" instruction, so INTERRUPT_RETURN will
-remain a "jmp native_iret".  I'm not sure why this patch was there in
-the first place.  On Xen, it should still get patched with the
-hypercall (although someone should verify this).
-
---Andy
-
-> -boris
->
->
->
->>                 PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
->>                 PATCH_SITE(pv_cpu_ops, usergs_sysret32);
->>                 PATCH_SITE(pv_cpu_ops, usergs_sysret64);
->
->
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6FHO9J5016921
 
 
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+>-----Original Message-----
+>From: dri-devel [mailto:dri-devel-bounces@lists.freedesktop.org] On Behalf
+>Of Bridgman, John
+>Sent: Tuesday, July 15, 2014 1:07 PM
+>To: Dave Airlie; Christian K√∂nig
+>Cc: Lewycky, Andrew; linux-kernel@vger.kernel.org; dri-
+>devel@lists.freedesktop.org; Deucher, Alexander; akpm@linux-
+>foundation.org
+>Subject: RE: [PATCH 00/83] AMD HSA kernel driver
+>
+>
+>
+>>-----Original Message-----
+>>From: Dave Airlie [mailto:airlied@gmail.com]
+>>Sent: Tuesday, July 15, 2014 12:35 AM
+>>To: Christian K√∂nig
+>>Cc: Jerome Glisse; Bridgman, John; Lewycky, Andrew; linux-
+>>kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Deucher,
+>>Alexander; akpm@linux-foundation.org
+>>Subject: Re: [PATCH 00/83] AMD HSA kernel driver
+>>
+>>On 14 July 2014 18:37, Christian K√∂nig <deathsimple@vodafone.de> wrote:
+>>>> I vote for HSA module that expose ioctl and is an intermediary with
+>>>> the kernel driver that handle the hardware. This gives a single
+>>>> point for HSA hardware and yes this enforce things for any hardware
+>>manufacturer.
+>>>> I am more than happy to tell them that this is it and nothing else
+>>>> if they want to get upstream.
+>>>
+>>> I think we should still discuss this single point of entry a bit more.
+>>>
+>>> Just to make it clear the plan is to expose all physical HSA capable
+>>> devices through a single /dev/hsa device node to userspace.
+>>
+>>This is why we don't design kernel interfaces in secret foundations,
+>>and expect anyone to like them.
+>
+>Understood and agree. In this case though this isn't a cross-vendor interface
+>designed by a secret committee, it's supposed to be more of an inoffensive
+>little single-vendor interface designed *for* a secret committee. I'm hoping
+>that's better ;)
+>
+>>
+>>So before we go any further, how is this stuff planned to work for
+>>multiple GPUs/accelerators?
+>
+>Three classes of "multiple" :
+>
+>1. Single CPU with IOMMUv2 and multiple GPUs:
+>
+>- all devices accessible via /dev/kfd
+>- topology information identifies CPU + GPUs, each has "node ID" at top of
+>userspace API, "global ID" at user/kernel interface  (don't think we've
+>implemented CPU part yet though)
+>- userspace builds snapshot from sysfs info & exposes to HSAIL runtime,
+>which in turn exposes the "standard" API
+>- kfd sets up ATC aperture so GPUs can access system RAM via IOMMUv2 (fast
+>for APU, relatively less so for dGPU over PCIE)
+>- to-be-added memory operations allow allocation & residency control
+>(within existing gfx driver limits) of buffers in VRAM & carved-out system
+>RAM
+>- queue operations specify a node ID to userspace library, which translates to
+>"global ID" before calling kfd
+>
+>2. Multiple CPUs connected via fabric (eg HyperTransport) each with 0 or
+>more GPUs:
+>
+>- topology information exposes CPUs & GPUs, along with affinity info
+>showing what is connected to what
+>- everything else works as in (1) above
+
+This is probably a good point to stress that HSA topology is only intended as an OS-independent way of communicating system info up to higher levels of the HSA stack, not as a new and competing way to *manage* system properties inside Linux or any other OS.
+
+>
+>3. Multiple CPUs not connected via fabric (eg a blade server) each with 0 or
+>more GPUs
+>
+>- no attempt to cover this with HSA topology, each CPU and associated GPUs
+>is accessed independently via separate /dev/kfd instances
+>
+>>
+>>Do we have a userspace to exercise this interface so we can see how
+>>such a thing would look?
+>
+>Yes -- initial IP review done, legal stuff done, sanitizing WIP, hoping for final
+>approval this week
+>
+>There's a separate test harness to exercise the userspace lib calls, haven't
+>started IP review or sanitizing for that but legal stuff is done
+>
+>>
+>>Dave.
+>_______________________________________________
+>dri-devel mailing list
+>dri-devel@lists.freedesktop.org
+>http://lists.freedesktop.org/mailman/listinfo/dri-devel
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
