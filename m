@@ -1,38 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaGOQ5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:57:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37939 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094AbaGOQ5D (ORCPT
+	id S1754637AbaGOQ7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:59:45 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:54754 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116AbaGOQ7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:57:03 -0400
-To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
-Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
-        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
-        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
-        <hch@infradead.org>, <martin.petersen@oracle.com>
-Subject: Re: [RESEND][PATCH 8/8][SCSI]mpt3sas: Bump mpt3sas driver version to 04.100.00.00
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625104207.GA13042@avagotech.com>
-Date: Tue, 15 Jul 2014 12:56:33 -0400
-In-Reply-To: <20140625104207.GA13042@avagotech.com> (Sreekanth Reddy's message
-	of "Wed, 25 Jun 2014 16:12:07 +0530")
-Message-ID: <yq1a98av9vi.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 15 Jul 2014 12:59:42 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: bfields@fieldses.org
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] nfsd: silence sparse warning about accessing credentials
+Date: Tue, 15 Jul 2014 12:59:36 -0400
+Message-Id: <1405443576-28348-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
+sparse says:
 
-Sreekanth> Bump mpt3sas driver version to 04.100.00.00.
+    fs/nfsd/auth.c:31:38: warning: incorrect type in argument 1 (different address spaces)
+    fs/nfsd/auth.c:31:38:    expected struct cred const *cred
+    fs/nfsd/auth.c:31:38:    got struct cred const [noderef] <asn:4>*real_cred
 
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Add a new accessor for the ->real_cred and use that to fetch the
+pointer. Accessing current->real_cred directly is actually quite safe
+since we know that they can't go away so this is mostly a cosmetic fixup
+to silence sparse.
 
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ fs/nfsd/auth.c       | 2 +-
+ include/linux/cred.h | 9 +++++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/fs/nfsd/auth.c b/fs/nfsd/auth.c
+index 72f44823adbb..9d46a0bdd9f9 100644
+--- a/fs/nfsd/auth.c
++++ b/fs/nfsd/auth.c
+@@ -28,7 +28,7 @@ int nfsd_setuser(struct svc_rqst *rqstp, struct svc_export *exp)
+ 	validate_process_creds();
+ 
+ 	/* discard any old override before preparing the new set */
+-	revert_creds(get_cred(current->real_cred));
++	revert_creds(get_cred(current_real_cred()));
+ 	new = prepare_creds();
+ 	if (!new)
+ 		return -ENOMEM;
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index f61d6c8f5ef3..b2d0820837c4 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -259,6 +259,15 @@ static inline void put_cred(const struct cred *_cred)
+ 	rcu_dereference_protected(current->cred, 1)
+ 
+ /**
++ * current_real_cred - Access the current task's objective credentials
++ *
++ * Access the objective credentials of the current task.  RCU-safe,
++ * since nobody else can modify it.
++ */
++#define current_real_cred() \
++	rcu_dereference_protected(current->real_cred, 1)
++
++/**
+  * __task_cred - Access a task's objective credentials
+  * @task: The task to query
+  *
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.9.3
+
