@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597AbaGPAP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:15:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S965077AbaGPAQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:16:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759668AbaGOXNV (ORCPT
+	with ESMTP id S1759676AbaGOXNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.10 18/44] crypto: sha512_ssse3 - fix byte count to bit count conversion
-Date: Tue, 15 Jul 2014 16:17:16 -0700
-Message-Id: <20140715231647.243784650@linuxfoundation.org>
+        Colin Cross <ccross@android.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.10 19/44] arm64: implement TASK_SIZE_OF
+Date: Tue, 15 Jul 2014 16:17:17 -0700
+Message-Id: <20140715231647.272750382@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -30,38 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Colin Cross <ccross@android.com>
 
-commit cfe82d4f45c7cc39332a2be7c4c1d3bf279bbd3d upstream.
+commit fa2ec3ea10bd377f9d55772b1dab65178425a1a2 upstream.
 
-Byte-to-bit-count computation is only partly converted to big-endian and is
-mixing in CPU-endian values. Problem was noticed by sparce with warning:
+include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
+is not set by the architecture headers.  TASK_SIZE uses the
+current task to determine the size of the virtual address space.
+On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
+64-bit process from a 32-bit process to return EOF when it reads
+past 0xffffffff.
 
-  CHECK   arch/x86/crypto/sha512_ssse3_glue.c
-arch/x86/crypto/sha512_ssse3_glue.c:144:19: warning: restricted __be64 degrades to integer
-arch/x86/crypto/sha512_ssse3_glue.c:144:17: warning: incorrect type in assignment (different base types)
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    expected restricted __be64 <noident>
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    got unsigned long long
+Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
+test_tsk_thread_flag instead of test_thread_flag.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Colin Cross <ccross@android.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/crypto/sha512_ssse3_glue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/include/asm/memory.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/crypto/sha512_ssse3_glue.c
-+++ b/arch/x86/crypto/sha512_ssse3_glue.c
-@@ -141,7 +141,7 @@ static int sha512_ssse3_final(struct sha
- 
- 	/* save number of bits */
- 	bits[1] = cpu_to_be64(sctx->count[0] << 3);
--	bits[0] = cpu_to_be64(sctx->count[1] << 3) | sctx->count[0] >> 61;
-+	bits[0] = cpu_to_be64(sctx->count[1] << 3 | sctx->count[0] >> 61);
- 
- 	/* Pad out to 112 mod 128 and append length */
- 	index = sctx->count[0] & 0x7f;
+--- a/arch/arm64/include/asm/memory.h
++++ b/arch/arm64/include/asm/memory.h
+@@ -51,6 +51,8 @@
+ #define TASK_SIZE_32		UL(0x100000000)
+ #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
+ 				TASK_SIZE_32 : TASK_SIZE_64)
++#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
++				TASK_SIZE_32 : TASK_SIZE_64)
+ #else
+ #define TASK_SIZE		TASK_SIZE_64
+ #endif /* CONFIG_COMPAT */
 
 
