@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaGOPiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:38:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51910 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaGOPiI (ORCPT
+	id S1753272AbaGOPlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:41:53 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:58399 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaGOPlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:38:08 -0400
-Date: Tue, 15 Jul 2014 11:38:01 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, boris.ostrovsky@oracle.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] x86_64,xen,espfix: Initialize espfix on secondary CPUs
-Message-ID: <20140715153801.GX3403@laptop.dumpdata.com>
-References: <195642a5e9fd4515ad8ca4cd8bcffd4900df5790.1405437568.git.luto@amacapital.net>
+	Tue, 15 Jul 2014 11:41:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <195642a5e9fd4515ad8ca4cd8bcffd4900df5790.1405437568.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <alpine.DEB.2.11.1407150952580.10593@gentwo.org>
+References: <20140612135630.GA23606@htj.dyndns.org>
+	<20140612153426.GV4581@linux.vnet.ibm.com>
+	<20140612155227.GB23606@htj.dyndns.org>
+	<20140617144151.GD4669@linux.vnet.ibm.com>
+	<20140617152752.GC31819@htj.dyndns.org>
+	<87lhs35p0v.fsf@rustcorp.com.au>
+	<20140714113911.GM16041@linux.vnet.ibm.com>
+	<alpine.DEB.2.11.1407141014390.25436@gentwo.org>
+	<20140715101150.GA8690@linux.vnet.ibm.com>
+	<alpine.DEB.2.11.1407150903570.10593@gentwo.org>
+	<20140715143225.GC8690@linux.vnet.ibm.com>
+	<alpine.DEB.2.11.1407150952580.10593@gentwo.org>
+Date: Tue, 15 Jul 2014 08:41:49 -0700
+X-Google-Sender-Auth: SYaEO3sqtD1KVG4XIXrlC4UD6Rc
+Message-ID: <CA+55aFzP_GZaTYcUg7CN+Sz5ZeWX2CgxX3hig2gyBxhCCayamA@mail.gmail.com>
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 08:26:41AM -0700, Andy Lutomirski wrote:
-> Xen doesn't call start_secondary.
+Christoph, stop arguing. Trust me, Paul knows memory ordering. You
+clearly do *not*.
 
-Duh!
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> espfix still doesn't seem to work on Xen (it goes boom in some way that
-> I don't understand right now), but initializing all CPUs instead of just
-> one of them seems like a good start.
-> 
-> ISTM the right fix is probably to shove the espfix logic into
-> native_iret and to tweak the paravirt logic so that native_iret always
-> gets invoked.  I suspect that Xen will need its own implementation of
-> espfix64 in the hypervisor and that, ultimately, someone may want to
-> stop initializing espfix64 at all on Xen guests.
+On Tue, Jul 15, 2014 at 8:06 AM, Christoph Lameter <cl@gentwo.org> wrote:
+>
+> The cachelines will be evicted from the other processors at
+> initialization. alloc_percpu *itself* zeroes all data on each percpu areas
+> before returning the offset to the percpu data structure. See
+> pcpu_populate_chunk(). At that point *all* other processors have those
+> cachelines no longer in their caches. The initialization done with values
+> specific to the subsystem is not that important.
 
-I think just disallowing would be preferrable.
+In practice, with enough instructions in the CPU queues and
+sufficiently small write buffers etc (or with a sufficiently ordered
+CPU core, like x86), that may often be true. But there is absolutely
+zero reason to think it's always true.
 
-Thanks for posting this patch!
-> 
->  arch/x86/xen/smp.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 7005974..eea9bcc 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -23,6 +23,7 @@
->  #include <asm/desc.h>
->  #include <asm/pgtable.h>
->  #include <asm/cpu.h>
-> +#include <asm/espfix.h>
->  
->  #include <xen/interface/xen.h>
->  #include <xen/interface/vcpu.h>
-> @@ -85,6 +86,13 @@ static void cpu_bringup(void)
->  
->  	xen_setup_cpu_clockevents();
->  
-> +	/*
-> +	 * Enable the espfix hack for this CPU
-> +	 */
-> +#ifdef CONFIG_X86_ESPFIX64
-> +	init_espfix_ap();
-> +#endif
-> +
->  	notify_cpu_starting(cpu);
->  
->  	set_cpu_online(cpu, true);
-> -- 
-> 1.9.3
-> 
+On the writer side, if there isn't a write barrier, the actual writes
+can be visible to other CPU's in arbitrary order. *Including* the
+visibility of the offset before the zeroing. Really.
+
+On the reader side, for all sane CPU's, reading the offset and then
+reading data from that offset is an implicit barrier. But "all sane"
+is not "all". On alpha, reading the offset does NOT guarantee that you
+see later data when you use that offset to read data. In theory, it
+could be due to value prediction, but in practice it's actually due to
+segmented caches, so that one part of the cache has seen data that
+arrived "later" (ie written _after_ the wmb on the writing CPU)
+_before_ it sees data that arrived earlier. That's what the
+"smp_read_barrier_depends()" protects against.
+
+> The return value of the function is only available after
+> pcpu_populate_chunk() returns.
+
+Really, "before" and "after" have ABSOLUTELY NO MEANING unless you
+have a barrier. And you're arguing against those barriers. So you
+cannot use "before" as an argument, since in your world, no such thing
+even exists!
+
+There are other arguments, but they basically boil down to "no other
+CPU ever accesses the per-cpu data of *this* CPU" (wrong) or "the
+users will do their own barriers" (maybe true, maybe not). Your "value
+is only available after" argument really isn't an argument. Not
+without those barriers.
+
+            Linus
