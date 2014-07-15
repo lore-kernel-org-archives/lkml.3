@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759155AbaGONVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:21:03 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:59440 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731AbaGONVB (ORCPT
+	id S1758988AbaGONYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:24:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56271 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758718AbaGONYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:21:01 -0400
-Message-ID: <53C52A73.8010307@gmail.com>
-Date: Tue, 15 Jul 2014 18:49:47 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 15 Jul 2014 09:24:14 -0400
+Date: Tue, 15 Jul 2014 15:23:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: finish_task_switch && prev_state (Was: sched, timers: use after
+ free in __lock_task_sighand when exiting a process)
+Message-ID: <20140715132353.GF9918@twins.programming.kicks-ass.net>
+References: <53C2FF4D.3020606@oracle.com>
+ <53C31A34.8030500@oracle.com>
+ <20140714090449.GL9918@twins.programming.kicks-ass.net>
+ <20140714144953.GA8173@redhat.com>
+ <20140714160147.GA11986@redhat.com>
+ <20140715131240.GA23014@redhat.com>
 MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-CC: t.figa@samsung.com, m.szyprowski@samsung.com, linux@roeck-us.net,
-        tklauser@distanz.ch, linux-pwm@vger.kernel.org
-Subject: Re: [PATCH v3] hwmon: pwm-fan: Add pwm-fan driver
-References: <1405425092-553-1-git-send-email-k.debski@samsung.com>
-In-Reply-To: <1405425092-553-1-git-send-email-k.debski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HIPflPGvV5kKjZ73"
+Content-Disposition: inline
+In-Reply-To: <20140715131240.GA23014@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 05:21 PM, Kamil Debski wrote:
-> The pwm-fan driver enables control of fans connected to PWM lines.
-> This driver uses the PWM framework, so it is compatible with all
-> PWM devices that provide drivers through the PWM framework.
->
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> ---
-> Changes since v2:
-> - add CONFIG_PM_SLEEP around pwm_fan_suspend and pwm_fan_resume
-> Changes since v1:
-> - added documentation to Documentation/hwmon
-> - fix checkpatch errors
-> 	- added extra description to Kconfig
-> 	- removed whitespace errors
-> - include files rearranged to be in alphabetical order
-> - remove unused sysfs entry pwm1_enable
-> - changed the behavior of the set_pwm function
-> 	- when 0 PWM value is set pwm_disable is run
-> 	- pwm_config return value is checked for errors
-> - use of ATTRIBUTE_GROUPS was added
-> - removed "Not enouch memory" error message
-> - fixed probe return value in case of devm_of_pwm_get error
-> - changed hwmon_device_register_with_groups to
->    devm_hwmon_device_register_with_groups
-> - changes suspend/resume to use pwm_disable/enable
-> - removed unnecessary CONFIG_PM_SLEEP ifdefs
-> ---
->   .../devicetree/bindings/hwmon/pwm-fan.txt          |   12 ++
->   Documentation/hwmon/pwm-fan                        |   17 ++
->   drivers/hwmon/Kconfig                              |   11 ++
->   drivers/hwmon/Makefile                             |    1 +
->   drivers/hwmon/pwm-fan.c                            |  201 ++++++++++++++++++++
->   5 files changed, 242 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/hwmon/pwm-fan.txt
->   create mode 100644 Documentation/hwmon/pwm-fan
->   create mode 100644 drivers/hwmon/pwm-fan.c
->
-> diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> new file mode 100644
-> index 0000000..f534607
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> @@ -0,0 +1,12 @@
-> +Bindings for a fan connected to the PWM lines
-> +
-> +Required properties:
-> +- compatible: "pwm-fan"
-> +- pwms: the PWM that is used to control the PWM fan
->
-It would be more readable if it like this...
-Required properties:
-- compatible		: should be "pwm-fan"
-- pwms			: The PWM that is used to control the PWM fan
 
+--HIPflPGvV5kKjZ73
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Jul 15, 2014 at 03:12:40PM +0200, Oleg Nesterov wrote:
+> Ah, I am stupid, please ignore.
+>=20
+> Of course a TASK_DEAD task can not schedule, but we can race with RUNNING=
+ ->
+> DEAD transition. So we should only do put_task_struct() if "prev" was alr=
+eady
+> TASK_DEAD before we drop the rq locks.
 
+Not so stupid; that is, when I read your question yesterday I didn't
+have a ready answer and queued the email to look at later.
 
--- 
-Regards,
-Varka Bhadram.
+This does mean the comment isn't clear enough at the very least.
 
+Does this make it better?
+
+---
+ kernel/sched/core.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7bc599dc4aa4..aa67f1cfa58e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2211,13 +2211,15 @@ static void finish_task_switch(struct rq *rq, struc=
+t task_struct *prev)
+=20
+ 	/*
+ 	 * A task struct has one reference for the use as "current".
++	 *
+ 	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
+-	 * schedule one last time. The schedule call will never return, and
+-	 * the scheduled task must drop that reference.
+-	 * The test for TASK_DEAD must occur while the runqueue locks are
+-	 * still held, otherwise prev could be scheduled on another cpu, die
+-	 * there before we look at prev->state, and then the reference would
+-	 * be dropped twice.
++	 * schedule one last time. The schedule call will never return, and the
++	 * scheduled task must drop that reference.
++	 *
++	 * The test for TASK_DEAD must occur while the runqueue locks are still
++	 * held, otherwise we can race with RUNNING -> DEAD transitions, and
++	 * then the reference would be dropped twice.
++	 *
+ 	 *		Manfred Spraul <manfred@colorfullife.com>
+ 	 */
+ 	prev_state =3D prev->state;
+
+--HIPflPGvV5kKjZ73
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTxStpAAoJEHZH4aRLwOS6CGoP/ibltbZG6BUvw0kWRu++beZ1
+4h570fqmP6lDT3J5sLldSAiu+e8qjDEjX0mZWmRtkzrNWclZySkuQ/A+DHJEKK9n
+wbO0nPvkSeHU6WgXWx2vysmpHqkcHOy7hfV+nc2nNMlMX5Jd1IqupXn7pw2sXG1F
+xNrJl84SW4+Y8CGz8OY4SiN/t6b9g+G/DUAcydYVThXJQCDcetywNObcj32Ywu19
+MhE8VnsaWi6pSW8CQMZsoOzupkK+BUb5V+NPx+qbENHr9ig9rEI+PTmY45k5SwNp
+15agpnfqmOrUQIbc0UpEnVVrPPue6QmLzhGroBLvelZJOVLemDP7e1D0WJ2Lwg4H
+8/gd6uFuA7qrAojIRz81uDbCaOlPWabvUpNWKbwAJfa0Rvi03LxfMLVVBJJQK2IU
+BPaGJFCaymtLHlaQxZzzLbSBUViK9bub4Hmtc/dnRT6H79WU/8Ge/y+jlkelriRr
+EZo41+D3qyknDJ9YsF22pomNhGIjzY+4QWMQDr28uJViqahJQA5j3LItECBQ+81+
+M3ARjXJrdEybSq/fl3f6Lwr7p2kGBqkfsv+qLWOqT5hH4/Ki3JIoYM4j++KlQyy4
+9oCK2VmVJcZOrbo9N/KyLi/fpvB8V7XAjM+BCQIhTDzRZO/cb13uCSphM0Ijt0DM
+A/RJLBwjJnOKIeFFyDPT
+=0Yp0
+-----END PGP SIGNATURE-----
+
+--HIPflPGvV5kKjZ73--
