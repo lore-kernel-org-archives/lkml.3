@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760390AbaGOXyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:54:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S1760732AbaGOXyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:54:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933440AbaGOXNr (ORCPT
+	with ESMTP id S933421AbaGOXNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Theodore Tso <tytso@mit.edu>,
-        Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: [PATCH 3.14 48/66] ext4: fix a potential deadlock in __ext4_es_shrink()
-Date: Tue, 15 Jul 2014 16:17:42 -0700
-Message-Id: <20140715231704.219303834@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 47/66] ext4: disable synchronous transaction batching if max_batch_time==0
+Date: Tue, 15 Jul 2014 16:17:41 -0700
+Message-Id: <20140715231704.191457582@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,92 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 3f1f9b851311a76226140b55b1ea22111234a7c2 upstream.
+commit 5dd214248f94d430d70e9230bda72f2654ac88a8 upstream.
 
-This fixes the following lockdep complaint:
+The mount manpage says of the max_batch_time option,
 
-[ INFO: possible circular locking dependency detected ]
-3.16.0-rc2-mm1+ #7 Tainted: G           O
--------------------------------------------------------
-kworker/u24:0/4356 is trying to acquire lock:
- (&(&sbi->s_es_lru_lock)->rlock){+.+.-.}, at: [<ffffffff81285fff>] __ext4_es_shrink+0x4f/0x2e0
+	This optimization can be turned off entirely
+	by setting max_batch_time to 0.
 
-but task is already holding lock:
- (&ei->i_es_lock){++++-.}, at: [<ffffffff81286961>] ext4_es_insert_extent+0x71/0x180
+But the code doesn't do that.  So fix the code to do
+that.
 
-which lock already depends on the new lock.
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&ei->i_es_lock);
-                               lock(&(&sbi->s_es_lru_lock)->rlock);
-                               lock(&ei->i_es_lock);
-  lock(&(&sbi->s_es_lru_lock)->rlock);
-
- *** DEADLOCK ***
-
-6 locks held by kworker/u24:0/4356:
- #0:  ("writeback"){.+.+.+}, at: [<ffffffff81071d00>] process_one_work+0x180/0x560
- #1:  ((&(&wb->dwork)->work)){+.+.+.}, at: [<ffffffff81071d00>] process_one_work+0x180/0x560
- #2:  (&type->s_umount_key#22){++++++}, at: [<ffffffff811a9c74>] grab_super_passive+0x44/0x90
- #3:  (jbd2_handle){+.+...}, at: [<ffffffff812979f9>] start_this_handle+0x189/0x5f0
- #4:  (&ei->i_data_sem){++++..}, at: [<ffffffff81247062>] ext4_map_blocks+0x132/0x550
- #5:  (&ei->i_es_lock){++++-.}, at: [<ffffffff81286961>] ext4_es_insert_extent+0x71/0x180
-
-stack backtrace:
-CPU: 0 PID: 4356 Comm: kworker/u24:0 Tainted: G           O   3.16.0-rc2-mm1+ #7
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-Workqueue: writeback bdi_writeback_workfn (flush-253:0)
- ffffffff8213dce0 ffff880014b07538 ffffffff815df0bb 0000000000000007
- ffffffff8213e040 ffff880014b07588 ffffffff815db3dd ffff880014b07568
- ffff880014b07610 ffff88003b868930 ffff88003b868908 ffff88003b868930
-Call Trace:
- [<ffffffff815df0bb>] dump_stack+0x4e/0x68
- [<ffffffff815db3dd>] print_circular_bug+0x1fb/0x20c
- [<ffffffff810a7a3e>] __lock_acquire+0x163e/0x1d00
- [<ffffffff815e89dc>] ? retint_restore_args+0xe/0xe
- [<ffffffff815ddc7b>] ? __slab_alloc+0x4a8/0x4ce
- [<ffffffff81285fff>] ? __ext4_es_shrink+0x4f/0x2e0
- [<ffffffff810a8707>] lock_acquire+0x87/0x120
- [<ffffffff81285fff>] ? __ext4_es_shrink+0x4f/0x2e0
- [<ffffffff8128592d>] ? ext4_es_free_extent+0x5d/0x70
- [<ffffffff815e6f09>] _raw_spin_lock+0x39/0x50
- [<ffffffff81285fff>] ? __ext4_es_shrink+0x4f/0x2e0
- [<ffffffff8119760b>] ? kmem_cache_alloc+0x18b/0x1a0
- [<ffffffff81285fff>] __ext4_es_shrink+0x4f/0x2e0
- [<ffffffff812869b8>] ext4_es_insert_extent+0xc8/0x180
- [<ffffffff812470f4>] ext4_map_blocks+0x1c4/0x550
- [<ffffffff8124c4c4>] ext4_writepages+0x6d4/0xd00
-	...
-
-Reported-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reported-by: Minchan Kim <minchan@kernel.org>
-Cc: Zheng Liu <gnehzuil.liu@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents_status.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/super.c       |    2 --
+ fs/jbd2/transaction.c |    5 ++++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/extents_status.c
-+++ b/fs/ext4/extents_status.c
-@@ -962,10 +962,10 @@ retry:
- 			continue;
- 		}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1519,8 +1519,6 @@ static int handle_mount_opt(struct super
+ 			arg = JBD2_DEFAULT_MAX_COMMIT_AGE;
+ 		sbi->s_commit_interval = HZ * arg;
+ 	} else if (token == Opt_max_batch_time) {
+-		if (arg == 0)
+-			arg = EXT4_DEF_MAX_BATCH_TIME;
+ 		sbi->s_max_batch_time = arg;
+ 	} else if (token == Opt_min_batch_time) {
+ 		sbi->s_min_batch_time = arg;
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1590,9 +1590,12 @@ int jbd2_journal_stop(handle_t *handle)
+ 	 * to perform a synchronous write.  We do this to detect the
+ 	 * case where a single process is doing a stream of sync
+ 	 * writes.  No point in waiting for joiners in that case.
++	 *
++	 * Setting max_batch_time to 0 disables this completely.
+ 	 */
+ 	pid = current->pid;
+-	if (handle->h_sync && journal->j_last_sync_writer != pid) {
++	if (handle->h_sync && journal->j_last_sync_writer != pid &&
++	    journal->j_max_batch_time) {
+ 		u64 commit_time, trans_time;
  
--		if (ei->i_es_lru_nr == 0 || ei == locked_ei)
-+		if (ei->i_es_lru_nr == 0 || ei == locked_ei ||
-+		    !write_trylock(&ei->i_es_lock))
- 			continue;
- 
--		write_lock(&ei->i_es_lock);
- 		shrunk = __es_try_to_reclaim_extents(ei, nr_to_scan);
- 		if (ei->i_es_lru_nr == 0)
- 			list_del_init(&ei->i_es_lru);
+ 		journal->j_last_sync_writer = pid;
 
 
