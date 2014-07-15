@@ -1,147 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759114AbaGONFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:05:50 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:58156 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758656AbaGONFs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:05:48 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v2] Bluetooth: BCSP fails to ACK re-transmitted frames from the peer
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <53C52541.50300@mentor.com>
-Date: Tue, 15 Jul 2014 15:06:00 +0200
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Linux Bluetooth mailing list 
-	<linux-bluetooth@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dean_Jenkins@mentor.com
-Content-Transfer-Encoding: 7BIT
-Message-Id: <65682881-0875-408A-8A7B-C0BFB6C669F0@holtmann.org>
-References: <1405417294-24832-1-git-send-email-jiada_wang@mentor.com> <B8E404C6-6A75-41E8-9506-0B05AA4C56D6@holtmann.org> <53C52541.50300@mentor.com>
-To: Jiada Wang <jiada_wang@mentor.com>
-X-Mailer: Apple Mail (2.1878.6)
+	id S1758917AbaGONKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:10:41 -0400
+Received: from mout.web.de ([212.227.17.12]:52282 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758219AbaGONKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 09:10:39 -0400
+Message-ID: <53C52837.4030105@web.de>
+Date: Tue, 15 Jul 2014 15:10:15 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@minantech.com>, Tang Chen <tangchen@cn.fujitsu.com>
+CC: mtosatti@redhat.com, nadav.amit@gmail.com, kvm@vger.kernel.org,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page
+ in memory.
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com> <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com> <20140712080442.GH4399@minantech.com> <53C38D55.2040307@cn.fujitsu.com> <20140714145822.GK4399@minantech.com> <53C51608.4080109@web.de> <20140715120921.GT18167@minantech.com> <53C51E66.7030208@cn.fujitsu.com> <20140715124048.GU18167@minantech.com>
+In-Reply-To: <20140715124048.GU18167@minantech.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ndPCTSEi3KP8GNFciBjsIURkx5bTXBXxf"
+X-Provags-ID: V03:K0:SriIK7GZ7tosTXGlH/0GTae0H6Kcg50cXy/jND76RXffSur1711
+ FlO6PiXBG+h8uHSTo7qUJvMbN8H/TsNP48gqENk5pmg0lKp+ZV+k0hQTcDpZqYwzJVSkCh3
+ pFrT5ruahFqjSZbSfafTnWvw7+MA7D0jLfsM9Au/FgSDbzUGJJ+Wx4Yq2xSDQAojDovoHaY
+ OGt86x8/b5/hATc68KllQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiada,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ndPCTSEi3KP8GNFciBjsIURkx5bTXBXxf
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
->>> Send an ACK frame with the current txack value in response to
->>> every received reliable frame unless a TX reliable frame is being
->>> sent. This modification allows re-transmitted frames from the remote
->>> peer to be acknowledged rather than ignored. It means that the remote
->>> peer knows which frame number to start re-transmitting from.
->>> 
->>> Without this modification, the recovery time to a missing frame
->>> from the remote peer was unnecessarily being extended because the
->>> headers of the out of order reliable frames were being discarded rather
->>> than being processed. The frame headers of received frames will
->>> indicate whether the local peer's transmissions have been
->>> acknowledged by the remote peer. Therefore, the local peer may
->>> unnecessarily re-transmit despite the remote peer already indicating
->>> that the frame had been acknowledged in out of order reliable frame.
->>> 
->>> Signed-off-by: Dean Jenkins <djenkins@mvista.com>
->>> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
->>> ---
->>> drivers/bluetooth/hci_bcsp.c | 94 ++++++++++++++++++++++++++++----------------
->>> 1 file changed, 60 insertions(+), 34 deletions(-)
->>> 
->>> diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
->>> index 21cc45b..0f4664d 100644
->>> --- a/drivers/bluetooth/hci_bcsp.c
->>> +++ b/drivers/bluetooth/hci_bcsp.c
->>> @@ -478,13 +478,29 @@ static inline void bcsp_unslip_one_byte(struct bcsp_struct *bcsp, unsigned char
->>> static void bcsp_complete_rx_pkt(struct hci_uart *hu)
->>> {
->>> 	struct bcsp_struct *bcsp = hu->priv;
->>> -	int pass_up;
->>> +	int pass_up = 0;
->>> 
->>> 	if (bcsp->rx_skb->data[0] & 0x80) {	/* reliable pkt */
->>> 		BT_DBG("Received seqno %u from card", bcsp->rxseq_txack);
->>> -		bcsp->rxseq_txack++;
->>> -		bcsp->rxseq_txack %= 0x8;
->>> -		bcsp->txack_req    = 1;
->>> +
->>> +		/* check the rx sequence number is as expected */
->>> +		if ((bcsp->rx_skb->data[0] & 0x07) == bcsp->rxseq_txack) {
->>> +			bcsp->rxseq_txack++;
->>> +			bcsp->rxseq_txack %= 0x8;
->>> +		} else {
->>> +			/*
->>> +			 * handle re-transmitted packet or
->>> +			 * when packet was missed
->>> +			 */
->> 
->> Comment style is wrong.
->> 
->> 	/* aaa
->> 	 * bbb
->> 	 */
->> 
->>> +			BT_ERR ("Out-of-order packet arrived, got %u expected %u",
->>> +				bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
->> 
->> It is BT_ERR(" and not BT_ERR (".
->> 
->>> +
->>> +			/* do not process out-of-order packet payload */
->>> +			pass_up = 2;
->>> +		}
->>> +
->>> +		/* send current txack value to all recieved reliable packets */
->>> +		bcsp->txack_req = 1;
->>> 
->>> 		/* If needed, transmit an ack pkt */
->>> 		hci_uart_tx_wakeup(hu);
->>> @@ -493,26 +509,36 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
->>> 	bcsp->rxack = (bcsp->rx_skb->data[0] >> 3) & 0x07;
->>> 	BT_DBG("Request for pkt %u from card", bcsp->rxack);
->>> 
->>> +	/*
->>> +	 * handle recieved ACK indications,
->>> +	 * including those from out-of-order packets
->>> +	 */
->> 
->> Same here. Please fix comment style.
->> 
->>> 	bcsp_pkt_cull(bcsp);
->>> -	if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
->>> -			bcsp->rx_skb->data[0] & 0x80) {
->>> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
->>> -		pass_up = 1;
->>> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
->>> -			bcsp->rx_skb->data[0] & 0x80) {
->>> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
->>> -		pass_up = 1;
->>> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
->>> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
->>> -		pass_up = 1;
->>> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
->>> -			!(bcsp->rx_skb->data[0] & 0x80)) {
->>> -		bcsp_handle_le_pkt(hu);
->>> -		pass_up = 0;
->>> -	} else
->>> -		pass_up = 0;
->>> -
->>> -	if (!pass_up) {
->>> +
->>> +	if (pass_up != 2) {
->>> +		if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
->>> +				bcsp->rx_skb->data[0] & 0x80) {
->> 
->> Fix indentation here.
-> 
-> Can you tell me what should be the correct indentation.
+On 2014-07-15 14:40, Gleb Natapov wrote:
+>>
+>> ......
+>> 7922                         if (!vmx->nested.apic_access_page)
+>> 7923                                 exec_control &=3D
+>> 7924 ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+>> 7925                         else
+>> 7926                                 vmcs_write64(APIC_ACCESS_ADDR,
+>> 7927 page_to_phys(vmx->nested.apic_access_page));
+>> 7928                 } else if
+>> (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
+>> 7929                         exec_control |=3D
+>> 7930 SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+>> 7931                         vmcs_write64(APIC_ACCESS_ADDR,
+>> 7932 page_to_phys(vcpu->kvm->arch.apic_access_page));
+>> 7933                 }
+>>
+>> And yes, we have the problem you said here. We can migrate the page wh=
+ile L2
+>> vm is running.
+>> So I think we should enforce L2 vm to exit to L1. Right ?
+>>
+> We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, =
+so
+> if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for=
+ L1 too.
 
-		if ((bcsp->... &&
-		    (bcsp->... )) {
+How should this host-managed VMCS field possibly change while L2 is runni=
+ng?
 
-Regards
+Jan
 
-Marcel
 
+
+--ndPCTSEi3KP8GNFciBjsIURkx5bTXBXxf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlPFKDcACgkQitSsb3rl5xSrDACdG7B6LVBlptPxtgXqfiGBLqPJ
+0f0AoJIkj+w1FOdKa+QZnqRUAfP+MIrC
+=EQGb
+-----END PGP SIGNATURE-----
+
+--ndPCTSEi3KP8GNFciBjsIURkx5bTXBXxf--
