@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760467AbaGPAIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:08:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
+	id S1760544AbaGPAIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:08:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759879AbaGOXN3 (ORCPT
+	with ESMTP id S1759866AbaGOXN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.10 05/44] parisc: add serial ports of C8000/1GHz machine to hardware database
-Date: Tue, 15 Jul 2014 16:17:03 -0700
-Message-Id: <20140715231646.848830349@linuxfoundation.org>
+        Michal Sojka <sojkam1@fel.cvut.cz>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 04/44] USB: serial: ftdi_sio: Add Infineon Triboard
+Date: Tue, 15 Jul 2014 16:17:02 -0700
+Message-Id: <20140715231646.820404175@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -28,28 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Michal Sojka <sojkam1@fel.cvut.cz>
 
-commit eadcc7208a2237016be7bdff4551ba7614da85c8 upstream.
+commit d8279a40e50ad55539780aa617a32a53d7f0953e upstream.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+This adds support for Infineon TriBoard TC1798 [1]. Only interface 1
+is used as serial line (see [2], Figure 8-6).
+
+[1] http://www.infineon.com/cms/de/product/microcontroller/development-tools-software-and-kits/tricore-tm-development-tools-software-and-kits/starterkits-and-evaluation-boards/starter-kit-tc1798/channel.html?channel=db3a304333b8a7ca0133cfa3d73e4268
+[2] http://www.infineon.com/dgdl/TriBoardManual-TC1798-V10.pdf?folderId=db3a304412b407950112b409ae7c0343&fileId=db3a304333b8a7ca0133cfae99fe426a
+
+Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/hardware.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/arch/parisc/kernel/hardware.c
-+++ b/arch/parisc/kernel/hardware.c
-@@ -1205,7 +1205,8 @@ static struct hp_hardware hp_hardware_li
- 	{HPHW_FIO, 0x004, 0x00320, 0x0, "Metheus Frame Buffer"}, 
- 	{HPHW_FIO, 0x004, 0x00340, 0x0, "BARCO CX4500 VME Grphx Cnsl"}, 
- 	{HPHW_FIO, 0x004, 0x00360, 0x0, "Hughes TOG VME FDDI"}, 
--	{HPHW_FIO, 0x076, 0x000AD, 0x00, "Crestone Peak RS-232"},
-+	{HPHW_FIO, 0x076, 0x000AD, 0x0, "Crestone Peak Core RS-232"},
-+	{HPHW_FIO, 0x077, 0x000AD, 0x0, "Crestone Peak Fast? Core RS-232"},
- 	{HPHW_IOA, 0x185, 0x0000B, 0x00, "Java BC Summit Port"}, 
- 	{HPHW_IOA, 0x1FF, 0x0000B, 0x00, "Hitachi Ghostview Summit Port"}, 
- 	{HPHW_IOA, 0x580, 0x0000B, 0x10, "U2-IOA BC Runway Port"}, 
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -948,6 +948,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
++	/* Infineon Devices */
++	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -584,6 +584,12 @@
+ #define RATOC_PRODUCT_ID_USB60F	0xb020
+ 
+ /*
++ * Infineon Technologies
++ */
++#define INFINEON_VID		0x058b
++#define INFINEON_TRIBOARD_PID	0x0028 /* DAS JTAG TriBoard TC1798 V1.0 */
++
++/*
+  * Acton Research Corp.
+  */
+ #define ACTON_VID		0x0647	/* Vendor ID */
 
 
