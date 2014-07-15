@@ -1,107 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834AbaGOLDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 07:03:43 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:42275 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758108AbaGOLDj (ORCPT
+	id S1758784AbaGOLDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 07:03:08 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:54632 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758043AbaGOLDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 07:03:39 -0400
-Message-ID: <53C50A87.6000902@codesourcery.com>
-Date: Tue, 15 Jul 2014 19:03:35 +0800
-From: Chung-Lin Tang <cltang@codesourcery.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <lftan.linux@gmail.com>
-Subject: Re: [PATCH v2 22/29] nios2: Miscellaneous header files
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <1405413956-2772-23-git-send-email-lftan@altera.com> <4999408.jEEY9BVX9F@wuerfel>
-In-Reply-To: <4999408.jEEY9BVX9F@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Jul 2014 11:03:37.0251 (UTC) FILETIME=[6D6E5730:01CFA01C]
+	Tue, 15 Jul 2014 07:03:05 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v2 1/3] regulator: s2mpxxx: Move regulator min/step voltages in common place
+Date: Tue, 15 Jul 2014 16:32:51 +0530
+Message-Id: <1405422173-15050-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/15 06:22 PM, Arnd Bergmann wrote:
->> +
->> > +#ifndef _UAPI_ASM_NIOS2_STATFS_H
->> > +#define _UAPI_ASM_NIOS2_STATFS_H
->> > +
->> > +#define __statfs_word __s32
-> Why this? Every other architecture except parisc uses the default __u32 here.
+This is a cleanup patch and moves min/step voltages in a common samsung
+header file so that they can be used by other s2mpxxx PMIC drivers. Only
+few required macros are added currently and others can be added if needed.
 
-Because include/uapi/asm/statfs.h has this:
+Cc: Sangbeom Kim <sbkim73@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+Changes since v1:
+* Added Cc to maintainers.
+* Added Krzysztof reviewed-by.
 
-#ifndef __statfs_word
-#if __BITS_PER_LONG == 64
-#define __statfs_word __kernel_long_t
-#else
-#define __statfs_word __u32
-#endif
-#endif
-...
-struct statfs64 {
-        __statfs_word f_type;
-        __statfs_word f_bsize;
-        __u64 f_blocks;
-        __u64 f_bfree;
-...
+ drivers/regulator/s2mpa01.c         | 32 ++++++++++++------------
+ drivers/regulator/s2mps11.c         | 50 ++++++++++++++++++-------------------
+ include/linux/mfd/samsung/core.h    | 21 ++++++++++++++++
+ include/linux/mfd/samsung/s2mpa01.h | 12 ---------
+ include/linux/mfd/samsung/s2mps11.h |  9 -------
+ include/linux/mfd/samsung/s2mps14.h | 10 --------
+ 6 files changed, 62 insertions(+), 72 deletions(-)
 
-While the bits/statfs.h header in glibc has this:
-struct statfs
-  {
-    __SWORD_TYPE f_type;
-    __SWORD_TYPE f_bsize;
-    __field64(__fsblkcnt_t, __fsblkcnt64_t, f_blocks);
-...
-struct statfs64
-  {
-    __SWORD_TYPE f_type;
-    __SWORD_TYPE f_bsize;
-    __fsblkcnt64_t f_blocks;
-...
-
-Where __SWORD_TYPE is always a signed integer (int or long int depending
-on 32/64-bit word size).  Hence we define the kernel __statfs_word to be
-signed 32-bit to match.
-
-Supposedly, tilepro should have a similar issue too, though I guess this
-is quite obscure in practice. We so far haven't encountered any issues
-on nios2 without this __s32 override either, it's just by observation.
-
->> > +#include <linux/types.h>
->> > +#include <asm-generic/swab.h>
->> > +
->> > +#ifdef CONFIG_NIOS2_CI_SWAB_SUPPORT
->> > +#ifdef __GNUC__
->> > +
->> > +#define __nios2_swab(x)		\
->> > +	__builtin_custom_ini(CONFIG_NIOS2_CI_SWAB_NO, (x))
->> > +
->> > +static inline __attribute__((const)) __u16 __arch_swab16(__u16 x)
->> > +{
->> > +	return (__u16) __nios2_swab(((__u32) x) << 16);
->> > +}
-> Is this actually better than ___constant_swab16()?
-> 
-> Also, have you checked if you need to support old compiler versions that
-> don't have __builtin_bswap16/32/64? With newer compilers you don't need
-> to define any of these yourself.
-> 
-> 	Arnd
-
-This swap is configured/implemented using Nios II's custom instruction
-facility; it is not part of the compiler supported Nios II core
-instruction set. In fact, even the exact opcode allocated is not fixed.
-
-So the custom swap will not be in a form usable by the compiler, and
-hence no use of it during code generation (if it is, you might not even
-need to use __builtin_swap*(), there's a optimization pass that
-recognizes the shift+or-ing C code patterns)
-
-Thanks,
-Chung-Lin
+diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+index ee83b48..962c5f1 100644
+--- a/drivers/regulator/s2mpa01.c
++++ b/drivers/regulator/s2mpa01.c
+@@ -241,8 +241,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPA01_LDO_MIN,		\
+-	.uV_step	= S2MPA01_LDO_STEP1,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_50_MV,			\
+ 	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
+@@ -255,8 +255,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPA01_LDO_MIN,		\
+-	.uV_step	= S2MPA01_LDO_STEP2,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
+@@ -270,8 +270,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN1,			\
+-	.uV_step	= S2MPA01_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B1CTRL2 + (num - 1) * 2,	\
+@@ -286,8 +286,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN2,			\
+-	.uV_step	= S2MPA01_BUCK_STEP1,			\
++	.min_uV		= MIN_800_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B5CTRL2,			\
+@@ -302,8 +302,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN1,			\
+-	.uV_step	= S2MPA01_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B6CTRL2 + (num - 6) * 2,	\
+@@ -318,8 +318,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN2,			\
+-	.uV_step	= S2MPA01_BUCK_STEP2,			\
++	.min_uV		= MIN_800_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B8CTRL2,			\
+@@ -334,8 +334,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN4,			\
+-	.uV_step	= S2MPA01_BUCK_STEP2,			\
++	.min_uV		= MIN_1500_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B9CTRL2,			\
+@@ -350,8 +350,8 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.ops		= &s2mpa01_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPA01_BUCK_MIN3,			\
+-	.uV_step	= S2MPA01_BUCK_STEP2,			\
++	.min_uV		= MIN_1000_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPA01_REG_B10CTRL2,			\
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 02e2fb2..2098c3e 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -250,14 +250,14 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.set_ramp_delay		= s2mps11_set_ramp_delay,
+ };
+ 
+-#define regulator_desc_s2mps11_ldo1(num)	{		\
++#define regulator_desc_s2mps11_ldo1(num)	{	\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS11_LDO##num,		\
+ 	.ops		= &s2mps11_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS11_LDO_MIN,		\
+-	.uV_step	= S2MPS11_LDO_STEP1,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_50_MV,			\
+ 	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
+@@ -270,8 +270,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_ldo_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS11_LDO_MIN,		\
+-	.uV_step	= S2MPS11_LDO_STEP2,		\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPS11_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS11_LDO_VSEL_MASK,	\
+@@ -285,8 +285,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN1,			\
+-	.uV_step	= S2MPS11_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B1CTRL2 + (num - 1) * 2,	\
+@@ -301,8 +301,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN1,			\
+-	.uV_step	= S2MPS11_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B5CTRL2,			\
+@@ -317,8 +317,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN1,			\
+-	.uV_step	= S2MPS11_BUCK_STEP1,			\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B6CTRL2 + (num - 6) * 2,	\
+@@ -333,8 +333,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN3,			\
+-	.uV_step	= S2MPS11_BUCK_STEP3,			\
++	.min_uV		= MIN_3000_MV,				\
++	.uV_step	= STEP_25_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
+@@ -349,8 +349,8 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.ops		= &s2mps11_buck_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS11_BUCK_MIN2,			\
+-	.uV_step	= S2MPS11_BUCK_STEP2,			\
++	.min_uV		= MIN_750_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
+ 	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
+ 	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
+@@ -473,8 +473,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
+-	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+@@ -487,8 +487,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS14_LDO_MIN_1800MV,	\
+-	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
++	.min_uV		= MIN_1800_MV,			\
++	.uV_step	= STEP_25_MV,			\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+@@ -501,8 +501,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,		\
+ 	.type		= REGULATOR_VOLTAGE,		\
+ 	.owner		= THIS_MODULE,			\
+-	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
+-	.uV_step	= S2MPS14_LDO_STEP_12_5MV,	\
++	.min_uV		= MIN_800_MV,			\
++	.uV_step	= STEP_12_5_MV,			\
+ 	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
+ 	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
+ 	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
+@@ -515,8 +515,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS14_BUCK1235_MIN_600MV,		\
+-	.uV_step	= S2MPS14_BUCK1235_STEP_6_25MV,		\
++	.min_uV		= MIN_600_MV,				\
++	.uV_step	= STEP_6_25_MV,				\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+ 	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+@@ -531,8 +531,8 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.ops		= &s2mps14_reg_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,			\
+ 	.owner		= THIS_MODULE,				\
+-	.min_uV		= S2MPS14_BUCK4_MIN_1400MV,		\
+-	.uV_step	= S2MPS14_BUCK4_STEP_12_5MV,		\
++	.min_uV		= MIN_1400_MV,				\
++	.uV_step	= STEP_12_5_MV,				\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+ 	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+index 47d8424..a4118aa 100644
+--- a/include/linux/mfd/samsung/core.h
++++ b/include/linux/mfd/samsung/core.h
+@@ -14,6 +14,27 @@
+ #ifndef __LINUX_MFD_SEC_CORE_H
+ #define __LINUX_MFD_SEC_CORE_H
+ 
++/* Macros to represent minimum voltages for LDO/BUCK */
++#define MIN_3000_MV		3000000
++#define MIN_2500_MV		2500000
++#define MIN_2000_MV		2000000
++#define MIN_1800_MV		1800000
++#define MIN_1500_MV		1500000
++#define MIN_1400_MV		1400000
++#define MIN_1000_MV		1000000
++
++#define MIN_900_MV		900000
++#define MIN_850_MV		850000
++#define MIN_800_MV		800000
++#define MIN_750_MV		750000
++#define MIN_600_MV		600000
++
++/* Macros to represent steps for LDO/BUCK */
++#define STEP_50_MV		50000
++#define STEP_25_MV		25000
++#define STEP_12_5_MV		12500
++#define STEP_6_25_MV		6250
++
+ enum sec_device_type {
+ 	S5M8751X,
+ 	S5M8763X,
+diff --git a/include/linux/mfd/samsung/s2mpa01.h b/include/linux/mfd/samsung/s2mpa01.h
+index fbc63bc..2766108 100644
+--- a/include/linux/mfd/samsung/s2mpa01.h
++++ b/include/linux/mfd/samsung/s2mpa01.h
+@@ -155,18 +155,6 @@ enum s2mpa01_regulators {
+ 	S2MPA01_REGULATOR_MAX,
+ };
+ 
+-#define S2MPA01_BUCK_MIN1	600000
+-#define S2MPA01_BUCK_MIN2	800000
+-#define S2MPA01_BUCK_MIN3	1000000
+-#define S2MPA01_BUCK_MIN4	1500000
+-#define S2MPA01_LDO_MIN		800000
+-
+-#define S2MPA01_BUCK_STEP1	6250
+-#define S2MPA01_BUCK_STEP2	12500
+-
+-#define S2MPA01_LDO_STEP1	50000
+-#define S2MPA01_LDO_STEP2	25000
+-
+ #define S2MPA01_LDO_VSEL_MASK	0x3F
+ #define S2MPA01_BUCK_VSEL_MASK	0xFF
+ #define S2MPA01_ENABLE_MASK	(0x03 << S2MPA01_ENABLE_SHIFT)
+diff --git a/include/linux/mfd/samsung/s2mps11.h b/include/linux/mfd/samsung/s2mps11.h
+index b3ddf98..7981a9d 100644
+--- a/include/linux/mfd/samsung/s2mps11.h
++++ b/include/linux/mfd/samsung/s2mps11.h
+@@ -171,15 +171,6 @@ enum s2mps11_regulators {
+ 	S2MPS11_REGULATOR_MAX,
+ };
+ 
+-#define S2MPS11_BUCK_MIN1	600000
+-#define S2MPS11_BUCK_MIN2	750000
+-#define S2MPS11_BUCK_MIN3	3000000
+-#define S2MPS11_LDO_MIN	800000
+-#define S2MPS11_BUCK_STEP1	6250
+-#define S2MPS11_BUCK_STEP2	12500
+-#define S2MPS11_BUCK_STEP3	25000
+-#define S2MPS11_LDO_STEP1	50000
+-#define S2MPS11_LDO_STEP2	25000
+ #define S2MPS11_LDO_VSEL_MASK	0x3F
+ #define S2MPS11_BUCK_VSEL_MASK	0xFF
+ #define S2MPS11_ENABLE_MASK	(0x03 << S2MPS11_ENABLE_SHIFT)
+diff --git a/include/linux/mfd/samsung/s2mps14.h b/include/linux/mfd/samsung/s2mps14.h
+index 900cd7a..c92f478 100644
+--- a/include/linux/mfd/samsung/s2mps14.h
++++ b/include/linux/mfd/samsung/s2mps14.h
+@@ -123,10 +123,6 @@ enum s2mps14_regulators {
+ };
+ 
+ /* Regulator constraints for BUCKx */
+-#define S2MPS14_BUCK1235_MIN_600MV	600000
+-#define S2MPS14_BUCK4_MIN_1400MV	1400000
+-#define S2MPS14_BUCK1235_STEP_6_25MV	6250
+-#define S2MPS14_BUCK4_STEP_12_5MV	12500
+ #define S2MPS14_BUCK1235_START_SEL	0x20
+ #define S2MPS14_BUCK4_START_SEL		0x40
+ /*
+@@ -136,12 +132,6 @@ enum s2mps14_regulators {
+  */
+ #define S2MPS14_BUCK_RAMP_DELAY		12500
+ 
+-/* Regulator constraints for different types of LDOx */
+-#define S2MPS14_LDO_MIN_800MV		800000
+-#define S2MPS14_LDO_MIN_1800MV		1800000
+-#define S2MPS14_LDO_STEP_12_5MV		12500
+-#define S2MPS14_LDO_STEP_25MV		25000
+-
+ #define S2MPS14_LDO_VSEL_MASK		0x3F
+ #define S2MPS14_BUCK_VSEL_MASK		0xFF
+ #define S2MPS14_ENABLE_MASK		(0x03 << S2MPS14_ENABLE_SHIFT)
+-- 
+1.9.1
 
