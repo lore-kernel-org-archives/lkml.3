@@ -1,59 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaGOFIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 01:08:40 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:44196 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaGOFIj (ORCPT
+	id S1753350AbaGOFMP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 01:12:15 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:53121 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaGOFMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 01:08:39 -0400
-Date: Tue, 15 Jul 2014 06:08:32 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: KY Srinivasan <kys@microsoft.com>, "David S. Miller" <davem@davemloft.net>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
- in 3.14+ on Hyper-V 2012 R2
-Message-ID: <20140715050832.GA28549@sucs.org>
-References: <20140706201800.GA10587@sucs.org>
- <941b0055b1a94c66b3a608ae67764d11@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140707181341.GA2646@sucs.org>
- <20140711055259.GA10317@sucs.org>
- <52afbe119b1a481aa1c80f909c3a2432@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140714213032.GA23639@sucs.org>
- <8b68f48141a045f784c10f9c081cd51f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	Tue, 15 Jul 2014 01:12:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8b68f48141a045f784c10f9c081cd51f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3820825.ei0ZJkn3Cj@vostro.rjw.lan>
+References: <1403261865-7472-1-git-send-email-pramod.gurav.etc@gmail.com>
+	<CAMf-jSm=YK4AN9-enh_8F4DYf-JGpv_=FRYdgYTt5P_EvSsE8g@mail.gmail.com>
+	<CAMf-jSmvVL9BwkiqmS0Ep+MhZHERXsV_E8vHKdthM7hmnd9Fkg@mail.gmail.com>
+	<3820825.ei0ZJkn3Cj@vostro.rjw.lan>
+Date: Tue, 15 Jul 2014 10:42:11 +0530
+Message-ID: <CAMf-jS=gqH4h2d=P3EUtG=KSfBdHyzgeoBBAO6uJnYEX-tMW8A@mail.gmail.com>
+Subject: Re: [PATCH] cpuidle: Fix Coding style reported by checkpatch.pl
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:39:48PM +0000, Haiyang Zhang wrote:
-> > -----Original Message-----
-> > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> > Sent: Monday, July 14, 2014 5:31 PM
-> > To: Haiyang Zhang
-> > Cc: KY Srinivasan; David S. Miller; devel@linuxdriverproject.org; linux-
-> > kernel@vger.kernel.org; netdev@vger.kernel.org
-> > Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers is
-> > racy in 3.14+ on Hyper-V 2012 R2
-> 
-> Thanks for the tests! I will make a patch that can automatically retry
-> smaller memory allocs when memory is insufficient.
+On Mon, Jul 14, 2014 at 11:38 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Monday, July 14, 2014 12:40:24 PM pramod gurav wrote:
+>> Hi Rafael,
+>>
+>> Can we consider these changes if there are  no issues with this?
+>
+> Well, are you "fixing" checkpatch.pl warnings just for the sake of
+> this or is there a deeper reason?
+>
 
-This concerns me a bit - why would there be insufficient memory on a 64
-bit VM with 4 GBytes of RAM just after startup (presumably the host's
-memory isn't the issue)? Additionally, while things might fail just when
-things are starting up, doing ifup eth0 at some point later succeeds so
-whatever issue it had seems temporary.
+I was browsing through the source code and found couple of them. Then
+ran checkpatch.pl to see if there are more. And thought the error
+"Fixed: ERROR: do not use assignment in if condition" must be fixed.
+Otherwise there is no reason.
 
-Perhaps it would be wise to adding some debugging output to see if the
-allocation really failed and why...
+> Rafael
+>
+>
+>> On Fri, Jun 20, 2014 at 4:28 PM, pramod gurav
+>> <pramod.gurav.etc@gmail.com> wrote:
+>> > +linux-pm
+>> >
+>> > On Fri, Jun 20, 2014 at 4:27 PM, Pramod Gurav
+>> > <pramod.gurav.etc@gmail.com> wrote:
+>> >> Fixed: ERROR: do not use assignment in if condition
+>> >> Fixed: WARNING: EXPORT_SYMBOL should immediately follow its function
+>> >> Fixed: WARNING: line over 80 characters in a comment
+>> >>
+>> >> CC: Rafael J. Wysocki <rjw@rjwysocki.net>
+>> >> CC: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> >>
+>> >> Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
+>> >> ---
+>> >>  drivers/cpuidle/cpuidle.c |   18 ++++++++----------
+>> >>  1 file changed, 8 insertions(+), 10 deletions(-)
+>> >>
+>> >> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>> >> index 8236746..2c8752e 100644
+>> >> --- a/drivers/cpuidle/cpuidle.c
+>> >> +++ b/drivers/cpuidle/cpuidle.c
+>> >> @@ -179,7 +179,9 @@ void cpuidle_reflect(struct cpuidle_device *dev, int index)
+>> >>  void cpuidle_install_idle_handler(void)
+>> >>  {
+>> >>         if (enabled_devices) {
+>> >> -               /* Make sure all changes finished before we switch to new idle */
+>> >> +               /*
+>> >> +                * Make sure all changes finished before we switch to new idle
+>> >> +                */
+>> >>                 smp_wmb();
+>> >>                 initialized = 1;
+>> >>         }
+>> >> @@ -204,7 +206,6 @@ void cpuidle_pause_and_lock(void)
+>> >>         mutex_lock(&cpuidle_lock);
+>> >>         cpuidle_uninstall_idle_handler();
+>> >>  }
+>> >> -
+>> >>  EXPORT_SYMBOL_GPL(cpuidle_pause_and_lock);
+>> >>
+>> >>  /**
+>> >> @@ -215,7 +216,6 @@ void cpuidle_resume_and_unlock(void)
+>> >>         cpuidle_install_idle_handler();
+>> >>         mutex_unlock(&cpuidle_lock);
+>> >>  }
+>> >> -
+>> >>  EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+>> >>
+>> >>  /* Currently used in suspend/resume path to suspend cpuidle */
+>> >> @@ -267,9 +267,11 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+>> >>         if (ret)
+>> >>                 return ret;
+>> >>
+>> >> -       if (cpuidle_curr_governor->enable &&
+>> >> -           (ret = cpuidle_curr_governor->enable(drv, dev)))
+>> >> -               goto fail_sysfs;
+>> >> +       if (cpuidle_curr_governor->enable) {
+>> >> +               ret = cpuidle_curr_governor->enable(drv, dev);
+>> >> +               if (ret)
+>> >> +                       goto fail_sysfs;
+>> >> +       }
+>> >>
+>> >>         smp_wmb();
+>> >>
+>> >> @@ -283,7 +285,6 @@ fail_sysfs:
+>> >>
+>> >>         return ret;
+>> >>  }
+>> >> -
+>> >>  EXPORT_SYMBOL_GPL(cpuidle_enable_device);
+>> >>
+>> >>  /**
+>> >> @@ -311,7 +312,6 @@ void cpuidle_disable_device(struct cpuidle_device *dev)
+>> >>         cpuidle_remove_device_sysfs(dev);
+>> >>         enabled_devices--;
+>> >>  }
+>> >> -
+>> >>  EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+>> >>
+>> >>  static void __cpuidle_unregister_device(struct cpuidle_device *dev)
+>> >> @@ -399,7 +399,6 @@ out_unregister:
+>> >>         __cpuidle_unregister_device(dev);
+>> >>         goto out_unlock;
+>> >>  }
+>> >> -
+>> >>  EXPORT_SYMBOL_GPL(cpuidle_register_device);
+>> >>
+>> >>  /**
+>> >> @@ -423,7 +422,6 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
+>> >>
+>> >>         cpuidle_resume_and_unlock();
+>> >>  }
+>> >> -
+>> >>  EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
+>> >>
+>> >>  /**
+>> >> --
+>> >> 1.7.9.5
+>> >>
+>> >
+>> >
+>> >
+>> > --
+>> > Thanks and Regards
+>> > Pramod
+>>
+>>
+>>
+>>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+
+
 
 -- 
-Sitsofe | http://sucs.org/~sits/
+Thanks and Regards
+Pramod
