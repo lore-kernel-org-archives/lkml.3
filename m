@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698AbaGORhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:37:16 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:41407 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaGORhN (ORCPT
+	id S932741AbaGORhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:37:24 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:54546 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932078AbaGORhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:37:13 -0400
-Date: Tue, 15 Jul 2014 13:37:06 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: "Bridgman, John" <John.Bridgman@amd.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/83] AMD HSA kernel driver
-Message-ID: <20140715173704.GA3421@gmail.com>
-References: <20140710222423.GA14219@gmail.com>
- <019CCE693E457142B37B791721487FD91809E4C2@storexdag01.amd.com>
- <20140711211850.GU1870@gmail.com>
- <019CCE693E457142B37B791721487FD9180A193B@storexdag01.amd.com>
- <20140713035535.GB5301@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
- <20140713164901.GB10624@gmail.com>
- <53C396D3.9000600@vodafone.de>
- <CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
+	Tue, 15 Jul 2014 13:37:17 -0400
+Message-ID: <53C565B8.7000106@fb.com>
+Date: Tue, 15 Jul 2014 13:32:40 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Martin Lau <kafai@fb.com>, <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ring-buffer: Fix polling on trace_pipe
+References: <20140610060637.GA14045@devbig242.prn2.facebook.com>
+In-Reply-To: <20140610060637.GA14045@devbig242.prn2.facebook.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-15_06:2014-07-15,2014-07-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.67438285458843e-11 kscore.compositescore=0
+ circleOfTrustscore=22.4078557653337 compositescore=0.997695897463551
+ urlsuspect_oldscore=0.997695897463551 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1407150186
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 05:06:56PM +0000, Bridgman, John wrote:
-> >From: Dave Airlie [mailto:airlied@gmail.com]
-> >Sent: Tuesday, July 15, 2014 12:35 AM
-> >To: Christian König
-> >Cc: Jerome Glisse; Bridgman, John; Lewycky, Andrew; linux-
-> >kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Deucher,
-> >Alexander; akpm@linux-foundation.org
-> >Subject: Re: [PATCH 00/83] AMD HSA kernel driver
-> >
-> >On 14 July 2014 18:37, Christian König <deathsimple@vodafone.de> wrote:
-> >>> I vote for HSA module that expose ioctl and is an intermediary with
-> >>> the kernel driver that handle the hardware. This gives a single point
-> >>> for HSA hardware and yes this enforce things for any hardware
-> >manufacturer.
-> >>> I am more than happy to tell them that this is it and nothing else if
-> >>> they want to get upstream.
-> >>
-> >> I think we should still discuss this single point of entry a bit more.
-> >>
-> >> Just to make it clear the plan is to expose all physical HSA capable
-> >> devices through a single /dev/hsa device node to userspace.
-> >
-> >This is why we don't design kernel interfaces in secret foundations, and
-> >expect anyone to like them.
-> 
-> Understood and agree. In this case though this isn't a cross-vendor interface designed by a secret committee, it's supposed to be more of an inoffensive little single-vendor interface designed *for* a secret committee. I'm hoping that's better ;)
-> 
-> >
-> >So before we go any further, how is this stuff planned to work for multiple
-> >GPUs/accelerators?
-> 
-> Three classes of "multiple" :
-> 
-> 1. Single CPU with IOMMUv2 and multiple GPUs:
-> 
-> - all devices accessible via /dev/kfd
-> - topology information identifies CPU + GPUs, each has "node ID" at top of userspace API, "global ID" at user/kernel interface
->  (don't think we've implemented CPU part yet though)
-> - userspace builds snapshot from sysfs info & exposes to HSAIL runtime, which in turn exposes the "standard" API
 
-This is why i do not like the sysfs approach, it would be lot nicer to have
-device file per provider and thus hsail can listen on device file event and
-discover if hardware is vanishing or appearing. Periodicaly going over sysfs
-files is not the right way to do that.
 
-> - kfd sets up ATC aperture so GPUs can access system RAM via IOMMUv2 (fast for APU, relatively less so for dGPU over PCIE)
-> - to-be-added memory operations allow allocation & residency control (within existing gfx driver limits) of buffers in VRAM & carved-out system RAM
-> - queue operations specify a node ID to userspace library, which translates to "global ID" before calling kfd
+On 06/10/2014 02:06 AM, Martin Lau wrote:
+> ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+> even there is immediate data available.  Otherwise, the following epoll and
+> read sequence will eventually hang forever:
 > 
-> 2. Multiple CPUs connected via fabric (eg HyperTransport) each with 0 or more GPUs:
+> 1. Put some data to make the trace_pipe ring_buffer read ready first
+> 2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+> 3. epoll_wait()
+> 4. read(trace_pipe_fd) till EAGAIN
+> 5. Add some more data to the trace_pipe ring_buffer
+> 6. epoll_wait() -> this epoll_wait() will block forever
 > 
-> - topology information exposes CPUs & GPUs, along with affinity info showing what is connected to what
-> - everything else works as in (1) above
+> ~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+>   ring_buffer_poll_wait() returns immediately without adding poll_table,
+>   which has poll_table->_qproc pointing to ep_poll_callback(), to its
+>   wait_queue.
+> ~ During the epoll_wait() call in step 3 and step 6,
+>   ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+>   because the poll_table->_qproc is NULL and it is how epoll works.
+> ~ When there is new data available in step 6, ring_buffer does not know
+>   it has to call ep_poll_callback() because it is not in its wait queue.
+>   Hence, block forever.
 > 
+> Other poll implementation seems to call poll_wait() unconditionally as the very
+> first thing to do.  For example, tcp_poll() in tcp.c.
 
-This is suppose to be part of HSA ? This is lot broader than i thought.
+Reviewed-by: Chris Mason <clm@fb.com>
 
-> 3. Multiple CPUs not connected via fabric (eg a blade server) each with 0 or more GPUs
-> 
-> - no attempt to cover this with HSA topology, each CPU and associated GPUs is accessed independently via separate /dev/kfd instances
-> 
-> >
-> >Do we have a userspace to exercise this interface so we can see how such a
-> >thing would look?
-> 
-> Yes -- initial IP review done, legal stuff done, sanitizing WIP, hoping for final approval this week
-> 
-> There's a separate test harness to exercise the userspace lib calls, haven't started IP review or sanitizing for that but legal stuff is done
-> 
-> >
-> >Dave.
+This looked horribly wrong to me at first, but Martin walked me through
+how the polling code is setting up waiters.  We have it in production here.
