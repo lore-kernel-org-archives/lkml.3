@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759875AbaGOWFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:05:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54536 "EHLO
+	id S1759945AbaGOWGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:06:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54528 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759392AbaGOVgd (ORCPT
+	with ESMTP id S1759425AbaGOVgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:33 -0400
+	Tue, 15 Jul 2014 17:36:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 116/198] drm/nv50-/mc: fix kms pageflip events by reordering irq handling order.
-Date: Tue, 15 Jul 2014 14:29:46 -0700
-Message-Id: <1405459868-15089-117-git-send-email-kamal@canonical.com>
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 134/198] ALSA: hda - Add quirk for external mic on Lifebook U904
+Date: Tue, 15 Jul 2014 14:30:04 -0700
+Message-Id: <1405459868-15089-135-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit dcfb1009df3b4ad8d2e0779dd45b438629d6858a upstream.
+commit 2041d56464a067461d7cc21734a0f024587ed2ff upstream.
 
-Whenever a single nouveau_mc_intr() main gpu irq-handler invocation was
-responsible for calling both, the vblank-irq handler (display engine irq)
-and kms-pageflip completion handler (from fifo irq), the order of
-invocation was wrong. nouveau_finish_flip() was called before
-drm_handle_vblank() for the vblank of pageflip completion, so the
-emitted pageflip event contained stale vblank count and timestamp
-from previous vblank. This caused failure in userspace to timestamp
-properly.
+According to the bug reporter (Данило Шеган), the external mic
+starts to work and has proper jack detection if only pin 0x19
+is marked properly as an external headset mic.
 
-Reorder order of invocation of engine irq handlers: Put
-NVDEV_ENGINE_DISP always on top, and thereby before NVDEV_ENGINE_FIFO,
-so that drm_handle_vblank() gets called to update vblank timestamps
-and count before potential pageflip events make use of that
-information.
+AlsaInfo at https://bugs.launchpad.net/ubuntu/+source/pulseaudio/+bug/1328587/+attachment/4128991/+files/AlsaInfo.txt
 
-This works on nv-50 and later, where kms-pageflip completion triggers
-an irq either after a separate vblank irq, or both pageflip and vblank
-trigger one common irq invocation, but never before vblank irqs.
-
-v2 (Ben):
-- removed mods for nv04-nv40, it doesn't help there anyway
-- this is considered a hack, and a better solution should be found
-
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+BugLink: https://bugs.launchpad.net/bugs/1328587
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c | 2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c | 2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c b/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-index e8822a9..90d8bf8 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-@@ -26,6 +26,7 @@
- 
- const struct nouveau_mc_intr
- nv50_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP before FIFO, so pageflip-timestamping works! */
- 	{ 0x00000001, NVDEV_ENGINE_MPEG },
- 	{ 0x00000100, NVDEV_ENGINE_FIFO },
- 	{ 0x00001000, NVDEV_ENGINE_GR },
-@@ -34,7 +35,6 @@ nv50_mc_intr[] = {
- 	{ 0x00020000, NVDEV_ENGINE_VP },	/* NV84- */
- 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
- 	{ 0x0002d101, NVDEV_SUBDEV_FB },
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c b/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-index f8a6f18..95b3d35 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-@@ -26,6 +26,7 @@
- 
- static const struct nouveau_mc_intr
- nv98_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work */
- 	{ 0x00000001, NVDEV_ENGINE_PPP },
- 	{ 0x00000100, NVDEV_ENGINE_FIFO },
- 	{ 0x00001000, NVDEV_ENGINE_GR },
-@@ -37,7 +38,6 @@ nv98_mc_intr[] = {
- 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
- 	{ 0x00400000, NVDEV_ENGINE_COPY0 },	/* NVA3-     */
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
- 	{ 0x0042d101, NVDEV_SUBDEV_FB },
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-index c02b476..c809743 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-@@ -26,6 +26,7 @@
- 
- const struct nouveau_mc_intr
- nvc0_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work. */
- 	{ 0x00000001, NVDEV_ENGINE_PPP },
- 	{ 0x00000020, NVDEV_ENGINE_COPY0 },
- 	{ 0x00000040, NVDEV_ENGINE_COPY1 },
-@@ -39,7 +40,6 @@ nvc0_mc_intr[] = {
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
- 	{ 0x01000000, NVDEV_SUBDEV_PWR },
- 	{ 0x02000000, NVDEV_SUBDEV_LTCG },
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x40000000, NVDEV_SUBDEV_IBUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index d370e43..d44229b 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3958,6 +3958,7 @@ enum {
+ 	ALC269_FIXUP_HEADSET_MIC,
+ 	ALC269_FIXUP_QUANTA_MUTE,
+ 	ALC269_FIXUP_LIFEBOOK,
++	ALC269_FIXUP_LIFEBOOK_EXTMIC,
+ 	ALC269_FIXUP_AMIC,
+ 	ALC269_FIXUP_DMIC,
+ 	ALC269VB_FIXUP_AMIC,
+@@ -4081,6 +4082,13 @@ static const struct hda_fixup alc269_fixups[] = {
+ 		.chained = true,
+ 		.chain_id = ALC269_FIXUP_QUANTA_MUTE
+ 	},
++	[ALC269_FIXUP_LIFEBOOK_EXTMIC] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{ 0x19, 0x01a1903c }, /* headset mic, with jack detect */
++			{ }
++		},
++	},
+ 	[ALC269_FIXUP_AMIC] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = (const struct hda_pintbl[]) {
+@@ -4442,6 +4450,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+ 	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
+ 	SND_PCI_QUIRK(0x10cf, 0x1475, "Lifebook", ALC269_FIXUP_LIFEBOOK),
++	SND_PCI_QUIRK(0x10cf, 0x1845, "Lifebook U904", ALC269_FIXUP_LIFEBOOK_EXTMIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Thinkpad SL410/510", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Thinkpad L512", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
 -- 
 1.9.1
 
