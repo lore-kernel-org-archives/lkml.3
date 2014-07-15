@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769AbaGOIys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:54:48 -0400
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:41667
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S932755AbaGOIyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:54:44 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:38858
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758253AbaGOIry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:47:54 -0400
+	id S1757584AbaGOIr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:47:57 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 10/29] nios2: Cache handling
-Date: Tue, 15 Jul 2014 16:45:37 +0800
-Message-ID: <1405413956-2772-11-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 11/29] nios2: TLB handling
+Date: Tue, 15 Jul 2014 16:45:38 +0800
+Message-ID: <1405413956-2772-12-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(22564002)(92566001)(77156001)(4396001)(85852003)(88136002)(83072002)(99396002)(229853001)(42186005)(79102001)(31966008)(77982001)(2201001)(81542001)(74662001)(80022001)(48376002)(89996001)(76482001)(36756003)(81342001)(47776003)(97736001)(68736004)(62966002)(19580405001)(21056001)(87286001)(104166001)(102836001)(44976005)(6806004)(83322001)(84676001)(86362001)(85306003)(87936001)(95666004)(92726001)(19580395003)(50226001)(77096002)(105596002)(76176999)(20776003)(107046002)(74502001)(50986999)(64706001)(93916002)(106466001)(46102001)(33646002)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB038;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(22564002)(189002)(77156001)(99396002)(81542001)(64706001)(95666004)(76176999)(76482001)(88136002)(68736004)(36756003)(84676001)(81342001)(20776003)(85306003)(229853001)(4396001)(21056001)(50226001)(47776003)(80022001)(85852003)(50986999)(107046002)(62966002)(83072002)(104166001)(105596002)(79102001)(77096002)(86362001)(33646002)(92566001)(74662001)(106466001)(31966008)(2201001)(97736001)(93916002)(92726001)(77982001)(83322001)(19580395003)(87936001)(19580405001)(74502001)(6806004)(102836001)(89996001)(48376002)(15975445006)(44976005)(46102001)(42186005)(87286001)(15202345003)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB033;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,395 +31,389 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds functionality required for cache maintenance.
+This patch adds the TLB maintenance functions.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/cache.h      |  36 +++++
- arch/nios2/include/asm/cacheflush.h |  54 ++++++++
- arch/nios2/mm/cacheflush.c          | 270 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 360 insertions(+)
- create mode 100644 arch/nios2/include/asm/cache.h
- create mode 100644 arch/nios2/include/asm/cacheflush.h
- create mode 100644 arch/nios2/mm/cacheflush.c
+ arch/nios2/include/asm/tlb.h      |  34 +++++
+ arch/nios2/include/asm/tlbflush.h |  46 +++++++
+ arch/nios2/mm/tlb.c               | 274 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 354 insertions(+)
+ create mode 100644 arch/nios2/include/asm/tlb.h
+ create mode 100644 arch/nios2/include/asm/tlbflush.h
+ create mode 100644 arch/nios2/mm/tlb.c
 
-diff --git a/arch/nios2/include/asm/cache.h b/arch/nios2/include/asm/cache.h
+diff --git a/arch/nios2/include/asm/tlb.h b/arch/nios2/include/asm/tlb.h
 new file mode 100644
-index 0000000..2293cf5
+index 0000000..d3bc648
 --- /dev/null
-+++ b/arch/nios2/include/asm/cache.h
-@@ -0,0 +1,36 @@
++++ b/arch/nios2/include/asm/tlb.h
+@@ -0,0 +1,34 @@
 +/*
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
 + * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ */
-+
-+#ifndef _ASM_NIOS2_CACHE_H
-+#define _ASM_NIOS2_CACHE_H
-+
-+#define NIOS2_DCACHE_SIZE	CONFIG_NIOS2_DCACHE_SIZE
-+#define NIOS2_ICACHE_SIZE	CONFIG_NIOS2_ICACHE_SIZE
-+#define NIOS2_DCACHE_LINE_SIZE	CONFIG_NIOS2_DCACHE_LINE_SIZE
-+#define NIOS2_ICACHE_LINE_SHIFT	5
-+#define NIOS2_ICACHE_LINE_SIZE	(1 << NIOS2_ICACHE_LINE_SHIFT)
-+
-+/* bytes per L1 cache line */
-+#define L1_CACHE_SHIFT		NIOS2_ICACHE_LINE_SHIFT
-+#define L1_CACHE_BYTES		NIOS2_ICACHE_LINE_SIZE
-+
-+#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
-+
-+#define __cacheline_aligned
-+#define ____cacheline_aligned
-+
-+#endif
-diff --git a/arch/nios2/include/asm/cacheflush.h b/arch/nios2/include/asm/cacheflush.h
-new file mode 100644
-index 0000000..c9d34d7
---- /dev/null
-+++ b/arch/nios2/include/asm/cacheflush.h
-@@ -0,0 +1,54 @@
-+/*
-+ * Copyright (C) 2003 Microtronix Datacom Ltd.
-+ * Copyright (C) 2000-2002 Greg Ungerer <gerg@snapgear.com>
-+ *
-+ * Ported from m68knommu.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_CACHEFLUSH_H
-+#define _ASM_NIOS2_CACHEFLUSH_H
++#ifndef _ASM_NIOS2_TLB_H
++#define _ASM_NIOS2_TLB_H
 +
-+#include <linux/mm_types.h>
++#define tlb_flush(tlb)	flush_tlb_mm((tlb)->mm)
++
++extern void set_mmu_pid(unsigned long pid);
 +
 +/*
-+ * This flag is used to indicate that the page pointed to by a pte is clean
-+ * and does not require cleaning before returning it to the user.
++ * NiosII doesn't need any special per-pte or per-vma handling, except
++ * we need to flush cache for the area to be unmapped.
 + */
-+#define PG_dcache_clean PG_arch_1
++#define tlb_start_vma(tlb, vma)					\
++	do {							\
++		if (!tlb->fullmm)				\
++			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
++	}  while (0)
++
++#define tlb_end_vma(tlb, vma)	do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
++
++#include <linux/pagemap.h>
++#include <asm-generic/tlb.h>
++
++#endif /* _ASM_NIOS2_TLB_H */
+diff --git a/arch/nios2/include/asm/tlbflush.h b/arch/nios2/include/asm/tlbflush.h
+new file mode 100644
+index 0000000..e19652f
+--- /dev/null
++++ b/arch/nios2/include/asm/tlbflush.h
+@@ -0,0 +1,46 @@
++/*
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _ASM_NIOS2_TLBFLUSH_H
++#define _ASM_NIOS2_TLBFLUSH_H
 +
 +struct mm_struct;
 +
-+extern void flush_cache_all(void);
-+extern void flush_cache_mm(struct mm_struct *mm);
-+extern void flush_cache_dup_mm(struct mm_struct *mm);
-+extern void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
-+	unsigned long end);
-+extern void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
-+	unsigned long pfn);
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 1
-+extern void flush_dcache_page(struct page *page);
-+
-+extern void flush_icache_range(unsigned long start, unsigned long end);
-+extern void flush_icache_page(struct vm_area_struct *vma, struct page *page);
-+
-+#define flush_cache_vmap(start, end)		flush_dcache_range(start, end)
-+#define flush_cache_vunmap(start, end)		flush_dcache_range(start, end)
-+
-+extern void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+				unsigned long user_vaddr,
-+				void *dst, void *src, int len);
-+extern void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
-+				unsigned long user_vaddr,
-+				void *dst, void *src, int len);
-+
-+extern void flush_dcache_range(unsigned long start, unsigned long end);
-+extern void invalidate_dcache_range(unsigned long start, unsigned long end);
-+
-+#define flush_dcache_mmap_lock(mapping)		do { } while (0)
-+#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
-+
-+#endif /* _ASM_NIOS2_CACHEFLUSH_H */
-diff --git a/arch/nios2/mm/cacheflush.c b/arch/nios2/mm/cacheflush.c
-new file mode 100644
-index 0000000..cf06a00
---- /dev/null
-+++ b/arch/nios2/mm/cacheflush.c
-@@ -0,0 +1,270 @@
 +/*
++ * TLB flushing:
++ *
++ *  - flush_tlb_all() flushes all processes TLB entries
++ *  - flush_tlb_mm(mm) flushes the specified mm context TLB entries
++ *  - flush_tlb_page(vma, vmaddr) flushes one page
++ *  - flush_tlb_range(vma, start, end) flushes a range of pages
++ *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
++ */
++extern void flush_tlb_all(void);
++extern void flush_tlb_mm(struct mm_struct *mm);
++extern void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			    unsigned long end);
++extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++extern void flush_tlb_one(unsigned long vaddr);
++
++static inline void flush_tlb_page(struct vm_area_struct *vma,
++				unsigned long addr)
++{
++	flush_tlb_one(addr);
++}
++
++#endif /* _ASM_NIOS2_TLBFLUSH_H */
+diff --git a/arch/nios2/mm/tlb.c b/arch/nios2/mm/tlb.c
+new file mode 100644
+index 0000000..642b6df
+--- /dev/null
++++ b/arch/nios2/mm/tlb.c
+@@ -0,0 +1,274 @@
++/*
++ * Nios2 TLB handling
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
-+ *
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + */
 +
-+#include <linux/export.h>
++#include <linux/init.h>
 +#include <linux/sched.h>
 +#include <linux/mm.h>
-+#include <linux/fs.h>
++#include <linux/pagemap.h>
 +
-+#include <asm/cacheflush.h>
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++#include <asm/pgtable.h>
 +#include <asm/cpuinfo.h>
 +
-+static void __flush_dcache(unsigned long start, unsigned long end)
++#define TLB_INDEX_MASK		\
++	((((1UL << (cpuinfo.tlb_ptr_sz - cpuinfo.tlb_num_ways_log2))) - 1) \
++		<< PAGE_SHIFT)
++
++/* Used as illegal PHYS_ADDR for TLB mappings
++ */
++#define MAX_PHYS_ADDR 0
++
++static void get_misc_and_pid(unsigned long *misc, unsigned long *pid)
 +{
-+	unsigned long addr;
++	*misc  = RDCTL(CTL_TLBMISC);
++	*misc &= (TLBMISC_PID | TLBMISC_WAY);
++	*pid  = *misc & TLBMISC_PID;
++}
 +
-+	start &= ~(cpuinfo.dcache_line_size - 1);
-+	end += (cpuinfo.dcache_line_size - 1);
-+	end &= ~(cpuinfo.dcache_line_size - 1);
++/*
++ * All entries common to a mm share an asid.  To effectively flush these
++ * entries, we just bump the asid.
++ */
++void flush_tlb_mm(struct mm_struct *mm)
++{
++	if (current->mm == mm)
++		flush_tlb_all();
++	else
++		memset(&mm->context, 0, sizeof(mm_context_t));
++}
 +
-+	if (end > start + cpuinfo.dcache_size)
-+		end = start + cpuinfo.dcache_size;
++/*
++ * This one is only used for pages with the global bit set so we don't care
++ * much about the ASID.
++ */
++void flush_tlb_one_pid(unsigned long addr, unsigned long mmu_pid)
++{
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
 +
-+	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
-+		__asm__ __volatile__ ("   flushda 0(%0)\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
++	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
++
++	/* remember pid/way until we return. */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++		unsigned long pid;
++
++		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
++		WRCTL(CTL_TLBMISC, tlbmisc);
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++		pid = (tlbmisc >> TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK;
++		if (((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) &&
++				pid == mmu_pid) {
++			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
++				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
++				(addr & TLB_INDEX_MASK);
++			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
++				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
++
++			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
++			tlbmisc = pid_misc | TLBMISC_WE |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++		}
 +	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
 +
-+static void __flush_dcache_all(unsigned long start, unsigned long end)
-+{
-+	unsigned long addr;
-+
-+	start &= ~(cpuinfo.dcache_line_size - 1);
-+	end += (cpuinfo.dcache_line_size - 1);
-+	end &= ~(cpuinfo.dcache_line_size - 1);
-+
-+	if (end > start + cpuinfo.dcache_size)
-+		end = start + cpuinfo.dcache_size;
-+
-+	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
-+		__asm__ __volatile__ ("   flushd 0(%0)\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
-+}
-+
-+static void __invalidate_dcache(unsigned long start, unsigned long end)
-+{
-+	unsigned long addr;
-+
-+	start &= ~(cpuinfo.dcache_line_size - 1);
-+	end += (cpuinfo.dcache_line_size - 1);
-+	end &= ~(cpuinfo.dcache_line_size - 1);
-+
-+	if (end > start + cpuinfo.dcache_size)
-+		end = start + cpuinfo.dcache_size;
-+
-+	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
-+		__asm__ __volatile__ ("   initda 0(%0)\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
-+}
-+
-+static void __flush_icache(unsigned long start, unsigned long end)
-+{
-+	unsigned long addr;
-+
-+	start &= ~(cpuinfo.icache_line_size - 1);
-+	end += (cpuinfo.icache_line_size - 1);
-+	end &= ~(cpuinfo.icache_line_size - 1);
-+
-+	if (end > start + cpuinfo.icache_size)
-+		end = start + cpuinfo.icache_size;
-+
-+	for (addr = start; addr < end; addr += cpuinfo.icache_line_size) {
-+		__asm__ __volatile__ ("   flushi %0\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
-+	__asm__ __volatile(" flushp\n");
-+}
-+
-+static void flush_aliases(struct address_space *mapping, struct page *page)
-+{
-+	struct mm_struct *mm = current->active_mm;
-+	struct vm_area_struct *mpnt;
-+	pgoff_t pgoff;
-+
-+	pgoff = page->index;
-+
-+	flush_dcache_mmap_lock(mapping);
-+	vma_interval_tree_foreach(mpnt, &mapping->i_mmap, pgoff, pgoff) {
-+		unsigned long offset;
-+
-+		if (mpnt->vm_mm != mm)
-+			continue;
-+		if (!(mpnt->vm_flags & VM_MAYSHARE))
-+			continue;
-+
-+		offset = (pgoff - mpnt->vm_pgoff) << PAGE_SHIFT;
-+		flush_cache_page(mpnt, mpnt->vm_start + offset,
-+			page_to_pfn(page));
-+	}
-+	flush_dcache_mmap_unlock(mapping);
-+}
-+
-+void flush_cache_all(void)
-+{
-+	__flush_dcache_all(0, cpuinfo.dcache_size);
-+	__flush_icache(0, cpuinfo.icache_size);
-+}
-+
-+void flush_cache_mm(struct mm_struct *mm)
-+{
-+	flush_cache_all();
-+}
-+
-+void flush_cache_dup_mm(struct mm_struct *mm)
-+{
-+	flush_cache_all();
-+}
-+
-+void flush_icache_range(unsigned long start, unsigned long end)
-+{
-+	__flush_icache(start, end);
-+}
-+
-+void flush_dcache_range(unsigned long start, unsigned long end)
-+{
-+	__flush_dcache(start, end);
-+}
-+EXPORT_SYMBOL(flush_dcache_range);
-+
-+void invalidate_dcache_range(unsigned long start, unsigned long end)
-+{
-+	__invalidate_dcache(start, end);
-+}
-+EXPORT_SYMBOL(invalidate_dcache_range);
-+
-+void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
++void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
 +			unsigned long end)
 +{
-+	__flush_dcache(start, end);
-+	if (vma == NULL || (vma->vm_flags & VM_EXEC))
-+		__flush_icache(start, end);
-+}
++	unsigned long mmu_pid = get_pid_from_context(&vma->vm_mm->context);
 +
-+void flush_icache_page(struct vm_area_struct *vma, struct page *page)
-+{
-+	unsigned long start = (unsigned long) page_address(page);
-+	unsigned long end = start + PAGE_SIZE;
-+
-+	__flush_icache(start, end);
-+}
-+
-+void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
-+			unsigned long pfn)
-+{
-+	unsigned long start = vmaddr;
-+	unsigned long end = start + PAGE_SIZE;
-+
-+	__flush_dcache(start, end);
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache(start, end);
-+}
-+
-+void flush_dcache_page(struct page *page)
-+{
-+	struct address_space *mapping;
-+
-+	/*
-+	 * The zero page is never written to, so never has any dirty
-+	 * cache lines, and therefore never needs to be flushed.
-+	 */
-+	if (page == ZERO_PAGE(0))
-+		return;
-+
-+	mapping = page_mapping(page);
-+
-+	/* Flush this page if there are aliases. */
-+	if (mapping && !mapping_mapped(mapping)) {
-+		clear_bit(PG_dcache_clean, &page->flags);
-+	} else {
-+		unsigned long start = (unsigned long)page_address(page);
-+		__flush_dcache_all(start, start + PAGE_SIZE);
-+		if (mapping)
-+			flush_aliases(mapping,  page);
-+		set_bit(PG_dcache_clean, &page->flags);
-+	}
-+}
-+EXPORT_SYMBOL(flush_dcache_page);
-+
-+void update_mmu_cache(struct vm_area_struct *vma,
-+		      unsigned long address, pte_t *pte)
-+{
-+	unsigned long pfn = pte_pfn(*pte);
-+	struct page *page;
-+
-+	if (!pfn_valid(pfn))
-+		return;
-+
-+	/*
-+	* The zero page is never written to, so never has any dirty
-+	* cache lines, and therefore never needs to be flushed.
-+	*/
-+	page = pfn_to_page(pfn);
-+	if (page == ZERO_PAGE(0))
-+		return;
-+
-+	if (!PageReserved(page) &&
-+	     !test_and_set_bit(PG_dcache_clean, &page->flags)) {
-+		unsigned long start = page_to_virt(page);
-+		struct address_space *mapping;
-+
-+		__flush_dcache(start, start + PAGE_SIZE);
-+
-+		mapping = page_mapping(page);
-+		if (mapping)
-+			flush_aliases(mapping, page);
++	while (start < end) {
++		flush_tlb_one_pid(start, mmu_pid);
++		start += PAGE_SIZE;
 +	}
 +}
 +
-+void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+		    struct page *to)
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
 +{
-+	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
-+	copy_page(vto, vfrom);
-+	__flush_dcache((unsigned long)vto, (unsigned long)vto + PAGE_SIZE);
++	while (start < end) {
++		flush_tlb_one(start);
++		start += PAGE_SIZE;
++	}
 +}
 +
-+void clear_user_page(void *addr, unsigned long vaddr, struct page *page)
++/*
++ * This one is only used for pages with the global bit set so we don't care
++ * much about the ASID.
++ */
++void flush_tlb_one(unsigned long addr)
 +{
-+	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
-+	clear_page(addr);
-+	__flush_dcache((unsigned long)addr, (unsigned long)addr + PAGE_SIZE);
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
++
++	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
++
++	/* remember pid/way until we return. */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++
++		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
++		WRCTL(CTL_TLBMISC, tlbmisc);
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++
++		if ((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) {
++			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
++				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
++				(addr & TLB_INDEX_MASK);
++
++			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
++				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
++
++			tlbmisc = pid_misc | TLBMISC_WE |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
 +
-+void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
-+			unsigned long user_vaddr,
-+			void *dst, void *src, int len)
++void dump_tlb_line(unsigned long line)
 +{
-+	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
-+	memcpy(dst, src, len);
-+	__flush_dcache((unsigned long)src, (unsigned long)src + len);
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache((unsigned long)src, (unsigned long)src + len);
++	unsigned int way;
++	unsigned long org_misc;
++
++	pr_debug("dump tlb-entries for line=%#lx (addr %08lx)\n", line,
++		line << (PAGE_SHIFT + cpuinfo.tlb_num_ways_log2));
++
++	/* remember pid/way until we return */
++	org_misc = (RDCTL(CTL_TLBMISC) & (TLBMISC_PID | TLBMISC_WAY));
++
++	WRCTL(CTL_PTEADDR, line << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++		unsigned long tlbacc;
++
++		WRCTL(CTL_TLBMISC, TLBMISC_RD | (way << TLBMISC_WAY_SHIFT));
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++		tlbacc = RDCTL(CTL_TLBACC);
++
++		if ((tlbacc << PAGE_SHIFT) != (MAX_PHYS_ADDR & PAGE_MASK)) {
++			pr_debug("-- way:%02x vpn:0x%08lx phys:0x%08lx pid:0x%02lx flags:%c%c%c%c%c\n",
++				way,
++				(pteaddr << (PAGE_SHIFT-2)),
++				(tlbacc << PAGE_SHIFT),
++				((tlbmisc >> TLBMISC_PID_SHIFT) &
++				TLBMISC_PID_MASK),
++				(tlbacc & _PAGE_READ ? 'r' : '-'),
++				(tlbacc & _PAGE_WRITE ? 'w' : '-'),
++				(tlbacc & _PAGE_EXEC ? 'x' : '-'),
++				(tlbacc & _PAGE_GLOBAL ? 'g' : '-'),
++				(tlbacc & _PAGE_CACHED ? 'c' : '-'));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
 +
-+void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+			unsigned long user_vaddr,
-+			void *dst, void *src, int len)
++void dump_tlb(void)
 +{
-+	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
-+	memcpy(dst, src, len);
-+	__flush_dcache((unsigned long)dst, (unsigned long)dst + len);
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache((unsigned long)dst, (unsigned long)dst + len);
++	unsigned int i;
++	for (i = 0; i < cpuinfo.tlb_num_lines; i++)
++		dump_tlb_line(i);
++}
++
++void flush_tlb_pid(unsigned long pid)
++{
++	unsigned int line;
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
++
++	/* remember pid/way until we return */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	for (line = 0; line < cpuinfo.tlb_num_lines; line++) {
++		WRCTL(CTL_PTEADDR, line << 2);
++
++		for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++			unsigned long pteaddr;
++			unsigned long tlbmisc;
++			unsigned long tlbacc;
++
++			tlbmisc = pid_misc | TLBMISC_RD |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			pteaddr = RDCTL(CTL_PTEADDR);
++			tlbmisc = RDCTL(CTL_TLBMISC);
++			tlbacc = RDCTL(CTL_TLBACC);
++
++			if (((tlbmisc>>TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK)
++				== pid) {
++				tlbmisc = pid_misc | TLBMISC_WE |
++					(way << TLBMISC_WAY_SHIFT);
++				WRCTL(CTL_TLBMISC, tlbmisc);
++				WRCTL(CTL_TLBACC,
++					(MAX_PHYS_ADDR >> PAGE_SHIFT));
++			}
++		}
++
++		WRCTL(CTL_TLBMISC, org_misc);
++	}
++}
++
++void flush_tlb_all(void)
++{
++	int i;
++	unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE;
++	unsigned int way;
++	unsigned long org_misc, pid_misc, tlbmisc;
++
++	/* remember pid/way until we return */
++	get_misc_and_pid(&org_misc, &pid_misc);
++	pid_misc |= TLBMISC_WE;
++
++	/* Map each TLB entry to physcal address 0 with no-access and a
++	   bad ptbase */
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		tlbmisc = pid_misc | (way << TLBMISC_WAY_SHIFT);
++		for (i = 0; i < cpuinfo.tlb_num_lines; i++) {
++			WRCTL(CTL_PTEADDR, ((vaddr) >> PAGE_SHIFT) << 2);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++			vaddr += 1UL << 12;
++		}
++	}
++
++	/* restore pid/way */
++	WRCTL(CTL_TLBMISC, org_misc);
++}
++
++void set_mmu_pid(unsigned long pid)
++{
++	WRCTL(CTL_TLBMISC, (RDCTL(CTL_TLBMISC) & TLBMISC_WAY) |
++		((pid & TLBMISC_PID_MASK) << TLBMISC_PID_SHIFT));
 +}
 -- 
 1.8.2.1
