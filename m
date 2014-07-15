@@ -1,52 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934481AbaGPAGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:06:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32818 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932982AbaGPAGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:06:05 -0400
-Message-ID: <53C5C1C9.6070100@zytor.com>
-Date: Tue, 15 Jul 2014 17:05:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934505AbaGPAGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:06:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177AbaGOXNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:13:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 44/44] ACPI / battery: Retry to get battery information if failed during probing
+Date: Tue, 15 Jul 2014 16:17:42 -0700
+Message-Id: <20140715231647.998327037@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to handle
- WT type
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>	 <1405452884-25688-4-git-send-email-toshi.kani@hp.com>	 <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>	 <1405465801.28702.34.camel@misato.fc.hp.com>	 <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com> <1405468387.28702.53.camel@misato.fc.hp.com>
-In-Reply-To: <1405468387.28702.53.camel@misato.fc.hp.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 04:53 PM, Toshi Kani wrote:
-> 
-> Right.
-> 
-> I think using struct page table for the RAM ranges is a good way for
-> saving memory, but I wonder how often the RAM ranges are mapped other
-> than WB...  If not often, reserve_memtype() could simply call
-> rbt_memtype_check_insert() for all ranges, including RAM.
-> 
-> In this patch, I left using reserve_ram_pages_type() since I do not see
-> much reason to use WT for RAM, either.
-> 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-They get flipped to WC or WT or even UC for some I/O devices, but
-ultimately the number of ranges is pretty small.
+------------------
 
-	-hpa
+From: Lan Tianyu <tianyu.lan@intel.com>
+
+commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
+
+Some machines (eg. Lenovo Z480) ECs are not stable during boot up
+and causes battery driver fails to be loaded due to failure of getting
+battery information from EC sometimes. After several retries, the
+operation will work. This patch is to retry to get battery information 5
+times if the first try fails.
+
+[ backport to 3.14.5: removed second parameter in acpi_battery_update(),
+introduced by the commit 9e50bc14a7f58b5d8a55973b2d69355852ae2dae (ACPI /
+battery: Accelerate battery resume callback)]
+
+[naszar <naszar@ya.ru>: backport to 3.14.5]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+Reported-and-tested-by: naszar <naszar@ya.ru>
+Cc: All applicable <stable@vger.kernel.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/acpi/battery.c |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
+
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <linux/delay.h>
+ #include <asm/unaligned.h>
+ 
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+@@ -1081,6 +1082,28 @@ static struct dmi_system_id bat_dmi_tabl
+ 	{},
+ };
+ 
++/*
++ * Some machines'(E,G Lenovo Z480) ECs are not stable
++ * during boot up and this causes battery driver fails to be
++ * probed due to failure of getting battery information
++ * from EC sometimes. After several retries, the operation
++ * may work. So add retry code here and 20ms sleep between
++ * every retries.
++ */
++static int acpi_battery_update_retry(struct acpi_battery *battery)
++{
++	int retry, ret;
++
++	for (retry = 5; retry; retry--) {
++		ret = acpi_battery_update(battery);
++		if (!ret)
++			break;
++
++		msleep(20);
++	}
++	return ret;
++}
++
+ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1100,9 +1123,11 @@ static int acpi_battery_add(struct acpi_
+ 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+ 			"_BIX", &handle)))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	result = acpi_battery_update(battery);
++
++	result = acpi_battery_update_retry(battery);
+ 	if (result)
+ 		goto fail;
++
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 	result = acpi_battery_add_fs(device);
+ #endif
 
 
