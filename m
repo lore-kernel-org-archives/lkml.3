@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721AbaGORGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:06:10 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:36492 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969AbaGORCW (ORCPT
+	id S1756770AbaGORGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:06:12 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:64196 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967AbaGORCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:02:22 -0400
+	Tue, 15 Jul 2014 13:02:21 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 87/94] clk: spear3xx: Use proper control register offset
-Date: Tue, 15 Jul 2014 20:01:42 +0300
-Message-Id: <1405443709-15288-87-git-send-email-asadi.samuel@gmail.com>
+        Sam Asadi <asadi.samuel@gmail.com>
+Subject: [PATCH 90/94] Staging: comedi: 8253.h fixed by removing 'return' from generic func
+Date: Tue, 15 Jul 2014 20:01:45 +0300
+Message-Id: <1405443709-15288-90-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -23,33 +21,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
 
-The control register is at offset 0x10, not 0x0. This is wreckaged
-since commit 5df33a62c (SPEAr: Switch to common clock framework).
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+	modified:   drivers/staging/comedi/drivers/8253.h
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- drivers/clk/spear/spear3xx_clock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/8253.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/clk/spear/spear3xx_clock.c b/drivers/clk/spear/spear3xx_clock.c
-index c2d2043..125eba8 100644
---- a/drivers/clk/spear/spear3xx_clock.c
-+++ b/drivers/clk/spear/spear3xx_clock.c
-@@ -211,7 +211,7 @@ static inline void spear310_clk_init(void) { }
- /* array of all spear 320 clock lookups */
- #ifdef CONFIG_MACH_SPEAR320
+diff --git a/drivers/staging/comedi/drivers/8253.h b/drivers/staging/comedi/drivers/8253.h
+index 5829b46..f6b8607 100644
+--- a/drivers/staging/comedi/drivers/8253.h
++++ b/drivers/staging/comedi/drivers/8253.h
+@@ -55,7 +55,7 @@ static inline void i8253_cascade_ns_to_timer(int i8253_osc_base,
+ 	    /* check for overflow */
+ 	    divider > div1 && divider > div2 &&
+ 	    divider * i8253_osc_base > divider &&
+-	    divider * i8253_osc_base > i8253_osc_base) {
++	    divider * i8253_osc_base > i8253_osc_base)	{
+ 		return;
+ 	}
  
--#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0000)
-+#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0010)
- #define SPEAR320_EXT_CTRL_REG		(soc_config_base + 0x0018)
+@@ -118,7 +118,6 @@ static inline void i8253_cascade_ns_to_timer(int i8253_osc_base,
+ 	/*  masking is done since counter maps zero to 0x10000 */
+ 	*d1 = div1 & 0xffff;
+ 	*d2 = div2 & 0xffff;
+-	return;
+ }
  
- 	#define SPEAR320_UARTX_PCLK_MASK		0x1
+ #ifndef CMDTEST
 -- 
 1.7.10.4
 
