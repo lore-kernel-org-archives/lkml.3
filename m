@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539AbaGOJVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:21:42 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49048 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461AbaGOJVg (ORCPT
+	id S932569AbaGOJVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:21:49 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:40955 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932461AbaGOJVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:21:36 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAAj6DX2Tnt6=CuNAhkq_D=pknbEv=j7tf7Dtm7aoCm3gMu+RQw@mail.gmail.com>
-References: <1405359159-12379-1-git-send-email-tremyfr@yahoo.fr> <53C43BD6.9030102@kernel.org> <CAAj6DX2Tnt6=CuNAhkq_D=pknbEv=j7tf7Dtm7aoCm3gMu+RQw@mail.gmail.com>
+	Tue, 15 Jul 2014 05:21:45 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] iio: add support of the max5821
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Tue, 15 Jul 2014 10:21:26 +0100
-To: Antonio Borneo <borneo.antonio@gmail.com>
-CC: Philippe Reynes <tremyfr@yahoo.fr>, linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        armadeus-forum@lists.sourceforge.net, devicetree@vger.kernel.org,
-        julien.boibessot@free.fr
-Message-ID: <c0929d8c-7835-4522-9280-6c1c422df035@email.android.com>
+In-Reply-To: <20140714135106.GZ19379@twins.programming.kicks-ass.net>
+References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
+ <1404144343-18720-9-git-send-email-vincent.guittot@linaro.org>
+ <20140710111833.GY3935@laptop> <CAKfTPtD=TiURcppZ+oVUmhMf6Ofxbp4BPA0SCFViu0SDb05oRw@mail.gmail.com>
+ <20140711145138.GC3935@laptop> <CAKfTPtCdd6uR_qBuW2W4asMgEV=OfsNvrOCVQCci+w3C8RAoCQ@mail.gmail.com>
+ <20140714135106.GZ19379@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 15 Jul 2014 11:21:24 +0200
+Message-ID: <CAKfTPtCoBpt5aOe9z2LjvOZBsiNnnC5wCFRyyOS_RPoqshJCxw@mail.gmail.com>
+Subject: Re: [PATCH v3 08/12] sched: move cfs task on a CPU with higher capacity
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On July 15, 2014 9:56:17 AM GMT+01:00, Antonio Borneo <borneo.antonio@gmail.com> wrote:
->On Tue, Jul 15, 2014 at 4:21 AM, Jonathan Cameron <jic23@kernel.org>
->wrote:
->> On 14/07/14 18:32, Philippe Reynes wrote:
->
->Hi Jonathan,
->
->regarding your comment below
->
-><snip>
->>> +static int max5821_get_value(struct iio_dev *indio_dev,
->>> +                            int *val, int channel)
->>> +{
->>> +       struct max5821_data *data = iio_priv(indio_dev);
->>> +       struct i2c_client *client = data->client;
->>> +       u8 outbuf[1];
->>> +       u8 inbuf[2];
->>> +       int ret;
->>> +
->>> +       switch (channel) {
->>> +       case 0:
->>> +               outbuf[0] = MAX5821_READ_DAC_A_COMMAND;
->>> +               break;
->>> +       case 1:
->>> +               outbuf[0] = MAX5821_READ_DAC_B_COMMAND;
->>> +               break;
->>> +       default:
->>> +               return -EINVAL;
->>> +       }
->>> +
->>> +       ret = i2c_master_send(client, outbuf, 1);
->>> +       if (ret < 0)
->>> +               return ret;
->>> +       else if (ret != 1)
->>> +               return -EIO;
->>> +
->>> +       ret = i2c_master_recv(client, inbuf, 2);
->>> +       if (ret < 0)
->>> +               return ret;
->>> +       else if (ret != 2)
->>> +               return -EIO;
+On 14 July 2014 15:51, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Jul 11, 2014 at 05:17:44PM +0200, Vincent Guittot wrote:
+>> > In any case, its feels rather arbitrary to me. What about machines where
+>> > there's no cache sharing at all (the traditional SMP systems). This
+>> > thing you're trying to do still seems to make sense there.
 >>
->> It somehow always feels like this error handling should be in the
->> i2c core.  Just how often does it make sense to receive too little
->> from and i2c transaction?  Anyhow, such is life ;)
+>> ok, I thought that traditional SMP systems have this flag set at core
+>> level.
 >
->You wrote:
+> Yeah, with 1 core, so its effectively disabled.
 >
->> You could set this up to use i2c_transfer instead of separating it
->like
->> this.
+>> I mean ARM platforms have the flag for CPUs in the same cluster
+>> (which include current ARM SMP system) and the corei7 of my laptop has
+>> the flag at the cores level.
 >
->Accordingly to:
->- Documentation/i2c/i2c-protocol
->- Documentation/i2c/writing-clients
->a sequence of i2c_master_send() and i2c_master_recv() is not fully
->equivalent to a single i2c_transfer(); in latter case the transactions
->would be combined and the stop bit in between would be removed.
+> So I can see 'small' parts reducing shared caches in order to improve
+> idle performance.
 >
->I checked the datasheet of max5821 and it reports that
->"Each transmit sequence is framed by a START (S) or REPEATED START
->(Sr) condition and a STOP (P) condition."
->So combined transaction should work with this device.
+> The point being that LLC seems a somewhat arbitrary measure for this.
 >
->But we have few I2C controllers that cannot send combined transactions
->and would return error.
->E.g. in drivers/i2c/busses/i2c-powermac.c
->i2c_powermac_master_xfer() returns -EOPNOTSUPP when num!=1.
->
->What is the proper way to address this:
->- use combine transactions, since supported by majority of (but not
->all) controllers?
->or
->- keep individual transactions, if not strictly required by the
->protocol of the I2C device?
-I would go with working on the vast majority unless we have a user actually using such
- an i2c controller.
->
->Thanks,
->Antonio
+> Can we try and see what happens if you remove the limit. Its always best
+> to try the simpler things first and only make it more complex if we have
+> to.
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+ok. i will remove the condition in the next version
