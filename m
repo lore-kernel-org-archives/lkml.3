@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965006AbaGOWHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:07:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54502 "EHLO
+	id S965027AbaGOWIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:08:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54482 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758418AbaGOVgW (ORCPT
+	with ESMTP id S1759381AbaGOVgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:22 -0400
+	Tue, 15 Jul 2014 17:36:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Sam Bobroff <sam.bobroff@au1.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 024/198] Drivers: hv: balloon: Ensure pressure reports are posted regularly
-Date: Tue, 15 Jul 2014 14:28:14 -0700
-Message-Id: <1405459868-15089-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 125/198] powerpc: Correct DSCR during TM context switch
+Date: Tue, 15 Jul 2014 14:29:55 -0700
+Message-Id: <1405459868-15089-126-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,117 +28,245 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Sam bobroff <sam.bobroff@au1.ibm.com>
 
-commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
+commit 96d016108640bc2b7fb0ee800737f80923847294 upstream.
 
-The current code posts periodic memory pressure status from a dedicated thread.
-Under some conditions, especially when we are releasing a lot of memory into
-the guest, we may not send timely pressure reports back to the host. Fix this
-issue by reporting pressure in all contexts that can be active in this driver.
+Correct the DSCR SPR becoming temporarily corrupted if a task is
+context switched during a transaction.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The problem occurs while suspending the task and is caused by saving
+the DSCR to thread.dscr after it has already been set to the CPU's
+default value:
+
+__switch_to() calls __switch_to_tm()
+	which calls tm_reclaim_task()
+	which calls tm_reclaim_thread()
+	which calls tm_reclaim()
+		where the DSCR is set to the CPU's default
+__switch_to() calls _switch()
+		where thread.dscr is set to the DSCR
+
+When the task is resumed, it's transaction will be doomed (as usual)
+and the DSCR SPR will be corrupted, although the checkpointed value
+will be correct. Therefore the DSCR will be immediately corrected by
+the transaction aborting, unless it has been suspended. In that case
+the incorrect value can be seen by the task until it resumes the
+transaction.
+
+The fix is to treat the DSCR similarly to the TAR and save it early
+in __switch_to().
+
+A program exposing the problem is added to the kernel self tests as:
+tools/testing/selftests/powerpc/tm/tm-resched-dscr.
+
+Signed-off-by: Sam Bobroff <sam.bobroff@au1.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hv/hv_balloon.c | 29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ arch/powerpc/include/asm/switch_to.h               |  6 +-
+ arch/powerpc/kernel/entry_64.S                     |  6 --
+ arch/powerpc/kernel/process.c                      |  8 +-
+ tools/testing/selftests/powerpc/Makefile           |  2 +-
+ tools/testing/selftests/powerpc/tm/Makefile        | 15 ++++
+ .../testing/selftests/powerpc/tm/tm-resched-dscr.c | 90 ++++++++++++++++++++++
+ 6 files changed, 114 insertions(+), 13 deletions(-)
+ create mode 100644 tools/testing/selftests/powerpc/tm/Makefile
+ create mode 100644 tools/testing/selftests/powerpc/tm/tm-resched-dscr.c
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 7e17a54..393fd8a 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -19,6 +19,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
-+#include <linux/jiffies.h>
- #include <linux/mman.h>
- #include <linux/delay.h>
- #include <linux/init.h>
-@@ -459,6 +460,11 @@ static bool do_hot_add;
-  */
- static uint pressure_report_delay = 45;
- 
-+/*
-+ * The last time we posted a pressure report to host.
-+ */
-+static unsigned long last_post_time;
-+
- module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
- MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
- 
-@@ -542,6 +548,7 @@ struct hv_dynmem_device {
- 
- static struct hv_dynmem_device dm_device;
- 
-+static void post_status(struct hv_dynmem_device *dm);
- #ifdef CONFIG_MEMORY_HOTPLUG
- 
- static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
-@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
- 		 * have not been "onlined" within the allowed time.
- 		 */
- 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
--
-+		post_status(&dm_device);
- 	}
- 
- 	return;
-@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem_device *dm)
+diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
+index aace905..3b8d941 100644
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -16,13 +16,15 @@ struct thread_struct;
+ extern struct task_struct *_switch(struct thread_struct *prev,
+ 				   struct thread_struct *next);
+ #ifdef CONFIG_PPC_BOOK3S_64
+-static inline void save_tar(struct thread_struct *prev)
++static inline void save_early_sprs(struct thread_struct *prev)
  {
- 	struct dm_status status;
- 	struct sysinfo val;
-+	unsigned long now = jiffies;
-+	unsigned long last_post = last_post_time;
+ 	if (cpu_has_feature(CPU_FTR_ARCH_207S))
+ 		prev->tar = mfspr(SPRN_TAR);
++	if (cpu_has_feature(CPU_FTR_DSCR))
++		prev->dscr = mfspr(SPRN_DSCR);
+ }
+ #else
+-static inline void save_tar(struct thread_struct *prev) {}
++static inline void save_early_sprs(struct thread_struct *prev) {}
+ #endif
  
- 	if (pressure_report_delay > 0) {
- 		--pressure_report_delay;
- 		return;
- 	}
+ extern void load_up_fpu(void);
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index bbfb029..fb5ba6d 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -432,12 +432,6 @@ BEGIN_FTR_SECTION
+ 	std	r24,THREAD_VRSAVE(r3)
+ END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
+ #endif /* CONFIG_ALTIVEC */
+-#ifdef CONFIG_PPC64
+-BEGIN_FTR_SECTION
+-	mfspr	r25,SPRN_DSCR
+-	std	r25,THREAD_DSCR(r3)
+-END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
+-#endif
+ 	and.	r0,r0,r22
+ 	beq+	1f
+ 	andc	r22,r22,r0
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index c274355..79e063b 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -626,15 +626,15 @@ struct task_struct *__switch_to(struct task_struct *prev,
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
+-	/* Back up the TAR across context switches.
++	/* Back up the TAR and DSCR across context switches.
+ 	 * Note that the TAR is not available for use in the kernel.  (To
+ 	 * provide this, the TAR should be backed up/restored on exception
+ 	 * entry/exit instead, and be in pt_regs.  FIXME, this should be in
+ 	 * pt_regs anyway (for debug).)
+-	 * Save the TAR here before we do treclaim/trecheckpoint as these
+-	 * will change the TAR.
++	 * Save the TAR and DSCR here before we do treclaim/trecheckpoint as
++	 * these will change them.
+ 	 */
+-	save_tar(&prev->thread);
++	save_early_sprs(&prev->thread);
+ 
+ 	__switch_to_tm(prev);
+ 
+diff --git a/tools/testing/selftests/powerpc/Makefile b/tools/testing/selftests/powerpc/Makefile
+index bd24ae5..b99b500 100644
+--- a/tools/testing/selftests/powerpc/Makefile
++++ b/tools/testing/selftests/powerpc/Makefile
+@@ -13,7 +13,7 @@ CFLAGS := -Wall -O2 -flto -Wall -Werror -DGIT_VERSION='"$(GIT_VERSION)"' -I$(CUR
+ 
+ export CC CFLAGS
+ 
+-TARGETS = pmu
++TARGETS = pmu tm
+ 
+ endif
+ 
+diff --git a/tools/testing/selftests/powerpc/tm/Makefile b/tools/testing/selftests/powerpc/tm/Makefile
+new file mode 100644
+index 0000000..51267f4
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/tm/Makefile
+@@ -0,0 +1,15 @@
++PROGS := tm-resched-dscr
 +
-+	if (!time_after(now, (last_post_time + HZ)))
-+		return;
++all: $(PROGS)
 +
- 	si_meminfo(&val);
- 	memset(&status, 0, sizeof(struct dm_status));
- 	status.hdr.type = DM_STATUS_REPORT;
-@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem_device *dm)
- 	if (status.hdr.trans_id != atomic_read(&trans_id))
- 		return;
- 
-+	/*
-+	 * If the last post time that we sampled has changed,
-+	 * we have raced, don't post the status.
-+	 */
-+	if (last_post != last_post_time)
-+		return;
++$(PROGS):
 +
-+	last_post_time = jiffies;
- 	vmbus_sendpacket(dm->dev->channel, &status,
- 				sizeof(struct dm_status),
- 				(unsigned long)NULL,
-@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struct *dummy)
- 
- 			if (ret == -EAGAIN)
- 				msleep(20);
--
-+			post_status(&dm_device);
- 		} while (ret == -EAGAIN);
- 
- 		if (ret) {
-@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynmem_device *dm,
- 	struct dm_unballoon_response resp;
- 	int i;
- 
--	for (i = 0; i < range_count; i++)
-+	for (i = 0; i < range_count; i++) {
- 		free_balloon_pages(dm, &range_array[i]);
-+		post_status(&dm_device);
++run_tests: all
++	@-for PROG in $(PROGS); do \
++		./$$PROG; \
++	done;
++
++clean:
++	rm -f $(PROGS) *.o
++
++.PHONY: all run_tests clean
+diff --git a/tools/testing/selftests/powerpc/tm/tm-resched-dscr.c b/tools/testing/selftests/powerpc/tm/tm-resched-dscr.c
+new file mode 100644
+index 0000000..ee98e38
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/tm/tm-resched-dscr.c
+@@ -0,0 +1,90 @@
++/* Test context switching to see if the DSCR SPR is correctly preserved
++ * when within a transaction.
++ *
++ * Note: We assume that the DSCR has been left at the default value (0)
++ * for all CPUs.
++ *
++ * Method:
++ *
++ * Set a value into the DSCR.
++ *
++ * Start a transaction, and suspend it (*).
++ *
++ * Hard loop checking to see if the transaction has become doomed.
++ *
++ * Now that we *may* have been preempted, record the DSCR and TEXASR SPRS.
++ *
++ * If the abort was because of a context switch, check the DSCR value.
++ * Otherwise, try again.
++ *
++ * (*) If the transaction is not suspended we can't see the problem because
++ * the transaction abort handler will restore the DSCR to it's checkpointed
++ * value before we regain control.
++ */
++
++#include <inttypes.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <assert.h>
++#include <asm/tm.h>
++
++#define TBEGIN          ".long 0x7C00051D ;"
++#define TEND            ".long 0x7C00055D ;"
++#define TCHECK          ".long 0x7C00059C ;"
++#define TSUSPEND        ".long 0x7C0005DD ;"
++#define TRESUME         ".long 0x7C2005DD ;"
++#define SPRN_TEXASR     0x82
++#define SPRN_DSCR       0x03
++
++int main(void) {
++	uint64_t rv, dscr1 = 1, dscr2, texasr;
++
++	printf("Check DSCR TM context switch: ");
++	fflush(stdout);
++	for (;;) {
++		rv = 1;
++		asm __volatile__ (
++			/* set a known value into the DSCR */
++			"ld      3, %[dscr1];"
++			"mtspr   %[sprn_dscr], 3;"
++
++			/* start and suspend a transaction */
++			TBEGIN
++			"beq     1f;"
++			TSUSPEND
++
++			/* hard loop until the transaction becomes doomed */
++			"2: ;"
++			TCHECK
++			"bc      4, 0, 2b;"
++
++			/* record DSCR and TEXASR */
++			"mfspr   3, %[sprn_dscr];"
++			"std     3, %[dscr2];"
++			"mfspr   3, %[sprn_texasr];"
++			"std     3, %[texasr];"
++
++			TRESUME
++			TEND
++			"li      %[rv], 0;"
++			"1: ;"
++			: [rv]"=r"(rv), [dscr2]"=m"(dscr2), [texasr]"=m"(texasr)
++			: [dscr1]"m"(dscr1)
++			, [sprn_dscr]"i"(SPRN_DSCR), [sprn_texasr]"i"(SPRN_TEXASR)
++			: "memory", "r3"
++		);
++		assert(rv); /* make sure the transaction aborted */
++		if ((texasr >> 56) != TM_CAUSE_RESCHED) {
++			putchar('.');
++			fflush(stdout);
++			continue;
++		}
++		if (dscr2 != dscr1) {
++			printf(" FAIL\n");
++			exit(EXIT_FAILURE);
++		} else {
++			printf(" OK\n");
++			exit(EXIT_SUCCESS);
++		}
 +	}
- 
- 	if (req->more_pages == 1)
- 		return;
++}
 -- 
 1.9.1
 
