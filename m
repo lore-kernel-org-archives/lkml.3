@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaGOV3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:29:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53222 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbaGOV3m (ORCPT
+	id S1757098AbaGOVaC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:30:02 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:34637 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756320AbaGOVaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:29:42 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
-Subject: [3.13.y.z extended stable] Patch "NFS: populate ->net in mount data when remounting" has been added to staging queue
-Date: Tue, 15 Jul 2014 14:29:39 -0700
-Message-Id: <1405459779-11347-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-X-Extended-Stable: 3.13
+	Tue, 15 Jul 2014 17:30:00 -0400
+Date: Wed, 16 Jul 2014 02:59:53 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] saa7164-dvb: Remove unnecessary null test
+Message-ID: <20140715212953.GA28003@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+This patch removes the null test on dvb. dvb is initialized at the
+beginning of the function to &port->dvb. Since port is dereferenced
+prior to the null test, port must be a valid pointer, and
+&port->dvb cannot be null.
 
-    NFS: populate ->net in mount data when remounting
+The following Coccinelle script is used for detecting the change:
 
-to the linux-3.13.y-queue branch of the 3.13.y.z extended stable tree 
-which can be found at:
+@r@
+expression e,f;
+identifier g,y;
+statement S1,S2;
+@@
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
+*e = &f->g
+<+...
+ f->y
+ ...+>
+*if (e != NULL || ...)
+ S1 else S2
 
-This patch is scheduled to be released in version 3.13.11.5.
-
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
-
-For more information about the 3.13.y.z tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Kamal
-
-------
-
->From 11011b30354f55150938e36cda49de819ca70ac8 Mon Sep 17 00:00:00 2001
-From: Mateusz Guzik <mguzik@redhat.com>
-Date: Tue, 10 Jun 2014 12:44:12 +0200
-Subject: NFS: populate ->net in mount data when remounting
-
-commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
-
-Otherwise the kernel oopses when remounting with IPv6 server because
-net is dereferenced in dev_get_by_name.
-
-Use net ns of current thread so that dev_get_by_name does not operate on
-foreign ns. Changing the address is prohibited anyway so this should not
-affect anything.
-
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- fs/nfs/super.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/pci/saa7164/saa7164-dvb.c | 32 ++++++++++++++------------------
+ 1 file changed, 14 insertions(+), 18 deletions(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 910ed90..05c3a6e 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2246,6 +2246,7 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
- 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
- 	data->version = nfsvers;
- 	data->minorversion = nfss->nfs_client->cl_minorversion;
-+	data->net = current->nsproxy->net_ns;
- 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
- 		data->nfs_server.addrlen);
-
---
+diff --git a/drivers/media/pci/saa7164/saa7164-dvb.c b/drivers/media/pci/saa7164/saa7164-dvb.c
+index 5c5cc3e..16ae715 100644
+--- a/drivers/media/pci/saa7164/saa7164-dvb.c
++++ b/drivers/media/pci/saa7164/saa7164-dvb.c
+@@ -242,16 +242,14 @@ static int saa7164_dvb_start_feed(struct dvb_demux_feed *feed)
+ 	if (!demux->dmx.frontend)
+ 		return -EINVAL;
+ 
+-	if (dvb) {
+-		mutex_lock(&dvb->lock);
+-		if (dvb->feeding++ == 0) {
+-			/* Start transport */
+-			ret = saa7164_dvb_start_port(port);
+-		}
+-		mutex_unlock(&dvb->lock);
+-		dprintk(DBGLVL_DVB, "%s(port=%d) now feeding = %d\n",
+-			__func__, port->nr, dvb->feeding);
++	mutex_lock(&dvb->lock);
++	if (dvb->feeding++ == 0) {
++		/* Start transport */
++		ret = saa7164_dvb_start_port(port);
+ 	}
++	mutex_unlock(&dvb->lock);
++	dprintk(DBGLVL_DVB, "%s(port=%d) now feeding = %d\n",
++		__func__, port->nr, dvb->feeding);
+ 
+ 	return ret;
+ }
+@@ -266,16 +264,14 @@ static int saa7164_dvb_stop_feed(struct dvb_demux_feed *feed)
+ 
+ 	dprintk(DBGLVL_DVB, "%s(port=%d)\n", __func__, port->nr);
+ 
+-	if (dvb) {
+-		mutex_lock(&dvb->lock);
+-		if (--dvb->feeding == 0) {
+-			/* Stop transport */
+-			ret = saa7164_dvb_stop_streaming(port);
+-		}
+-		mutex_unlock(&dvb->lock);
+-		dprintk(DBGLVL_DVB, "%s(port=%d) now feeding = %d\n",
+-			__func__, port->nr, dvb->feeding);
++	mutex_lock(&dvb->lock);
++	if (--dvb->feeding == 0) {
++		/* Stop transport */
++		ret = saa7164_dvb_stop_streaming(port);
+ 	}
++	mutex_unlock(&dvb->lock);
++	dprintk(DBGLVL_DVB, "%s(port=%d) now feeding = %d\n",
++		__func__, port->nr, dvb->feeding);
+ 
+ 	return ret;
+ }
+-- 
 1.9.1
 
