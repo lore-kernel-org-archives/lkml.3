@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933858AbaGOVfl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:35:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54402 "EHLO
+	id S965055AbaGOWKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:10:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54426 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933801AbaGOVff (ORCPT
+	with ESMTP id S1757753AbaGOVf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:35 -0400
+	Tue, 15 Jul 2014 17:35:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Bart Van Assche <bvanassche@acm.org>, Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 088/198] mm: fix sleeping function warning from __put_anon_vma
-Date: Tue, 15 Jul 2014 14:29:18 -0700
-Message-Id: <1405459868-15089-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 074/198] IB/umad: Fix error handling
+Date: Tue, 15 Jul 2014 14:29:04 -0700
+Message-Id: <1405459868-15089-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,68 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
+commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
 
-Trinity reports BUG:
+Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
+or if nonseekable_open() fails.
 
-  sleeping function called from invalid context at kernel/locking/rwsem.c:47
-  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+Avoid leaking a kref count, that sm_sem is kept down and also that the
+IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
+nonseekable_open() fails.
 
-__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+Since container_of() never returns NULL, remove the code that tests
+whether container_of() returns NULL.
 
-Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-from inside an rcu_read_lock()ed section: fix the two places that did so.
-And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
+Moving the kref_get() call from the start of ib_umad_*open() to the
+end is safe since it is the responsibility of the caller of these
+functions to ensure that the cdev pointer remains valid until at least
+when these functions return.
 
-Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+
+[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+
+[ nonseekable_open() can't actually fail, but....  - Roland ]
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/rmap.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/infiniband/core/user_mad.c | 49 +++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 22478fb..cd6b576 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct anon_vma *anon_vma)
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
-@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struct page *page)
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
+diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
+index f0d588f..9bdf576 100644
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ {
+ 	struct ib_umad_port *port;
+ 	struct ib_umad_file *file;
+-	int ret;
++	int ret = -ENXIO;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	mutex_lock(&port->file_mutex);
+ 
+-	if (!port->ib_dev) {
+-		ret = -ENXIO;
++	if (!port->ib_dev)
+ 		goto out;
+-	}
+ 
++	ret = -ENOMEM;
+ 	file = kzalloc(sizeof *file, GFP_KERNEL);
+-	if (!file) {
+-		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+-		ret = -ENOMEM;
++	if (!file)
+ 		goto out;
+-	}
+ 
+ 	mutex_init(&file->mutex);
+ 	spin_lock_init(&file->send_lock);
+@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ 	list_add_tail(&file->port_list, &port->file_list);
+ 
+ 	ret = nonseekable_open(inode, filp);
++	if (ret) {
++		list_del(&file->port_list);
++		kfree(file);
++		goto out;
++	}
++
++	kref_get(&port->umad_dev->ref);
+ 
  out:
- 	rcu_read_unlock();
-@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
+ 	mutex_unlock(&port->file_mutex);
+@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	int ret;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	if (filp->f_flags & O_NONBLOCK) {
+ 		if (down_trylock(&port->sm_sem)) {
+@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
  	}
  
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
+ 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
+-	if (ret) {
+-		up(&port->sm_sem);
+-		goto fail;
+-	}
++	if (ret)
++		goto err_up_sem;
  
- 	/* we pinned the anon_vma, its safe to sleep */
+ 	filp->private_data = port;
+ 
+-	return nonseekable_open(inode, filp);
++	ret = nonseekable_open(inode, filp);
++	if (ret)
++		goto err_clr_sm_cap;
++
++	kref_get(&port->umad_dev->ref);
++
++	return 0;
++
++err_clr_sm_cap:
++	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
++	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
++
++err_up_sem:
++	up(&port->sm_sem);
+ 
+ fail:
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
