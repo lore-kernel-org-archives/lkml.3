@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760205AbaGOXaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:30:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45609 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934150AbaGOXOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934148AbaGOXOV (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 15 Jul 2014 19:14:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760044AbaGOXNq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:13:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.15 74/84] drivers/rtc/rtc-puv3.c: remove "&dev->" for typo issue
-Date: Tue, 15 Jul 2014 16:18:11 -0700
-Message-Id: <20140715231715.395463575@linuxfoundation.org>
+        Maxime Bizon <mbizon@freebox.fr>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 09/66] workqueue: fix dev_set_uevent_suppress() imbalance
+Date: Tue, 15 Jul 2014 16:17:03 -0700
+Message-Id: <20140715231702.507962251@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,44 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+From: Maxime Bizon <mbizon@freebox.fr>
 
-commit 73fa540618d8b1f8c2266934f23bd84bb9e28d9e upstream.
+commit bddbceb688c6d0decaabc7884fede319d02f96c8 upstream.
 
-It is only a typo issue, the related commit:
+Uevents are suppressed during attributes registration, but never
+restored, so kobject_uevent() does nothing.
 
-  "1fbc4c4 drivers/rtc/rtc-puv3.c: use dev_dbg() instead of pr_debug()"
-
-The related error (for unicore32 with allmodconfig):
-
-    CC [M]  drivers/rtc/rtc-puv3.o
-  drivers/rtc/rtc-puv3.c: In function 'puv3_rtc_setalarm':
-  drivers/rtc/rtc-puv3.c:143: error: 'struct device' has no member named 'dev'
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 226223ab3c4118ddd10688cc2c131135848371ab
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-puv3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/workqueue.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/rtc/rtc-puv3.c
-+++ b/drivers/rtc/rtc-puv3.c
-@@ -140,7 +140,7 @@ static int puv3_rtc_setalarm(struct devi
- 	rtc_tm_to_time(tm, &rtcalarm_count);
- 	writel(rtcalarm_count, RTC_RTAR);
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3415,6 +3415,7 @@ int workqueue_sysfs_register(struct work
+ 		}
+ 	}
  
--	puv3_rtc_setaie(&dev->dev, alrm->enabled);
-+	puv3_rtc_setaie(dev, alrm->enabled);
- 
- 	if (alrm->enabled)
- 		enable_irq_wake(puv3_rtc_alarmno);
++	dev_set_uevent_suppress(&wq_dev->dev, false);
+ 	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
+ 	return 0;
+ }
 
 
