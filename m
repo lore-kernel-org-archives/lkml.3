@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875AbaGOMxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:53:05 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:63568 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757665AbaGOMxD (ORCPT
+	id S1759010AbaGOM4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:56:30 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:54160 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757669AbaGOM4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:53:03 -0400
-X-IronPort-AV: E=Sophos;i="5.00,896,1396972800"; 
-   d="scan'208";a="33293716"
-Message-ID: <53C52469.3060607@cn.fujitsu.com>
-Date: Tue, 15 Jul 2014 20:54:01 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@minantech.com>
-CC: Jan Kiszka <jan.kiszka@web.de>, <mtosatti@redhat.com>,
-        <nadav.amit@gmail.com>, <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page
- in memory.
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com> <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com> <20140712080442.GH4399@minantech.com> <53C38D55.2040307@cn.fujitsu.com> <20140714145822.GK4399@minantech.com> <53C51608.4080109@web.de> <20140715120921.GT18167@minantech.com> <53C51E66.7030208@cn.fujitsu.com> <20140715124048.GU18167@minantech.com>
-In-Reply-To: <20140715124048.GU18167@minantech.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.99]
+	Tue, 15 Jul 2014 08:56:23 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-9e-53c524e9b23b
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH v1 0/4] ima: require signed user-space initialization
+Date: Tue, 15 Jul 2014 15:54:19 +0300
+Message-id: <cover.1405428802.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNJMWRmVeSWpSXmKPExsVy+t/xK7ovVY4GG3y9zWgxZ/0aNotbf/cy
+	W7xr+s1i8WVpncXLGfPYLS7vmsNm8aHnEZvFpxWTmB04PHbOusvucWLGbxaPB4c2s3jsXvCZ
+	yeP9vqtsHn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJVxt2snY8EXoYpVK7axNTD28XcxcnJI
+	CJhInP+3gQ3CFpO4cG89mC0ksJRRYkofYxcjF5DdySTx6Pt/VpAEm4CexIbmH+wgCRGBdkaJ
+	A9dPs4MkmAVqJB72LGIBsYUFXCXaF+4BauDgYBFQlZjUmA8S5hWwlLjePIcVYpmcxMljk1kn
+	MHIvYGRYxSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESQF93MC49ZnWIUYCDUYmH98a0I8FC
+	rIllxZW5hxglOJiVRHgLlY4GC/GmJFZWpRblxxeV5qQWH2Jk4uCUamCctn7u/vluOQb5PzIe
+	7F9tEuW1dEOB0IdDNyZL7+i5sbDd6Czfu/0P370oan3m2dL/X09ZMZiFq/1GgKbfhcjbUzIX
+	dMcpX5mo8Y5BY+FFx7rNUz9/eTNp+2GGRS2xXxuOsft5RvwJ46hsapxdFsd7682mJ+t9/M0O
+	yitHGTPY/ThnNas0a4uzEktxRqKhFnNRcSIAmXbGMP4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 08:40 PM, Gleb Natapov wrote:
-> On Tue, Jul 15, 2014 at 08:28:22PM +0800, Tang Chen wrote:
->> On 07/15/2014 08:09 PM, Gleb Natapov wrote:
->>> On Tue, Jul 15, 2014 at 01:52:40PM +0200, Jan Kiszka wrote:
->> ......
->>>>
->>>> I cannot follow your concerns yet. Specifically, how should
->>>> APIC_ACCESS_ADDR (the VMCS field, right?) change while L2 is running? We
->>>> currently pin/unpin on L1->L2/L2->L1, respectively. Or what do you mean?
->>>>
->>> I am talking about this case:
->>>           if (cpu_has_secondary_exec_ctrls()) {a
->>>           } else {
->>>               exec_control |=
->>>                  SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
->>>              vmcs_write64(APIC_ACCESS_ADDR,
->>>                  page_to_phys(vcpu->kvm->arch.apic_access_page));
->>>           }
->>> We do not pin here.
->>>
->>
->> Hi Gleb,
->>
->>
->> 7905                 if (exec_control&
->> SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
->> ......
->> 7912                         if (vmx->nested.apic_access_page) /* shouldn't
->> happen */
->> 7913 nested_release_page(vmx->nested.apic_access_page);
->> 7914                         vmx->nested.apic_access_page =
->> 7915                                 nested_get_page(vcpu,
->> vmcs12->apic_access_addr);
->>
->> I thought you were talking about the problem here. We pin
->> vmcs12->apic_access_addr
->> in memory. And I think we should do the same thing to this page as to L1 vm.
->> Right ?
-> Nested kvm pins a lot of pages, it will probably be not easy to handle all of them,
-> so for now I am concerned with non nested case only (but nested should continue to
-> work obviously, just pin pages like it does now).
+Currently secure IMA/EVM initialization has to be done from the initramfs,
+embedded in the signed kernel image. Many systems do not want to use
+initramfs or usage of embedded initramfs makes it difficult to have
+multi-target kernels.
 
-True. I will work on it.
+This is a very simple patchset which makes it possible to perform secure
+initialization by requiring initial user-space to be signed.
 
-And also, when using PCI passthrough, kvm_pin_pages() also pins some 
-pages. This is
-also in my todo list.
+It does it by:
+- introducing IMA public keys loading hook
+- loading IMA trusted public key into .ima trusted keyring
+- making default IMA appraisal policy to require everything to be signed
 
-But sorry, a little strange. I didn't find where 
-vmcs12->apic_access_addr is allocated
-or initialized... Would you please tell me ?
+When builtin initramfs is not in use, keys cannot be read from initcalls,
+because root filesystem is not yet mounted. In order to read keys before
+executing init process, ima_prepare_keys() hook is introduced. Reading
+public keys from the kernel is justified because signature verification
+key is needed in order to verify anything else which is read from the
+file system. Public keys are X509 certificates and itself signed by the
+trusted key from the .system keyring. Kernel BIG KEYS support is an example
+of reading keys directly by the kernel.
 
->
->>
->> ......
->> 7922                         if (!vmx->nested.apic_access_page)
->> 7923                                 exec_control&=
->> 7924 ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
->> 7925                         else
->> 7926                                 vmcs_write64(APIC_ACCESS_ADDR,
->> 7927 page_to_phys(vmx->nested.apic_access_page));
->> 7928                 } else if
->> (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
->> 7929                         exec_control |=
->> 7930 SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
->> 7931                         vmcs_write64(APIC_ACCESS_ADDR,
->> 7932 page_to_phys(vcpu->kvm->arch.apic_access_page));
->> 7933                 }
->>
->> And yes, we have the problem you said here. We can migrate the page while L2
->> vm is running.
->> So I think we should enforce L2 vm to exit to L1. Right ?
->>
-> We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, so
-> if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for L1 too.
->
+CONFIG_IMA_APPRAISE_SIGNED_INIT kernel option is provided to make the IMA
+default appraisal policy to required signature validation. Signed init
+process need to initialize EVM key and load appropriate IMA policy which
+would not require everything to be signed.
 
-apic pages for L2 and L1 are not the same page, right ?
+Unless real '/sbin/init' is signed, a simple and practical way is to place
+all signed programs, libraries, scripts and configuration files under
+dedicated directory, for example '/ima', and run signed init process by
+providing a kernel command line parameter 'init=/ima/init'
 
-I think, just like we are doing in patch 5/5, we cannot wait for the 
-next L2->L1 vmexit.
-We should enforce a L2->L1 vmexit in mmu_notifier, just like 
-make_all_cpus_request() does.
+-Dmitry
 
-Am I right ?
+Dmitry Kasatkin (4):
+  ima: provide hook to load IMA keys when rootfs is ready
+  integrity: provide file reading API
+  integrity: provide x509 certificate loading from the kernel
+  ima: require signed user-space initialization
 
-Thanks.
+ include/linux/ima.h                 |  9 +++++
+ init/main.c                         |  6 ++-
+ security/integrity/Kconfig          |  7 ++++
+ security/integrity/digsig.c         | 78 +++++++++++++++++++++++++++++++++++++
+ security/integrity/ima/Kconfig      | 15 +++++++
+ security/integrity/ima/ima_init.c   | 17 ++++++++
+ security/integrity/ima/ima_policy.c |  5 +++
+ security/integrity/integrity.h      | 11 +++++-
+ 8 files changed, 146 insertions(+), 2 deletions(-)
+
+-- 
+1.9.1
 
