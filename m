@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327AbaGOVd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:33:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54134 "EHLO
+	id S933372AbaGOVeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:34:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54145 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbaGOVdv (ORCPT
+	with ESMTP id S1755638AbaGOVeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:33:51 -0400
+	Tue, 15 Jul 2014 17:34:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 106/198] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
-Date: Tue, 15 Jul 2014 14:29:36 -0700
-Message-Id: <1405459868-15089-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 102/198] powerpc/mm: Check paca psize is up to date for huge mappings
+Date: Tue, 15 Jul 2014 14:29:32 -0700
+Message-Id: <1405459868-15089-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -33,91 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
+commit 09567e7fd44291bfc08accfdd67ad8f467842332 upstream.
 
-The rtc user must wait at least 1 sec between each time/calandar update
-(see atmel's datasheet chapter "Updating Time/Calendar").
+We have a bug in our hugepage handling which exhibits as an infinite
+loop of hash faults. If the fault is being taken in the kernel it will
+typically trigger the softlockup detector, or the RCU stall detector.
 
-Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
-the at91_rtc_wait_upd_rdy event if the rtc is not ready.
+The bug is as follows:
 
-This patch fixes a deadlock in an uninterruptible wait when the RTC is
-updated more than once every second.  AFAICT the bug is here from the
-beginning, but I think we should at least backport this fix to 3.10 and
-the following longterm and stable releases.
+ 1. mmap(0xa0000000, ..., MAP_FIXED | MAP_HUGE_TLB | MAP_ANONYMOUS ..)
+ 2. Slice code converts the slice psize to 16M.
+ 3. The code on lines 539-540 of slice.c in slice_get_unmapped_area()
+    synchronises the mm->context with the paca->context. So the paca slice
+    mask is updated to include the 16M slice.
+ 3. Either:
+    * mmap() fails because there are no huge pages available.
+    * mmap() succeeds and the mapping is then munmapped.
+    In both cases the slice psize remains at 16M in both the paca & mm.
+ 4. mmap(0xa0000000, ..., MAP_FIXED | MAP_ANONYMOUS ..)
+ 5. The slice psize is converted back to 64K. Because of the check on line 539
+    of slice.c we DO NOT update the paca->context. The paca slice mask is now
+    out of sync with the mm slice mask.
+ 6. User/kernel accesses 0xa0000000.
+ 7. The SLB miss handler slb_allocate_realmode() **uses the paca slice mask**
+    to create an SLB entry and inserts it in the SLB.
+18. With the 16M SLB entry in place the hardware does a hash lookup, no entry
+    is found so a data access exception is generated.
+19. The data access handler calls do_page_fault() -> handle_mm_fault().
+10. __handle_mm_fault() creates a THP mapping with do_huge_pmd_anonymous_page().
+11. The hardware retries the access, there is still nothing in the hash table
+    so once again a data access exception is generated.
+12. hash_page() calls into __hash_page_thp() and inserts a mapping in the
+    hash. Although the THP mapping maps 16M the hashing is done using 64K
+    as the segment page size.
+13. hash_page() returns immediately after calling __hash_page_thp(), skipping
+    over the code at line 1125. Resulting in the mismatch between the
+    paca->context and mm->context not being detected.
+14. The hardware retries the access, the hash it generates using the 16M
+    SLB entry does NOT match the hash we inserted.
+15. We take another data access and go into __hash_page_thp().
+16. We see a valid entry in the hpte_slot_array and so we call updatepp()
+    which succeeds.
+17. Goto 14.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+We could fix this in two ways. The first would be to remove or modify
+the check on line 539 of slice.c.
+
+The second option is to cause the check of paca psize in hash_page() on
+line 1125 to also be done for THP pages.
+
+We prefer the latter, because the check & update of the paca psize is
+not done until we know it's necessary. It's also done only on the
+current cpu, so we don't need to IPI all other cpus.
+
+Without further rearranging the code, the simplest fix is to pull out
+the code that checks paca psize and call it in two places. Firstly for
+THP/hugetlb, and secondly for other mappings as before.
+
+Thanks to Dave Jones for trinity, which originally found this bug.
+
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/rtc/rtc-at91rm9200.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ arch/powerpc/mm/hash_utils_64.c | 31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 3281c90..44fe83e 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -48,6 +48,7 @@ struct at91_rtc_config {
- 
- static const struct at91_rtc_config *at91_rtc_config;
- static DECLARE_COMPLETION(at91_rtc_updated);
-+static DECLARE_COMPLETION(at91_rtc_upd_rdy);
- static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
-@@ -161,6 +162,8 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
- 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
- 		tm->tm_hour, tm->tm_min, tm->tm_sec);
- 
-+	wait_for_completion(&at91_rtc_upd_rdy);
-+
- 	/* Stop Time/Calendar from counting */
- 	cr = at91_rtc_read(AT91_RTC_CR);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
-@@ -183,7 +186,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
- 
- 	/* Restart Time/Calendar */
- 	cr = at91_rtc_read(AT91_RTC_CR);
-+	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
- 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
- 
- 	return 0;
+diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+index 6176b3c..3b7a3d1 100644
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -945,6 +945,22 @@ void hash_failure_debug(unsigned long ea, unsigned long access,
+ 		trap, vsid, ssize, psize, lpsize, pte);
  }
-@@ -290,8 +295,10 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
- 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
- 		if (rtsr & AT91_RTC_ALARM)
- 			events |= (RTC_AF | RTC_IRQF);
--		if (rtsr & AT91_RTC_SECEV)
--			events |= (RTC_UF | RTC_IRQF);
-+		if (rtsr & AT91_RTC_SECEV) {
-+			complete(&at91_rtc_upd_rdy);
-+			at91_rtc_write_idr(AT91_RTC_SECEV);
+ 
++static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
++			     int psize, bool user_region)
++{
++	if (user_region) {
++		if (psize != get_paca_psize(ea)) {
++			get_paca()->context = mm->context;
++			slb_flush_and_rebolt();
 +		}
- 		if (rtsr & AT91_RTC_ACKUPD)
- 			complete(&at91_rtc_updated);
- 
-@@ -413,6 +420,11 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
- 		return PTR_ERR(rtc);
- 	platform_set_drvdata(pdev, rtc);
- 
-+	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
-+	 * completion.
-+	 */
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
++	} else if (get_paca()->vmalloc_sllp !=
++		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
++		get_paca()->vmalloc_sllp =
++			mmu_psize_defs[mmu_vmalloc_psize].sllp;
++		slb_vmalloc_update();
++	}
++}
 +
- 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
- 	return 0;
- }
+ /* Result code is:
+  *  0 - handled
+  *  1 - normal page fault
+@@ -1066,6 +1082,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 			WARN_ON(1);
+ 		}
+ #endif
++		check_paca_psize(ea, mm, psize, user_region);
++
+ 		goto bail;
+ 	}
+ 
+@@ -1106,17 +1124,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ #endif
+ 		}
+ 	}
+-	if (user_region) {
+-		if (psize != get_paca_psize(ea)) {
+-			get_paca()->context = mm->context;
+-			slb_flush_and_rebolt();
+-		}
+-	} else if (get_paca()->vmalloc_sllp !=
+-		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
+-		get_paca()->vmalloc_sllp =
+-			mmu_psize_defs[mmu_vmalloc_psize].sllp;
+-		slb_vmalloc_update();
+-	}
++
++	check_paca_psize(ea, mm, psize, user_region);
+ #endif /* CONFIG_PPC_64K_PAGES */
+ 
+ #ifdef CONFIG_PPC_HAS_HASH_64K
 -- 
 1.9.1
 
