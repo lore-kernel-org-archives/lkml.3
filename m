@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419AbaGOP4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:56:08 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:46918 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaGOP4E (ORCPT
+	id S1755458AbaGOP4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:56:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28427 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaGOP4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:56:04 -0400
-Date: Tue, 15 Jul 2014 17:56:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715155600.GA29269@dhcp22.suse.cz>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715082545.GA9366@dhcp22.suse.cz>
- <20140715142350.GD9366@dhcp22.suse.cz>
- <20140715150937.GS29639@cmpxchg.org>
- <20140715151818.GE9366@dhcp22.suse.cz>
- <20140715154643.GT29639@cmpxchg.org>
+	Tue, 15 Jul 2014 11:56:25 -0400
+Date: Tue, 15 Jul 2014 11:56:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] x86_64,xen,espfix: Initialize espfix on secondary CPUs
+Message-ID: <20140715155619.GC7792@laptop.dumpdata.com>
+References: <195642a5e9fd4515ad8ca4cd8bcffd4900df5790.1405437568.git.luto@amacapital.net>
+ <20140715153801.GX3403@laptop.dumpdata.com>
+ <CALCETrUsjMkQfwhwAvsJz0gNXaH-OOz0qCUJ5q1me3=4zpP7Ew@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140715154643.GT29639@cmpxchg.org>
+In-Reply-To: <CALCETrUsjMkQfwhwAvsJz0gNXaH-OOz0qCUJ5q1me3=4zpP7Ew@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-07-14 11:46:43, Johannes Weiner wrote:
-> On Tue, Jul 15, 2014 at 05:18:18PM +0200, Michal Hocko wrote:
-> > On Tue 15-07-14 11:09:37, Johannes Weiner wrote:
-> > > On Tue, Jul 15, 2014 at 04:23:50PM +0200, Michal Hocko wrote:
-> > > > On Tue 15-07-14 10:25:45, Michal Hocko wrote:
-> > [...]
-> > > > > @@ -2760,15 +2752,15 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
-> > > > >  		spin_unlock_irq(&zone->lru_lock);
-> > > > >  	}
-> > > > >  
-> > > > > -	mem_cgroup_charge_statistics(memcg, page, anon, nr_pages);
-> > > > > -	unlock_page_cgroup(pc);
-> > > > > -
-> > > > > +	local_irq_disable();
-> > > > > +	mem_cgroup_charge_statistics(memcg, page, nr_pages);
-> > > > >  	/*
-> > > > >  	 * "charge_statistics" updated event counter. Then, check it.
-> > > > >  	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
-> > > > >  	 * if they exceeds softlimit.
-> > > > >  	 */
-> > > > >  	memcg_check_events(memcg, page);
-> > > > > +	local_irq_enable();
-> > > > 
-> > > > preempt_{enable,disbale} should be sufficient for
-> > > > mem_cgroup_charge_statistics and memcg_check_events no?
-> > > > The first one is about per-cpu accounting (and that should be atomic
-> > > > wrt. IRQ on the same CPU) and the later one uses IRQ safe locks down in
-> > > > mem_cgroup_update_tree.
-> > > 
-> > > How could it be atomic wrt. IRQ on the local CPU when IRQs that modify
-> > > the counters can fire on the local CPU?
-> > 
-> > I meant that __this_atomic_add and __this_cpu_inc should be atomic wrt. IRQ.
-> > We do not care that an IRQ might jump in between two per-cpu operations.
-> > This is racy from other CPUs anyway.
+On Tue, Jul 15, 2014 at 08:44:39AM -0700, Andy Lutomirski wrote:
+> On Tue, Jul 15, 2014 at 8:38 AM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> > On Tue, Jul 15, 2014 at 08:26:41AM -0700, Andy Lutomirski wrote:
+> >> Xen doesn't call start_secondary.
+> >
+> > Duh!
+> >>
+> >> Cc: stable@vger.kernel.org
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>
+> >> espfix still doesn't seem to work on Xen (it goes boom in some way that
+> >> I don't understand right now), but initializing all CPUs instead of just
+> >> one of them seems like a good start.
+> >>
+> >> ISTM the right fix is probably to shove the espfix logic into
+> >> native_iret and to tweak the paravirt logic so that native_iret always
+> >> gets invoked.  I suspect that Xen will need its own implementation of
+> >> espfix64 in the hypervisor and that, ultimately, someone may want to
+> >> stop initializing espfix64 at all on Xen guests.
+> >
+> > I think just disallowing would be preferrable.
 > 
-> It's really about a single RMW (+=) being interrupted by an IRQ.
-> this_cpu_ guarantees IRQ-atomicity, but __this_cpu_ does not.
+> Disabling what?
+> 
+> Sorry, my flu-addled brain needs more clarity.  I'm currently working
+> on a patch on top of this one to move all of the espfix64 invocation
+> logic into native_iret, which will have the effect of preventing it
+> from being used on Xen.
+> 
+> Is that what you mean?
 
-Yes, you are right. I was too x86 centric where both add and inc are
-really a single instruction. Generic implementation already shows I was
-wrong.
+Yes. I presume the logic to deal with the bits losing information
+has to be dealt in the Xen case somehow. Peter asked whether the 
+Xen IRET handles a 16-bit stack segment - and if it restores all of the
+RSP then we are OK.
 
-Sorry for the noise!
--- 
-Michal Hocko
-SUSE Labs
+I don't have yet that information and my brain is a in low-power right
+now (-ENOSLEEP).
