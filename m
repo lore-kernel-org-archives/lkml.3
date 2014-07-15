@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934442AbaGOXjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:39:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S1030285AbaGOXjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:39:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933941AbaGOXOK (ORCPT
+	with ESMTP id S933333AbaGOXOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minfei Huang <huangminfei@ucloud.cn>,
-        Joe Thornber <thornber@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: [PATCH 3.15 42/84] dm io: fix a race condition in the wake up code for sync_io
-Date: Tue, 15 Jul 2014 16:17:39 -0700
-Message-Id: <20140715231714.461216059@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.15 43/84] dm: allocate a special workqueue for deferred device removal
+Date: Tue, 15 Jul 2014 16:17:40 -0700
+Message-Id: <20140715231714.494756078@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -30,100 +30,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <thornber@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 10f1d5d111e8aed46a0f1179faf9a3cf422f689e upstream.
+commit acfe0ad74d2e1bfc81d1d7bf5e15b043985d3650 upstream.
 
-There's a race condition between the atomic_dec_and_test(&io->count)
-in dec_count() and the waking of the sync_io() thread.  If the thread
-is spuriously woken immediately after the decrement it may exit,
-making the on stack io struct invalid, yet the dec_count could still
-be using it.
+The commit 2c140a246dc ("dm: allow remove to be deferred") introduced a
+deferred removal feature for the device mapper.  When this feature is
+used (by passing a flag DM_DEFERRED_REMOVE to DM_DEV_REMOVE_CMD ioctl)
+and the user tries to remove a device that is currently in use, the
+device will be removed automatically in the future when the last user
+closes it.
 
-Fix this race by using a completion in sync_io() and dec_count().
+Device mapper used the system workqueue to perform deferred removals.
+However, some targets (dm-raid1, dm-mpath, dm-stripe) flush work items
+scheduled for the system workqueue from their destructor.  If the
+destructor itself is called from the system workqueue during deferred
+removal, it introduces a possible deadlock - the workqueue tries to flush
+itself.
 
-Reported-by: Minfei Huang <huangminfei@ucloud.cn>
-Signed-off-by: Joe Thornber <thornber@redhat.com>
+Fix this possible deadlock by introducing a new workqueue for deferred
+removals.  We allocate just one workqueue for all dm targets.  The
+ability of dm targets to process IOs isn't dependent on deferred removal
+of unused targets, so a deadlock due to shared workqueue isn't possible.
+
+Also, cleanup local_init() to eliminate potential for returning success
+on failure.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-io.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ drivers/md/dm.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-io.c
-+++ b/drivers/md/dm-io.c
-@@ -10,6 +10,7 @@
- #include <linux/device-mapper.h>
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -54,6 +54,8 @@ static void do_deferred_remove(struct wo
  
- #include <linux/bio.h>
-+#include <linux/completion.h>
- #include <linux/mempool.h>
- #include <linux/module.h>
- #include <linux/sched.h>
-@@ -32,7 +33,7 @@ struct dm_io_client {
- struct io {
- 	unsigned long error_bits;
- 	atomic_t count;
--	struct task_struct *sleeper;
-+	struct completion *wait;
- 	struct dm_io_client *client;
- 	io_notify_fn callback;
- 	void *context;
-@@ -121,8 +122,8 @@ static void dec_count(struct io *io, uns
- 			invalidate_kernel_vmap_range(io->vma_invalidate_address,
- 						     io->vma_invalidate_size);
+ static DECLARE_WORK(deferred_remove_work, do_deferred_remove);
  
--		if (io->sleeper)
--			wake_up_process(io->sleeper);
-+		if (io->wait)
-+			complete(io->wait);
++static struct workqueue_struct *deferred_remove_workqueue;
++
+ /*
+  * For bio-based dm.
+  * One of these is allocated per bio.
+@@ -276,16 +278,24 @@ static int __init local_init(void)
+ 	if (r)
+ 		goto out_free_rq_tio_cache;
  
- 		else {
- 			unsigned long r = io->error_bits;
-@@ -387,6 +388,7 @@ static int sync_io(struct dm_io_client *
- 	 */
- 	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
- 	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
-+	DECLARE_COMPLETION_ONSTACK(wait);
++	deferred_remove_workqueue = alloc_workqueue("kdmremove", WQ_UNBOUND, 1);
++	if (!deferred_remove_workqueue) {
++		r = -ENOMEM;
++		goto out_uevent_exit;
++	}
++
+ 	_major = major;
+ 	r = register_blkdev(_major, _name);
+ 	if (r < 0)
+-		goto out_uevent_exit;
++		goto out_free_workqueue;
  
- 	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
- 		WARN_ON(1);
-@@ -395,7 +397,7 @@ static int sync_io(struct dm_io_client *
+ 	if (!_major)
+ 		_major = r;
  
- 	io->error_bits = 0;
- 	atomic_set(&io->count, 1); /* see dispatch_io() */
--	io->sleeper = current;
-+	io->wait = &wait;
- 	io->client = client;
+ 	return 0;
  
- 	io->vma_invalidate_address = dp->vma_invalidate_address;
-@@ -403,15 +405,7 @@ static int sync_io(struct dm_io_client *
++out_free_workqueue:
++	destroy_workqueue(deferred_remove_workqueue);
+ out_uevent_exit:
+ 	dm_uevent_exit();
+ out_free_rq_tio_cache:
+@@ -299,6 +309,7 @@ out_free_io_cache:
+ static void local_exit(void)
+ {
+ 	flush_scheduled_work();
++	destroy_workqueue(deferred_remove_workqueue);
  
- 	dispatch_io(rw, num_regions, where, dp, io, 1);
+ 	kmem_cache_destroy(_rq_tio_cache);
+ 	kmem_cache_destroy(_io_cache);
+@@ -407,7 +418,7 @@ static void dm_blk_close(struct gendisk
  
--	while (1) {
--		set_current_state(TASK_UNINTERRUPTIBLE);
--
--		if (!atomic_read(&io->count))
--			break;
--
--		io_schedule();
--	}
--	set_current_state(TASK_RUNNING);
-+	wait_for_completion_io(&wait);
+ 	if (atomic_dec_and_test(&md->open_count) &&
+ 	    (test_bit(DMF_DEFERRED_REMOVE, &md->flags)))
+-		schedule_work(&deferred_remove_work);
++		queue_work(deferred_remove_workqueue, &deferred_remove_work);
  
- 	if (error_bits)
- 		*error_bits = io->error_bits;
-@@ -434,7 +428,7 @@ static int async_io(struct dm_io_client
- 	io = mempool_alloc(client->pool, GFP_NOIO);
- 	io->error_bits = 0;
- 	atomic_set(&io->count, 1); /* see dispatch_io() */
--	io->sleeper = NULL;
-+	io->wait = NULL;
- 	io->client = client;
- 	io->callback = fn;
- 	io->context = context;
+ 	dm_put(md);
+ 
 
 
