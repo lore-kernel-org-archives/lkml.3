@@ -1,110 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027AbaGOHAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 03:00:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47539 "EHLO mx1.redhat.com"
+	id S1758053AbaGOHBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 03:01:43 -0400
+Received: from moi001.1and1.com ([212.227.126.208]:59293 "EHLO moi.1and1.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757819AbaGOHA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 03:00:28 -0400
-Message-ID: <53C4D17E.60206@redhat.com>
-Date: Tue, 15 Jul 2014 09:00:14 +0200
-From: Hans de Goede <hdegoede@redhat.com>
+	id S1757279AbaGOHBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 03:01:39 -0400
+Message-ID: <53C4D1D0.9010105@1und1.de>
+Date: Tue, 15 Jul 2014 09:01:36 +0200
+From: =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theuer?= <tst@1und1.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
-References: <87pph8kse7.fsf@nemi.mork.no>	<53C3D7C3.7090505@redhat.com> <CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
-In-Reply-To: <CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Potential solution for MARS symlink problem
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi together,
 
-On 07/14/2014 06:24 PM, Linus Torvalds wrote:
-> On Mon, Jul 14, 2014 at 6:14 AM, Hans de Goede <hdegoede@redhat.com> wrote:
->>
->> This *not* a regression, it is an intended behavior change [..]
-> 
-> That counts as a regression.
-> 
-> If things used to work, and they don't work, it's a regression. If
-> it's intentional, that just makes it worse.
+it would be optionally possible to split MARS Light into two different
+kernel modules:
 
-The problem is that our previous default behavior turns out to be
-wrong for many users.
+1) the "block device driver" module.
 
-So as answered later in the thread Bjørn is using a custom setup with
-acpid and WindowMaker. So in order to keep his exotic (and very simple
-to fix) setup working we are keeping thing broken on what are probably
-a 100 thousand Linux installs or more.
+2) the "control module" (strategy level in IOP speak).
 
-> 
->> Yes this may break existing configurations for some users, most likely
->> users running some custom setup, who thus should be able to fix things
->> by adding one more customization to there setup.
-> 
-> .. and apparently this whole paragraph is completely bogus. It *does*
-> break things, and for normal people.
+This could be even a preparation for the planned MARS Full, where an
+even deeper separation of concerns is planned anyway. The current MARS
+Light should be easily splittable this way, because the internal
+structure already anticipates it.
 
-It breaks things on exotic setups, running a non standard desktop
-environment or no desktop environment at all. Note that this is
-about laptops most people will be using one of gnome / kde / unity /
-xfce on a desktop, and for all of these the old default behavior is
-bad.
+Essentially, it is all just a matter of linking (I was eager keeping the
+dependencies non-cylic all the time; even the originally submitted
+patchset had no forward references at all despite it was submitted
+file-by-file in a very particular order). Originally, my first MARS
+prototype had a separate *.ko for each brick type as well as for the
+generic brick infrastructure, but I abandoned that because it led to an
+_orgy_ when rmmod'ing an extremely long list in the right order, which
+is not very sysadmin-friendly. However, parts of that could potentially
+be re-established at any time when needed.
 
-> That's what the bug report is all about. So don't waffle about it.
-> 
-> Bjørn, what's your setup?
-> Is this perhaps solvable some other way?
+In order to resolve any complaints about the potential future module 1)
+ASAP, we could do some of the following:
 
-I see that further down the thread you've send a patch to fix
-this by waiting sometime for userspace to react and if it does
-not then do the change in the kernel as it used to be.
+1a) just replace xio_aio by xio_sio.
 
-FWIW I don't think this is a good idea. This is inherently racy, so
-we will still sometimes see the backlight taking 2 steps leading to
-hard to debug problems.
+This way, we will immediately get rid of all sys_io_*() syscalls, and of
+fake_mmu() and friends. With almost no effort.
 
-It has made me think about doing something to keep both setups
-like Bjørn's working, and get rid of the 2 steps problem. I think
-adding an auto setting for brightness_switch_enabled and making that
-the default is a good idea. But instead of using a timeout, I suggest
-to make -1 / auto behave the same as 1 / on until userspace sets the
-brightness. Once userspace has written to the brightness attribute
-we start interpreting auto as 0 / off.
+SIO stands for "Synchronous IO" using a bunch of parallel threads
+submitting ordinary blocking IO requests. It was my first prototype
+implementation, functionally equivalent to the later *_aio, when I
+didn't want to fiddle with userspace-like AIO at first.
+[BTW as Andi may have noticed, I really wasn't delighted re-using
+userspace AIO concepts, but I felt being forced by the "POC ASAP" demand
+as well as by the "backwards compatibility forever" demand from my
+industrial setup where other limiting conditions apply than in upstream
+kernel development]
 
-Rafael would you be willing to take a patch doing this ?
+The sio brick is not in the submitted patchset, but on
+github.com/schoebel/mars in the WIP-PORTABLE branch (for those who want
+to take a look at it). It has passed the fully automatic test suite as a
+replacement for xio_aio.
 
->> TL;DR: This change really is for the better and is here to stay.
-> 
-> Wrong. We don't break existing setups, and your attitude needs fixing.
-> 
-> Rafael, please get it reverted, or I will have to revert it. We have
-> *long* had a rule that we don't break things "in order to improve
-> things for others", and quite frankly, power management and ACPI in
-> particular was exactly *why* that rule was introduced, because the
-> whole "one step back, two steps forward" model does not work.
-> 
-> The problem needs to be solved some other way, and developers need to
-> f*cking stop with the "we can break peoples setups" mentality./
-> 
-> Hans, seriously. You have the wrong mental model. Fix it.
+After replacing aio by sio, the device driver module / part 1) will no
+longer need any new sys_*() or any other new symbols (AFAICS).
 
-Linus, normally I agree 101% with your no regressions policy. but I'm
-also a big fan of the it just works philosophy. The problem here is
-that when this switch got introduced a long time ago it got (in hindsight)
-the wrong default. In order to make things just work it needs to get
-fixed, but maybe we can come up with a solution to both have our cake
-and eat it.
+Sio has a little bit worse performance than its aio sibling, because the
+resulting IO parallelism is limited by the (potentially configurable)
+number of threads running in parallel.
 
-Regards,
+Of course, this would be only a transient solution. It would give us
+more time for the next steps:
 
-Hans
+1b) rename the current xio_aio to xio_aio_user or similar (only for
+backwards compatibility of the out-of-tree version to very _old_
+kernels) and implement a new functionally equivalent xio_aio_kernel (or
+a similar name) brick for the in-tree version.
+
+Of course, this would be the best solution. But it would take a longer time.
+
+My problem is that I work for the industry, so the demands from here
+have priority. I got the official permission for also working for the
+kernel upstream of MARS during my working hours, but that's 2nd priority.
+
+Hence, there is another potential alternative for overcoming this:
+
+1c) leave the implementation of the new xio_aio_kernel brick to a
+volunteer (of course with some help from me).
+
+This would have another advantage: the volunteer would start gaining
+experience with the brick framework. I would be generally very glad if
+people would become familiar with both the framework, and also with MARS
+Light in general.
+
+In order to do that, I would have to complete the developer
+documentation first (which is planned anyway). I was already planning to
+somewhen write an automatic extraction tool for creating Documentation/
+compatible ASCII text format out of the _relevant_ parts of the LyX /
+LaTeX source of my current out-of-tree documentation.
+
+Finding a volunteer would have many other advantages. In particular,
+somebody willing to do that could start training me in better
+understanding of upstream practices, similar to a coach.
+
+Conversely, expertise on MARS would flow back. Best would be if that
+person would be an experienced upstream hacker. I am sure we both will
+profit much from each other.
+
+We could do this via email, or we could use a tiny mailing list so
+others could watch us.
+
+Of course, this all depends on finding a volunteer.
+
+I am currently reasoning on viable solutions for the future module /
+part 2); this will take some more time until I will come up again
+(probably also with some more questions).
+
+In theory, there would be at least two solutions for module 2):
+
+2a) the future control module 2) has nothing to do with IO paths at all
+and is therefore not a device driver module; therefore I hope you could
+allow me using symlinks, at least transiently for migration /
+interoperability. This would be the quickest solution.
+
+2b) the abstract concept of a hierarchical key->value store is mapped to
+a new sysfs or /proc subtree.
+
+One important question in advance: is it allowed to map a new sysfs (or
+/proc) subtree to my own _persistent_ storage?
+
+[BTW not only persistence is important, but also _consistency_ between
+the device / backlog state and the metadata state -- it's not as trivial
+as it might look like at first glance -- storing the symlinks in the
+same journalled /mars/ filesystem solved most of it without additional
+effort]
+
+Of course, this solution would take a rather long time, because the
+userspace interface has also to be adapted / migrated, and all
+regression tests have to be passed in order to remain fully functionally
+compatible.
+
+AFAIK all current uses of sysfs or /proc had no persistence in mind. So
+the following question arises:
+
+2c) if neither 2a) nor 2b) is permitted, which other userspace
+representation / interface would be appropriate for a persistent
+key->value store with a hierarchical key space?
+
+[BTW it must be easily updateable in a fine-granular way, so XML or JSON
+is not an option at kernel level]
+
+Cheers,
+
+Thomas
+
+
+
