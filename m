@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792AbaGOVYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:24:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34125 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671AbaGOVXu (ORCPT
+	id S1756052AbaGOV3o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:29:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53222 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849AbaGOV3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:23:50 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V5 2/4] staging: vt6556: Cleanup coding style: comments
-Date: Tue, 15 Jul 2014 23:23:25 +0200
-Message-Id: <1405459407-9311-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405459407-9311-1-git-send-email-peter.senna@gmail.com>
-References: <1405459407-9311-1-git-send-email-peter.senna@gmail.com>
+	Tue, 15 Jul 2014 17:29:42 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
+Subject: [3.13.y.z extended stable] Patch "NFS: populate ->net in mount data when remounting" has been added to staging queue
+Date: Tue, 15 Jul 2014 14:29:39 -0700
+Message-Id: <1405459779-11347-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleanup coding style issues on comments.
+This is a note to let you know that I have just added a patch titled
 
-Tested by compilation only.
+    NFS: populate ->net in mount data when remounting
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+to the linux-3.13.y-queue branch of the 3.13.y.z extended stable tree 
+which can be found at:
+
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
+
+This patch is scheduled to be released in version 3.13.11.5.
+
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
+
+For more information about the 3.13.y.z tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+Thanks.
+-Kamal
+
+------
+
+>From 11011b30354f55150938e36cda49de819ca70ac8 Mon Sep 17 00:00:00 2001
+From: Mateusz Guzik <mguzik@redhat.com>
+Date: Tue, 10 Jun 2014 12:44:12 +0200
+Subject: NFS: populate ->net in mount data when remounting
+
+commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
+
+Otherwise the kernel oopses when remounting with IPv6 server because
+net is dereferenced in dev_get_by_name.
+
+Use net ns of current thread so that dev_get_by_name does not operate on
+foreign ns. Changing the address is prohibited anyway so this should not
+affect anything.
+
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Cc: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
-Changes from V4:
- - Splitted [PATCH V4 1/6] in 4 smaller patches
+ fs/nfs/super.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- drivers/staging/vt6656/baseband.c | 15 ++++++++-------
- drivers/staging/vt6656/card.c     |  4 ++--
- drivers/staging/vt6656/channel.c  |  5 +++--
- 3 files changed, 13 insertions(+), 11 deletions(-)
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 910ed90..05c3a6e 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2246,6 +2246,7 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
+ 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
+ 	data->version = nfsvers;
+ 	data->minorversion = nfss->nfs_client->cl_minorversion;
++	data->net = current->nsproxy->net_ns;
+ 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
+ 		data->nfs_server.addrlen);
 
-diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
-index c1675d5..7adc8db 100644
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -26,9 +26,10 @@
-  * Date: Jun. 5, 2002
-  *
-  * Functions:
-- *      vnt_get_frame_time        - Calculate data frame transmitting time
-- *      vnt_get_phy_field   - Calculate PhyLength, PhyService and Phy Signal parameter for baseband Tx
-- *      BBbVT3184Init          - VIA VT3184 baseband chip init code
-+ *	vnt_get_frame_time	- Calculate data frame transmitting time
-+ *	vnt_get_phy_field	- Calculate PhyLength, PhyService and Phy
-+ *				  Signal parameter for baseband Tx
-+ *	BBbVT3184Init		- VIA VT3184 baseband chip init code
-  *
-  * Revision History:
-  *
-@@ -86,7 +87,7 @@ static u8 vnt_vt3184_al2230[] = {
- 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 0xff */
- };
- 
--//{{RobertYu:20060515, new BB setting for VT3226D0
-+/* {{RobertYu:20060515, new BB setting for VT3226D0 */
- static u8 vnt_vt3184_vt3226d0[] = {
- 	0x31, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00,
- 	0x70, 0x45, 0x2a, 0x76, 0x00, 0x00, 0x80, 0x00, /* 0x0f */
-@@ -191,9 +192,9 @@ unsigned int vnt_get_frame_time(u8 preamble_type, u8 pkt_type,
-  *      tx_rate           - Tx Rate
-  *  Out:
-  *	struct vnt_phy_field *phy
-- * 			- pointer to Phy Length field
-- *			- pointer to Phy Service field
-- * 			- pointer to Phy Signal field
-+ *		- pointer to Phy Length field
-+ *		- pointer to Phy Service field
-+ *		- pointer to Phy Signal field
-  *
-  * Return Value: none
-  *
-diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
-index ea06b63..6a6e614 100644
---- a/drivers/staging/vt6656/card.c
-+++ b/drivers/staging/vt6656/card.c
-@@ -55,8 +55,8 @@
- #include "key.h"
- #include "usbpipe.h"
- 
--//const u16 cwRXBCNTSFOff[MAX_RATE] =
--//{17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3};
-+/* const u16 cwRXBCNTSFOff[MAX_RATE] =
-+   {17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3}; */
- 
- static const u16 cwRXBCNTSFOff[MAX_RATE] =
- {192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3};
-diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-index fb1838e..4a53f1a 100644
---- a/drivers/staging/vt6656/channel.c
-+++ b/drivers/staging/vt6656/channel.c
-@@ -28,8 +28,9 @@
-  *
-  *
-  * Revision History:
-- *      01-18-2005      RobertYu:  remove the for loop searching in ChannelValid,
-- *                                 change ChannelRuleTab to lookup-type, reorder table items.
-+ *	01-18-2005	RobertYu:	remove the for loop searching in
-+ *					ChannelValid, change ChannelRuleTab
-+ *					to lookup-type, reorder table items.
-  *
-  *
-  */
--- 
-1.9.3
+--
+1.9.1
 
