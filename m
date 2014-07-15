@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049AbaGOHJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 03:09:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35135 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785AbaGOHJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 03:09:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,663,1400050800"; 
-   d="scan'208";a="569932342"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2] ACPI/EC: Enable storm prevention mechanisms.
-Date: Tue, 15 Jul 2014 15:09:01 +0800
-Message-Id: <d43c4857af0aef38ba62fd21f62cb69deea888f3.1405407302.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1403060601.git.lv.zheng@intel.com>
-References: <cover.1403060601.git.lv.zheng@intel.com>
+	id S1758023AbaGOHM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 03:12:58 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:18919 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757830AbaGOHMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 03:12:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 15 Jul 2014 00:01:40 -0700
+Message-ID: <53C4D472.9010507@nvidia.com>
+Date: Tue, 15 Jul 2014 10:12:50 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Hans de Goede <hdegoede@redhat.com>, Tejun Heo <tj@kernel.org>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
+References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com> <1403101406-15439-7-git-send-email-mperttunen@nvidia.com> <20140708132216.GA4979@htj.dyndns.org> <53C3DCF0.3030001@redhat.com>
+In-Reply-To: <53C3DCF0.3030001@redhat.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables storm prevention mechanisms. After applying this patch,
-when the command/event storms are actually detected, EC driver will be
-switched from the IRQ mode to the polling mode.
+Heh, what you are describing is the v1 of this series :)
 
-If regressions are reported against storm prevention support, this patch
-can be bisected and reverted before issues can be root caused.
+However,
 
-By changing the storm threshold to 0 and stops returning from
-advance_transaction() without increasing irq_count on non-error cases, we
-can perform unit test for the storm prevention. The result is as follows:
-  [    4.525321] ACPI : EC: ***** Command(RD_EC) started *****
-  [    4.525321] ACPI : EC: ===== TASK =====
-  [    4.525326] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.525327] ACPI : EC: EC_SC(W) = 0x80
-  [    4.525436] ACPI : EC: ===== IRQ =====
-  [    4.525442] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.525442] ACPI : EC: EC_DATA(W) = 0x23
-  [    4.525448] ACPI : EC: +++++ Polling enabled +++++
-  [    4.525451] ACPI : EC: EC_SC(R) = 0x02 SCI_EVT=0 BURST=0 CMD=0 IBF=1 OBF=0
-# [    4.528954] ACPI : EC: ===== TASK =====
-  [    4.528957] ACPI : EC: EC_SC(R) = 0x01 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=1
-  [    4.528960] ACPI : EC: EC_DATA(R) = 0x2b
-  [    4.528963] ACPI : EC: +++++ Polling disabled +++++
-  [    4.528964] ACPI : EC: ***** Command(RD_EC) stopped *****
-  [    4.528974] ACPI : EC: ===== IRQ =====
-  [    4.528977] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.528980] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.528988] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.529347] ACPI : EC: ***** Command(WR_EC) started *****
-  [    4.529348] ACPI : EC: ===== TASK =====
-  [    4.529352] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.529353] ACPI : EC: EC_SC(W) = 0x81
-* [    4.529467] ACPI : EC: ===== IRQ =====
-  [    4.529473] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.529473] ACPI : EC: EC_DATA(W) = 0x04
-  [    4.529479] ACPI : EC: +++++ Polling enabled +++++
-  [    4.529482] ACPI : EC: EC_SC(R) = 0x02 SCI_EVT=0 BURST=0 CMD=0 IBF=1 OBF=0
-  [    4.532951] ACPI : EC: ===== TASK =====
-  [    4.532957] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.532957] ACPI : EC: EC_DATA(W) = 0x01
-  [    4.536952] ACPI : EC: ===== TASK =====
-  [    4.536957] ACPI : EC: EC_SC(R) = 0x00 SCI_EVT=0 BURST=0 CMD=0 IBF=0 OBF=0
-  [    4.536964] ACPI : EC: +++++ Polling disabled +++++
-  [    4.536965] ACPI : EC: ***** Command(WR_EC) stopped *****
-We can see the command is advanced in the task context after enabling the
-polling mode (#) and the next command can still be started from the high
-performance IRQ mode (*).
+17/06/14 Thierry Reding wrote:
+ > I would've preferred tegra_powergate_sequence_power_up() to be used
+ > consistently in all drivers. I'm still not convinced that using the
+ > platform AHCI driver this way is really the best option, since we're
+ > bending over backwards to fit into what this driver dictates. There
+ > shouldn't be a need for that.
 
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- drivers/acpi/ec.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+As you probably noticed, the issue is that on Tegra we want to use 
+tegra_powergate_sequence_power_up to enable the SATA power rail. That 
+function assumes that it gets a disabled clock and returns with the 
+clock enabled. If we use ahci_platform's resource management functions,
+this is not doable, since it wants to handle clocks by itself.
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index d3b1bd7..f40144e 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -825,13 +825,17 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
- {
- 	unsigned long flags;
- 	struct acpi_ec *ec = data;
-+	u32 enable = 0;
- 
- 	spin_lock_irqsave(&ec->lock, flags);
- 	if (advance_transaction(ec))
- 		wake_up(&ec->wait);
-+	if (!test_bit(EC_FLAGS_EVENT_STORM, &ec->flags) &&
-+	    !test_bit(EC_FLAGS_COMMAND_STORM, &ec->flags))
-+		enable = ACPI_REENABLE_GPE;
- 	spin_unlock_irqrestore(&ec->lock, flags);
- 	ec_check_sci(ec, acpi_ec_read_status(ec));
--	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
-+	return ACPI_INTERRUPT_HANDLED | enable;
- }
- 
- /* --------------------------------------------------------------------------
--- 
-1.7.10
+To be honest, I too would prefer handling the resources in the driver. 
+The driver needs other resources than what ahci_platform currently 
+manages (at least reset_controls and multiple regulators, later we might 
+get more) and managing them in the driver allows the driver to do proper 
+error handling and manage all resources consistently and in one place. 
+Also, I don't think it is sensible to add support for loading every 
+possible kind of DT resource to ahci_platform, since most drivers won't 
+need them. Other subsystems I've been in don't have this kind of helper 
+library, so diverging here seems weird.
 
+That said, if you feel strongly about this, I can do what you described.
+
+Thanks,
+Mikko
+
+On 14/07/14 16:36, Hans de Goede wrote:
+> Hi,
+>
+> On 07/08/2014 03:22 PM, Tejun Heo wrote:
+>> (cc'ing Hans)
+>>
+>> Hans, can you please review this patch?
+>
+> Done.
+>
+> Mikko, it looks like you are doing a lot of stuff
+> the DIY way. I can see there are good reasons for
+> that though.
+>
+> Still it would be nice if you could use a little bit
+> more of the helper functions provided by libahci_platform.c
+>
+> Specifically I think it would be better if you used
+> ahci_platform_get_resources, that would remove a lot of
+> duplicate code from the new driver.
+>
+> To be specific I would like to suggest that you
+> raise AHCI_MAX_CLKS to 4, and then specify an order
+> in which the clks must be listed in the devicetree
+> binding. Then you can put that order in an enum
+> and use hpriv->clks[CLK_FOO] in your driver, where
+> CLK_FOO comes from the enum.
+>
+> This way you should be able to use ahci_platform_get_resources
+> and drop doing the iomap of the base registers, all the
+> clk_gets and the phy_get yourself.
+>
+> You could then also use ahci_platform_disable_clks() in
+> tegra_ahci_power_off
+>
+> Regards,
+>
+> Hans
+>
