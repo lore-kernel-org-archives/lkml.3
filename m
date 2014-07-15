@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892AbaGOXOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:14:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S934307AbaGOXPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933801AbaGOXOA (ORCPT
+	with ESMTP id S933816AbaGOXOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:00 -0400
+	Tue, 15 Jul 2014 19:14:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
-Subject: [PATCH 3.15 17/84] hwmon: (amc6821) Fix permissions for temp2_input
-Date: Tue, 15 Jul 2014 16:17:14 -0700
-Message-Id: <20140715231713.713759047@linuxfoundation.org>
+Subject: [PATCH 3.15 20/84] hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
+Date: Tue, 15 Jul 2014 16:17:17 -0700
+Message-Id: <20140715231713.805064468@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -30,9 +30,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Axel Lin <axel.lin@ingics.com>
 
-commit df86754b746e9a0ff6f863f690b1c01d408e3cdc upstream.
+commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
 
-temp2_input should not be writable, fix it.
+Writing to fanX_div does not clear the cache. As a result, reading
+from fanX_div may return the old value for up to two seconds
+after writing a new value.
+
+This patch ensures the fan_div cache is updated in set_fan_div().
 
 Reported-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
@@ -40,19 +44,20 @@ Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/amc6821.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/adm1029.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hwmon/amc6821.c
-+++ b/drivers/hwmon/amc6821.c
-@@ -704,7 +704,7 @@ static SENSOR_DEVICE_ATTR(temp1_max_alar
- 	get_temp_alarm, NULL, IDX_TEMP1_MAX);
- static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO,
- 	get_temp_alarm, NULL, IDX_TEMP1_CRIT);
--static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO | S_IWUSR,
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
- 	get_temp, NULL, IDX_TEMP2_INPUT);
- static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO | S_IWUSR, get_temp,
- 	set_temp, IDX_TEMP2_MIN);
+--- a/drivers/hwmon/adm1029.c
++++ b/drivers/hwmon/adm1029.c
+@@ -232,6 +232,9 @@ static ssize_t set_fan_div(struct device
+ 	/* Update the value */
+ 	reg = (reg & 0x3F) | (val << 6);
+ 
++	/* Update the cache */
++	data->fan_div[attr->index] = reg;
++
+ 	/* Write value */
+ 	i2c_smbus_write_byte_data(client,
+ 				  ADM1029_REG_FAN_DIV[attr->index], reg);
 
 
