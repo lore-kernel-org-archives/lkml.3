@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758850AbaGOMTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:19:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52146 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758376AbaGOMTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:19:39 -0400
-Date: Tue, 15 Jul 2014 14:19:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715121935.GB9366@dhcp22.suse.cz>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715082545.GA9366@dhcp22.suse.cz>
+	id S1758895AbaGOMWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:22:04 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:51770 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758633AbaGOMWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 08:22:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        lftan.linux@gmail.com, cltang@codesourcery.com
+Subject: Re: [PATCH v2 24/29] nios2: Module support
+Date: Tue, 15 Jul 2014 14:21:49 +0200
+Message-ID: <5671533.7yANBX1RSQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140715111237.GF7668@distanz.ch>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <6364841.e2Acy30lOs@wuerfel> <20140715111237.GF7668@distanz.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715082545.GA9366@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:lO6qkya8pYT/VA4KVrlHo7zValWTyjNYeVs7xyRLBjS
+ 17A62pbCOK/gnsJjROq7bOh4yjkh2us2UJbQu2e+8kVpueQsGp
+ 0VaVuwYSLV9zyFukBeUoVfjZSA3E7QzezmQgnfyZpyBfGtkmAP
+ K4sbqmB7cebjM3tudWw2RY4P8V7qhNAnWb3Z1QVFt0bUL19mzC
+ rB5HxFM+rXzHTOGGZANLCiEa+h7dRPez/R2d1VJ4E4L1k5qvSj
+ OUHUYCT9mM/k4LHR9ZUp5nQe52Nr7rHPCRfiYX2emT6ueTwjA8
+ pB5Nbhy1BBnnMlJyK0UKCn20VS0VVoIaHaAgA72xghhFeUUam3
+ 3k6ofFLSYezAwR9JXWD8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> +/**
-> + * mem_cgroup_migrate - migrate a charge to another page
-> + * @oldpage: currently charged page
-> + * @newpage: page to transfer the charge to
-> + * @lrucare: page might be on LRU already
+On Tuesday 15 July 2014 13:12:37 Tobias Klauser wrote:
+> On 2014-07-15 at 12:24:46 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 15 July 2014 16:45:51 Ley Foon Tan wrote:
+> > > +void *module_alloc(unsigned long size)
+> > > +{
+> > > +   if (size == 0)
+> > > +           return NULL;
+> > > +   return kmalloc(size, GFP_KERNEL);
+> > > +}
+> > > +
+> > > +/* Free memory returned from module_alloc */
+> > > +void module_free(struct module *mod, void *module_region)
+> > > +{
+> > > +   kfree(module_region);
+> > > +}
+> > 
+> > Any particular reason for defining these to use kmalloc rather than
+> > the default vmalloc based functions?
+> 
+> AFAIR this is due to relocation issues, as the FIXME comment in the
+> "original" code [1] states. I don't know whether this still applies,
+> though (or what would be the proper fix for this to overcome the
+> relocation issues).
+> 
+> [1] https://github.com/tklauser/linux-nios2/blob/nios2/arch/nios2/kernel/module.c#L45
+> 
 
-which one? I guess the newpage?
+Ah, I see. Please at least copy over that comment then.
 
-> + *
-> + * Migrate the charge from @oldpage to @newpage.
-> + *
-> + * Both pages must be locked, @newpage->mapping must be set up.
-> + */
-> +void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
-> +			bool lrucare)
-> +{
-> +	unsigned int nr_pages = 1;
-> +	struct page_cgroup *pc;
-> +
-> +	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
-> +	VM_BUG_ON_PAGE(!PageLocked(newpage), newpage);
-> +	VM_BUG_ON_PAGE(PageLRU(oldpage), oldpage);
-> +	VM_BUG_ON_PAGE(PageLRU(newpage), newpage);
+A long-term solution would be to copy what ARM does, since that
+has the same problem. The modules are allocated with
+__vmalloc_node_range, passing a virtual address range that
+is just before the kernel virtual address, taken out of the
+top 16MB of the user space addresses.
 
-	VM_BUG_ON_PAGE(PageLRU(newpage) && !lruvec, newpage);
-
-> +	VM_BUG_ON_PAGE(PageAnon(oldpage) != PageAnon(newpage), newpage);
-> +
-> +	if (mem_cgroup_disabled())
-> +		return;
-> +
-> +	pc = lookup_page_cgroup(oldpage);
-> +	if (!PageCgroupUsed(pc))
-> +		return;
-> +
-> +	/* Already migrated */
-> +	if (!(pc->flags & PCG_MEM))
-> +		return;
-> +
-> +	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
-> +	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
-
-What about PCG_USED?
-Wouldn't we uncharge the currently transfered charge when oldpage does
-its last put_page when the migration is done?
-
-On a not directly related note. I was quite surprised to see that
-__unmap_and_move calls putback_lru_page on oldpage even when migration
-succeeded. So it goes through mem_cgroup_page_lruvec which checks
-PCG_USED and resets pc->mem_cgroup to root for !PCG_USED.
-
-> +
-> +	if (PageTransHuge(oldpage)) {
-> +		nr_pages <<= compound_order(oldpage);
-> +		VM_BUG_ON_PAGE(!PageTransHuge(oldpage), oldpage);
-> +		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
-> +	}
-> +
-> +	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
-> +}
--- 
-Michal Hocko
-SUSE Labs
+	Arnd
