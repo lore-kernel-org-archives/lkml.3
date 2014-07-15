@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934541AbaGOXqS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:46:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S1030395AbaGOXqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:46:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45910 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760056AbaGOXN6 (ORCPT
+	with ESMTP id S1754068AbaGOXqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.15 11/84] workqueue: zero cpumask of wq_numa_possible_cpumask on init
-Date: Tue, 15 Jul 2014 16:17:08 -0700
-Message-Id: <20140715231713.531207163@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 19:46:25 -0400
+Date: Tue, 15 Jul 2014 16:50:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, devel <devel@driverdev.osuosl.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8 V2] staging: dgap: remove unneeded dgap_err()
+Message-ID: <20140715235058.GB32651@kroah.com>
+References: <20140715091144.GA19080@devel.8.8.4.4>
+ <20140715152929.GA8844@kroah.com>
+ <CAHb8M2B0EAjDr=yTfWQ_YsRcX9JumU8rUQ1mQeoqMWeBbY4gnQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHb8M2B0EAjDr=yTfWQ_YsRcX9JumU8rUQ1mQeoqMWeBbY4gnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jul 16, 2014 at 08:21:30AM +0900, DaeSeok Youn wrote:
+> Hi,
+> 
+> 2014-07-16 0:29 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> > On Tue, Jul 15, 2014 at 06:11:44PM +0900, Daeseok Youn wrote:
+> >> The dgap_err() is printing a message with pr_err(),
+> >> so all those are replaced.
+> >>
+> >> Use definition "pr_fmt" and then all of "dgap:" in
+> >> the beginning of print messages are removed.
+> >>
+> >> And also removed "out of memory" message because
+> >> the kernel has own message for that.
+> >>
+> >> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> >> ---
+> >> V2: use pr_fmt "dgap:" prefix on print message on dgap.
+> >>     remove "out of memory" message.
+> >>
+> >>     Adds Mark to TO list and CC list for checking send
+> >>     this email properly to him.
+> >>
+> >>  drivers/staging/dgap/dgap.c |  306 +++++++++++++++++++------------------------
+> >>  1 files changed, 133 insertions(+), 173 deletions(-)
+> >>
+> >> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> >> index 06c55cb..9e750fb 100644
+> >> --- a/drivers/staging/dgap/dgap.c
+> >> +++ b/drivers/staging/dgap/dgap.c
+> >> @@ -41,6 +41,8 @@
+> >>   */
+> >>  #undef DIGI_CONCENTRATORS_SUPPORTED
+> >>
+> >> +#define pr_fmt(fmt) "dgap: " fmt
+> >> +
+> >>  #include <linux/kernel.h>
+> >>  #include <linux/module.h>
+> >>  #include <linux/pci.h>
+> >> @@ -153,7 +155,6 @@ static void dgap_firmware_reset_port(struct channel_t *ch);
+> >>  static int dgap_gettok(char **in);
+> >>  static char *dgap_getword(char **in);
+> >>  static int dgap_checknode(struct cnode *p);
+> >> -static void dgap_err(char *s);
+> >>
+> >>  /*
+> >>   * Function prototypes from dgap_sysfs.h
+> >> @@ -815,7 +816,7 @@ static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
+> >>       if (ret)
+> >>               goto free_brd;
+> >>
+> >> -     pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+> >> +     pr_info("board %d: %s (rev %d), irq %ld\n",
+> >>               boardnum, brd->name, brd->rev, brd->irq);
+> >
+> > Almost all of the pr_*() calls in this driver should be converted over
+> > to use dev_*() calls instead.  And some of them, like this one, should
+> > be removed entirely (no need for a driver to be "noisy" when a device
+> > for it is found, it should be quiet if at all possible, unless something
+> > went wrong.)
+> >
+> > So can you do that here instead?  I've applied the earlier patches in
+> > this series, and stopped here.
+> OK. I can. pr_*() calls are replaced with dev_*() calls.
+> And also removes some of print message which are useless like "out
+> of memory"
 
-------------------
+Yes, please do that, that would be great.
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+thanks,
 
-commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
-
-When hot-adding and onlining CPU, kernel panic occurs, showing following
-call trace.
-
-  BUG: unable to handle kernel paging request at 0000000000001d08
-  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
-  PGD 0
-  Oops: 0000 [#1] SMP
-  ...
-  Call Trace:
-   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
-   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
-   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
-   [<ffffffff811926f1>] new_slab+0x91/0x300
-   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
-   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
-   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
-   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
-   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
-   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
-   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
-   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
-   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
-   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
-   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
-   [<ffffffff81086652>] kthreadd+0x2c2/0x300
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-
-In my investigation, I found the root cause is wq_numa_possible_cpumask.
-All entries of wq_numa_possible_cpumask is allocated by
-alloc_cpumask_var_node(). And these entries are used without initializing.
-So these entries have wrong value.
-
-When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
-wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
-calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
-as follow:
-
-3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
-3593         if (wq_numa_enabled) {
-3594                 for_each_node(node) {
-3595                         if (cpumask_subset(pool->attrs->cpumask,
-3596                                            wq_numa_possible_cpumask[node])) {
-3597                                 pool->node = node;
-3598                                 break;
-3599                         }
-3600                 }
-3601         }
-
-But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
-node is selected. As a result, kernel panic occurs.
-
-By this patch, all entries of wq_numa_possible_cpumask are allocated by
-zalloc_cpumask_var_node to initialize them. And the panic disappeared.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/workqueue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -5034,7 +5034,7 @@ static void __init wq_numa_init(void)
- 	BUG_ON(!tbl);
- 
- 	for_each_node(node)
--		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-+		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
- 				node_online(node) ? node : NUMA_NO_NODE));
- 
- 	for_each_possible_cpu(cpu) {
-
-
+greg k-h
