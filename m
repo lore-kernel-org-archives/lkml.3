@@ -1,104 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940AbaGOSqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:46:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33226 "EHLO mx1.redhat.com"
+	id S932959AbaGOSqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:46:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25568 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896AbaGOSpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:45:54 -0400
+	id S932900AbaGOSpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:45:55 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 00/23] Wacom queued patches
-Date: Tue, 15 Jul 2014 14:45:23 -0400
-Message-Id: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 05/23] Input - wacom: split out the pad device for Bamboos
+Date: Tue, 15 Jul 2014 14:45:28 -0400
+Message-Id: <1405449946-11515-6-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+We rely on the return code of wacom_bpt*() to do the input_sync().
+wacom_wac_irq() then properly sync the input devices.
 
-this is a resend/v2 of part of the Wacom tablet kernel work I have been
-conducted during this merge window.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Reviewed-by: Ping Cheng <pingc@wacom.com>
+Reviewed-by: Jason Gerecke <killertofu@gmail.com>
+---
 
-There are 2 fixes (01/23 and 02/23), a compatibility feature for wayland
-(splitting the pad input device out of the pen/finger ones, which allows to
-have a simple mapping kernel event / user event), and the conversion from a pure
-usb driver to a HID one.
+no changes in v2
 
-This conversion will allow us to make regression tests and hopefully help
-including new devices in a much faster way when the report descriptors will be
-fixed in the kernel or in the hardware.
+ drivers/input/tablet/wacom_wac.c | 39 +++++++++++++++++++++++----------------
+ 1 file changed, 23 insertions(+), 16 deletions(-)
 
-I added a brand new patch (23/23) which moves wacom.ko into drivers/hid.
-Jiri asked me to move the module into his subtree once the change is done, so
-here it is.
-
-I discussed with Jiri last Friday, and he was fine that you take this work
-through your tree, even if it changes some files in his.
-In order not to make the mess between your two trees, I removed one patch
-(HID: uhid: add and set HID_TYPE_UHID for uhid devices) which is not mandatory
-for the user.
-
-Cheers,
-Benjamin
-
-
-Benjamin Tissoires (23):
-  Revert "Input: wacom - testing result shows get_report is
-    unnecessary."
-  Input - wacom: assign phys field from struct wacom into input_dev
-  Input - wacom: create a separate input device for pads
-  Input - wacom: split out the pad device for Intuos/Cintiq
-  Input - wacom: split out the pad device for Bamboos
-  Input - wacom: split out the pad device for DTUS
-  Input - wacom: split out the pad device for Graphire G4 and MO
-  Input - wacom: split out the pad device for the wireless receiver
-  Input - wacom: include and use linux/hid.h
-  Input - wacom: switch from an USB driver to a HID driver
-  Input - wacom: use hid communication instead of plain usb
-  Input - wacom: use HID core to actually fetch the report descriptor
-  Input - wacom: compute the HID report size to get the actual packet
-    size
-  Input - wacom: install LED/OLED sysfs files in the HID device instead
-    of USB
-  Input - wacom: register the input devices on top of the HID one
-  Input - wacom: remove usb dependency for siblings devices
-  Input - wacom: register power device at the HID level
-  Input - wacom: use hid_info instead of plain dev_info
-  Input - wacom: use in-kernel HID parser
-  Input - wacom: use hidinput_calc_abs_res instead of duplicating its
-    code
-  Input - wacom: remove field pktlen declaration in the list of devices
-  Input - wacom: keep wacom_ids ordered
-  Input - wacom: Move the USB (now hid) Wacom driver in drivers/hid
-
- drivers/hid/Kconfig              |   13 +
- drivers/hid/Makefile             |    3 +
- drivers/hid/hid-core.c           |   10 +-
- drivers/hid/hid-wacom.c          |    2 +-
- drivers/hid/wacom.h              |  138 +++
- drivers/hid/wacom_sys.c          | 1257 +++++++++++++++++++
- drivers/hid/wacom_wac.c          | 2534 ++++++++++++++++++++++++++++++++++++++
- drivers/hid/wacom_wac.h          |  169 +++
- drivers/input/tablet/Kconfig     |   16 -
- drivers/input/tablet/Makefile    |    3 -
- drivers/input/tablet/wacom.h     |  139 ---
- drivers/input/tablet/wacom_sys.c | 1497 ----------------------
- drivers/input/tablet/wacom_wac.c | 2485 -------------------------------------
- drivers/input/tablet/wacom_wac.h |  165 ---
- include/linux/hid.h              |    5 +
- 15 files changed, 4129 insertions(+), 4307 deletions(-)
- create mode 100644 drivers/hid/wacom.h
- create mode 100644 drivers/hid/wacom_sys.c
- create mode 100644 drivers/hid/wacom_wac.c
- create mode 100644 drivers/hid/wacom_wac.h
- delete mode 100644 drivers/input/tablet/wacom.h
- delete mode 100644 drivers/input/tablet/wacom_sys.c
- delete mode 100644 drivers/input/tablet/wacom_wac.c
- delete mode 100644 drivers/input/tablet/wacom_wac.h
-
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 0be2c73..4a40381 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1143,6 +1143,7 @@ static int wacom_bpt_touch(struct wacom_wac *wacom)
+ {
+ 	struct wacom_features *features = &wacom->features;
+ 	struct input_dev *input = wacom->input;
++	struct input_dev *pad_input = wacom->pad_input;
+ 	unsigned char *data = wacom->data;
+ 	int i;
+ 
+@@ -1177,14 +1178,12 @@ static int wacom_bpt_touch(struct wacom_wac *wacom)
+ 
+ 	input_mt_report_pointer_emulation(input, true);
+ 
+-	input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
+-	input_report_key(input, BTN_FORWARD, (data[1] & 0x04) != 0);
+-	input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
+-	input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
+-
+-	input_sync(input);
++	input_report_key(pad_input, BTN_LEFT, (data[1] & 0x08) != 0);
++	input_report_key(pad_input, BTN_FORWARD, (data[1] & 0x04) != 0);
++	input_report_key(pad_input, BTN_BACK, (data[1] & 0x02) != 0);
++	input_report_key(pad_input, BTN_RIGHT, (data[1] & 0x01) != 0);
+ 
+-	return 0;
++	return 1;
+ }
+ 
+ static void wacom_bpt3_touch_msg(struct wacom_wac *wacom, unsigned char *data)
+@@ -1232,7 +1231,7 @@ static void wacom_bpt3_touch_msg(struct wacom_wac *wacom, unsigned char *data)
+ 
+ static void wacom_bpt3_button_msg(struct wacom_wac *wacom, unsigned char *data)
+ {
+-	struct input_dev *input = wacom->input;
++	struct input_dev *input = wacom->pad_input;
+ 	struct wacom_features *features = &wacom->features;
+ 
+ 	if (features->type == INTUOSHT) {
+@@ -1269,9 +1268,7 @@ static int wacom_bpt3_touch(struct wacom_wac *wacom)
+ 	}
+ 	input_mt_report_pointer_emulation(input, true);
+ 
+-	input_sync(input);
+-
+-	return 0;
++	return 1;
+ }
+ 
+ static int wacom_bpt_pen(struct wacom_wac *wacom)
+@@ -1800,11 +1797,6 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 
+ 		if (features->device_type == BTN_TOOL_FINGER) {
+ 
+-			__set_bit(BTN_LEFT, input_dev->keybit);
+-			__set_bit(BTN_FORWARD, input_dev->keybit);
+-			__set_bit(BTN_BACK, input_dev->keybit);
+-			__set_bit(BTN_RIGHT, input_dev->keybit);
+-
+ 			if (features->touch_max) {
+ 				if (features->pktlen == WACOM_PKGLEN_BBTOUCH3) {
+ 					input_set_abs_params(input_dev,
+@@ -1979,6 +1971,21 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
+ 
+ 		break;
+ 
++	case INTUOSHT:
++	case BAMBOO_PT:
++		/* pad device is on the touch interface */
++		if (features->device_type != BTN_TOOL_FINGER)
++			return 1;
++
++		__clear_bit(ABS_MISC, input_dev->absbit);
++
++		__set_bit(BTN_LEFT, input_dev->keybit);
++		__set_bit(BTN_FORWARD, input_dev->keybit);
++		__set_bit(BTN_BACK, input_dev->keybit);
++		__set_bit(BTN_RIGHT, input_dev->keybit);
++
++		break;
++
+ 	default:
+ 		/* no pad supported */
+ 		return 1;
 -- 
 2.0.0
 
