@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153AbaGOTPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:15:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:50507 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932926AbaGOTPN (ORCPT
+	id S933160AbaGOTRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:17:07 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:39153 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932798AbaGOTRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:15:13 -0400
-Date: Tue, 15 Jul 2014 15:02:52 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-Message-ID: <20140715190252.GC26012@tuxdriver.com>
-References: <20140715.002844.679028486034873225.davem@davemloft.net>
- <CA+55aFw9=c_jSb7GOXDoityxWGiDs9y7LsdasyPHXESiZR75bg@mail.gmail.com>
- <20140715.114614.827795344549781033.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715.114614.827795344549781033.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 15 Jul 2014 15:17:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AokRAAB+xVNbsm9N/2dsb2JhbABZgw6BKaw8CwUBbpwAgRAXdYRgI4EaDSqIRgHKQ4V7iGxkHYQtBZsYlCWDRjsvgQM
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
+Subject: [PATCH 1/1] Btrfs: fix sparse warning
+Date: Tue, 15 Jul 2014 21:17:17 +0200
+Message-Id: <1405451837-8235-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 11:46:14AM -0700, David Miller wrote:
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Tue, 15 Jul 2014 08:52:33 -0700
-> 
-> > And if David actually asks for these, my apologies..
-> 
-> I didn't ask for these :-)
+Fix the following sparse warning:
+fs/btrfs/send.c:518:51: warning: incorrect type in argument 2 (different address spaces)
+fs/btrfs/send.c:518:51:    expected char const [noderef] <asn:1>*<noident>
+fs/btrfs/send.c:518:51:    got char *
 
-Just trying to be helpful, for those times when there are non-trivial
-merge conflicts.  I can stop.
+We can safely use (const char __user *) with set_fs(KERNEL_DS)
 
-John
+__force added to avoid sparse-all warning:
+fs/btrfs/send.c:518:40: warning: cast adds address space to expression (<asn:1>)
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+
+This is untested.
+
+ fs/btrfs/send.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
+index 6528aa6..b67e12e 100644
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -515,7 +515,8 @@ static int write_buf(struct file *filp, const void *buf, u32 len, loff_t *off)
+ 	set_fs(KERNEL_DS);
+ 
+ 	while (pos < len) {
+-		ret = vfs_write(filp, (char *)buf + pos, len - pos, off);
++		ret = vfs_write(filp, (__force const char __user *)buf + pos,
++				len - pos, off);
+ 		/* TODO handle that correctly */
+ 		/*if (ret == -ERESTARTSYS) {
+ 			continue;
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.8.4.5
+
