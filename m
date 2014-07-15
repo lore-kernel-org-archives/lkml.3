@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030360AbaGOXnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:43:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S934523AbaGOXoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:44:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933863AbaGOXOE (ORCPT
+	with ESMTP id S933812AbaGOXOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:04 -0400
+	Tue, 15 Jul 2014 19:14:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Barton Xu <tank.xuhan@gmail.com>,
-        Steffen Weber <steffen.weber@gmail.com>,
-        Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 26/84] ACPI / EC: Remove duplicated ec_wait_ibf0() waiter
-Date: Tue, 15 Jul 2014 16:17:23 -0700
-Message-Id: <20140715231713.995265908@linuxfoundation.org>
+        Andras Kovacs <andras@sth.sze.hu>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.15 02/84] USB: cp210x: add support for Corsair usb dongle
+Date: Tue, 15 Jul 2014 16:16:59 -0700
+Message-Id: <20140715231713.265881309@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -31,93 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Andras Kovacs <andras@sth.sze.hu>
 
-commit 9b80f0f73ae1583c22325ede341c74195847618c upstream.
+commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
 
-After we've added the first command byte write into advance_transaction(),
-the IBF=0 waiter is duplicated with the command completion waiter
-implemented in the ec_poll() because:
-   If IBF=1 blocked the first command byte write invoked in the task
-   context ec_poll(), it would be kicked off upon IBF=0 interrupt or timed
-   out and retried again in the task context.
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-Remove this seperate and duplicate IBF=0 waiter.  By doing so we can
-reduce the overall number of times to access the EC_SC(R) status
-register.
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   27 +--------------------------
- 1 file changed, 1 insertion(+), 26 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -281,23 +281,6 @@ static int acpi_ec_transaction_unlocked(
- 	return ret;
- }
- 
--static int ec_check_ibf0(struct acpi_ec *ec)
--{
--	u8 status = acpi_ec_read_status(ec);
--	return (status & ACPI_EC_FLAG_IBF) == 0;
--}
--
--static int ec_wait_ibf0(struct acpi_ec *ec)
--{
--	unsigned long delay = jiffies + msecs_to_jiffies(ec_delay);
--	/* interrupt wait manually if GPE mode is not active */
--	while (time_before(jiffies, delay))
--		if (wait_event_timeout(ec->wait, ec_check_ibf0(ec),
--					msecs_to_jiffies(1)))
--			return 0;
--	return -ETIME;
--}
--
- static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
- {
- 	int status;
-@@ -318,12 +301,6 @@ static int acpi_ec_transaction(struct ac
- 			goto unlock;
- 		}
- 	}
--	if (ec_wait_ibf0(ec)) {
--		pr_err("input buffer is not empty, "
--				"aborting transaction\n");
--		status = -ETIME;
--		goto end;
--	}
- 	pr_debug("transaction start (cmd=0x%02x, addr=0x%02x)\n",
- 			t->command, t->wdata ? t->wdata[0] : 0);
- 	/* disable GPE during transaction if storm is detected */
-@@ -347,7 +324,6 @@ static int acpi_ec_transaction(struct ac
- 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
- 	}
- 	pr_debug("transaction end\n");
--end:
- 	if (ec->global_lock)
- 		acpi_release_global_lock(glk);
- unlock:
-@@ -653,8 +629,7 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	spin_lock_irqsave(&ec->lock, flags);
- 	advance_transaction(ec);
- 	spin_unlock_irqrestore(&ec->lock, flags);
--	if (ec_transaction_completed(ec) &&
--	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
-+	if (ec_transaction_completed(ec)) {
- 		wake_up(&ec->wait);
- 		ec_check_sci(ec, acpi_ec_read_status(ec));
- 	}
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -153,6 +153,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 
 
