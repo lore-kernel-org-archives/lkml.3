@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760502AbaGOXg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:36:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933991AbaGOXON (ORCPT
+	id S965270AbaGOXgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:36:52 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:61135 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933982AbaGOXgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 46/84] intel_pstate: Update documentation of {max,min}_perf_pct sysfs files
-Date: Tue, 15 Jul 2014 16:17:43 -0700
-Message-Id: <20140715231714.594912975@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 19:36:48 -0400
 MIME-Version: 1.0
+In-Reply-To: <1405465801.28702.34.camel@misato.fc.hp.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+ <1405452884-25688-4-git-send-email-toshi.kani@hp.com> <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
+ <1405465801.28702.34.camel@misato.fc.hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 15 Jul 2014 16:36:26 -0700
+Message-ID: <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to handle
+ WT type
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 15, 2014 at 4:10 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Tue, 2014-07-15 at 12:56 -0700, Andy Lutomirski wrote:
+>> On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > This patch changes reserve_memtype() to handle the new WT type.
+>> > When (!pat_enabled && new_type), it continues to set either WB
+>> > or UC- to *new_type.  When pat_enabled, it can reserve a given
+>> > non-RAM range for WT.  At this point, it may not reserve a RAM
+>> > range for WT since reserve_ram_pages_type() uses the page flags
+>> > limited to three memory types, WB, WC and UC.
+>>
+>> FWIW, last time I looked at this, it seemed like all the fancy
+>> reserve_ram_pages stuff was unnecessary: shouldn't the RAM type be
+>> easy to track in the direct map page tables?
+>
+> Are you referring the direct map page tables as the kernel page
+> directory tables (pgd/pud/..)?
+>
+> I think it needs to be able to keep track of the memory type per a
+> physical memory range, not per a translation, in order to prevent
+> aliasing of the memory type.
 
-------------------
+Actual RAM (the lowmem kind, which is all of it on x86_64) is mapped
+linearly somewhere in kernel address space.  The pagetables for that
+mapping could be used as the canonical source of the memory type for
+the ram range in question.
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+This only works for lowmem, so maybe it's not a good idea to rely on it.
 
-commit 41629a8233470325bfbb60377f555f9e8acc879f upstream.
-
-Update documentation to make the interpretation of the values clearer
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=64251
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- Documentation/cpu-freq/intel-pstate.txt |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
---- a/Documentation/cpu-freq/intel-pstate.txt
-+++ b/Documentation/cpu-freq/intel-pstate.txt
-@@ -15,10 +15,13 @@ New sysfs files for controlling P state
- /sys/devices/system/cpu/intel_pstate/
- 
-       max_perf_pct: limits the maximum P state that will be requested by
--      the driver stated as a percentage of the available performance.
-+      the driver stated as a percentage of the available performance. The
-+      available (P states) performance may be reduced by the no_turbo
-+      setting described below.
- 
-       min_perf_pct: limits the minimum P state that will be  requested by
--      the driver stated as a percentage of the available performance.
-+      the driver stated as a percentage of the max (non-turbo)
-+      performance level.
- 
-       no_turbo: limits the driver to selecting P states below the turbo
-       frequency range.
-
-
+--Andy
