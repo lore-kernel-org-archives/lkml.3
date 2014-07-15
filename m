@@ -1,96 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839AbaGODPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:15:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37903 "EHLO mga01.intel.com"
+	id S1757956AbaGODQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:16:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:49371 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757802AbaGODPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:15:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
-   d="scan'208";a="561822846"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 06/10] ACPI/EC: Add a warning message to indicate event storms.
-Date: Tue, 15 Jul 2014 11:15:00 +0800
-Message-Id: <c22b03a036ea97a94cfe7a2d878ff63c93174d43.1405391679.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1405391678.git.lv.zheng@intel.com>
-References: <cover.1403060601.git.lv.zheng@intel.com> <cover.1405391678.git.lv.zheng@intel.com>
+	id S1757901AbaGODQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:16:40 -0400
+Message-ID: <1405394196.17767.6.camel@concordia>
+Subject: Re: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find
+ blacklist" error on ia64 and ppc64
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 15 Jul 2014 13:16:36 +1000
+In-Reply-To: <53C490F1.4020402@hitachi.com>
+References: <1404276081.7254.1.camel@concordia>
+	  <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
+	  <53BBDEE6.1080800@hitachi.com>
+	  <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
+	 <1405390262.17767.5.camel@concordia> <53C490F1.4020402@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch splits query handler scheduling into a new seperate function
-acpi_ec_notify_query_handlers() and adds a warning message in it to
-indicate a BIOS bug. It is reported that EC event storm can happen in case
-there is no handler prepared for the event. No functional changes.
+On Tue, 2014-07-15 at 11:24 +0900, Masami Hiramatsu wrote:
+> (2014/07/15 11:11), Michael Ellerman wrote:
+> > On Mon, 2014-07-14 at 10:17 -0700, Tony Luck wrote:
+> >> On Tue, Jul 8, 2014 at 5:07 AM, Masami Hiramatsu
+> >> <masami.hiramatsu.pt@hitachi.com> wrote:
+> >>> Ping?
+> >>>
+> >>> This patch can be applied without 1/2, and will fix ia64/ppc64 problem.
+> >>
+> >> Is somebody going to push this upstream? Another week has gone by,
+> >> we are at -rc5, and I'm still seeing the
+> >>
+> >>   Failed to find blacklist a00000010133b150
+> >>
+> >> messages on ia64.
+> > 
+> > I don't see those messages on ppc64, I don't know where the original report
+> > that it was broken on ppc64 came from. So I'm a bit lukewarm on the patch.
+> 
+> Right, on ppc64(ABIv1) it may be silently failed. Because each function
+> descriptor has another entry on kallsyms, original code can't detect
+> that. 
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=78091
-Reported-by: Steffen Weber <steffen.weber@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- drivers/acpi/ec.c |   29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
+OK, that would have been good to know :)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index cf83872..8817836 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -669,32 +669,39 @@ static void acpi_ec_run(void *cxt)
- 	acpi_ec_put_query_handler(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
-+static int acpi_ec_notify_query_handlers(struct acpi_ec *ec, u8 query_bit)
- {
--	u8 value = 0;
--	int status;
- 	struct acpi_ec_query_handler *handler;
- 
--	status = acpi_ec_query_unlocked(ec, &value);
--	if (data)
--		*data = value;
--	if (status)
--		return status;
--
- 	list_for_each_entry(handler, &ec->list, node) {
--		if (value == handler->query_bit) {
-+		if (query_bit == handler->query_bit) {
- 			/* have custom handler for this bit */
- 			handler = acpi_ec_get_query_handler(handler);
- 			pr_debug("push query execution (0x%2x) on queue\n",
--				value);
-+				 query_bit);
- 			return acpi_os_execute((handler->func) ?
- 				OSL_NOTIFY_HANDLER : OSL_GPE_HANDLER,
- 				acpi_ec_run, handler);
- 		}
- 	}
-+	pr_warn_once("BIOS bug: no handler for query (0x%02x)\n", query_bit);
- 	return 0;
- }
- 
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
-+{
-+	u8 value = 0;
-+	int status;
-+
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
-+		return status;
-+
-+	return acpi_ec_notify_query_handlers(ec, value);
-+}
-+
- static void acpi_ec_gpe_query(void *ec_cxt)
- {
- 	struct acpi_ec *ec = ec_cxt;
--- 
-1.7.10
+It's actually much worse than you describe. On ppc64 (ABIv1) we are
+successfully blacklisting the function descriptors. But that doesn't prevent
+you from probing the text address. So basically NOKPROBE_SYMBOL() does nothing
+useful for us.
+
+$ head -2 ../kprobes/blacklist 
+0xc000000000d4cff8-0xc000000000d4d010	notify_die
+0xc000000000d4cf80-0xc000000000d4cf98	atomic_notifier_call_chain
+$ echo "p:atomic_notifier_call_chain .atomic_notifier_call_chain" > kprobe_events
+$ echo 1 > events/kprobes/enable 
+$ ls
+available_events      instances       saved_cmdlines       trace_options
+available_tracers     kprobe_events   saved_cmdlines_size  trace_pipe
+buffer_size_kb        kprobe_profile  set_event            tracing_cpumask
+buffer_total_size_kb  options         snapshot             tracing_max_latency
+current_tracer        per_cpu         trace                tracing_on
+events                printk_formats  trace_clock          tracing_thresh
+free_buffer           README          trace_marker
+$ Dumping ftrace buffer:
+cpu 0x2: Vector: 400 (Instruction Access) at [c0000001defaf830]
+    pc: 0000000000000000
+    lr: 0000000000000001
+    sp: c0000001defafab0
+   msr: 8000000140009032
+  current = 0xc0000001def57e40
+  paca    = 0xc00000000fe00800	 softe: 0	 irq_happened: 0x01
+    pid   = 1, comm = swapper/2
+cpu 0x3: Vector: 400 (Instruction Access) at [c0000001ddbcc640]
+    pc: 0000000000000000
+    lr: 0000000000000000
+    sp: c0000001ddbcc8c0
+   msr: 8000000040001032
+  current = 0xc0000001def5a100
+  paca    = 0xc00000000fe00c00	 softe: 0	 irq_happened: 0x01
+    pid   = -554326528, comm = 
+
+Dead machine.
+
+
+With your patch:
+
+$ head -2 kprobes/blacklist 
+0xc0000000000bf860-0xc0000000000bf8b0	.notify_die
+0xc0000000000bf750-0xc0000000000bf780	.atomic_notifier_call_chain
+
+$ echo "p:notify_die .notify_die" > tracing/kprobe_events
+-bash: echo: write error: Invalid argument
+
+So that is much better.
+
+cheers
+
 
