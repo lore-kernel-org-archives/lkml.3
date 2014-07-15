@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253AbaGPAUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:20:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44907 "EHLO
+	id S934667AbaGPAUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:20:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759007AbaGOXNI (ORCPT
+	with ESMTP id S1759099AbaGOXNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 21/22] x86, ioremap: Speed up check for RAM pages
-Date: Tue, 15 Jul 2014 16:17:26 -0700
-Message-Id: <20140715231622.774167844@linuxfoundation.org>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.4 10/22] tracing: Remove ftrace_stop/start() from reading the trace file
+Date: Tue, 15 Jul 2014 16:17:15 -0700
+Message-Id: <20140715231622.427041266@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -29,76 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit c81c8a1eeede61e92a15103748c23d100880cc8a upstream.
+commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
 
-In __ioremap_caller() (the guts of ioremap), we loop over the range of
-pfns being remapped and checks each one individually with page_is_ram().
-For large ioremaps, this can be very slow.  For example, we have a
-device with a 256 GiB PCI BAR, and ioremapping this BAR can take 20+
-seconds -- sometimes long enough to trigger the soft lockup detector!
+Disabling reading and writing to the trace file should not be able to
+disable all function tracing callbacks. There's other users today
+(like kprobes and perf). Reading a trace file should not stop those
+from happening.
 
-Internally, page_is_ram() calls walk_system_ram_range() on a single
-page.  Instead, we can make a single call to walk_system_ram_range()
-from __ioremap_caller(), and do our further checks only for any RAM
-pages that we find.  For the common case of MMIO, this saves an enormous
-amount of work, since the range being ioremapped doesn't intersect
-system RAM at all.
-
-With this change, ioremap on our 256 GiB BAR takes less than 1 second.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Link: http://lkml.kernel.org/r/1399054721-1331-1-git-send-email-roland@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/ioremap.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ kernel/trace/trace.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -50,6 +50,21 @@ int ioremap_change_attr(unsigned long va
- 	return err;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1052,7 +1052,6 @@ void tracing_start(void)
+ 
+ 	arch_spin_unlock(&ftrace_max_lock);
+ 
+-	ftrace_start();
+  out:
+ 	raw_spin_unlock_irqrestore(&tracing_start_lock, flags);
  }
+@@ -1068,7 +1067,6 @@ void tracing_stop(void)
+ 	struct ring_buffer *buffer;
+ 	unsigned long flags;
  
-+static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
-+			       void *arg)
-+{
-+	unsigned long i;
-+
-+	for (i = 0; i < nr_pages; ++i)
-+		if (pfn_valid(start_pfn + i) &&
-+		    !PageReserved(pfn_to_page(start_pfn + i)))
-+			return 1;
-+
-+	WARN_ONCE(1, "ioremap on RAM pfn 0x%lx\n", start_pfn);
-+
-+	return 0;
-+}
-+
- /*
-  * Remap an arbitrary physical address space into the kernel virtual
-  * address space. Needed when the kernel wants to access high addresses
-@@ -93,14 +108,11 @@ static void __iomem *__ioremap_caller(re
- 	/*
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
-+	pfn      = phys_addr >> PAGE_SHIFT;
- 	last_pfn = last_addr >> PAGE_SHIFT;
--	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
--		int is_ram = page_is_ram(pfn);
--
--		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
--			return NULL;
--		WARN_ON_ONCE(is_ram);
--	}
-+	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
-+				  __ioremap_check_ram) == 1)
-+		return NULL;
- 
- 	/*
- 	 * Mappings have to be page-aligned
+-	ftrace_stop();
+ 	raw_spin_lock_irqsave(&tracing_start_lock, flags);
+ 	if (trace_stop_count++)
+ 		goto out;
 
 
