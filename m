@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964858AbaGOV6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:58:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54788 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759560AbaGOViH (ORCPT
+	id S964882AbaGOV6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:58:52 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:54076 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933254AbaGOV6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:07 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Edward Lin <yidi.lin@canonical.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 137/198] ACPI / video: Add Dell Inspiron 5737 to the blacklist
-Date: Tue, 15 Jul 2014 14:30:07 -0700
-Message-Id: <1405459868-15089-138-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 15 Jul 2014 17:58:47 -0400
+Date: Tue, 15 Jul 2014 17:58:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>, ralf@linux-mips.org
+Subject: Re: [RFA][PATCH 21/27] MIPS: ftrace: Remove check of obsolete
+ variable function_trace_stop
+Message-ID: <20140715175844.5304e2a3@gandalf.local.home>
+In-Reply-To: <20140626165852.665644919@goodmis.org>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165852.665644919@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
+Ralf,
 
-------------------
+Can you please test and ack this and patch 7. It would make it better
+than just pushing it through.
 
-From: Edward Lin <yidi.lin@canonical.com>
+Thanks!
 
-commit 08a56226d84706d402372d891550e130ef5df9f0 upstream.
+-- Steve
 
-With win8 capabiltiy, the ACPI backlight control is broken.
-The system also loses backlight setting when resuming from S3.
 
-Add this model to the the ACPI video detect blacklist to make backlight
-functionality work.
+On Thu, 26 Jun 2014 12:52:42 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Although backlight functionality works via video.use_native_backlight=1,
-this approach may be safer.
-
-Signed-off-by: Edward Lin <yidi.lin@canonical.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/acpi/video_detect.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 84875fd..7245a5d 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -176,6 +176,14 @@ static struct dmi_system_id video_detect_dmi_table[] = {
- 		DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Yoga 13"),
- 		},
- 	},
-+	{
-+	.callback = video_detect_force_vendor,
-+	.ident = "Dell Inspiron 5737",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 5737"),
-+		},
-+	},
- 	{ },
- };
- 
--- 
-1.9.1
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> Nothing sets function_trace_stop to disable function tracing anymore.
+> Remove the check for it in the arch code.
+> 
+> [ Please test this on your arch ]
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/mips/Kconfig         | 1 -
+>  arch/mips/kernel/mcount.S | 7 -------
+>  2 files changed, 8 deletions(-)
+> 
+> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> index 7a469acee33c..9ca52987fcd5 100644
+> --- a/arch/mips/Kconfig
+> +++ b/arch/mips/Kconfig
+> @@ -15,7 +15,6 @@ config MIPS
+>  	select HAVE_BPF_JIT if !CPU_MICROMIPS
+>  	select ARCH_HAVE_CUSTOM_GPIO_H
+>  	select HAVE_FUNCTION_TRACER
+> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+>  	select HAVE_DYNAMIC_FTRACE
+>  	select HAVE_FTRACE_MCOUNT_RECORD
+>  	select HAVE_C_RECORDMCOUNT
+> diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+> index 539b6294b613..00940d1d5c4f 100644
+> --- a/arch/mips/kernel/mcount.S
+> +++ b/arch/mips/kernel/mcount.S
+> @@ -74,10 +74,6 @@ _mcount:
+>  #endif
+>  
+>  	/* When tracing is activated, it calls ftrace_caller+8 (aka here) */
+> -	lw	t1, function_trace_stop
+> -	bnez	t1, ftrace_stub
+> -	 nop
+> -
+>  	MCOUNT_SAVE_REGS
+>  #ifdef KBUILD_MCOUNT_RA_ADDRESS
+>  	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
+> @@ -105,9 +101,6 @@ ftrace_stub:
+>  #else	/* ! CONFIG_DYNAMIC_FTRACE */
+>  
+>  NESTED(_mcount, PT_SIZE, ra)
+> -	lw	t1, function_trace_stop
+> -	bnez	t1, ftrace_stub
+> -	 nop
+>  	PTR_LA	t1, ftrace_stub
+>  	PTR_L	t2, ftrace_trace_function /* Prepare t2 for (1) */
+>  	bne	t1, t2, static_trace
 
