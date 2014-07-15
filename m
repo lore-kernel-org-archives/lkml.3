@@ -1,201 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273AbaGOI71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:59:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44559 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441AbaGOI7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:59:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,664,1400050800"; 
-   d="scan'208";a="457092150"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v2 1/7] perf, core: introduce pmu context switch callback
-Date: Tue, 15 Jul 2014 16:58:53 +0800
-Message-Id: <1405414739-31455-2-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
-References: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
+	id S1758546AbaGOJCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:02:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49979 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751256AbaGOI7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:59:25 -0400
+Date: Tue, 15 Jul 2014 09:59:14 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Harini Katakam <harinikatakamlinux@gmail.com>
+Cc: "wim@iguana.be" <wim@iguana.be>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "michals@xilinx.com" <michals@xilinx.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "harini.katakam@xilinx.com" <harini.katakam@xilinx.com>
+Subject: Re: [PATCH v3 2/2] devicetree: Add Cadence WDT devicetree bindings
+ documentation
+Message-ID: <20140715085914.GT26465@leverpostej>
+References: <1405340169-2820-1-git-send-email-harinik@xilinx.com>
+ <1405340169-2820-2-git-send-email-harinik@xilinx.com>
+ <20140714150749.GH26465@leverpostej>
+ <CAFcVECK9U_3+3htTAu7r-agi43mC9Z2pqHeS9TpHTbZ3=o-o8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFcVECK9U_3+3htTAu7r-agi43mC9Z2pqHeS9TpHTbZ3=o-o8w@mail.gmail.com>
+Thread-Topic: [PATCH v3 2/2] devicetree: Add Cadence WDT devicetree bindings
+ documentation
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callback is invoked when process is scheduled in or out.
-It provides mechanism for later patches to save/store the LBR
-stack. For the schedule in case, the callback is invoked at
-the same place that flush branch stack callback is invoked.
-So it also can replace the flush branch stack callback. To
-avoid unnecessary overhead, the callback is enabled only when
-there are events use the LBR stack.
+On Tue, Jul 15, 2014 at 07:39:40AM +0100, Harini Katakam wrote:
+> Hi Mark,
+> 
+> On Mon, Jul 14, 2014 at 8:37 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> > On Mon, Jul 14, 2014 at 01:16:09PM +0100, Harini Katakam wrote:
+> >> Add cadence-wdt bindings documentation.
+> >>
+> >> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> >> ---
+> >>
+> >> v3 changes:
+> >> - Change reset property type and improve description.
+> >> - Improve description of clocks and interrupts.
+> >> - Use watchdog@ in the example.
+> >> - Use only cdns compatible string for now.
+> >>
+> >> v2:
+> >> No changes
+> >>
+> >> ---
+> >>  .../devicetree/bindings/watchdog/cadence-wdt.txt   |   27 ++++++++++++++++++++
+> >>  1 file changed, 27 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+> >> new file mode 100644
+> >> index 0000000..ab23e38
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+> >> @@ -0,0 +1,27 @@
+> >> +Zynq Watchdog Device Tree Bindings
+> >> +-------------------------------------------
+> >> +
+> >> +Required properties:
+> >> +- compatible         : Should be "cdns,wdt-r1p2".
+> >> +- clocks             : Input clock specifier. This should be the ref clk.
+> >
+> > This wording makes it sound like the watchdog block has more than one
+> > clock input. Does it?
+> 
+> It doesn't. It has one APB clock - named pclk.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event.c |  7 +++++
- arch/x86/kernel/cpu/perf_event.h |  2 ++
- include/linux/perf_event.h       |  9 ++++++
- kernel/events/core.c             | 59 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 77 insertions(+)
+Ok. Could we refer to that by name in the description then? The phrase
+"This should be the ref clk" makes it sound like there are other clocks
+we aren't describing.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2bdfbff..7d22972 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1874,6 +1874,12 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	NULL,
- };
- 
-+static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
-+{
-+	if (x86_pmu.sched_task)
-+		x86_pmu.sched_task(ctx, sched_in);
-+}
-+
- static void x86_pmu_flush_branch_stack(void)
- {
- 	if (x86_pmu.flush_branch_stack)
-@@ -1907,6 +1913,7 @@ static struct pmu pmu = {
- 
- 	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
-+	.sched_task		= x86_pmu_sched_task,
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3b2f9bd..e70b352 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -429,6 +429,8 @@ struct x86_pmu {
- 
- 	void		(*check_microcode)(void);
- 	void		(*flush_branch_stack)(void);
-+	void		(*sched_task)(struct perf_event_context *ctx,
-+				      bool sched_in);
- 
- 	/*
- 	 * Intel Arch Perfmon v2+
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 707617a..73f3afa 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -262,6 +262,13 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
-+
-+	/*
-+	 * context-switches callback for CPU PMU. Other PMUs shouldn't set
-+	 * this callback
-+	 */
-+	void (*sched_task)		(struct perf_event_context *ctx,
-+					 bool sched_in);
- };
- 
- /**
-@@ -557,6 +564,8 @@ extern void perf_event_delayed_put(struct task_struct *task);
- extern void perf_event_print_debug(void);
- extern void perf_pmu_disable(struct pmu *pmu);
- extern void perf_pmu_enable(struct pmu *pmu);
-+extern void perf_sched_cb_disable(struct pmu *pmu);
-+extern void perf_sched_cb_enable(struct pmu *pmu);
- extern int perf_event_task_disable(void);
- extern int perf_event_task_enable(void);
- extern int perf_event_refresh(struct perf_event *event, int refresh);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 67e3b9c..4e721fa 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -144,6 +144,7 @@ enum event_type_t {
- struct static_key_deferred perf_sched_events __read_mostly;
- static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
- static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
-+static DEFINE_PER_CPU(int, perf_sched_cb_usages);
- 
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
-@@ -2362,6 +2363,58 @@ unlock:
- 	}
- }
- 
-+void perf_sched_cb_disable(struct pmu *pmu)
-+{
-+	this_cpu_dec(perf_sched_cb_usages);
-+}
-+
-+void perf_sched_cb_enable(struct pmu *pmu)
-+{
-+	this_cpu_inc(perf_sched_cb_usages);
-+}
-+
-+/*
-+ * This function provides the context switch callback to the lower code
-+ * layer. It is invoked ONLY when the context switch callback is enabled.
-+ */
-+static void perf_pmu_sched_task(struct task_struct *prev,
-+				struct task_struct *next,
-+				bool sched_in)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct pmu *pmu;
-+	unsigned long flags;
-+
-+	if (prev == next)
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	rcu_read_lock();
-+
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		if (pmu->sched_task) {
-+			cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+
-+			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
-+
-+			perf_pmu_disable(pmu);
-+
-+			pmu->sched_task(cpuctx->task_ctx, sched_in);
-+
-+			perf_pmu_enable(pmu);
-+
-+			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
-+			/* only CPU PMU has context switch callback */
-+			break;
-+		}
-+	}
-+
-+	rcu_read_unlock();
-+
-+	local_irq_restore(flags);
-+}
-+
- #define for_each_task_context_nr(ctxn)					\
- 	for ((ctxn) = 0; (ctxn) < perf_nr_task_contexts; (ctxn)++)
- 
-@@ -2381,6 +2434,9 @@ void __perf_event_task_sched_out(struct task_struct *task,
- {
- 	int ctxn;
- 
-+	if (__get_cpu_var(perf_sched_cb_usages))
-+		perf_pmu_sched_task(task, next, false);
-+
- 	for_each_task_context_nr(ctxn)
- 		perf_event_context_sched_out(task, ctxn, next);
- 
-@@ -2638,6 +2694,9 @@ void __perf_event_task_sched_in(struct task_struct *prev,
- 	/* check for system-wide branch_stack events */
- 	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
- 		perf_branch_stack_sched_in(prev, task);
-+
-+	if (__get_cpu_var(perf_sched_cb_usages))
-+		perf_pmu_sched_task(prev, task, true);
- }
- 
- static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
--- 
-1.9.3
+> >
+> >> +- reg                        : Physical base address and size of WDT registers map.
+> >> +- interrupts         : Property with a value describing the interrupt
+> >> +                       number. This interrupt is used for indication
+> >> +                       when the watchdog times out.
+> >
+> > Just say "the watchdog timeout interrupt", or (better) use the name of
+> > the interrupt from the documentation.
+> 
+> OK. Yeah I'll do that. The interrupt name is wd_irq.
 
+That sounds good to me.
+ 
+> >
+> >> +- interrupt-parent   : Must be core interrupt controller.
+> >> +
+> >> +Optional properties
+> >> +- reset                      : If this property exists, then a reset is done
+> >> +                       when watchdog times out.
+> >
+> > That's a bit of an ambiguous name (too easy to misconstrue as a reset
+> > device reference). Do any other watchdogs have similar properties?
+> 
+> I could change it to "reset-on-timeout" if that better.
+> From the documentation of other drivers, there seems to be a reset-type
+> property in atmel. Dint find any other reset related properties.
+> 
+
+Ok. reset-on-timeout sounds like a better property name to avoid
+possible confusion.
+
+That said, what happens if we don't specify the device should reset the
+system (but have a timeout-sec property)?
+
+Thanks,
+Mark.
