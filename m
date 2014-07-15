@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759087AbaGOR0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:26:21 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44011 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbaGORCI (ORCPT
+	id S1759054AbaGOR0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:26:16 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:38701 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153AbaGORCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 13:02:08 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 12/94] dma: cppi41: handle 0-length packets
-Date: Tue, 15 Jul 2014 20:00:27 +0300
-Message-Id: <1405443709-15288-12-git-send-email-asadi.samuel@gmail.com>
+        Jon Medhurst <tixy@linaro.org>, sam-the-6 <asadi.samuel@gmail.com>
+Subject: [PATCH 16/94] ARM: kprobes: Prevent known test failures stopping other tests running
+Date: Tue, 15 Jul 2014 20:00:31 +0300
+Message-Id: <1405443709-15288-16-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -22,63 +21,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Mack <zonque@gmail.com>
+From: Jon Medhurst <tixy@linaro.org>
 
-When a 0-length packet is received on the bus, desc->pd0 yields 1,
-which confuses the driver's users. This information is clearly wrong
-and not in accordance to the datasheet, but it's been observed on an
-AM335x board, very reproducible.
+Due to a long-standing issue with Thumb symbol lookup [1] the jprobes
+tests fail when built into a kernel compiled as Thumb mode. (They work
+fine for ARM mode kernels or for Thumb when built as a loadable module.)
 
-Fix this by looking at bit 19 in PD2 of the completed packet. This bit
-will tell us if a zero-length packet was received on a queue. If it's
-set, ignore the value in PD0 and report a total length of 0 instead.
+Rather than have this problem terminate testing prematurely lets instead
+emit an error message and carry on with the main kprobes tests, delaying
+the final failure report until the end.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2011-August/063026.html
+
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- drivers/dma/cppi41.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ arch/arm/kernel/kprobes-test.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-index d028f36..8f8b0b6 100644
---- a/drivers/dma/cppi41.c
-+++ b/drivers/dma/cppi41.c
-@@ -86,6 +86,9 @@
+diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
+index 3796399..08d7312 100644
+--- a/arch/arm/kernel/kprobes-test.c
++++ b/arch/arm/kernel/kprobes-test.c
+@@ -225,6 +225,7 @@ static int pre_handler_called;
+ static int post_handler_called;
+ static int jprobe_func_called;
+ static int kretprobe_handler_called;
++static int tests_failed;
  
- #define USBSS_IRQ_PD_COMP	(1 <<  2)
+ #define FUNC_ARG1 0x12345678
+ #define FUNC_ARG2 0xabcdef
+@@ -461,6 +462,13 @@ static int run_api_tests(long (*func)(long, long))
  
-+/* Packet Descriptor */
-+#define PD2_ZERO_LENGTH		(1 << 19)
-+
- struct cppi41_channel {
- 	struct dma_chan chan;
- 	struct dma_async_tx_descriptor txd;
-@@ -307,7 +310,7 @@ static irqreturn_t cppi41_irq(int irq, void *data)
- 			__iormb();
+ 	pr_info("    jprobe\n");
+ 	ret = test_jprobe(func);
++#if defined(CONFIG_THUMB2_KERNEL) && !defined(MODULE)
++	if (ret == -EINVAL) {
++		pr_err("FAIL: Known longtime bug with jprobe on Thumb kernels\n");
++		tests_failed = ret;
++		ret = 0;
++	}
++#endif
+ 	if (ret < 0)
+ 		return ret;
  
- 		while (val) {
--			u32 desc;
-+			u32 desc, len;
+@@ -1672,6 +1680,8 @@ static int __init run_all_tests(void)
  
- 			q_num = __fls(val);
- 			val &= ~(1 << q_num);
-@@ -319,9 +322,13 @@ static irqreturn_t cppi41_irq(int irq, void *data)
- 						q_num, desc);
- 				continue;
- 			}
--			c->residue = pd_trans_len(c->desc->pd6) -
--				pd_trans_len(c->desc->pd0);
- 
-+			if (c->desc->pd2 & PD2_ZERO_LENGTH)
-+				len = 0;
-+			else
-+				len = pd_trans_len(c->desc->pd0);
-+
-+			c->residue = pd_trans_len(c->desc->pd6) - len;
- 			dma_cookie_complete(&c->txd);
- 			c->txd.callback(c->txd.callback_param);
- 		}
+ out:
+ 	if (ret == 0)
++		ret = tests_failed;
++	if (ret == 0)
+ 		pr_info("Finished kprobe tests OK\n");
+ 	else
+ 		pr_err("kprobe tests failed\n");
 -- 
 1.7.10.4
 
