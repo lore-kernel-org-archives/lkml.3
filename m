@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaGOVPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:15:22 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:65268 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaGOVPU (ORCPT
+	id S1754279AbaGOVQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:16:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51294 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaGOVQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:15:20 -0400
+	Tue, 15 Jul 2014 17:16:26 -0400
+Date: Tue, 15 Jul 2014 23:16:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [patch 0/4] timerfd c/r support, v4
+In-Reply-To: <20140715211413.GL23835@moon>
+Message-ID: <alpine.DEB.2.10.1407152315350.24854@nanos>
+References: <20140623185431.396309193@openvz.org> <20140630194354.GB2305@moon> <20140715135445.GJ23835@moon> <alpine.DEB.2.10.1407151811050.24854@nanos> <20140715162501.GK23835@moon> <alpine.DEB.2.10.1407152306430.24854@nanos> <20140715211413.GL23835@moon>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Date: Tue, 15 Jul 2014 14:15:18 -0700
-Message-ID: <CA+r1Zhg9wwv6qUcRMWNBadE=dWFjbb45J+SwRpV7xg8AmgSEpw@mail.gmail.com>
-Subject: make mandocs fails with next-20140715
-From: Jim Davis <jim.epost@gmail.com>
-To: sfr@canb.auug.org.au, linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, rdunlap@infradead.org,
-        linux-doc <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jim@krebstar:~/linux2$ make mandocs
-  HOSTCC  scripts/basic/fixdep
-  HOSTCC  scripts/docproc
-  DOCPROC Documentation/DocBook/z8530book.xml
-  MAN     Documentation/DocBook/z8530book.9
-Warn: AUTHOR sect.: no personblurb|contrib for Alan Cox
+On Wed, 16 Jul 2014, Cyrill Gorcunov wrote:
 
-[... ]
+> On Tue, Jul 15, 2014 at 11:08:39PM +0200, Thomas Gleixner wrote:
+> > On Tue, 15 Jul 2014, Cyrill Gorcunov wrote:
+> > 
+> > > On Tue, Jul 15, 2014 at 06:11:58PM +0200, Thomas Gleixner wrote:
+> > > > > 
+> > > > > Dear sirs, ping?
+> > > > 
+> > > > Hmm, I was waiting for a V5, but it seems you just updated that single
+> > > > patch according to the review. I'll pick it up
+> > > 
+> > > Thanks a lot, Thomas!
+> > 
+> > Sigh. That updated 3/4 patch does not even apply.... 
+> 
+> Maybe it's because of new -rc? Letme check...
 
-Note: Writing spans_boundary.9
-  DOCPROC Documentation/DocBook/device-drivers.xml
-docproc: .//kernel/timer.c: No such file or directory
-make[1]: *** [Documentation/DocBook/device-drivers.xml] Error 1
-make: *** [mandocs] Error 2
+No, it's because its against an older version of your patches which
+lack the #ifdef PROC_FS around the show function ....
+
+
+ 
