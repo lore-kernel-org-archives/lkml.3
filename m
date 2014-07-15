@@ -1,168 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759781AbaGOVss (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:48:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54999 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964813AbaGOVi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:58 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 140/198] rtmutex: Handle deadlock detection smarter
-Date: Tue, 15 Jul 2014 14:30:10 -0700
-Message-Id: <1405459868-15089-141-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1759814AbaGOVtD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:49:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60919 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759791AbaGOVs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 17:48:58 -0400
+Date: Tue, 15 Jul 2014 17:48:43 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140715214843.GX29639@cmpxchg.org>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+ <20140715155537.GA19454@nhori.bos.redhat.com>
+ <20140715160735.GB29269@dhcp22.suse.cz>
+ <20140715173439.GU29639@cmpxchg.org>
+ <20140715184358.GA31550@nhori.bos.redhat.com>
+ <20140715190454.GW29639@cmpxchg.org>
+ <20140715204953.GA21016@nhori.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715204953.GA21016@nhori.bos.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 15, 2014 at 04:49:53PM -0400, Naoya Horiguchi wrote:
+> I feel that these 2 messages have the same cause (just appear differently).
+> __add_to_page_cache_locked() (and mem_cgroup_try_charge()) can be called
+> for hugetlb, while we avoid calling mem_cgroup_migrate()/mem_cgroup_uncharge()
+> for hugetlb. This seems to make page_cgroup of the hugepage inconsistent,
+> and results in the bad page bug ("page dumped because: cgroup check failed").
+> So maybe some more PageHuge check is necessary around the charging code.
 
-------------------
+This struck me as odd because I don't remember removing a PageHuge()
+call in the charge path and wondered how it worked before my changes:
+apparently it just checked PageCompound() in mem_cgroup_charge_file().
 
-From: Thomas Gleixner <tglx@linutronix.de>
+So it's not fallout of the new uncharge batching code, but was already
+broken during the rewrite of the charge API because then hugetlb pages
+entered the charging code.
 
-commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
+Anyway, we don't have file-specific charging code anymore, and the
+PageCompound() check would have required changing anyway for THP
+cache.  So I guess the solution is checking PageHuge() in charge,
+uncharge, and migrate for now.  Oh well.
 
-Even in the case when deadlock detection is not requested by the
-caller, we can detect deadlocks. Right now the code stops the lock
-chain walk and keeps the waiter enqueued, even on itself. Silly not to
-yell when such a scenario is detected and to keep the waiter enqueued.
+How about this?
 
-Return -EDEADLK unconditionally and handle it at the call sites.
-
-The futex calls return -EDEADLK. The non futex ones dequeue the
-waiter, throw a warning and put the task into a schedule loop.
-
-Tagged for stable as it makes the code more robust.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Brad Mouring <bmouring@ni.com>
-Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- kernel/locking/rtmutex-debug.h |  5 +++++
- kernel/locking/rtmutex.c       | 33 ++++++++++++++++++++++++++++-----
- kernel/locking/rtmutex.h       |  5 +++++
- 3 files changed, 38 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/locking/rtmutex-debug.h b/kernel/locking/rtmutex-debug.h
-index 14193d5..ab29b6a 100644
---- a/kernel/locking/rtmutex-debug.h
-+++ b/kernel/locking/rtmutex-debug.h
-@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 9c99d6868a5e..b61194273b56 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -564,9 +564,12 @@ static int __add_to_page_cache_locked(struct page *page,
+ 	VM_BUG_ON_PAGE(!PageLocked(page), page);
+ 	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
+ 
+-	error = mem_cgroup_try_charge(page, current->mm, gfp_mask, &memcg);
+-	if (error)
+-		return error;
++	if (!PageHuge(page)) {
++		error = mem_cgroup_try_charge(page, current->mm,
++					      gfp_mask, &memcg);
++		if (error)
++			return error;
++	}
+ 
+ 	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
+ 	if (error) {
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 7f5a42403fae..dabed2f08609 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -781,7 +781,8 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+ 		if (!PageAnon(newpage))
+ 			newpage->mapping = NULL;
+ 	} else {
+-		mem_cgroup_migrate(page, newpage, false);
++		if (!PageHuge(page))
++			mem_cgroup_migrate(page, newpage, false);
+ 		if (remap_swapcache)
+ 			remove_migration_ptes(page, newpage);
+ 		if (!PageAnon(page))
+diff --git a/mm/swap.c b/mm/swap.c
+index 3461f2f5be20..97b6ec132398 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -62,12 +62,12 @@ static void __page_cache_release(struct page *page)
+ 		del_page_from_lru_list(page, lruvec, page_off_lru(page));
+ 		spin_unlock_irqrestore(&zone->lru_lock, flags);
+ 	}
+-	mem_cgroup_uncharge(page);
+ }
+ 
+ static void __put_single_page(struct page *page)
  {
- 	return (waiter != NULL);
- }
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	debug_rt_mutex_print_deadlock(w);
-+}
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 16d5356c..1029a85 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -196,7 +196,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		}
- 		put_task_struct(task);
- 
--		return deadlock_detect ? -EDEADLK : 0;
-+		return -EDEADLK;
- 	}
-  retry:
- 	/*
-@@ -259,7 +259,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
--		ret = deadlock_detect ? -EDEADLK : 0;
-+		ret = -EDEADLK;
- 		goto out_unlock_pi;
- 	}
- 
-@@ -433,7 +433,7 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	 * which is wrong, as the other waiter is not in a deadlock
- 	 * situation.
- 	 */
--	if (detect_deadlock && owner == task)
-+	if (owner == task)
- 		return -EDEADLK;
- 
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -650,6 +650,26 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
- 	return ret;
+ 	__page_cache_release(page);
++	mem_cgroup_uncharge_page(page);
+ 	free_hot_cold_page(page, false);
  }
  
-+static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
-+				     struct rt_mutex_waiter *w)
-+{
-+	/*
-+	 * If the result is not -EDEADLOCK or the caller requested
-+	 * deadlock detection, nothing to do here.
-+	 */
-+	if (res != -EDEADLOCK || detect_deadlock)
-+		return;
-+
-+	/*
-+	 * Yell lowdly and stop the task right here.
-+	 */
-+	rt_mutex_print_deadlock(w);
-+	while (1) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		schedule();
+@@ -75,7 +75,10 @@ static void __put_compound_page(struct page *page)
+ {
+ 	compound_page_dtor *dtor;
+ 
+-	__page_cache_release(page);
++	if (!PageHuge(page)) {
++		__page_cache_release(page);
++		mem_cgroup_uncharge_page(page);
 +	}
-+}
-+
- /*
-  * Slow path lock function:
-  */
-@@ -687,8 +707,10 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
- 
- 	set_current_state(TASK_RUNNING);
- 
--	if (unlikely(ret))
-+	if (unlikely(ret)) {
- 		remove_waiter(lock, &waiter);
-+		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
-+	}
- 
- 	/*
- 	 * try_to_take_rt_mutex() sets the waiter bit
-@@ -996,7 +1018,8 @@ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
- 		return 1;
- 	}
- 
--	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
-+	/* We enforce deadlock detection for futexes */
-+	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
- 
- 	if (ret && !rt_mutex_owner(lock)) {
- 		/*
-diff --git a/kernel/locking/rtmutex.h b/kernel/locking/rtmutex.h
-index a1a1dd0..f6a1f3c 100644
---- a/kernel/locking/rtmutex.h
-+++ b/kernel/locking/rtmutex.h
-@@ -24,3 +24,8 @@
- #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
- #define debug_rt_mutex_detect_deadlock(w,d)		(d)
- #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	WARN(1, "rtmutex deadlock detected\n");
-+}
--- 
-1.9.1
-
+ 	dtor = get_compound_page_dtor(page);
+ 	(*dtor)(page);
+ }
