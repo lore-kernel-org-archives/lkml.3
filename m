@@ -1,244 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443AbaGOJzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:55:04 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51026 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757530AbaGOJy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:54:59 -0400
-Message-ID: <53C4FA44.5020200@mev.co.uk>
-Date: Tue, 15 Jul 2014 10:54:12 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: sam-the-6 <asadi.samuel@gmail.com>, <hsweeten@visionengravers.com>,
-        <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 93/93] Staging: comedi: adl_pci9118: fixed style issues
-References: <1405394279-26061-1-git-send-email-asadi.samuel@gmail.com>
-In-Reply-To: <1405394279-26061-1-git-send-email-asadi.samuel@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+	id S1758530AbaGOJ40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:56:26 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:61871 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758190AbaGOJ4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:56:23 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-6d-53c4faa17ee1
+Subject: [PATCH] mm: fix faulting range in do_fault_around
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+To: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Korb <ingo.korb@tu-dortmund.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ning Qu <quning@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Date: Tue, 15 Jul 2014 13:55:39 +0400
+Message-id: <20140715095539.2086.44482.stgit@buzz>
+In-reply-to: <CALYGNiM9Fu9-i7hXMQNTUP69RfydN+2NqO29wZYd+4Gn25GbCQ@mail.gmail.com>
+References: <CALYGNiM9Fu9-i7hXMQNTUP69RfydN+2NqO29wZYd+4Gn25GbCQ@mail.gmail.com>
+User-Agent: StGit/0.17.1-dirty
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xa7oLfx0JNtj839Bizvo1bBZbrjcx
+	WTz91Mdi0fKnk83ix85eVoubz+ewWKzsfMBqcXnXHDaLe2v+s1pc3zSPxWLxkdvMDtweO2fd
+	ZfdYsKnUY9OnSeweJ2b8ZvGYdzLQ4+PTWywe7/ddZfPo27KK0aPxXC+zx+dNcgFcUVw2Kak5
+	mWWpRfp2CVwZbafmMxfsFai48GECewPjYt4uRg4OCQETidlnErsYOYFMMYkL99azdTFycQgJ
+	LGWUWH9uOzuE08gkcfPICxaQKmEBK4lvV1YwgdhsAmYS2/bdZgSxRQRqJXoeHGQEaWAW+M4o
+	8fHHJ7AGFgFViTmTu9lAbF4BI4nzf9+xgticAsES3y90gQ0SEgiQ6LjZAGaLCshJrLzcwgpR
+	LyjxY/I9FpBLmQXUJaZMyQUJMwvIS2xe85Z5AqPALCRVsxCqZiGpWsDIvIpRNLU0uaA4KT3X
+	UK84Mbe4NC9dLzk/dxMjJHK+7GBcfMzqEKMAB6MSD2+F2OFgIdbEsuLK3EOMEhzMSiK8tz8d
+	CRbiTUmsrEotyo8vKs1JLT7EyMTBKdXAaMX1ZJFd7+fHnzQjExonqTF6TNEX8b2/6sJPxR0X
+	rE7ei3kT0MjV53P3vE2FSsX041urKjxyGjaast66w/zPtu/4g+8BB798E7fd9+db73TBZYmL
+	Y26vO5kzdarDxeOSp9/6fVMtbll7sa7gUGfE+VWBAjdtvl4J3mR45eFT07nsPCfvnbL32qjE
+	UpyRaKjFXFScCAAsLvxZegIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-15 04:17, sam-the-6 wrote:
-> From: Sam Asadi <asadi.samuel@gmail.com>
->
-> several style issues fixed.
->
-> Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
->
-> 	modified:   drivers/staging/comedi/drivers/adl_pci9118.c
-> ---
->   drivers/staging/comedi/drivers/adl_pci9118.c |  124 +++++++++++++-------------
->   1 file changed, 62 insertions(+), 62 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
-> index 59a65cb..7139f87 100644
-> --- a/drivers/staging/comedi/drivers/adl_pci9118.c
-> +++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-> @@ -8,59 +8,63 @@
->    * Author: Michal Dobes <dobes@tesnet.cz>
->    *
->   */
-> -/*
-> -Driver: adl_pci9118
-> -Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
-> -Author: Michal Dobes <dobes@tesnet.cz>
-> -Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
-> -  PCI-9118HR (pci9118hr)
-> -Status: works
-> -
-> -This driver supports AI, AO, DI and DO subdevices.
-> -AI subdevice supports cmd and insn interface,
-> -other subdevices support only insn interface.
-> -For AI:
-> -- If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
-> -- If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
-> -- If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
-> -- It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
-> -  cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
-> -- If return value of cmdtest is 5 then you've bad channel list
-> -  (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
-> -  ranges).
-> -
-> -There are some hardware limitations:
-> -a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
-> -   ended inputs.
-> -b) DMA transfers must have the length aligned to two samples (32 bit),
-> -   so there is some problems if cmd->chanlist_len is odd. This driver tries
-> -   bypass this with adding one sample to the end of the every scan and discard
-> -   it on output but this cann't be used if cmd->scan_begin_src=TRIG_FOLLOW
-> -   and is used flag TRIG_WAKE_EOS, then driver switch to interrupt driven mode
-> -   with interrupt after every sample.
-> -c) If isn't used DMA then you can use only mode where
-> -   cmd->scan_begin_src=TRIG_FOLLOW.
-> -
-> -Configuration options:
-> -  [0] - PCI bus of device (optional)
-> -  [1] - PCI slot of device (optional)
-> -	If bus/slot is not specified, then first available PCI
-> -	card will be used.
-> -  [2] - 0= standard 8 DIFF/16 SE channels configuration
-> -	n = external multiplexer connected, 1 <= n <= 256
-> -  [3] - 0=autoselect DMA or EOC interrupts operation
-> -	1 = disable DMA mode
-> -	3 = disable DMA and INT, only insn interface will work
-> -  [4] - sample&hold signal - card can generate signal for external S&H board
-> -	0 = use SSHO(pin 45) signal is generated in onboard hardware S&H logic
-> -	0 != use ADCHN7(pin 23) signal is generated from driver, number say how
-> -		long delay is requested in ns and sign polarity of the hold
-> -		(in this case external multiplexor can serve only 128 channels)
-> -  [5] - 0=stop measure on all hardware errors
-> -	2 | = ignore ADOR - A/D Overrun status
-> -	8|=ignore Bover - A/D Burst Mode Overrun status
-> -	256|=ignore nFull - A/D FIFO Full status
->
-> +/*
-> +     Driver: adl_pci9118
-> +     Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
-> +     Author: Michal Dobes <dobes@tesnet.cz>
-> +     Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
-> +     PCI-9118HR (pci9118hr)
-> +     Status: works
-> +
-> +     This driver supports AI, AO, DI and DO subdevices.
-> +     AI subdevice supports cmd and insn interface,
-> +     other subdevices support only insn interface.
-> +     For AI:
-> +     - If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
-> +     - If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
-> +     - If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
-> +     - It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
-> +       cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
-> +     - If return value of cmdtest is 5 then you've bad channel list
-> +       (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
-> +       ranges).
-> +
-> +     There are some hardware limitations:
-> +     a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
-> +	ended inputs.
-> +     b) DMA transfers must have the length aligned to two samples (32 bit),
-> +	so there is some problems if cmd->chanlist_len is odd. This driver
-> +	tries bypass this with adding one sample to the end of the every scan
-> +	and discard it on output but this cann't be used if
-> +	cmd->scan_begin_src=TRIG_FOLLOW and is used flag TRIG_WAKE_EOS, then
-> +	driver switch to interrupt driven mode with interrupt after every
-> +	sample.
-> +     c) If isn't used DMA then you can use only mode where
-> +	cmd->scan_begin_src=TRIG_FOLLOW.
-> +
-> +     Configuration options:
-> +       [0] - PCI bus of device (optional)
-> +       [1] - PCI slot of device (optional)
-> +	     If bus/slot is not specified, then first available PCI
-> +	     card will be used.
-> +       [2] - 0= standard 8 DIFF/16 SE channels configuration
-> +	     n = external multiplexer connected, 1 <= n <= 256
-> +       [3] - 0=autoselect DMA or EOC interrupts operation
-> +	     1 = disable DMA mode
-> +	     3 = disable DMA and INT, only insn interface will work
-> +       [4] - sample&hold signal - card can generate signal for external
-> +	     S&H board
-> +	     0 = use SSHO(pin 45) signal is generated in onboard hardware
-> +		 S&H logic
-> +	     0 != use ADCHN7(pin 23) signal is generated from driver, number
-> +		  say how long delay is requested in ns and sign polarity of
-> +		  the hold (in this case external multiplexor can serve only
-> +		  128 channels)
-> +       [5] - 0=stop measure on all hardware errors
-> +	     2 | = ignore ADOR - A/D Overrun status
-> +	     8|=ignore Bover - A/D Burst Mode Overrun status
-> +	     256|=ignore nFull - A/D FIFO Full status
->   */
+From: Konstantin Khlebnikov <koct9i@gmail.com>
 
-Please reformat that comment using the normal block comment style, 
-similar to the "Driver:" comment in drivers/staging/comedi/drivers/das16.c.
+do_fault_around shoudn't cross pmd boundaries.
 
->
->   /*
-> @@ -346,7 +350,7 @@ struct pci9118_private {
->   						 * on external start
->   						 */
->   	unsigned short ao_data[2];		/* data output buffer */
-> -	char dma_doublebuf;			/* we can use double buffering */
-> +	char dma_doublebuf;		/* we can use double buffering */
+This patch does calculation in terms of addresses rather than pgoff.
+It looks much cleaner in this way. Probably it's worth to replace
+vmf->max_pgoff with vmf->end_address as well.
 
-Just change the comment to "use double buffering" and put the tab back in.
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reported-by: "Ingo Korb" <ingo.korb@tu-dortmund.de>
+---
+ mm/memory.c |   26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
 
->   	unsigned int dma_actbuf;		/* which buffer is used now */
->   	unsigned short *dmabuf_virt[2];		/*
->   						 * pointers to begin of
-> @@ -399,7 +403,7 @@ static int check_channel_list(struct comedi_device *dev,
->   	}
->   	if ((frontadd + n_chan + backadd) > s->len_chanlist) {
->   		comedi_error(dev,
-> -			    "range/channel list is too long for actual configuration!\n");
-> +		"range/channel list is too long for actual configuration!\n");
+diff --git a/mm/memory.c b/mm/memory.c
+index d67fd9f..f27638a 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2831,33 +2831,29 @@ late_initcall(fault_around_debugfs);
+ static void do_fault_around(struct vm_area_struct *vma, unsigned long address,
+ 		pte_t *pte, pgoff_t pgoff, unsigned int flags)
+ {
+-	unsigned long start_addr;
++	unsigned long start_addr, end_addr;
+ 	pgoff_t max_pgoff;
+ 	struct vm_fault vmf;
+ 	int off;
+ 
+-	start_addr = max(address & fault_around_mask(), vma->vm_start);
+-	off = ((address - start_addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1);
++	start_addr = max3(vma->vm_start, address & PMD_MASK,
++			  address & fault_around_mask());
++
++	end_addr = min3(vma->vm_end, ALIGN(address, PMD_SIZE),
++			start_addr + PAGE_ALIGN(fault_around_bytes));
++
++	off = (address - start_addr) >> PAGE_SHIFT;
+ 	pte -= off;
+ 	pgoff -= off;
+-
+-	/*
+-	 *  max_pgoff is either end of page table or end of vma
+-	 *  or fault_around_pages() from pgoff, depending what is nearest.
+-	 */
+-	max_pgoff = pgoff - ((start_addr >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)) +
+-		PTRS_PER_PTE - 1;
+-	max_pgoff = min3(max_pgoff, vma_pages(vma) + vma->vm_pgoff - 1,
+-			pgoff + fault_around_pages() - 1);
++	max_pgoff = pgoff + ((end_addr - start_addr) >> PAGE_SHIFT) - 1;
+ 
+ 	/* Check if it makes any sense to call ->map_pages */
+ 	while (!pte_none(*pte)) {
+-		if (++pgoff > max_pgoff)
+-			return;
+ 		start_addr += PAGE_SIZE;
+-		if (start_addr >= vma->vm_end)
++		if (start_addr >= end_addr)
+ 			return;
+ 		pte++;
++		pgoff++;
+ 	}
+ 
+ 	vmf.virtual_address = (void __user *) start_addr;
 
-If anything, it should have had one more space to line the opening '"' 
-up with the 'dev' on the previous line, not less space.  Strings are 
-allowed to go past column 80.
-
->   		return 0;
->   	}
->
-> @@ -412,22 +416,19 @@ static int check_channel_list(struct comedi_device *dev,
->   			if ((CR_AREF(chanlist[i]) == AREF_DIFF) !=
->   			    (differencial)) {
->   				comedi_error(dev,
-> -					     "Differencial and single ended "
-> -						"inputs can't be mixtured!");
-> +						"Differencial and single ended inputs can't be mixtured!");
-
-Okay (apart from the appalling spelling in the original), but better if 
-the opening '"' lines up with the 'dev' on the preceding line.
-
->   				return 0;
->   			}
->   			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
->   			    (bipolar)) {
->   				comedi_error(dev,
-> -					     "Bipolar and unipolar ranges "
-> -							"can't be mixtured!");
-> +						"Bipolar and unipolar ranges can't be mixtured!");
-
-Ditto.
-
->   				return 0;
->   			}
->   			if (!devpriv->usemux && differencial &&
->   			    (CR_CHAN(chanlist[i]) >= this_board->n_aichand)) {
->   				comedi_error(dev,
-> -					     "If AREF_DIFF is used then is "
-> -					"available only first 8 channels!");
-> +						"If AREF_DIFF is used then is available only first 8 channels!");
-
-Ditto.
-
->   				return 0;
->   			}
->   		}
-> @@ -1678,8 +1679,7 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
->   						/* double timed action */
->   		if (!devpriv->usedma) {
->   			comedi_error(dev,
-> -				     "cmd->scan_begin_src=TRIG_TIMER works "
-> -						"only with bus mastering!");
-> +					"cmd->scan_begin_src=TRIG_TIMER works only with bus mastering!");
-
-Ditto.
-
->   			return -EIO;
->   		}
->
->
-
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
