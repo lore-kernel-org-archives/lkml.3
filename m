@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609AbaGOXNS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:13:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44894 "EHLO
+	id S965201AbaGPARe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:17:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758364AbaGOXNE (ORCPT
+	with ESMTP id S1759588AbaGOXNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:04 -0400
+	Tue, 15 Jul 2014 19:13:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andras Kovacs <andras@sth.sze.hu>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.4 02/22] USB: cp210x: add support for Corsair usb dongle
-Date: Tue, 15 Jul 2014 16:17:07 -0700
-Message-Id: <20140715231622.194813561@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.10 11/44] hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
+Date: Tue, 15 Jul 2014 16:17:09 -0700
+Message-Id: <20140715231647.033443177@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
-References: <20140715231622.121816073@linuxfoundation.org>
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,38 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andras Kovacs <andras@sth.sze.hu>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
+commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
 
-Corsair USB Dongles are shipped with Corsair AXi series PSUs.
-These are cp210x serial usb devices, so make driver detect these.
-I have a program, that can get information from these PSUs.
+Writing to fanX_div does not clear the cache. As a result, reading
+from fanX_div may return the old value for up to two seconds
+after writing a new value.
 
-Tested with 2 different dongles shipped with Corsair AX860i and
-AX1200i units.
+This patch ensures the fan_div cache is updated in set_fan_div().
 
-Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/adm1029.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -159,6 +159,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
-+	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+--- a/drivers/hwmon/adm1029.c
++++ b/drivers/hwmon/adm1029.c
+@@ -232,6 +232,9 @@ static ssize_t set_fan_div(struct device
+ 	/* Update the value */
+ 	reg = (reg & 0x3F) | (val << 6);
+ 
++	/* Update the cache */
++	data->fan_div[attr->index] = reg;
++
+ 	/* Write value */
+ 	i2c_smbus_write_byte_data(client,
+ 				  ADM1029_REG_FAN_DIV[attr->index], reg);
 
 
