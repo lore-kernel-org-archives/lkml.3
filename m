@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969AbaGORjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:39:15 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50050 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963AbaGORjN (ORCPT
+	id S1757193AbaGORjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:39:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26811 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756857AbaGORjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:39:13 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Sam Asadi <asadi.samuel@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 89/94] Linux 3.16-rc5
-In-Reply-To: Your message of "Tue, 15 Jul 2014 20:01:44 +0300."
-             <1405443709-15288-89-git-send-email-asadi.samuel@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
-            <1405443709-15288-89-git-send-email-asadi.samuel@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1405445850_1984P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 15 Jul 2014 13:39:15 -0400
+Message-ID: <53C567C6.2050007@oracle.com>
+Date: Tue, 15 Jul 2014 13:41:26 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, xen-devel@lists.xenproject.org
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com> <1405431640-649-3-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1405431640-649-3-git-send-email-vkuznets@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 15 Jul 2014 13:37:30 -0400
-Message-ID: <77434.1405445850@turing-police.cc.vt.edu>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1405445850_1984P
-Content-Type: text/plain; charset=us-ascii
-
-On Tue, 15 Jul 2014 20:01:44 +0300, Sam Asadi said:
-> From: Linus Torvalds <torvalds@linux-foundation.org>
+On 07/15/2014 09:40 AM, Vitaly Kuznetsov wrote:
+> PVHVM guest requires special actions before kexec. Register specific
+> xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
 >
->
-> Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
 > ---
->  Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>   arch/x86/xen/enlighten.c | 9 +++++++++
+>   arch/x86/xen/smp.c       | 9 +++++++++
+>   arch/x86/xen/smp.h       | 1 +
+>   3 files changed, 19 insertions(+)
 >
-> diff --git a/Makefile b/Makefile
-> index 2167084..f3c543d 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -1,7 +1,7 @@
->  VERSION = 3
->  PATCHLEVEL = 16
->  SUBLEVEL = 0
-> -EXTRAVERSION = -rc4
-> +EXTRAVERSION = -rc5
->  NAME = Shuffling Zombie Juror
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index a11af62..8074e4a 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
+>   	.notifier_call	= xen_hvm_cpu_notify,
+>   };
+>   
+> +static void xen_pvhvm_kexec_shutdown(void)
+> +{
+> +	xen_kexec_shutdown();
+> +	native_machine_shutdown();
+> +}
+> +
 
-Moral of the story - always test send a stream of patches to yourself
-first.... :)
+This should probably be under ifdef CONFIG_KEXEC ?
 
+>   static void __init xen_hvm_guest_init(void)
+>   {
+>   	init_hvm_pv_info();
+> @@ -1849,6 +1855,9 @@ static void __init xen_hvm_guest_init(void)
+>   	x86_init.irqs.intr_init = xen_init_IRQ;
+>   	xen_hvm_init_time_ops();
+>   	xen_hvm_init_mmu_ops();
+> +#ifdef CONFIG_KEXEC
+> +	machine_ops.shutdown = xen_pvhvm_kexec_shutdown;
+> +#endif
+>   }
+>   
+>   static uint32_t __init xen_hvm_platform(void)
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 7005974..35dcf39 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -18,6 +18,7 @@
+>   #include <linux/smp.h>
+>   #include <linux/irq_work.h>
+>   #include <linux/tick.h>
+> +#include <linux/kexec.h>
+>   
+>   #include <asm/paravirt.h>
+>   #include <asm/desc.h>
+> @@ -762,6 +763,14 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+>   	native_cpu_die(cpu);
+>   }
+>   
+> +void xen_kexec_shutdown(void)
+> +{
+> +#ifdef CONFIG_KEXEC
+> +	if (!kexec_in_progress)
+> +		return;
+> +#endif
+> +}
+> +
 
---==_Exmh_1405445850_1984P
-Content-Type: application/pgp-signature
+and this one too (whole routine)? And "#include" above as well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+>   void __init xen_hvm_smp_init(void)
+>   {
+>   	if (!xen_have_vector_callback)
+> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+> index c7c2d89..1af0493 100644
+> --- a/arch/x86/xen/smp.h
+> +++ b/arch/x86/xen/smp.h
+> @@ -8,4 +8,5 @@ extern void xen_send_IPI_allbutself(int vector);
+>   extern void xen_send_IPI_all(int vector);
+>   extern void xen_send_IPI_self(int vector);
+>   
+> +extern void xen_kexec_shutdown(void);
+>   #endif
 
-iQIVAwUBU8Vm2gdmEQWDXROgAQIXcw//SbFbCne5GnAdOFMjZWE3uLgTsAarRD1w
-S3MDB0ykvtLAvn5ANAMyJw30kV8LkkD8N9yJhL4ON540XJ7ue0OXqqgmxCWAtiuQ
-QxXyC2lklqjE09Ck+DjUJs7iRAWOy5C8IwL4IdqP1+h4b9dcNwJmvvb/uIjIseyX
-C8mDQJZNMMwmWKjroyoEP6B40zt8ZIq6KKxX851NHlEf7EVNsNltT9aY0jDnTwlT
-22n1SgEiJDTPEzVVucuO7MkGwojpnNyPqm0Vqn9RLDPZgaufdpz3HuL3BpozVhdR
-cYvbwMzS+Tjg4CpXxhYiXihYFFA9wzZ4PloiwHH+BXWcoc7Eknx2wPPFN94b0pH/
-4foGIuPTJ7nU6MsvOAM5cAbpAC4Fhsqg0hv4nAX+1rg8W6RihZMS6e1SCx1/IQO2
-FfQie0YIuegSXWwMtyInuh5ham1P+Iy7Y5GJqUuFi1+dKeXBtRZwLLtm2MgeU9A4
-YnS/mPncJOLD3HPlQZuPlu/Ou8n9qj8XCiBjZ1yX0Hrckim2OLGwH2bG9KfObXzo
-C4tp/lCdSoLNd9IALfIZ5ATHABHTMGylvlnCGWmZ89n5JhtSFOFX4m4ezxjO7ZIx
-QF6vvkoiHJ4kRt5/DL+JukAfbuCMJeokz5iVU4r4Vrtd6lrt9Cpk3q14UBGqxRKS
-Bjz0HywL+/4=
-=ffpd
------END PGP SIGNATURE-----
-
---==_Exmh_1405445850_1984P--
