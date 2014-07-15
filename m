@@ -1,39 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaGOOGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:06:10 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:46106
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752402AbaGOOGE (ORCPT
+	id S1752647AbaGOOGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:06:30 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:48829 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaGOOG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:06:04 -0400
-Date: Tue, 15 Jul 2014 09:06:00 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-In-Reply-To: <20140715101150.GA8690@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1407150903570.10593@gentwo.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <20140612153426.GV4581@linux.vnet.ibm.com> <20140612155227.GB23606@htj.dyndns.org> <20140617144151.GD4669@linux.vnet.ibm.com> <20140617152752.GC31819@htj.dyndns.org> <87lhs35p0v.fsf@rustcorp.com.au>
- <20140714113911.GM16041@linux.vnet.ibm.com> <alpine.DEB.2.11.1407141014390.25436@gentwo.org> <20140715101150.GA8690@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 15 Jul 2014 10:06:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADsdr6MCnqCwt8623sB=rpuip4cw7LysT1_1KYzBc7yOahcmZA@mail.gmail.com>
+References: <1404743641-16847-1-git-send-email-sviau@codeaurora.org>
+	<1404743641-16847-2-git-send-email-sviau@codeaurora.org>
+	<CADsdr6MCnqCwt8623sB=rpuip4cw7LysT1_1KYzBc7yOahcmZA@mail.gmail.com>
+Date: Tue, 15 Jul 2014 10:06:27 -0400
+Message-ID: <CAF6AEGuXuhELAfz58SK=OPPWWiBP_epn_U_6AxLq_SAkam6fuA@mail.gmail.com>
+Subject: Re: [PATCH] drm/msm/mdp5: add support for MDP5 v1.3
+From: Rob Clark <robdclark@gmail.com>
+To: divya ojha <odivya77@gmail.com>
+Cc: Stephane Viau <sviau@codeaurora.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Paul E. McKenney wrote:
+On Tue, Jul 15, 2014 at 8:15 AM, divya ojha <odivya77@gmail.com> wrote:
+> Hi Stephane,
+>
+> On Mon, Jul 7, 2014 at 8:04 PM, Stephane Viau <sviau@codeaurora.org> wrote:
+>>
+>> MDP5 has several functional blocks (ie: VIG/RGB pipes, LMs, ...).
+>> From one revision to another, these blocks' base addresses might
+>> change due to the number of instances present in the MDP5 hw.
+> ..
+>> -static inline uint32_t REG_MDP5_PIPE(enum mdp5_pipe i0) { return 0x00001200 + 0x400*i0; }
+>> +static inline uint32_t __offset_PIPE(enum mdp5_pipe idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case SSPP_VIG0: return (mdp5_cfg->pipe_vig.base[0]);
+>> +               case SSPP_VIG1: return (mdp5_cfg->pipe_vig.base[1]);
+>> +               case SSPP_VIG2: return (mdp5_cfg->pipe_vig.base[2]);
+> ..
+>> -static inline uint32_t REG_MDP5_LM(uint32_t i0) { return 0x00003200 + 0x400*i0; }
+>> +static inline uint32_t __offset_LM(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
 
-> If I understand your initialization procedure correctly, you need at least
-> an smp_wmb() on the update side and at least an smp_read_barrier_depends()
-> on the read side.
+this is generated code, so it is ok.  I'm not going to bother trying
+to make the tool that generates this compliant with any indent rules,
+etc.  Too much PITA for no real purpose.
 
-A barrier for data that is not in the cache of the read side? That has
-not been accessed yet (well there could have been a free_percpu before but
-if so then the cache line was evicted by the initialization code).
+Generally I try and split out regeneration of the generated headers,
+but in this case it was kind of coupled with the other changes.
+
+BR,
+-R
 
 
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->lm.base[0]);
+>> +               case 1: return (mdp5_cfg->lm.base[1]);
+>> +               case 2: return (mdp5_cfg->lm.base[2]);
+> ..
+>
+>> -static inline uint32_t REG_MDP5_DSPP(uint32_t i0) { return 0x00004600 + 0x400*i0; }
+>> +static inline uint32_t __offset_DSPP(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->dspp.base[0]);
+>> +               case 1: return (mdp5_cfg->dspp.base[1]);
+>> +               case 2: return (mdp5_cfg->dspp.base[2]);
+>> +               case 3: return (mdp5_cfg->dspp.base[3]);
+> ..
+>> -static inline uint32_t REG_MDP5_INTF(uint32_t i0) { return 0x00012500 + 0x200*i0; }
+>> +static inline uint32_t __offset_INTF(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->intf.base[0]);
+>> +               case 1: return (mdp5_cfg->intf.base[1]);
+>> +               case 2: return (mdp5_cfg->intf.base[2]);
+> ..
+>> -static inline uint32_t REG_MDP5_AD(uint32_t i0) { return 0x00013100 + 0x200*i0; }
+>> +static inline uint32_t __offset_AD(uint32_t idx)
+>> +{
+>
+> ERROR: switch and case should be at the same indent
+>
+>> +       switch (idx) {
+>> +               case 0: return (mdp5_cfg->ad.base[0]);
+>> +               case 1: return (mdp5_cfg->ad.base[1]);
+>> +               default: return INVALID_IDX(idx);
+>> +       }
+>> +}
+> ..
+>>  }
+>> --
+>> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+>> hosted by The Linux Foundation
