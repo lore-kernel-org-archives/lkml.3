@@ -1,51 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680AbaGOJ47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:56:59 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:43753 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758430AbaGOJ4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:56:55 -0400
-Message-ID: <53C4FAD9.1020008@daenzer.net>
-Date: Tue, 15 Jul 2014 18:56:41 +0900
-From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
-User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Hayes Wang <hayeswang@realtek.com>, Francois Romieu <romieu@fr.zoreil.com>,
-        nic_swsd <nic_swsd@realtek.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] r8169: Enable RX_MULTI_EN for RTL_GIGA_MAC_VER_40
-References: <1405406500-1208-1-git-send-email-michel@daenzer.net> <0835B3720019904CB8F7AA43166CEEB25066DC@RTITMBSV03.realtek.com.tw>
-In-Reply-To: <0835B3720019904CB8F7AA43166CEEB25066DC@RTITMBSV03.realtek.com.tw>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1758693AbaGOJ5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:57:07 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22643 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758430AbaGOJ5B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:57:01 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-af-53c4fae5ebbe
+Message-id: <53C4F99B.5010007@samsung.com>
+Date: Tue, 15 Jul 2014 13:51:23 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 14/21] mm: slub: kasan: disable kasan when
+ touching unaccessible memory
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-15-git-send-email-a.ryabinin@samsung.com>
+ <20140715060405.GI11317@js1304-P5Q-DELUXE> <53C4DA54.3010502@samsung.com>
+ <20140715081852.GL11317@js1304-P5Q-DELUXE>
+In-reply-to: <20140715081852.GL11317@js1304-P5Q-DELUXE>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t/xK7pPfx0JNri9QtXi996ZrBZz1q9h
+	s7j+7Q2jxYSHbewWK7ub2Sy2P3vLZLGy8wGrxabH11gt/uzawWRxedccNot7a/6zWty+zGtx
+	6cACJouWfReYLNo+/2O12LfyPJC1ZCOTxeIjt5kt3j2bzGyxedNUZosfGx6zOoh6tDT3sHns
+	nHWX3WPBplKPTas62Tw2fZrE7tH19gqTx7tz59g9Tsz4zeLx5Mp0Jo/NS+o9Pj69xeLxft9V
+	No8zC46we3zeJBfAF8Vlk5Kak1mWWqRvl8CVcXD6cbaCY1IVay82sjcwHhftYuTkkBAwkZj7
+	5xEbhC0mceHeeiCbi0NIYCmjxLtbz9ghnGYmifW7XzGDVPEKaEm82nUFrINFQFWi++h/sDib
+	gJ7Ev1nbweKiAhESB/qesULUC0r8mHyPBcQWEdCQWL1qMzPIUGaB86wS91/9YgJJCAvkSew4
+	380Kse03o8SGs1/ZQRKcAuYSM3bcAetmFtCR2N86jQ3ClpfYvOYt8wRGgVlIlsxCUjYLSdkC
+	RuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCGx/HUH49JjVocYBTgYlXh4b0w7EizEmlhW
+	XJl7iFGCg1lJhPf2J6AQb0piZVVqUX58UWlOavEhRiYOTqkGxjs6559NM965zSNjmbqBUDer
+	3EOrIp0SU7HggntnVxZZ5AvdmvD096qnX/+Vyeptyv3VHL0/PDPO1vOoW3G0fKta9u9bCyWD
+	lqUxKrG35Re8+/RQ+axWk6t86P9vy0SO/Qj+uD1faObUCW85N3xy5L10Yob4xS+3fTa893qZ
+	c6bg2avZU46d2qnEUpyRaKjFXFScCACMQDpowwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.07.2014 18:29, Hayes Wang wrote:
->  Michel Dänzer [mailto:michel@daenzer.net] 
->> Sent: Tuesday, July 15, 2014 2:42 PM
->> To: Francois Romieu; nic_swsd
->> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
->> Subject: [PATCH] r8169: Enable RX_MULTI_EN for RTL_GIGA_MAC_VER_40
+On 07/15/14 12:18, Joonsoo Kim wrote:
+> On Tue, Jul 15, 2014 at 11:37:56AM +0400, Andrey Ryabinin wrote:
+>> On 07/15/14 10:04, Joonsoo Kim wrote:
+>>> On Wed, Jul 09, 2014 at 03:30:08PM +0400, Andrey Ryabinin wrote:
+>>>> Some code in slub could validly touch memory marked by kasan as unaccessible.
+>>>> Even though slub.c doesn't instrumented, functions called in it are instrumented,
+>>>> so to avoid false positive reports such places are protected by
+>>>> kasan_disable_local()/kasan_enable_local() calls.
+>>>>
+>>>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>>>> ---
+>>>>  mm/slub.c | 21 +++++++++++++++++++--
+>>>>  1 file changed, 19 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/mm/slub.c b/mm/slub.c
+>>>> index 6ddedf9..c8dbea7 100644
+>>>> --- a/mm/slub.c
+>>>> +++ b/mm/slub.c
+>>>> @@ -560,8 +560,10 @@ static void print_tracking(struct kmem_cache *s, void *object)
+>>>>  	if (!(s->flags & SLAB_STORE_USER))
+>>>>  		return;
+>>>>  
+>>>> +	kasan_disable_local();
+>>>>  	print_track("Allocated", get_track(s, object, TRACK_ALLOC));
+>>>>  	print_track("Freed", get_track(s, object, TRACK_FREE));
+>>>> +	kasan_enable_local();
+>>>
+>>> I don't think that this is needed since print_track() doesn't call
+>>> external function with object pointer. print_track() call pr_err(), but,
+>>> before calling, it retrieve t->addrs[i] so memory access only occurs
+>>> in slub.c.
+>>>
+>> Agree.
 >>
->> Without this, the ethernet port on my ASUS A88X Pro mainboard stops
->> working sometimes, with messages like these in dmesg:
+>>>>  }
+>>>>  
+>>>>  static void print_page_info(struct page *page)
+>>>> @@ -604,6 +606,8 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+>>>>  	unsigned int off;	/* Offset of last byte */
+>>>>  	u8 *addr = page_address(page);
+>>>>  
+>>>> +	kasan_disable_local();
+>>>> +
+>>>>  	print_tracking(s, p);
+>>>>  
+>>>>  	print_page_info(page);
+>>>> @@ -632,6 +636,8 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+>>>>  		/* Beginning of the filler is the free pointer */
+>>>>  		print_section("Padding ", p + off, s->size - off);
+>>>>  
+>>>> +	kasan_enable_local();
+>>>> +
+>>>>  	dump_stack();
+>>>>  }
+>>>
+>>> And, I recommend that you put this hook on right place.
+>>> At a glance, the problematic function is print_section() which have
+>>> external function call, print_hex_dump(), with object pointer.
+>>> If you disable kasan in print_section, all the below thing won't be
+>>> needed, I guess.
+>>>
 >>
->> AMD-Vi: Event logged [IO_PAGE_FAULT device=05:00.0 
->> domain=0x001e address=0x0000000000003000 flags=0x0050]
+>> Nope, at least memchr_inv() call in slab_pad_check will be a problem.
+>>
+>> I think putting disable/enable only where we strictly need them might be a problem for future maintenance of slub.
+>> If someone is going to add a new function call somewhere, he must ensure that it this call won't be a problem
+>> for kasan.
 > 
-> I search the information about your issue. It seems to be
-> relative to the IOMMU. I don't sure if your patch is the root
-> cause or a workaround.
+> I don't agree with this.
+> 
+> If someone is going to add a slab_pad_check() in other places in
+> slub.c, we should disable/enable kasan there, too. This looks same
+> maintenance problem to me. Putting disable/enable only where we
+> strictly need at least ensures that we don't need to care when using
+> slub internal functions.
+> 
+> And, if memchr_inv() is problem, I think that you also need to add hook
+> into validate_slab_cache().
+> 
+> validate_slab_cache() -> validate_slab_slab() -> validate_slab() ->
+> check_object() -> check_bytes_and_report() -> memchr_inv()
+> 
+> Thanks.
+> 
 
-It's quite possibly just a workaround; I tried this based on previous
-similar commits in this driver.
+Ok, you convinced me. I'll do it.
 
 
--- 
-Earthling Michel Dänzer            |                  http://www.amd.com
-Libre software enthusiast          |                Mesa and X developer
