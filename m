@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761129AbaGPABk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:01:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S933344AbaGOXNj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:13:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758364AbaGOXNk (ORCPT
+	with ESMTP id S1758757AbaGOXNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:40 -0400
+	Tue, 15 Jul 2014 19:13:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joel Stanley <joel@jms.id.au>, Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 27/66] powerpc/perf: Clear MMCR2 when enabling PMU
-Date: Tue, 15 Jul 2014 16:17:21 -0700
-Message-Id: <20140715231703.275842645@linuxfoundation.org>
+        Andy Whitcroft <apw@canonical.com>, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 13/44] ACPI / resources: only reject zero length resources based at address zero
+Date: Tue, 15 Jul 2014 16:17:11 -0700
+Message-Id: <20140715231647.090545885@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,78 +25,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joel Stanley <joel@jms.id.au>
+From: Andy Whitcroft <apw@canonical.com>
 
-commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
+commit 867f9d463b82462793ea4610e748be0b04b37fc7 upstream.
 
-On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
-the PMU counters. Aside from on boot they are then never reset,
-resulting in stuck perf counters for any user in the guest or host.
+The recently merged change (in v3.14-rc6) to ACPI resource detection
+(below) causes all zero length ACPI resources to be elided from the
+table:
 
-We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
-state for perf to use the PMU counters under either the guest or the
-host.
+  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
+  Author: Zhang Rui <rui.zhang@intel.com>
+  Date:   Thu Feb 27 11:37:15 2014 +0800
 
-This was manifesting as a bug with ppc64_cpu --frequency:
+    ACPI / resources: ignore invalid ACPI device resources
 
-    $ sudo ppc64_cpu --frequency
-    WARNING: couldn't run on cpu 0
-    WARNING: couldn't run on cpu 8
-      ...
-    WARNING: couldn't run on cpu 144
-    WARNING: couldn't run on cpu 152
-    min:    18446744073.710 GHz (cpu -1)
-    max:    0.000 GHz (cpu -1)
-    avg:    0.000 GHz
+This change has caused a regression in (at least) serial port detection
+for a number of machines (see LP#1313981 [1]).  These seem to represent
+their IO regions (presumably incorrectly) as a zero length region.
+Reverting the above commit restores these serial devices.
 
-The command uses a perf counter to measure CPU cycles over a fixed
-amount of time, in order to approximate the frequency of the machine.
-The counters were returning zero once a guest was started, regardless of
-weather it was still running or had been shut down.
+Only elide zero length resources which lie at address 0.
 
-By dumping the value of MMCR2, it was observed that once a guest is
-running MMCR2 is set to 1s - which stops counters from running:
-
-    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
-    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
-    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
-    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
-    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
-    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
-    EBBRR: 0000000000000000 BESCR: 0000000000000000
-    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
-
-This is done unconditionally in book3s_hv_interrupts.S upon entering the
-guest, and the original value is only save/restored if the host has
-indicated it was using the PMU. This is okay, however the user of the
-PMU needs to ensure that it is in a defined state when it starts using
-it.
-
-Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
-Signed-off-by: Joel Stanley <joel@jms.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fixes: b355cee88e3b (ACPI / resources: ignore invalid ACPI device resources)
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Acked-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/acpi/resource.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1167,6 +1167,9 @@ static void power_pmu_enable(struct pmu
- 
- 	write_mmcr0(cpuhw, mmcr0);
- 
-+	if (ppmu->flags & PPMU_ARCH_207S)
-+		mtspr(SPRN_MMCR2, 0);
-+
- 	/*
- 	 * Enable instruction sampling if necessary
- 	 */
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -77,7 +77,7 @@ bool acpi_dev_resource_memory(struct acp
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_MEMORY24:
+ 		memory24 = &ares->data.memory24;
+-		if (!memory24->address_length)
++		if (!memory24->minimum && !memory24->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, memory24->minimum,
+ 					 memory24->address_length,
+@@ -85,7 +85,7 @@ bool acpi_dev_resource_memory(struct acp
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_MEMORY32:
+ 		memory32 = &ares->data.memory32;
+-		if (!memory32->address_length)
++		if (!memory32->minimum && !memory32->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, memory32->minimum,
+ 					 memory32->address_length,
+@@ -93,7 +93,7 @@ bool acpi_dev_resource_memory(struct acp
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+ 		fixed_memory32 = &ares->data.fixed_memory32;
+-		if (!fixed_memory32->address_length)
++		if (!fixed_memory32->address && !fixed_memory32->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, fixed_memory32->address,
+ 					 fixed_memory32->address_length,
+@@ -150,7 +150,7 @@ bool acpi_dev_resource_io(struct acpi_re
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_IO:
+ 		io = &ares->data.io;
+-		if (!io->address_length)
++		if (!io->minimum && !io->address_length)
+ 			return false;
+ 		acpi_dev_get_ioresource(res, io->minimum,
+ 					io->address_length,
+@@ -158,7 +158,7 @@ bool acpi_dev_resource_io(struct acpi_re
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_IO:
+ 		fixed_io = &ares->data.fixed_io;
+-		if (!fixed_io->address_length)
++		if (!fixed_io->address && !fixed_io->address_length)
+ 			return false;
+ 		acpi_dev_get_ioresource(res, fixed_io->address,
+ 					fixed_io->address_length,
 
 
