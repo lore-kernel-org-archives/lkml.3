@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591AbaGOXsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:48:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S1760083AbaGOXsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:48:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933707AbaGOXN4 (ORCPT
+	with ESMTP id S933699AbaGOXNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:56 -0400
+	Tue, 15 Jul 2014 19:13:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.14 44/66] ext4: fix unjournalled bg descriptor while initializing inode bitmap
-Date: Tue, 15 Jul 2014 16:17:38 -0700
-Message-Id: <20140715231704.102786025@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>
+Subject: [PATCH 3.14 43/66] PCI: Fix unaligned access in AF transaction pending test
+Date: Tue, 15 Jul 2014 16:17:37 -0700
+Message-Id: <20140715231704.073788182@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,54 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
+commit d066c946a866268c14a120b33e7226e899981998 upstream.
 
-The first time that we allocate from an uninitialized inode allocation
-bitmap, if the block allocation bitmap is also uninitalized, we need
-to get write access to the block group descriptor before we start
-modifying the block group descriptor flags and updating the free block
-count, etc.  Otherwise, there is the potential of a bad journal
-checksum (if journal checksums are enabled), and of the file system
-becoming inconsistent if we crash at exactly the wrong time.
+pci_wait_for_pending() uses word access, so we shouldn't be passing
+an offset that is only byte aligned.  Use the control register offset
+instead, shifting the mask to match.
 
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Fixes: d0b4cc4e3270 ("PCI: Wrong register used to check pending traffic")
+Fixes: 157e876ffe0b ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ialloc.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/pci/pci.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -851,6 +851,13 @@ got:
- 		goto out;
- 	}
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3085,8 +3085,13 @@ static int pci_af_flr(struct pci_dev *de
+ 	if (probe)
+ 		return 0;
  
-+	BUFFER_TRACE(group_desc_bh, "get_write_access");
-+	err = ext4_journal_get_write_access(handle, group_desc_bh);
-+	if (err) {
-+		ext4_std_error(sb, err);
-+		goto out;
-+	}
-+
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -887,13 +894,6 @@ got:
- 		}
- 	}
+-	/* Wait for Transaction Pending bit clean */
+-	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
++	/*
++	 * Wait for Transaction Pending bit to clear.  A word-aligned test
++	 * is used, so we use the conrol offset rather than status and shift
++	 * the test bit to match.
++	 */
++	if (pci_wait_for_pending(dev, pos + PCI_AF_CTRL,
++				 PCI_AF_STATUS_TP << 8))
+ 		goto clear;
  
--	BUFFER_TRACE(group_desc_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, group_desc_bh);
--	if (err) {
--		ext4_std_error(sb, err);
--		goto out;
--	}
--
- 	/* Update the relevant bg descriptor fields */
- 	if (ext4_has_group_desc_csum(sb)) {
- 		int free;
+ 	dev_err(&dev->dev, "transaction is not cleared; "
 
 
