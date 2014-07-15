@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942AbaGOP0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:26:54 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61940 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887AbaGOP0v (ORCPT
+	id S1755970AbaGOP1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:27:05 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3214 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaGOP05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:26:51 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
-Subject: [PATCH] x86_64,xen,espfix: Initialize espfix on secondary CPUs
-Date: Tue, 15 Jul 2014 08:26:41 -0700
-Message-Id: <195642a5e9fd4515ad8ca4cd8bcffd4900df5790.1405437568.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Tue, 15 Jul 2014 11:26:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 15 Jul 2014 08:19:33 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 6/6] clk: tegra: Add Tegra132 ccplex clocks
+Date: Tue, 15 Jul 2014 18:24:36 +0300
+Message-ID: <1405437890-6468-7-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen doesn't call start_secondary.
+Add support for the ccplex clocks in Tegra132.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
+ drivers/clk/tegra/Makefile |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-espfix still doesn't seem to work on Xen (it goes boom in some way that
-I don't understand right now), but initializing all CPUs instead of just
-one of them seems like a good start.
-
-ISTM the right fix is probably to shove the espfix logic into
-native_iret and to tweak the paravirt logic so that native_iret always
-gets invoked.  I suspect that Xen will need its own implementation of
-espfix64 in the hypervisor and that, ultimately, someone may want to
-stop initializing espfix64 at all on Xen guests.
-
- arch/x86/xen/smp.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 7005974..eea9bcc 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -23,6 +23,7 @@
- #include <asm/desc.h>
- #include <asm/pgtable.h>
- #include <asm/cpu.h>
-+#include <asm/espfix.h>
- 
- #include <xen/interface/xen.h>
- #include <xen/interface/vcpu.h>
-@@ -85,6 +86,13 @@ static void cpu_bringup(void)
- 
- 	xen_setup_cpu_clockevents();
- 
-+	/*
-+	 * Enable the espfix hack for this CPU
-+	 */
-+#ifdef CONFIG_X86_ESPFIX64
-+	init_espfix_ap();
-+#endif
-+
- 	notify_cpu_starting(cpu);
- 
- 	set_cpu_online(cpu, true);
+diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+index f7dfb72..4231865 100644
+--- a/drivers/clk/tegra/Makefile
++++ b/drivers/clk/tegra/Makefile
+@@ -15,3 +15,5 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
+ obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
+ obj-$(CONFIG_ARCH_TEGRA_124_SOC)	+= clk-tegra124.o
++obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra124.c
++obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra132-ccplex.c
 -- 
-1.9.3
+1.7.7.rc0.72.g4b5ea.dirty
 
