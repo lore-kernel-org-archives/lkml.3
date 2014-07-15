@@ -1,46 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaGQEzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 00:55:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48977 "EHLO mail.zytor.com"
+	id S1753261AbaGQEzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 00:55:32 -0400
+Received: from ozlabs.org ([103.22.144.67]:55571 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753160AbaGQEzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 00:55:33 -0400
-Message-ID: <53C75733.8060507@zytor.com>
-Date: Wed, 16 Jul 2014 21:55:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753102AbaGQEza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 00:55:30 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: paulmck@linux.vnet.ibm.com
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu accessors and operations
+In-Reply-To: <20140714113911.GM16041@linux.vnet.ibm.com>
+References: <20140612135630.GA23606@htj.dyndns.org> <20140612153426.GV4581@linux.vnet.ibm.com> <20140612155227.GB23606@htj.dyndns.org> <20140617144151.GD4669@linux.vnet.ibm.com> <20140617152752.GC31819@htj.dyndns.org> <87lhs35p0v.fsf@rustcorp.com.au> <20140714113911.GM16041@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 15 Jul 2014 21:20:52 +0930
+Message-ID: <87y4vu3ko3.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
-References: <cover.1405546879.git.luto@amacapital.net> <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net> <53C6F5A9.80400@zytor.com> <CALCETrVwT1g-S1hLyyB_uAVwffYCnFacTfUhJeD8Bb5j3X0mkg@mail.gmail.com> <CALCETrVCrJEwYokasRoqQTKJWKtzq9XUMNqHoT4-ZjgyZ-mBow@mail.gmail.com> <53C703ED.2010605@zytor.com> <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
-In-Reply-To: <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 05:03 PM, Andy Lutomirski wrote:
->>
->> prandom is exactly the opposite; it is designed for when we need
->> possibly low quality random numbers very quickly.  RDRAND is actually
->> too slow.
-> 
-> I meant that prandom isn't using rdrand for early seeding.
-> 
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
+> On Wed, Jul 09, 2014 at 10:25:44AM +0930, Rusty Russell wrote:
+>> Tejun Heo <tj@kernel.org> writes:
+>> > Hello, Paul.
+>> 
+>> Rusty wakes up...
+>
+> ;-)
+>
+>> >> Good point.  How about per-CPU variables that are introduced by
+>> >> loadable modules?  (I would guess that there are plenty of memory
+>> >> barriers in the load process, given that text and data also needs
+>> >> to be visible to other CPUs.)
+>> >
+>> > (cc'ing Rusty, hi!)
+>> >
+>> > Percpu initialization happens in post_relocation() before
+>> > module_finalize().  There seem to be enough operations which can act
+>> > as write barrier afterwards but nothing seems explicit.
+>> >
+>> > I have no idea how we're guaranteeing that .data is visible to all
+>> > cpus without barrier from reader side.  Maybe we don't allow something
+>> > like the following?
+>> >
+>> >   module init				built-in code
+>> >
+>> >   static int mod_static_var = X;	if (builtin_ptr)
+>> >   builtin_ptr = &mod_static_var;		WARN_ON(*builtin_ptr != X);
+>> >
+>> > Rusty, can you please enlighten me?
+>> 
+>> Subtle, but I think in theory (though not in practice) this can happen.
+>> 
+>> Making this this assigner's responsibility is nasty, since we reasonably
+>> assume that .data is consistent across CPUs once code is executing
+>> (similarly on boot).
+>> 
+>> >> Again, it won't help for the allocator to strongly order the
+>> >> initialization to zero if there are additional initializations of some
+>> >> fields to non-zero values.  And again, it should be a lot easier to
+>> >> require the smp_store_release() or whatever uniformly than only in cases
+>> >> where additional initialization occurred.
+>> >
+>> > This one is less murky as we can say that the cpu which allocated owns
+>> > the zeroing; however, it still deviates from requiring the one which
+>> > makes changes to take care of barriering for those changes, which is
+>> > what makes me feel a bit uneasy.  IOW, it's the allocator which
+>> > cleared the memory, why should its users worry about in-flight
+>> > operations from it?  That said, this poses a lot less issues compared
+>> > to percpu ones as passing normal pointers to other cpus w/o going
+>> > through proper set of barriers is a special thing to do anyway.
+>> 
+>> I think that the implicit per-cpu allocations done by modules need to
+>> be consistent once the module is running.
+>> 
+>> I'm deeply reluctant to advocate it in the other per-cpu cases though.
+>> Once we add a barrier, it's impossible to remove: callers may subtly
+>> rely on the behavior.
+>> 
+>> "Magic barrier sprinkles" is a bad path to start down, IMHO.
+>
+> Here is the sort of thing that I would be concerned about:
+>
+> 	p = alloc_percpu(struct foo);
+> 	for_each_possible_cpu(cpu)
+> 		initialize(per_cpu_ptr(p, cpu);
+> 	gp = p;
+>
+> We clearly need a memory barrier in there somewhere, and it cannot
+> be buried in alloc_percpu().  Some cases avoid trouble due to locking,
+> for example, initialize() might acquire a per-CPU lock and later uses
+> might acquire that same lock.  Clearly, use of a global lock would not
+> be helpful from a scalability viewpoint.
 
-We should probably fix that.
+I agree with Christoph: there's no per-cpu-unique peculiarity here.
+Anyone who exposes a pointer needs a barrier first.
 
-	-hpa
+And the per-cpu allocation for modules is under a mutex, so that case is
+already covered.
 
-
+Cheers,
+Rusty.
