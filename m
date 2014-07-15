@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934419AbaGOXhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:37:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45503 "EHLO
+	id S1030254AbaGOXiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:38:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933968AbaGOXOM (ORCPT
+	with ESMTP id S933950AbaGOXOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:12 -0400
+	Tue, 15 Jul 2014 19:14:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.15 07/84] parisc: add serial ports of C8000/1GHz machine to hardware database
-Date: Tue, 15 Jul 2014 16:17:04 -0700
-Message-Id: <20140715231713.413202000@linuxfoundation.org>
+        Jan Kardell <jan.kardell@telliq.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.15 05/84] iio: ti_am335x_adc: Fix: Use same step id at FIFOs both ends
+Date: Tue, 15 Jul 2014 16:17:02 -0700
+Message-Id: <20140715231713.351197257@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,28 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Jan Kardell <jan.kardell@telliq.com>
 
-commit eadcc7208a2237016be7bdff4551ba7614da85c8 upstream.
+commit baa3c65298c089a9014b4e523a14ec2885cca1bc upstream.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+Since AI lines could be selected at will (linux-3.11) the sending
+and receiving ends of the FIFO does not agree about what step is used
+for a line. It only works if the last lines are used, like 5,6,7,
+and fails if ie 2,4,6 is selected in DT.
+
+Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
+Tested-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/hardware.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iio/adc/ti_am335x_adc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/kernel/hardware.c
-+++ b/arch/parisc/kernel/hardware.c
-@@ -1210,7 +1210,8 @@ static struct hp_hardware hp_hardware_li
- 	{HPHW_FIO, 0x004, 0x00320, 0x0, "Metheus Frame Buffer"}, 
- 	{HPHW_FIO, 0x004, 0x00340, 0x0, "BARCO CX4500 VME Grphx Cnsl"}, 
- 	{HPHW_FIO, 0x004, 0x00360, 0x0, "Hughes TOG VME FDDI"}, 
--	{HPHW_FIO, 0x076, 0x000AD, 0x00, "Crestone Peak RS-232"},
-+	{HPHW_FIO, 0x076, 0x000AD, 0x0, "Crestone Peak Core RS-232"},
-+	{HPHW_FIO, 0x077, 0x000AD, 0x0, "Crestone Peak Fast? Core RS-232"},
- 	{HPHW_IOA, 0x185, 0x0000B, 0x00, "Java BC Summit Port"}, 
- 	{HPHW_IOA, 0x1FF, 0x0000B, 0x00, "Hitachi Ghostview Summit Port"}, 
- 	{HPHW_IOA, 0x580, 0x0000B, 0x10, "U2-IOA BC Runway Port"}, 
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -374,7 +374,7 @@ static int tiadc_read_raw(struct iio_dev
+ 			return -EAGAIN;
+ 		}
+ 	}
+-	map_val = chan->channel + TOTAL_CHANNELS;
++	map_val = adc_dev->channel_step[chan->scan_index];
+ 
+ 	/*
+ 	 * We check the complete FIFO. We programmed just one entry but in case
 
 
