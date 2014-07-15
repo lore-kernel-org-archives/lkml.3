@@ -1,164 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933104AbaGOSs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:48:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33249 "EHLO mx1.redhat.com"
+	id S933119AbaGOSsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:48:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932732AbaGOSsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:48:24 -0400
+	id S932741AbaGOSs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:48:27 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 13/23] Input - wacom: compute the HID report size to get the actual packet size
-Date: Tue, 15 Jul 2014 14:45:36 -0400
-Message-Id: <1405449946-11515-14-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 16/23] Input - wacom: remove usb dependency for siblings devices
+Date: Tue, 15 Jul 2014 14:45:39 -0400
+Message-Id: <1405449946-11515-17-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes an USB dependency and is more accurate: the computed pktlen
-is the actual maximum size of the reports forwarded by the device.
+Wacom tablets can share different physical sensors on one physical device.
+These are called siblings in the code. The current way of implementation
+relies on the USB topology to be able to share data amongs those sensors.
 
-Given that the pktlen is correctly computed/validated, we can store it now
-in the features struct instead of having a special handling in the rest of
-the code.
+We can replace the code to match a HID subsystem, without involving the USB
+topology:
+- the first probed sensor does not find any siblings in the list
+  wacom_udev_list, so it creates its own wacom_hdev_data with its own
+  struct hid_device
+- the other sensor checks the current list of siblings in wacom_hdev_data,
+  and if there is a match, it associates itself to the matched device.
 
-Likewise, this information is not mandatory anymore in the description
-of devices in wacom_wac.c. They will be removed in a separate patch.
+To be sure that we are not associating different sensors from different
+physical devices, we also check for the phys path of the hid device which
+contains the USB topology.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 Tested-by: Jason Gerecke <killertofu@gmail.com>
 ---
 
-no changes in v2
+changes in v2:
+- use Jason's suggestion to find the sibblings devices
 
- drivers/input/tablet/wacom_sys.c | 58 ++++++++++++++++++----------------------
- 1 file changed, 26 insertions(+), 32 deletions(-)
+ drivers/input/tablet/wacom_sys.c | 76 +++++++++++++++++++---------------------
+ 1 file changed, 37 insertions(+), 39 deletions(-)
 
 diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index 2c0983b..ce76e1e 100644
+index 2650443..8065bac 100644
 --- a/drivers/input/tablet/wacom_sys.c
 +++ b/drivers/input/tablet/wacom_sys.c
-@@ -149,7 +149,6 @@ static int wacom_parse_logical_collection(unsigned char *report,
- 	if (features->type == BAMBOO_PT) {
- 
- 		/* Logical collection is only used by 3rd gen Bamboo Touch */
--		features->pktlen = WACOM_PKGLEN_BBTOUCH3;
- 		features->device_type = BTN_TOOL_FINGER;
- 
- 		features->x_max = features->y_max =
-@@ -240,29 +239,6 @@ static int wacom_parse_hid(struct hid_device *hdev,
- 					features->device_type = BTN_TOOL_FINGER;
- 					/* touch device at least supports one touch point */
- 					touch_max = 1;
--					switch (features->type) {
--					case TABLETPC2FG:
--						features->pktlen = WACOM_PKGLEN_TPC2FG;
--						break;
--
--					case MTSCREEN:
--					case WACOM_24HDT:
--						features->pktlen = WACOM_PKGLEN_MTOUCH;
--						break;
--
--					case MTTPC:
--					case MTTPC_B:
--						features->pktlen = WACOM_PKGLEN_MTTPC;
--						break;
--
--					case BAMBOO_PT:
--						features->pktlen = WACOM_PKGLEN_BBTOUCH;
--						break;
--
--					default:
--						features->pktlen = WACOM_PKGLEN_GRAPHIRE;
--						break;
--					}
- 
- 					switch (features->type) {
- 					case BAMBOO_PT:
-@@ -305,8 +281,6 @@ static int wacom_parse_hid(struct hid_device *hdev,
- 					}
- 				} else if (pen) {
- 					/* penabled only accepts exact bytes of data */
--					if (features->type >= TABLETPC)
--						features->pktlen = WACOM_PKGLEN_GRAPHIRE;
- 					features->device_type = BTN_TOOL_PEN;
- 					features->x_max =
- 						get_unaligned_le16(&report[i + 3]);
-@@ -1224,12 +1198,34 @@ static void wacom_calculate_res(struct wacom_features *features)
- 						    features->unitExpo);
+@@ -488,46 +488,48 @@ static int wacom_retrieve_hid_descriptor(struct hid_device *hdev,
+ 	return error;
  }
  
-+static int wacom_hid_report_len(struct hid_report *report)
-+{
-+	/* equivalent to DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) */
-+	return ((report->size - 1) >> 3) + 1 + (report->id > 0);
-+}
-+
-+static size_t wacom_compute_pktlen(struct hid_device *hdev)
-+{
-+	struct hid_report_enum *report_enum;
-+	struct hid_report *report;
-+	size_t size = 0;
-+
-+	report_enum = hdev->report_enum + HID_INPUT_REPORT;
-+
-+	list_for_each_entry(report, &report_enum->report_list, list) {
-+		size_t report_size = wacom_hid_report_len(report);
-+		if (report_size > size)
-+			size = report_size;
-+	}
-+
-+	return size;
-+}
-+
- static int wacom_probe(struct hid_device *hdev,
- 		const struct hid_device_id *id)
+-struct wacom_usbdev_data {
++struct wacom_hdev_data {
+ 	struct list_head list;
+ 	struct kref kref;
+-	struct usb_device *dev;
++	struct hid_device *dev;
+ 	struct wacom_shared shared;
+ };
+ 
+ static LIST_HEAD(wacom_udev_list);
+ static DEFINE_MUTEX(wacom_udev_list_lock);
+ 
+-static struct usb_device *wacom_get_sibling(struct usb_device *dev, int vendor, int product)
++static bool wacom_are_sibling(struct hid_device *hdev,
++		struct hid_device *sibling)
  {
- 	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
- 	struct usb_device *dev = interface_to_usbdev(intf);
--	struct usb_endpoint_descriptor *endpoint;
- 	struct wacom *wacom;
- 	struct wacom_wac *wacom_wac;
- 	struct wacom_features *features;
-@@ -1255,6 +1251,7 @@ static int wacom_probe(struct hid_device *hdev,
- 	wacom_wac = &wacom->wacom_wac;
- 	wacom_wac->features = *((struct wacom_features *)id->driver_data);
- 	features = &wacom_wac->features;
-+	features->pktlen = wacom_compute_pktlen(hdev);
- 	if (features->pktlen > WACOM_PKGLEN_MAX) {
- 		error = -EINVAL;
- 		goto fail1;
-@@ -1272,8 +1269,6 @@ static int wacom_probe(struct hid_device *hdev,
- 	usb_make_path(dev, wacom->phys, sizeof(wacom->phys));
- 	strlcat(wacom->phys, "/input0", sizeof(wacom->phys));
- 
--	endpoint = &intf->cur_altsetting->endpoint[0].desc;
+-	int port1;
+-	struct usb_device *sibling;
 -
- 	/* set the default size in case we do not get them from hid */
- 	wacom_set_default_phy(features);
+-	if (vendor == 0 && product == 0)
+-		return dev;
++	struct wacom *wacom = hid_get_drvdata(hdev);
++	struct wacom_features *features = &wacom->wacom_wac.features;
++	int vid = features->oVid;
++	int pid = features->oPid;
++	int n1,n2;
  
-@@ -1284,13 +1279,12 @@ static int wacom_probe(struct hid_device *hdev,
+-	if (dev->parent == NULL)
+-		return NULL;
++	if (vid == 0 && pid == 0) {
++		vid = hdev->vendor;
++		pid = hdev->product;
++	}
  
- 	/*
- 	 * Intuos5 has no useful data about its touch interface in its
--	 * HID descriptor. If this is the touch interface (wMaxPacketSize
-+	 * HID descriptor. If this is the touch interface (PacketSize
- 	 * of WACOM_PKGLEN_BBTOUCH3), override the table values.
- 	 */
- 	if (features->type >= INTUOS5S && features->type <= INTUOSHT) {
--		if (endpoint->wMaxPacketSize == WACOM_PKGLEN_BBTOUCH3) {
-+		if (features->pktlen == WACOM_PKGLEN_BBTOUCH3) {
- 			features->device_type = BTN_TOOL_FINGER;
--			features->pktlen = WACOM_PKGLEN_BBTOUCH3;
+-	usb_hub_for_each_child(dev->parent, port1, sibling) {
+-		struct usb_device_descriptor *d;
+-		if (sibling == NULL)
+-			continue;
++	if (vid != sibling->vendor || pid != sibling->product)
++		return false;
  
- 			features->x_max = 4096;
- 			features->y_max = 4096;
+-		d = &sibling->descriptor;
+-		if (d->idVendor == vendor && d->idProduct == product)
+-			return sibling;
+-	}
++	/* Compare the physical path. */
++	n1 = strrchr(hdev->phys, '.') - hdev->phys;
++	n2 = strrchr(sibling->phys, '.') - sibling->phys;
++	if (n1 != n2 || n1 <= 0 || n2 <= 0)
++		return false;
+ 
+-	return NULL;
++	return !strncmp(hdev->phys, sibling->phys, n1);
+ }
+ 
+-static struct wacom_usbdev_data *wacom_get_usbdev_data(struct usb_device *dev)
++static struct wacom_hdev_data *wacom_get_hdev_data(struct hid_device *hdev)
+ {
+-	struct wacom_usbdev_data *data;
++	struct wacom_hdev_data *data;
+ 
+ 	list_for_each_entry(data, &wacom_udev_list, list) {
+-		if (data->dev == dev) {
++		if (wacom_are_sibling(hdev, data->dev)) {
+ 			kref_get(&data->kref);
+ 			return data;
+ 		}
+@@ -536,28 +538,29 @@ static struct wacom_usbdev_data *wacom_get_usbdev_data(struct usb_device *dev)
+ 	return NULL;
+ }
+ 
+-static int wacom_add_shared_data(struct wacom_wac *wacom,
+-				 struct usb_device *dev)
++static int wacom_add_shared_data(struct hid_device *hdev)
+ {
+-	struct wacom_usbdev_data *data;
++	struct wacom *wacom = hid_get_drvdata(hdev);
++	struct wacom_wac *wacom_wac = &wacom->wacom_wac;
++	struct wacom_hdev_data *data;
+ 	int retval = 0;
+ 
+ 	mutex_lock(&wacom_udev_list_lock);
+ 
+-	data = wacom_get_usbdev_data(dev);
++	data = wacom_get_hdev_data(hdev);
+ 	if (!data) {
+-		data = kzalloc(sizeof(struct wacom_usbdev_data), GFP_KERNEL);
++		data = kzalloc(sizeof(struct wacom_hdev_data), GFP_KERNEL);
+ 		if (!data) {
+ 			retval = -ENOMEM;
+ 			goto out;
+ 		}
+ 
+ 		kref_init(&data->kref);
+-		data->dev = dev;
++		data->dev = hdev;
+ 		list_add_tail(&data->list, &wacom_udev_list);
+ 	}
+ 
+-	wacom->shared = &data->shared;
++	wacom_wac->shared = &data->shared;
+ 
+ out:
+ 	mutex_unlock(&wacom_udev_list_lock);
+@@ -566,8 +569,8 @@ out:
+ 
+ static void wacom_release_shared_data(struct kref *kref)
+ {
+-	struct wacom_usbdev_data *data =
+-		container_of(kref, struct wacom_usbdev_data, kref);
++	struct wacom_hdev_data *data =
++		container_of(kref, struct wacom_hdev_data, kref);
+ 
+ 	mutex_lock(&wacom_udev_list_lock);
+ 	list_del(&data->list);
+@@ -578,10 +581,10 @@ static void wacom_release_shared_data(struct kref *kref)
+ 
+ static void wacom_remove_shared_data(struct wacom_wac *wacom)
+ {
+-	struct wacom_usbdev_data *data;
++	struct wacom_hdev_data *data;
+ 
+ 	if (wacom->shared) {
+-		data = container_of(wacom->shared, struct wacom_usbdev_data, shared);
++		data = container_of(wacom->shared, struct wacom_hdev_data, shared);
+ 		kref_put(&data->kref, wacom_release_shared_data);
+ 		wacom->shared = NULL;
+ 	}
+@@ -1308,8 +1311,6 @@ static int wacom_probe(struct hid_device *hdev,
+ 		"%s Pad", features->name);
+ 
+ 	if (features->quirks & WACOM_QUIRK_MULTI_INPUT) {
+-		struct usb_device *other_dev;
+-
+ 		/* Append the device type to the name */
+ 		if (features->device_type != BTN_TOOL_FINGER)
+ 			strlcat(wacom_wac->name, " Pen", WACOM_NAME_MAX);
+@@ -1318,10 +1319,7 @@ static int wacom_probe(struct hid_device *hdev,
+ 		else
+ 			strlcat(wacom_wac->name, " Pad", WACOM_NAME_MAX);
+ 
+-		other_dev = wacom_get_sibling(dev, features->oVid, features->oPid);
+-		if (other_dev == NULL || wacom_get_usbdev_data(other_dev) == NULL)
+-			other_dev = dev;
+-		error = wacom_add_shared_data(wacom_wac, other_dev);
++		error = wacom_add_shared_data(hdev);
+ 		if (error)
+ 			goto fail1;
+ 	}
 -- 
 2.0.0
 
