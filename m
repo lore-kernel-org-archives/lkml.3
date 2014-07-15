@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761303AbaGPAOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:14:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45038 "EHLO
+	id S1761288AbaGPAOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:14:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45042 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759722AbaGOXNX (ORCPT
+	with ESMTP id S1759733AbaGOXNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.10 23/44] ext4: fix unjournalled bg descriptor while initializing inode bitmap
-Date: Tue, 15 Jul 2014 16:17:21 -0700
-Message-Id: <20140715231647.387317677@linuxfoundation.org>
+        Pavel Machek <pavel@ucw.cz>, Theodore Tso <tytso@mit.edu>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: [PATCH 3.10 24/44] ext4: clarify error count warning messages
+Date: Tue, 15 Jul 2014 16:17:22 -0700
+Message-Id: <20140715231647.416301339@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -30,52 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
+commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
 
-The first time that we allocate from an uninitialized inode allocation
-bitmap, if the block allocation bitmap is also uninitalized, we need
-to get write access to the block group descriptor before we start
-modifying the block group descriptor flags and updating the free block
-count, etc.  Otherwise, there is the potential of a bad journal
-checksum (if journal checksums are enabled), and of the file system
-becoming inconsistent if we crash at exactly the wrong time.
+Make it clear that values printed are times, and that it is error
+since last fsck. Also add note about fsck version required.
 
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ialloc.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/ext4/super.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -780,6 +780,13 @@ got:
- 		goto out;
- 	}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2687,10 +2687,11 @@ static void print_daily_error_info(unsig
+ 	es = sbi->s_es;
  
-+	BUFFER_TRACE(group_desc_bh, "get_write_access");
-+	err = ext4_journal_get_write_access(handle, group_desc_bh);
-+	if (err) {
-+		ext4_std_error(sb, err);
-+		goto out;
-+	}
-+
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -816,13 +823,6 @@ got:
- 		}
+ 	if (es->s_error_count)
+-		ext4_msg(sb, KERN_NOTICE, "error count: %u",
++		/* fsck newer than v1.41.13 is needed to clean this condition. */
++		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
+ 			 le32_to_cpu(es->s_error_count));
+ 	if (es->s_first_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
++		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
+ 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
+ 		       (int) sizeof(es->s_first_error_func),
+ 		       es->s_first_error_func,
+@@ -2704,7 +2705,7 @@ static void print_daily_error_info(unsig
+ 		printk("\n");
  	}
- 
--	BUFFER_TRACE(group_desc_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, group_desc_bh);
--	if (err) {
--		ext4_std_error(sb, err);
--		goto out;
--	}
--
- 	/* Update the relevant bg descriptor fields */
- 	if (ext4_has_group_desc_csum(sb)) {
- 		int free;
+ 	if (es->s_last_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
++		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
+ 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
+ 		       (int) sizeof(es->s_last_error_func),
+ 		       es->s_last_error_func,
 
 
