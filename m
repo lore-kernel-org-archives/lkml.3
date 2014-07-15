@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908AbaGOWGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:06:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54530 "EHLO
+	id S1759351AbaGOVg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:36:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54494 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759433AbaGOVgb (ORCPT
+	with ESMTP id S1759394AbaGOVgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:31 -0400
+	Tue, 15 Jul 2014 17:36:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 025/198] x86, x32: Use compat shims for io_{setup,submit}
-Date: Tue, 15 Jul 2014 14:28:15 -0700
-Message-Id: <1405459868-15089-26-git-send-email-kamal@canonical.com>
+Cc: Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 128/198] Target/iscsi: Fix sendtargets response pdu for iser transport
+Date: Tue, 15 Jul 2014 14:29:58 -0700
+Message-Id: <1405459868-15089-129-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,59 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
+commit 22c7aaa57e80853b4904a46c18f97db0036a3b97 upstream.
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
+In case the transport is iser we should not include the
+iscsi target info in the sendtargets text response pdu.
+This causes sendtargets response to include the target
+info twice.
 
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
+Modify iscsit_build_sendtargets_response to filter
+transport types that don't match.
 
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
-
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/syscalls/syscall_64.tbl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |  2 +-
+ drivers/target/iscsi/iscsi_target.c     | 14 ++++++++++----
+ include/target/iscsi/iscsi_transport.h  |  3 ++-
+ 3 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65d..63a8993 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -356,3 +356,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index bde56da..5199f4e 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -2016,7 +2016,7 @@ isert_put_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ 	int rc;
+ 
+ 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
+-	rc = iscsit_build_text_rsp(cmd, conn, hdr);
++	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_INFINIBAND);
+ 	if (rc < 0)
+ 		return rc;
+ 
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index fe63a02..711dff4 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3360,7 +3360,9 @@ static bool iscsit_check_inaddr_any(struct iscsi_np *np)
+ 
+ #define SENDTARGETS_BUF_LIMIT 32768U
+ 
+-static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
++static int
++iscsit_build_sendtargets_response(struct iscsi_cmd *cmd,
++				  enum iscsit_transport_type network_transport)
+ {
+ 	char *payload = NULL;
+ 	struct iscsi_conn *conn = cmd->conn;
+@@ -3437,6 +3439,9 @@ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
+ 				struct iscsi_np *np = tpg_np->tpg_np;
+ 				bool inaddr_any = iscsit_check_inaddr_any(np);
+ 
++				if (np->np_network_transport != network_transport)
++					continue;
++
+ 				if (!target_name_printed) {
+ 					len = sprintf(buf, "TargetName=%s",
+ 						      tiqn->tiqn);
+@@ -3490,11 +3495,12 @@ eob:
+ 
+ int
+ iscsit_build_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
+-		      struct iscsi_text_rsp *hdr)
++		      struct iscsi_text_rsp *hdr,
++		      enum iscsit_transport_type network_transport)
+ {
+ 	int text_length, padding;
+ 
+-	text_length = iscsit_build_sendtargets_response(cmd);
++	text_length = iscsit_build_sendtargets_response(cmd, network_transport);
+ 	if (text_length < 0)
+ 		return text_length;
+ 
+@@ -3532,7 +3538,7 @@ static int iscsit_send_text_rsp(
+ 	u32 tx_size = 0;
+ 	int text_length, iov_count = 0, rc;
+ 
+-	rc = iscsit_build_text_rsp(cmd, conn, hdr);
++	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_TCP);
+ 	if (rc < 0)
+ 		return rc;
+ 
+diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
+index 361bd0f..78edd78 100644
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -68,7 +68,8 @@ extern void iscsit_build_nopin_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+ extern void iscsit_build_task_mgt_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+ 				struct iscsi_tm_rsp *);
+ extern int iscsit_build_text_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+-				struct iscsi_text_rsp *);
++				struct iscsi_text_rsp *,
++				enum iscsit_transport_type);
+ extern void iscsit_build_reject(struct iscsi_cmd *, struct iscsi_conn *,
+ 				struct iscsi_reject *);
+ extern int iscsit_build_logout_rsp(struct iscsi_cmd *, struct iscsi_conn *,
 -- 
 1.9.1
 
