@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023AbaGOHM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 03:12:58 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:18919 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757830AbaGOHMy (ORCPT
+	id S1757940AbaGOHU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 03:20:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40169 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751210AbaGOHUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 03:12:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 15 Jul 2014 00:01:40 -0700
-Message-ID: <53C4D472.9010507@nvidia.com>
-Date: Tue, 15 Jul 2014 10:12:50 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 15 Jul 2014 03:20:24 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/2MhQPKwJcgtiJG/PRsPtd
+Date: Tue, 15 Jul 2014 00:18:59 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: [RESEND PATCH 0/8] arm: dts: dra7: Add PCIe data and PCIe PHY
+ data
+Message-ID: <20140715071859.GL20068@atomide.com>
+References: <1405334543-25509-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>, Tejun Heo <tj@kernel.org>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com> <1403101406-15439-7-git-send-email-mperttunen@nvidia.com> <20140708132216.GA4979@htj.dyndns.org> <53C3DCF0.3030001@redhat.com>
-In-Reply-To: <53C3DCF0.3030001@redhat.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405334543-25509-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heh, what you are describing is the v1 of this series :)
+* Kishon Vijay Abraham I <kishon@ti.com> [140714 03:44]:
+> [1] is split into separate series in order for individual subsystem
+> Maintainers to pick up the patches. This series handles the PCIe
+> dt data for DRA7.
+> 
+> This series has better commit logs than the previous one modified as
+> suggested by Tero.
+> 
+> [1] -> https://lkml.org/lkml/2014/5/29/258
+> 
+> Keerthy (2):
+>   ARM: dts: dra7xx-clocks: Add divider table to optfclk_pciephy_div
+>     clock
+>   ARM: dts: dra7xx-clocks: Change the parent of apll_pcie_in_clk_mux to
+>     dpll_pcie_ref_m2ldo_ck
+> 
+> Kishon Vijay Abraham I (6):
+>   ARM: dts: dra7xx-clocks: Add missing 32KHz clocks used for PHY
+>   ARM: dts: dra7xx-clocks: rename pcie clocks to accommodate second PHY
+>     instance
+>   ARM: dts: dra7xx-clocks: Add missing clocks for second PCIe PHY
+>     instance
+>   ARM: dts: dra7: Add dt data for PCIe PHY control module
+>   ARM: dts: dra7: Add dt data for PCIe PHY
+>   ARM: dts: dra7: Add dt data for PCIe controller
+> 
+>  arch/arm/boot/dts/dra7.dtsi          |  127 ++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/dra7xx-clocks.dtsi |   39 ++++++++++-
+>  2 files changed, 163 insertions(+), 3 deletions(-)
 
-However,
+Applying this series into omap-for-v3.17/dt thanks.
 
-17/06/14 Thierry Reding wrote:
- > I would've preferred tegra_powergate_sequence_power_up() to be used
- > consistently in all drivers. I'm still not convinced that using the
- > platform AHCI driver this way is really the best option, since we're
- > bending over backwards to fit into what this driver dictates. There
- > shouldn't be a need for that.
-
-As you probably noticed, the issue is that on Tegra we want to use 
-tegra_powergate_sequence_power_up to enable the SATA power rail. That 
-function assumes that it gets a disabled clock and returns with the 
-clock enabled. If we use ahci_platform's resource management functions,
-this is not doable, since it wants to handle clocks by itself.
-
-To be honest, I too would prefer handling the resources in the driver. 
-The driver needs other resources than what ahci_platform currently 
-manages (at least reset_controls and multiple regulators, later we might 
-get more) and managing them in the driver allows the driver to do proper 
-error handling and manage all resources consistently and in one place. 
-Also, I don't think it is sensible to add support for loading every 
-possible kind of DT resource to ahci_platform, since most drivers won't 
-need them. Other subsystems I've been in don't have this kind of helper 
-library, so diverging here seems weird.
-
-That said, if you feel strongly about this, I can do what you described.
-
-Thanks,
-Mikko
-
-On 14/07/14 16:36, Hans de Goede wrote:
-> Hi,
->
-> On 07/08/2014 03:22 PM, Tejun Heo wrote:
->> (cc'ing Hans)
->>
->> Hans, can you please review this patch?
->
-> Done.
->
-> Mikko, it looks like you are doing a lot of stuff
-> the DIY way. I can see there are good reasons for
-> that though.
->
-> Still it would be nice if you could use a little bit
-> more of the helper functions provided by libahci_platform.c
->
-> Specifically I think it would be better if you used
-> ahci_platform_get_resources, that would remove a lot of
-> duplicate code from the new driver.
->
-> To be specific I would like to suggest that you
-> raise AHCI_MAX_CLKS to 4, and then specify an order
-> in which the clks must be listed in the devicetree
-> binding. Then you can put that order in an enum
-> and use hpriv->clks[CLK_FOO] in your driver, where
-> CLK_FOO comes from the enum.
->
-> This way you should be able to use ahci_platform_get_resources
-> and drop doing the iomap of the base registers, all the
-> clk_gets and the phy_get yourself.
->
-> You could then also use ahci_platform_disable_clks() in
-> tegra_ahci_power_off
->
-> Regards,
->
-> Hans
->
+Tony
