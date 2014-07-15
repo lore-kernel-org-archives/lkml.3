@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965338AbaGOX2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:28:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45659 "EHLO
+	id S1760152AbaGOX3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:29:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760072AbaGOXOX (ORCPT
+	with ESMTP id S1759402AbaGOXOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:23 -0400
+	Tue, 15 Jul 2014 19:14:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.15 79/84] x86, espfix: Move espfix definitions into a separate header file
-Date: Tue, 15 Jul 2014 16:18:16 -0700
-Message-Id: <20140715231715.545289455@linuxfoundation.org>
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.15 75/84] drivers/rtc/rtc-puv3.c: use dev_dbg() instead of dev_debug() for typo issue
+Date: Tue, 15 Jul 2014 16:18:12 -0700
+Message-Id: <20140715231715.423786550@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,68 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 
-commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
+commit c863810cefc7ffd782e5648a21bfb36a32c8b081 upstream.
 
-Sparse warns that the percpu variables aren't declared before they are
-defined.  Rather than hacking around it, move espfix definitions into
-a proper header file.
+It is only a typo issue, the related commit:
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+  "1fbc4c4 drivers/rtc/rtc-puv3.c: use dev_dbg() instead of pr_debug()"
+
+The related error (unicore32 with allmodconfig):
+
+    CC [M]  drivers/rtc/rtc-puv3.o
+  drivers/rtc/rtc-puv3.c: In function 'puv3_rtc_setpie':
+  drivers/rtc/rtc-puv3.c:74: error: implicit declaration of function 'dev_debug'
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/espfix.h |   16 ++++++++++++++++
- arch/x86/include/asm/setup.h  |    5 ++---
- arch/x86/kernel/espfix_64.c   |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-puv3.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- /dev/null
-+++ b/arch/x86/include/asm/espfix.h
-@@ -0,0 +1,16 @@
-+#ifdef _ASM_X86_ESPFIX_H
-+#define _ASM_X86_ESPFIX_H
-+
-+#ifdef CONFIG_X86_64
-+
-+#include <asm/percpu.h>
-+
-+DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
-+DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
-+
-+extern void init_espfix_bsp(void);
-+extern void init_espfix_ap(void);
-+
-+#endif /* CONFIG_X86_64 */
-+
-+#endif /* _ASM_X86_ESPFIX_H */
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -57,11 +57,10 @@ extern void x86_ce4100_early_setup(void)
- static inline void x86_ce4100_early_setup(void) { }
- #endif
+--- a/drivers/rtc/rtc-puv3.c
++++ b/drivers/rtc/rtc-puv3.c
+@@ -71,7 +71,7 @@ static int puv3_rtc_setpie(struct device
+ {
+ 	unsigned int tmp;
  
--extern void init_espfix_bsp(void);
--extern void init_espfix_ap(void);
--
- #ifndef _SETUP
+-	dev_debug(dev, "%s: pie=%d\n", __func__, enabled);
++	dev_dbg(dev, "%s: pie=%d\n", __func__, enabled);
  
-+#include <asm/espfix.h>
-+
- /*
-  * This is set up by the setup-routine at boot-time
-  */
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -40,6 +40,7 @@
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/setup.h>
-+#include <asm/espfix.h>
- 
- /*
-  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
+ 	spin_lock_irq(&puv3_rtc_pie_lock);
+ 	tmp = readl(RTC_RTSR) & ~RTC_RTSR_HZE;
 
 
