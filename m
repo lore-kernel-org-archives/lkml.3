@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689AbaGORCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:02:12 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:56153 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919AbaGORCF (ORCPT
+	id S1755861AbaGORCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:02:17 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:42925 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929AbaGORCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 13:02:05 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Tero Kristo <t-kristo@ti.com>,
+        Roger Quadros <rogerq@ti.com>, Tero Kristo <t-kristo@ti.com>,
         sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 03/94] clk: ti: dra7: return error code in failure case
-Date: Tue, 15 Jul 2014 20:00:18 +0300
-Message-Id: <1405443709-15288-3-git-send-email-asadi.samuel@gmail.com>
+Subject: [PATCH 04/94] clk: ti: am43x: Fix boot with CONFIG_SOC_AM33XX disabled
+Date: Tue, 15 Jul 2014 20:00:19 +0300
+Message-Id: <1405443709-15288-4-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -22,39 +22,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Roger Quadros <rogerq@ti.com>
 
-Add a returned error code in the MAX_APLL_WAIT_TRIES case.  Remove the
-updating of the return variable r to 0 if MAX_APLL_WAIT_TRIES is not yet
-reached, because r is already 0 at this point.
+Define ti_clk_register_dpll_x2() and of_ti_am3_dpll_x2_setup() if
+AM43XX is defined.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Fixes the below boot issue.
+
+[    2.157258] gpmc_l3_clk not enabled
+[    2.161194] gpmc_l3_clk not enabled
+[    2.164896] Division by zero in kernel.
+[    2.169055] CPU: 0 PID: 321 Comm: kworker/u2:2 Tainted: G        W     3.16.0-rc1-00008-g4c0e520 #273
+[    2.178880] Workqueue: deferwq deferred_probe_work_func
+[    2.184459] [<c001477c>] (unwind_backtrace) from [<c001187c>] (show_stack+0x10/0x14)
+[    2.192752] [<c001187c>] (show_stack) from [<c0530f28>] (dump_stack+0x80/0x9c)
+[    2.200486] [<c0530f28>] (dump_stack) from [<c02c867c>] (Ldiv0+0x8/0x10)
+[    2.207678] [<c02c867c>] (Ldiv0) from [<c0022da0>] (gpmc_calc_divider+0x24/0x40)
+[    2.215490] [<c0022da0>] (gpmc_calc_divider) from [<c0022e20>] (gpmc_cs_set_timings+0x18/0x474)
+[    2.224783] [<c0022e20>] (gpmc_cs_set_timings) from [<c003069c>] (gpmc_nand_init+0x74/0x1a8)
+[    2.233791] [<c003069c>] (gpmc_nand_init) from [<c0024668>] (gpmc_probe+0x52c/0x874)
+[    2.242089] [<c0024668>] (gpmc_probe) from [<c0349218>] (platform_drv_probe+0x18/0x48)
+[    2.250534] [<c0349218>] (platform_drv_probe) from [<c0347d88>] (driver_probe_device+0x104/0x22c)
+[    2.259988] [<c0347d88>] (driver_probe_device) from [<c03464dc>] (bus_for_each_drv+0x44/0x8c)
+[    2.269087] [<c03464dc>] (bus_for_each_drv) from [<c0347c4c>] (device_attach+0x74/0x8c)
+[    2.277620] [<c0347c4c>] (device_attach) from [<c0347380>] (bus_probe_device+0x88/0xb0)
+[    2.286074] [<c0347380>] (bus_probe_device) from [<c0347768>] (deferred_probe_work_func+0x60/0x90)
+[    2.295611] [<c0347768>] (deferred_probe_work_func) from [<c004ef50>] (process_one_work+0x1b4/0x4bc)
+[    2.305288] [<c004ef50>] (process_one_work) from [<c004f3d4>] (worker_thread+0x148/0x550)
+[    2.313954] [<c004f3d4>] (worker_thread) from [<c0055a48>] (kthread+0xc8/0xe4)
+[    2.321628] [<c0055a48>] (kthread) from [<c000e648>] (ret_from_fork+0x14/0x2c)
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reported-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Tero Kristo <t-kristo@ti.com>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- drivers/clk/ti/apll.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/clk/ti/dpll.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/ti/apll.c b/drivers/clk/ti/apll.c
-index 18dbaf12..72d9727 100644
---- a/drivers/clk/ti/apll.c
-+++ b/drivers/clk/ti/apll.c
-@@ -77,13 +77,11 @@ static int dra7_apll_enable(struct clk_hw *hw)
- 	if (i == MAX_APLL_WAIT_TRIES) {
- 		pr_warn("clock: %s failed transition to '%s'\n",
- 			clk_name, (state) ? "locked" : "bypassed");
--	} else {
-+		r = -EBUSY;
-+	} else
- 		pr_debug("clock: %s transition to '%s' in %d loops\n",
- 			 clk_name, (state) ? "locked" : "bypassed", i);
- 
--		r = 0;
--	}
--
- 	return r;
+diff --git a/drivers/clk/ti/dpll.c b/drivers/clk/ti/dpll.c
+index abd956d..79791e1 100644
+--- a/drivers/clk/ti/dpll.c
++++ b/drivers/clk/ti/dpll.c
+@@ -161,7 +161,8 @@ cleanup:
  }
  
+ #if defined(CONFIG_ARCH_OMAP4) || defined(CONFIG_SOC_OMAP5) || \
+-	defined(CONFIG_SOC_DRA7XX) || defined(CONFIG_SOC_AM33XX)
++	defined(CONFIG_SOC_DRA7XX) || defined(CONFIG_SOC_AM33XX) || \
++	defined(CONFIG_SOC_AM43XX)
+ /**
+  * ti_clk_register_dpll_x2 - Registers a DPLLx2 clock
+  * @node: device node for this clock
+@@ -322,7 +323,7 @@ CLK_OF_DECLARE(ti_omap4_dpll_x2_clock, "ti,omap4-dpll-x2-clock",
+ 	       of_ti_omap4_dpll_x2_setup);
+ #endif
+ 
+-#ifdef CONFIG_SOC_AM33XX
++#if defined(CONFIG_SOC_AM33XX) || defined(CONFIG_SOC_AM43XX)
+ static void __init of_ti_am3_dpll_x2_setup(struct device_node *node)
+ {
+ 	ti_clk_register_dpll_x2(node, &dpll_x2_ck_ops, NULL);
 -- 
 1.7.10.4
 
