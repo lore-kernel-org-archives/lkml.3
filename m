@@ -1,151 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaGOQXQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:23:16 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:50655 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaGOQXM (ORCPT
+	id S1753054AbaGOQYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:24:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:42126 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752794AbaGOQY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:23:12 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC PATCH] x86_64,entry,xen: Do not invoke espfix64 on Xen
-Date: Tue, 15 Jul 2014 09:23:07 -0700
-Message-Id: <08bf951548224b92c0316c93cf0064d90e392578.1405441297.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Tue, 15 Jul 2014 12:24:29 -0400
+Date: Tue, 15 Jul 2014 12:24:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [GIT PULL] tracing: instance_rmdir() leaks
+ ftrace_event_file->filter
+Message-ID: <20140715122426.7f2c8cd1@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
 
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
+Linus,
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+Oleg Nesterov fixed a memory leak that happens if a user creates
+a tracing instance, sets up a filter in an event, and then removes
+that instance. The filter allocates memory that is never freed
+when the instance is destroyed.
 
-I just pushed this to kernel.org, so the kbuild robot should be pounding
-on it soon.  It passes all my tests on bare metal, and it fails them
-without crashing on Xen.
+Please pull the latest trace-fixes-v3.16-rc5 tree, which can be found at:
 
-It's not exactly beautiful, but I think it's an improvement.
 
- arch/x86/include/asm/irqflags.h     |  2 +-
- arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
- arch/x86/kernel/paravirt_patch_64.c |  2 --
- 3 files changed, 11 insertions(+), 21 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.16-rc5
 
-diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
-index bba3cf8..0a8b519 100644
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
+Tag SHA1: 669ea50dfcff14f49119e15133c0b0eb32d1999a
+Head SHA1: 2448e3493cb3874baa90725c87869455ebf11cd2
+
+
+Oleg Nesterov (1):
+      tracing: instance_rmdir() leaks ftrace_event_file->filter
+
+----
+ kernel/trace/trace_events.c | 1 +
+ 1 file changed, 1 insertion(+)
+---------------------------
+commit 2448e3493cb3874baa90725c87869455ebf11cd2
+Author: Oleg Nesterov <oleg@redhat.com>
+Date:   Fri Jul 11 21:06:38 2014 +0200
+
+    tracing: instance_rmdir() leaks ftrace_event_file->filter
+    
+    instance_rmdir() path destroys the event files but forgets to free
+    file->filter. Change remove_event_file_dir() to free_event_filter().
+    
+    Link: http://lkml.kernel.org/p/20140711190638.GA19517@redhat.com
+    
+    Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+    Cc: Namhyung Kim <namhyung@kernel.org>
+    Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+    Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
+    Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+    Cc: stable@vger.kernel.org # 3.11+
+    Fixes: f6a84bdc75b5 "tracing: Introduce remove_event_file_dir()"
+    Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index f99e0b3bca8c..2de53628689f 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -470,6 +470,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
  
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ 	list_del(&file->list);
+ 	remove_subsystem(file->system);
++	free_event_filter(file->filter);
+ 	kmem_cache_free(file_cachep, file);
+ }
  
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b25ca96..c844f08 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -830,27 +830,24 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
- 
- irq_return:
-+	INTERRUPT_RETURN
-+
-+ENTRY(native_iret)
- 	/*
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
- #ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
- #endif
- 
--irq_return_iret:
--	INTERRUPT_RETURN
--	_ASM_EXTABLE(irq_return_iret, bad_iret)
--
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
--	_ASM_EXTABLE(native_iret, bad_iret)
--#endif
-+	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
- 
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
- 	SWAPGS
-@@ -872,7 +869,7 @@ irq_return_ldt:
- 	SWAPGS
- 	movq %rax,%rsp
- 	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
- #endif
- 
- 	.section .fixup,"ax"
-@@ -956,13 +953,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1428,7 +1420,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
-diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
-index 3f08f34..a1da673 100644
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
--- 
-1.9.3
-
