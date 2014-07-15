@@ -1,158 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167AbaGOG3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:29:41 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61192 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872AbaGOGZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:25:47 -0400
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: [PATCH RFCv3 13/14] arm64: introduce aarch64_insn_gen_logical_shifted_reg()
-Date: Mon, 14 Jul 2014 23:25:11 -0700
-Message-Id: <1405405512-4423-14-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
-References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+	id S1757920AbaGOGfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:35:43 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:42176 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757803AbaGOGfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 02:35:40 -0400
+Message-ID: <1405406114.13503.40.camel@iivanov-dev>
+Subject: Re: [PATCH 2/3] pinctrl: Device tree bindings for Qualcomm pm8xxx
+ gpio block
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Date: Tue, 15 Jul 2014 09:35:14 +0300
+In-Reply-To: <53C449A3.2010404@codeaurora.org>
+References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
+	  <1404782785-1824-3-git-send-email-bjorn.andersson@sonymobile.com>
+	  <CACRpkdZ2hekBGe1-9GV-amqi50heghWhXJ9raW7P_Nif_Ci88g@mail.gmail.com>
+	  <CAJAp7OghZoTXutxw7hAsq1XA_wAhOXDNFO0tz8u9ceQ1fD9W1w@mail.gmail.com>
+	  <CACRpkdai=q3nmPk5OWQWn_UMdXmqcbFXJ90rxREBG9k6gdy88Q@mail.gmail.com>
+	  <53C095EA.90000@codeaurora.org> <1405346335.13503.25.camel@iivanov-dev>
+	 <53C449A3.2010404@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce function to generate logical (shifted register)
-instructions.
+On Mon, 2014-07-14 at 14:20 -0700, Stephen Boyd wrote:
+> On 07/14/14 06:58, Ivan T. Ivanov wrote:
+> > On Fri, 2014-07-11 at 18:56 -0700, Stephen Boyd wrote:
+> >> On 07/10/14 02:53, Linus Walleij wrote:
+> >>> On Wed, Jul 9, 2014 at 11:18 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
+> >>>> On Wed, Jul 9, 2014 at 1:53 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> >>>>> On Tue, Jul 8, 2014 at 3:26 AM, Bjorn Andersson
+> >>>>> <bjorn.andersson@sonymobile.com> wrote:
+> >>>>>
+> >>>>> +- function:
+> >>>>> +       Usage: optional
+> >>>>> +       Value type: <string>
+> >>>>> +       Definition: Specify the alternative function to be configured for the
+> >>>>> +                   specified pins.  Valid values are:
+> >>>>> +                       "normal",
+> >>>>> +                       "paired",
+> >>>>> +                       "func1",
+> >>>>> +                       "func2",
+> >>>>> +                       "dtest1",
+> >>>>> +                       "dtest2",
+> >>>>> +                       "dtest3",
+> >>>>> +                       "dtest4"
+> >>>>> These are a bit ambigous, why doesn't the driver present functions that
+> >>>>> are more specific than "func1", "func2"? Or "dtest1"?
+> >>>> I agree, unfortunately I have only seen traces of the actual function matrix;
+> >>>> for pm8xxx I have no documentation and for pm8x41 they are only listed as
+> >>>> func[1-2] and dtest[1-4].
+> >>>>
+> >>>> Maybe if someone at Qualcomm could release such a list we could provide a
+> >>>> proper table instead.
+> >>> I guess Stephen Boyd can help us. (?)
+> >> Ok. "normal" is pretty much gpio mode, i.e. don't mux anything. "paired"
+> >> is where we take the output of the gpio next to it and loop it back into
+> >> this gpio (and vice versa). So gpio1 is paired with gpio2, gpio 3 is
+> >> paired with gpio 4, etc. This allows us to make level translators by
+> >> choosing different supply voltages for the paired gpios. "func1" and
+> >> "func2" are used for muxing things internally. "dtest" is used to mux
+> >> specific things out for testing purposes, not really used in any
+> >> end-products but still useful while debugging. I can provide the
+> >> function to pin mapping if necessary. There are lots of pmics.
+> > Thank you Stephen. If understand it right, this is more like option for
+> > the pin when it is GPIO. Next generation of PMIC's have support for pin
+> > acting like analog-input/output and current sink.
+> 
+> Isn't this document only for the gpios? I think you're talking about the
+> MPPs, which also exist on these generation of pmics. We should probably
+> avoid mixing the two (gpios and mpps) in one binding because they're
+> really different hardware.
 
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
----
- arch/arm64/include/asm/insn.h | 25 ++++++++++++++++++
- arch/arm64/kernel/insn.c      | 60 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 85 insertions(+)
+I don't know. For me "gpio" looks like function of the pin hardware.
 
-diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index 36e8465..56a9e63 100644
---- a/arch/arm64/include/asm/insn.h
-+++ b/arch/arm64/include/asm/insn.h
-@@ -206,6 +206,17 @@ enum aarch64_insn_data3_type {
- 	AARCH64_INSN_DATA3_MSUB,
- };
- 
-+enum aarch64_insn_logic_type {
-+	AARCH64_INSN_LOGIC_AND,
-+	AARCH64_INSN_LOGIC_BIC,
-+	AARCH64_INSN_LOGIC_ORR,
-+	AARCH64_INSN_LOGIC_ORN,
-+	AARCH64_INSN_LOGIC_EOR,
-+	AARCH64_INSN_LOGIC_EON,
-+	AARCH64_INSN_LOGIC_AND_SETFLAGS,
-+	AARCH64_INSN_LOGIC_BIC_SETFLAGS
-+};
-+
- #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
- static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
- { return (code & (mask)) == (val); } \
-@@ -243,6 +254,14 @@ __AARCH64_INSN_FUNCS(rorv,	0x7FE0FC00, 0x1AC02C00)
- __AARCH64_INSN_FUNCS(rev16,	0x7FFFFC00, 0x5AC00400)
- __AARCH64_INSN_FUNCS(rev32,	0x7FFFFC00, 0x5AC00800)
- __AARCH64_INSN_FUNCS(rev64,	0x7FFFFC00, 0x5AC00C00)
-+__AARCH64_INSN_FUNCS(and,	0x7F200000, 0x0A000000)
-+__AARCH64_INSN_FUNCS(bic,	0x7F200000, 0x0A200000)
-+__AARCH64_INSN_FUNCS(orr,	0x7F200000, 0x2A000000)
-+__AARCH64_INSN_FUNCS(orn,	0x7F200000, 0x2A200000)
-+__AARCH64_INSN_FUNCS(eor,	0x7F200000, 0x4A000000)
-+__AARCH64_INSN_FUNCS(eon,	0x7F200000, 0x4A200000)
-+__AARCH64_INSN_FUNCS(ands,	0x7F200000, 0x6A000000)
-+__AARCH64_INSN_FUNCS(bics,	0x7F200000, 0x6A200000)
- __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
- __AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
- __AARCH64_INSN_FUNCS(cbz,	0xFE000000, 0x34000000)
-@@ -323,6 +342,12 @@ u32 aarch64_insn_gen_data3(enum aarch64_insn_register dst,
- 			   enum aarch64_insn_register reg2,
- 			   enum aarch64_insn_variant variant,
- 			   enum aarch64_insn_data3_type type);
-+u32 aarch64_insn_gen_logical_shifted_reg(enum aarch64_insn_register dst,
-+					 enum aarch64_insn_register src,
-+					 enum aarch64_insn_register reg,
-+					 int shift,
-+					 enum aarch64_insn_variant variant,
-+					 enum aarch64_insn_logic_type type);
- 
- bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
- 
-diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index 01664e3..22b07dc 100644
---- a/arch/arm64/kernel/insn.c
-+++ b/arch/arm64/kernel/insn.c
-@@ -872,3 +872,63 @@ u32 aarch64_insn_gen_data3(enum aarch64_insn_register dst,
- 	return aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RM, insn,
- 					    reg2);
- }
-+
-+u32 aarch64_insn_gen_logical_shifted_reg(enum aarch64_insn_register dst,
-+					 enum aarch64_insn_register src,
-+					 enum aarch64_insn_register reg,
-+					 int shift,
-+					 enum aarch64_insn_variant variant,
-+					 enum aarch64_insn_logic_type type)
-+{
-+	u32 insn;
-+
-+	switch (type) {
-+	case AARCH64_INSN_LOGIC_AND:
-+		insn = aarch64_insn_get_and_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_BIC:
-+		insn = aarch64_insn_get_bic_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_ORR:
-+		insn = aarch64_insn_get_orr_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_ORN:
-+		insn = aarch64_insn_get_orn_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_EOR:
-+		insn = aarch64_insn_get_eor_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_EON:
-+		insn = aarch64_insn_get_eon_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_AND_SETFLAGS:
-+		insn = aarch64_insn_get_ands_value();
-+		break;
-+	case AARCH64_INSN_LOGIC_BIC_SETFLAGS:
-+		insn = aarch64_insn_get_bics_value();
-+		break;
-+	default:
-+		BUG_ON(1);
-+	}
-+
-+	switch (variant) {
-+	case AARCH64_INSN_VARIANT_32BIT:
-+		BUG_ON(shift < 0 || shift > 31);
-+		break;
-+	case AARCH64_INSN_VARIANT_64BIT:
-+		insn |= BIT(31);
-+		BUG_ON(shift < 0 || shift > 63);
-+		break;
-+	default:
-+		BUG_ON(1);
-+	}
-+
-+
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RD, insn, dst);
-+
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn, src);
-+
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RM, insn, reg);
-+
-+	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_6, insn, shift);
-+}
--- 
-1.9.1
+> 
+> >  So I will like
+> > to keep "function" property for selecting one of the above functions.
+> > Choosing between "normal", "paired"... options in QPNP pinctrl driver
+> > is supported trough passing values, defined in DT header file, to
+> > "output-high" property. Please don't kill me :-).
+> 
+> Overloading output-high to choose the MPP mode doesn't seem to follow
+> the generic pinconfig binding. Does output-high even take a value? Why
+> can't we use the function property?
+
+No, no.  using value of the output-high|low" is just to select
+"normal", "paired"... thing. Function selection is via "function" 
+property. Currently QPNP support following functions "gpio", "mpp-ain",
+"mpp-aout", "mpp-cs".
+
+Regards,
+Ivan
+
+
 
