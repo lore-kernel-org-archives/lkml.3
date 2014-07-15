@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899AbaGOMYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:24:23 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:53605 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758321AbaGOMYU (ORCPT
+	id S1758934AbaGOMYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:24:41 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:53722 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758321AbaGOMYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:24:20 -0400
-Date: Tue, 15 Jul 2014 14:24:10 +0200
-From: Josef Gajdusek <atx@atx.name>
-To: linux-iio@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
-        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
-        dan.carpenter@oracle.com, lars@metafoo.de
-Subject: [PATCH v4 0/5] staging:iio:hmc5843: Few adjustments and support for
- hmc5983
-Message-ID: <20140715122410.GA30770@dashie>
+	Tue, 15 Jul 2014 08:24:37 -0400
+Date: Tue, 15 Jul 2014 14:24:29 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [GIT PULL] fuse fixes for 3.16
+Message-ID: <20140715122429.GA15016@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series modifies the hmc5843 driver to support the hmc5983 i2c and
-spi interfaces.
+Hi Linus,
 
-v2:
-	* Reverted the changed order of iio unregister and setting hmc mode to sleep
+Please pull from:
 
-v3:
-	* Fixed bug introduced in the first patch
-	* Readded few comment lines which have gone missing in the hmc5843.c ->
-	  hmc5843_core.c move
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
 
-v4: 
-    * Changes suggested by Lars in https://lkml.org/lkml/2014/7/14/968
-	  * The i2c and spi drivers are now user-selectable with the core driver
-	    being selected automatically
-	  * The regmap_config structs in both _spi and _i2c files are now static
-	  * The iio_dev allocation is now done in the common function
-	  * pm ops are now defined in the header file and the same definition is
-	    shared between both interface-specific drivers
-	* regmap tables in hmc5843.h are not longer static (this fixed bunch of 
-	  variable not used warnings)
+This contains miscellaneous fixes.
 
-Jonathan, the patch series applies cleanly against mainline (for me at least), 
-maybe you already have some hmc5843 related patches in your tree which are not 
-yet in upstream? (probably https://lkml.org/lkml/2014/2/14/312)
+Thanks,
+Miklos
 
-Josef Gajdusek (5):
-  staging:iio:hmc5843: Added regmap support
-  staging:iio:hmc5843: Split hmc5843.c to multiple files
-  staging:iio:hmc5843: register <-> value arrays now can have different
-    lengths
-  staging:iio:hmc5843: Add support for i2c hmc5983
-  staging:iio:hmc5843: Add support for spi hmc5983
+----
+Anand Avati (1):
+      fuse: ignore entry-timeout on LOOKUP_REVAL
 
- drivers/staging/iio/magnetometer/Kconfig        |  30 +-
- drivers/staging/iio/magnetometer/Makefile       |   4 +-
- drivers/staging/iio/magnetometer/hmc5843.c      | 652 ------------------------
- drivers/staging/iio/magnetometer/hmc5843.h      |  86 ++++
- drivers/staging/iio/magnetometer/hmc5843_core.c | 638 +++++++++++++++++++++++
- drivers/staging/iio/magnetometer/hmc5843_i2c.c  |  74 +++
- drivers/staging/iio/magnetometer/hmc5843_spi.c  |  73 +++
- 7 files changed, 900 insertions(+), 657 deletions(-)
- delete mode 100644 drivers/staging/iio/magnetometer/hmc5843.c
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843.h
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_core.c
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_i2c.c
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
+Fabian Frederick (1):
+      fuse: replace count*size kzalloc by kcalloc
 
--- 
-1.8.5.5
+Himangi Saraogi (1):
+      fuse: inode: drop cast
 
+Maxim Patlasov (1):
+      fuse: release temporary page if fuse_writepage_locked() failed
+
+Miklos Szeredi (4):
+      fuse: timeout comparison fix
+      fuse: handle large user and group ID
+      fuse: avoid scheduling while atomic
+      fuse: restructure ->rename2()
+
+---
+ fs/fuse/dev.c   | 51 +++++++++++++++++++++++----------------------------
+ fs/fuse/dir.c   | 41 ++++++++++++++++++++++++-----------------
+ fs/fuse/file.c  |  8 +++++---
+ fs/fuse/inode.c | 22 +++++++++++++++++-----
+ 4 files changed, 69 insertions(+), 53 deletions(-)
