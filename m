@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413AbaGOJcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:32:24 -0400
-Received: from imap.thunk.org ([74.207.234.97]:35446 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758340AbaGOJcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:32:02 -0400
-Date: Tue, 15 Jul 2014 05:31:54 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/ext4/super.c: Let 'counters' switched by SMP
-Message-ID: <20140715093154.GB1451@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Chen Gang <gang.chen.5i5j@gmail.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <53C47E59.8030502@gmail.com>
+	id S1758453AbaGOJcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:32:43 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:48640 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758432AbaGOJcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:32:41 -0400
+Date: Tue, 15 Jul 2014 10:32:34 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under
+ CONFIG_FAIR_GROUP_SCHED"
+Message-ID: <20140715093234.GA8700@e103034-lin>
+References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
+ <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
+ <20140710131646.GB3935@laptop>
+ <CAKfTPtDzxyrzVmX016VB8j_y19wcCBVB1Rj46FYngMA+Ajft6g@mail.gmail.com>
+ <20140711161344.GD26542@e103034-lin>
+ <CAKfTPtDeTnPVM5nFR19eWRQZMtAZ3B2dB36q4qGNH=URgfLfHw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C47E59.8030502@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAKfTPtDeTnPVM5nFR19eWRQZMtAZ3B2dB36q4qGNH=URgfLfHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 09:05:29AM +0800, Chen Gang wrote:
-> When SMP is disabled, 'struct percpu_counter' has no 'counters' member,
-> so need skip it when in !SMP.
+On Tue, Jul 15, 2014 at 10:27:19AM +0100, Vincent Guittot wrote:
+> On 11 July 2014 18:13, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
 > 
-> The related git commit:
+> [snip]
 > 
->   "feab139 ext4: rearrange initialization to fix EXT4FS_DEBUG".
+> >
+> > In this example using rq->avg leads to imbalance whereas unweighted load
+> > would not. Correct me if I missed anything.
 > 
-> The related error (with allmodconfig under score):
-> 
->     CC [M]  fs/ext4/super.o
->   fs/ext4/super.c: In function 'ext4_commit_super':
->   fs/ext4/super.c:4546:41: error: 'struct percpu_counter' has no member named 'counters'
->     if (EXT4_SB(sb)->s_freeclusters_counter.counters)
->                                            ^
->   fs/ext4/super.c:4550:39: error: 'struct percpu_counter' has no member named 'counters'
->     if (EXT4_SB(sb)->s_freeinodes_counter.counters)
+> You just miss to take into account how the imbalance is computed
 
-Thanks for the pointing out the problem.  I though think the right way
-of fixing this problem, though, instead of using the #ifdef
-CONFIG_SMP, is to do this:
+I don't think so. I'm aware that the imbalance is calculated based on
+the runnable_load_avg of the cpus. But if you pick the wrong cpus to
+compare to begin with, it doesn't matter.
 
-       if (percpu_counter_initialized(&EXT4_SB(sb)->s_freeclusters_counter))
-       	  ...
-
-I'll respin the "ext4: rearrange initialization to fix EXT4FS_DEBUG"
-commit to include this fix and give you credit in the commit logs for
-pointing out this issue.
-
-Cheers,
-
-						- Ted
-
+Morten
