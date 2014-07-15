@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030405AbaGOXq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:46:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933723AbaGOXN4 (ORCPT
+	id S1030445AbaGOXrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:47:45 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34336 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965031AbaGOXrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:56 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, Theodore Tso <tytso@mit.edu>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: [PATCH 3.14 45/66] ext4: clarify error count warning messages
-Date: Tue, 15 Jul 2014 16:17:39 -0700
-Message-Id: <20140715231704.131997441@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 19:47:40 -0400
+X-Sasl-enc: we2FDoeYmhsIZJaejOZ6tOMcHU3Lcvlq0zYQxMeZiW2S 1405468059
+Date: Tue, 15 Jul 2014 16:52:12 -0700
+From: Greg KH <greg@kroah.com>
+To: Andrew Lutomirski <amluto@gmail.com>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dirk Hohndel <dirk@hohndel.org>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        comex <comexk@gmail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: DO NOT APPLY: x86-64, espfix: Don't leak bits 31:16 of %esp
+ returning to 16-bit stack
+Message-ID: <20140715235212.GC32651@kroah.com>
+References: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 15, 2014 at 04:21:46PM -0700, Andrew Lutomirski wrote:
+> On Tue, Jul 15, 2014 at 2:28 PM, Kamal Mostafa <kamal@canonical.com> wrote:
+> > 3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
+> >
+> > ------------------
+> >
+> > From: "H. Peter Anvin" <hpa@linux.intel.com>
+> >
+> > commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
+> 
+> Do not apply to any -stable release yet.  This causes nasty regressions on Xen.
 
-------------------
+I thought you all found the Xen-regression-fix patch a few hours ago,
+right?
 
-From: Theodore Ts'o <tytso@mit.edu>
+This means that Linus's tree is also broken?
 
-commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
+thanks,
 
-Make it clear that values printed are times, and that it is error
-since last fsck. Also add note about fsck version required.
-
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/super.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2793,10 +2793,11 @@ static void print_daily_error_info(unsig
- 	es = sbi->s_es;
- 
- 	if (es->s_error_count)
--		ext4_msg(sb, KERN_NOTICE, "error count: %u",
-+		/* fsck newer than v1.41.13 is needed to clean this condition. */
-+		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
- 			 le32_to_cpu(es->s_error_count));
- 	if (es->s_first_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
- 		       (int) sizeof(es->s_first_error_func),
- 		       es->s_first_error_func,
-@@ -2810,7 +2811,7 @@ static void print_daily_error_info(unsig
- 		printk("\n");
- 	}
- 	if (es->s_last_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
- 		       (int) sizeof(es->s_last_error_func),
- 		       es->s_last_error_func,
-
-
+greg k-h
