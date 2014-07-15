@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934656AbaGPAS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:18:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44912 "EHLO
+	id S1760915AbaGPATu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:19:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759421AbaGOXNK (ORCPT
+	with ESMTP id S1759334AbaGOXNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:10 -0400
+	Tue, 15 Jul 2014 19:13:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Gerst <brgerst@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Andrew Lutomriski <amluto@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 3.4 16/22] x86-64, espfix: Dont leak bits 31:16 of %esp returning to 16-bit stack
-Date: Tue, 15 Jul 2014 16:17:21 -0700
-Message-Id: <20140715231622.625343252@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Brad Mouring <bmouring@ni.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: [PATCH 3.4 12/22] rtmutex: Detect changes in the pi lock chain
+Date: Tue, 15 Jul 2014 16:17:17 -0700
+Message-Id: <20140715231622.483765597@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -37,578 +31,274 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
+commit 82084984383babe728e6e3c9a8e5c46278091315 upstream.
 
-The IRET instruction, when returning to a 16-bit segment, only
-restores the bottom 16 bits of the user space stack pointer.  This
-causes some 16-bit software to break, but it also leaks kernel state
-to user space.  We have a software workaround for that ("espfix") for
-the 32-bit kernel, but it relies on a nonzero stack segment base which
-is not available in 64-bit mode.
+When we walk the lock chain, we drop all locks after each step. So the
+lock chain can change under us before we reacquire the locks. That's
+harmless in principle as we just follow the wrong lock path. But it
+can lead to a false positive in the dead lock detection logic:
 
-In checkin:
+T0 holds L0
+T0 blocks on L1 held by T1
+T1 blocks on L2 held by T2
+T2 blocks on L3 held by T3
+T4 blocks on L4 held by T4
 
-    b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+Now we walk the chain
 
-we "solved" this by forbidding 16-bit segments on 64-bit kernels, with
-the logic that 16-bit support is crippled on 64-bit kernels anyway (no
-V86 support), but it turns out that people are doing stuff like
-running old Win16 binaries under Wine and expect it to work.
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 ->
+     lock T2 ->  adjust T2 ->  drop locks
 
-This works around this by creating percpu "ministacks", each of which
-is mapped 2^16 times 64K apart.  When we detect that the return SS is
-on the LDT, we copy the IRET frame to the ministack and use the
-relevant alias to return to userspace.  The ministacks are mapped
-readonly, so if IRET faults we promote #GP to #DF which is an IST
-vector and thus has its own stack; we then do the fixup in the #DF
-handler.
+T2 times out and blocks on L0
 
-(Making #GP an IST exception would make the msr_safe functions unsafe
-in NMI/MC context, and quite possibly have other effects.)
+Now we continue:
 
-Special thanks to:
+lock T2 -> lock L0 -> deadlock detected, but it's not a deadlock at all.
 
-- Andy Lutomirski, for the suggestion of using very small stack slots
-  and copy (as opposed to map) the IRET frame there, and for the
-  suggestion to mark them readonly and let the fault promote to #DF.
-- Konrad Wilk for paravirt fixup and testing.
-- Borislav Petkov for testing help and useful comments.
+Brad tried to work around that in the deadlock detection logic itself,
+but the more I looked at it the less I liked it, because it's crystal
+ball magic after the fact.
 
-Reported-by: Brian Gerst <brgerst@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Lutomriski <amluto@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dirk Hohndel <dirk@hohndel.org>
-Cc: Arjan van de Ven <arjan.van.de.ven@intel.com>
-Cc: comex <comexk@gmail.com>
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: <stable@vger.kernel.org> # consider after upstream merge
+We actually can detect a chain change very simple:
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
+
+     next_lock = T2->pi_blocked_on->lock;
+
+drop locks
+
+T2 times out and blocks on L0
+
+Now we continue:
+
+lock T2 ->
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+So if we detect that T2 is now blocked on a different lock we stop the
+chain walk. That's also correct in the following scenario:
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
+
+     next_lock = T2->pi_blocked_on->lock;
+
+drop locks
+
+T3 times out and drops L3
+T2 acquires L3 and blocks on L4 now
+
+Now we continue:
+
+lock T2 ->
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+We don't have to follow up the chain at that point, because T2
+propagated our priority up to T4 already.
+
+[ Folded a cleanup patch from peterz ]
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Brad Mouring <bmouring@ni.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140605152801.930031935@linutronix.de
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/x86/x86_64/mm.txt         |    2 
- arch/x86/include/asm/pgtable_64_types.h |    2 
- arch/x86/include/asm/setup.h            |    3 
- arch/x86/kernel/Makefile                |    1 
- arch/x86/kernel/entry_64.S              |   73 ++++++++++-
- arch/x86/kernel/espfix_64.c             |  208 ++++++++++++++++++++++++++++++++
- arch/x86/kernel/ldt.c                   |   11 -
- arch/x86/kernel/smpboot.c               |    7 +
- arch/x86/mm/dump_pagetables.c           |   31 +++-
- init/main.c                             |    4 
- 10 files changed, 316 insertions(+), 26 deletions(-)
+ kernel/rtmutex.c |   74 +++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 59 insertions(+), 15 deletions(-)
 
---- a/Documentation/x86/x86_64/mm.txt
-+++ b/Documentation/x86/x86_64/mm.txt
-@@ -12,6 +12,8 @@ ffffc90000000000 - ffffe8ffffffffff (=45
- ffffe90000000000 - ffffe9ffffffffff (=40 bits) hole
- ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
- ... unused hole ...
-+ffffff0000000000 - ffffff7fffffffff (=39 bits) %esp fixup stacks
-+... unused hole ...
- ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
- ffffffffa0000000 - fffffffffff00000 (=1536 MB) module mapping space
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -141,6 +141,11 @@ static void rt_mutex_adjust_prio(struct
+  */
+ int max_lock_depth = 1024;
  
---- a/arch/x86/include/asm/pgtable_64_types.h
-+++ b/arch/x86/include/asm/pgtable_64_types.h
-@@ -59,5 +59,7 @@ typedef struct { pteval_t pte; } pte_t;
- #define MODULES_VADDR    _AC(0xffffffffa0000000, UL)
- #define MODULES_END      _AC(0xffffffffff000000, UL)
- #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
-+#define ESPFIX_PGD_ENTRY _AC(-2, UL)
-+#define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
- 
- #endif /* _ASM_X86_PGTABLE_64_DEFS_H */
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -59,6 +59,9 @@ extern void x86_ce4100_early_setup(void)
- static inline void x86_ce4100_early_setup(void) { }
- #endif
- 
-+extern void init_espfix_bsp(void);
-+extern void init_espfix_ap(void);
++static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
++{
++	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
++}
 +
- #ifndef _SETUP
- 
  /*
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x86
- obj-y			+= syscall_$(BITS).o
- obj-$(CONFIG_X86_64)	+= vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
-+obj-$(CONFIG_X86_64)	+= espfix_64.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -55,6 +55,7 @@
- #include <asm/paravirt.h>
- #include <asm/ftrace.h>
- #include <asm/percpu.h>
-+#include <asm/pgtable_types.h>
- #include <linux/err.h>
+  * Adjust the priority chain. Also used for deadlock detection.
+  * Decreases task's usage by one - may thus free the task.
+@@ -149,6 +154,7 @@ int max_lock_depth = 1024;
+ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 				      int deadlock_detect,
+ 				      struct rt_mutex *orig_lock,
++				      struct rt_mutex *next_lock,
+ 				      struct rt_mutex_waiter *orig_waiter,
+ 				      struct task_struct *top_task)
+ {
+@@ -207,6 +213,18 @@ static int rt_mutex_adjust_prio_chain(st
+ 		goto out_unlock_pi;
  
- /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
-@@ -899,10 +900,18 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
- 
- irq_return:
-+	/*
-+	 * Are we returning to a stack segment from the LDT?  Note: in
-+	 * 64-bit mode SS:RSP on the exception stack is always valid.
-+	 */
-+	testb $4,(SS-RIP)(%rsp)
-+	jnz irq_return_ldt
-+
-+irq_return_iret:
- 	INTERRUPT_RETURN
- 
- 	.section __ex_table, "a"
--	.quad irq_return, bad_iret
-+	.quad irq_return_iret, bad_iret
- 	.previous
- 
- #ifdef CONFIG_PARAVIRT
-@@ -914,6 +923,30 @@ ENTRY(native_iret)
- 	.previous
- #endif
- 
-+irq_return_ldt:
-+	pushq_cfi %rax
-+	pushq_cfi %rdi
-+	SWAPGS
-+	movq PER_CPU_VAR(espfix_waddr),%rdi
-+	movq %rax,(0*8)(%rdi)	/* RAX */
-+	movq (2*8)(%rsp),%rax	/* RIP */
-+	movq %rax,(1*8)(%rdi)
-+	movq (3*8)(%rsp),%rax	/* CS */
-+	movq %rax,(2*8)(%rdi)
-+	movq (4*8)(%rsp),%rax	/* RFLAGS */
-+	movq %rax,(3*8)(%rdi)
-+	movq (6*8)(%rsp),%rax	/* SS */
-+	movq %rax,(5*8)(%rdi)
-+	movq (5*8)(%rsp),%rax	/* RSP */
-+	movq %rax,(4*8)(%rdi)
-+	andl $0xffff0000,%eax
-+	popq_cfi %rdi
-+	orq PER_CPU_VAR(espfix_stack),%rax
-+	SWAPGS
-+	movq %rax,%rsp
-+	popq_cfi %rax
-+	jmp irq_return_iret
-+
- 	.section .fixup,"ax"
- bad_iret:
  	/*
-@@ -977,9 +1010,41 @@ ENTRY(retint_kernel)
- 	call preempt_schedule_irq
- 	jmp exit_intr
- #endif
--
- 	CFI_ENDPROC
- END(common_interrupt)
++	 * We dropped all locks after taking a refcount on @task, so
++	 * the task might have moved on in the lock chain or even left
++	 * the chain completely and blocks now on an unrelated lock or
++	 * on @orig_lock.
++	 *
++	 * We stored the lock on which @task was blocked in @next_lock,
++	 * so we can detect the chain change.
++	 */
++	if (next_lock != waiter->lock)
++		goto out_unlock_pi;
 +
 +	/*
-+	 * If IRET takes a fault on the espfix stack, then we
-+	 * end up promoting it to a doublefault.  In that case,
-+	 * modify the stack to make it look like we just entered
-+	 * the #GP handler from user space, similar to bad_iret.
-+	 */
-+	ALIGN
-+__do_double_fault:
-+	XCPT_FRAME 1 RDI+8
-+	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
-+	sarq $PGDIR_SHIFT,%rax
-+	cmpl $ESPFIX_PGD_ENTRY,%eax
-+	jne do_double_fault		/* No, just deliver the fault */
-+	cmpl $__KERNEL_CS,CS(%rdi)
-+	jne do_double_fault
-+	movq RIP(%rdi),%rax
-+	cmpq $irq_return_iret,%rax
-+#ifdef CONFIG_PARAVIRT
-+	je 1f
-+	cmpq $native_iret,%rax
-+#endif
-+	jne do_double_fault		/* This shouldn't happen... */
-+1:
-+	movq PER_CPU_VAR(kernel_stack),%rax
-+	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
-+	movq %rax,RSP(%rdi)
-+	movq $0,(%rax)			/* Missing (lost) #GP error code */
-+	movq $general_protection,RIP(%rdi)
-+	retq
-+	CFI_ENDPROC
-+END(__do_double_fault)
-+
- /*
-  * End of kprobes section
-  */
-@@ -1155,7 +1220,7 @@ zeroentry overflow do_overflow
- zeroentry bounds do_bounds
- zeroentry invalid_op do_invalid_op
- zeroentry device_not_available do_device_not_available
--paranoiderrorentry double_fault do_double_fault
-+paranoiderrorentry double_fault __do_double_fault
- zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
- errorentry invalid_TSS do_invalid_TSS
- errorentry segment_not_present do_segment_not_present
-@@ -1486,7 +1551,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return(%rip),%rcx
-+	leaq irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
---- /dev/null
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -0,0 +1,208 @@
-+/* ----------------------------------------------------------------------- *
-+ *
-+ *   Copyright 2014 Intel Corporation; author: H. Peter Anvin
-+ *
-+ *   This program is free software; you can redistribute it and/or modify it
-+ *   under the terms and conditions of the GNU General Public License,
-+ *   version 2, as published by the Free Software Foundation.
-+ *
-+ *   This program is distributed in the hope it will be useful, but WITHOUT
-+ *   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ *   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ *   more details.
-+ *
-+ * ----------------------------------------------------------------------- */
-+
-+/*
-+ * The IRET instruction, when returning to a 16-bit segment, only
-+ * restores the bottom 16 bits of the user space stack pointer.  This
-+ * causes some 16-bit software to break, but it also leaks kernel state
-+ * to user space.
-+ *
-+ * This works around this by creating percpu "ministacks", each of which
-+ * is mapped 2^16 times 64K apart.  When we detect that the return SS is
-+ * on the LDT, we copy the IRET frame to the ministack and use the
-+ * relevant alias to return to userspace.  The ministacks are mapped
-+ * readonly, so if the IRET fault we promote #GP to #DF which is an IST
-+ * vector and thus has its own stack; we then do the fixup in the #DF
-+ * handler.
-+ *
-+ * This file sets up the ministacks and the related page tables.  The
-+ * actual ministack invocation is in entry_64.S.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/init_task.h>
-+#include <linux/kernel.h>
-+#include <linux/percpu.h>
-+#include <linux/gfp.h>
-+#include <linux/random.h>
-+#include <asm/pgtable.h>
-+#include <asm/pgalloc.h>
-+#include <asm/setup.h>
-+
-+/*
-+ * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
-+ * it up to a cache line to avoid unnecessary sharing.
-+ */
-+#define ESPFIX_STACK_SIZE	(8*8UL)
-+#define ESPFIX_STACKS_PER_PAGE	(PAGE_SIZE/ESPFIX_STACK_SIZE)
-+
-+/* There is address space for how many espfix pages? */
-+#define ESPFIX_PAGE_SPACE	(1UL << (PGDIR_SHIFT-PAGE_SHIFT-16))
-+
-+#define ESPFIX_MAX_CPUS		(ESPFIX_STACKS_PER_PAGE * ESPFIX_PAGE_SPACE)
-+#if CONFIG_NR_CPUS > ESPFIX_MAX_CPUS
-+# error "Need more than one PGD for the ESPFIX hack"
-+#endif
-+
-+#define PGALLOC_GFP (GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
-+
-+/* This contains the *bottom* address of the espfix stack */
-+DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
-+DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
-+
-+/* Initialization mutex - should this be a spinlock? */
-+static DEFINE_MUTEX(espfix_init_mutex);
-+
-+/* Page allocation bitmap - each page serves ESPFIX_STACKS_PER_PAGE CPUs */
-+#define ESPFIX_MAX_PAGES  DIV_ROUND_UP(CONFIG_NR_CPUS, ESPFIX_STACKS_PER_PAGE)
-+static void *espfix_pages[ESPFIX_MAX_PAGES];
-+
-+static __page_aligned_bss pud_t espfix_pud_page[PTRS_PER_PUD]
-+	__aligned(PAGE_SIZE);
-+
-+static unsigned int page_random, slot_random;
-+
-+/*
-+ * This returns the bottom address of the espfix stack for a specific CPU.
-+ * The math allows for a non-power-of-two ESPFIX_STACK_SIZE, in which case
-+ * we have to account for some amount of padding at the end of each page.
-+ */
-+static inline unsigned long espfix_base_addr(unsigned int cpu)
-+{
-+	unsigned long page, slot;
-+	unsigned long addr;
-+
-+	page = (cpu / ESPFIX_STACKS_PER_PAGE) ^ page_random;
-+	slot = (cpu + slot_random) % ESPFIX_STACKS_PER_PAGE;
-+	addr = (page << PAGE_SHIFT) + (slot * ESPFIX_STACK_SIZE);
-+	addr = (addr & 0xffffUL) | ((addr & ~0xffffUL) << 16);
-+	addr += ESPFIX_BASE_ADDR;
-+	return addr;
-+}
-+
-+#define PTE_STRIDE        (65536/PAGE_SIZE)
-+#define ESPFIX_PTE_CLONES (PTRS_PER_PTE/PTE_STRIDE)
-+#define ESPFIX_PMD_CLONES PTRS_PER_PMD
-+#define ESPFIX_PUD_CLONES (65536/(ESPFIX_PTE_CLONES*ESPFIX_PMD_CLONES))
-+
-+#define PGTABLE_PROT	  ((_KERNPG_TABLE & ~_PAGE_RW) | _PAGE_NX)
-+
-+static void init_espfix_random(void)
-+{
-+	unsigned long rand;
-+
-+	/*
-+	 * This is run before the entropy pools are initialized,
-+	 * but this is hopefully better than nothing.
-+	 */
-+	if (!arch_get_random_long(&rand)) {
-+		/* The constant is an arbitrary large prime */
-+		rdtscll(rand);
-+		rand *= 0xc345c6b72fd16123UL;
-+	}
-+
-+	slot_random = rand % ESPFIX_STACKS_PER_PAGE;
-+	page_random = (rand / ESPFIX_STACKS_PER_PAGE)
-+		& (ESPFIX_PAGE_SPACE - 1);
-+}
-+
-+void __init init_espfix_bsp(void)
-+{
-+	pgd_t *pgd_p;
-+	pteval_t ptemask;
-+
-+	ptemask = __supported_pte_mask;
-+
-+	/* Install the espfix pud into the kernel page directory */
-+	pgd_p = &init_level4_pgt[pgd_index(ESPFIX_BASE_ADDR)];
-+	pgd_populate(&init_mm, pgd_p, (pud_t *)espfix_pud_page);
-+
-+	/* Randomize the locations */
-+	init_espfix_random();
-+
-+	/* The rest is the same as for any other processor */
-+	init_espfix_ap();
-+}
-+
-+void init_espfix_ap(void)
-+{
-+	unsigned int cpu, page;
-+	unsigned long addr;
-+	pud_t pud, *pud_p;
-+	pmd_t pmd, *pmd_p;
-+	pte_t pte, *pte_p;
-+	int n;
-+	void *stack_page;
-+	pteval_t ptemask;
-+
-+	/* We only have to do this once... */
-+	if (likely(this_cpu_read(espfix_stack)))
-+		return;		/* Already initialized */
-+
-+	cpu = smp_processor_id();
-+	addr = espfix_base_addr(cpu);
-+	page = cpu/ESPFIX_STACKS_PER_PAGE;
-+
-+	/* Did another CPU already set this up? */
-+	stack_page = ACCESS_ONCE(espfix_pages[page]);
-+	if (likely(stack_page))
-+		goto done;
-+
-+	mutex_lock(&espfix_init_mutex);
-+
-+	/* Did we race on the lock? */
-+	stack_page = ACCESS_ONCE(espfix_pages[page]);
-+	if (stack_page)
-+		goto unlock_done;
-+
-+	ptemask = __supported_pte_mask;
-+
-+	pud_p = &espfix_pud_page[pud_index(addr)];
-+	pud = *pud_p;
-+	if (!pud_present(pud)) {
-+		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
-+		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
-+		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
-+		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
-+			set_pud(&pud_p[n], pud);
-+	}
-+
-+	pmd_p = pmd_offset(&pud, addr);
-+	pmd = *pmd_p;
-+	if (!pmd_present(pmd)) {
-+		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
-+		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
-+		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
-+		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
-+			set_pmd(&pmd_p[n], pmd);
-+	}
-+
-+	pte_p = pte_offset_kernel(&pmd, addr);
-+	stack_page = (void *)__get_free_page(GFP_KERNEL);
-+	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
-+	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
-+	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
-+		set_pte(&pte_p[n*PTE_STRIDE], pte);
-+
-+	/* Job is done for this CPU and any CPU which shares this page */
-+	ACCESS_ONCE(espfix_pages[page]) = stack_page;
-+
-+unlock_done:
-+	mutex_unlock(&espfix_init_mutex);
-+done:
-+	this_cpu_write(espfix_stack, addr);
-+	this_cpu_write(espfix_waddr, (unsigned long)stack_page
-+		       + (addr & ~PAGE_MASK));
-+}
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,17 +229,6 @@ static int write_ldt(void __user *ptr, u
- 		}
+ 	 * Drop out, when the task has no waiters. Note,
+ 	 * top_waiter can be NULL, when we are in the deboosting
+ 	 * mode!
+@@ -292,11 +310,26 @@ static int rt_mutex_adjust_prio_chain(st
+ 		__rt_mutex_adjust_prio(task);
  	}
  
--	/*
--	 * On x86-64 we do not support 16-bit segments due to
--	 * IRET leaking the high bits of the kernel stack address.
--	 */
--#ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
--		error = -EINVAL;
--		goto out_unlock;
--	}
--#endif
--
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -271,6 +271,13 @@ notrace static void __cpuinit start_seco
- 	check_tsc_sync_target();
- 
- 	/*
-+	 * Enable the espfix hack for this CPU
-+	 */
-+#ifdef CONFIG_X86_64
-+	init_espfix_ap();
-+#endif
-+
 +	/*
- 	 * We need to hold call_lock, so there is no inconsistency
- 	 * between the time smp_call_function() determines number of
- 	 * IPI recipients, and the time when the determination is made
---- a/arch/x86/mm/dump_pagetables.c
-+++ b/arch/x86/mm/dump_pagetables.c
-@@ -30,11 +30,13 @@ struct pg_state {
- 	unsigned long start_address;
- 	unsigned long current_address;
- 	const struct addr_marker *marker;
-+	unsigned long lines;
- };
++	 * Check whether the task which owns the current lock is pi
++	 * blocked itself. If yes we store a pointer to the lock for
++	 * the lock chain change detection above. After we dropped
++	 * task->pi_lock next_lock cannot be dereferenced anymore.
++	 */
++	next_lock = task_blocked_on_lock(task);
++
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
  
- struct addr_marker {
- 	unsigned long start_address;
- 	const char *name;
-+	unsigned long max_lines;
- };
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 	raw_spin_unlock(&lock->wait_lock);
  
- /* indices for address_markers; keep sync'd w/ address_markers below */
-@@ -45,6 +47,7 @@ enum address_markers_idx {
- 	LOW_KERNEL_NR,
- 	VMALLOC_START_NR,
- 	VMEMMAP_START_NR,
-+	ESPFIX_START_NR,
- 	HIGH_KERNEL_NR,
- 	MODULES_VADDR_NR,
- 	MODULES_END_NR,
-@@ -67,6 +70,7 @@ static struct addr_marker address_marker
- 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
- 	{ VMALLOC_START,        "vmalloc() Area" },
- 	{ VMEMMAP_START,        "Vmemmap" },
-+	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
- 	{ __START_KERNEL_map,   "High Kernel Mapping" },
- 	{ MODULES_VADDR,        "Modules" },
- 	{ MODULES_END,          "End Modules" },
-@@ -163,7 +167,7 @@ static void note_page(struct seq_file *m
- 		      pgprot_t new_prot, int level)
++	/*
++	 * We reached the end of the lock chain. Stop right here. No
++	 * point to go back just to figure that out.
++	 */
++	if (!next_lock)
++		goto out_put_task;
++
+ 	if (!detect_deadlock && waiter != top_waiter)
+ 		goto out_put_task;
+ 
+@@ -407,8 +440,9 @@ static int task_blocks_on_rt_mutex(struc
  {
- 	pgprotval_t prot, cur;
--	static const char units[] = "KMGTPE";
-+	static const char units[] = "BKMGTPE";
+ 	struct task_struct *owner = rt_mutex_owner(lock);
+ 	struct rt_mutex_waiter *top_waiter = waiter;
+-	unsigned long flags;
++	struct rt_mutex *next_lock;
+ 	int chain_walk = 0, res;
++	unsigned long flags;
  
  	/*
- 	 * If we have a "break" in the series, we need to flush the state that
-@@ -178,6 +182,7 @@ static void note_page(struct seq_file *m
- 		st->current_prot = new_prot;
- 		st->level = level;
- 		st->marker = address_markers;
-+		st->lines = 0;
- 		seq_printf(m, "---[ %s ]---\n", st->marker->name);
- 	} else if (prot != cur || level != st->level ||
- 		   st->current_address >= st->marker[1].start_address) {
-@@ -188,17 +193,21 @@ static void note_page(struct seq_file *m
- 		/*
- 		 * Now print the actual finished series
- 		 */
--		seq_printf(m, "0x%0*lx-0x%0*lx   ",
--			   width, st->start_address,
--			   width, st->current_address);
--
--		delta = (st->current_address - st->start_address) >> 10;
--		while (!(delta & 1023) && unit[1]) {
--			delta >>= 10;
--			unit++;
-+		if (!st->marker->max_lines ||
-+		    st->lines < st->marker->max_lines) {
-+			seq_printf(m, "0x%0*lx-0x%0*lx   ",
-+				   width, st->start_address,
-+				   width, st->current_address);
-+
-+			delta = (st->current_address - st->start_address) >> 10;
-+			while (!(delta & 1023) && unit[1]) {
-+				delta >>= 10;
-+				unit++;
-+			}
-+			seq_printf(m, "%9lu%c ", delta, *unit);
-+			printk_prot(m, st->current_prot, st->level);
- 		}
--		seq_printf(m, "%9lu%c ", delta, *unit);
--		printk_prot(m, st->current_prot, st->level);
-+		st->lines++;
+ 	 * Early deadlock detection. We really don't want the task to
+@@ -441,20 +475,28 @@ static int task_blocks_on_rt_mutex(struc
+ 	if (!owner)
+ 		return 0;
  
- 		/*
- 		 * We print markers for special areas of address space,
---- a/init/main.c
-+++ b/init/main.c
-@@ -606,6 +606,10 @@ asmlinkage void __init start_kernel(void
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
- #endif
-+#ifdef CONFIG_X86_64
-+	/* Should be run before the first non-init thread is created */
-+	init_espfix_bsp();
-+#endif
- 	thread_info_cache_init();
- 	cred_init();
- 	fork_init(totalram_pages);
++	raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+-		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+ 		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+ 			chain_walk = 1;
+-		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+-	}
+-	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
++	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
+ 		chain_walk = 1;
++	}
+ 
+-	if (!chain_walk)
++	/* Store the lock on which owner is blocked or NULL */
++	next_lock = task_blocked_on_lock(owner);
++
++	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
++	/*
++	 * Even if full deadlock detection is on, if the owner is not
++	 * blocked itself, we can avoid finding this out in the chain
++	 * walk.
++	 */
++	if (!chain_walk || !next_lock)
+ 		return 0;
+ 
+ 	/*
+@@ -466,8 +508,8 @@ static int task_blocks_on_rt_mutex(struc
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
+-					 task);
++	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
++					 next_lock, waiter, task);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -516,8 +558,8 @@ static void remove_waiter(struct rt_mute
+ {
+ 	int first = (waiter == rt_mutex_top_waiter(lock));
+ 	struct task_struct *owner = rt_mutex_owner(lock);
++	struct rt_mutex *next_lock = NULL;
+ 	unsigned long flags;
+-	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+ 	plist_del(&waiter->list_entry, &lock->wait_list);
+@@ -541,15 +583,15 @@ static void remove_waiter(struct rt_mute
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+-		if (owner->pi_blocked_on)
+-			chain_walk = 1;
++		/* Store the lock on which owner is blocked or NULL */
++		next_lock = task_blocked_on_lock(owner);
+ 
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+ 	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 
+-	if (!chain_walk)
++	if (!next_lock)
+ 		return;
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+@@ -557,7 +599,7 @@ static void remove_waiter(struct rt_mute
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
++	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ }
+@@ -570,6 +612,7 @@ static void remove_waiter(struct rt_mute
+ void rt_mutex_adjust_pi(struct task_struct *task)
+ {
+ 	struct rt_mutex_waiter *waiter;
++	struct rt_mutex *next_lock;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -579,12 +622,13 @@ void rt_mutex_adjust_pi(struct task_stru
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+-
++	next_lock = waiter->lock;
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+ 	get_task_struct(task);
+-	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
++
++	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
+ }
+ 
+ /**
 
 
