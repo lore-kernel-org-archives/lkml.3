@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538AbaGOBqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 21:46:55 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:51096 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448AbaGOBqx (ORCPT
+	id S1755223AbaGOByI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 21:54:08 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32001 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506AbaGOByG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 21:46:53 -0400
-Date: Mon, 14 Jul 2014 18:46:49 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Dinh Nguyen <dinguyen@altera.com>
-Cc: Graham Moore <grmoore@altera.com>, ggrahammoore@gmail.com,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: Re: [PATCH V2] In the Denali NAND controller driver, use 8 bytes for
- READID command.
-Message-ID: <20140715014649.GT7537@ld-irv-0074>
-References: <1403551270-31873-1-git-send-email-grmoore@altera.com>
- <1403553015.9081.7.camel@linux-builds1>
+	Mon, 14 Jul 2014 21:54:06 -0400
+Message-ID: <53C48986.5010109@oracle.com>
+Date: Tue, 15 Jul 2014 11:53:10 +1000
+From: James Morris <james.l.morris@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403553015.9081.7.camel@linux-builds1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kees Cook <keescook@chromium.org>
+CC: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
+References: <1405017631-27346-1-git-send-email-keescook@chromium.org>	<20140711164931.GA18473@redhat.com>	<CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com> <CAGXu5jJJsiTxxn5UijkBz7jpWgqg01BS=Zc0WbHXbs0vH_xPMQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jJJsiTxxn5UijkBz7jpWgqg01BS=Zc0WbHXbs0vH_xPMQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 02:50:15PM -0500, Dinh Nguyen wrote:
-> On Mon, 2014-06-23 at 14:21 -0500, Graham Moore wrote:
-> > The Denali NAND driver reads only 5 bytes of ID, but some Hynix and Samsung
-> > have size parameters in the 6th byte.  As a result, the page and oob size
-> > for a Hynix H27UAG8T2B were calculated incorrectly and the driver failed to
-> > load.
-> > 
-> > The solution is to read 8 bytes of ID, as expected by the nand framework.
-> > 
-> > Signed-off-by: Graham Moore <grmoore@altera.com>
-> > --
-> > V2: Increase size of id_bytes array to 8.
-> > ---
-> >  drivers/mtd/nand/denali.c |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> Your commit header should have "mtd: denali:"
-> 
-> i.e: "mtd: denali: use 8 bytes for READID command"
+On 07/15/2014 04:59 AM, Kees Cook wrote:
+> Hi James,
+>
+> Is this series something you would carry in the security-next tree?
+> That has traditionally been where seccomp features have landed in the
+> past.
+>
+> -Kees
+>
+>
+> On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> On 07/10, Kees Cook wrote:
+>>>>
+>>>> This adds the ability for threads to request seccomp filter
+>>>> synchronization across their thread group (at filter attach time).
+>>>> For example, for Chrome to make sure graphic driver threads are fully
+>>>> confined after seccomp filters have been attached.
+>>>>
+>>>> To support this, locking on seccomp changes via thread-group-shared
+>>>> sighand lock is introduced, along with refactoring of no_new_privs. Races
+>>>> with thread creation are handled via delayed duplication of the seccomp
+>>>> task struct field and cred_guard_mutex.
+>>>>
+>>>> This includes a new syscall (instead of adding a new prctl option),
+>>>> as suggested by Andy Lutomirski and Michael Kerrisk.
+>>>
+>>> I do not not see any problems in this version,
+>>
+>> Awesome! Thank you for all the reviews. :) If Andy and Michael are
+>> happy with this too, I think this is in good shape. \o/
+>>
+>> -Kees
+>>
+>>>
+>>> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+>>>
+>>
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+>
+>
+>
 
-Modified the subject and pushed to l2-mtd.git. Thanks!
+Yep, certainly.
 
-Brian
