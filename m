@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759704AbaGOXNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:13:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44907 "EHLO
+	id S934391AbaGPAPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:15:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758155AbaGOXNF (ORCPT
+	with ESMTP id S1759710AbaGOXNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:05 -0400
+	Tue, 15 Jul 2014 19:13:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
-Subject: [PATCH 3.4 05/22] hwmon: (amc6821) Fix permissions for temp2_input
-Date: Tue, 15 Jul 2014 16:17:10 -0700
-Message-Id: <20140715231622.285894954@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.10 21/44] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
+Date: Tue, 15 Jul 2014 16:17:19 -0700
+Message-Id: <20140715231647.330233867@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
-References: <20140715231622.121816073@linuxfoundation.org>
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,35 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit df86754b746e9a0ff6f863f690b1c01d408e3cdc upstream.
+commit affb1aff300ddee54df307812b38f166e8a865ef upstream.
 
-temp2_input should not be writable, fix it.
+Starting with Win8, we have implemented several optimizations to improve the
+scalability and performance of the VMBUS transport between the Host and the
+Guest. Some of the non-performance critical services cannot leverage these
+optimization since they only read and process one message at a time.
+Make adjustments to the callback dispatch code to account for the way
+non-performance critical drivers handle reading of the channel.
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/amc6821.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hv/connection.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/amc6821.c
-+++ b/drivers/hwmon/amc6821.c
-@@ -715,7 +715,7 @@ static SENSOR_DEVICE_ATTR(temp1_max_alar
- 	get_temp_alarm, NULL, IDX_TEMP1_MAX);
- static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO,
- 	get_temp_alarm, NULL, IDX_TEMP1_CRIT);
--static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO | S_IWUSR,
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
- 	get_temp, NULL, IDX_TEMP2_INPUT);
- static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO | S_IWUSR, get_temp,
- 	set_temp, IDX_TEMP2_MIN);
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -304,9 +304,13 @@ static void process_chn_event(u32 relid)
+ 		 */
+ 
+ 		do {
+-			hv_begin_read(&channel->inbound);
++			if (read_state)
++				hv_begin_read(&channel->inbound);
+ 			channel->onchannel_callback(arg);
+-			bytes_to_read = hv_end_read(&channel->inbound);
++			if (read_state)
++				bytes_to_read = hv_end_read(&channel->inbound);
++			else
++				bytes_to_read = 0;
+ 		} while (read_state && (bytes_to_read != 0));
+ 	} else {
+ 		pr_err("no channel callback for relid - %u\n", relid);
 
 
