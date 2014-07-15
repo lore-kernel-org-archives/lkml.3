@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472AbaGOVgo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:36:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54545 "EHLO
+	id S1758841AbaGOVgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:36:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54565 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759408AbaGOVgi (ORCPT
+	with ESMTP id S1759408AbaGOVgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:38 -0400
+	Tue, 15 Jul 2014 17:36:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 126/198] powerpc: Don't setup CPUs with bad status
-Date: Tue, 15 Jul 2014 14:29:56 -0700
-Message-Id: <1405459868-15089-127-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 119/198] auditsc: audit_krule mask accesses need bounds checking
+Date: Tue, 15 Jul 2014 14:29:49 -0700
+Message-Id: <1405459868-15089-120-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
+commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
 
-OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
-node.
+Fixes an easy DoS and possible information disclosure.
 
-Unfortunatley Linux doesn't check this property and will put the bad CPU in the
-present map.  This has caused hangs on booting when we try to unsplit the core.
+This does nothing about the broken state of x32 auditing.
 
-This patch checks the CPU is avaliable via this status property before putting
-it in the present map.
+eparis: If the admin has enabled auditd and has specifically loaded
+audit rules.  This bug has been around since before git.  Wow...
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Tested-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/setup-common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/auditsc.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
-index bc76cc6..486cc04 100644
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -458,7 +458,7 @@ void __init smp_setup_cpu_maps(void)
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, be32_to_cpu(intserv[j]));
--			set_cpu_present(cpu, true);
-+			set_cpu_present(cpu, of_device_is_available(dn));
- 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
- 			set_cpu_possible(cpu, true);
- 			cpu++;
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index b590eae..d36a620 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -720,6 +720,22 @@ static enum audit_state audit_filter_task(struct task_struct *tsk, char **key)
+ 	return AUDIT_BUILD_CONTEXT;
+ }
+ 
++static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
++{
++	int word, bit;
++
++	if (val > 0xffffffff)
++		return false;
++
++	word = AUDIT_WORD(val);
++	if (word >= AUDIT_BITMASK_SIZE)
++		return false;
++
++	bit = AUDIT_BIT(val);
++
++	return rule->mask[word] & bit;
++}
++
+ /* At syscall entry and exit time, this filter is called if the
+  * audit_state is not low enough that auditing cannot take place, but is
+  * also not high enough that we already know we have to write an audit
+@@ -737,11 +753,8 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
+ 
+ 	rcu_read_lock();
+ 	if (!list_empty(list)) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+-
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
+ 					       &state, false)) {
+ 				rcu_read_unlock();
+@@ -761,20 +774,16 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
+ static int audit_filter_inode_name(struct task_struct *tsk,
+ 				   struct audit_names *n,
+ 				   struct audit_context *ctx) {
+-	int word, bit;
+ 	int h = audit_hash_ino((u32)n->ino);
+ 	struct list_head *list = &audit_inode_hash[h];
+ 	struct audit_entry *e;
+ 	enum audit_state state;
+ 
+-	word = AUDIT_WORD(ctx->major);
+-	bit  = AUDIT_BIT(ctx->major);
+-
+ 	if (list_empty(list))
+ 		return 0;
+ 
+ 	list_for_each_entry_rcu(e, list, list) {
+-		if ((e->rule.mask[word] & bit) == bit &&
++		if (audit_in_mask(&e->rule, ctx->major) &&
+ 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
+ 			ctx->current_state = state;
+ 			return 1;
 -- 
 1.9.1
 
