@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965474AbaGOXqy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:46:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S1030420AbaGOXrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:47:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759882AbaGOXN5 (ORCPT
+	with ESMTP id S1759532AbaGOXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minfei Huang <huangminfei@ucloud.cn>,
-        Joe Thornber <thornber@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: [PATCH 3.14 37/66] dm io: fix a race condition in the wake up code for sync_io
-Date: Tue, 15 Jul 2014 16:17:31 -0700
-Message-Id: <20140715231703.779758667@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 46/66] ext4: clarify ext4_error message in ext4_mb_generate_buddy_error()
+Date: Tue, 15 Jul 2014 16:17:40 -0700
+Message-Id: <20140715231704.161060737@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -30,100 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <thornber@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 10f1d5d111e8aed46a0f1179faf9a3cf422f689e upstream.
+commit 94d4c066a4ff170a2671b1a9b153febbf36796f6 upstream.
 
-There's a race condition between the atomic_dec_and_test(&io->count)
-in dec_count() and the waking of the sync_io() thread.  If the thread
-is spuriously woken immediately after the decrement it may exit,
-making the on stack io struct invalid, yet the dec_count could still
-be using it.
+We are spending a lot of time explaining to users what this error
+means.  Let's try to improve the message to avoid this problem.
 
-Fix this race by using a completion in sync_io() and dec_count().
-
-Reported-by: Minfei Huang <huangminfei@ucloud.cn>
-Signed-off-by: Joe Thornber <thornber@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-io.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ fs/ext4/mballoc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-io.c
-+++ b/drivers/md/dm-io.c
-@@ -10,6 +10,7 @@
- #include <linux/device-mapper.h>
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -751,8 +751,8 @@ void ext4_mb_generate_buddy(struct super
  
- #include <linux/bio.h>
-+#include <linux/completion.h>
- #include <linux/mempool.h>
- #include <linux/module.h>
- #include <linux/sched.h>
-@@ -32,7 +33,7 @@ struct dm_io_client {
- struct io {
- 	unsigned long error_bits;
- 	atomic_t count;
--	struct task_struct *sleeper;
-+	struct completion *wait;
- 	struct dm_io_client *client;
- 	io_notify_fn callback;
- 	void *context;
-@@ -121,8 +122,8 @@ static void dec_count(struct io *io, uns
- 			invalidate_kernel_vmap_range(io->vma_invalidate_address,
- 						     io->vma_invalidate_size);
- 
--		if (io->sleeper)
--			wake_up_process(io->sleeper);
-+		if (io->wait)
-+			complete(io->wait);
- 
- 		else {
- 			unsigned long r = io->error_bits;
-@@ -387,6 +388,7 @@ static int sync_io(struct dm_io_client *
- 	 */
- 	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
- 	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
-+	DECLARE_COMPLETION_ONSTACK(wait);
- 
- 	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
- 		WARN_ON(1);
-@@ -395,7 +397,7 @@ static int sync_io(struct dm_io_client *
- 
- 	io->error_bits = 0;
- 	atomic_set(&io->count, 1); /* see dispatch_io() */
--	io->sleeper = current;
-+	io->wait = &wait;
- 	io->client = client;
- 
- 	io->vma_invalidate_address = dp->vma_invalidate_address;
-@@ -403,15 +405,7 @@ static int sync_io(struct dm_io_client *
- 
- 	dispatch_io(rw, num_regions, where, dp, io, 1);
- 
--	while (1) {
--		set_current_state(TASK_UNINTERRUPTIBLE);
--
--		if (!atomic_read(&io->count))
--			break;
--
--		io_schedule();
--	}
--	set_current_state(TASK_RUNNING);
-+	wait_for_completion_io(&wait);
- 
- 	if (error_bits)
- 		*error_bits = io->error_bits;
-@@ -434,7 +428,7 @@ static int async_io(struct dm_io_client
- 	io = mempool_alloc(client->pool, GFP_NOIO);
- 	io->error_bits = 0;
- 	atomic_set(&io->count, 1); /* see dispatch_io() */
--	io->sleeper = NULL;
-+	io->wait = NULL;
- 	io->client = client;
- 	io->callback = fn;
- 	io->context = context;
+ 	if (free != grp->bb_free) {
+ 		ext4_grp_locked_error(sb, group, 0, 0,
+-				      "%u clusters in bitmap, %u in gd; "
+-				      "block bitmap corrupt.",
++				      "block bitmap and bg descriptor "
++				      "inconsistent: %u vs %u free clusters",
+ 				      free, grp->bb_free);
+ 		/*
+ 		 * If we intend to continue, we consider group descriptor
 
 
