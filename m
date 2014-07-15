@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883AbaGOXN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:13:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44917 "EHLO
+	id S1760426AbaGPAIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:08:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758324AbaGOXNL (ORCPT
+	with ESMTP id S1758324AbaGOXNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:11 -0400
+	Tue, 15 Jul 2014 19:13:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, Theodore Tso <tytso@mit.edu>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: [PATCH 3.4 08/22] ext4: clarify error count warning messages
-Date: Tue, 15 Jul 2014 16:17:13 -0700
-Message-Id: <20140715231622.370406372@linuxfoundation.org>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 08/44] workqueue: zero cpumask of wq_numa_possible_cpumask on init
+Date: Tue, 15 Jul 2014 16:17:06 -0700
+Message-Id: <20140715231646.941066551@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
-References: <20140715231622.121816073@linuxfoundation.org>
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,50 +25,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
+commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
 
-Make it clear that values printed are times, and that it is error
-since last fsck. Also add note about fsck version required.
+When hot-adding and onlining CPU, kernel panic occurs, showing following
+call trace.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+  BUG: unable to handle kernel paging request at 0000000000001d08
+  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
+  PGD 0
+  Oops: 0000 [#1] SMP
+  ...
+  Call Trace:
+   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
+   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
+   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
+   [<ffffffff811926f1>] new_slab+0x91/0x300
+   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
+   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
+   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
+   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
+   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
+   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
+   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
+   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
+   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
+   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
+   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
+   [<ffffffff81086652>] kthreadd+0x2c2/0x300
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+
+In my investigation, I found the root cause is wq_numa_possible_cpumask.
+All entries of wq_numa_possible_cpumask is allocated by
+alloc_cpumask_var_node(). And these entries are used without initializing.
+So these entries have wrong value.
+
+When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
+wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
+calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
+as follow:
+
+3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
+3593         if (wq_numa_enabled) {
+3594                 for_each_node(node) {
+3595                         if (cpumask_subset(pool->attrs->cpumask,
+3596                                            wq_numa_possible_cpumask[node])) {
+3597                                 pool->node = node;
+3598                                 break;
+3599                         }
+3600                 }
+3601         }
+
+But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
+node is selected. As a result, kernel panic occurs.
+
+By this patch, all entries of wq_numa_possible_cpumask are allocated by
+zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ kernel/workqueue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2589,10 +2589,11 @@ static void print_daily_error_info(unsig
- 	es = sbi->s_es;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4968,7 +4968,7 @@ static void __init wq_numa_init(void)
+ 	BUG_ON(!tbl);
  
- 	if (es->s_error_count)
--		ext4_msg(sb, KERN_NOTICE, "error count: %u",
-+		/* fsck newer than v1.41.13 is needed to clean this condition. */
-+		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
- 			 le32_to_cpu(es->s_error_count));
- 	if (es->s_first_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
- 		       (int) sizeof(es->s_first_error_func),
- 		       es->s_first_error_func,
-@@ -2606,7 +2607,7 @@ static void print_daily_error_info(unsig
- 		printk("\n");
- 	}
- 	if (es->s_last_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
- 		       (int) sizeof(es->s_last_error_func),
- 		       es->s_last_error_func,
+ 	for_each_node(node)
+-		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
++		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+ 				node_online(node) ? node : NUMA_NO_NODE));
+ 
+ 	for_each_possible_cpu(cpu) {
 
 
