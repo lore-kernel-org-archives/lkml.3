@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128AbaGOStN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:49:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29202 "EHLO mx1.redhat.com"
+	id S933143AbaGOStQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:49:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20334 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896AbaGOSqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:46:04 -0400
+	id S932936AbaGOSqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:46:03 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 14/23] Input - wacom: install LED/OLED sysfs files in the HID device instead of USB
-Date: Tue, 15 Jul 2014 14:45:37 -0400
-Message-Id: <1405449946-11515-15-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 12/23] Input - wacom: use HID core to actually fetch the report descriptor
+Date: Tue, 15 Jul 2014 14:45:35 -0400
+Message-Id: <1405449946-11515-13-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes one more dependency over USB, but requires some changes in
-the user space to find the sysfs files correctly.
-
-This patch breaks the user space. However, the number of program
-accessing the LEDs is quite limited and we can easily patch them
-to handle the new HID behavior.
+HID core already retrieves the report descritor. There is no need
+to ask ourself for one.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Reviewed-by: Jason Gerecke <killertofu@gmail.com>
@@ -33,110 +29,148 @@ Tested-by: Jason Gerecke <killertofu@gmail.com>
 
 no changes in v2
 
- drivers/input/tablet/wacom_sys.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/input/tablet/wacom_sys.c | 70 ++++++----------------------------------
+ 1 file changed, 10 insertions(+), 60 deletions(-)
 
 diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index ce76e1e..6e21064 100644
+index 120ab1b..2c0983b 100644
 --- a/drivers/input/tablet/wacom_sys.c
 +++ b/drivers/input/tablet/wacom_sys.c
-@@ -675,7 +675,7 @@ out:
- static ssize_t wacom_led_select_store(struct device *dev, int set_id,
- 				      const char *buf, size_t count)
+@@ -15,9 +15,6 @@
+ #include "wacom.h"
+ #include <linux/hid.h>
+ 
+-/* defines to get HID report descriptor */
+-#define HID_DEVICET_HID		(USB_TYPE_CLASS | 0x01)
+-#define HID_DEVICET_REPORT	(USB_TYPE_CLASS | 0x02)
+ #define HID_HDESC_USAGE_UNDEFINED	0x00
+ #define HID_HDESC_USAGE_PAGE		0x05
+ #define HID_HDESC_USAGE			0x09
+@@ -25,15 +22,6 @@
+ #define HID_HDESC_COLLECTION_LOGICAL	0x02
+ #define HID_HDESC_COLLECTION_END	0xc0
+ 
+-struct wac_hid_descriptor {
+-	struct usb_descriptor_header header;
+-	__le16   bcdHID;
+-	u8       bCountryCode;
+-	u8       bNumDescriptors;
+-	u8       bDescriptorType;
+-	__le16   wDescriptorLength;
+-} __attribute__ ((packed));
+-
+ #define WAC_MSG_RETRIES		5
+ 
+ #define WAC_CMD_LED_CONTROL	0x20
+@@ -230,39 +218,14 @@ static void wacom_retrieve_report_data(struct hid_device *hdev,
+  * this after returning from this function.
+  */
+ static int wacom_parse_hid(struct hid_device *hdev,
+-			   struct wac_hid_descriptor *hid_desc,
+ 			   struct wacom_features *features)
  {
--	struct hid_device *hdev = dev_get_drvdata(dev);
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
- 	struct wacom *wacom = hid_get_drvdata(hdev);
- 	unsigned int id;
- 	int err;
-@@ -703,7 +703,7 @@ static ssize_t wacom_led##SET_ID##_select_store(struct device *dev,	\
- static ssize_t wacom_led##SET_ID##_select_show(struct device *dev,	\
- 	struct device_attribute *attr, char *buf)			\
- {									\
--	struct hid_device *hdev = dev_get_drvdata(dev);			\
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);\
- 	struct wacom *wacom = hid_get_drvdata(hdev);			\
- 	return snprintf(buf, 2, "%d\n", wacom->led.select[SET_ID]);	\
- }									\
-@@ -738,7 +738,7 @@ static ssize_t wacom_luminance_store(struct wacom *wacom, u8 *dest,
- static ssize_t wacom_##name##_luminance_store(struct device *dev,	\
- 	struct device_attribute *attr, const char *buf, size_t count)	\
- {									\
--	struct hid_device *hdev = dev_get_drvdata(dev);			\
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);\
- 	struct wacom *wacom = hid_get_drvdata(hdev);			\
- 									\
- 	return wacom_luminance_store(wacom, &wacom->led.field,		\
-@@ -754,7 +754,7 @@ DEVICE_LUMINANCE_ATTR(buttons, img_lum);
- static ssize_t wacom_button_image_store(struct device *dev, int button_id,
- 					const char *buf, size_t count)
- {
--	struct hid_device *hdev = dev_get_drvdata(dev);
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
- 	struct wacom *wacom = hid_get_drvdata(hdev);
- 	int err;
+-	struct wacom *wacom = hid_get_drvdata(hdev);
+-	struct usb_interface *intf = wacom->intf;
+-	struct usb_device *dev = interface_to_usbdev(intf);
+-	char limit = 0;
+ 	/* result has to be defined as int for some devices */
+ 	int result = 0, touch_max = 0;
+ 	int i = 0, page = 0, finger = 0, pen = 0;
+-	unsigned char *report;
++	unsigned char *report = hdev->rdesc;
  
-@@ -845,7 +845,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 		wacom->led.llv = 10;
- 		wacom->led.hlv = 20;
- 		wacom->led.img_lum = 10;
--		error = sysfs_create_group(&wacom->intf->dev.kobj,
-+		error = sysfs_create_group(&wacom->hdev->dev.kobj,
- 					   &intuos4_led_attr_group);
- 		break;
+-	report = kzalloc(hid_desc->wDescriptorLength, GFP_KERNEL);
+-	if (!report)
+-		return -ENOMEM;
+-
+-	/* retrive report descriptors */
+-	do {
+-		result = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
+-			USB_REQ_GET_DESCRIPTOR,
+-			USB_RECIP_INTERFACE | USB_DIR_IN,
+-			HID_DEVICET_REPORT << 8,
+-			intf->altsetting[0].desc.bInterfaceNumber, /* interface */
+-			report,
+-			hid_desc->wDescriptorLength,
+-			5000); /* 5 secs */
+-	} while (result < 0 && limit++ < WAC_MSG_RETRIES);
+-
+-	/* No need to parse the Descriptor. It isn't an error though */
+-	if (result < 0)
+-		goto out;
+-
+-	for (i = 0; i < hid_desc->wDescriptorLength; i++) {
++	for (i = 0; i < hdev->rsize; i++) {
  
-@@ -857,7 +857,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 		wacom->led.hlv = 0;
- 		wacom->led.img_lum = 0;
- 
--		error = sysfs_create_group(&wacom->intf->dev.kobj,
-+		error = sysfs_create_group(&wacom->hdev->dev.kobj,
- 					   &cintiq_led_attr_group);
- 		break;
- 
-@@ -874,7 +874,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 			wacom->led.hlv = 0;
- 			wacom->led.img_lum = 0;
- 
--			error = sysfs_create_group(&wacom->intf->dev.kobj,
-+			error = sysfs_create_group(&wacom->hdev->dev.kobj,
- 						  &intuos5_led_attr_group);
- 		} else
- 			return 0;
-@@ -885,7 +885,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
+ 		switch (report[i]) {
+ 		case HID_HDESC_USAGE_PAGE:
+@@ -452,11 +415,9 @@ static int wacom_parse_hid(struct hid_device *hdev,
+ 		}
  	}
  
+- out:
+ 	if (!features->touch_max && touch_max)
+ 		features->touch_max = touch_max;
+ 	result = 0;
+-	kfree(report);
+ 	return result;
+ }
+ 
+@@ -519,8 +480,6 @@ static int wacom_retrieve_hid_descriptor(struct hid_device *hdev,
+ 	int error = 0;
+ 	struct wacom *wacom = hid_get_drvdata(hdev);
+ 	struct usb_interface *intf = wacom->intf;
+-	struct usb_host_interface *interface = intf->cur_altsetting;
+-	struct wac_hid_descriptor *hid_desc;
+ 
+ 	/* default features */
+ 	features->device_type = BTN_TOOL_PEN;
+@@ -549,17 +508,7 @@ static int wacom_retrieve_hid_descriptor(struct hid_device *hdev,
+ 		goto out;
+ 	}
+ 
+-	error = usb_get_extra_descriptor(interface, HID_DEVICET_HID, &hid_desc);
+-	if (error) {
+-		error = usb_get_extra_descriptor(&interface->endpoint[0],
+-						 HID_DEVICET_REPORT, &hid_desc);
+-		if (error) {
+-			hid_err(hdev,
+-				"can not retrieve extra class descriptor\n");
+-			goto out;
+-		}
+-	}
+-	error = wacom_parse_hid(hdev, hid_desc, features);
++	error = wacom_parse_hid(hdev, features);
+ 
+  out:
+ 	return error;
+@@ -1296,6 +1245,13 @@ static int wacom_probe(struct hid_device *hdev,
+ 	hid_set_drvdata(hdev, wacom);
+ 	wacom->hdev = hdev;
+ 
++	/* ask for the report descriptor to be loaded by HID */
++	error = hid_parse(hdev);
++	if (error) {
++		hid_err(hdev, "parse failed\n");
++		goto fail1;
++	}
++
+ 	wacom_wac = &wacom->wacom_wac;
+ 	wacom_wac->features = *((struct wacom_features *)id->driver_data);
+ 	features = &wacom_wac->features;
+@@ -1389,12 +1345,6 @@ static int wacom_probe(struct hid_device *hdev,
+ 	wacom_query_tablet_data(hdev, features);
+ 
+ 	/* Regular HID work starts now */
+-	error = hid_parse(hdev);
+-	if (error) {
+-		hid_err(hdev, "parse failed\n");
+-		goto fail4;
+-	}
+-
+ 	error = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
  	if (error) {
--		dev_err(&wacom->intf->dev,
-+		hid_err(wacom->hdev,
- 			"cannot create sysfs group err: %d\n", error);
- 		return error;
- 	}
-@@ -900,13 +900,13 @@ static void wacom_destroy_leds(struct wacom *wacom)
- 	case INTUOS4S:
- 	case INTUOS4:
- 	case INTUOS4L:
--		sysfs_remove_group(&wacom->intf->dev.kobj,
-+		sysfs_remove_group(&wacom->hdev->dev.kobj,
- 				   &intuos4_led_attr_group);
- 		break;
- 
- 	case WACOM_24HD:
- 	case WACOM_21UX2:
--		sysfs_remove_group(&wacom->intf->dev.kobj,
-+		sysfs_remove_group(&wacom->hdev->dev.kobj,
- 				   &cintiq_led_attr_group);
- 		break;
- 
-@@ -917,7 +917,7 @@ static void wacom_destroy_leds(struct wacom *wacom)
- 	case INTUOSPM:
- 	case INTUOSPL:
- 		if (wacom->wacom_wac.features.device_type == BTN_TOOL_PEN)
--			sysfs_remove_group(&wacom->intf->dev.kobj,
-+			sysfs_remove_group(&wacom->hdev->dev.kobj,
- 					   &intuos5_led_attr_group);
- 		break;
- 	}
+ 		hid_err(hdev, "hw start failed\n");
 -- 
 2.0.0
 
