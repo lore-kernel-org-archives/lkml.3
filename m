@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619AbaGORGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:06:01 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:35009 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019AbaGORCW (ORCPT
+	id S1756683AbaGORGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:06:05 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:36473 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755996AbaGORCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 13:02:22 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Sam Asadi <asadi.samuel@gmail.com>
-Subject: [PATCH 92/94] Staging: comedi: adl_pci9118: fixed style issues
-Date: Tue, 15 Jul 2014 20:01:47 +0300
-Message-Id: <1405443709-15288-92-git-send-email-asadi.samuel@gmail.com>
+Subject: [PATCH 91/94] Staging: comedi: 8255: fixed by adding an empthy line
+Date: Tue, 15 Jul 2014 20:01:46 +0300
+Message-Id: <1405443709-15288-91-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -21,190 +21,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-several style issues fixed.
+fixed a coding style issue.
 
 Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
-
-	modified:   drivers/staging/comedi/drivers/adl_pci9118.c
+	modified:   drivers/staging/comedi/drivers/8255.c
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- drivers/staging/comedi/drivers/adl_pci9118.c |  124 +++++++++++++-------------
- 1 file changed, 62 insertions(+), 62 deletions(-)
+ drivers/staging/comedi/drivers/8255.c |  150 ++++++++++++++++-----------------
+ 1 file changed, 74 insertions(+), 76 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
-index 59a65cb..7139f87 100644
---- a/drivers/staging/comedi/drivers/adl_pci9118.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-@@ -8,59 +8,63 @@
-  * Author: Michal Dobes <dobes@tesnet.cz>
-  *
+diff --git a/drivers/staging/comedi/drivers/8255.c b/drivers/staging/comedi/drivers/8255.c
+index 46113a3..de273c7 100644
+--- a/drivers/staging/comedi/drivers/8255.c
++++ b/drivers/staging/comedi/drivers/8255.c
+@@ -1,77 +1,73 @@
+ /*
+-    comedi/drivers/8255.c
+-    Driver for 8255
+-
+-    COMEDI - Linux Control and Measurement Device Interface
+-    Copyright (C) 1998 David A. Schleef <ds@schleef.org>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
++	comedi/drivers/8255.c
++	Driver for 8255
++
++	COMEDI - Linux Control and Measurement Device Interface
++	Copyright (C) 1998 David A. Schleef <ds@schleef.org>
++
++	This program is free software; you can redistribute it and/or modify
++	it under the terms of the GNU General Public License as published by
++	the Free Software Foundation; either version 2 of the License, or
++	(at your option) any later version.
++
++	This program is distributed in the hope that it will be useful,
++	but WITHOUT ANY WARRANTY; without even the implied warranty of
++	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++	GNU General Public License for more details.
++
++	Driver: 8255
++	Description: generic 8255 support
++	Devices: [standard] 8255 (8255)
++	Author: ds
++	Status: works
++	Updated: Fri,  7 Jun 2002 12:56:45 -0700
++
++	The classic in digital I/O.  The 8255 appears in Comedi as a single
++	digital I/O subdevice with 24 channels.  The channel 0 corresponds
++	to the 8255's port A, bit 0; channel 23 corresponds to port C, bit
++	7.  Direction configuration is done in blocks, with channels 0-7,
++	8-15, 16-19, and 20-23 making up the 4 blocks.  The only 8255 mode
++	supported is mode 0.
++
++	You should enable compilation this driver if you plan to use a board
++	that has an 8255 chip.  For multifunction boards, the main driver will
++	configure the 8255 subdevice automatically.
++
++	This driver also works independently with ISA and PCI cards that
++	directly map the 8255 registers to I/O ports, including cards with
++	multiple 8255 chips.  To configure the driver for such a card, the
++	option list should be a list of the I/O port bases for each of the
++	8255 chips.  For example,
++
++	comedi_config /dev/comedi0 8255 0x200,0x204,0x208,0x20c
++
++	Note that most PCI 8255 boards do NOT work with this driver, and
++	need a separate driver as a wrapper.  For those that do work, the
++	I/O port base address can be found in the output of 'lspci -v'.
++
++	This file contains an exported subdevice for driving an 8255.
++
++	To use this subdevice as part of another driver, you need to
++	set up the subdevice in the attach function of the driver by
++	calling:
++
++	subdev_8255_init(device, subdevice, io_function, iobase)
++
++	device and subdevice are pointers to the device and subdevice
++	structures.  io_function will be called to provide the
++	low-level input/output to the device, i.e., actual register
++	access.  io_function will be called with the value of iobase
++	as the last parameter.  If the 8255 device is mapped as 4
++	consecutive I/O ports, you can use NULL for io_function
++	and the I/O port base for iobase, and an internal function will
++	handle the register access.
++
++	In addition, if the main driver handles interrupts, you can
++	enable commands on the subdevice by calling subdev_8255_init_irq()
++	instead.  Then, when you get an interrupt that is likely to be
++	from the 8255, you should call subdev_8255_interrupt(), which
++	will copy the latched value to a Comedi buffer.
  */
 -/*
--Driver: adl_pci9118
--Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
--Author: Michal Dobes <dobes@tesnet.cz>
--Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
--  PCI-9118HR (pci9118hr)
+-Driver: 8255
+-Description: generic 8255 support
+-Devices: [standard] 8255 (8255)
+-Author: ds
 -Status: works
+-Updated: Fri,  7 Jun 2002 12:56:45 -0700
 -
--This driver supports AI, AO, DI and DO subdevices.
--AI subdevice supports cmd and insn interface,
--other subdevices support only insn interface.
--For AI:
--- If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
--- If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
--- If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
--- It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
--  cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
--- If return value of cmdtest is 5 then you've bad channel list
--  (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
--  ranges).
+-The classic in digital I/O.  The 8255 appears in Comedi as a single
+-digital I/O subdevice with 24 channels.  The channel 0 corresponds
+-to the 8255's port A, bit 0; channel 23 corresponds to port C, bit
+-7.  Direction configuration is done in blocks, with channels 0-7,
+-8-15, 16-19, and 20-23 making up the 4 blocks.  The only 8255 mode
+-supported is mode 0.
 -
--There are some hardware limitations:
--a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
--   ended inputs.
--b) DMA transfers must have the length aligned to two samples (32 bit),
--   so there is some problems if cmd->chanlist_len is odd. This driver tries
--   bypass this with adding one sample to the end of the every scan and discard
--   it on output but this cann't be used if cmd->scan_begin_src=TRIG_FOLLOW
--   and is used flag TRIG_WAKE_EOS, then driver switch to interrupt driven mode
--   with interrupt after every sample.
--c) If isn't used DMA then you can use only mode where
--   cmd->scan_begin_src=TRIG_FOLLOW.
+-You should enable compilation this driver if you plan to use a board
+-that has an 8255 chip.  For multifunction boards, the main driver will
+-configure the 8255 subdevice automatically.
 -
--Configuration options:
--  [0] - PCI bus of device (optional)
--  [1] - PCI slot of device (optional)
--	If bus/slot is not specified, then first available PCI
--	card will be used.
--  [2] - 0= standard 8 DIFF/16 SE channels configuration
--	n = external multiplexer connected, 1 <= n <= 256
--  [3] - 0=autoselect DMA or EOC interrupts operation
--	1 = disable DMA mode
--	3 = disable DMA and INT, only insn interface will work
--  [4] - sample&hold signal - card can generate signal for external S&H board
--	0 = use SSHO(pin 45) signal is generated in onboard hardware S&H logic
--	0 != use ADCHN7(pin 23) signal is generated from driver, number say how
--		long delay is requested in ns and sign polarity of the hold
--		(in this case external multiplexor can serve only 128 channels)
--  [5] - 0=stop measure on all hardware errors
--	2 | = ignore ADOR - A/D Overrun status
--	8|=ignore Bover - A/D Burst Mode Overrun status
--	256|=ignore nFull - A/D FIFO Full status
+-This driver also works independently with ISA and PCI cards that
+-directly map the 8255 registers to I/O ports, including cards with
+-multiple 8255 chips.  To configure the driver for such a card, the
+-option list should be a list of the I/O port bases for each of the
+-8255 chips.  For example,
+-
+-  comedi_config /dev/comedi0 8255 0x200,0x204,0x208,0x20c
+-
+-Note that most PCI 8255 boards do NOT work with this driver, and
+-need a separate driver as a wrapper.  For those that do work, the
+-I/O port base address can be found in the output of 'lspci -v'.
+-
+-*/
+-
+-/*
+-   This file contains an exported subdevice for driving an 8255.
+-
+-   To use this subdevice as part of another driver, you need to
+-   set up the subdevice in the attach function of the driver by
+-   calling:
+-
+-     subdev_8255_init(device, subdevice, io_function, iobase)
+-
+-   device and subdevice are pointers to the device and subdevice
+-   structures.  io_function will be called to provide the
+-   low-level input/output to the device, i.e., actual register
+-   access.  io_function will be called with the value of iobase
+-   as the last parameter.  If the 8255 device is mapped as 4
+-   consecutive I/O ports, you can use NULL for io_function
+-   and the I/O port base for iobase, and an internal function will
+-   handle the register access.
+-
+-   In addition, if the main driver handles interrupts, you can
+-   enable commands on the subdevice by calling subdev_8255_init_irq()
+-   instead.  Then, when you get an interrupt that is likely to be
+-   from the 8255, you should call subdev_8255_interrupt(), which
+-   will copy the latched value to a Comedi buffer.
+- */
  
-+/*
-+     Driver: adl_pci9118
-+     Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
-+     Author: Michal Dobes <dobes@tesnet.cz>
-+     Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
-+     PCI-9118HR (pci9118hr)
-+     Status: works
+ #include <linux/module.h>
+ #include "../comedidev.h"
+@@ -94,6 +90,7 @@ I/O port base address can be found in the output of 'lspci -v'.
+ 
+ struct subdev_8255_private {
+ 	unsigned long iobase;
 +
-+     This driver supports AI, AO, DI and DO subdevices.
-+     AI subdevice supports cmd and insn interface,
-+     other subdevices support only insn interface.
-+     For AI:
-+     - If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
-+     - If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
-+     - If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
-+     - It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
-+       cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
-+     - If return value of cmdtest is 5 then you've bad channel list
-+       (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
-+       ranges).
-+
-+     There are some hardware limitations:
-+     a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
-+	ended inputs.
-+     b) DMA transfers must have the length aligned to two samples (32 bit),
-+	so there is some problems if cmd->chanlist_len is odd. This driver
-+	tries bypass this with adding one sample to the end of the every scan
-+	and discard it on output but this cann't be used if
-+	cmd->scan_begin_src=TRIG_FOLLOW and is used flag TRIG_WAKE_EOS, then
-+	driver switch to interrupt driven mode with interrupt after every
-+	sample.
-+     c) If isn't used DMA then you can use only mode where
-+	cmd->scan_begin_src=TRIG_FOLLOW.
-+
-+     Configuration options:
-+       [0] - PCI bus of device (optional)
-+       [1] - PCI slot of device (optional)
-+	     If bus/slot is not specified, then first available PCI
-+	     card will be used.
-+       [2] - 0= standard 8 DIFF/16 SE channels configuration
-+	     n = external multiplexer connected, 1 <= n <= 256
-+       [3] - 0=autoselect DMA or EOC interrupts operation
-+	     1 = disable DMA mode
-+	     3 = disable DMA and INT, only insn interface will work
-+       [4] - sample&hold signal - card can generate signal for external
-+	     S&H board
-+	     0 = use SSHO(pin 45) signal is generated in onboard hardware
-+		 S&H logic
-+	     0 != use ADCHN7(pin 23) signal is generated from driver, number
-+		  say how long delay is requested in ns and sign polarity of
-+		  the hold (in this case external multiplexor can serve only
-+		  128 channels)
-+       [5] - 0=stop measure on all hardware errors
-+	     2 | = ignore ADOR - A/D Overrun status
-+	     8|=ignore Bover - A/D Burst Mode Overrun status
-+	     256|=ignore nFull - A/D FIFO Full status
- */
+ 	int (*io)(int, int, int, unsigned long);
+ };
+ 
+@@ -102,9 +99,8 @@ static int subdev_8255_io(int dir, int port, int data, unsigned long iobase)
+ 	if (dir) {
+ 		outb(data, iobase + port);
+ 		return 0;
+-	} else {
++	} else
+ 		return inb(iobase + port);
+-	}
+ }
+ 
+ void subdev_8255_interrupt(struct comedi_device *dev,
+@@ -309,9 +305,9 @@ EXPORT_SYMBOL_GPL(subdev_8255_init_irq);
  
  /*
-@@ -346,7 +350,7 @@ struct pci9118_private {
- 						 * on external start
- 						 */
- 	unsigned short ao_data[2];		/* data output buffer */
--	char dma_doublebuf;			/* we can use double buffering */
-+	char dma_doublebuf;		/* we can use double buffering */
- 	unsigned int dma_actbuf;		/* which buffer is used now */
- 	unsigned short *dmabuf_virt[2];		/*
- 						 * pointers to begin of
-@@ -399,7 +403,7 @@ static int check_channel_list(struct comedi_device *dev,
- 	}
- 	if ((frontadd + n_chan + backadd) > s->len_chanlist) {
- 		comedi_error(dev,
--			    "range/channel list is too long for actual configuration!\n");
-+		"range/channel list is too long for actual configuration!\n");
- 		return 0;
- 	}
  
-@@ -412,22 +416,19 @@ static int check_channel_list(struct comedi_device *dev,
- 			if ((CR_AREF(chanlist[i]) == AREF_DIFF) !=
- 			    (differencial)) {
- 				comedi_error(dev,
--					     "Differencial and single ended "
--						"inputs can't be mixtured!");
-+						"Differencial and single ended inputs can't be mixtured!");
- 				return 0;
- 			}
- 			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
- 			    (bipolar)) {
- 				comedi_error(dev,
--					     "Bipolar and unipolar ranges "
--							"can't be mixtured!");
-+						"Bipolar and unipolar ranges can't be mixtured!");
- 				return 0;
- 			}
- 			if (!devpriv->usemux && differencial &&
- 			    (CR_CHAN(chanlist[i]) >= this_board->n_aichand)) {
- 				comedi_error(dev,
--					     "If AREF_DIFF is used then is "
--					"available only first 8 channels!");
-+						"If AREF_DIFF is used then is available only first 8 channels!");
- 				return 0;
- 			}
- 		}
-@@ -1678,8 +1679,7 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 						/* double timed action */
- 		if (!devpriv->usedma) {
- 			comedi_error(dev,
--				     "cmd->scan_begin_src=TRIG_TIMER works "
--						"only with bus mastering!");
-+					"cmd->scan_begin_src=TRIG_TIMER works only with bus mastering!");
- 			return -EIO;
- 		}
+-   Start of the 8255 standalone device
++	Start of the 8255 standalone device
  
+- */
++*/
+ 
+ static int dev_8255_attach(struct comedi_device *dev,
+ 			   struct comedi_devconfig *it)
+@@ -373,8 +369,10 @@ static struct comedi_driver dev_8255_driver = {
+ 	.attach		= dev_8255_attach,
+ 	.detach		= dev_8255_detach,
+ };
++
+ module_comedi_driver(dev_8255_driver);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
+ MODULE_LICENSE("GPL");
++
 -- 
 1.7.10.4
 
