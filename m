@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516AbaGORPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:15:18 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46855 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675AbaGORCM (ORCPT
+	id S1757132AbaGORR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:17:27 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:48966 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756940AbaGORRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:02:12 -0400
-From: Sam Asadi <asadi.samuel@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 36/94] ARM: DRA7: hwmod: Fixup SATA hwmod
-Date: Tue, 15 Jul 2014 20:00:51 +0300
-Message-Id: <1405443709-15288-36-git-send-email-asadi.samuel@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
-References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
+	Tue, 15 Jul 2014 13:17:19 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 15 Jul 2014 13:17:16 -0400
+To: Christoph Hellwig <hch@infradead.org>
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] net: clean up some sparse endianness warnings in ipv6.h
+Message-ID: <20140715131716.7e14c493@tlielax.poochiereds.net>
+In-Reply-To: <20140715170107.GA1722@infradead.org>
+References: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
+	<20140715170107.GA1722@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+On Tue, 15 Jul 2014 10:01:07 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
 
-Get rid of optional clock as that is now managed by the
-AHCI platform driver.
+> >  #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
+> > -	const unsigned long *ul = (const unsigned long *)a;
+> > +	const __be64 *be = (const __be64 *)a;
+> >  
+> > -	return (ul[0] | (ul[1] ^ cpu_to_be64(1))) == 0UL;
+> > +	return (be[0] | (be[1] ^ cpu_to_be64(1))) == cpu_to_be64(0UL);
+> 
+> Do you need the swap for 0UL?  I know sparse treats 0 as special, so why
+> wouldn't it treat 0UL special?  Or just remove the 0UL postfix, no need
+> for it in a simple comparism.
+> 
+> Otherwise looks fine to me.
 
-Correct .mpu_rt_idx to 1 as the module register space (SYSCONFIG..)
-is passed as the second memory resource in the device tree.
+Maybe not, I did it for completeness sake. I'll see if I can remove
+that. The macros do the conversion at compile time though so it
+shouldn't hurt anything either way.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Rajendra Nayak <rnayak@ti.com>
-Tested-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
----
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-index 20b4398..1209266 100644
---- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-@@ -1268,9 +1268,6 @@ static struct omap_hwmod_class dra7xx_sata_hwmod_class = {
- };
- 
- /* sata */
--static struct omap_hwmod_opt_clk sata_opt_clks[] = {
--	{ .role = "ref_clk", .clk = "sata_ref_clk" },
--};
- 
- static struct omap_hwmod dra7xx_sata_hwmod = {
- 	.name		= "sata",
-@@ -1278,6 +1275,7 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
- 	.clkdm_name	= "l3init_clkdm",
- 	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
- 	.main_clk	= "func_48m_fclk",
-+	.mpu_rt_idx	= 1,
- 	.prcm = {
- 		.omap4 = {
- 			.clkctrl_offs = DRA7XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
-@@ -1285,8 +1283,6 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
- 			.modulemode   = MODULEMODE_SWCTRL,
- 		},
- 	},
--	.opt_clks	= sata_opt_clks,
--	.opt_clks_cnt	= ARRAY_SIZE(sata_opt_clks),
- };
- 
- /*
 -- 
-1.7.10.4
-
+Jeff Layton <jlayton@primarydata.com>
