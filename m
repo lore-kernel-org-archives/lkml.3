@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760834AbaGOX4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:56:47 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:60098 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757837AbaGOX4o (ORCPT
+	id S1760850AbaGOX5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:57:04 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:35488 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757837AbaGOX46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:56:44 -0400
+	Tue, 15 Jul 2014 19:56:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140715142939.GJ9918@twins.programming.kicks-ass.net>
-References: <1405384304-26816-1-git-send-email-eranian@google.com>
-	<1405384304-26816-3-git-send-email-eranian@google.com>
-	<20140715142939.GJ9918@twins.programming.kicks-ass.net>
-Date: Wed, 16 Jul 2014 01:56:43 +0200
-Message-ID: <CABPqkBRaxyeXBGNZ8J1=XhfCyuhOhuWtz1spG-eVBE1Jgy-14A@mail.gmail.com>
-Subject: Re: [PATCH v2 2/5] perf/x86: add support for sampling PEBS machine
- state registers
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
+In-Reply-To: <20140715235212.GC32651@kroah.com>
+References: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
+ <20140715235212.GC32651@kroah.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 15 Jul 2014 16:56:36 -0700
+Message-ID: <CAObL_7EzYQFWm0VsWbp6u67NWWTc=mN=4pQQOt7GYjwL0dzmrw@mail.gmail.com>
+Subject: Re: DO NOT APPLY: x86-64, espfix: Don't leak bits 31:16 of %esp
+ returning to 16-bit stack
+To: Greg KH <greg@kroah.com>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dirk Hohndel <dirk@hohndel.org>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        comex <comexk@gmail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 4:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jul 15, 2014 at 02:31:41AM +0200, Stephane Eranian wrote:
->> PEBS can capture machine state regs at retiremnt of the sampled
->> instructions. When precise sampling is enabled on an event, PEBS
->> is used, so substitute the interrupted state with the PEBS state.
->> Note that not all registers are captured by PEBS. Those missing
->> are replaced by the interrupt state counter-parts.
+On Tue, Jul 15, 2014 at 4:52 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Jul 15, 2014 at 04:21:46PM -0700, Andrew Lutomirski wrote:
+>> On Tue, Jul 15, 2014 at 2:28 PM, Kamal Mostafa <kamal@canonical.com> wrote:
+>> > 3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
+>> >
+>> > ------------------
+>> >
+>> > From: "H. Peter Anvin" <hpa@linux.intel.com>
+>> >
+>> > commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
 >>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> ---
->>  arch/x86/kernel/cpu/perf_event_intel_ds.c |   19 +++++++++++++++++++
->>  1 file changed, 19 insertions(+)
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
->> index 980970c..d612bcd 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
->> @@ -925,6 +925,25 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->>       regs.bp = pebs->bp;
->>       regs.sp = pebs->sp;
->>
->> +     if (sample_type & PERF_SAMPLE_REGS_INTR) {
->> +             regs.ax = pebs->ax;
->> +             regs.bx = pebs->bx;
->> +             regs.cx = pebs->cx;
->> +             regs.si = pebs->si;
->> +             regs.di = pebs->di;
->> +
->> +             regs.r8 = pebs->r8;
->> +             regs.r9 = pebs->r9;
->> +             regs.r10 = pebs->r10;
->> +             regs.r11 = pebs->r11;
->> +             regs.r12 = pebs->r12;
->> +             regs.r13 = pebs->r13;
->> +             regs.r14 = pebs->r14;
->> +             regs.r14 = pebs->r15;
->> +
->> +             data.regs_intr.regs = &regs;
+>> Do not apply to any -stable release yet.  This causes nasty regressions on Xen.
 >
-> This last assignment is superfluous. Note how you previous patch's
-> perf_sample_regs_intr() is unconditionally writing its .regs value, and
-> in turn, perf_sample_regs_intr() is called unconditionally from
-> perf_prepare_sample().
+> I thought you all found the Xen-regression-fix patch a few hours ago,
+> right?
+
+That patch is insufficient: Xen guests still fail to initialize
+espfix64 correctly on SMP.  It's currently unclear that espfix64 can
+work at all on Xen -- it's may be rather fundamentally incompatible
+with the Xen hypercall IRET mechanism.  So it might need to be
+disabled entirely on Xen (and maybe Xen will fix the info leak in the
+hypervisor).
+
 >
-Ok, I will remove it.
+> This means that Linus's tree is also broken?
+
+Yes.
+
+--Andy
