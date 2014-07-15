@@ -1,139 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319AbaGOT23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:28:29 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:50547 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933039AbaGOT21 (ORCPT
+	id S933211AbaGOTcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:32:39 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:8842 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932890AbaGOTch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:28:27 -0400
-Date: Tue, 15 Jul 2014 12:26:37 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] shmem: fix faulting into a hole, not taking
- i_mutex
-In-Reply-To: <53C551A8.2040400@suse.cz>
-Message-ID: <alpine.LSU.2.11.1407151156110.3571@eggly.anvils>
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <alpine.LSU.2.11.1407150329250.2584@eggly.anvils> <53C551A8.2040400@suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 15 Jul 2014 15:32:37 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AokRAJaAxVNbsm9N/2dsb2JhbABZgw6BKaw8CwUBbpwAgRAXdYRgI4ECGDeILgMVAcMYDYcihXuHI4FJZB2ELQWQH4h5ggCOCYYcg0Y7L4ED
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/ubifs/io.c: kernel-doc warning fix
+Date: Tue, 15 Jul 2014 21:33:51 +0200
+Message-Id: <1405452831-10201-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Vlastimil Babka wrote:
-> On 07/15/2014 12:31 PM, Hugh Dickins wrote:
-> > f00cdc6df7d7 ("shmem: fix faulting into a hole while it's punched") was
-> > buggy: Sasha sent a lockdep report to remind us that grabbing i_mutex in
-> > the fault path is a no-no (write syscall may already hold i_mutex while
-> > faulting user buffer).
-> > 
-> > We tried a completely different approach (see following patch) but that
-> > proved inadequate: good enough for a rational workload, but not good
-> > enough against trinity - which forks off so many mappings of the object
-> > that contention on i_mmap_mutex while hole-puncher holds i_mutex builds
-> > into serious starvation when concurrent faults force the puncher to fall
-> > back to single-page unmap_mapping_range() searches of the i_mmap tree.
-> > 
-> > So return to the original umbrella approach, but keep away from i_mutex
-> > this time.  We really don't want to bloat every shmem inode with a new
-> > mutex or completion, just to protect this unlikely case from trinity.
-> > So extend the original with wait_queue_head on stack at the hole-punch
-> > end, and wait_queue item on the stack at the fault end.
-> 
-> Hi, thanks a lot, I will definitely test it soon, although my reproducer is
-> rather limited - it already works fine with the current kernel. Trinity will
-> be more useful here.
+s/data/timer
 
-Yes, 2/2 (minus the page->swap addition) already proved good enough for
-your (more realistic than trinity) testcase, and for mine.  And 1/2 (minus
-the new waiting) already proved good enough for you too, just more awkward
-to backport way back.  I agree that it's trinity we most need, to check
-that I didn't mess up 1/2 - though your testing welcome too, thanks.
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ubifs/io.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> But there's something that caught my eye so I though I
-> would raise the concern now.
+diff --git a/fs/ubifs/io.c b/fs/ubifs/io.c
+index 2290d58..fb08b0c 100644
+--- a/fs/ubifs/io.c
++++ b/fs/ubifs/io.c
+@@ -431,7 +431,7 @@ void ubifs_prep_grp_node(struct ubifs_info *c, void *node, int len, int last)
+ 
+ /**
+  * wbuf_timer_callback - write-buffer timer callback function.
+- * @data: timer data (write-buffer descriptor)
++ * @timer: timer data (write-buffer descriptor)
+  *
+  * This function is called when the write-buffer timer expires.
+  */
+-- 
+1.8.4.5
 
-Thank you.
-
-> 
-> > @@ -760,7 +760,7 @@ static int shmem_writepage(struct page *
-> >   			spin_lock(&inode->i_lock);
-> >   			shmem_falloc = inode->i_private;
-> 
-> Without ACCESS_ONCE, can shmem_falloc potentially become an alias on
-> inode->i_private and later become re-read outside of the lock?
-
-No, it could be re-read inside the locked section (which is okay since
-the locking ensures the same value would be re-read each time), but it
-cannot be re-read after the unlock.  The unlock guarantees that (whereas
-an assignment after the unlock might be moved up before the unlock).
-
-I searched for a simple example (preferably not in code written by me!)
-to convince you.  I thought it would be easy to find an example of
-
-	spin_lock(&lock);
-	thing_to_free = whatever;
-	spin_unlock(&lock);
-	if (thing_to_free)
-		free(thing_to_free);
-
-but everything I hit upon was actually a little more complicated than
-than that (e.g. involving whatever(), or setting whatever = NULL after),
-and therefore less convincing.  Please hunt around to convince yourself.
-
-> 
-> >   			if (shmem_falloc &&
-> > -			    !shmem_falloc->mode &&
-> > +			    !shmem_falloc->waitq &&
-> >   			    index >= shmem_falloc->start &&
-> >   			    index < shmem_falloc->next)
-> >   				shmem_falloc->nr_unswapped++;
-...
-> >   	if (unlikely(inode->i_private)) {
-> >   		struct shmem_falloc *shmem_falloc;
-> > 
-> >   		spin_lock(&inode->i_lock);
-> >   		shmem_falloc = inode->i_private;
-> 
-> Same here.
-
-Same here :)
-
-> 
-> > -		if (!shmem_falloc ||
-> > -		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
-> > -		    vmf->pgoff < shmem_falloc->start ||
-> > -		    vmf->pgoff >= shmem_falloc->next)
-> > -			shmem_falloc = NULL;
-> > -		spin_unlock(&inode->i_lock);
-> > -		/*
-> > -		 * i_lock has protected us from taking shmem_falloc seriously
-> > -		 * once return from shmem_fallocate() went back up that
-> > stack.
-> > -		 * i_lock does not serialize with i_mutex at all, but it does
-> > -		 * not matter if sometimes we wait unnecessarily, or
-> > sometimes
-> > -		 * miss out on waiting: we just need to make those cases
-> > rare.
-> > -		 */
-> > -		if (shmem_falloc) {
-> > +		if (shmem_falloc &&
-> > +		    shmem_falloc->waitq &&
-> 
-> Here it's operating outside of lock.
-
-No, it's inside the lock: just easier to see from the patched source
-than from the patch itself.
-
-Hugh
