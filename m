@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998AbaGOPzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:55:54 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:55318 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaGOPzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:55:49 -0400
-Message-ID: <53C54F07.4050808@cogentembedded.com>
-Date: Tue, 15 Jul 2014 19:55:51 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755255AbaGOP4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:56:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755112AbaGOP4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:56:02 -0400
+Date: Tue, 15 Jul 2014 11:55:37 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140715155537.GA19454@nhori.bos.redhat.com>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
-CC: yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/8] usb: rename phy to usb_phy in HCD
-References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com> <1405435156-27297-5-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1405435156-27297-5-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Jun 18, 2014 at 04:40:45PM -0400, Johannes Weiner wrote:
+...
+> diff --git a/mm/swap.c b/mm/swap.c
+> index a98f48626359..3074210f245d 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -62,6 +62,7 @@ static void __page_cache_release(struct page *page)
+>  		del_page_from_lru_list(page, lruvec, page_off_lru(page));
+>  		spin_unlock_irqrestore(&zone->lru_lock, flags);
+>  	}
+> +	mem_cgroup_uncharge(page);
+>  }
+>  
+>  static void __put_single_page(struct page *page)
 
-On 07/15/2014 06:39 PM, Antoine Ténart wrote:
+This seems to cause a list breakage in hstate->hugepage_activelist
+when freeing a hugetlbfs page.
+For hugetlbfs, we uncharge in free_huge_page() which is called after
+__page_cache_release(), so I think that we don't have to uncharge here.
 
-> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
-> modifications are done in all drivers accessing it.
+In my testing, moving mem_cgroup_uncharge() inside if (PageLRU) block
+fixed the problem, so if that works for you, could you fold the change
+into your patch?
 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-
-    I've been thru that and such change has been turned down already.
-
-WBR, Sergei
-
+Thanks,
+Naoya Horiguchi
