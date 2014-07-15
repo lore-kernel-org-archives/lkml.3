@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640AbaGOVei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:34:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54191 "EHLO
+	id S933670AbaGOVep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:34:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54210 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933609AbaGOVed (ORCPT
+	with ESMTP id S933609AbaGOVel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:34:33 -0400
+	Tue, 15 Jul 2014 17:34:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 085/198] drm/radeon/atom: fix dithering on certain panels
-Date: Tue, 15 Jul 2014 14:29:15 -0700
-Message-Id: <1405459868-15089-86-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 188/198] net: allwinner: emac: Add missing free_irq
+Date: Tue, 15 Jul 2014 14:30:58 -0700
+Message-Id: <1405459868-15089-189-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,40 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit 642528355c694f5ed68f6bff9ff520326a249f99 upstream.
+commit b91113282bf44df46aba374a0b8f88a75bfd4b3f upstream.
 
-We need to specify the encoder mode as LVDS for eDP
-when using the Crtc_Source atom table in order to properly
-set up the FMT hardware.
+If the mdio probe function fails in emac_open, the interrupt we just requested
+isn't freed. If emac_open is called again, for example because we try to set up
+the interface again, the kernel will oops because the interrupt wasn't properly
+released.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73911
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/allwinner/sun4i-emac.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index cf90161..95ac45e 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1897,8 +1897,11 @@ atombios_set_encoder_crtc_source(struct drm_encoder *encoder)
- 					args.v2.ucEncodeMode = ATOM_ENCODER_MODE_CRT;
- 				else
- 					args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
--			} else
-+			} else if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-+				args.v2.ucEncodeMode = ATOM_ENCODER_MODE_LVDS;
-+			} else {
- 				args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
-+			}
- 			switch (radeon_encoder->encoder_id) {
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
+index 46dfb13..81576c6 100644
+--- a/drivers/net/ethernet/allwinner/sun4i-emac.c
++++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
+@@ -726,6 +726,7 @@ static int emac_open(struct net_device *dev)
+ 
+ 	ret = emac_mdio_probe(dev);
+ 	if (ret < 0) {
++		free_irq(dev->irq, dev);
+ 		netdev_err(dev, "cannot probe MDIO bus\n");
+ 		return ret;
+ 	}
 -- 
 1.9.1
 
