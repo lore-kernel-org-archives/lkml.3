@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237AbaGOSvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:51:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932876AbaGOSuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:50:10 -0400
-Date: Tue, 15 Jul 2014 20:48:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/7] tracing: kill destroy_call_preds()
-Message-ID: <20140715184816.GA20495@redhat.com>
+	id S933240AbaGOSwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:52:00 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:61684 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932819AbaGOSvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:51:54 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 15 Jul 2014 14:51:51 -0400
+To: davem@davemloft.net
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] net: clean up some sparse endianness warnings in ipv6.h
+Message-ID: <20140715145151.42c4cf09@tlielax.poochiereds.net>
+In-Reply-To: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
+References: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715184753.GA20470@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove destroy_call_preds(). Its only caller, __trace_remove_event_call(),
-can use free_event_filter() and nullify ->filter by hand.
+On Mon, 14 Jul 2014 08:25:46 -0400
+Jeff Layton <jlayton@primarydata.com> wrote:
 
-Perhaps we could keep this trivial helper although imo it is pointless, but
-then it should be static in trace_events.c.
+> sparse is throwing warnings when building sunrpc modules due to some
+> endianness shenanigans in ipv6.h. Sprinkle some endianness fixups to
+> silence them. These should all get fixed up at compile time, so I don't
+> think this will add any extra work to be done at runtime.
+> 
+> Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+> ---
+>  include/net/ipv6.h | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/net/ipv6.h b/include/net/ipv6.h
+> index 574337fe72dd..5ed2c24fe950 100644
+> --- a/include/net/ipv6.h
+> +++ b/include/net/ipv6.h
+> @@ -557,9 +557,9 @@ static inline u32 __ipv6_addr_jhash(const struct in6_addr *a, const u32 initval)
+>  static inline bool ipv6_addr_loopback(const struct in6_addr *a)
+>  {
+>  #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
+> -	const unsigned long *ul = (const unsigned long *)a;
+> +	const __be64 *be = (const __be64 *)a;
+>  
+> -	return (ul[0] | (ul[1] ^ cpu_to_be64(1))) == 0UL;
+> +	return (be[0] | (be[1] ^ cpu_to_be64(1))) == cpu_to_be64(0UL);
+>  #else
+>  	return (a->s6_addr32[0] | a->s6_addr32[1] |
+>  		a->s6_addr32[2] | (a->s6_addr32[3] ^ htonl(1))) == 0;
+> @@ -570,11 +570,11 @@ static inline bool ipv6_addr_v4mapped(const struct in6_addr *a)
+>  {
+>  	return (
+>  #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
+> -		*(__be64 *)a |
+> +		(*(__be64 *)a != cpu_to_be64(0)) |
+>  #else
+> -		(a->s6_addr32[0] | a->s6_addr32[1]) |
+> +		((a->s6_addr32[0] | a->s6_addr32[1]) != cpu_to_be32(0)) |
+>  #endif
+> -		(a->s6_addr32[2] ^ htonl(0x0000ffff))) == 0UL;
+> +		((a->s6_addr32[2] ^ htonl(0x0000ffff)) == cpu_to_be32(0)));
+>  }
+>  
+>  /*
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/ftrace_event.h       |    1 -
- kernel/trace/trace_events.c        |    3 ++-
- kernel/trace/trace_events_filter.c |    6 ------
- 3 files changed, 2 insertions(+), 8 deletions(-)
+Oof. I think I had the ipv6_addr_v4mapped changes wrong before due to
+misreading the code. The existing code basically takes the different
+values, does a bunch of bitwise operations on them and then compares
+the result to 0.
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 738d465..f434d75 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -404,7 +404,6 @@ enum event_trigger_type {
- 	ETT_EVENT_ENABLE	= (1 << 3),
- };
- 
--extern void destroy_call_preds(struct ftrace_event_call *call);
- extern int filter_match_preds(struct event_filter *filter, void *rec);
- 
- extern int filter_check_discard(struct ftrace_event_file *file, void *rec,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index d049a5e..8690a3f 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1748,7 +1748,8 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
- {
- 	event_remove(call);
- 	trace_destroy_fields(call);
--	destroy_call_preds(call);
-+	free_event_filter(call->filter);
-+	call->filter = NULL;
- }
- 
- static int probe_remove_event_call(struct ftrace_event_call *call)
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 30fc66f..1edec32 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -804,12 +804,6 @@ void free_event_filter(struct event_filter *filter)
- 	__free_filter(filter);
- }
- 
--void destroy_call_preds(struct ftrace_event_call *call)
--{
--	__free_filter(call->filter);
--	call->filter = NULL;
--}
--
- static struct event_filter *__alloc_filter(void)
- {
- 	struct event_filter *filter;
+My patch had it doing more than one comparison. I've got a fixed
+version, but it does mean that we need to use a __force cast in one
+place. I'll resend once I've tested it our some more.
+
+Sorry for the noise!
 -- 
-1.5.5.1
-
+Jeff Layton <jlayton@primarydata.com>
