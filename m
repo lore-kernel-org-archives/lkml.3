@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934684AbaGPAUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:20:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44912 "EHLO
+	id S933253AbaGPAUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:20:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759066AbaGOXNI (ORCPT
+	with ESMTP id S1759007AbaGOXNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 22/22] ACPI / battery: Retry to get battery information if failed during probing
-Date: Tue, 15 Jul 2014 16:17:27 -0700
-Message-Id: <20140715231622.801802705@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.4 21/22] x86, ioremap: Speed up check for RAM pages
+Date: Tue, 15 Jul 2014 16:17:26 -0700
+Message-Id: <20140715231622.774167844@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -29,82 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
+commit c81c8a1eeede61e92a15103748c23d100880cc8a upstream.
 
-Some machines (eg. Lenovo Z480) ECs are not stable during boot up
-and causes battery driver fails to be loaded due to failure of getting
-battery information from EC sometimes. After several retries, the
-operation will work. This patch is to retry to get battery information 5
-times if the first try fails.
+In __ioremap_caller() (the guts of ioremap), we loop over the range of
+pfns being remapped and checks each one individually with page_is_ram().
+For large ioremaps, this can be very slow.  For example, we have a
+device with a 256 GiB PCI BAR, and ioremapping this BAR can take 20+
+seconds -- sometimes long enough to trigger the soft lockup detector!
 
-[ backport to 3.14.5: removed second parameter in acpi_battery_update(),
-introduced by the commit 9e50bc14a7f58b5d8a55973b2d69355852ae2dae (ACPI /
-battery: Accelerate battery resume callback)]
+Internally, page_is_ram() calls walk_system_ram_range() on a single
+page.  Instead, we can make a single call to walk_system_ram_range()
+from __ioremap_caller(), and do our further checks only for any RAM
+pages that we find.  For the common case of MMIO, this saves an enormous
+amount of work, since the range being ioremapped doesn't intersect
+system RAM at all.
 
-[naszar <naszar@ya.ru>: backport to 3.14.5]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
-Reported-and-tested-by: naszar <naszar@ya.ru>
-Cc: All applicable <stable@vger.kernel.org>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+With this change, ioremap on our 256 GiB BAR takes less than 1 second.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Link: http://lkml.kernel.org/r/1399054721-1331-1-git-send-email-roland@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/acpi/battery.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/delay.h>
- #include <asm/unaligned.h>
- 
- #ifdef CONFIG_ACPI_PROCFS_POWER
-@@ -1055,6 +1056,28 @@ static int battery_notify(struct notifie
- 	return 0;
+---
+ arch/x86/mm/ioremap.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
+
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -50,6 +50,21 @@ int ioremap_change_attr(unsigned long va
+ 	return err;
  }
  
-+/*
-+ * Some machines'(E,G Lenovo Z480) ECs are not stable
-+ * during boot up and this causes battery driver fails to be
-+ * probed due to failure of getting battery information
-+ * from EC sometimes. After several retries, the operation
-+ * may work. So add retry code here and 20ms sleep between
-+ * every retries.
-+ */
-+static int acpi_battery_update_retry(struct acpi_battery *battery)
++static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
++			       void *arg)
 +{
-+	int retry, ret;
++	unsigned long i;
 +
-+	for (retry = 5; retry; retry--) {
-+		ret = acpi_battery_update(battery);
-+		if (!ret)
-+			break;
++	for (i = 0; i < nr_pages; ++i)
++		if (pfn_valid(start_pfn + i) &&
++		    !PageReserved(pfn_to_page(start_pfn + i)))
++			return 1;
 +
-+		msleep(20);
-+	}
-+	return ret;
++	WARN_ONCE(1, "ioremap on RAM pfn 0x%lx\n", start_pfn);
++
++	return 0;
 +}
 +
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1074,9 +1097,11 @@ static int acpi_battery_add(struct acpi_
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	result = acpi_battery_update(battery);
-+
-+	result = acpi_battery_update_retry(battery);
- 	if (result)
- 		goto fail;
-+
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
+ /*
+  * Remap an arbitrary physical address space into the kernel virtual
+  * address space. Needed when the kernel wants to access high addresses
+@@ -93,14 +108,11 @@ static void __iomem *__ioremap_caller(re
+ 	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
++	pfn      = phys_addr >> PAGE_SHIFT;
+ 	last_pfn = last_addr >> PAGE_SHIFT;
+-	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
+-		int is_ram = page_is_ram(pfn);
+-
+-		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+-			return NULL;
+-		WARN_ON_ONCE(is_ram);
+-	}
++	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
++				  __ioremap_check_ram) == 1)
++		return NULL;
+ 
+ 	/*
+ 	 * Mappings have to be page-aligned
 
 
