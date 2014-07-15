@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828AbaGOMGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:06:36 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43553 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758633AbaGOMGd (ORCPT
+	id S1758870AbaGOMHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:07:25 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61282 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758628AbaGOMHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:06:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19IU6p4G2gR/n5fkqzz4DTi
-Date: Tue, 15 Jul 2014 05:04:56 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, bcousson@baylibre.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        hns@goldelico.com
-Subject: Re: [PATCH 0/5] Add gta04 board variants
-Message-ID: <20140715120455.GC28715@atomide.com>
-References: <1405369228-27197-1-git-send-email-marek@goldelico.com>
+	Tue, 15 Jul 2014 08:07:20 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] ACPICA: Improve GPE handling model.
+Date: Tue, 15 Jul 2014 14:25:33 +0200
+Message-ID: <1659923.7L0Vy69Ets@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1405306438.git.lv.zheng@intel.com>
+References: <cover.1403060601.git.lv.zheng@intel.com> <cover.1405306438.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405369228-27197-1-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marek Belisko <marek@goldelico.com> [140714 13:22]:
-> This patch series completes the GTA04 device tree to describe all hardware
-> components that are on the different variants of the GTA04 boards.
+On Tuesday, July 15, 2014 11:07:10 AM Lv Zheng wrote:
+> This patchset enables the ideal GPE handling model. The ideal GPE handling
+> model should be able to handle the following cases:
 > 
-> Marek Belisko (5):
->   arm: dts: omap3-gta04: Add missing nodes to fully describe gta04 board
->   arm: dts: omap3-gta04: Rename gta04.dts to gta04.dtsi and add a4 model
->   arm: dts: Add gta04a3 model
->   arm: dts: Add gta04+b2 model bindings
->   arm: dts: Add gta04+b3 model bindings
+>    1. When upper layers (the users of the driver) submit requests to the
+>       drivers, it means they care about the underlying hardware. For this
+>       case, acpi_enable_gpe() should be invoked. When the reference count
+>       is increased from 0 to 1, driver enables the hardware IRQ. And
+>       acpi_disable_gpe() is used as the reversal when the users have
+>       completed the submitted requests.
+>    2. Driver may temporarily disables the IRQ and wants to re-enable it
+>       later, this case is normally used in order to prevent IRQ storm.
+>       When a driver cannot fully solve the condition that triggered the IRQ
+>       in the IRQ context, in order not to trigger IRQ storm, driver has to
+>       disable IRQ and re-enables it in the deferred execution environment
+>       - which should be in a task context. The acpi_set_gpe() API should be
+>       used exactly for this purpose.
+> 
+> The reason why this model hasn't been enabled for the current Linux ACPI
+> drivers is:
+>   In ACPICA, the same GPE lock is held while invoking the GPE handler
+>   callback, it's thus impossible to invoke GPE APIs in the GPE handler
+>   because the APIs require to hold the GPE lock. The recursive locking
+>   leads to dead locks. This is a simple design defect, callbacks should
+>   always be invoked in a lockless environment, normally in Linux, this is
+>   achieved by RCU locking, and in ACPICA, we achieve this using reference
+>   counting.
+> 
+> After fixing the above bug and doing necessary cleanups in the ACPICA GPE
+> handling code, we now can enable this ideal GPE handling model for the EC
+> driver to implement "commands flushing" and "storm prevention" (the EC
+> driver enabling is not included in this patchset).
 
-Hmm at least the first patch won't apply:
+How this patch series is related to upstream ACPICA?  Is the design fixed
+already upstream?
 
-Hunk #4 FAILED at 143.
-Hunk #5 succeeded at 142 with fuzz 2 (offset -26 lines).
-Hunk #6 succeeded at 287 (offset -26 lines).
-Hunk #7 succeeded at 364 (offset -26 lines).
-Hunk #8 succeeded at 433 (offset -26 lines).
-Hunk #9 succeeded at 472 (offset -26 lines).
-Hunk #10 succeeded at 485 (offset -26 lines).
-Hunk #11 succeeded at 556 (offset -26 lines).
-Hunk #12 FAILED at 720.
-2 out of 12 hunks FAILED -- rejects in file arch/arm/boot/dts/omap3-gta04.dts
+> The refined patches are passed the runtime/suspend tests carried out on the
+> following platforms with EC driver enhanced:
+>   "Dell Inspiron Mini 1010" - i386 kernel
+>   "Dell Latitude 6430u" - x86_64 kernel
+> 
+> Lv Zheng (9):
+>   ACPICA: Events: Reduce indent divergences of events files.
+>   ACPICA: Events: Fix an issue that GPE APIs cannot be invoked in
+>     atomic context.
+>   ACPICA: Events: Fix an issue that GPE APIs cannot be invoked in
+>     deferred handlers.
+>   ACPICA: Events: Introduce acpi_set_gpe()/acpi_finish_gpe() to reduce
+>     divergences.
+>   ACPICA: Events: Fix an issue that acpi_set_gpe() cannot
+>     unconditionally enable GPEs.
+>   ACPICA: Events: Fix an issue that status of GPEs are unexpectedly
+>     cleared.
+>   ACPICA: Events: Fix an issue that originally_enabled check is not
+>     paired.
+>   ACPICA: Events: Add a flag to disable internal auto GPE clearing.
+>   ACPI: Update interrupt handler to honor new ACPI_REENABLE_GPE bit.
+> 
+>  drivers/acpi/acpica/acevents.h |    1 +
+>  drivers/acpi/acpica/aclocal.h  |    5 +-
+>  drivers/acpi/acpica/evgpe.c    |  136 +++++++++++++++++++++-------------------
+>  drivers/acpi/acpica/evxface.c  |   41 ++++++++----
+>  drivers/acpi/acpica/evxfgpe.c  |  105 +++++++++++++++++++++++++++++++
+>  drivers/acpi/osl.c             |    2 +-
+>  include/acpi/actypes.h         |   16 ++---
+>  7 files changed, 219 insertions(+), 87 deletions(-)
+> 
+> 
 
-Can you please repost against let's say v3.16-rc1? Maybe also
-check they apply cleanly against omap-for-v3.17/dt branch that
-I just pushed out to:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap omap-for-v3.17/dt
-
-Thanks,
-
-Tony
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
