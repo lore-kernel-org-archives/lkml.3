@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760135AbaGOWSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:18:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54215 "EHLO
+	id S1760150AbaGOWSb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:18:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54209 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933644AbaGOVen (ORCPT
+	with ESMTP id S933643AbaGOVel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:34:43 -0400
+	Tue, 15 Jul 2014 17:34:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 189/198] ALSA: usb-audio: Fix races at disconnection and PCM closing
-Date: Tue, 15 Jul 2014 14:30:59 -0700
-Message-Id: <1405459868-15089-190-git-send-email-kamal@canonical.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 075/198] RDMA/cxgb4: Add missing padding at end of struct c4iw_create_cq_resp
+Date: Tue, 15 Jul 2014 14:29:05 -0700
+Message-Id: <1405459868-15089-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -26,130 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit 92a586bdc06de6629dae1b357dac221253f55ff8 upstream.
+commit b6f04d3d21458818073a2f5af5339f958864bf71 upstream.
 
-When a USB-audio device is disconnected while PCM is still running, we
-still see some race: the disconnect callback calls
-snd_usb_endpoint_free() that calls release_urbs() and then kfree()
-while a PCM stream would be closed at the same time and calls
-stop_endpoints() that leads to wait_clear_urbs().  That is, the EP
-object might be deallocated while a PCM stream is syncing with
-wait_clear_urbs() with the same EP.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data types larger than 4 bytes: on most ABIs a padding must be added
+at end of the structures, while it is not required on i386.
 
-Basically calling multiple wait_clear_urbs() would work fine, also
-calling wait_clear_urbs() and release_urbs() would work, too, as
-wait_clear_urbs() just reads some fields in ep.  The problem is the
-succeeding kfree() in snd_pcm_endpoint_free().
+So for most ABI struct c4iw_create_cq_resp gets implicitly padded
+to be aligned on a 8 bytes multiple, while for i386, such padding
+is not added.
 
-This patch moves out the EP deallocation into the later point, the
-destructor callback.  At this stage, all PCMs must have been already
-closed, so it's safe to free the objects.
+The tool pahole can be used to find such implicit padding:
 
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name c4iw_create_cq_resp \
+           drivers/infiniband/hw/cxgb4/iw_cxgb4.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+  +++ obj-i386/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt   2014-03-28 11:43:05.547432195 +0100
+  --- obj-x86_64/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt 2014-03-28 10:55:10.990133017 +0100
+  @@ -14,9 +13,8 @@ struct c4iw_create_cq_resp {
+          __u32                      size;                 /*    28     4 */
+          __u32                      qid_mask;             /*    32     4 */
+
+  -       /* size: 36, cachelines: 1, members: 6 */
+  -       /* last cacheline: 36 bytes */
+  +       /* size: 40, cachelines: 1, members: 6 */
+  +       /* padding: 4 */
+  +       /* last cacheline: 40 bytes */
+   };
+
+This ABI disagreement will make an x86_64 kernel try to write past the
+buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will refuse
+to write past the i386 userspace provided buffer and the uverbs will
+fail.
+
+If the structure is on a page boundary and the next page is not
+mapped, ib_copy_to_udata() will fail and the uverb will fail.
+
+This patch adds an explicit padding at end of structure
+c4iw_create_cq_resp, and, like 92b0ca7cb149 ("IB/mlx5: Fix stack info
+leak in mlx5_ib_alloc_ucontext()"), makes function c4iw_create_cq()
+not writting this padding field to userspace. This way, x86_64 kernel
+will be able to write struct c4iw_create_cq_resp as expected by
+unpatched and patched i386 libcxgb4.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: cfdda9d764362 ("RDMA/cxgb4: Add driver for Chelsio T4 RNIC")
+Fixes: e24a72a3302a6 ("RDMA/cxgb4: Fix four byte info leak in c4iw_create_cq()")
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/card.c     | 13 ++++++++++---
- sound/usb/endpoint.c | 17 ++++++++++++++---
- sound/usb/endpoint.h |  1 +
- 3 files changed, 25 insertions(+), 6 deletions(-)
+ drivers/infiniband/hw/cxgb4/cq.c   | 3 ++-
+ drivers/infiniband/hw/cxgb4/user.h | 1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index d979050..af19560 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -304,6 +304,11 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
+diff --git a/drivers/infiniband/hw/cxgb4/cq.c b/drivers/infiniband/hw/cxgb4/cq.c
+index 88de3aa..deadaa3 100644
+--- a/drivers/infiniband/hw/cxgb4/cq.c
++++ b/drivers/infiniband/hw/cxgb4/cq.c
+@@ -940,7 +940,8 @@ struct ib_cq *c4iw_create_cq(struct ib_device *ibdev, int entries,
+ 		uresp.gts_key = ucontext->key;
+ 		ucontext->key += PAGE_SIZE;
+ 		spin_unlock(&ucontext->mmap_lock);
+-		ret = ib_copy_to_udata(udata, &uresp, sizeof uresp);
++		ret = ib_copy_to_udata(udata, &uresp,
++				       sizeof(uresp) - sizeof(uresp.reserved));
+ 		if (ret)
+ 			goto err5;
  
- static int snd_usb_audio_free(struct snd_usb_audio *chip)
- {
-+	struct list_head *p, *n;
-+
-+	list_for_each_safe(p, n, &chip->ep_list)
-+		snd_usb_endpoint_free(p);
-+
- 	mutex_destroy(&chip->mutex);
- 	kfree(chip);
- 	return 0;
-@@ -580,7 +585,7 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- 				     struct snd_usb_audio *chip)
- {
- 	struct snd_card *card;
--	struct list_head *p, *n;
-+	struct list_head *p;
+diff --git a/drivers/infiniband/hw/cxgb4/user.h b/drivers/infiniband/hw/cxgb4/user.h
+index 32b754c..4893599 100644
+--- a/drivers/infiniband/hw/cxgb4/user.h
++++ b/drivers/infiniband/hw/cxgb4/user.h
+@@ -48,6 +48,7 @@ struct c4iw_create_cq_resp {
+ 	__u32 cqid;
+ 	__u32 size;
+ 	__u32 qid_mask;
++	__u32 reserved; /* explicit padding (optional for i386) */
+ };
  
- 	if (chip == (void *)-1L)
- 		return;
-@@ -593,14 +598,16 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- 	mutex_lock(&register_mutex);
- 	chip->num_interfaces--;
- 	if (chip->num_interfaces <= 0) {
-+		struct snd_usb_endpoint *ep;
-+
- 		snd_card_disconnect(card);
- 		/* release the pcm resources */
- 		list_for_each(p, &chip->pcm_list) {
- 			snd_usb_stream_disconnect(p);
- 		}
- 		/* release the endpoint resources */
--		list_for_each_safe(p, n, &chip->ep_list) {
--			snd_usb_endpoint_free(p);
-+		list_for_each_entry(ep, &chip->ep_list, list) {
-+			snd_usb_endpoint_release(ep);
- 		}
- 		/* release the midi resources */
- 		list_for_each(p, &chip->midi_list) {
-diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-index 814430f..105ece3 100644
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -981,19 +981,30 @@ void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep)
- }
  
- /**
-+ * snd_usb_endpoint_release: Tear down an snd_usb_endpoint
-+ *
-+ * @ep: the endpoint to release
-+ *
-+ * This function does not care for the endpoint's use count but will tear
-+ * down all the streaming URBs immediately.
-+ */
-+void snd_usb_endpoint_release(struct snd_usb_endpoint *ep)
-+{
-+	release_urbs(ep, 1);
-+}
-+
-+/**
-  * snd_usb_endpoint_free: Free the resources of an snd_usb_endpoint
-  *
-  * @ep: the list header of the endpoint to free
-  *
-- * This function does not care for the endpoint's use count but will tear
-- * down all the streaming URBs immediately and free all resources.
-+ * This free all resources of the given ep.
-  */
- void snd_usb_endpoint_free(struct list_head *head)
- {
- 	struct snd_usb_endpoint *ep;
- 
- 	ep = list_entry(head, struct snd_usb_endpoint, list);
--	release_urbs(ep, 1);
- 	kfree(ep);
- }
- 
-diff --git a/sound/usb/endpoint.h b/sound/usb/endpoint.h
-index 1c7e8ee..e61ee5c 100644
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -23,6 +23,7 @@ void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_sync_pending_stop(struct snd_usb_endpoint *ep);
- int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep);
-+void snd_usb_endpoint_release(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_free(struct list_head *head);
- 
- int snd_usb_endpoint_implicit_feedback_sink(struct snd_usb_endpoint *ep);
 -- 
 1.9.1
 
