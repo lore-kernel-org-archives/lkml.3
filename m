@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180AbaGOUKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 16:10:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58481 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756546AbaGOUKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 16:10:48 -0400
-Message-ID: <53C58A9C.6070906@zytor.com>
-Date: Tue, 15 Jul 2014 13:10:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933494AbaGOUNv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 16:13:51 -0400
+Received: from [74.50.51.50] ([74.50.51.50]:59812 "EHLO utopia.booyaka.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933422AbaGOUNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 16:13:46 -0400
+Date: Tue, 15 Jul 2014 20:13:45 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+cc: Rajendra Nayak <rnayak@ti.com>, devicetree@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-omap@vger.kernel.org,
+        tony@atomide.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] arm: dra7xx: Add hwmod data for pcie1 and pcie2
+ subsystems
+In-Reply-To: <53C3B251.8000209@ti.com>
+Message-ID: <alpine.DEB.2.02.1407152013310.21432@utopia.booyaka.com>
+References: <1403719366-9656-3-git-send-email-kishon@ti.com> <1404896567-32204-1-git-send-email-kishon@ti.com> <53BD2136.9030009@ti.com> <53C3B251.8000209@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Toshi Kani <toshi.kani@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com> <CALCETrVfqBpJaTJCnDH8pZf4-6x6oojv+8Vvm3XudJfhbstdOQ@mail.gmail.com>
-In-Reply-To: <CALCETrVfqBpJaTJCnDH8pZf4-6x6oojv+8Vvm3XudJfhbstdOQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 12:53 PM, Andy Lutomirski wrote:
+On Mon, 14 Jul 2014, Kishon Vijay Abraham I wrote:
+
+> On Wednesday 09 July 2014 04:32 PM, Rajendra Nayak wrote:
+> > On Wednesday 09 July 2014 02:32 PM, Kishon Vijay Abraham I wrote:
+> >> Added hwmod data for pcie1 and pcie2 subsystem present in DRA7xx SOC.
+> >>
+> >> Cc: Tony Lindgren <tony@atomide.com>
+> >> Cc: Russell King <linux@arm.linux.org.uk>
+> >> Cc: Paul Walmsley <paul@pwsan.com>
+> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> >> Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
+> >> ---
+> >> Changes from v1:
+> >> * changed the clock domain to "pcie_clkdm"
+> >> * Added PCIe as a slave port for l3_main.
+> > 
+> > Looks good to me,
+> > Reviewed-by: Rajendra Nayak <rnayak@ti.com>
 > 
-> Note that MTRRs are already partially deprecated: all drivers *should*
-> be using arch_phys_wc_add, not mtrr_add, and arch_phys_wc_add is a
-> no-op on systems with working PAT.
+> Paul,
 > 
-> Unfortunately, I never finished excising mtrr_add.  Finishing the job
-> wouldn't be very hard.
-> 
+> Can you pick this one?
 
-The use of MTRRs in drivers is separate from the MTRR global setup done
-by the firmware, though.
+Yep, queued for 3.17.
 
-	-hpa
-
-
+- Paul
