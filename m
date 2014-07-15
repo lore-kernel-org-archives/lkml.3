@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758487AbaGOJAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:00:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44619 "EHLO mga03.intel.com"
+	id S1758471AbaGOJAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:00:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44594 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758299AbaGOI7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758307AbaGOI7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 04:59:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,664,1400050800"; 
-   d="scan'208";a="457092161"
+   d="scan'208";a="457092214"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v2 2/7] perf, x86: use context switch callback to flush LBR stack
-Date: Tue, 15 Jul 2014 16:58:54 +0800
-Message-Id: <1405414739-31455-3-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v2 4/7] perf, x86: large PEBS interrupt threshold
+Date: Tue, 15 Jul 2014 16:58:56 +0800
+Message-Id: <1405414739-31455-5-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
 References: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,321 +24,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous commit introduces context switch callback, its function
-overlaps with the flush branch stack callback. So we can use the
-context switch callback to flush LBR stack.
+PEBS always had the capability to log samples to its buffers without
+an interrupt. Traditionally perf has not used this but always set the
+PEBS threshold to one.
 
-This patch adds code that uses the flush branch callback to
-flush the LBR stack when task is being scheduled in. The callback
-is enabled only when there are events use the LBR hardware. This
-patch also removes all old flush branch stack code.
+For frequently occuring events (like cycles or branches or load/stores)
+this in term requires using a relatively high sampling period to avoid
+overloading the system, by only processing PMIs. This in term increases
+sampling error.
+
+For the common cases we still need to use the PMI because the PEBS
+hardware has various limitations. The biggest one is that it can not
+supply a callgraph. It also requires setting a fixed period, as the
+hardware does not support adaptive period. Another issue is that it
+cannot supply a time stamp and some other options. To supply a TID it
+requires flushing on context switch. It can however supply the IP, the
+load/store address, TSX information, registers, and some other things.
+
+So we can make PEBS work for some specific cases, basically as long as
+you can do without a callgraph and can set the period you can use this
+new PEBS mode.
+
+The main benefit is the ability to support much lower sampling period
+(down to -c 1000) without extensive overhead.
+
+One use cases is for example to increase the resolution of the c2c tool.
+Another is double checking when you suspect the standard sampling has
+too much sampling error.
+
+Some numbers on the overhead, using cycle soak, comparing
+"perf record --no-time -e cycles:p -c" to "perf record -e cycles:p -c"
+
+period    plain  multi  delta
+10003     15     5      10
+20003     15.7   4      11.7
+40003     8.7    2.5    6.2
+80003     4.1    1.4    2.7
+100003    3.6    1.2    2.4
+800003    4.4    1.4    3
+1000003   0.6    0.4    0.2
+2000003   0.4    0.3    0.1
+4000003   0.3    0.2    0.1
+10000003  0.3    0.2    0.1
+
+The interesting part is the delta between multi-pebs and normal pebs. Above
+-c 1000003 it does not really matter because the basic overhead is so low.
+With periods below 80003 it becomes interesting.
+
+Note in some other workloads (e.g. kernbench) the smaller sampling periods
+cause much more overhead without multi-pebs,  upto 80% (and throttling) have
+been observed with -c 10003. multi pebs generally does not throttle.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c           |  7 ---
- arch/x86/kernel/cpu/perf_event.h           |  3 +-
- arch/x86/kernel/cpu/perf_event_intel.c     | 14 +-----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 32 +++++++++++--
- include/linux/perf_event.h                 |  6 ---
- kernel/events/core.c                       | 77 ------------------------------
- 6 files changed, 30 insertions(+), 109 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           |  1 +
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  | 98 +++++++++++++++++++++---------
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |  5 --
+ 3 files changed, 71 insertions(+), 33 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 7d22972..8868e9b 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1880,12 +1880,6 @@ static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
- 		x86_pmu.sched_task(ctx, sched_in);
- }
- 
--static void x86_pmu_flush_branch_stack(void)
--{
--	if (x86_pmu.flush_branch_stack)
--		x86_pmu.flush_branch_stack();
--}
--
- void perf_check_microcode(void)
- {
- 	if (x86_pmu.check_microcode)
-@@ -1912,7 +1906,6 @@ static struct pmu pmu = {
- 	.commit_txn		= x86_pmu_commit_txn,
- 
- 	.event_idx		= x86_pmu_event_idx,
--	.flush_branch_stack	= x86_pmu_flush_branch_stack,
- 	.sched_task		= x86_pmu_sched_task,
- };
- 
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index e70b352..d8165f3 100644
+index d8165f3..cb7cda8 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -428,7 +428,6 @@ struct x86_pmu {
- 	void		(*cpu_dead)(int cpu);
- 
- 	void		(*check_microcode)(void);
--	void		(*flush_branch_stack)(void);
- 	void		(*sched_task)(struct perf_event_context *ctx,
- 				      bool sched_in);
- 
-@@ -685,6 +684,8 @@ void intel_pmu_pebs_disable_all(void);
- 
- void intel_ds_init(void);
- 
-+void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in);
-+
- void intel_pmu_lbr_reset(void);
- 
- void intel_pmu_lbr_enable(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index adb02aa..ef926ee 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2035,18 +2035,6 @@ static void intel_pmu_cpu_dying(int cpu)
- 	fini_debug_store_on_cpu(cpu);
- }
- 
--static void intel_pmu_flush_branch_stack(void)
--{
--	/*
--	 * Intel LBR does not tag entries with the
--	 * PID of the current task, then we need to
--	 * flush it on ctxsw
--	 * For now, we simply reset it
--	 */
--	if (x86_pmu.lbr_nr)
--		intel_pmu_lbr_reset();
--}
--
- PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
- 
- PMU_FORMAT_ATTR(ldlat, "config1:0-15");
-@@ -2098,7 +2086,7 @@ static __initconst const struct x86_pmu intel_pmu = {
- 	.cpu_starting		= intel_pmu_cpu_starting,
- 	.cpu_dying		= intel_pmu_cpu_dying,
- 	.guest_get_msrs		= intel_guest_get_msrs,
--	.flush_branch_stack	= intel_pmu_flush_branch_stack,
-+	.sched_task		= intel_pmu_lbr_sched_task,
- };
- 
- static __init void intel_clovertown_quirk(void)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 9dd2459..d6d5fcf 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -181,7 +181,7 @@ void intel_pmu_lbr_reset(void)
- 		intel_pmu_lbr_reset_64();
- }
- 
--void intel_pmu_lbr_enable(struct perf_event *event)
-+void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
-@@ -189,6 +189,23 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- 		return;
+@@ -450,6 +450,7 @@ struct x86_pmu {
+ 	struct event_constraint *pebs_constraints;
+ 	void		(*pebs_aliases)(struct perf_event *event);
+ 	int 		max_pebs_events;
++	bool		multi_pebs;
  
  	/*
-+	 * It is necessary to flush the stack on context switch. This happens
-+	 * when the branch stack does not tag its entries with the pid of the
-+	 * current task.
-+	 */
-+	if (sched_in) {
-+		intel_pmu_lbr_reset();
-+		cpuc->lbr_context = ctx;
-+	}
-+}
-+
-+void intel_pmu_lbr_enable(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+
-+	if (!x86_pmu.lbr_nr)
-+		return;
-+	/*
- 	 * Reset the LBR stack if we changed task context to
- 	 * avoid data leaks.
- 	 */
-@@ -199,6 +216,8 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- 	cpuc->br_sel = event->hw.branch_reg.reg;
+ 	 * Intel LBR
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 1db4ce5..e17eb5b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -11,7 +11,7 @@
+ #define BTS_RECORD_SIZE		24
  
- 	cpuc->lbr_users++;
-+	if (cpuc->lbr_users == 1)
-+		perf_sched_cb_enable(event->ctx->pmu);
- }
- 
- void intel_pmu_lbr_disable(struct perf_event *event)
-@@ -211,10 +230,13 @@ void intel_pmu_lbr_disable(struct perf_event *event)
- 	cpuc->lbr_users--;
- 	WARN_ON_ONCE(cpuc->lbr_users < 0);
- 
--	if (cpuc->enabled && !cpuc->lbr_users) {
--		__intel_pmu_lbr_disable();
--		/* avoid stale pointer */
--		cpuc->lbr_context = NULL;
-+	if (!cpuc->lbr_users) {
-+		perf_sched_cb_disable(event->ctx->pmu);
-+		if (cpuc->enabled) {
-+			__intel_pmu_lbr_disable();
-+			/* avoid stale pointer */
-+			cpuc->lbr_context = NULL;
-+		}
- 	}
- }
- 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 73f3afa..5d665e8 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -259,11 +259,6 @@ struct pmu {
- 	int (*event_idx)		(struct perf_event *event); /*optional */
- 
- 	/*
--	 * flush branch stack on context-switches (needed in cpu-wide mode)
--	 */
--	void (*flush_branch_stack)	(void);
--
--	/*
- 	 * context-switches callback for CPU PMU. Other PMUs shouldn't set
- 	 * this callback
- 	 */
-@@ -512,7 +507,6 @@ struct perf_event_context {
- 	u64				generation;
- 	int				pin_count;
- 	int				nr_cgroups;	 /* cgroup evts */
--	int				nr_branch_stack; /* branch_stack evt */
- 	struct rcu_head			rcu_head;
- };
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4e721fa..31f9209 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -143,7 +143,6 @@ enum event_type_t {
-  */
- struct static_key_deferred perf_sched_events __read_mostly;
- static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
--static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
- static DEFINE_PER_CPU(int, perf_sched_cb_usages);
- 
- static atomic_t nr_mmap_events __read_mostly;
-@@ -1137,9 +1136,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (is_cgroup_event(event))
- 		ctx->nr_cgroups++;
- 
--	if (has_branch_stack(event))
--		ctx->nr_branch_stack++;
--
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
- 	if (!ctx->nr_events)
- 		perf_pmu_rotate_start(ctx->pmu);
-@@ -1302,9 +1298,6 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 			cpuctx->cgrp = NULL;
- 	}
- 
--	if (has_branch_stack(event))
--		ctx->nr_branch_stack--;
--
- 	ctx->nr_events--;
- 	if (event->attr.inherit_stat)
- 		ctx->nr_stat--;
-@@ -2602,64 +2595,6 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
- }
+ #define BTS_BUFFER_SIZE		(PAGE_SIZE << 4)
+-#define PEBS_BUFFER_SIZE	PAGE_SIZE
++#define PEBS_BUFFER_SIZE	(PAGE_SIZE << 4)
+ #define PEBS_FIXUP_SIZE		PAGE_SIZE
  
  /*
-- * When sampling the branck stack in system-wide, it may be necessary
-- * to flush the stack on context switch. This happens when the branch
-- * stack does not tag its entries with the pid of the current task.
-- * Otherwise it becomes impossible to associate a branch entry with a
-- * task. This ambiguity is more likely to appear when the branch stack
-- * supports priv level filtering and the user sets it to monitor only
-- * at the user level (which could be a useful measurement in system-wide
-- * mode). In that case, the risk is high of having a branch stack with
-- * branch from multiple tasks. Flushing may mean dropping the existing
-- * entries or stashing them somewhere in the PMU specific code layer.
-- *
-- * This function provides the context switch callback to the lower code
-- * layer. It is invoked ONLY when there is at least one system-wide context
-- * with at least one active event using taken branch sampling.
-- */
--static void perf_branch_stack_sched_in(struct task_struct *prev,
--				       struct task_struct *task)
--{
--	struct perf_cpu_context *cpuctx;
--	struct pmu *pmu;
--	unsigned long flags;
+@@ -251,7 +251,7 @@ static int alloc_pebs_buffer(int cpu)
+ {
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+ 	int node = cpu_to_node(cpu);
+-	int max, thresh = 1; /* always use a single PEBS record */
++	int max;
+ 	void *buffer, *ibuffer;
+ 
+ 	if (!x86_pmu.pebs)
+@@ -281,9 +281,6 @@ static int alloc_pebs_buffer(int cpu)
+ 	ds->pebs_absolute_maximum = ds->pebs_buffer_base +
+ 		max * x86_pmu.pebs_record_size;
+ 
+-	ds->pebs_interrupt_threshold = ds->pebs_buffer_base +
+-		thresh * x86_pmu.pebs_record_size;
 -
--	/* no need to flush branch stack if not changing task */
--	if (prev == task)
+ 	return 0;
+ }
+ 
+@@ -708,14 +705,29 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 	return &emptyconstraint;
+ }
+ 
++/*
++ * Flags PEBS can handle without an PMI.
++ *
++ * TID can only be handled by flushing at context switch.
++ */
++#define PEBS_FREERUNNING_FLAGS \
++	(PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_ADDR | \
++	 PERF_SAMPLE_ID | PERF_SAMPLE_CPU | PERF_SAMPLE_STREAM_ID | \
++	 PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_IDENTIFIER | \
++	 PERF_SAMPLE_TRANSACTION)
++
+ void intel_pmu_pebs_enable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
++	struct debug_store *ds = cpuc->ds;
++	u64 threshold;
++	bool first_pebs;
+ 
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 	hwc->autoreload = !event->attr.freq;
+ 
++	first_pebs = !(cpuc->pebs_enabled & ((1ULL << MAX_PEBS_EVENTS) - 1));
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
+ 
+ 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
+@@ -723,6 +735,20 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
+ 		cpuc->pebs_enabled |= 1ULL << 63;
+ 
++	/*
++	 * When the event is constrained enough we can use a larger
++	 * threshold and run the event with less frequent PMI.
++	 */
++	if (x86_pmu.multi_pebs && hwc->autoreload &&
++	    !(event->attr.sample_type & ~PEBS_FREERUNNING_FLAGS)) {
++		threshold = ds->pebs_absolute_maximum -
++			x86_pmu.max_pebs_events * x86_pmu.pebs_record_size;
++	} else {
++		threshold = ds->pebs_buffer_base + x86_pmu.pebs_record_size;
++	}
++	if (first_pebs || ds->pebs_interrupt_threshold > threshold)
++		ds->pebs_interrupt_threshold = threshold;
++
+ 	/* Use auto-reload if possible to save a MSR write in the PMI */
+ 	if (hwc->autoreload)
+ 		ds->pebs_event_reset[hwc->idx] =
+@@ -867,7 +893,8 @@ static inline u64 intel_hsw_transaction(struct pebs_record_hsw *pebs)
+ }
+ 
+ static void __intel_pmu_pebs_event(struct perf_event *event,
+-				   struct pt_regs *iregs, void *__pebs)
++				   struct pt_regs *iregs, void *__pebs,
++				   bool first_record)
+ {
+ 	/*
+ 	 * We cast to the biggest pebs_record but are careful not to
+@@ -880,7 +907,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	u64 sample_type;
+ 	int fll, fst;
+ 
+-	if (!intel_pmu_save_and_restart(event))
++	if (first_record && !intel_pmu_save_and_restart(event))
+ 		return;
+ 
+ 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
+@@ -956,8 +983,22 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
+ 
+-	if (perf_event_overflow(event, &data, &regs))
+-		x86_pmu_stop(event, 0);
++	if (first_record) {
++		if (perf_event_overflow(event, &data, &regs))
++			x86_pmu_stop(event, 0);
++	} else {
++		struct perf_output_handle handle;
++		struct perf_event_header header;
++
++		perf_prepare_sample(&header, &data, event, &regs);
++
++		if (perf_output_begin(&handle, event, header.size))
++			return;
++
++		perf_output_sample(&handle, &header, &data, event);
++
++		perf_output_end(&handle);
++	}
+ }
+ 
+ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+@@ -998,17 +1039,18 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ 	WARN_ONCE(n > 1, "bad leftover pebs %d\n", n);
+ 	at += n - 1;
+ 
+-	__intel_pmu_pebs_event(event, iregs, at);
++	__intel_pmu_pebs_event(event, iregs, at, true);
+ }
+ 
+ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+-	struct perf_event *event = NULL;
++	struct perf_event *event;
+ 	void *at, *top;
+ 	u64 status = 0;
+ 	int bit;
++	bool multi_pebs, first_record;
+ 
+ 	if (!x86_pmu.pebs_active)
+ 		return;
+@@ -1021,17 +1063,19 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 	if (unlikely(at > top))
+ 		return;
+ 
+-	/*
+-	 * Should not happen, we program the threshold at 1 and do not
+-	 * set a reset value.
+-	 */
+-	WARN_ONCE(top - at > x86_pmu.max_pebs_events * x86_pmu.pebs_record_size,
+-		  "Unexpected number of pebs records %ld\n",
+-		  (long)(top - at) / x86_pmu.pebs_record_size);
++	if (ds->pebs_interrupt_threshold >
++	    ds->pebs_buffer_base + x86_pmu.pebs_record_size)
++		multi_pebs = true;
++	else
++		multi_pebs = false;
+ 
+ 	for (; at < top; at += x86_pmu.pebs_record_size) {
+ 		struct pebs_record_nhm *p = at;
+ 
++		/*
++		 * PEBS creates only one entry if multiple counters
++		 * overflow simultaneously.
++		 */
+ 		for_each_set_bit(bit, (unsigned long *)&p->status,
+ 				 x86_pmu.max_pebs_events) {
+ 			event = cpuc->events[bit];
+@@ -1042,17 +1086,15 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 
+ 			if (!event->attr.precise_ip)
+ 				continue;
+-
+-			if (__test_and_set_bit(bit, (unsigned long *)&status))
+-				continue;
+-
+-			break;
++			if (!__test_and_set_bit(bit, (unsigned long *)&status)) {
++				first_record = true;
++			} else {
++				if (!multi_pebs)
++					continue;
++				first_record = false;
++			}
++			__intel_pmu_pebs_event(event, iregs, at, first_record);
+ 		}
+-
+-		if (!event || bit >= x86_pmu.max_pebs_events)
+-			continue;
+-
+-		__intel_pmu_pebs_event(event, iregs, at);
+ 	}
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d6d5fcf..430f1ad 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -184,10 +184,6 @@ void intel_pmu_lbr_reset(void)
+ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-
+-	if (!x86_pmu.lbr_nr)
 -		return;
 -
--	local_irq_save(flags);
--
--	rcu_read_lock();
--
--	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
--
--		/*
--		 * check if the context has at least one
--		 * event using PERF_SAMPLE_BRANCH_STACK
--		 */
--		if (cpuctx->ctx.nr_branch_stack > 0
--		    && pmu->flush_branch_stack) {
--
--			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
--
--			perf_pmu_disable(pmu);
--
--			pmu->flush_branch_stack();
--
--			perf_pmu_enable(pmu);
--
--			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
--		}
--	}
--
--	rcu_read_unlock();
--
--	local_irq_restore(flags);
--}
--
--/*
-  * Called from scheduler to add the events of the current task
-  * with interrupts disabled.
-  *
-@@ -2691,10 +2626,6 @@ void __perf_event_task_sched_in(struct task_struct *prev,
- 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
- 		perf_cgroup_sched_in(prev, task);
+ 	/*
+ 	 * It is necessary to flush the stack on context switch. This happens
+ 	 * when the branch stack does not tag its entries with the pid of the
+@@ -408,7 +404,6 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
  
--	/* check for system-wide branch_stack events */
--	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
--		perf_branch_stack_sched_in(prev, task);
+ 	if (br_type & PERF_SAMPLE_BRANCH_COND)
+ 		mask |= X86_BR_JCC;
 -
- 	if (__get_cpu_var(perf_sched_cb_usages))
- 		perf_pmu_sched_task(prev, task, true);
- }
-@@ -3280,10 +3211,6 @@ static void unaccount_event_cpu(struct perf_event *event, int cpu)
- 	if (event->parent)
- 		return;
- 
--	if (has_branch_stack(event)) {
--		if (!(event->attach_state & PERF_ATTACH_TASK))
--			atomic_dec(&per_cpu(perf_branch_stack_events, cpu));
--	}
- 	if (is_cgroup_event(event))
- 		atomic_dec(&per_cpu(perf_cgroup_events, cpu));
- }
-@@ -6769,10 +6696,6 @@ static void account_event_cpu(struct perf_event *event, int cpu)
- 	if (event->parent)
- 		return;
- 
--	if (has_branch_stack(event)) {
--		if (!(event->attach_state & PERF_ATTACH_TASK))
--			atomic_inc(&per_cpu(perf_branch_stack_events, cpu));
--	}
- 	if (is_cgroup_event(event))
- 		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
- }
+ 	/*
+ 	 * stash actual user request into reg, it may
+ 	 * be used by fixup code for some CPU
 -- 
 1.9.3
 
