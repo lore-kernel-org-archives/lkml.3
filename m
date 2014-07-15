@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933269AbaGOVdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:33:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54123 "EHLO
+	id S933327AbaGOVd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:33:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54134 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108AbaGOVdi (ORCPT
+	with ESMTP id S1755909AbaGOVdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:33:38 -0400
+	Tue, 15 Jul 2014 17:33:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Dempsky <mdempsky@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 107/198] ptrace: fix fork event messages across pid namespaces
-Date: Tue, 15 Jul 2014 14:29:37 -0700
-Message-Id: <1405459868-15089-108-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 106/198] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Date: Tue, 15 Jul 2014 14:29:36 -0700
+Message-Id: <1405459868-15089-107-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -32,122 +33,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Dempsky <mdempsky@chromium.org>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-commit 4e52365f279564cef0ddd41db5237f0471381093 upstream.
+commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
 
-When tracing a process in another pid namespace, it's important for fork
-event messages to contain the child's pid as seen from the tracer's pid
-namespace, not the parent's.  Otherwise, the tracer won't be able to
-correlate the fork event with later SIGTRAP signals it receives from the
-child.
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
-We still risk a race condition if a ptracer from a different pid
-namespace attaches after we compute the pid_t value.  However, sending a
-bogus fork event message in this unlikely scenario is still a vast
-improvement over the status quo where we always send bogus fork event
-messages to debuggers in a different pid namespace than the forking
-process.
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
 
-Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Julien Tinnes <jln@chromium.org>
-Cc: Roland McGrath <mcgrathr@chromium.org>
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
+This patch fixes a deadlock in an uninterruptible wait when the RTC is
+updated more than once every second.  AFAICT the bug is here from the
+beginning, but I think we should at least backport this fix to 3.10 and
+the following longterm and stable releases.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/ptrace.h | 32 ++++++++++++++++++++++++++++++++
- kernel/fork.c          | 10 +++++++---
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-at91rm9200.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 07d0df6..077904c 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -5,6 +5,7 @@
- #include <linux/sched.h>		/* For struct task_struct.  */
- #include <linux/err.h>			/* for IS_ERR_VALUE */
- #include <linux/bug.h>			/* For BUG_ON.  */
-+#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
- #include <uapi/linux/ptrace.h>
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index 3281c90..44fe83e 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -48,6 +48,7 @@ struct at91_rtc_config {
  
- /*
-@@ -129,6 +130,37 @@ static inline void ptrace_event(int event, unsigned long message)
+ static const struct at91_rtc_config *at91_rtc_config;
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+@@ -161,6 +162,8 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
+ 
++	wait_for_completion(&at91_rtc_upd_rdy);
++
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -183,7 +186,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 
+ 	/* Restart Time/Calendar */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
++	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
+ 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
++	at91_rtc_write_ier(AT91_RTC_SECEV);
+ 
+ 	return 0;
  }
+@@ -290,8 +295,10 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
+-			events |= (RTC_UF | RTC_IRQF);
++		if (rtsr & AT91_RTC_SECEV) {
++			complete(&at91_rtc_upd_rdy);
++			at91_rtc_write_idr(AT91_RTC_SECEV);
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
  
- /**
-+ * ptrace_event_pid - possibly stop for a ptrace event notification
-+ * @event:	%PTRACE_EVENT_* value to report
-+ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
-+ *
-+ * Check whether @event is enabled and, if so, report @event and @pid
-+ * to the ptrace parent.  @pid is reported as the pid_t seen from the
-+ * the ptrace parent's pid namespace.
-+ *
-+ * Called without locks.
-+ */
-+static inline void ptrace_event_pid(int event, struct pid *pid)
-+{
-+	/*
-+	 * FIXME: There's a potential race if a ptracer in a different pid
-+	 * namespace than parent attaches between computing message below and
-+	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
-+	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
+@@ -413,6 +420,11 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 		return PTR_ERR(rtc);
+ 	platform_set_drvdata(pdev, rtc);
+ 
++	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
++	 * completion.
 +	 */
-+	unsigned long message = 0;
-+	struct pid_namespace *ns;
++	at91_rtc_write_ier(AT91_RTC_SECEV);
 +
-+	rcu_read_lock();
-+	ns = task_active_pid_ns(rcu_dereference(current->parent));
-+	if (ns)
-+		message = pid_nr_ns(pid, ns);
-+	rcu_read_unlock();
-+
-+	ptrace_event(event, message);
-+}
-+
-+/**
-  * ptrace_init_task - initialize ptrace state for a new child
-  * @child:		new child task
-  * @ptrace:		true if child should be ptrace'd by parent's tracer
-diff --git a/kernel/fork.c b/kernel/fork.c
-index f330664..d0ca776 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1606,10 +1606,12 @@ long do_fork(unsigned long clone_flags,
- 	 */
- 	if (!IS_ERR(p)) {
- 		struct completion vfork;
-+		struct pid *pid;
- 
- 		trace_sched_process_fork(current, p);
- 
--		nr = task_pid_vnr(p);
-+		pid = get_task_pid(p, PIDTYPE_PID);
-+		nr = pid_vnr(pid);
- 
- 		if (clone_flags & CLONE_PARENT_SETTID)
- 			put_user(nr, parent_tidptr);
-@@ -1624,12 +1626,14 @@ long do_fork(unsigned long clone_flags,
- 
- 		/* forking complete and child started to run, tell ptracer */
- 		if (unlikely(trace))
--			ptrace_event(trace, nr);
-+			ptrace_event_pid(trace, pid);
- 
- 		if (clone_flags & CLONE_VFORK) {
- 			if (!wait_for_vfork_done(p, &vfork))
--				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
-+				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
- 		}
-+
-+		put_pid(pid);
- 	} else {
- 		nr = PTR_ERR(p);
- 	}
+ 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+ 	return 0;
+ }
 -- 
 1.9.1
 
