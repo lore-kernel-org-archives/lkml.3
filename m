@@ -1,103 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759429AbaGOVq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:46:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39834 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756546AbaGOVqP convert rfc822-to-8bit (ORCPT
+	id S964848AbaGOVjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:39:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54968 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964794AbaGOVix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:46:15 -0400
-From: Catalin Marinas <Catalin.Marinas@arm.com>
-To: Jungseok Lee <jungseoklee85@gmail.com>
-CC: Joel Schopp <joel.schopp@amd.com>, Timur Tabi <timur@codeaurora.org>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "barami97@gmail.com" <barami97@gmail.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Date: Tue, 15 Jul 2014 22:44:56 +0100
-Subject: Re: [PATCH v6 2/7] arm64: Introduce VA_BITS and translation level
- options
-Thread-Topic: [PATCH v6 2/7] arm64: Introduce VA_BITS and translation level
- options
-Thread-Index: Ac+gdgVDJMPieG9/QXGgc+RR0bnw/g==
-Message-ID: <95F7642B-124A-4E03-ACDE-5BF9D70E8E15@arm.com>
-References: <000101cf6dc6$3b93d510$b2bb7f30$@samsung.com>
- <CAOZdJXWCu-zHuQoAUdiieqsKqCfG9BsZariFqQP=NCgQP-zpNA@mail.gmail.com>
- <53C43FE3.1050008@amd.com> <20140714224159.GA9829@arm.com>
- <3AF98E68-6818-416A-BC33-57148F1EC246@gmail.com>
-In-Reply-To: <3AF98E68-6818-416A-BC33-57148F1EC246@gmail.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-MIME-Version: 1.0
-X-MC-Unique: 114071522445905602
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Jul 2014 17:38:53 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 181/198] mm: fix crashes from mbind() merging vmas
+Date: Tue, 15 Jul 2014 14:30:51 -0700
+Message-Id: <1405459868-15089-182-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 Jul 2014, at 15:53, Jungseok Lee <jungseoklee85@gmail.com> wrote:
-> On Jul 15, 2014, at 7:41 AM, Catalin Marinas wrote:
->> On Mon, Jul 14, 2014 at 09:38:59PM +0100, Joel Schopp wrote:
->>> I agree that these patches would be very useful.  I just rebased my fix
->>> for a VTTBR_BADDR_MASK bug on one of these patches that could be pulled
->>> out independently.  See
->>> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-July/010480.html
->>>
->>> The original author Jungseok Lee is no longer available to work on
->>> future versions of these patches.  I was thinking that if they didn't
->>> get picked up as they are that with the original author's blessing I
->>> would pick them up and keep them forward ported/resubmitted.  I have an
->>> SOC to test them on.
->>
->> The patches are pretty good. I'll give them a try tomorrow and if there
->> isn't something fundamental missing I'll consider taking them for 3.17.
->
-> Hi All,
->
-> If only stage1 side is taken and merged, KVM should be disabled under 4 level
-> lookups with the following configuration adjustment. I've tested it on top of
-> arm64/for-next/core branch and it works fine.
->
-> --- a/arch/arm64/kvm/Kconfig
-> +++ b/arch/arm64/kvm/Kconfig
-> @@ -18,6 +18,7 @@ if VIRTUALIZATION
->
-> config KVM
->        bool "Kernel-based Virtual Machine (KVM) support"
-> +       depends on !ARM64_4_LEVELS
->        select MMU_NOTIFIER
->        select PREEMPT_NOTIFIERS
->        select ANON_INODES
->
-> However, I don't know whether it does make sense or not.
+3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
 
-I added some patches on top of your series, I hope to be able to post
-them tomorrow. My interim approach was to disable 4-levels if KVM is
-enabled.
+------------------
 
-> In other words, stage2 side should be prepared to fully support 4 level lookups.
->
-> In order to cover all combinations of host and guest, VTTBR_X should be determined
-> dynamically as referring to hardware capability. At this point, the patches have
-> been revised many times, but they don't have got ACKs from Christoffer and Marc yet.
->
-> That is why the patches are pending now in the author's point of view.
+From: Hugh Dickins <hughd@google.com>
 
-I have some clean-up for stage 1 on top but nothing major.
+commit d05f0cdcbe6388723f1900c549b4850360545201 upstream.
 
-Catalin
+In v2.6.34 commit 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
+introduced vma merging to mbind(), but it should have also changed the
+convention of passing start vma from queue_pages_range() (formerly
+check_range()) to new_vma_page(): vma merging may have already freed
+that structure, resulting in BUG at mm/mempolicy.c:1738 and probably
+worse crashes.
 
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
+Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ mm/mempolicy.c | 46 ++++++++++++++++++++--------------------------
+ 1 file changed, 20 insertions(+), 26 deletions(-)
 
-ARM Limited, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2557590
-ARM Holdings plc, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2548782
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index e980746..65c7674 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -654,19 +654,18 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
+  * @nodes and @flags,) it's isolated and queued to the pagelist which is
+  * passed via @private.)
+  */
+-static struct vm_area_struct *
++static int
+ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 		const nodemask_t *nodes, unsigned long flags, void *private)
+ {
+-	int err;
+-	struct vm_area_struct *first, *vma, *prev;
+-
++	int err = 0;
++	struct vm_area_struct *vma, *prev;
+ 
+-	first = find_vma(mm, start);
+-	if (!first)
+-		return ERR_PTR(-EFAULT);
++	vma = find_vma(mm, start);
++	if (!vma)
++		return -EFAULT;
+ 	prev = NULL;
+-	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
++	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
+ 		unsigned long endvma = vma->vm_end;
+ 
+ 		if (endvma > end)
+@@ -676,9 +675,9 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 
+ 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
+ 			if (!vma->vm_next && vma->vm_end < end)
+-				return ERR_PTR(-EFAULT);
++				return -EFAULT;
+ 			if (prev && prev->vm_end < vma->vm_start)
+-				return ERR_PTR(-EFAULT);
++				return -EFAULT;
+ 		}
+ 
+ 		if (flags & MPOL_MF_LAZY) {
+@@ -692,15 +691,13 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 
+ 			err = queue_pages_pgd_range(vma, start, endvma, nodes,
+ 						flags, private);
+-			if (err) {
+-				first = ERR_PTR(err);
++			if (err)
+ 				break;
+-			}
+ 		}
+ next:
+ 		prev = vma;
+ 	}
+-	return first;
++	return err;
+ }
+ 
+ /*
+@@ -1185,16 +1182,17 @@ out:
+ 
+ /*
+  * Allocate a new page for page migration based on vma policy.
+- * Start assuming that page is mapped by vma pointed to by @private.
++ * Start by assuming the page is mapped by the same vma as contains @start.
+  * Search forward from there, if not.  N.B., this assumes that the
+  * list of pages handed to migrate_pages()--which is how we get here--
+  * is in virtual address order.
+  */
+-static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
++static struct page *new_page(struct page *page, unsigned long start, int **x)
+ {
+-	struct vm_area_struct *vma = (struct vm_area_struct *)private;
++	struct vm_area_struct *vma;
+ 	unsigned long uninitialized_var(address);
+ 
++	vma = find_vma(current->mm, start);
+ 	while (vma) {
+ 		address = page_address_in_vma(page, vma);
+ 		if (address != -EFAULT)
+@@ -1226,7 +1224,7 @@ int do_migrate_pages(struct mm_struct *mm, const nodemask_t *from,
+ 	return -ENOSYS;
+ }
+ 
+-static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
++static struct page *new_page(struct page *page, unsigned long start, int **x)
+ {
+ 	return NULL;
+ }
+@@ -1236,7 +1234,6 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 		     unsigned short mode, unsigned short mode_flags,
+ 		     nodemask_t *nmask, unsigned long flags)
+ {
+-	struct vm_area_struct *vma;
+ 	struct mm_struct *mm = current->mm;
+ 	struct mempolicy *new;
+ 	unsigned long end;
+@@ -1302,11 +1299,9 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (err)
+ 		goto mpol_out;
+ 
+-	vma = queue_pages_range(mm, start, end, nmask,
++	err = queue_pages_range(mm, start, end, nmask,
+ 			  flags | MPOL_MF_INVERT, &pagelist);
+-
+-	err = PTR_ERR(vma);	/* maybe ... */
+-	if (!IS_ERR(vma))
++	if (!err)
+ 		err = mbind_range(mm, start, end, new);
+ 
+ 	if (!err) {
+@@ -1314,9 +1309,8 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 
+ 		if (!list_empty(&pagelist)) {
+ 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+-			nr_failed = migrate_pages(&pagelist, new_vma_page,
+-					(unsigned long)vma,
+-					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
++			nr_failed = migrate_pages(&pagelist, new_page,
++				start, MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
+ 			if (nr_failed)
+ 				putback_movable_pages(&pagelist);
+ 		}
+-- 
+1.9.1
 
