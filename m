@@ -1,219 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540AbaGOTgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:36:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51713 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932933AbaGOTgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:36:14 -0400
-Date: Tue, 15 Jul 2014 15:35:49 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 3/15] block copy: report the amount of copied data
-In-Reply-To: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1407151535240.14632@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933551AbaGOTgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:36:42 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:65358 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933318AbaGOTc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:32:58 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>,
+        James Morris <james.l.morris@oracle.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3/7] seccomp: Allow arch code to provide seccomp_data
+Date: Tue, 15 Jul 2014 12:32:32 -0700
+Message-Id: <bc33fe6f3afc640ec53d8e135e1c66ed12746dab.1405452484.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1405452484.git.luto@amacapital.net>
+References: <cover.1405452484.git.luto@amacapital.net>
+In-Reply-To: <cover.1405452484.git.luto@amacapital.net>
+References: <cover.1405452484.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes blkdev_issue_copy so that it returns the number of
-copied sectors in the variable "copied".
+populate_seccomp_data is expensive: it works by inspecting
+task_pt_regs and various other bits to piece together all the
+information, and it's does so in multiple partially redundant steps.
 
-The kernel makes best effort to copy as much data as possible, but because
-of device mapper mapping, it may be possible that copying fails at some
-stage. If we just returned the error number, the caller wouldn't know if
-all or part of the operation failed and the caller would be required to
-redo the whole copy operation.
+Arch-specific code in the syscall entry path can do much better.
 
-We return the number of copied sectors so that the caller can skip these
-sectors when doing the copy manually. On success (zero return code), the
-number of copied sectors is equal to the number of requested sectors. On
-error (negative return code), the number of copied sectors is smaller than
-the number of requested sectors.
+Admittedly this adds a bit of additional room for error, but the
+speedup should be worth it.
 
-The number of copied bytes is returned as a fourth uint64_t argument in
-the BLKCOPY ioctl.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- block/blk-lib.c           |   30 +++++++++++++++++++++++++-----
- block/ioctl.c             |   25 ++++++++++++++++---------
- include/linux/blk_types.h |    2 ++
- include/linux/blkdev.h    |    3 ++-
- 4 files changed, 45 insertions(+), 15 deletions(-)
+ include/linux/seccomp.h |  2 +-
+ kernel/seccomp.c        | 32 +++++++++++++++++++-------------
+ 2 files changed, 20 insertions(+), 14 deletions(-)
 
-Index: linux-3.16-rc5/block/blk-lib.c
-===================================================================
---- linux-3.16-rc5.orig/block/blk-lib.c	2014-07-15 15:26:33.000000000 +0200
-+++ linux-3.16-rc5/block/blk-lib.c	2014-07-15 15:27:25.000000000 +0200
-@@ -327,8 +327,17 @@ static void bio_copy_end_io(struct bio *
- 	bio_put(bio);
- 	if (atomic_dec_and_test(&bc->in_flight)) {
- 		struct bio_batch *bb = bc->private;
--		if (unlikely(bc->error < 0) && !ACCESS_ONCE(bb->error))
--			ACCESS_ONCE(bb->error) = bc->error;
-+		if (unlikely(bc->error < 0)) {
-+			u64 first_error;
-+			if (!ACCESS_ONCE(bb->error))
-+				ACCESS_ONCE(bb->error) = bc->error;
-+			do {
-+				first_error = atomic64_read(bc->first_error);
-+				if (bc->offset >= first_error)
-+					break;
-+			} while (unlikely(atomic64_cmpxchg(bc->first_error,
-+				first_error, bc->offset) != first_error));
-+		}
- 		kfree(bc);
- 		if (atomic_dec_and_test(&bb->done))
- 			complete(bb->wait);
-@@ -349,7 +358,7 @@ static void bio_copy_end_io(struct bio *
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index 8345fdc..4fc7a84 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -37,7 +37,7 @@ static inline int secure_computing(void)
+ #define SECCOMP_PHASE1_OK	0
+ #define SECCOMP_PHASE1_SKIP	1
+ 
+-extern u32 seccomp_phase1(void);
++extern u32 seccomp_phase1(struct seccomp_data *sd);
+ int seccomp_phase2(u32 phase1_result);
+ #else
+ extern void secure_computing_strict(int this_syscall);
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index d737445..391f6c4 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -171,24 +171,27 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+  *
+  * Returns valid seccomp BPF response codes.
   */
- int blkdev_issue_copy(struct block_device *src_bdev, sector_t src_sector,
- 		      struct block_device *dst_bdev, sector_t dst_sector,
--		      unsigned int nr_sects, gfp_t gfp_mask)
-+		      sector_t nr_sects, gfp_t gfp_mask, sector_t *copied)
+-static u32 seccomp_run_filters(void)
++static u32 seccomp_run_filters(struct seccomp_data *sd)
  {
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct request_queue *sq = bdev_get_queue(src_bdev);
-@@ -357,6 +366,11 @@ int blkdev_issue_copy(struct block_devic
- 	unsigned int max_copy_sectors;
- 	struct bio_batch bb;
- 	int ret = 0;
-+	atomic64_t first_error = ATOMIC64_INIT(nr_sects);
-+	sector_t offset = 0;
-+
-+	if (copied)
-+		*copied = 0;
+ 	struct seccomp_filter *f;
+-	struct seccomp_data sd;
++	struct seccomp_data sd_local;
+ 	u32 ret = SECCOMP_RET_ALLOW;
  
- 	if (!sq || !dq)
- 		return -ENXIO;
-@@ -380,10 +394,10 @@ int blkdev_issue_copy(struct block_devic
- 	bb.error = 0;
- 	bb.wait = &wait;
+ 	/* Ensure unexpected behavior doesn't result in failing open. */
+ 	if (WARN_ON(current->seccomp.filter == NULL))
+ 		return SECCOMP_RET_KILL;
  
--	while (nr_sects) {
-+	while (nr_sects && !ACCESS_ONCE(bb.error)) {
- 		struct bio *read_bio, *write_bio;
- 		struct bio_copy *bc;
--		unsigned int chunk = min(nr_sects, max_copy_sectors);
-+		unsigned chunk = (unsigned)min(nr_sects, (sector_t)max_copy_sectors);
+-	populate_seccomp_data(&sd);
++	if (!sd) {
++		populate_seccomp_data(&sd_local);
++		sd = &sd_local;
++	}
  
- 		bc = kmalloc(sizeof(struct bio_copy), gfp_mask);
- 		if (!bc) {
-@@ -411,6 +425,8 @@ int blkdev_issue_copy(struct block_devic
- 		bc->pair[0] = NULL;
- 		bc->pair[1] = NULL;
- 		bc->private = &bb;
-+		bc->first_error = &first_error;
-+		bc->offset = offset;
- 		spin_lock_init(&bc->spinlock);
+ 	/*
+ 	 * All filters in the list are evaluated and the lowest BPF return
+ 	 * value always takes priority (ignoring the DATA).
+ 	 */
+ 	for (f = current->seccomp.filter; f; f = f->prev) {
+-		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
++		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)sd);
  
- 		read_bio->bi_iter.bi_sector = src_sector;
-@@ -432,12 +448,16 @@ int blkdev_issue_copy(struct block_devic
- 		src_sector += chunk;
- 		dst_sector += chunk;
- 		nr_sects -= chunk;
-+		offset += chunk;
- 	}
+ 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+ 			ret = cur_ret;
+@@ -415,7 +418,7 @@ void secure_computing_strict(int this_syscall)
+ #else
+ int __secure_computing(void)
+ {
+-	u32 phase1_result = seccomp_phase1();
++	u32 phase1_result = seccomp_phase1(NULL);
  
- 	/* Wait for bios in-flight */
- 	if (!atomic_dec_and_test(&bb.done))
- 		wait_for_completion_io(&wait);
- 
-+	if (copied)
-+		*copied = min((sector_t)atomic64_read(&first_error), offset);
-+
- 	if (likely(!ret))
- 		ret = bb.error;
- 
-Index: linux-3.16-rc5/include/linux/blk_types.h
-===================================================================
---- linux-3.16-rc5.orig/include/linux/blk_types.h	2014-07-15 15:26:05.000000000 +0200
-+++ linux-3.16-rc5/include/linux/blk_types.h	2014-07-15 15:27:12.000000000 +0200
-@@ -49,6 +49,8 @@ struct bio_copy {
- 	atomic_t in_flight;
- 	struct bio *pair[2];
- 	void *private;
-+	atomic64_t *first_error;
-+	sector_t offset;
- 	spinlock_t spinlock;
- };
- 
-Index: linux-3.16-rc5/include/linux/blkdev.h
-===================================================================
---- linux-3.16-rc5.orig/include/linux/blkdev.h	2014-07-15 15:26:05.000000000 +0200
-+++ linux-3.16-rc5/include/linux/blkdev.h	2014-07-15 15:27:12.000000000 +0200
-@@ -1172,7 +1172,8 @@ extern int blkdev_issue_discard(struct b
- extern int blkdev_issue_write_same(struct block_device *bdev, sector_t sector,
- 		sector_t nr_sects, gfp_t gfp_mask, struct page *page);
- extern int blkdev_issue_copy(struct block_device *, sector_t,
--		struct block_device *, sector_t, unsigned int, gfp_t);
-+		struct block_device *, sector_t, sector_t, gfp_t,
-+		sector_t *);
- extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask);
- static inline int sb_issue_discard(struct super_block *sb, sector_t block,
-Index: linux-3.16-rc5/block/ioctl.c
-===================================================================
---- linux-3.16-rc5.orig/block/ioctl.c	2014-07-15 15:26:05.000000000 +0200
-+++ linux-3.16-rc5/block/ioctl.c	2014-07-15 15:27:12.000000000 +0200
-@@ -202,8 +202,13 @@ static int blk_ioctl_zeroout(struct bloc
+ 	if (likely(phase1_result == SECCOMP_PHASE1_OK))
+ 		return 0;
+@@ -426,22 +429,22 @@ int __secure_computing(void)
  }
  
- static int blk_ioctl_copy(struct block_device *bdev, uint64_t src_offset,
--			  uint64_t dst_offset, uint64_t len)
-+			  uint64_t dst_offset, uint64_t len, uint64_t *copied)
+ #ifdef CONFIG_SECCOMP_FILTER
+-static u32 __seccomp_phase1_filter(int this_syscall, struct pt_regs *regs)
++static u32 __seccomp_phase1_filter(int this_syscall, struct seccomp_data *sd)
  {
-+	int ret;
-+	sector_t copied_sec;
-+
-+	*copied = 0;
-+
- 	if (src_offset & 511)
- 		return -EINVAL;
- 	if (dst_offset & 511)
-@@ -222,8 +227,12 @@ static int blk_ioctl_copy(struct block_d
- 	    unlikely(dst_offset + len > (i_size_read(bdev->bd_inode) >> 9)))
- 		return -EINVAL;
+-	u32 filter_ret = seccomp_run_filters();
++	u32 filter_ret = seccomp_run_filters(sd);
+ 	int data = filter_ret & SECCOMP_RET_DATA;
+ 	u32 action = filter_ret & SECCOMP_RET_ACTION;
  
--	return blkdev_issue_copy(bdev, src_offset, bdev, dst_offset, len,
--				 GFP_KERNEL);
-+	ret = blkdev_issue_copy(bdev, src_offset, bdev, dst_offset, len,
-+				GFP_KERNEL, &copied_sec);
-+
-+	*copied = (uint64_t)copied_sec << 9;
-+
-+	return ret;
- }
+ 	switch (action) {
+ 	case SECCOMP_RET_ERRNO:
+ 		/* Set the low-order 16-bits as a errno. */
+-		syscall_set_return_value(current, regs,
++		syscall_set_return_value(current, task_pt_regs(current),
+ 					 -data, 0);
+ 		goto skip;
  
- static int put_ushort(unsigned long arg, unsigned short val)
-@@ -367,12 +376,10 @@ int blkdev_ioctl(struct block_device *bd
- 		if (copy_from_user(range, (void __user *)arg, 24))
- 			return -EFAULT;
+ 	case SECCOMP_RET_TRAP:
+ 		/* Show the handler the original registers. */
+-		syscall_rollback(current, regs);
++		syscall_rollback(current, task_pt_regs(current));
+ 		/* Let the filter pass back 16 bits of data. */
+ 		seccomp_send_sigsys(this_syscall, data);
+ 		goto skip;
+@@ -468,11 +471,14 @@ skip:
  
--		ret = blk_ioctl_copy(bdev, range[0], range[1], range[2]);
--		if (!ret) {
--			range[3] = range[2];
--			if (copy_to_user((void __user *)(arg + 24), &range[3], 8))
--				return -EFAULT;
--		}
-+		ret = blk_ioctl_copy(bdev, range[0], range[1], range[2], &range[3]);
-+
-+		if (copy_to_user((void __user *)(arg + 24), &range[3], 8))
-+			return -EFAULT;
+ /**
+  * seccomp_phase1() - run fast path seccomp checks on the current syscall
++ * @arg sd: The seccomp_data or NULL
+  *
+  * This only reads pt_regs via the syscall_xyz helpers.  The only change
+  * it will make to pt_regs is via syscall_set_return_value, and it will
+  * only do that if it returns SECCOMP_PHASE1_SKIP.
+  *
++ * If sd is provided, it will not read pt_regs at all.
++ *
+  * It may also call do_exit or force a signal; these actions must be
+  * safe.
+  *
+@@ -486,11 +492,11 @@ skip:
+  * If it returns anything else, then the return value should be passed
+  * to seccomp_phase2 from a context in which ptrace hooks are safe.
+  */
+-u32 seccomp_phase1(void)
++u32 seccomp_phase1(struct seccomp_data *sd)
+ {
+ 	int mode = current->seccomp.mode;
+-	struct pt_regs *regs = task_pt_regs(current);
+-	int this_syscall = syscall_get_nr(current, regs);
++	int this_syscall = sd ? sd->nr :
++		syscall_get_nr(current, task_pt_regs(current));
  
- 		return ret;
- 	}
+ 	switch (mode) {
+ 	case SECCOMP_MODE_STRICT:
+@@ -498,7 +504,7 @@ u32 seccomp_phase1(void)
+ 		return SECCOMP_PHASE1_OK;
+ #ifdef CONFIG_SECCOMP_FILTER
+ 	case SECCOMP_MODE_FILTER:
+-		return __seccomp_phase1_filter(this_syscall, regs);
++		return __seccomp_phase1_filter(this_syscall, sd);
+ #endif
+ 	default:
+ 		BUG();
+-- 
+1.9.3
 
