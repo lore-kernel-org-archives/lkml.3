@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760802AbaGOX4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:56:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S1760819AbaGOX4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:56:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760028AbaGOXNp (ORCPT
+	with ESMTP id S1760021AbaGOXNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.14 07/66] parisc: fix fanotify_mark() syscall on 32bit compat kernel
-Date: Tue, 15 Jul 2014 16:17:01 -0700
-Message-Id: <20140715231702.409749914@linuxfoundation.org>
+Subject: [PATCH 3.14 06/66] parisc: add serial ports of C8000/1GHz machine to hardware database
+Date: Tue, 15 Jul 2014 16:17:00 -0700
+Message-Id: <20140715231702.379359179@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -30,76 +30,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Helge Deller <deller@gmx.de>
 
-commit ab8a261ba5e2dd9206da640de5870cc31d568a7c upstream.
-
-On parisc we can not use the existing compat implementation for fanotify_mark()
-because for the 64bit mask parameter the higher and lower 32bits are ordered
-differently than what the compat function expects from big endian
-architectures.
-
-Specifically:
-It finally turned out, that on hppa we end up with different assignments
-of parameters to kernel arguments depending on if we call the glibc
-wrapper function
- int fanotify_mark (int __fanotify_fd, unsigned int __flags,
-                    uint64_t __mask, int __dfd, const char *__pathname);
-or directly calling the syscall manually
- syscall(__NR_fanotify_mark, ...)
-
-Reason is, that the syscall() function is implemented as C-function and
-because we now have the sysno as first parameter in front of the other
-parameters the compiler will unexpectedly add an empty paramenter in
-front of the u64 value to ensure the correct calling alignment for 64bit
-values.
-This means, on hppa you can't simply use syscall() to call the kernel
-fanotify_mark() function directly, but you have to use the glibc
-function instead.
-
-This patch fixes the kernel in the hppa-arch specifc coding to adjust
-the parameters in a way as if userspace calls the glibc wrapper function
-fanotify_mark().
+commit eadcc7208a2237016be7bdff4551ba7614da85c8 upstream.
 
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/sys_parisc32.c  |   10 ++++++++++
- arch/parisc/kernel/syscall_table.S |    2 +-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ arch/parisc/kernel/hardware.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/kernel/sys_parisc32.c
-+++ b/arch/parisc/kernel/sys_parisc32.c
-@@ -4,6 +4,7 @@
-  * Copyright (C) 2000-2001 Hewlett Packard Company
-  * Copyright (C) 2000 John Marvin
-  * Copyright (C) 2001 Matthew Wilcox
-+ * Copyright (C) 2014 Helge Deller <deller@gmx.de>
-  *
-  * These routines maintain argument size conversion between 32bit and 64bit
-  * environment. Based heavily on sys_ia32.c and sys_sparc32.c.
-@@ -57,3 +58,12 @@ asmlinkage long sys32_unimplemented(int
-     	current->comm, current->pid, r20);
-     return -ENOSYS;
- }
-+
-+asmlinkage long sys32_fanotify_mark(compat_int_t fanotify_fd, compat_uint_t flags,
-+	compat_uint_t mask0, compat_uint_t mask1, compat_int_t dfd,
-+	const char  __user * pathname)
-+{
-+	return sys_fanotify_mark(fanotify_fd, flags,
-+			((__u64)mask1 << 32) | mask0,
-+			 dfd, pathname);
-+}
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -418,7 +418,7 @@
- 	ENTRY_SAME(accept4)		/* 320 */
- 	ENTRY_SAME(prlimit64)
- 	ENTRY_SAME(fanotify_init)
--	ENTRY_COMP(fanotify_mark)
-+	ENTRY_DIFF(fanotify_mark)
- 	ENTRY_COMP(clock_adjtime)
- 	ENTRY_SAME(name_to_handle_at)	/* 325 */
- 	ENTRY_COMP(open_by_handle_at)
+--- a/arch/parisc/kernel/hardware.c
++++ b/arch/parisc/kernel/hardware.c
+@@ -1210,7 +1210,8 @@ static struct hp_hardware hp_hardware_li
+ 	{HPHW_FIO, 0x004, 0x00320, 0x0, "Metheus Frame Buffer"}, 
+ 	{HPHW_FIO, 0x004, 0x00340, 0x0, "BARCO CX4500 VME Grphx Cnsl"}, 
+ 	{HPHW_FIO, 0x004, 0x00360, 0x0, "Hughes TOG VME FDDI"}, 
+-	{HPHW_FIO, 0x076, 0x000AD, 0x00, "Crestone Peak RS-232"},
++	{HPHW_FIO, 0x076, 0x000AD, 0x0, "Crestone Peak Core RS-232"},
++	{HPHW_FIO, 0x077, 0x000AD, 0x0, "Crestone Peak Fast? Core RS-232"},
+ 	{HPHW_IOA, 0x185, 0x0000B, 0x00, "Java BC Summit Port"}, 
+ 	{HPHW_IOA, 0x1FF, 0x0000B, 0x00, "Hitachi Ghostview Summit Port"}, 
+ 	{HPHW_IOA, 0x580, 0x0000B, 0x10, "U2-IOA BC Runway Port"}, 
 
 
