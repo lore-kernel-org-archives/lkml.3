@@ -1,62 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321AbaGOT0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:26:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933286AbaGOT0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:26:40 -0400
-Date: Tue, 15 Jul 2014 15:26:10 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: ANNOUNCE: SCSI XCOPY support for the kernel and device mapper
-In-Reply-To: <20140715185513.GA5331@infradead.org>
-Message-ID: <alpine.LRH.2.02.1407151523120.14632@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1407151359430.5499@file01.intranet.prod.int.rdu2.redhat.com> <20140715185513.GA5331@infradead.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S933319AbaGOT23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:28:29 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:50547 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933039AbaGOT21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:28:27 -0400
+Date: Tue, 15 Jul 2014 12:26:37 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] shmem: fix faulting into a hole, not taking
+ i_mutex
+In-Reply-To: <53C551A8.2040400@suse.cz>
+Message-ID: <alpine.LSU.2.11.1407151156110.3571@eggly.anvils>
+References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <alpine.LSU.2.11.1407150329250.2584@eggly.anvils> <53C551A8.2040400@suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 15 Jul 2014, Christoph Hellwig wrote:
-
-> On Tue, Jul 15, 2014 at 02:33:13PM -0400, Mikulas Patocka wrote:
-> > Hi
+On Tue, 15 Jul 2014, Vlastimil Babka wrote:
+> On 07/15/2014 12:31 PM, Hugh Dickins wrote:
+> > f00cdc6df7d7 ("shmem: fix faulting into a hole while it's punched") was
+> > buggy: Sasha sent a lockdep report to remind us that grabbing i_mutex in
+> > the fault path is a no-no (write syscall may already hold i_mutex while
+> > faulting user buffer).
 > > 
-> > I annouce that I released the first version of a patch set that makes it 
-> > possible to use SCSI XCOPY offload for the block layer and device mapper.
+> > We tried a completely different approach (see following patch) but that
+> > proved inadequate: good enough for a rational workload, but not good
+> > enough against trinity - which forks off so many mappings of the object
+> > that contention on i_mmap_mutex while hole-puncher holds i_mutex builds
+> > into serious starvation when concurrent faults force the puncher to fall
+> > back to single-page unmap_mapping_range() searches of the i_mmap tree.
 > > 
-> > The patchset is at 
-> > http://people.redhat.com/~mpatocka/patches/kernel/xcopy/series.html It 
-> > requires kernel version at least 3.16-rc4. It was tested on target-core 
-> > iSCSI implementation.
+> > So return to the original umbrella approach, but keep away from i_mutex
+> > this time.  We really don't want to bloat every shmem inode with a new
+> > mutex or completion, just to protect this unlikely case from trinity.
+> > So extend the original with wait_queue_head on stack at the hole-punch
+> > end, and wait_queue item on the stack at the fault end.
 > 
-> Can you send the series to the mainling list(s)?  That makes it a lot
-> easier to do a quick review.
+> Hi, thanks a lot, I will definitely test it soon, although my reproducer is
+> rather limited - it already works fine with the current kernel. Trinity will
+> be more useful here.
 
-I'll post them to the lists.
+Yes, 2/2 (minus the page->swap addition) already proved good enough for
+your (more realistic than trinity) testcase, and for mine.  And 1/2 (minus
+the new waiting) already proved good enough for you too, just more awkward
+to backport way back.  I agree that it's trinity we most need, to check
+that I didn't mess up 1/2 - though your testing welcome too, thanks.
 
-> > The dm-kcopyd subsystem is modified to use the XCOPY command, so device 
-> > mapper targets that use it (mirror, snapshot, thin, cache) take advantage 
-> > of copy offload automatically.
+> But there's something that caught my eye so I though I
+> would raise the concern now.
+
+Thank you.
+
 > 
-> That sounds good, do you have any benchmarking data that shows the
-> advantage of using XCOPY?
+> > @@ -760,7 +760,7 @@ static int shmem_writepage(struct page *
+> >   			spin_lock(&inode->i_lock);
+> >   			shmem_falloc = inode->i_private;
+> 
+> Without ACCESS_ONCE, can shmem_falloc potentially become an alias on
+> inode->i_private and later become re-read outside of the lock?
 
-dm-mirror resynchronization is 4 times faster with XCOPY offload, but it 
-is just a benchmark on a network with iSCSI between two slow machines.
+No, it could be re-read inside the locked section (which is okay since
+the locking ensures the same value would be re-read each time), but it
+cannot be re-read after the unlock.  The unlock guarantees that (whereas
+an assignment after the unlock might be moved up before the unlock).
 
-I hope that we get some benchmarks on a real hardware.
+I searched for a simple example (preferably not in code written by me!)
+to convince you.  I thought it would be easy to find an example of
 
-Mikulas
+	spin_lock(&lock);
+	thing_to_free = whatever;
+	spin_unlock(&lock);
+	if (thing_to_free)
+		free(thing_to_free);
+
+but everything I hit upon was actually a little more complicated than
+than that (e.g. involving whatever(), or setting whatever = NULL after),
+and therefore less convincing.  Please hunt around to convince yourself.
+
+> 
+> >   			if (shmem_falloc &&
+> > -			    !shmem_falloc->mode &&
+> > +			    !shmem_falloc->waitq &&
+> >   			    index >= shmem_falloc->start &&
+> >   			    index < shmem_falloc->next)
+> >   				shmem_falloc->nr_unswapped++;
+...
+> >   	if (unlikely(inode->i_private)) {
+> >   		struct shmem_falloc *shmem_falloc;
+> > 
+> >   		spin_lock(&inode->i_lock);
+> >   		shmem_falloc = inode->i_private;
+> 
+> Same here.
+
+Same here :)
+
+> 
+> > -		if (!shmem_falloc ||
+> > -		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
+> > -		    vmf->pgoff < shmem_falloc->start ||
+> > -		    vmf->pgoff >= shmem_falloc->next)
+> > -			shmem_falloc = NULL;
+> > -		spin_unlock(&inode->i_lock);
+> > -		/*
+> > -		 * i_lock has protected us from taking shmem_falloc seriously
+> > -		 * once return from shmem_fallocate() went back up that
+> > stack.
+> > -		 * i_lock does not serialize with i_mutex at all, but it does
+> > -		 * not matter if sometimes we wait unnecessarily, or
+> > sometimes
+> > -		 * miss out on waiting: we just need to make those cases
+> > rare.
+> > -		 */
+> > -		if (shmem_falloc) {
+> > +		if (shmem_falloc &&
+> > +		    shmem_falloc->waitq &&
+> 
+> Here it's operating outside of lock.
+
+No, it's inside the lock: just easier to see from the patched source
+than from the patch itself.
+
+Hugh
