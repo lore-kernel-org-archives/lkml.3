@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760974AbaGOX7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:59:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S1760049AbaGOX7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:59:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759953AbaGOXNm (ORCPT
+	with ESMTP id S1759950AbaGOXNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:42 -0400
+	Tue, 15 Jul 2014 19:13:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 30/66] crypto: caam - fix memleak in caam_jr module
-Date: Tue, 15 Jul 2014 16:17:24 -0700
-Message-Id: <20140715231703.368430405@linuxfoundation.org>
+        Bert Vermeulen <bert@biot.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 03/66] USB: ftdi_sio: Add extra PID.
+Date: Tue, 15 Jul 2014 16:16:57 -0700
+Message-Id: <20140715231702.279138778@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,44 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Bert Vermeulen <bert@biot.com>
 
-commit 0378c9a855bfa395f595fbfb049707093e270f69 upstream.
+commit 5a7fbe7e9ea0b1b9d7ffdba64db1faa3a259164c upstream.
 
-This patch fixes a memory leak that appears when caam_jr module is unloaded.
+This patch adds PID 0x0003 to the VID 0x128d (Testo). At least the
+Testo 435-4 uses this, likely other gear as well.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Bert Vermeulen <bert@biot.com>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/jr.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    3 ++-
+ drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/crypto/caam/jr.c
-+++ b/drivers/crypto/caam/jr.c
-@@ -453,8 +453,8 @@ static int caam_jr_probe(struct platform
- 	int error;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -720,7 +720,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+-	{ USB_DEVICE(TESTO_VID, TESTO_USB_INTERFACE_PID) },
++	{ USB_DEVICE(TESTO_VID, TESTO_1_PID) },
++	{ USB_DEVICE(TESTO_VID, TESTO_3_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_GAMMA_SCOUT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13M_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13S_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -798,7 +798,8 @@
+  * Submitted by Colin Leroy
+  */
+ #define TESTO_VID			0x128D
+-#define TESTO_USB_INTERFACE_PID		0x0001
++#define TESTO_1_PID			0x0001
++#define TESTO_3_PID			0x0003
  
- 	jrdev = &pdev->dev;
--	jrpriv = kmalloc(sizeof(struct caam_drv_private_jr),
--			 GFP_KERNEL);
-+	jrpriv = devm_kmalloc(jrdev, sizeof(struct caam_drv_private_jr),
-+			      GFP_KERNEL);
- 	if (!jrpriv)
- 		return -ENOMEM;
- 
-@@ -487,10 +487,8 @@ static int caam_jr_probe(struct platform
- 
- 	/* Now do the platform independent part */
- 	error = caam_jr_init(jrdev); /* now turn on hardware */
--	if (error) {
--		kfree(jrpriv);
-+	if (error)
- 		return error;
--	}
- 
- 	jrpriv->dev = jrdev;
- 	spin_lock(&driver_data.jr_alloc_lock);
+ /*
+  * Mobility Electronics products.
 
 
