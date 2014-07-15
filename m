@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641AbaGODFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:05:20 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:41228 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081AbaGODFT (ORCPT
+	id S1757292AbaGODGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:06:34 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:35593 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106AbaGODGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:05:19 -0400
-Date: Tue, 15 Jul 2014 12:04:02 +0900
+	Mon, 14 Jul 2014 23:06:32 -0400
+Date: Tue, 15 Jul 2014 12:05:14 +0900
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: lidza.louina@gmail.com
 Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
         driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] staging: dgap: introduce dgap_cleanup_nodes()
-Message-ID: <20140715030402.GA14411@devel.8.8.4.4>
+Subject: [PATCH 8/8] staging: dgap: fix memory leak in dgap_parsefile()
+Message-ID: <20140715030456.GA14420@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,103 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a configration file is parsed with dgap_parsefile(),
-makes nodes for saving configrations for board.
-
-Making a node will allocate node memory and strings for saving
-configrations with kstrdup().
-
-So these are freed when dgap is unloaded or failed to initialize.
+The p->u.board.status is allocated and set a string as
+"No" once within allocating a node of BNODE type.
+But it also set again with kstrdup() in case of "STATUS"
+or "ID". If it is not allocated yet, use kstrdup().
+If not, use just memcpy().
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-It MUST be needed to prevent memory leaks but
-I'm not sure that I fix properly.
-
-Please review.
-
- drivers/staging/dgap/dgap.c |   47 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ drivers/staging/dgap/dgap.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 61baee1..a207bd7 100644
+index a207bd7..cedf4b3 100644
 --- a/drivers/staging/dgap/dgap.c
 +++ b/drivers/staging/dgap/dgap.c
-@@ -200,6 +200,7 @@ static int dgap_test_fep(struct board_t *brd);
- static int dgap_tty_register_ports(struct board_t *brd);
- static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
- 			      struct board_t *brd);
-+static void dgap_cleanup_nodes(void);
- 
- static void dgap_cleanup_module(void);
- 
-@@ -618,6 +619,7 @@ unregister_tty:
- free_flipbuf:
- 	dgap_free_flipbuf(brd);
- cleanup_brd:
-+	dgap_cleanup_nodes();
- 	dgap_release_remap(brd);
- 	kfree(brd);
- 
-@@ -658,6 +660,8 @@ static void dgap_cleanup_module(void)
- 		dgap_cleanup_board(dgap_board[i]);
- 	}
- 
-+	dgap_cleanup_nodes();
+@@ -6598,7 +6598,11 @@ static int dgap_parsefile(char **in)
+ 				pr_err("dgap: parse: unexpected end of file\n");
+ 				return -1;
+ 			}
+-			p->u.board.status = kstrdup(s, GFP_KERNEL);
 +
- 	if (dgap_numboards)
- 		pci_unregister_driver(&dgap_driver);
- }
-@@ -6322,6 +6326,49 @@ static void dgap_remove_tty_sysfs(struct device *c)
- 	sysfs_remove_group(&c->kobj, &dgap_tty_attribute_group);
- }
++			if (p->u.board.status)
++				memcpy(p->u.board.status, s, strlen(s) + 1);
++			else
++				p->u.board.status = kstrdup(s, GFP_KERNEL);
+ 			break;
  
-+static void dgap_cleanup_nodes(void)
-+{
-+	struct cnode *p;
-+
-+	p = &dgap_head;
-+
-+	while (p) {
-+		struct cnode *tmp = p->next;
-+
-+		switch (p->type) {
-+		case BNODE:
-+			kfree(p->u.board.portstr);
-+			kfree(p->u.board.addrstr);
-+			kfree(p->u.board.pcibusstr);
-+			kfree(p->u.board.pcislotstr);
-+			kfree(p->u.board.method);
-+			break;
-+		case CNODE:
-+			kfree(p->u.conc.id);
-+			kfree(p->u.conc.connect);
-+			break;
-+		case MNODE:
-+			kfree(p->u.module.id);
-+			break;
-+		case TNODE:
-+			kfree(p->u.ttyname);
-+			break;
-+		case CUNODE:
-+			kfree(p->u.cuname);
-+			break;
-+		case LNODE:
-+			kfree(p->u.line.cable);
-+			break;
-+		case PNODE:
-+			kfree(p->u.printname);
-+			break;
-+		}
-+
-+		kfree(p->u.board.status);
-+		kfree(p);
-+		p = tmp;
-+	}
-+}
- /*
-  * Parse a configuration file read into memory as a string.
-  */
+ 		case NPORTS:	/* number of ports */
+@@ -6648,7 +6652,10 @@ static int dgap_parsefile(char **in)
+ 				return -1;
+ 			}
+ 
+-			p->u.board.status = kstrdup(s, GFP_KERNEL);
++			if (p->u.board.status)
++				memcpy(p->u.board.status, s, strlen(s) + 1);
++			else
++				p->u.board.status = kstrdup(s, GFP_KERNEL);
+ 
+ 			if (p->type == CNODE) {
+ 				p->u.conc.id = kstrdup(s, GFP_KERNEL);
 -- 
 1.7.1
 
