@@ -1,100 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaGOOUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:20:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7301 "EHLO mx1.redhat.com"
+	id S1753082AbaGOOVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:21:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027AbaGOOUp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:20:45 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAFLxGvw_fnG1KTVXrcZxHZzKPnG5DA117VmcZBvw3EYgXw-DVw@mail.gmail.com>
-References: <CAFLxGvw_fnG1KTVXrcZxHZzKPnG5DA117VmcZBvw3EYgXw-DVw@mail.gmail.com> <1405413956-2772-1-git-send-email-lftan@altera.com> <4213.1405430178@warthog.procyon.org.uk>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: dhowells@redhat.com, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>, cltang@codesourcery.com
-Subject: Re: [PATCH v2 00/29] nios2 Linux kernel port
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <20543.1405434031.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 15 Jul 2014 15:20:31 +0100
-Message-ID: <20544.1405434031@warthog.procyon.org.uk>
+	id S1752942AbaGOOVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 10:21:43 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Jones <drjones@redhat.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v7] mmap_vmcore: skip non-ram pages reported by hypervisors
+Date: Tue, 15 Jul 2014 16:20:25 +0200
+Message-Id: <1405434025-4739-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard.weinberger@gmail.com> wrote:
+We have a special check in read_vmcore() handler to check if the page was
+reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+vmcore is read with mmap() no such check is performed. That can lead to
+unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+enormous load in both DomU and Dom0.
 
-> Having it on https://www.kernel.org/pub/tools/crosstool/ would be also nice.
+Fix the issue by mapping each non-ram page to the zero page. Keep direct
+path with remap_oldmem_pfn_range() to avoid looping through all pages on
+bare metal.
 
-Does the Fedora cross-compiler suite fit with your set?  All the fedora
-cross-compilers are build from a single pair of SRPMS into a slew of binary
-RPMs and none of the resulting RPMs are relocatable (they all end up in /usr).
+The issue can also be solved by overriding remap_oldmem_pfn_range() in
+xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+That, however, would involve non-obvious xen code path for all x86 builds
+with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+code on x86 arch from doing the same override.
 
-The easiest way to install them is:
+Changes from v6:
+- remove useless len increment when remapping the rest of the region
 
-	yum install gcc-\*-linux-gnu
+Changes from v5:
+- make len size_t to match do_unmap() interface
 
-For reference, the current rawhide SRPMs can be found here:
+Changes from v4:
+- change map_size type size_t -> unsigned long
+- use prot instead of vma->vm_page_prot inside remap_oldmem_pfn_checked()
 
-	https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS/c/cross-binutils-2.24-4.fc21.src.rpm
-	https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS/c/cross-gcc-4.9.0-3.fc21.src.rpm
+Changes from v3:
+- multi line comment style changes
+- minor code style changes
 
-I haven't yet pushed the NIOS2 arch changes (I'm waiting on a fix to allow me
-to build libgcc for Cris).
+Changes from v2:
+- make remap_oldmem_pfn_checked() interface exactly match
+  remap_oldmem_pfn_range()
+- unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
+  we don't need to take care of it in mmap_vmcore()
+- create vmcore_remap_oldmem_pfn() wrapper
 
-I haven't applied any of your patches, though I do apply the same patches that
-are applied to the core Fedora binutils and gcc.  Note that this URL linked to
-on your page:
+Changes from v1:
+- comment style changes
+- change remap_oldmem_pfn_checked() interface to closer match the
+  remap_oldmem_pfn() interface
+- preserve formal parameters within the loop, make the loop conditions
+  easier to understand
+- use my_zero_pfn() for the zero page
+- return remapped length instead of new offset
 
-	https://www.kernel.org/pub/tools/crosstool/patches/
+Reviewed-by: Andrew Jones <drjones@redhat.com>
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+---
+ fs/proc/vmcore.c | 82 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 79 insertions(+), 3 deletions(-)
 
-does not seem to exist.
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 382aa89..a18e651 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -328,6 +328,82 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
+  * virtually contiguous user-space in ELF layout.
+  */
+ #ifdef CONFIG_MMU
++/*
++ * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
++ * reported as not being ram with the zero page.
++ *
++ * @vma: vm_area_struct describing requested mapping
++ * @from: start remapping from
++ * @pfn: page frame number to start remapping to
++ * @size: remapping size
++ * @prot: protection bits
++ *
++ * Returns zero on success, -EAGAIN on failure.
++ */
++int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
++			     unsigned long pfn, unsigned long size,
++			     pgprot_t prot)
++{
++	unsigned long map_size;
++	unsigned long pos_start, pos_end, pos;
++	unsigned long zeropage_pfn = my_zero_pfn(0);
++	size_t len = 0;
++
++	pos_start = pfn;
++	pos_end = pfn + (size >> PAGE_SHIFT);
++
++	for (pos = pos_start; pos < pos_end; ++pos) {
++		if (!pfn_is_ram(pos)) {
++			/*
++			 * We hit a page which is not ram. Remap the continuous
++			 * region between pos_start and pos-1 and replace
++			 * the non-ram page at pos with the zero page.
++			 */
++			if (pos > pos_start) {
++				/* Remap continuous region */
++				map_size = (pos - pos_start) << PAGE_SHIFT;
++				if (remap_oldmem_pfn_range(vma, from + len,
++							   pos_start, map_size,
++							   prot))
++					goto fail;
++				len += map_size;
++			}
++			/* Remap the zero page */
++			if (remap_oldmem_pfn_range(vma, from + len,
++						   zeropage_pfn,
++						   PAGE_SIZE, prot))
++				goto fail;
++			len += PAGE_SIZE;
++			pos_start = pos + 1;
++		}
++	}
++	if (pos > pos_start) {
++		/* Remap the rest */
++		map_size = (pos - pos_start) << PAGE_SHIFT;
++		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
++					   map_size, prot))
++			goto fail;
++	}
++	return 0;
++fail:
++	do_munmap(vma->vm_mm, from, len);
++	return -EAGAIN;
++}
++
++int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
++			    unsigned long from, unsigned long pfn,
++			    unsigned long size, pgprot_t prot)
++{
++	/*
++	 * Check if oldmem_pfn_is_ram was registered to avoid
++	 * looping over all pages without a reason.
++	 */
++	if (oldmem_pfn_is_ram)
++		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
++	else
++		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
++}
++
+ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ {
+ 	size_t size = vma->vm_end - vma->vm_start;
+@@ -387,9 +463,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 			tsz = min_t(size_t, m->offset + m->size - start, size);
+ 			paddr = m->paddr + start - m->offset;
+-			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+-						   paddr >> PAGE_SHIFT, tsz,
+-						   vma->vm_page_prot))
++			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
++						    paddr >> PAGE_SHIFT, tsz,
++						    vma->vm_page_prot))
+ 				goto fail;
+ 			size -= tsz;
+ 			start += tsz;
+-- 
+1.9.3
 
-The compilers that I have managed to produce and install on my system are:
-
-	gcc-aarch64-linux-gnu
-	gcc-alpha-linux-gnu
-	gcc-arm-linux-gnu
-	gcc-avr32-linux-gnu
-	gcc-bfin-linux-gnu
-	gcc-c6x-linux-gnu
-	gcc-cris-linux-gnu
-	gcc-frv-linux-gnu
-	gcc-h8300-linux-gnu
-	gcc-hppa-linux-gnu
-	gcc-hppa64-linux-gnu
-	gcc-ia64-linux-gnu
-	gcc-m32r-linux-gnu
-	gcc-m68k-linux-gnu
-	gcc-microblaze-linux-gnu
-	gcc-mips64-linux-gnu
-	gcc-mn10300-linux-gnu
-	gcc-nios2-linux-gnu
-	gcc-powerpc64-linux-gnu
-	gcc-ppc64-linux-gnu
-	gcc-s390x-linux-gnu
-	gcc-sh-linux-gnu
-	gcc-sh64-linux-gnu
-	gcc-sparc64-linux-gnu
-	gcc-tile-linux-gnu
-	gcc-x86_64-linux-gnu
-	gcc-xtensa-linux-gnu
-
-All but cris, nios2, sh, sh64 and tile have a collection of libgcc built.
-
-I don't build i386, mips, powerpc, s390, sh4 and sparc as these are covered by
-the ones I do build.
-
-gcc doesn't support Metag or Openrisc, it considers Score obsolete and
-Hexagon and Unicore32 don't seem to have suitable binutils support.
-
-David
