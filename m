@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312AbaGOIsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:48:25 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:54743
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S932706AbaGOIw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:52:58 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:46522
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758138AbaGOIsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:48:21 -0400
+	id S1758313AbaGOIs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:48:26 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 12/29] nios2: Interrupt handling
-Date: Tue, 15 Jul 2014 16:45:39 +0800
-Message-ID: <1405413956-2772-13-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 20/29] nios2: Cpuinfo handling
+Date: Tue, 15 Jul 2014 16:45:47 +0800
+Message-ID: <1405413956-2772-21-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(15202345003)(50226001)(93916002)(21056001)(86362001)(92566001)(81342001)(47776003)(15975445006)(95666004)(87936001)(83322001)(44976005)(68736004)(4396001)(19580395003)(76176999)(88136002)(50986999)(87286001)(33646002)(2201001)(36756003)(6806004)(85306003)(102836001)(105596002)(31966008)(106466001)(62966002)(77982001)(80022001)(42186005)(74502001)(92726001)(81542001)(79102001)(19580405001)(85852003)(64706001)(48376002)(84676001)(89996001)(20776003)(83072002)(97736001)(104166001)(74662001)(99396002)(77096002)(76482001)(107046002)(77156001)(46102001)(229853001)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB040;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(95666004)(87286001)(85852003)(85306003)(42186005)(46102001)(50986999)(229853001)(19580395003)(79102001)(62966002)(47776003)(97736001)(87936001)(99396002)(84676001)(20776003)(80022001)(15202345003)(86362001)(33646002)(93916002)(44976005)(77156001)(92566001)(21056001)(81542001)(76176999)(31966008)(77096002)(102836001)(19580405001)(83322001)(2201001)(106466001)(48376002)(64706001)(74662001)(77982001)(76482001)(68736004)(74502001)(81342001)(6806004)(104166001)(92726001)(36756003)(105596002)(50226001)(89996001)(15975445006)(4396001)(107046002)(88136002)(83072002)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB318;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,26 +31,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the support for IRQ handling.
-
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/irq.h      | 34 +++++++++++++++
- arch/nios2/include/asm/irqflags.h | 69 ++++++++++++++++++++++++++++++
- arch/nios2/kernel/irq.c           | 90 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 193 insertions(+)
- create mode 100644 arch/nios2/include/asm/irq.h
- create mode 100644 arch/nios2/include/asm/irqflags.h
- create mode 100644 arch/nios2/kernel/irq.c
+ arch/nios2/include/asm/cpuinfo.h |  57 +++++++++++
+ arch/nios2/kernel/cpuinfo.c      | 201 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 258 insertions(+)
+ create mode 100644 arch/nios2/include/asm/cpuinfo.h
+ create mode 100644 arch/nios2/kernel/cpuinfo.c
 
-diff --git a/arch/nios2/include/asm/irq.h b/arch/nios2/include/asm/irq.h
+diff --git a/arch/nios2/include/asm/cpuinfo.h b/arch/nios2/include/asm/cpuinfo.h
 new file mode 100644
-index 0000000..f7e94b9
+index 0000000..e88fcae
 --- /dev/null
-+++ b/arch/nios2/include/asm/irq.h
-@@ -0,0 +1,34 @@
++++ b/arch/nios2/include/asm/cpuinfo.h
+@@ -0,0 +1,57 @@
 +/*
-+ * Copyright (C) 2013 Altera Corporation
 + * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -68,192 +63,252 @@ index 0000000..f7e94b9
 + *
 + */
 +
-+#ifndef _ASM_NIOS2_IRQ_H
-+#define _ASM_NIOS2_IRQ_H
++#ifndef _ASM_NIOS2_CPUINFO_H
++#define _ASM_NIOS2_CPUINFO_H
 +
-+#define NIOS2_CPU_NR_IRQS	32
-+/* Reserve 32 additional interrupts for GPIO IRQs */
-+#define NR_IRQS			(NIOS2_CPU_NR_IRQS + 32)
++#include <linux/types.h>
 +
-+#ifndef NO_IRQ
-+#define NO_IRQ			(-1)
-+#endif
++struct cpuinfo {
++	/* Core CPU configuration */
++	char cpu_impl[12];
++	u32 cpu_clock_freq;
++	u32 mmu;
++	u32 has_div;
++	u32 has_mul;
++	u32 has_mulx;
 +
-+#include <asm-generic/irq.h>
-+#include <linux/irqdomain.h>
++	/* CPU caches */
++	u32 icache_line_size;
++	u32 icache_size;
++	u32 dcache_line_size;
++	u32 dcache_size;
 +
-+#endif
-diff --git a/arch/nios2/include/asm/irqflags.h b/arch/nios2/include/asm/irqflags.h
-new file mode 100644
-index 0000000..e91f4f0
---- /dev/null
-+++ b/arch/nios2/include/asm/irqflags.h
-@@ -0,0 +1,69 @@
-+/*
-+ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+#ifndef _ASM_IRQFLAGS_H
-+#define _ASM_IRQFLAGS_H
++	/* TLB */
++	u32 tlb_pid_num_bits;	/* number of bits used for the PID in TLBMISC */
++	u32 tlb_num_ways;
++	u32 tlb_num_ways_log2;
++	u32 tlb_num_entries;
++	u32 tlb_num_lines;
++	u32 tlb_ptr_sz;
 +
-+#include <asm/registers.h>
-+
-+static inline unsigned long arch_local_save_flags(void)
-+{
-+	return RDCTL(CTL_STATUS);
-+}
-+
-+/*
-+ * This will restore ALL status register flags, not only the interrupt
-+ * mask flag.
-+ */
-+static inline void arch_local_irq_restore(unsigned long flags)
-+{
-+	WRCTL(CTL_STATUS, flags);
-+}
-+
-+static inline void arch_local_irq_disable(void)
-+{
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags & ~STATUS_PIE);
-+}
-+
-+static inline void arch_local_irq_enable(void)
-+{
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags | STATUS_PIE);
-+}
-+
-+static inline int arch_irqs_disabled_flags(unsigned long flags)
-+{
-+	return (flags & STATUS_PIE) == 0;
-+}
-+
-+static inline int arch_irqs_disabled(void)
-+{
-+	return arch_irqs_disabled_flags(arch_local_save_flags());
-+}
-+
-+static inline unsigned long arch_local_irq_save(void)
-+{
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags & ~STATUS_PIE);
-+	return flags;
-+}
-+
-+#endif /* _ASM_IRQFLAGS_H */
-diff --git a/arch/nios2/kernel/irq.c b/arch/nios2/kernel/irq.c
-new file mode 100644
-index 0000000..8770d50
---- /dev/null
-+++ b/arch/nios2/kernel/irq.c
-@@ -0,0 +1,90 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * based on irq.c from m68k which is:
-+ *
-+ * Copyright (C) 2007 Greg Ungerer <gerg@snapgear.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/of.h>
-+
-+asmlinkage void do_IRQ(int hwirq, struct pt_regs *regs)
-+{
-+	struct pt_regs *oldregs = set_irq_regs(regs);
-+	int irq;
-+
-+	irq_enter();
-+	irq = irq_find_mapping(NULL, hwirq);
-+	generic_handle_irq(irq);
-+	irq_exit();
-+
-+	set_irq_regs(oldregs);
-+}
-+
-+static void chip_unmask(struct irq_data *d)
-+{
-+	u32 ien;
-+	ien = RDCTL(CTL_IENABLE);
-+	ien |= (1 << d->hwirq);
-+	WRCTL(CTL_IENABLE, ien);
-+}
-+
-+static void chip_mask(struct irq_data *d)
-+{
-+	u32 ien;
-+	ien = RDCTL(CTL_IENABLE);
-+	ien &= ~(1 << d->hwirq);
-+	WRCTL(CTL_IENABLE, ien);
-+}
-+
-+static struct irq_chip m_irq_chip = {
-+	.name		= "NIOS2-INTC",
-+	.irq_unmask	= chip_unmask,
-+	.irq_mask	= chip_mask,
++	/* Addresses */
++	u32 reset_addr;
++	u32 exception_addr;
++	u32 fast_tlb_miss_exc_addr;
 +};
 +
-+static int irq_map(struct irq_domain *h, unsigned int virq,
-+				irq_hw_number_t hw_irq_num)
++extern struct cpuinfo cpuinfo;
++
++extern void setup_cpuinfo(void);
++
++#endif /* _ASM_NIOS2_CPUINFO_H */
+diff --git a/arch/nios2/kernel/cpuinfo.c b/arch/nios2/kernel/cpuinfo.c
+new file mode 100644
+index 0000000..fa57a2d
+--- /dev/null
++++ b/arch/nios2/kernel/cpuinfo.c
+@@ -0,0 +1,201 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ *
++ * Based on cpuinfo.c from microblaze
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/seq_file.h>
++#include <linux/string.h>
++#include <linux/of.h>
++#include <asm/cpuinfo.h>
++
++struct cpuinfo cpuinfo;
++
++#define err_cpu(x) \
++	pr_err("ERROR: Nios II " x " different for kernel and DTS\n");
++
++static inline u32 fcpu(struct device_node *cpu, const char *n)
 +{
-+	irq_set_chip_and_handler(virq, &m_irq_chip, handle_level_irq);
++	u32 val = 0;
++
++	of_property_read_u32(cpu, n, &val);
++
++	return val;
++}
++
++static inline u32 fcpu_has(struct device_node *cpu, const char *n)
++{
++	return of_get_property(cpu, n, NULL) ? 1 : 0;
++}
++
++void __init setup_cpuinfo(void)
++{
++	struct device_node *cpu;
++	const char *str;
++	int len;
++
++	cpu = of_find_node_by_type(NULL, "cpu");
++	if (!cpu)
++		panic("%s: No CPU found in devicetree!\n", __func__);
++
++	if (!fcpu_has(cpu, "altr,has-initda"))
++		panic("initda instruction is unimplemented. Please update your "
++			"hardware system to have more than 4-byte line data "
++			"cache\n");
++
++	cpuinfo.cpu_clock_freq = fcpu(cpu, "clock-frequency");
++
++	str = of_get_property(cpu, "altr,implementation", &len);
++	if (str)
++		strlcpy(cpuinfo.cpu_impl, str, sizeof(cpuinfo.cpu_impl));
++	else
++		strcpy(cpuinfo.cpu_impl, "<unknown>");
++
++	cpuinfo.has_div = fcpu_has(cpu, "altr,has-div");
++	cpuinfo.has_mul = fcpu_has(cpu, "altr,has-mul");
++	cpuinfo.has_mulx = fcpu_has(cpu, "altr,has-mulx");
++
++#ifdef CONFIG_NIOS2_HW_DIV_SUPPORT
++	if (!cpuinfo.has_div)
++		err_cpu("DIV");
++#endif
++#ifdef CONFIG_NIOS2_HW_MUL_SUPPORT
++	if (!cpuinfo.has_mul)
++		err_cpu("MUL");
++#endif
++#ifdef CONFIG_NIOS2_HW_MULX_SUPPORT
++	if (!cpuinfo.has_mulx)
++		err_cpu("MULX");
++#endif
++
++	cpuinfo.tlb_num_ways = fcpu(cpu, "altr,tlb-num-ways");
++	if (!cpuinfo.tlb_num_ways)
++		panic("altr,tlb-num-ways can't be 0. Please check your hardware "
++			"system\n");
++	cpuinfo.icache_line_size = fcpu(cpu, "icache-line-size");
++	cpuinfo.icache_size = fcpu(cpu, "icache-size");
++	if (CONFIG_NIOS2_ICACHE_SIZE != cpuinfo.icache_size)
++	pr_warn("Warning: icache size configuration mismatch "
++		"(0x%x vs 0x%x) of CONFIG_NIOS2_ICACHE_SIZE vs "
++		"device tree icache-size\n",
++		CONFIG_NIOS2_ICACHE_SIZE, cpuinfo.icache_size);
++
++	cpuinfo.dcache_line_size = fcpu(cpu, "dcache-line-size");
++	if (CONFIG_NIOS2_DCACHE_LINE_SIZE != cpuinfo.dcache_line_size)
++		pr_warn("Warning: dcache line size configuration mismatch "
++		"(0x%x vs 0x%x) of CONFIG_NIOS2_DCACHE_LINE_SIZE vs "
++		"device tree dcache-line-size\n",
++		CONFIG_NIOS2_DCACHE_LINE_SIZE, cpuinfo.dcache_line_size);
++	cpuinfo.dcache_size = fcpu(cpu, "dcache-size");
++	if (CONFIG_NIOS2_DCACHE_SIZE != cpuinfo.dcache_size)
++		pr_warn("Warning: dcache size configuration mismatch "
++			"(0x%x vs 0x%x) of CONFIG_NIOS2_DCACHE_SIZE vs "
++			"device tree dcache-size\n",
++			CONFIG_NIOS2_DCACHE_SIZE, cpuinfo.dcache_size);
++
++	cpuinfo.tlb_pid_num_bits = fcpu(cpu, "altr,pid-num-bits");
++	cpuinfo.tlb_num_ways_log2 = ilog2(cpuinfo.tlb_num_ways);
++	cpuinfo.tlb_num_entries = fcpu(cpu, "altr,tlb-num-entries");
++	cpuinfo.tlb_num_lines = cpuinfo.tlb_num_entries / cpuinfo.tlb_num_ways;
++	cpuinfo.tlb_ptr_sz = fcpu(cpu, "altr,tlb-ptr-sz");
++
++	cpuinfo.reset_addr = fcpu(cpu, "altr,reset-addr");
++	cpuinfo.exception_addr = fcpu(cpu, "altr,exception-addr");
++	cpuinfo.fast_tlb_miss_exc_addr = fcpu(cpu, "altr,fast-tlb-miss-addr");
++}
++
++#ifdef CONFIG_PROC_FS
++
++/*
++ * Get CPU information for use by the procfs.
++ */
++static int show_cpuinfo(struct seq_file *m, void *v)
++{
++	int count = 0;
++	const u32 clockfreq = cpuinfo.cpu_clock_freq;
++
++	count = seq_printf(m,
++			"CPU:\t\tNios II/%s\n"
++			"MMU:\t\t%s\n"
++			"FPU:\t\tnone\n"
++			"Clocking:\t%u.%02u MHz\n"
++			"BogoMips:\t%lu.%02lu\n"
++			"Calibration:\t%lu loops\n",
++			cpuinfo.cpu_impl,
++			cpuinfo.mmu ? "present" : "none",
++			clockfreq / 1000000, (clockfreq / 100000) % 10,
++			(loops_per_jiffy * HZ) / 500000,
++			((loops_per_jiffy * HZ) / 5000) % 100,
++			(loops_per_jiffy * HZ));
++
++	count += seq_printf(m,
++			"HW:\n"
++			" MUL:\t\t%s\n"
++			" MULX:\t\t%s\n"
++			" DIV:\t\t%s\n",
++			cpuinfo.has_mul ? "yes" : "no",
++			cpuinfo.has_mulx ? "yes" : "no",
++			cpuinfo.has_div ? "yes" : "no");
++
++	count += seq_printf(m,
++			"Icache:\t\t%ukB, line length: %u\n",
++			cpuinfo.icache_size >> 10,
++			cpuinfo.icache_line_size);
++
++	count += seq_printf(m,
++			"Dcache:\t\t%ukB, line length: %u\n",
++			cpuinfo.dcache_size >> 10,
++			cpuinfo.dcache_line_size);
++
++	count += seq_printf(m,
++			"TLB:\t\t%u ways, %u entries, %u PID bits\n",
++			cpuinfo.tlb_num_ways,
++			cpuinfo.tlb_num_entries,
++			cpuinfo.tlb_pid_num_bits);
 +
 +	return 0;
 +}
 +
-+static struct irq_domain_ops irq_ops = {
-+	.map	= irq_map,
-+	.xlate	= irq_domain_xlate_onecell,
++static void *cpuinfo_start(struct seq_file *m, loff_t *pos)
++{
++	unsigned long i = *pos;
++
++	return i < num_possible_cpus() ? (void *) (i + 1) : NULL;
++}
++
++static void *cpuinfo_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return cpuinfo_start(m, pos);
++}
++
++static void cpuinfo_stop(struct seq_file *m, void *v)
++{
++}
++
++const struct seq_operations cpuinfo_op = {
++	.start	= cpuinfo_start,
++	.next	= cpuinfo_next,
++	.stop	= cpuinfo_stop,
++	.show	= show_cpuinfo
 +};
 +
-+void __init init_IRQ(void)
-+{
-+	struct irq_domain *domain;
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "altr,nios2-1.0");
-+	BUG_ON(!node);
-+
-+	domain = irq_domain_add_linear(node, NIOS2_CPU_NR_IRQS, &irq_ops, NULL);
-+	BUG_ON(!domain);
-+
-+	irq_set_default_host(domain);
-+	of_node_put(node);
-+}
++#endif /* CONFIG_PROC_FS */
 -- 
 1.8.2.1
 
