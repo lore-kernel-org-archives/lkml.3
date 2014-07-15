@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470AbaGOWIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:08:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54465 "EHLO
+	id S965042AbaGOWIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:08:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54445 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759359AbaGOVgH (ORCPT
+	with ESMTP id S1759352AbaGOVgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:07 -0400
+	Tue, 15 Jul 2014 17:36:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Wim Van Sebroeck <wim@iguana.be>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 122/198] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
-Date: Tue, 15 Jul 2014 14:29:52 -0700
-Message-Id: <1405459868-15089-123-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 124/198] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
+Date: Tue, 15 Jul 2014 14:29:54 -0700
+Message-Id: <1405459868-15089-125-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,52 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
+commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
 
-Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
-watchdog_device' passed to it. sp805 was rather setting this in a local
-variable. Fix it.
+The Vector Crypto category instructions are supported by current POWER8
+chips, advertise them to userspace using a specific bit to properly
+differentiate with chips of the same architecture level that might not
+have them.
 
-Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/watchdog/sp805_wdt.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/powerpc/include/uapi/asm/cputable.h | 1 +
+ arch/powerpc/kernel/cputable.c           | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/sp805_wdt.c b/drivers/watchdog/sp805_wdt.c
-index 3f786ce..88bcdfb 100644
---- a/drivers/watchdog/sp805_wdt.c
-+++ b/drivers/watchdog/sp805_wdt.c
-@@ -60,7 +60,6 @@
-  * @adev: amba device structure of wdt
-  * @status: current status of wdt
-  * @load_val: load value to be set for current timeout
-- * @timeout: current programmed timeout
-  */
- struct sp805_wdt {
- 	struct watchdog_device		wdd;
-@@ -69,7 +68,6 @@ struct sp805_wdt {
- 	struct clk			*clk;
- 	struct amba_device		*adev;
- 	unsigned int			load_val;
--	unsigned int			timeout;
- };
+diff --git a/arch/powerpc/include/uapi/asm/cputable.h b/arch/powerpc/include/uapi/asm/cputable.h
+index 5b76579..de2c0e4 100644
+--- a/arch/powerpc/include/uapi/asm/cputable.h
++++ b/arch/powerpc/include/uapi/asm/cputable.h
+@@ -41,5 +41,6 @@
+ #define PPC_FEATURE2_EBB		0x10000000
+ #define PPC_FEATURE2_ISEL		0x08000000
+ #define PPC_FEATURE2_TAR		0x04000000
++#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
  
- static bool nowayout = WATCHDOG_NOWAYOUT;
-@@ -99,7 +97,7 @@ static int wdt_setload(struct watchdog_device *wdd, unsigned int timeout)
- 	spin_lock(&wdt->lock);
- 	wdt->load_val = load;
- 	/* roundup timeout to closest positive integer value */
--	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
-+	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
- 	spin_unlock(&wdt->lock);
- 
- 	return 0;
+ #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
+diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
+index 597d954..c5d3d02 100644
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -105,7 +105,8 @@ extern void __restore_cpu_e6500(void);
+ 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
+ #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
+ 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
+-				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
++				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
++				 PPC_FEATURE2_VEC_CRYPTO)
+ #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
+ 				 PPC_FEATURE_TRUE_LE | \
+ 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
 -- 
 1.9.1
 
