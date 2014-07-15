@@ -1,161 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093AbaGOJl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:41:26 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:64422 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758305AbaGOJlT convert rfc822-to-8bit (ORCPT
+	id S1758428AbaGOJlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:41:42 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:37012 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758380AbaGOJli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:41:19 -0400
+	Tue, 15 Jul 2014 05:41:38 -0400
+From: Jiada Wang <jiada_wang@mentor.com>
+To: <marcel@holtmann.org>, <gustavo@padovan.org>, <johan.hedberg@gmail.com>
+CC: <linux-bluetooth@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <Dean_Jenkins@mentor.com>
+Subject: [PATCH v2] Bluetooth: BCSP fails to ACK re-transmitted frames from the peer
+Date: Tue, 15 Jul 2014 18:41:34 +0900
+Message-ID: <1405417294-24832-1-git-send-email-jiada_wang@mentor.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-In-Reply-To: <CA+M3ks5osUkkEY64t=M1zEp7DA5rn+MxxqiJhQm5QiEFUPBL+A@mail.gmail.com>
-References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
-	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
-	<20140703215200.GG32514@n2100.arm.linux.org.uk>
-	<CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
-	<CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
-	<CA+M3ks5osUkkEY64t=M1zEp7DA5rn+MxxqiJhQm5QiEFUPBL+A@mail.gmail.com>
-Date: Tue, 15 Jul 2014 11:41:18 +0200
-Message-ID: <CA+M3ks7-ZHghELcRHDiFNbubDZ2DRQPDh2bKKzhsu4EcA0Tzcg@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginalArrivalTime: 15 Jul 2014 09:41:36.0173 (UTC) FILETIME=[F83D6DD0:01CFA010]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Dean Jenkins <djenkins@mvista.com>
 
-Does version 6 fit to all your expectations ?
-If yes will you consider to merge it into drm-next ?
-If no, please tell me what need to be fixed.
+Send an ACK frame with the current txack value in response to
+every received reliable frame unless a TX reliable frame is being
+sent. This modification allows re-transmitted frames from the remote
+peer to be acknowledged rather than ignored. It means that the remote
+peer knows which frame number to start re-transmitting from.
 
-Regards,
-Benjamin
+Without this modification, the recovery time to a missing frame
+from the remote peer was unnecessarily being extended because the
+headers of the out of order reliable frames were being discarded rather
+than being processed. The frame headers of received frames will
+indicate whether the local peer's transmissions have been
+acknowledged by the remote peer. Therefore, the local peer may
+unnecessarily re-transmit despite the remote peer already indicating
+that the frame had been acknowledged in out of order reliable frame.
 
-2014-07-04 15:54 GMT+02:00 Benjamin Gaignard <benjamin.gaignard@linaro.org>:
-> Hi,
->
-> I have following Russel advice to rebase my patches on top of the new
-> component helpers API.
->
-> A new branch "drm_kms_for_next-v6" is available here
-> git://git.linaro.org/people/benjamin.gaignard/kernel.git
->
-> Regards,
-> Benjamin
->
->
-> 2014-07-04 10:39 GMT+02:00 Benjamin Gaignard <benjamin.gaignard@linaro.org>:
->> Rob, Russel,
->>
->> What I can do is to rebase my driver on driver-core-next branch from
->> Greg tree (git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git).
->>
->> Does that could help ?
->>
->> Regards,
->> Benjamin
->>
->>
->> 2014-07-03 23:59 GMT+02:00 Rob Clark <robdclark@gmail.com>:
->>> On Thu, Jul 3, 2014 at 5:52 PM, Russell King - ARM Linux
->>> <linux@arm.linux.org.uk> wrote:
->>>> On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
->>>>> >From a brief look, it looks like my comments have been addressed, so I
->>>>> think this is starting to shape up..
->>>>>
->>>>> Laurent/Thierry/Russell, I don't suppose any of you are likely to have
->>>>> time before 3.17 merge window to give sti one last once-over to see
->>>>> what I missed ;-)
->>>>
->>>> As this appears to be using the component helpers, it would be good for
->>>> the author to be pre-warned about the change to the API.  I'm going to
->>>> be doing this as a two step thing.
->>>>
->>>> The first stage of it has just been taken by Greg this evening.  This
->>>> retires old behaviour that was needed for the initial versions of imx-drm,
->>>> and fixes a bug.  More importantly, it introduces a new interface where
->>>> you build the list of expected components before calling
->>>> component_master_add(), passing it into that function.
->>>>
->>>> It is slightly less flexible from the driver writer's view point, but
->>>> allows us to do more in the component helper, and support some features
->>>> that others would like to see (such as being able to add additional
->>>> optional components after the initial bind (that's not much interest
->>>> to DRM though.)
->>>>
->>>> This should make the v3.17 merge window.  I'm hoping that by forewarning
->>>> about the change, that people can be aware of it and have patches
->>>> prepared for v3.18 (or maybe even v3.17) to convert over to it, so we
->>>> can get rid of the older interface before we get too many users of it.
->>>>
->>>> I've just peeked at the binding document in the first patch.  I notice
->>>> that it isn't making use of the of_graph stuff, which is a bit of a
->>>> shame because I've sent a RFC patch adding drivers/gpu/drm/drm_of.c
->>>> to provide a helper which encoders can use to get the CRTC mask from
->>>> an of_graph representation.
->>>
->>> which reminds me, I need to have a look at the drm_of stuff..
->>>
->>>> I'm using this not only for imx-drm, but also for tda998x - and that's
->>>> where the problems are likely to start if we end up with different
->>>> DRM implementations doing different solutions to the connectivity
->>>> problem.
->>>
->>> If it simplifies merge-order stuff, I'd be ok with a follow-up patch
->>> that converts over (assuming it shouldn't have an impact on the DT
->>> bindings, which I'm only assuming it should not..)
->>>
->>> Probably it would be a good idea if Benjamin at least had a patch
->>> ready to go to convert over which could be merged right after your
->>> stuff hits drm-next.
->>>
->>> BR,
->>> -R
->>>
->>>> --
->>>> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
->>>> improving, and getting towards what was expected from it.
->>
->>
->>
->> --
->> Benjamin Gaignard
->>
->> Graphic Working Group
->>
->> Linaro.org │ Open source software for ARM SoCs
->>
->> Follow Linaro: Facebook | Twitter | Blog
->
->
->
-> --
-> Benjamin Gaignard
->
-> Graphic Working Group
->
-> Linaro.org │ Open source software for ARM SoCs
->
-> Follow Linaro: Facebook | Twitter | Blog
+Signed-off-by: Dean Jenkins <djenkins@mvista.com>
+Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
+---
+ drivers/bluetooth/hci_bcsp.c | 94 ++++++++++++++++++++++++++++----------------
+ 1 file changed, 60 insertions(+), 34 deletions(-)
 
-
-
+diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
+index 21cc45b..0f4664d 100644
+--- a/drivers/bluetooth/hci_bcsp.c
++++ b/drivers/bluetooth/hci_bcsp.c
+@@ -478,13 +478,29 @@ static inline void bcsp_unslip_one_byte(struct bcsp_struct *bcsp, unsigned char
+ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
+ {
+ 	struct bcsp_struct *bcsp = hu->priv;
+-	int pass_up;
++	int pass_up = 0;
+ 
+ 	if (bcsp->rx_skb->data[0] & 0x80) {	/* reliable pkt */
+ 		BT_DBG("Received seqno %u from card", bcsp->rxseq_txack);
+-		bcsp->rxseq_txack++;
+-		bcsp->rxseq_txack %= 0x8;
+-		bcsp->txack_req    = 1;
++
++		/* check the rx sequence number is as expected */
++		if ((bcsp->rx_skb->data[0] & 0x07) == bcsp->rxseq_txack) {
++			bcsp->rxseq_txack++;
++			bcsp->rxseq_txack %= 0x8;
++		} else {
++			/*
++			 * handle re-transmitted packet or
++			 * when packet was missed
++			 */
++			BT_ERR ("Out-of-order packet arrived, got %u expected %u",
++				bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
++
++			/* do not process out-of-order packet payload */
++			pass_up = 2;
++		}
++
++		/* send current txack value to all recieved reliable packets */
++		bcsp->txack_req = 1;
+ 
+ 		/* If needed, transmit an ack pkt */
+ 		hci_uart_tx_wakeup(hu);
+@@ -493,26 +509,36 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
+ 	bcsp->rxack = (bcsp->rx_skb->data[0] >> 3) & 0x07;
+ 	BT_DBG("Request for pkt %u from card", bcsp->rxack);
+ 
++	/*
++	 * handle recieved ACK indications,
++	 * including those from out-of-order packets
++	 */
+ 	bcsp_pkt_cull(bcsp);
+-	if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
+-			bcsp->rx_skb->data[0] & 0x80) {
+-		bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
+-		pass_up = 1;
+-	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
+-			bcsp->rx_skb->data[0] & 0x80) {
+-		bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
+-		pass_up = 1;
+-	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
+-		bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
+-		pass_up = 1;
+-	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
+-			!(bcsp->rx_skb->data[0] & 0x80)) {
+-		bcsp_handle_le_pkt(hu);
+-		pass_up = 0;
+-	} else
+-		pass_up = 0;
+-
+-	if (!pass_up) {
++
++	if (pass_up != 2) {
++		if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
++				bcsp->rx_skb->data[0] & 0x80) {
++			bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
++			pass_up = 1;
++		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
++				bcsp->rx_skb->data[0] & 0x80) {
++			bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
++			pass_up = 1;
++		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
++			bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
++			pass_up = 1;
++		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
++				!(bcsp->rx_skb->data[0] & 0x80)) {
++			bcsp_handle_le_pkt(hu);
++			pass_up = 0;
++		} else {
++			pass_up = 0;
++		}
++	}
++
++	switch (pass_up) {
++	case 0:
++	{
+ 		struct hci_event_hdr hdr;
+ 		u8 desc = (bcsp->rx_skb->data[1] & 0x0f);
+ 
+@@ -537,11 +563,21 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
+ 			}
+ 		} else
+ 			kfree_skb(bcsp->rx_skb);
+-	} else {
++		break;
++	}
++	case 1:
+ 		/* Pull out BCSP hdr */
+ 		skb_pull(bcsp->rx_skb, 4);
+ 
+ 		hci_recv_frame(hu->hdev, bcsp->rx_skb);
++		break;
++	default:
++		/*
++		 * ignore packet payload of already ACKed re-transmitted
++		 * packets or when a packet was missed in the BCSP window
++		 */
++		kfree_skb(bcsp->rx_skb);
++		break;
+ 	}
+ 
+ 	bcsp->rx_state = BCSP_W4_PKT_DELIMITER;
+@@ -587,16 +623,6 @@ static int bcsp_recv(struct hci_uart *hu, void *data, int count)
+ 				bcsp->rx_count = 0;
+ 				continue;
+ 			}
+-			if (bcsp->rx_skb->data[0] & 0x80	/* reliable pkt */
+-			    		&& (bcsp->rx_skb->data[0] & 0x07) != bcsp->rxseq_txack) {
+-				BT_ERR ("Out-of-order packet arrived, got %u expected %u",
+-					bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
+-
+-				kfree_skb(bcsp->rx_skb);
+-				bcsp->rx_state = BCSP_W4_PKT_DELIMITER;
+-				bcsp->rx_count = 0;
+-				continue;
+-			}
+ 			bcsp->rx_state = BCSP_W4_DATA;
+ 			bcsp->rx_count = (bcsp->rx_skb->data[1] >> 4) + 
+ 					(bcsp->rx_skb->data[2] << 4);	/* May be 0 */
 -- 
-Benjamin Gaignard
+1.9.3
 
-Graphic Working Group
-
-Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro: Facebook | Twitter | Blog
