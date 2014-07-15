@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934338AbaGOXPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S934368AbaGOXPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933929AbaGOXOK (ORCPT
+	with ESMTP id S933973AbaGOXOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:10 -0400
+	Tue, 15 Jul 2014 19:14:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.15 04/84] USB: serial: ftdi_sio: Add Infineon Triboard
-Date: Tue, 15 Jul 2014 16:17:01 -0700
-Message-Id: <20140715231713.321887045@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.15 08/84] parisc: fix fanotify_mark() syscall on 32bit compat kernel
+Date: Tue, 15 Jul 2014 16:17:05 -0700
+Message-Id: <20140715231713.442659766@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,50 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Sojka <sojkam1@fel.cvut.cz>
+From: Helge Deller <deller@gmx.de>
 
-commit d8279a40e50ad55539780aa617a32a53d7f0953e upstream.
+commit ab8a261ba5e2dd9206da640de5870cc31d568a7c upstream.
 
-This adds support for Infineon TriBoard TC1798 [1]. Only interface 1
-is used as serial line (see [2], Figure 8-6).
+On parisc we can not use the existing compat implementation for fanotify_mark()
+because for the 64bit mask parameter the higher and lower 32bits are ordered
+differently than what the compat function expects from big endian
+architectures.
 
-[1] http://www.infineon.com/cms/de/product/microcontroller/development-tools-software-and-kits/tricore-tm-development-tools-software-and-kits/starterkits-and-evaluation-boards/starter-kit-tc1798/channel.html?channel=db3a304333b8a7ca0133cfa3d73e4268
-[2] http://www.infineon.com/dgdl/TriBoardManual-TC1798-V10.pdf?folderId=db3a304412b407950112b409ae7c0343&fileId=db3a304333b8a7ca0133cfae99fe426a
+Specifically:
+It finally turned out, that on hppa we end up with different assignments
+of parameters to kernel arguments depending on if we call the glibc
+wrapper function
+ int fanotify_mark (int __fanotify_fd, unsigned int __flags,
+                    uint64_t __mask, int __dfd, const char *__pathname);
+or directly calling the syscall manually
+ syscall(__NR_fanotify_mark, ...)
 
-Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
-Cc: Johan Hovold <johan@kernel.org>
+Reason is, that the syscall() function is implemented as C-function and
+because we now have the sysno as first parameter in front of the other
+parameters the compiler will unexpectedly add an empty paramenter in
+front of the u64 value to ensure the correct calling alignment for 64bit
+values.
+This means, on hppa you can't simply use syscall() to call the kernel
+fanotify_mark() function directly, but you have to use the glibc
+function instead.
+
+This patch fixes the kernel in the hppa-arch specifc coding to adjust
+the parameters in a way as if userspace calls the glibc wrapper function
+fanotify_mark().
+
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 8 insertions(+)
+ arch/parisc/kernel/sys_parisc32.c  |   10 ++++++++++
+ arch/parisc/kernel/syscall_table.S |    2 +-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -945,6 +945,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
-+	/* Infineon Devices */
-+	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
- 	{ }					/* Terminating entry */
- };
- 
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -584,6 +584,12 @@
- #define RATOC_PRODUCT_ID_USB60F	0xb020
- 
- /*
-+ * Infineon Technologies
-+ */
-+#define INFINEON_VID		0x058b
-+#define INFINEON_TRIBOARD_PID	0x0028 /* DAS JTAG TriBoard TC1798 V1.0 */
+--- a/arch/parisc/kernel/sys_parisc32.c
++++ b/arch/parisc/kernel/sys_parisc32.c
+@@ -4,6 +4,7 @@
+  * Copyright (C) 2000-2001 Hewlett Packard Company
+  * Copyright (C) 2000 John Marvin
+  * Copyright (C) 2001 Matthew Wilcox
++ * Copyright (C) 2014 Helge Deller <deller@gmx.de>
+  *
+  * These routines maintain argument size conversion between 32bit and 64bit
+  * environment. Based heavily on sys_ia32.c and sys_sparc32.c.
+@@ -57,3 +58,12 @@ asmlinkage long sys32_unimplemented(int
+     	current->comm, current->pid, r20);
+     return -ENOSYS;
+ }
 +
-+/*
-  * Acton Research Corp.
-  */
- #define ACTON_VID		0x0647	/* Vendor ID */
++asmlinkage long sys32_fanotify_mark(compat_int_t fanotify_fd, compat_uint_t flags,
++	compat_uint_t mask0, compat_uint_t mask1, compat_int_t dfd,
++	const char  __user * pathname)
++{
++	return sys_fanotify_mark(fanotify_fd, flags,
++			((__u64)mask1 << 32) | mask0,
++			 dfd, pathname);
++}
+--- a/arch/parisc/kernel/syscall_table.S
++++ b/arch/parisc/kernel/syscall_table.S
+@@ -418,7 +418,7 @@
+ 	ENTRY_SAME(accept4)		/* 320 */
+ 	ENTRY_SAME(prlimit64)
+ 	ENTRY_SAME(fanotify_init)
+-	ENTRY_COMP(fanotify_mark)
++	ENTRY_DIFF(fanotify_mark)
+ 	ENTRY_COMP(clock_adjtime)
+ 	ENTRY_SAME(name_to_handle_at)	/* 325 */
+ 	ENTRY_COMP(open_by_handle_at)
 
 
