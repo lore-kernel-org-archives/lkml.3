@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965047AbaGOWJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:09:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54432 "EHLO
+	id S933858AbaGOVfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:35:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54402 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757903AbaGOVgA (ORCPT
+	with ESMTP id S933801AbaGOVff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:00 -0400
+	Tue, 15 Jul 2014 17:35:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhang Dongxing <dongxing.zhang@intel.com>,
-        xiaoming wang <xiaoming.wang@intel.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 131/198] ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
-Date: Tue, 15 Jul 2014 14:30:01 -0700
-Message-Id: <1405459868-15089-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 088/198] mm: fix sleeping function warning from __put_anon_vma
+Date: Tue, 15 Jul 2014 14:29:18 -0700
+Message-Id: <1405459868-15089-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,38 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 2bd0ae464a6cf7363bbf72c8545e0aa43caa57f0 upstream.
+commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
 
-Cancel the optimization of compiler for struct snd_compr_avail
-which size will be 0x1c in 32bit kernel while 0x20 in 64bit
-kernel under the optimizer. That will make compaction between
-32bit and 64bit. So add packed to fix the size of struct
-snd_compr_avail to 0x1c for all platform.
+Trinity reports BUG:
 
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+  sleeping function called from invalid context at kernel/locking/rwsem.c:47
+  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+
+__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
+migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+
+Right, since conversion to mutex then rwsem, we should not put_anon_vma()
+from inside an rcu_read_lock()ed section: fix the two places that did so.
+And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
+
+Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/uapi/sound/compress_offload.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/rmap.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/sound/compress_offload.h b/include/uapi/sound/compress_offload.h
-index 5759810..21eed48 100644
---- a/include/uapi/sound/compress_offload.h
-+++ b/include/uapi/sound/compress_offload.h
-@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
- struct snd_compr_avail {
- 	__u64 avail;
- 	struct snd_compr_tstamp tstamp;
--};
-+} __attribute__((packed));
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 22478fb..cd6b576 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct anon_vma *anon_vma)
+ 	 * LOCK should suffice since the actual taking of the lock must
+ 	 * happen _before_ what follows.
+ 	 */
++	might_sleep();
+ 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
+ 		anon_vma_lock_write(anon_vma);
+ 		anon_vma_unlock_write(anon_vma);
+@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struct page *page)
+ 	 * above cannot corrupt).
+ 	 */
+ 	if (!page_mapped(page)) {
++		rcu_read_unlock();
+ 		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
++		return NULL;
+ 	}
+ out:
+ 	rcu_read_unlock();
+@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
+ 	}
  
- enum snd_compr_direction {
- 	SND_COMPRESS_PLAYBACK = 0,
+ 	if (!page_mapped(page)) {
++		rcu_read_unlock();
+ 		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
+-		goto out;
++		return NULL;
+ 	}
+ 
+ 	/* we pinned the anon_vma, its safe to sleep */
 -- 
 1.9.1
 
