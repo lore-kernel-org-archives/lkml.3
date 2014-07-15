@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593AbaGOJEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:04:11 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:52338 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758057AbaGOJEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:04:07 -0400
+	id S1758225AbaGOJFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:05:03 -0400
+Received: from sym2.noone.org ([178.63.92.236]:54577 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757709AbaGOJFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:05:00 -0400
+Date: Tue, 15 Jul 2014 11:04:57 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH v2 26/29] Add ELF machine define for Nios2
+Message-ID: <20140715090456.GD7668@distanz.ch>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+ <1405413956-2772-27-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-In-Reply-To: <20140715085914.GT26465@leverpostej>
-References: <1405340169-2820-1-git-send-email-harinik@xilinx.com>
-	<1405340169-2820-2-git-send-email-harinik@xilinx.com>
-	<20140714150749.GH26465@leverpostej>
-	<CAFcVECK9U_3+3htTAu7r-agi43mC9Z2pqHeS9TpHTbZ3=o-o8w@mail.gmail.com>
-	<20140715085914.GT26465@leverpostej>
-Date: Tue, 15 Jul 2014 14:34:06 +0530
-Message-ID: <CAFcVECJ+tO4U5H2QvuY8xpkh5FrX_PtCvrH8FsZQ28bJwYRckA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] devicetree: Add Cadence WDT devicetree bindings documentation
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "wim@iguana.be" <wim@iguana.be>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "harini.katakam@xilinx.com" <harini.katakam@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405413956-2772-27-git-send-email-lftan@altera.com>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 2014-07-15 at 10:45:53 +0200, Ley Foon Tan <lftan@altera.com> wrote:
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
 
-On Tue, Jul 15, 2014 at 2:29 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Tue, Jul 15, 2014 at 07:39:40AM +0100, Harini Katakam wrote:
->> Hi Mark,
->>
->> On Mon, Jul 14, 2014 at 8:37 PM, Mark Rutland <mark.rutland@arm.com> wrote:
->> > On Mon, Jul 14, 2014 at 01:16:09PM +0100, Harini Katakam wrote:
->> >> Add cadence-wdt bindings documentation.
->> >>
->> >> Signed-off-by: Harini Katakam <harinik@xilinx.com>
->> >> ---
->> >>
->> >> v3 changes:
->> >> - Change reset property type and improve description.
->> >> - Improve description of clocks and interrupts.
->> >> - Use watchdog@ in the example.
->> >> - Use only cdns compatible string for now.
->> >>
->> >> v2:
->> >> No changes
->> >>
->> >> ---
->> >>  .../devicetree/bindings/watchdog/cadence-wdt.txt   |   27 ++++++++++++++++++++
->> >>  1 file changed, 27 insertions(+)
->> >>  create mode 100644 Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
->> >>
+This should probably be sent/applied before "[PATCH v2 14/29] nios2: ELF
+definitions", since there EM_ALTERA_NIOS2 is already used.
 
-<snip>
-
->> >> +Optional properties
->> >> +- reset                      : If this property exists, then a reset is done
->> >> +                       when watchdog times out.
->> >
->> > That's a bit of an ambiguous name (too easy to misconstrue as a reset
->> > device reference). Do any other watchdogs have similar properties?
->>
->> I could change it to "reset-on-timeout" if that better.
->> From the documentation of other drivers, there seems to be a reset-type
->> property in atmel. Dint find any other reset related properties.
->>
->
-> Ok. reset-on-timeout sounds like a better property name to avoid
-> possible confusion.
->
-> That said, what happens if we don't specify the device should reset the
-> system (but have a timeout-sec property)?
->
-
-A reset wont be done but a message will be printed when the watchdog times out
-just as an indication.
-
-Regards,
-Harini
+> ---
+>  include/uapi/linux/elf-em.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
+> index 01529bd..7f06c0d 100644
+> --- a/include/uapi/linux/elf-em.h
+> +++ b/include/uapi/linux/elf-em.h
+> @@ -33,6 +33,7 @@
+>  #define EM_M32R		88	/* Renesas M32R */
+>  #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
+>  #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
+> +#define EM_ALTERA_NIOS2	113	/* Altera Nios II soft-core processor */
+>  #define EM_TI_C6000	140	/* TI C6X DSPs */
+>  #define EM_AARCH64	183	/* ARM 64 bit */
+>  #define EM_FRV		0x5441	/* Fujitsu FR-V */
+> -- 
+> 1.8.2.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
