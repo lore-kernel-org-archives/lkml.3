@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959AbaGOX7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:59:05 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:46704 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760058AbaGOX64 (ORCPT
+	id S1759481AbaGOX72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:59:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759964AbaGOXNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:58:56 -0400
+	Tue, 15 Jul 2014 19:13:42 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Roger Quadros <rogerq@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 3.14 32/66] phy: core: Fix error path in phy_create()
+Date: Tue, 15 Jul 2014 16:17:26 -0700
+Message-Id: <20140715231703.505981387@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <20140715142524.GI9918@twins.programming.kicks-ass.net>
-References: <1405384304-26816-1-git-send-email-eranian@google.com>
-	<1405384304-26816-2-git-send-email-eranian@google.com>
-	<20140715142524.GI9918@twins.programming.kicks-ass.net>
-Date: Wed, 16 Jul 2014 01:58:55 +0200
-Message-ID: <CABPqkBQ1dRnTTW7=8XCRUDoeZM0UqgtLnXE0CJEZbeCD8qo1KA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] perf: add ability to sample machine state on interrupt
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 4:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jul 15, 2014 at 02:31:40AM +0200, Stephane Eranian wrote:
->> @@ -618,6 +619,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
->>       data->weight = 0;
->>       data->data_src.val = 0;
->>       data->txn = 0;
->> +     data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
->> +     data->regs_intr.regs = NULL;
->>  }
->
->> +static void perf_sample_regs_intr(struct perf_regs *regs_intr,
->> +                               struct pt_regs *regs)
->> +{
->> +     regs_intr->regs = regs;
->> +     regs_intr->abi  = perf_reg_abi(current);
->> +}
->
->> @@ -4800,6 +4824,20 @@ void perf_prepare_sample(struct perf_event_header *header,
->>               data->stack_user_size = stack_size;
->>               header->size += size;
->>       }
->> +
->> +     if (sample_type & PERF_SAMPLE_REGS_INTR) {
->> +             /* regs dump ABI info */
->> +             int size = sizeof(u64);
->> +
->> +             perf_sample_regs_intr(&data->regs_intr, regs);
->> +
->> +             if (data->regs_intr.regs) {
->> +                     u64 mask = event->attr.sample_regs_intr;
->> +                     size += hweight64(mask) * sizeof(u64);
->> +             }
->> +
->> +             header->size += size;
->> +     }
->
-> Given that the prepare_sample hunk sets both regs_intr fields, the
-> addition to perf_sample_data_init() is entirely superfluous, no?
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, looks like it, though having an initialization there prevents
-any random values for the two fields, in case code tries to check
-without first testing the sample_format bitmask. So yes, it is redundant
-but may  prevent future errors.
+------------------
+
+From: Roger Quadros <rogerq@ti.com>
+
+commit e73b49f1c4e75c44d62585cc3e5b9c7894b61c32 upstream.
+
+Prevent resources from being freed twice in case device_add() call
+fails within phy_create(). Also use ida_simple_remove() instead of
+ida_remove() as we had used ida_simple_get() to allocate the ida.
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/phy/phy-core.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -553,8 +553,9 @@ struct phy *phy_create(struct device *de
+ 	return phy;
+ 
+ put_dev:
+-	put_device(&phy->dev);
+-	ida_remove(&phy_ida, phy->id);
++	put_device(&phy->dev);  /* calls phy_release() which frees resources */
++	return ERR_PTR(ret);
++
+ free_phy:
+ 	kfree(phy);
+ 	return ERR_PTR(ret);
+@@ -738,7 +739,7 @@ static void phy_release(struct device *d
+ 
+ 	phy = to_phy(dev);
+ 	dev_vdbg(dev, "releasing '%s'\n", dev_name(dev));
+-	ida_remove(&phy_ida, phy->id);
++	ida_simple_remove(&phy_ida, phy->id);
+ 	kfree(phy);
+ }
+ 
+
+
