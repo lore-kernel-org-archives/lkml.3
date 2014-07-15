@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761319AbaGPAWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:22:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44903 "EHLO
+	id S1761184AbaGPAWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:22:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758402AbaGOXNF (ORCPT
+	with ESMTP id S1758747AbaGOXNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:05 -0400
+	Tue, 15 Jul 2014 19:13:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 04/22] cpuset,mempolicy: fix sleeping function called from invalid context
-Date: Tue, 15 Jul 2014 16:17:09 -0700
-Message-Id: <20140715231622.257893561@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 07/22] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
+Date: Tue, 15 Jul 2014 16:17:12 -0700
+Message-Id: <20140715231622.342248992@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -29,100 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 391acf970d21219a2a5446282d3b20eace0c0d7a upstream.
+commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
 
-When runing with the kernel(3.15-rc7+), the follow bug occurs:
-[ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
-[ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
-[ 9969.441175] INFO: lockdep is turned off.
-[ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
-[ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
-[ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
-[ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
-[ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
-[ 9969.974071] Call Trace:
-[ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
-[ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
-[ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
-[ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
-[ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
-[ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-[ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
-[ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-[ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
-[ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
-[ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
-[ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
-[ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
-[ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
-[ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
-[ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
-[ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+We are seeing a lot of PMU warnings on POWER8:
 
-The cause is that cpuset_mems_allowed() try to take
-mutex_lock(&callback_mutex) under the rcu_read_lock(which was hold in
-__mpol_dup()). And in cpuset_mems_allowed(), the access to cpuset is
-under rcu_read_lock, so in __mpol_dup, we can reduce the rcu_read_lock
-protection region to protect the access to cpuset only in
-current_cpuset_is_being_rebound(). So that we can avoid this bug.
+    Can't find PMC that caused IRQ
 
-This patch is a temporary solution that just addresses the bug
-mentioned above, can not fix the long-standing issue about cpuset.mems
-rebinding on fork():
+Looking closer, the active PMC is 0 at this point and we took a PMU
+exception on the transition from negative to 0. Some versions of POWER8
+have an issue where they edge detect and not level detect PMC overflows.
 
-"When the forker's task_struct is duplicated (which includes
- ->mems_allowed) and it races with an update to cpuset_being_rebound
- in update_tasks_nodemask() then the task's mems_allowed doesn't get
- updated. And the child task's mems_allowed can be wrong if the
- cpuset's nodemask changes before the child has been added to the
- cgroup's tasklist."
+A number of places program the PMC with (0x80000000 - period_left),
+where period_left can be negative. We can either fix all of these or
+just ensure that period_left is always >= 1.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This patch takes the second option.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cpuset.c |    8 +++++++-
- mm/mempolicy.c  |    2 --
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ arch/powerpc/perf/core-book3s.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1152,7 +1152,13 @@ done:
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -472,7 +472,22 @@ static void power_pmu_read(struct perf_e
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
  
- int current_cpuset_is_being_rebound(void)
- {
--	return task_cs(current) == cpuset_being_rebound;
-+	int ret;
+ 	local64_add(delta, &event->count);
+-	local64_sub(delta, &event->hw.period_left);
 +
-+	rcu_read_lock();
-+	ret = task_cs(current) == cpuset_being_rebound;
-+	rcu_read_unlock();
-+
-+	return ret;
++	/*
++	 * A number of places program the PMC with (0x80000000 - period_left).
++	 * We never want period_left to be less than 1 because we will program
++	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
++	 * roll around to 0 before taking an exception. We have seen this
++	 * on POWER8.
++	 *
++	 * To fix this, clamp the minimum value of period_left to 1.
++	 */
++	do {
++		prev = local64_read(&event->hw.period_left);
++		val = prev - delta;
++		if (val < 1)
++			val = 1;
++	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
  }
  
- static int update_relax_domain_level(struct cpuset *cs, s64 val)
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1991,7 +1991,6 @@ struct mempolicy *__mpol_dup(struct memp
- 	} else
- 		*new = *old;
- 
--	rcu_read_lock();
- 	if (current_cpuset_is_being_rebound()) {
- 		nodemask_t mems = cpuset_mems_allowed(current);
- 		if (new->flags & MPOL_F_REBINDING)
-@@ -1999,7 +1998,6 @@ struct mempolicy *__mpol_dup(struct memp
- 		else
- 			mpol_rebind_policy(new, &mems, MPOL_REBIND_ONCE);
- 	}
--	rcu_read_unlock();
- 	atomic_set(&new->refcnt, 1);
- 	return new;
- }
+ /*
 
 
