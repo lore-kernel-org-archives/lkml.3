@@ -1,85 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaGOQYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:24:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:42126 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752794AbaGOQY3 (ORCPT
+	id S1753489AbaGOQZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:25:10 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:55712 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932AbaGOQZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:24:29 -0400
-Date: Tue, 15 Jul 2014 12:24:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [GIT PULL] tracing: instance_rmdir() leaks
- ftrace_event_file->filter
-Message-ID: <20140715122426.7f2c8cd1@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 15 Jul 2014 12:25:07 -0400
+Date: Tue, 15 Jul 2014 20:25:01 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [patch 0/4] timerfd c/r support, v4
+Message-ID: <20140715162501.GK23835@moon>
+References: <20140623185431.396309193@openvz.org>
+ <20140630194354.GB2305@moon>
+ <20140715135445.GJ23835@moon>
+ <alpine.DEB.2.10.1407151811050.24854@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1407151811050.24854@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 15, 2014 at 06:11:58PM +0200, Thomas Gleixner wrote:
+> > 
+> > Dear sirs, ping?
+> 
+> Hmm, I was waiting for a V5, but it seems you just updated that single
+> patch according to the review. I'll pick it up
 
-Linus,
-
-Oleg Nesterov fixed a memory leak that happens if a user creates
-a tracing instance, sets up a filter in an event, and then removes
-that instance. The filter allocates memory that is never freed
-when the instance is destroyed.
-
-Please pull the latest trace-fixes-v3.16-rc5 tree, which can be found at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.16-rc5
-
-Tag SHA1: 669ea50dfcff14f49119e15133c0b0eb32d1999a
-Head SHA1: 2448e3493cb3874baa90725c87869455ebf11cd2
-
-
-Oleg Nesterov (1):
-      tracing: instance_rmdir() leaks ftrace_event_file->filter
-
-----
- kernel/trace/trace_events.c | 1 +
- 1 file changed, 1 insertion(+)
----------------------------
-commit 2448e3493cb3874baa90725c87869455ebf11cd2
-Author: Oleg Nesterov <oleg@redhat.com>
-Date:   Fri Jul 11 21:06:38 2014 +0200
-
-    tracing: instance_rmdir() leaks ftrace_event_file->filter
-    
-    instance_rmdir() path destroys the event files but forgets to free
-    file->filter. Change remove_event_file_dir() to free_event_filter().
-    
-    Link: http://lkml.kernel.org/p/20140711190638.GA19517@redhat.com
-    
-    Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-    Cc: Namhyung Kim <namhyung@kernel.org>
-    Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-    Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
-    Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-    Cc: stable@vger.kernel.org # 3.11+
-    Fixes: f6a84bdc75b5 "tracing: Introduce remove_event_file_dir()"
-    Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index f99e0b3bca8c..2de53628689f 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -470,6 +470,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
- 
- 	list_del(&file->list);
- 	remove_subsystem(file->system);
-+	free_event_filter(file->filter);
- 	kmem_cache_free(file_cachep, file);
- }
- 
+Thanks a lot, Thomas!
