@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbaGOPs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:48:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56060 "EHLO mail.zytor.com"
+	id S1754628AbaGOPtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:49:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450AbaGOPsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:48:23 -0400
-Message-ID: <53C54D32.6000000@zytor.com>
-Date: Tue, 15 Jul 2014 08:48:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752450AbaGOPta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:49:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140714.131738.1029964741108412525.davem@davemloft.net>
+References: <20140714.131738.1029964741108412525.davem@davemloft.net> <CAJfpegshQmihBb3xGQOcz3ua_b0v1ce=Xknmg7HzF=HqBe8i5Q@mail.gmail.com> <20140625.155459.559484835637033294.davem@davemloft.net> <66941674.g6WvxqVh4a@xrated>
+To: David Miller <davem@davemloft.net>
+Cc: dhowells@redhat.com, hpj@urpla.net, miklos@szeredi.hu,
+        hooanon05g@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: new mailing list for union/overlay filesystems?
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-arch@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [RFA][PATCH 16/27] ftrace: x86: Remove check of obsolete variable
- function_trace_stop
-References: <20140626165221.736847419@goodmis.org> <20140626165851.883708348@goodmis.org>
-In-Reply-To: <20140626165851.883708348@goodmis.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <21770.1405439359.1@warthog.procyon.org.uk>
+Date: Tue, 15 Jul 2014 16:49:19 +0100
+Message-ID: <21771.1405439359@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 09:52 AM, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Nothing sets function_trace_stop to disable function tracing anymore.
-> Remove the check for it in the arch code.
-> 
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+David Miller <davem@davemloft.net> wrote:
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+> Sorry I'm not changing the name, it's extremely inconvenient for all of
+> the people maintaining archives of this list.
+> 
+> I also do not agree with the degree to which the name not being generic
+> enough matters, sorry.  So I wouldn't have changed it on that grounds
+> anyways.
 
+I'm fine with sticking with it as it is.
+
+David
