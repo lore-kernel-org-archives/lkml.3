@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933895AbaGOVhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:37:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54636 "EHLO
+	id S933914AbaGOVhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:37:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54642 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933878AbaGOVhc (ORCPT
+	with ESMTP id S933883AbaGOVhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:37:32 -0400
+	Tue, 15 Jul 2014 17:37:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alessandro Miceli <angelofsky1980@gmail.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 032/198] [media] rtl28xxu: add [1b80:d3af] Sveon STV27
-Date: Tue, 15 Jul 2014 14:28:22 -0700
-Message-Id: <1405459868-15089-33-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 045/198] reiserfs: call truncate_setsize under tailpack mutex
+Date: Tue, 15 Jul 2014 14:28:35 -0700
+Message-Id: <1405459868-15089-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,44 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alessandro Miceli <angelofsky1980@gmail.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 74a86272f05c3dae40f2d7b17ff09a0608cf3304 upstream.
+commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
 
-Added support for Sveon STV27 device (rtl2832u + FC0013 tuner)
+Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
+truncates serialized on i_mutex. They mostly still do, with the exception
+of reiserfs_file_release. That blocks out other writers via the tailpack
+mutex and the inode openers counter adjusted in reiserfs_file_open.
 
-Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+However, NFS will call reiserfs_setattr without having called ->open, so
+we end up with a race when nfs is calling ->setattr while another
+process is releasing the file. Ultimately, it triggers the
+BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
+
+The solution is to pull the lock into reiserfs_setattr to encompass the
+truncate_setsize call as well.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/dvb-core/dvb-usb-ids.h    | 1 +
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
- 2 files changed, 3 insertions(+)
+ fs/reiserfs/inode.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
-index 4cfb962..8bdfad4 100644
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -373,4 +373,5 @@
- #define USB_PID_CTVDIGDUAL_V2				0xe410
- #define USB_PID_PCTV_2002E                              0x025c
- #define USB_PID_PCTV_2002E_SE                           0x025d
-+#define USB_PID_SVEON_STV27                             0xd3af
- #endif
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index 42e91ea..4043165 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1433,6 +1433,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
- 		&rtl2832u_props, "Sveon STV20", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV27,
-+		&rtl2832u_props, "Sveon STV27", NULL) },
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index ad62bdb..1e4cf9d 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -3220,8 +3220,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 	    attr->ia_size != i_size_read(inode)) {
+ 		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (!error) {
++			/*
++			 * Could race against reiserfs_file_release
++			 * if called from NFS, so take tailpack mutex.
++			 */
++			mutex_lock(&REISERFS_I(inode)->tailpack);
+ 			truncate_setsize(inode, attr->ia_size);
+-			reiserfs_vfs_truncate_file(inode);
++			reiserfs_truncate_file(inode, 1);
++			mutex_unlock(&REISERFS_I(inode)->tailpack);
+ 		}
+ 	}
  
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
 -- 
 1.9.1
 
