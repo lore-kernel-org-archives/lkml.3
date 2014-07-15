@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760250AbaGOXa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:30:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45623 "EHLO
+	id S934190AbaGOXbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:31:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934126AbaGOXOU (ORCPT
+	with ESMTP id S934113AbaGOXOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:20 -0400
+	Tue, 15 Jul 2014 19:14:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Subject: [PATCH 3.15 72/84] f2fs: adjust free mem size to flush dentry blocks
-Date: Tue, 15 Jul 2014 16:18:09 -0700
-Message-Id: <20140715231715.338984212@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.15 69/84] kernfs: implement kernfs_root->supers list
+Date: Tue, 15 Jul 2014 16:18:06 -0700
+Message-Id: <20140715231715.252976642@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,181 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 6fb03f3a40805a412c9b285010ffdc2e7563f81b upstream.
+commit 7d568a8383bbb9c1f5167781075906acb2bb1550 upstream.
 
-If so many dirty dentry blocks are cached, not reached to the flush condition,
-we should fall into livelock in balance_dirty_pages.
-So, let's consider the mem size for the condition.
+Currently, there's no way to find out which super_blocks are
+associated with a given kernfs_root.  Let's implement it - the planned
+inotify extension to kernfs_notify() needs it.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Make kernfs_super_info point back to the super_block and chain it at
+kernfs_root->supers.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[lizf: Backported to 3.15: Adjust context]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/f2fs/data.c |    3 ++-
- fs/f2fs/f2fs.h |    1 +
- fs/f2fs/node.c |   44 ++++++++++++++++++++++++++------------------
- fs/f2fs/node.h |    5 +++--
- 4 files changed, 32 insertions(+), 21 deletions(-)
+ fs/kernfs/dir.c             |    1 +
+ fs/kernfs/kernfs-internal.h |    5 +++++
+ fs/kernfs/mount.c           |   11 +++++++++++
+ include/linux/kernfs.h      |    4 ++++
+ 4 files changed, 21 insertions(+)
 
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -869,7 +869,8 @@ static int f2fs_write_data_pages(struct
- 		return 0;
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -714,6 +714,7 @@ struct kernfs_root *kernfs_create_root(s
+ 		return ERR_PTR(-ENOMEM);
  
- 	if (S_ISDIR(inode->i_mode) && wbc->sync_mode == WB_SYNC_NONE &&
--			get_dirty_dents(inode) < nr_pages_to_skip(sbi, DATA))
-+			get_dirty_dents(inode) < nr_pages_to_skip(sbi, DATA) &&
-+			available_free_memory(sbi, DIRTY_DENTS))
- 		goto skip_write;
+ 	ida_init(&root->ino_ida);
++	INIT_LIST_HEAD(&root->supers);
  
- 	diff = nr_pages_to_write(sbi, DATA, wbc);
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1140,6 +1140,7 @@ f2fs_hash_t f2fs_dentry_hash(const char
- struct dnode_of_data;
- struct node_info;
+ 	kn = __kernfs_new_node(root, "", S_IFDIR | S_IRUGO | S_IXUGO,
+ 			       KERNFS_DIR);
+--- a/fs/kernfs/kernfs-internal.h
++++ b/fs/kernfs/kernfs-internal.h
+@@ -49,6 +49,8 @@ static inline struct kernfs_root *kernfs
+  * mount.c
+  */
+ struct kernfs_super_info {
++	struct super_block	*sb;
++
+ 	/*
+ 	 * The root associated with this super_block.  Each super_block is
+ 	 * identified by the root and ns it's associated with.
+@@ -62,6 +64,9 @@ struct kernfs_super_info {
+ 	 * an array and compare kernfs_node tag against every entry.
+ 	 */
+ 	const void		*ns;
++
++	/* anchored at kernfs_root->supers, protected by kernfs_mutex */
++	struct list_head	node;
+ };
+ #define kernfs_info(SB) ((struct kernfs_super_info *)(SB->s_fs_info))
  
-+bool available_free_memory(struct f2fs_sb_info *, int);
- int is_checkpointed_node(struct f2fs_sb_info *, nid_t);
- bool fsync_mark_done(struct f2fs_sb_info *, nid_t);
- void get_node_info(struct f2fs_sb_info *, nid_t, struct node_info *);
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -26,20 +26,26 @@
- static struct kmem_cache *nat_entry_slab;
- static struct kmem_cache *free_nid_slab;
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -68,6 +68,7 @@ static int kernfs_fill_super(struct supe
+ 	struct inode *inode;
+ 	struct dentry *root;
  
--static inline bool available_free_memory(struct f2fs_nm_info *nm_i, int type)
-+bool available_free_memory(struct f2fs_sb_info *sbi, int type)
- {
-+	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 	struct sysinfo val;
- 	unsigned long mem_size = 0;
-+	bool res = false;
++	info->sb = sb;
+ 	sb->s_blocksize = PAGE_CACHE_SIZE;
+ 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
+ 	sb->s_magic = magic;
+@@ -167,12 +168,18 @@ struct dentry *kernfs_mount_ns(struct fi
+ 		*new_sb_created = !sb->s_root;
  
- 	si_meminfo(&val);
--	if (type == FREE_NIDS)
--		mem_size = nm_i->fcnt * sizeof(struct free_nid);
--	else if (type == NAT_ENTRIES)
--		mem_size += nm_i->nat_cnt * sizeof(struct nat_entry);
--	mem_size >>= 12;
--
--	/* give 50:50 memory for free nids and nat caches respectively */
--	return (mem_size < ((val.totalram * nm_i->ram_thresh) >> 11));
-+	/* give 25%, 25%, 50% memory for each components respectively */
-+	if (type == FREE_NIDS) {
-+		mem_size = (nm_i->fcnt * sizeof(struct free_nid)) >> 12;
-+		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
-+	} else if (type == NAT_ENTRIES) {
-+		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
-+		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
-+	} else if (type == DIRTY_DENTS) {
-+		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
-+		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
-+	}
-+	return res;
- }
- 
- static void clear_node_page_dirty(struct page *page)
-@@ -243,7 +249,7 @@ int try_to_free_nats(struct f2fs_sb_info
- {
- 	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 
--	if (available_free_memory(nm_i, NAT_ENTRIES))
-+	if (available_free_memory(sbi, NAT_ENTRIES))
- 		return 0;
- 
- 	write_lock(&nm_i->nat_tree_lock);
-@@ -1315,13 +1321,14 @@ static void __del_from_free_nid_list(str
- 	radix_tree_delete(&nm_i->free_nid_root, i->nid);
- }
- 
--static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build)
-+static int add_free_nid(struct f2fs_sb_info *sbi, nid_t nid, bool build)
- {
-+	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 	struct free_nid *i;
- 	struct nat_entry *ne;
- 	bool allocated = false;
- 
--	if (!available_free_memory(nm_i, FREE_NIDS))
-+	if (!available_free_memory(sbi, FREE_NIDS))
- 		return -1;
- 
- 	/* 0 nid should not be used */
-@@ -1374,9 +1381,10 @@ static void remove_free_nid(struct f2fs_
- 		kmem_cache_free(free_nid_slab, i);
- }
- 
--static void scan_nat_page(struct f2fs_nm_info *nm_i,
-+static void scan_nat_page(struct f2fs_sb_info *sbi,
- 			struct page *nat_page, nid_t start_nid)
- {
-+	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 	struct f2fs_nat_block *nat_blk = page_address(nat_page);
- 	block_t blk_addr;
- 	int i;
-@@ -1391,7 +1399,7 @@ static void scan_nat_page(struct f2fs_nm
- 		blk_addr = le32_to_cpu(nat_blk->entries[i].block_addr);
- 		f2fs_bug_on(blk_addr == NEW_ADDR);
- 		if (blk_addr == NULL_ADDR) {
--			if (add_free_nid(nm_i, start_nid, true) < 0)
-+			if (add_free_nid(sbi, start_nid, true) < 0)
- 				break;
+ 	if (!sb->s_root) {
++		struct kernfs_super_info *info = kernfs_info(sb);
++
+ 		error = kernfs_fill_super(sb, magic);
+ 		if (error) {
+ 			deactivate_locked_super(sb);
+ 			return ERR_PTR(error);
  		}
+ 		sb->s_flags |= MS_ACTIVE;
++
++		mutex_lock(&kernfs_mutex);
++		list_add(&info->node, &root->supers);
++		mutex_unlock(&kernfs_mutex);
  	}
-@@ -1415,7 +1423,7 @@ static void build_free_nids(struct f2fs_
- 	while (1) {
- 		struct page *page = get_current_nat_page(sbi, nid);
  
--		scan_nat_page(nm_i, page, nid);
-+		scan_nat_page(sbi, page, nid);
- 		f2fs_put_page(page, 1);
+ 	return dget(sb->s_root);
+@@ -191,6 +198,10 @@ void kernfs_kill_sb(struct super_block *
+ 	struct kernfs_super_info *info = kernfs_info(sb);
+ 	struct kernfs_node *root_kn = sb->s_root->d_fsdata;
  
- 		nid += (NAT_ENTRY_PER_BLOCK - (nid % NAT_ENTRY_PER_BLOCK));
-@@ -1435,7 +1443,7 @@ static void build_free_nids(struct f2fs_
- 		block_t addr = le32_to_cpu(nat_in_journal(sum, i).block_addr);
- 		nid = le32_to_cpu(nid_in_journal(sum, i));
- 		if (addr == NULL_ADDR)
--			add_free_nid(nm_i, nid, true);
-+			add_free_nid(sbi, nid, true);
- 		else
- 			remove_free_nid(nm_i, nid);
- 	}
-@@ -1512,7 +1520,7 @@ void alloc_nid_failed(struct f2fs_sb_inf
- 	spin_lock(&nm_i->free_nid_list_lock);
- 	i = __lookup_free_nid_list(nm_i, nid);
- 	f2fs_bug_on(!i || i->state != NID_ALLOC);
--	if (!available_free_memory(nm_i, FREE_NIDS)) {
-+	if (!available_free_memory(sbi, FREE_NIDS)) {
- 		__del_from_free_nid_list(nm_i, i);
- 		need_free = true;
- 	} else {
-@@ -1843,7 +1851,7 @@ flush_now:
- 		}
- 
- 		if (nat_get_blkaddr(ne) == NULL_ADDR &&
--				add_free_nid(NM_I(sbi), nid, false) <= 0) {
-+				add_free_nid(sbi, nid, false) <= 0) {
- 			write_lock(&nm_i->nat_tree_lock);
- 			__del_from_nat_cache(nm_i, ne);
- 			write_unlock(&nm_i->nat_tree_lock);
---- a/fs/f2fs/node.h
-+++ b/fs/f2fs/node.h
-@@ -75,9 +75,10 @@ static inline void node_info_from_raw_na
- 	ni->version = raw_ne->version;
- }
- 
--enum nid_type {
-+enum mem_type {
- 	FREE_NIDS,	/* indicates the free nid list */
--	NAT_ENTRIES	/* indicates the cached nat entry */
-+	NAT_ENTRIES,	/* indicates the cached nat entry */
-+	DIRTY_DENTS	/* indicates dirty dentry pages */
++	mutex_lock(&kernfs_mutex);
++	list_del(&info->node);
++	mutex_unlock(&kernfs_mutex);
++
+ 	/*
+ 	 * Remove the superblock from fs_supers/s_instances
+ 	 * so we can't find it, before freeing kernfs_super_info.
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -161,6 +161,10 @@ struct kernfs_root {
+ 	/* private fields, do not use outside kernfs proper */
+ 	struct ida		ino_ida;
+ 	struct kernfs_syscall_ops *syscall_ops;
++
++	/* list of kernfs_super_info of this root, protected by kernfs_mutex */
++	struct list_head	supers;
++
+ 	wait_queue_head_t	deactivate_waitq;
  };
  
- /*
 
 
