@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989AbaGOM3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:29:03 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61513 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758714AbaGOM27 (ORCPT
+	id S932559AbaGOMcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:32:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:12490 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758321AbaGOMcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:28:59 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / sleep: Fix request_firmware() error at resume
-Date: Tue, 15 Jul 2014 14:47:13 +0200
-Message-ID: <3026958.0fOrQtDZlF@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405407087-19493-1-git-send-email-tiwai@suse.de>
-References: <1405407087-19493-1-git-send-email-tiwai@suse.de>
+	Tue, 15 Jul 2014 08:32:00 -0400
+X-IronPort-AV: E=Sophos;i="5.00,896,1396972800"; 
+   d="scan'208";a="33293187"
+Message-ID: <53C51E66.7030208@cn.fujitsu.com>
+Date: Tue, 15 Jul 2014 20:28:22 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Gleb Natapov <gleb@kernel.org>
+CC: Jan Kiszka <jan.kiszka@web.de>, <mtosatti@redhat.com>,
+        <nadav.amit@gmail.com>, <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page
+ in memory.
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com> <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com> <20140712080442.GH4399@minantech.com> <53C38D55.2040307@cn.fujitsu.com> <20140714145822.GK4399@minantech.com> <53C51608.4080109@web.de> <20140715120921.GT18167@minantech.com>
+In-Reply-To: <20140715120921.GT18167@minantech.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 15, 2014 08:51:27 AM Takashi Iwai wrote:
-> The commit [247bc037: PM / Sleep: Mitigate race between the freezer
-> and request_firmware()] introduced the finer state control, but it
-> also leads to a new bug; for example, a bug report regarding the
-> firmware loading of intel BT device at suspend/resume:
->   https://bugzilla.novell.com/show_bug.cgi?id=873790
-> 
-> The root cause seems to be a small window between the process resume
-> and the clear of usermodehelper lock.  The request_firmware() function
-> checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
-> is for avoiding the invalid  f/w loading during suspend/resume phase.
-> The problem is, however, that usermodehelper_enable() is called at the
-> end of thaw_processes().  Thus, a thawed process in between can kick
-> off the f/w loader code path (in this case, via btusb_setup_intel())
-> even before the call of usermodehelper_enable().  Then
-> usermodehelper_read_trylock() returns an error and request_firmware()
-> spews WARN_ON() in the end.
-> 
-> This oneliner patch fixes the issue just by setting to UMH_FREEZING
-> state again before restarting tasks, so that the call of
-> request_firmware() will be blocked until the end of this function
-> instead of returning an error.
-> 
-> Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=873790
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+On 07/15/2014 08:09 PM, Gleb Natapov wrote:
+> On Tue, Jul 15, 2014 at 01:52:40PM +0200, Jan Kiszka wrote:
+......
+>>
+>> I cannot follow your concerns yet. Specifically, how should
+>> APIC_ACCESS_ADDR (the VMCS field, right?) change while L2 is running? We
+>> currently pin/unpin on L1->L2/L2->L1, respectively. Or what do you mean?
+>>
+> I am talking about this case:
+>           if (cpu_has_secondary_exec_ctrls()) {a
+>           } else {
+>               exec_control |=
+>                  SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+>              vmcs_write64(APIC_ACCESS_ADDR,
+>                  page_to_phys(vcpu->kvm->arch.apic_access_page));
+>           }
+> We do not pin here.
+>
 
-Applied, thanks for fixing this up!
+Hi Gleb,
 
-> ---
->  kernel/power/process.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index 0ca8d83e2369..4ee194eb524b 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -186,6 +186,7 @@ void thaw_processes(void)
->  
->  	printk("Restarting tasks ... ");
->  
-> +	__usermodehelper_set_disable_depth(UMH_FREEZING);
->  	thaw_workqueues();
->  
->  	read_lock(&tasklist_lock);
-> 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+7905                 if (exec_control & 
+SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
+......
+7912                         if (vmx->nested.apic_access_page) /* 
+shouldn't happen */
+7913 
+nested_release_page(vmx->nested.apic_access_page);
+7914                         vmx->nested.apic_access_page =
+7915                                 nested_get_page(vcpu, 
+vmcs12->apic_access_addr);
+
+I thought you were talking about the problem here. We pin 
+vmcs12->apic_access_addr
+in memory. And I think we should do the same thing to this page as to L1 
+vm.
+Right ?
+
+......
+7922                         if (!vmx->nested.apic_access_page)
+7923                                 exec_control &=
+7924 
+~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+7925                         else
+7926                                 vmcs_write64(APIC_ACCESS_ADDR,
+7927 
+page_to_phys(vmx->nested.apic_access_page));
+7928                 } else if 
+(vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
+7929                         exec_control |=
+7930 
+SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+7931                         vmcs_write64(APIC_ACCESS_ADDR,
+7932 
+page_to_phys(vcpu->kvm->arch.apic_access_page));
+7933                 }
+
+And yes, we have the problem you said here. We can migrate the page 
+while L2 vm is running.
+So I think we should enforce L2 vm to exit to L1. Right ?
+
+Thanks.
+
+
