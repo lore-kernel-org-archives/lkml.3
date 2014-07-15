@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759661AbaGOVkk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:40:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55188 "EHLO
+	id S933824AbaGOVkz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:40:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55175 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934107AbaGOVjq (ORCPT
+	with ESMTP id S964901AbaGOVjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:46 -0400
+	Tue, 15 Jul 2014 17:39:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maurizio Lombardi <mlombard@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 058/198] ext4: fix wrong assert in ext4_mb_normalize_request()
-Date: Tue, 15 Jul 2014 14:28:48 -0700
-Message-Id: <1405459868-15089-59-git-send-email-kamal@canonical.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 054/198] KVM: lapic: sync highest ISR to hardware apic on EOI
+Date: Tue, 15 Jul 2014 14:28:44 -0700
+Message-Id: <1405459868-15089-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,33 +26,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maurizio Lombardi <mlombard@redhat.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit b5b60778558cafad17bbcbf63e0310bd3c68eb17 upstream.
+commit fc57ac2c9ca8109ea97fcc594f4be436944230cc upstream.
 
-The variable "size" is expressed as number of blocks and not as
-number of clusters, this could trigger a kernel panic when using
-ext4 with the size of a cluster different from the size of a block.
+When Hyper-V enlightenments are in effect, Windows prefers to issue an
+Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+The Hyper-V MSR write is not handled by the processor, and besides
+being slower, this also causes bugs with APIC virtualization.  The
+reason is that on EOI the processor will modify the highest in-service
+interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
+the SDM; every other step in EOI virtualization is already done by
+apic_send_eoi or on VM entry, but this one is missing.
 
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+We need to do the same, and be careful not to muck with the isr_count
+and highest_isr_cache fields that are unused when virtual interrupt
+delivery is enabled.
+
+Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/mballoc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/lapic.c | 62 ++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 43 insertions(+), 19 deletions(-)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 04a5c75..08ddfda 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3135,7 +3135,7 @@ ext4_mb_normalize_request(struct ext4_allocation_context *ac,
- 	}
- 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
- 			start > ac->ac_o_ex.fe_logical);
--	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
-+	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index d86ff15..92bbb39 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -360,6 +360,8 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
  
- 	/* now prepare goal request */
+ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+ {
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+ 		++apic->isr_count;
+ 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+@@ -371,12 +373,48 @@ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+ 	apic->highest_isr_cache = vec;
+ }
+ 
++static inline int apic_find_highest_isr(struct kvm_lapic *apic)
++{
++	int result;
++
++	/*
++	 * Note that isr_count is always 1, and highest_isr_cache
++	 * is always -1, with APIC virtualization enabled.
++	 */
++	if (!apic->isr_count)
++		return -1;
++	if (likely(apic->highest_isr_cache != -1))
++		return apic->highest_isr_cache;
++
++	result = find_highest_vector(apic->regs + APIC_ISR);
++	ASSERT(result == -1 || result >= 16);
++
++	return result;
++}
++
+ static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+ {
+-	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++	struct kvm_vcpu *vcpu;
++	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++		return;
++
++	vcpu = apic->vcpu;
++
++	/*
++	 * We do get here for APIC virtualization enabled if the guest
++	 * uses the Hyper-V APIC enlightenment.  In this case we may need
++	 * to trigger a new interrupt delivery by writing the SVI field;
++	 * on the other hand isr_count and highest_isr_cache are unused
++	 * and must be left alone.
++	 */
++	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
++		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
++					       apic_find_highest_isr(apic));
++	else {
+ 		--apic->isr_count;
+-	BUG_ON(apic->isr_count < 0);
+-	apic->highest_isr_cache = -1;
++		BUG_ON(apic->isr_count < 0);
++		apic->highest_isr_cache = -1;
++	}
+ }
+ 
+ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+@@ -456,22 +494,6 @@ static void pv_eoi_clr_pending(struct kvm_vcpu *vcpu)
+ 	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+ }
+ 
+-static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+-{
+-	int result;
+-
+-	/* Note that isr_count is always 1 with vid enabled */
+-	if (!apic->isr_count)
+-		return -1;
+-	if (likely(apic->highest_isr_cache != -1))
+-		return apic->highest_isr_cache;
+-
+-	result = find_highest_vector(apic->regs + APIC_ISR);
+-	ASSERT(result == -1 || result >= 16);
+-
+-	return result;
+-}
+-
+ void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+@@ -1605,6 +1627,8 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (vector == -1)
+ 		return -1;
  
 -- 
 1.9.1
