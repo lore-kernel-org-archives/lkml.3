@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607AbaGOIto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:49:44 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:22397
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S932548AbaGOIs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:48:59 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:52036
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932461AbaGOItA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:49:00 -0400
+	id S932461AbaGOIsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:48:46 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 27/29] MAINTAINERS: Add nios2 maintainer
-Date: Tue, 15 Jul 2014 16:45:54 +0800
-Message-ID: <1405413956-2772-28-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 23/29] nios2: Nios2 registers
+Date: Tue, 15 Jul 2014 16:45:50 +0800
+Message-ID: <1405413956-2772-24-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(31966008)(64706001)(79102001)(102836001)(229853001)(83322001)(21056001)(87286001)(44976005)(99396002)(89996001)(50986999)(76176999)(20776003)(19580395003)(106466001)(104166001)(105596002)(74502001)(46102001)(33646002)(77982001)(85306003)(2201001)(95666004)(84676001)(85852003)(107046002)(77096002)(81342001)(42186005)(97736001)(19580405001)(81542001)(93916002)(92726001)(4396001)(50226001)(36756003)(62966002)(92566001)(87936001)(77156001)(76482001)(47776003)(86362001)(74662001)(6806004)(88136002)(68736004)(80022001)(48376002)(83072002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB309;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(77156001)(99396002)(81542001)(64706001)(95666004)(76176999)(76482001)(88136002)(68736004)(36756003)(84676001)(81342001)(20776003)(85306003)(229853001)(4396001)(21056001)(50226001)(47776003)(80022001)(85852003)(50986999)(107046002)(62966002)(83072002)(104166001)(105596002)(79102001)(77096002)(86362001)(33646002)(92566001)(74662001)(106466001)(31966008)(2201001)(97736001)(93916002)(92726001)(77982001)(83322001)(19580395003)(87936001)(19580405001)(74502001)(6806004)(102836001)(89996001)(48376002)(15975445006)(44976005)(46102001)(42186005)(87286001)(15202345003)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB033;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,29 +31,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This file contains constants for the instruction macros, cpu registers, fields and bits.
+
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- MAINTAINERS | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/nios2/include/asm/registers.h | 71 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 71 insertions(+)
+ create mode 100644 arch/nios2/include/asm/registers.h
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e31c874..db2bdf1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6350,6 +6350,13 @@ S:	Maintained
- F:	Documentation/scsi/NinjaSCSI.txt
- F:	drivers/scsi/nsp32*
- 
-+NIOS2 ARCHITECTURE
-+M:	Ley Foon Tan <lftan@altera.com>
-+L:	nios2-dev@lists.rocketboards.org (moderated for non-subscribers)
-+T:	git://git.rocketboards.org/linux-socfpga.git
-+S:	Maintained
-+F:	arch/nios2/
+diff --git a/arch/nios2/include/asm/registers.h b/arch/nios2/include/asm/registers.h
+new file mode 100644
+index 0000000..615bce1
+--- /dev/null
++++ b/arch/nios2/include/asm/registers.h
+@@ -0,0 +1,71 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
 +
- NTB DRIVER
- M:	Jon Mason <jon.mason@intel.com>
- S:	Supported
++#ifndef _ASM_NIOS2_REGISTERS_H
++#define _ASM_NIOS2_REGISTERS_H
++
++#ifndef __ASSEMBLY__
++#include <asm/cpuinfo.h>
++#endif
++
++/* control register numbers */
++#define CTL_STATUS	0
++#define CTL_ESTATUS	1
++#define CTL_BSTATUS	2
++#define CTL_IENABLE	3
++#define CTL_IPENDING	4
++#define CTL_CPUID	5
++#define CTL_RSV1	6
++#define CTL_EXCEPTION	7
++#define CTL_PTEADDR	8
++#define CTL_TLBACC	9
++#define CTL_TLBMISC	10
++#define CTL_RSV2	11
++#define CTL_BADADDR	12
++#define CTL_CONFIG	13
++#define CTL_MPUBASE	14
++#define CTL_MPUACC	15
++
++/* access control registers using GCC builtins */
++#define RDCTL(r)	__builtin_rdctl(r)
++#define WRCTL(r, v)	__builtin_wrctl(r, v)
++
++/* status register bits */
++#define STATUS_PIE	(1 << 0)	/* processor interrupt enable */
++#define STATUS_U	(1 << 1)	/* user mode */
++#define STATUS_EH	(1 << 2)	/* Exception mode */
++
++/* estatus register bits */
++#define ESTATUS_EPIE	(1 << 0)	/* processor interrupt enable */
++#define ESTATUS_EU	(1 << 1)	/* user mode */
++#define ESTATUS_EH	(1 << 2)	/* Exception mode */
++
++/* tlbmisc register bits */
++#define TLBMISC_PID_SHIFT	4
++#ifndef __ASSEMBLY__
++#define TLBMISC_PID_MASK	((1UL << cpuinfo.tlb_pid_num_bits) - 1)
++#endif
++#define TLBMISC_WAY_MASK	0xf
++#define TLBMISC_WAY_SHIFT	20
++
++#define TLBMISC_PID	(TLBMISC_PID_MASK << TLBMISC_PID_SHIFT)	/* TLB PID */
++#define TLBMISC_WE	(1 << 18)	/* TLB write enable */
++#define TLBMISC_RD	(1 << 19)	/* TLB read */
++#define TLBMISC_WAY	(TLBMISC_WAY_MASK << TLBMISC_WAY_SHIFT) /* TLB way */
++
++#endif /* _ASM_NIOS2_REGISTERS_H */
 -- 
 1.8.2.1
 
