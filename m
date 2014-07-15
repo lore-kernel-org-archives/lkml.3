@@ -1,180 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaGOOVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:21:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1526 "EHLO mx1.redhat.com"
+	id S1753252AbaGOOX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:23:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54086 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752942AbaGOOVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:21:43 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Jones <drjones@redhat.com>, xen-devel@lists.xenproject.org,
+	id S1751792AbaGOOXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 10:23:54 -0400
+Date: Tue, 15 Jul 2014 16:23:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7] mmap_vmcore: skip non-ram pages reported by hypervisors
-Date: Tue, 15 Jul 2014 16:20:25 +0200
-Message-Id: <1405434025-4739-1-git-send-email-vkuznets@redhat.com>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140715142350.GD9366@dhcp22.suse.cz>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+ <20140715082545.GA9366@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715082545.GA9366@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a special check in read_vmcore() handler to check if the page was
-reported as ram or not by the hypervisor (pfn_is_ram()). However, when
-vmcore is read with mmap() no such check is performed. That can lead to
-unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
-mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
-enormous load in both DomU and Dom0.
+On Tue 15-07-14 10:25:45, Michal Hocko wrote:
+[...]
+> diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
+> index bcf750d3cecd..8870b0212150 100644
+> --- a/Documentation/cgroups/memcg_test.txt
+> +++ b/Documentation/cgroups/memcg_test.txt
+[...]
+>  6. Shmem(tmpfs) Page Cache
+> -	Memcg's charge/uncharge have special handlers of shmem. The best way
+> -	to understand shmem's page state transition is to read mm/shmem.c.
+> +	The best way to understand shmem's page state transition is to read
+> +	mm/shmem.c.
 
-Fix the issue by mapping each non-ram page to the zero page. Keep direct
-path with remap_oldmem_pfn_range() to avoid looping through all pages on
-bare metal.
+:D
 
-The issue can also be solved by overriding remap_oldmem_pfn_range() in
-xen-specific code, as remap_oldmem_pfn_range() was been designed for.
-That, however, would involve non-obvious xen code path for all x86 builds
-with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
-code on x86 arch from doing the same override.
+[...]
+>  7. Page Migration
+> -   	One of the most complicated functions is page-migration-handler.
+> -	Memcg has 2 routines. Assume that we are migrating a page's contents
+> -	from OLDPAGE to NEWPAGE.
+> -
+> -	Usual migration logic is..
+> -	(a) remove the page from LRU.
+> -	(b) allocate NEWPAGE (migration target)
+> -	(c) lock by lock_page().
+> -	(d) unmap all mappings.
+> -	(e-1) If necessary, replace entry in radix-tree.
+> -	(e-2) move contents of a page.
+> -	(f) map all mappings again.
+> -	(g) pushback the page to LRU.
+> -	(-) OLDPAGE will be freed.
+> -
+> -	Before (g), memcg should complete all necessary charge/uncharge to
+> -	NEWPAGE/OLDPAGE.
+> -
+> -	The point is....
+> -	- If OLDPAGE is anonymous, all charges will be dropped at (d) because
+> -          try_to_unmap() drops all mapcount and the page will not be
+> -	  SwapCache.
+> -
+> -	- If OLDPAGE is SwapCache, charges will be kept at (g) because
+> -	  __delete_from_swap_cache() isn't called at (e-1)
+> -
+> -	- If OLDPAGE is page-cache, charges will be kept at (g) because
+> -	  remove_from_swap_cache() isn't called at (e-1)
+> -
+> -	memcg provides following hooks.
+> -
+> -	- mem_cgroup_prepare_migration(OLDPAGE)
+> -	  Called after (b) to account a charge (usage += PAGE_SIZE) against
+> -	  memcg which OLDPAGE belongs to.
+> -
+> -        - mem_cgroup_end_migration(OLDPAGE, NEWPAGE)
+> -	  Called after (f) before (g).
+> -	  If OLDPAGE is used, commit OLDPAGE again. If OLDPAGE is already
+> -	  charged, a charge by prepare_migration() is automatically canceled.
+> -	  If NEWPAGE is used, commit NEWPAGE and uncharge OLDPAGE.
+> -
+> -	  But zap_pte() (by exit or munmap) can be called while migration,
+> -	  we have to check if OLDPAGE/NEWPAGE is a valid page after commit().
+> +
+> +	mem_cgroup_migrate()
 
-Changes from v6:
-- remove useless len increment when remapping the rest of the region
+This doesn't tell us anything abouta the page migration. On the other
+hand I am not entirely sure the documentation here is very much helpful.
+There is some outdated information. I wouldn't be opposed to remove
+everything up to "9. Typical Tests." section which should be the primary
+target of the file anyway.
 
-Changes from v5:
-- make len size_t to match do_unmap() interface
+>  8. LRU
+>          Each memcg has its own private LRU. Now, its handling is under global
+[...]
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 290905133078..94fd0b23f3f9 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -382,9 +382,13 @@ static inline int mem_cgroup_swappiness(struct mem_cgroup *mem)
+>  }
+>  #endif
+>  #ifdef CONFIG_MEMCG_SWAP
+> -extern void mem_cgroup_uncharge_swap(swp_entry_t ent);
+> +extern void mem_cgroup_swapout(struct page *page, swp_entry_t entry);
+> +extern void mem_cgroup_uncharge_swap(swp_entry_t entry);
 
-Changes from v4:
-- change map_size type size_t -> unsigned long
-- use prot instead of vma->vm_page_prot inside remap_oldmem_pfn_checked()
+Wouldn't it be nicer to have those two with symmetric names?
+mem_cgroup_{un}charge_swap?
 
-Changes from v3:
-- multi line comment style changes
-- minor code style changes
+[...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index fe17420afdc7..e4afdbdda0a7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -2760,15 +2752,15 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+>  		spin_unlock_irq(&zone->lru_lock);
+>  	}
+>  
+> -	mem_cgroup_charge_statistics(memcg, page, anon, nr_pages);
+> -	unlock_page_cgroup(pc);
+> -
+> +	local_irq_disable();
+> +	mem_cgroup_charge_statistics(memcg, page, nr_pages);
+>  	/*
+>  	 * "charge_statistics" updated event counter. Then, check it.
+>  	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
+>  	 * if they exceeds softlimit.
+>  	 */
+>  	memcg_check_events(memcg, page);
+> +	local_irq_enable();
 
-Changes from v2:
-- make remap_oldmem_pfn_checked() interface exactly match
-  remap_oldmem_pfn_range()
-- unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
-  we don't need to take care of it in mmap_vmcore()
-- create vmcore_remap_oldmem_pfn() wrapper
+preempt_{enable,disbale} should be sufficient for
+mem_cgroup_charge_statistics and memcg_check_events no?
+The first one is about per-cpu accounting (and that should be atomic
+wrt. IRQ on the same CPU) and the later one uses IRQ safe locks down in
+mem_cgroup_update_tree.
 
-Changes from v1:
-- comment style changes
-- change remap_oldmem_pfn_checked() interface to closer match the
-  remap_oldmem_pfn() interface
-- preserve formal parameters within the loop, make the loop conditions
-  easier to understand
-- use my_zero_pfn() for the zero page
-- return remapped length instead of new offset
+Not that it would matter much it is just surprising.
 
-Reviewed-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- fs/proc/vmcore.c | 82 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 79 insertions(+), 3 deletions(-)
+>  }
+>  
+>  static DEFINE_MUTEX(set_limit_mutex);
+[...]
+> @@ -3533,20 +3521,23 @@ static int mem_cgroup_move_account(struct page *page,
+>  			       nr_pages);
+>  	}
+>  
+> -	mem_cgroup_charge_statistics(from, page, anon, -nr_pages);
+> +	/*
+> +	 * It is safe to change pc->mem_cgroup here because the page
+> +	 * is referenced, charged, and isolated - we can't race with
+> +	 * uncharging, charging, migration, or LRU putback.
+> +	 */
+>  
+>  	/* caller should have done css_get */
+>  	pc->mem_cgroup = to;
+> -	mem_cgroup_charge_statistics(to, page, anon, nr_pages);
+>  	move_unlock_mem_cgroup(from, &flags);
+>  	ret = 0;
+> -unlock:
+> -	unlock_page_cgroup(pc);
+> -	/*
+> -	 * check events
+> -	 */
+> +
+> +	local_irq_disable();
+> +	mem_cgroup_charge_statistics(to, page, nr_pages);
+>  	memcg_check_events(to, page);
+> +	mem_cgroup_charge_statistics(from, page, -nr_pages);
+>  	memcg_check_events(from, page);
+> +	local_irq_enable();
+>  out:
+>  	return ret;
+>  }
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 382aa89..a18e651 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -328,6 +328,82 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
-  * virtually contiguous user-space in ELF layout.
-  */
- #ifdef CONFIG_MMU
-+/*
-+ * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
-+ * reported as not being ram with the zero page.
-+ *
-+ * @vma: vm_area_struct describing requested mapping
-+ * @from: start remapping from
-+ * @pfn: page frame number to start remapping to
-+ * @size: remapping size
-+ * @prot: protection bits
-+ *
-+ * Returns zero on success, -EAGAIN on failure.
-+ */
-+int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
-+			     unsigned long pfn, unsigned long size,
-+			     pgprot_t prot)
-+{
-+	unsigned long map_size;
-+	unsigned long pos_start, pos_end, pos;
-+	unsigned long zeropage_pfn = my_zero_pfn(0);
-+	size_t len = 0;
-+
-+	pos_start = pfn;
-+	pos_end = pfn + (size >> PAGE_SHIFT);
-+
-+	for (pos = pos_start; pos < pos_end; ++pos) {
-+		if (!pfn_is_ram(pos)) {
-+			/*
-+			 * We hit a page which is not ram. Remap the continuous
-+			 * region between pos_start and pos-1 and replace
-+			 * the non-ram page at pos with the zero page.
-+			 */
-+			if (pos > pos_start) {
-+				/* Remap continuous region */
-+				map_size = (pos - pos_start) << PAGE_SHIFT;
-+				if (remap_oldmem_pfn_range(vma, from + len,
-+							   pos_start, map_size,
-+							   prot))
-+					goto fail;
-+				len += map_size;
-+			}
-+			/* Remap the zero page */
-+			if (remap_oldmem_pfn_range(vma, from + len,
-+						   zeropage_pfn,
-+						   PAGE_SIZE, prot))
-+				goto fail;
-+			len += PAGE_SIZE;
-+			pos_start = pos + 1;
-+		}
-+	}
-+	if (pos > pos_start) {
-+		/* Remap the rest */
-+		map_size = (pos - pos_start) << PAGE_SHIFT;
-+		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
-+					   map_size, prot))
-+			goto fail;
-+	}
-+	return 0;
-+fail:
-+	do_munmap(vma->vm_mm, from, len);
-+	return -EAGAIN;
-+}
-+
-+int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
-+			    unsigned long from, unsigned long pfn,
-+			    unsigned long size, pgprot_t prot)
-+{
-+	/*
-+	 * Check if oldmem_pfn_is_ram was registered to avoid
-+	 * looping over all pages without a reason.
-+	 */
-+	if (oldmem_pfn_is_ram)
-+		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
-+	else
-+		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
-+}
-+
- static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
- {
- 	size_t size = vma->vm_end - vma->vm_start;
-@@ -387,9 +463,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
- 
- 			tsz = min_t(size_t, m->offset + m->size - start, size);
- 			paddr = m->paddr + start - m->offset;
--			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
--						   paddr >> PAGE_SHIFT, tsz,
--						   vma->vm_page_prot))
-+			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
-+						    paddr >> PAGE_SHIFT, tsz,
-+						    vma->vm_page_prot))
- 				goto fail;
- 			size -= tsz;
- 			start += tsz;
+Same here.
+
+[...]
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 63f0cd559999..9da3cf84d30a 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -780,11 +780,14 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+>  		rc = fallback_migrate_page(mapping, newpage, page, mode);
+>  
+>  	if (rc != MIGRATEPAGE_SUCCESS) {
+> -		newpage->mapping = NULL;
+> +		if (!PageAnon(newpage))
+> +			newpage->mapping = NULL;
+
+OK, I am probably washed out from looking into this for too long but I
+cannot figure why have you done this...
+
+>  	} else {
+> +		mem_cgroup_migrate(page, newpage, false);
+>  		if (remap_swapcache)
+>  			remove_migration_ptes(page, newpage);
+> -		page->mapping = NULL;
+> +		if (!PageAnon(page))
+> +			page->mapping = NULL;
+>  	}
+>  
+>  	unlock_page(newpage);
+
+[...]
+
+The semantic is much cleaner now. I have to digest details about the
+patch because it is really huge. But nothing really jumped at me during
+the review (except for few minor things mentioned here and one mentioned
+in other email regarding USED flag).
+
+Good work! 
 -- 
-1.9.3
-
+Michal Hocko
+SUSE Labs
