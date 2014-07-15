@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933877AbaGOVhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:37:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54620 "EHLO
+	id S933895AbaGOVhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:37:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54636 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759521AbaGOVhZ (ORCPT
+	with ESMTP id S933878AbaGOVhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:37:25 -0400
+	Tue, 15 Jul 2014 17:37:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 033/198] ASoC: max98090: Fix reset at resume time
-Date: Tue, 15 Jul 2014 14:28:23 -0700
-Message-Id: <1405459868-15089-34-git-send-email-kamal@canonical.com>
+Cc: Alessandro Miceli <angelofsky1980@gmail.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 032/198] [media] rtl28xxu: add [1b80:d3af] Sveon STV27
+Date: Tue, 15 Jul 2014 14:28:22 -0700
+Message-Id: <1405459868-15089-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,44 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+From: Alessandro Miceli <angelofsky1980@gmail.com>
 
-commit 25b4ab430f8e166c9b63f4db28e7e812d5a59396 upstream.
+commit 74a86272f05c3dae40f2d7b17ff09a0608cf3304 upstream.
 
-Reset needs to wait 20ms before other codec IO is performed. This wait
-was not being performed. Fix this by making sure the reset register is not
-restored with the cache, but use the manual reset method in resume with
-the wait.
+Added support for Sveon STV27 device (rtl2832u + FC0013 tuner)
 
-Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/max98090.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/dvb-core/dvb-usb-ids.h    | 1 +
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-index 8bddf3f..9ad8f01 100644
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -255,6 +255,7 @@ static struct reg_default max98090_reg[] = {
- static bool max98090_volatile_register(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
-+	case M98090_REG_SOFTWARE_RESET:
- 	case M98090_REG_DEVICE_STATUS:
- 	case M98090_REG_JACK_STATUS:
- 	case M98090_REG_REVISION_ID:
-@@ -2360,6 +2361,8 @@ static int max98090_runtime_resume(struct device *dev)
+diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
+index 4cfb962..8bdfad4 100644
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -373,4 +373,5 @@
+ #define USB_PID_CTVDIGDUAL_V2				0xe410
+ #define USB_PID_PCTV_2002E                              0x025c
+ #define USB_PID_PCTV_2002E_SE                           0x025d
++#define USB_PID_SVEON_STV27                             0xd3af
+ #endif
+diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+index 42e91ea..4043165 100644
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1433,6 +1433,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
+ 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
+ 		&rtl2832u_props, "Sveon STV20", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV27,
++		&rtl2832u_props, "Sveon STV27", NULL) },
  
- 	regcache_cache_only(max98090->regmap, false);
- 
-+	max98090_reset(max98090);
-+
- 	regcache_sync(max98090->regmap);
- 
- 	return 0;
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+ 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
 -- 
 1.9.1
 
