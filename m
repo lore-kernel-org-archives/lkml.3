@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760226AbaGOXaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:30:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45594 "EHLO
+	id S1760205AbaGOXaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:30:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45609 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934131AbaGOXOV (ORCPT
+	with ESMTP id S934150AbaGOXOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Chadwick <brianchad@westnet.com.au>,
-        Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 3.15 73/84] f2fs: check bdi->dirty_exceeded when trying to skip data writes
-Date: Tue, 15 Jul 2014 16:18:10 -0700
-Message-Id: <20140715231715.366917437@linuxfoundation.org>
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.15 74/84] drivers/rtc/rtc-puv3.c: remove "&dev->" for typo issue
+Date: Tue, 15 Jul 2014 16:18:11 -0700
+Message-Id: <20140715231715.395463575@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,34 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaegeuk Kim <jaegeuk@kernel.org>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 
-commit 2743f865543c0c4a5e12fc13edb2bf89a6e9687c upstream.
+commit 73fa540618d8b1f8c2266934f23bd84bb9e28d9e upstream.
 
-If we don't check the current backing device status, balance_dirty_pages can
-fall into infinite pausing routine.
+It is only a typo issue, the related commit:
 
-This can be occurred when a lot of directories make a small number of dirty
-dentry pages including files.
+  "1fbc4c4 drivers/rtc/rtc-puv3.c: use dev_dbg() instead of pr_debug()"
 
-Reported-by: Brian Chadwick <brianchad@westnet.com.au>
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+The related error (for unicore32 with allmodconfig):
+
+    CC [M]  drivers/rtc/rtc-puv3.o
+  drivers/rtc/rtc-puv3.c: In function 'puv3_rtc_setalarm':
+  drivers/rtc/rtc-puv3.c:143: error: 'struct device' has no member named 'dev'
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/f2fs/node.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/rtc/rtc-puv3.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -42,6 +42,8 @@ bool available_free_memory(struct f2fs_s
- 		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
- 		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
- 	} else if (type == DIRTY_DENTS) {
-+		if (sbi->sb->s_bdi->dirty_exceeded)
-+			return false;
- 		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
- 		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
- 	}
+--- a/drivers/rtc/rtc-puv3.c
++++ b/drivers/rtc/rtc-puv3.c
+@@ -140,7 +140,7 @@ static int puv3_rtc_setalarm(struct devi
+ 	rtc_tm_to_time(tm, &rtcalarm_count);
+ 	writel(rtcalarm_count, RTC_RTAR);
+ 
+-	puv3_rtc_setaie(&dev->dev, alrm->enabled);
++	puv3_rtc_setaie(dev, alrm->enabled);
+ 
+ 	if (alrm->enabled)
+ 		enable_irq_wake(puv3_rtc_alarmno);
 
 
