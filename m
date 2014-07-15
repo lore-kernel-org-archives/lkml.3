@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933657AbaGOXNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:13:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
+	id S1760445AbaGOXuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:50:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713AbaGOXNd (ORCPT
+	with ESMTP id S933659AbaGOXNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:33 -0400
+	Tue, 15 Jul 2014 19:13:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 39/44] x86, espfix: Move espfix definitions into a separate header file
-Date: Tue, 15 Jul 2014 16:17:37 -0700
-Message-Id: <20140715231647.853382522@linuxfoundation.org>
+Subject: [PATCH 3.14 65/66] x86, ioremap: Speed up check for RAM pages
+Date: Tue, 15 Jul 2014 16:17:59 -0700
+Message-Id: <20140715231704.919801887@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
-References: <20140715231646.690728348@linuxfoundation.org>
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,72 +25,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
+commit c81c8a1eeede61e92a15103748c23d100880cc8a upstream.
 
-Sparse warns that the percpu variables aren't declared before they are
-defined.  Rather than hacking around it, move espfix definitions into
-a proper header file.
+In __ioremap_caller() (the guts of ioremap), we loop over the range of
+pfns being remapped and checks each one individually with page_is_ram().
+For large ioremaps, this can be very slow.  For example, we have a
+device with a 256 GiB PCI BAR, and ioremapping this BAR can take 20+
+seconds -- sometimes long enough to trigger the soft lockup detector!
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Internally, page_is_ram() calls walk_system_ram_range() on a single
+page.  Instead, we can make a single call to walk_system_ram_range()
+from __ioremap_caller(), and do our further checks only for any RAM
+pages that we find.  For the common case of MMIO, this saves an enormous
+amount of work, since the range being ioremapped doesn't intersect
+system RAM at all.
+
+With this change, ioremap on our 256 GiB BAR takes less than 1 second.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Link: http://lkml.kernel.org/r/1399054721-1331-1-git-send-email-roland@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/espfix.h |   16 ++++++++++++++++
- arch/x86/include/asm/setup.h  |    5 ++---
- arch/x86/kernel/espfix_64.c   |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ arch/x86/mm/ioremap.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
---- /dev/null
-+++ b/arch/x86/include/asm/espfix.h
-@@ -0,0 +1,16 @@
-+#ifdef _ASM_X86_ESPFIX_H
-+#define _ASM_X86_ESPFIX_H
-+
-+#ifdef CONFIG_X86_64
-+
-+#include <asm/percpu.h>
-+
-+DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
-+DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
-+
-+extern void init_espfix_bsp(void);
-+extern void init_espfix_ap(void);
-+
-+#endif /* CONFIG_X86_64 */
-+
-+#endif /* _ASM_X86_ESPFIX_H */
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -60,11 +60,10 @@ extern void x86_ce4100_early_setup(void)
- static inline void x86_ce4100_early_setup(void) { }
- #endif
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -50,6 +50,21 @@ int ioremap_change_attr(unsigned long va
+ 	return err;
+ }
  
--extern void init_espfix_bsp(void);
--extern void init_espfix_ap(void);
++static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
++			       void *arg)
++{
++	unsigned long i;
++
++	for (i = 0; i < nr_pages; ++i)
++		if (pfn_valid(start_pfn + i) &&
++		    !PageReserved(pfn_to_page(start_pfn + i)))
++			return 1;
++
++	WARN_ONCE(1, "ioremap on RAM pfn 0x%lx\n", start_pfn);
++
++	return 0;
++}
++
+ /*
+  * Remap an arbitrary physical address space into the kernel virtual
+  * address space. Needed when the kernel wants to access high addresses
+@@ -93,14 +108,11 @@ static void __iomem *__ioremap_caller(re
+ 	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
++	pfn      = phys_addr >> PAGE_SHIFT;
+ 	last_pfn = last_addr >> PAGE_SHIFT;
+-	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
+-		int is_ram = page_is_ram(pfn);
 -
- #ifndef _SETUP
+-		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+-			return NULL;
+-		WARN_ON_ONCE(is_ram);
+-	}
++	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
++				  __ioremap_check_ram) == 1)
++		return NULL;
  
-+#include <asm/espfix.h>
-+
- /*
-  * This is set up by the setup-routine at boot-time
-  */
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -40,6 +40,7 @@
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/setup.h>
-+#include <asm/espfix.h>
- 
- /*
-  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
+ 	/*
+ 	 * Mappings have to be page-aligned
 
 
