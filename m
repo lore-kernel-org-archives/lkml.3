@@ -1,133 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450AbaGOTeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:34:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29121 "EHLO mx1.redhat.com"
+	id S933485AbaGOTex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:34:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933312AbaGOTee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:34:34 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 07/23] Input - wacom: split out the pad device for Graphire G4 and MO
-Date: Tue, 15 Jul 2014 14:45:30 -0400
-Message-Id: <1405449946-11515-8-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S933453AbaGOTei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:34:38 -0400
+Date: Tue, 15 Jul 2014 15:34:13 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 0/15] SCSI XCOPY support for the kernel and device mapper
+Message-ID: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MSC_SERIAL can be safely removed from pad devices. If it is not
-here, xf86-input-wacom correctly generates ones for its internal
-use.
+This patch series makes it possible to use SCSI XCOPY offload for the 
+block layer and device mapper.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Reviewed-by: Ping Cheng <pingc@wacom.com>
-Reviewed-by: Jason Gerecke <killertofu@gmail.com>
----
+It is based on Martin Petersen's work
+https://git.kernel.org/cgit/linux/kernel/git/mkp/linux.git/commit/?h=xcopy&id=0bdeed274e16b3038a851552188512071974eea8,
+but it is changed significantly so that it is possible to propagate XCOPY
+bios through the device mapper stack.
 
-no changes in v2
+The basic architecture is this: in the function blkdev_issue_copy we
+create two bios, one for read and one for write (with bi_rw READ|REQ_COPY
+and WRITE|REQ_COPY). Both bios have a pointer to the same bio_copy
+structure. These two bios travel independently through the device mapper
+stack - each bio can go through different device mapper devices. When both
+the bios reach the physical block device (in the function blk_queue_bio)
+the bio pair is collected and a XCOPY request is allocated and sent to the
+scsi disk driver.
 
- drivers/input/tablet/wacom_wac.c | 44 ++++++++++++++++++++++++----------------
- 1 file changed, 27 insertions(+), 17 deletions(-)
+Note that because device mapper mapping can dynamically change, there no
+guarantee that the XCOPY command succeeds. If it ends with an error, the
+caller is supposed to perform the copying manually.
 
-diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index e7ce16e..299ce78 100644
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -262,6 +262,7 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
- 	struct wacom_features *features = &wacom->features;
- 	unsigned char *data = wacom->data;
- 	struct input_dev *input = wacom->input;
-+	struct input_dev *pad_input = wacom->pad_input;
- 	int prox;
- 	int rw = 0;
- 	int retval = 0;
-@@ -322,7 +323,6 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
- 			wacom->id[0] = 0;
- 		input_report_abs(input, ABS_MISC, wacom->id[0]); /* report tool id */
- 		input_report_key(input, wacom->tool[0], prox);
--		input_event(input, EV_MSC, MSC_SERIAL, 1);
- 		input_sync(input); /* sync last event */
- 	}
- 
-@@ -332,14 +332,13 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
- 		prox = data[7] & 0xf8;
- 		if (prox || wacom->id[1]) {
- 			wacom->id[1] = PAD_DEVICE_ID;
--			input_report_key(input, BTN_BACK, (data[7] & 0x40));
--			input_report_key(input, BTN_FORWARD, (data[7] & 0x80));
-+			input_report_key(pad_input, BTN_BACK, (data[7] & 0x40));
-+			input_report_key(pad_input, BTN_FORWARD, (data[7] & 0x80));
- 			rw = ((data[7] & 0x18) >> 3) - ((data[7] & 0x20) >> 3);
--			input_report_rel(input, REL_WHEEL, rw);
-+			input_report_rel(pad_input, REL_WHEEL, rw);
- 			if (!prox)
- 				wacom->id[1] = 0;
--			input_report_abs(input, ABS_MISC, wacom->id[1]);
--			input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
-+			input_report_abs(pad_input, ABS_MISC, wacom->id[1]);
- 			retval = 1;
- 		}
- 		break;
-@@ -348,15 +347,14 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
- 		prox = (data[7] & 0xf8) || data[8];
- 		if (prox || wacom->id[1]) {
- 			wacom->id[1] = PAD_DEVICE_ID;
--			input_report_key(input, BTN_BACK, (data[7] & 0x08));
--			input_report_key(input, BTN_LEFT, (data[7] & 0x20));
--			input_report_key(input, BTN_FORWARD, (data[7] & 0x10));
--			input_report_key(input, BTN_RIGHT, (data[7] & 0x40));
--			input_report_abs(input, ABS_WHEEL, (data[8] & 0x7f));
-+			input_report_key(pad_input, BTN_BACK, (data[7] & 0x08));
-+			input_report_key(pad_input, BTN_LEFT, (data[7] & 0x20));
-+			input_report_key(pad_input, BTN_FORWARD, (data[7] & 0x10));
-+			input_report_key(pad_input, BTN_RIGHT, (data[7] & 0x40));
-+			input_report_abs(pad_input, ABS_WHEEL, (data[8] & 0x7f));
- 			if (!prox)
- 				wacom->id[1] = 0;
--			input_report_abs(input, ABS_MISC, wacom->id[1]);
--			input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
-+			input_report_abs(pad_input, ABS_MISC, wacom->id[1]);
- 			retval = 1;
- 		}
- 		break;
-@@ -1624,10 +1622,6 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 		/* fall through */
- 
- 	case WACOM_G4:
--		input_set_capability(input_dev, EV_MSC, MSC_SERIAL);
--
--		__set_bit(BTN_BACK, input_dev->keybit);
--		__set_bit(BTN_FORWARD, input_dev->keybit);
- 		/* fall through */
- 
- 	case GRAPHIRE:
-@@ -1840,6 +1834,22 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
- 	input_set_abs_params(input_dev, ABS_Y, 0, 1, 0, 0);
- 
- 	switch (features->type) {
-+	case WACOM_MO:
-+		__set_bit(BTN_BACK, input_dev->keybit);
-+		__set_bit(BTN_LEFT, input_dev->keybit);
-+		__set_bit(BTN_FORWARD, input_dev->keybit);
-+		__set_bit(BTN_RIGHT, input_dev->keybit);
-+		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
-+		break;
-+
-+	case WACOM_G4:
-+		__set_bit(BTN_BACK, input_dev->keybit);
-+		__set_bit(BTN_LEFT, input_dev->keybit);
-+		__set_bit(BTN_FORWARD, input_dev->keybit);
-+		__set_bit(BTN_RIGHT, input_dev->keybit);
-+		input_set_capability(input_dev, EV_REL, REL_WHEEL);
-+		break;
-+
- 	case WACOM_24HD:
- 		__set_bit(BTN_A, input_dev->keybit);
- 		__set_bit(BTN_B, input_dev->keybit);
--- 
-2.0.0
+The dm-kcopyd subsystem is modified to use the XCOPY command, so device
+mapper targets that use it (mirror, snapshot, thin, cache) take advantage
+of copy offload automatically.
 
+There is a new ioctl BLKCOPY that makes it possible to use copy offload
+from userspace.
