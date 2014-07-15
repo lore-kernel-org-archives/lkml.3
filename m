@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936AbaGOR7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:59:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30592 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbaGOR73 (ORCPT
+	id S1758031AbaGOSAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:00:22 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:32848 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038AbaGOSAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:59:29 -0400
-To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
-Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
-        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
-        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
-        <hch@infradead.org>, <martin.petersen@oracle.com>
-Subject: Re: [RESEND][PATCH 08/10][SCSI]mpt2sas: Get IOC_FACTS information using handshake protocol only after HBA card gets into READY or Operational state
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625103532.GA12953@avagotech.com>
-Date: Tue, 15 Jul 2014 13:58:57 -0400
-In-Reply-To: <20140625103532.GA12953@avagotech.com> (Sreekanth Reddy's message
-	of "Wed, 25 Jun 2014 16:05:32 +0530")
-Message-ID: <yq1wqbetsf2.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+	Tue, 15 Jul 2014 14:00:20 -0400
+Message-ID: <53C56C2C.8010801@samsung.com>
+Date: Wed, 16 Jul 2014 03:00:12 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>, "'Tomasz Figa'" <t.figa@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 2/6] ARM: EXYNOS: Fix core ID used by platsmp and hotplug
+ code
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com> <1403618235-19353-3-git-send-email-t.figa@samsung.com> <031001cf9aaf$959cf6c0$c0d6e440$@samsung.com> <53C3A7FE.8000401@gmail.com>
+In-Reply-To: <53C3A7FE.8000401@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
+On 07/14/14 18:50, Tomasz Figa wrote:
+> Hi Kukjin,
+>
+Hi,
 
-Sreekanth> The driver would send IOC facts only if HBA is in operational
-Sreekanth> or ready state. If it is in fault state, a diagnostic reset
-Sreekanth> would be issued. It would wait for 10 seconds to exit out of
-Sreekanth> reset state. If the HBA continues to be in reset state, then
-Sreekanth> the HBA wouldn't be claimed by the driver.
+> On 08.07.2014 15:21, Kukjin Kim wrote:
+>> Tomasz Figa wrote:
+>>>
+>>> When CPU topology is specified in device tree, cpu_logical_map() does
+>>> not return core ID anymore, but rather full MPIDR value. This breaks
+>>> existing calculation of PMU register offsets on Exynos SoCs.
+>>>
+>>> This patch fixes the problem by adjusting the code to use only core ID
+>>> bits of the value returned by cpu_logical_map() to allow CPU topology to
+>>> be specified in device tree on Exynos SoCs.
+>>>
+>>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
+>>
+>> Looks good to me, but I think we don't need this fix in 3.16 because the CPU
+>> topology is not specified in DT yet...if I'm wrong, please correct me.
+>
+> CPU topology is already specified in DT for Exynos3250, 5250, 5260, 5410
+> and 5420/5800.
+>
+> This patch also fixes CPU hotplug on SoCs with more than 2 cores,
+> because it removes incorrect condition check in platform_do_lowpower().
+>
+> Please take this fix for next -rc release.
+>
+Agreed and I've applied this into fixes for 3.16...
 
-Your patch header describes what used to happen. What does the patched
-code do?
-
-Also, several of your patches move large functions around within the
-file. That makes it really hard to figure out what the actual code
-changes are. Please split changes like that in two: One patch that moves
-stuff around in bulk without any functional changes and a second that
-addresses the issue at hand. That makes reviewing much easier.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Thanks,
+Kukjin
