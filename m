@@ -1,89 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558AbaGODOa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:14:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42816 "EHLO mga11.intel.com"
+	id S1757600AbaGODOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:14:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43326 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757125AbaGODO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:14:27 -0400
+	id S1757125AbaGODOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:14:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,662,1400050800"; 
-   d="scan'208";a="569861390"
+   d="scan'208";a="456990397"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
         <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 00/10] ACPI/EC: Add event storm prevention and cleanup command storm prevention.
-Date: Tue, 15 Jul 2014 11:14:23 +0800
-Message-Id: <cover.1405391678.git.lv.zheng@intel.com>
+Subject: [PATCH v2 01/10] ACPI/EC: Introduce STARTED/STOPPED flags to replace BLOCKED flag.
+Date: Tue, 15 Jul 2014 11:14:28 +0800
+Message-Id: <025ed8a54ea074779fe6028fd9de9814e857de00.1405391678.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1403060601.git.lv.zheng@intel.com>
-References: <cover.1403060601.git.lv.zheng@intel.com>
+In-Reply-To: <cover.1405391678.git.lv.zheng@intel.com>
+References: <cover.1403060601.git.lv.zheng@intel.com> <cover.1405391678.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is based on the previous ACPI/EC bug fixes series and the GPE
-API enhancement series.
+By using the 2 flags, we can indicate an inter-mediate state where the
+current transactions should be completed while the new transactions should
+be blocked.
 
-During the bug fix, there is a dmesg showing Linux EC driver doesn't
-support EC event storm prevention.
-  https://bugzilla.kernel.org/show_bug.cgi?id=70891
-The comment 55 contains the dmesg log that shows a 0x0D event storm, for
-which there is no _Q0D method provided by the ACPI table to handle. This
-becomes a GPE storm and slows down the machine a lot, it tooks longer time
-for Linux to boot (see comment 80).
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ drivers/acpi/ec.c |   56 +++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 42 insertions(+), 14 deletions(-)
 
-This patchset implements event storm prevention, turning EC driver into
-polling mode when the storm happens so that other tasks can be processed
-by the CPU without being affected by this GPE storm.
-In current EC driver, we only have command storm prevention implemented,
-this patch also refines the command storm prevention support.
-
-All of the above storm prevention support are implemented using the ideal
-GPE handling model provided by the previous GPE API enhancement series.
-The ideal GPE handling model should be able to handle the following cases:
-
-This patchset also contains an EC commands flushing support. This is
-required to implement event storm prevention. By utilizing the GPE APIs, we
-need to invoke acpi_set_gpe() before invoking acpi_disable_gpe() to prevent
-storms. Without implementing flushing, there is no such a point invoking
-acpi_disable_gpe() before all commands have been completed.
-By implementing EC commands flushing, we now achieve an additional benefit:
-Some EC driven ACPI devices may require all submitted EC commands to be
-completed before they can be safely suspended or unplugged. Otherwise the
-state of such devices will be broken.
-When implementing IO flushing, there always need to be 2 flags to indicate
-an intermediate state - old IO submissions observe the (STARTED) flag to
-continue; new IO submissions observe the (STOPPED) flag to be discarded.
-After introducing the 2 flags, a "stop waiter" is implemented for the
-suspending/removing operations of the EC driver.
-
-The refined patches are also passed the runtime/suspend tests carried out
-on the following platforms:
-  "Dell Inspiron Mini 1010" - i386 kernel
-  "Dell Latitude 6430u" - x86_64 kernel
-
-This patchset also includes a unit test facility, I used it to test the
-hotplug support code in the driver. It's useful for future EC development.
-
-Lv Zheng (10):
-  ACPI/EC: Introduce STARTED/STOPPED flags to replace BLOCKED flag.
-  ACPI/EC: Add detailed command/query debugging information.
-  ACPI/EC: Deploy the new GPE handling model.
-  ACPI/EC: Refine command storm prevention support.
-  ACPI/EC: Add reference counting for query handlers.
-  ACPI/EC: Add a warning message to indicate event storms.
-  ACPI/EC: Refine event/query debugging messages.
-  ACPI/EC: Add command flushing support.
-  ACPI/EC: Add event storm prevention support.
-  ACPI/EC: Add unit test support for EC driver hotplug.
-
- drivers/acpi/ec.c       |  293 ++++++++++++++++++++++++++++++++++++++---------
- drivers/acpi/internal.h |    1 +
- 2 files changed, 239 insertions(+), 55 deletions(-)
-
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index a66ab65..1a94ba9 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -79,7 +79,8 @@ enum {
+ 	EC_FLAGS_GPE_STORM,		/* GPE storm detected */
+ 	EC_FLAGS_HANDLERS_INSTALLED,	/* Handlers for GPE and
+ 					 * OpReg are installed */
+-	EC_FLAGS_BLOCKED,		/* Transactions are blocked */
++	EC_FLAGS_STARTED,		/* Driver is started */
++	EC_FLAGS_STOPPED,		/* Driver is stopped */
+ };
+ 
+ #define ACPI_EC_COMMAND_POLL		0x01 /* Available for command byte */
+@@ -285,15 +286,25 @@ static int acpi_ec_transaction_unlocked(struct acpi_ec *ec,
+ 		udelay(ACPI_EC_MSI_UDELAY);
+ 	/* start transaction */
+ 	spin_lock_irqsave(&ec->lock, tmp);
++	if (!test_bit(EC_FLAGS_STARTED, &ec->flags) ||
++	    test_bit(EC_FLAGS_STOPPED, &ec->flags)) {
++		ret = -EINVAL;
++		goto unlock;
++	}
+ 	/* following two actions should be kept atomic */
+ 	ec->curr = t;
++	pr_debug("***** transaction started (cmd=0x%02x, addr=0x%02x) *****\n",
++		 t->command, t->wdata ? t->wdata[0] : 0);
+ 	start_transaction(ec);
+ 	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
+ 		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
+ 	spin_unlock_irqrestore(&ec->lock, tmp);
+ 	ret = ec_poll(ec);
+ 	spin_lock_irqsave(&ec->lock, tmp);
++	pr_debug("***** transaction stopped (cmd=0x%02x, addr=0x%02x) *****\n",
++		 t->command, t->wdata ? t->wdata[0] : 0);
+ 	ec->curr = NULL;
++unlock:
+ 	spin_unlock_irqrestore(&ec->lock, tmp);
+ 	return ret;
+ }
+@@ -307,10 +318,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ 	if (t->rdata)
+ 		memset(t->rdata, 0, t->rlen);
+ 	mutex_lock(&ec->mutex);
+-	if (test_bit(EC_FLAGS_BLOCKED, &ec->flags)) {
+-		status = -EINVAL;
+-		goto unlock;
+-	}
+ 	if (ec->global_lock) {
+ 		status = acpi_acquire_global_lock(ACPI_EC_UDELAY_GLK, &glk);
+ 		if (ACPI_FAILURE(status)) {
+@@ -318,8 +325,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ 			goto unlock;
+ 		}
+ 	}
+-	pr_debug("transaction start (cmd=0x%02x, addr=0x%02x)\n",
+-			t->command, t->wdata ? t->wdata[0] : 0);
+ 	/* disable GPE during transaction if storm is detected */
+ 	if (test_bit(EC_FLAGS_GPE_STORM, &ec->flags)) {
+ 		/* It has to be disabled, so that it doesn't trigger. */
+@@ -340,7 +345,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ 			t->irq_count);
+ 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
+ 	}
+-	pr_debug("transaction end\n");
+ 	if (ec->global_lock)
+ 		acpi_release_global_lock(glk);
+ unlock:
+@@ -470,6 +474,30 @@ static void acpi_ec_clear(struct acpi_ec *ec)
+ 		pr_info("%d stale EC events cleared\n", i);
+ }
+ 
++static void acpi_ec_start(struct acpi_ec *ec)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&ec->lock, flags);
++	if (!test_and_set_bit(EC_FLAGS_STARTED, &ec->flags))
++		acpi_enable_gpe(NULL, ec->gpe);
++	spin_unlock_irqrestore(&ec->lock, flags);
++}
++
++static void acpi_ec_stop(struct acpi_ec *ec)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&ec->lock, flags);
++	if (test_bit(EC_FLAGS_STARTED, &ec->flags) &&
++	    !test_and_set_bit(EC_FLAGS_STOPPED, &ec->flags)) {
++		acpi_disable_gpe(NULL, ec->gpe);
++		clear_bit(EC_FLAGS_STARTED, &ec->flags);
++		clear_bit(EC_FLAGS_STOPPED, &ec->flags);
++	}
++	spin_unlock_irqrestore(&ec->lock, flags);
++}
++
+ void acpi_ec_block_transactions(void)
+ {
+ 	struct acpi_ec *ec = first_ec;
+@@ -479,7 +507,7 @@ void acpi_ec_block_transactions(void)
+ 
+ 	mutex_lock(&ec->mutex);
+ 	/* Prevent transactions from being carried out */
+-	set_bit(EC_FLAGS_BLOCKED, &ec->flags);
++	acpi_ec_stop(ec);
+ 	mutex_unlock(&ec->mutex);
+ }
+ 
+@@ -492,7 +520,7 @@ void acpi_ec_unblock_transactions(void)
+ 
+ 	mutex_lock(&ec->mutex);
+ 	/* Allow transactions to be carried out again */
+-	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
++	acpi_ec_start(ec);
+ 
+ 	if (EC_FLAGS_CLEAR_ON_RESUME)
+ 		acpi_ec_clear(ec);
+@@ -507,7 +535,7 @@ void acpi_ec_unblock_transactions_early(void)
+ 	 * atomic context during wakeup, so we don't need to acquire the mutex).
+ 	 */
+ 	if (first_ec)
+-		clear_bit(EC_FLAGS_BLOCKED, &first_ec->flags);
++		acpi_ec_start(first_ec);
+ }
+ 
+ static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 * data)
+@@ -774,7 +802,7 @@ static int ec_install_handlers(struct acpi_ec *ec)
+ 	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
+ 
+-	acpi_enable_gpe(NULL, ec->gpe);
++	acpi_ec_start(ec);
+ 	status = acpi_install_address_space_handler(ec->handle,
+ 						    ACPI_ADR_SPACE_EC,
+ 						    &acpi_ec_space_handler,
+@@ -789,7 +817,7 @@ static int ec_install_handlers(struct acpi_ec *ec)
+ 			pr_err("Fail in evaluating the _REG object"
+ 				" of EC device. Broken bios is suspected.\n");
+ 		} else {
+-			acpi_disable_gpe(NULL, ec->gpe);
++			acpi_ec_stop(ec);
+ 			acpi_remove_gpe_handler(NULL, ec->gpe,
+ 				&acpi_ec_gpe_handler);
+ 			return -ENODEV;
+@@ -802,10 +830,10 @@ static int ec_install_handlers(struct acpi_ec *ec)
+ 
+ static void ec_remove_handlers(struct acpi_ec *ec)
+ {
+-	acpi_disable_gpe(NULL, ec->gpe);
+ 	if (ACPI_FAILURE(acpi_remove_address_space_handler(ec->handle,
+ 				ACPI_ADR_SPACE_EC, &acpi_ec_space_handler)))
+ 		pr_err("failed to remove space handler\n");
++	acpi_ec_stop(ec);
+ 	if (ACPI_FAILURE(acpi_remove_gpe_handler(NULL, ec->gpe,
+ 				&acpi_ec_gpe_handler)))
+ 		pr_err("failed to remove gpe handler\n");
 -- 
 1.7.10
 
