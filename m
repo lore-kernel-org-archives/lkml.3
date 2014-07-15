@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965027AbaGOWIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:08:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54482 "EHLO
+	id S1759470AbaGOWIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:08:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54465 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759381AbaGOVgM (ORCPT
+	with ESMTP id S1759359AbaGOVgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:36:12 -0400
+	Tue, 15 Jul 2014 17:36:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sam Bobroff <sam.bobroff@au1.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Wim Van Sebroeck <wim@iguana.be>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 125/198] powerpc: Correct DSCR during TM context switch
-Date: Tue, 15 Jul 2014 14:29:55 -0700
-Message-Id: <1405459868-15089-126-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 122/198] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
+Date: Tue, 15 Jul 2014 14:29:52 -0700
+Message-Id: <1405459868-15089-123-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,245 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sam bobroff <sam.bobroff@au1.ibm.com>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 96d016108640bc2b7fb0ee800737f80923847294 upstream.
+commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
 
-Correct the DSCR SPR becoming temporarily corrupted if a task is
-context switched during a transaction.
+Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
+watchdog_device' passed to it. sp805 was rather setting this in a local
+variable. Fix it.
 
-The problem occurs while suspending the task and is caused by saving
-the DSCR to thread.dscr after it has already been set to the CPU's
-default value:
-
-__switch_to() calls __switch_to_tm()
-	which calls tm_reclaim_task()
-	which calls tm_reclaim_thread()
-	which calls tm_reclaim()
-		where the DSCR is set to the CPU's default
-__switch_to() calls _switch()
-		where thread.dscr is set to the DSCR
-
-When the task is resumed, it's transaction will be doomed (as usual)
-and the DSCR SPR will be corrupted, although the checkpointed value
-will be correct. Therefore the DSCR will be immediately corrected by
-the transaction aborting, unless it has been suspended. In that case
-the incorrect value can be seen by the task until it resumes the
-transaction.
-
-The fix is to treat the DSCR similarly to the TAR and save it early
-in __switch_to().
-
-A program exposing the problem is added to the kernel self tests as:
-tools/testing/selftests/powerpc/tm/tm-resched-dscr.
-
-Signed-off-by: Sam Bobroff <sam.bobroff@au1.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/include/asm/switch_to.h               |  6 +-
- arch/powerpc/kernel/entry_64.S                     |  6 --
- arch/powerpc/kernel/process.c                      |  8 +-
- tools/testing/selftests/powerpc/Makefile           |  2 +-
- tools/testing/selftests/powerpc/tm/Makefile        | 15 ++++
- .../testing/selftests/powerpc/tm/tm-resched-dscr.c | 90 ++++++++++++++++++++++
- 6 files changed, 114 insertions(+), 13 deletions(-)
- create mode 100644 tools/testing/selftests/powerpc/tm/Makefile
- create mode 100644 tools/testing/selftests/powerpc/tm/tm-resched-dscr.c
+ drivers/watchdog/sp805_wdt.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
-index aace905..3b8d941 100644
---- a/arch/powerpc/include/asm/switch_to.h
-+++ b/arch/powerpc/include/asm/switch_to.h
-@@ -16,13 +16,15 @@ struct thread_struct;
- extern struct task_struct *_switch(struct thread_struct *prev,
- 				   struct thread_struct *next);
- #ifdef CONFIG_PPC_BOOK3S_64
--static inline void save_tar(struct thread_struct *prev)
-+static inline void save_early_sprs(struct thread_struct *prev)
- {
- 	if (cpu_has_feature(CPU_FTR_ARCH_207S))
- 		prev->tar = mfspr(SPRN_TAR);
-+	if (cpu_has_feature(CPU_FTR_DSCR))
-+		prev->dscr = mfspr(SPRN_DSCR);
- }
- #else
--static inline void save_tar(struct thread_struct *prev) {}
-+static inline void save_early_sprs(struct thread_struct *prev) {}
- #endif
+diff --git a/drivers/watchdog/sp805_wdt.c b/drivers/watchdog/sp805_wdt.c
+index 3f786ce..88bcdfb 100644
+--- a/drivers/watchdog/sp805_wdt.c
++++ b/drivers/watchdog/sp805_wdt.c
+@@ -60,7 +60,6 @@
+  * @adev: amba device structure of wdt
+  * @status: current status of wdt
+  * @load_val: load value to be set for current timeout
+- * @timeout: current programmed timeout
+  */
+ struct sp805_wdt {
+ 	struct watchdog_device		wdd;
+@@ -69,7 +68,6 @@ struct sp805_wdt {
+ 	struct clk			*clk;
+ 	struct amba_device		*adev;
+ 	unsigned int			load_val;
+-	unsigned int			timeout;
+ };
  
- extern void load_up_fpu(void);
-diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
-index bbfb029..fb5ba6d 100644
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -432,12 +432,6 @@ BEGIN_FTR_SECTION
- 	std	r24,THREAD_VRSAVE(r3)
- END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
- #endif /* CONFIG_ALTIVEC */
--#ifdef CONFIG_PPC64
--BEGIN_FTR_SECTION
--	mfspr	r25,SPRN_DSCR
--	std	r25,THREAD_DSCR(r3)
--END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
--#endif
- 	and.	r0,r0,r22
- 	beq+	1f
- 	andc	r22,r22,r0
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index c274355..79e063b 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -626,15 +626,15 @@ struct task_struct *__switch_to(struct task_struct *prev,
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+@@ -99,7 +97,7 @@ static int wdt_setload(struct watchdog_device *wdd, unsigned int timeout)
+ 	spin_lock(&wdt->lock);
+ 	wdt->load_val = load;
+ 	/* roundup timeout to closest positive integer value */
+-	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
++	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
+ 	spin_unlock(&wdt->lock);
  
- 	WARN_ON(!irqs_disabled());
- 
--	/* Back up the TAR across context switches.
-+	/* Back up the TAR and DSCR across context switches.
- 	 * Note that the TAR is not available for use in the kernel.  (To
- 	 * provide this, the TAR should be backed up/restored on exception
- 	 * entry/exit instead, and be in pt_regs.  FIXME, this should be in
- 	 * pt_regs anyway (for debug).)
--	 * Save the TAR here before we do treclaim/trecheckpoint as these
--	 * will change the TAR.
-+	 * Save the TAR and DSCR here before we do treclaim/trecheckpoint as
-+	 * these will change them.
- 	 */
--	save_tar(&prev->thread);
-+	save_early_sprs(&prev->thread);
- 
- 	__switch_to_tm(prev);
- 
-diff --git a/tools/testing/selftests/powerpc/Makefile b/tools/testing/selftests/powerpc/Makefile
-index bd24ae5..b99b500 100644
---- a/tools/testing/selftests/powerpc/Makefile
-+++ b/tools/testing/selftests/powerpc/Makefile
-@@ -13,7 +13,7 @@ CFLAGS := -Wall -O2 -flto -Wall -Werror -DGIT_VERSION='"$(GIT_VERSION)"' -I$(CUR
- 
- export CC CFLAGS
- 
--TARGETS = pmu
-+TARGETS = pmu tm
- 
- endif
- 
-diff --git a/tools/testing/selftests/powerpc/tm/Makefile b/tools/testing/selftests/powerpc/tm/Makefile
-new file mode 100644
-index 0000000..51267f4
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/tm/Makefile
-@@ -0,0 +1,15 @@
-+PROGS := tm-resched-dscr
-+
-+all: $(PROGS)
-+
-+$(PROGS):
-+
-+run_tests: all
-+	@-for PROG in $(PROGS); do \
-+		./$$PROG; \
-+	done;
-+
-+clean:
-+	rm -f $(PROGS) *.o
-+
-+.PHONY: all run_tests clean
-diff --git a/tools/testing/selftests/powerpc/tm/tm-resched-dscr.c b/tools/testing/selftests/powerpc/tm/tm-resched-dscr.c
-new file mode 100644
-index 0000000..ee98e38
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/tm/tm-resched-dscr.c
-@@ -0,0 +1,90 @@
-+/* Test context switching to see if the DSCR SPR is correctly preserved
-+ * when within a transaction.
-+ *
-+ * Note: We assume that the DSCR has been left at the default value (0)
-+ * for all CPUs.
-+ *
-+ * Method:
-+ *
-+ * Set a value into the DSCR.
-+ *
-+ * Start a transaction, and suspend it (*).
-+ *
-+ * Hard loop checking to see if the transaction has become doomed.
-+ *
-+ * Now that we *may* have been preempted, record the DSCR and TEXASR SPRS.
-+ *
-+ * If the abort was because of a context switch, check the DSCR value.
-+ * Otherwise, try again.
-+ *
-+ * (*) If the transaction is not suspended we can't see the problem because
-+ * the transaction abort handler will restore the DSCR to it's checkpointed
-+ * value before we regain control.
-+ */
-+
-+#include <inttypes.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <assert.h>
-+#include <asm/tm.h>
-+
-+#define TBEGIN          ".long 0x7C00051D ;"
-+#define TEND            ".long 0x7C00055D ;"
-+#define TCHECK          ".long 0x7C00059C ;"
-+#define TSUSPEND        ".long 0x7C0005DD ;"
-+#define TRESUME         ".long 0x7C2005DD ;"
-+#define SPRN_TEXASR     0x82
-+#define SPRN_DSCR       0x03
-+
-+int main(void) {
-+	uint64_t rv, dscr1 = 1, dscr2, texasr;
-+
-+	printf("Check DSCR TM context switch: ");
-+	fflush(stdout);
-+	for (;;) {
-+		rv = 1;
-+		asm __volatile__ (
-+			/* set a known value into the DSCR */
-+			"ld      3, %[dscr1];"
-+			"mtspr   %[sprn_dscr], 3;"
-+
-+			/* start and suspend a transaction */
-+			TBEGIN
-+			"beq     1f;"
-+			TSUSPEND
-+
-+			/* hard loop until the transaction becomes doomed */
-+			"2: ;"
-+			TCHECK
-+			"bc      4, 0, 2b;"
-+
-+			/* record DSCR and TEXASR */
-+			"mfspr   3, %[sprn_dscr];"
-+			"std     3, %[dscr2];"
-+			"mfspr   3, %[sprn_texasr];"
-+			"std     3, %[texasr];"
-+
-+			TRESUME
-+			TEND
-+			"li      %[rv], 0;"
-+			"1: ;"
-+			: [rv]"=r"(rv), [dscr2]"=m"(dscr2), [texasr]"=m"(texasr)
-+			: [dscr1]"m"(dscr1)
-+			, [sprn_dscr]"i"(SPRN_DSCR), [sprn_texasr]"i"(SPRN_TEXASR)
-+			: "memory", "r3"
-+		);
-+		assert(rv); /* make sure the transaction aborted */
-+		if ((texasr >> 56) != TM_CAUSE_RESCHED) {
-+			putchar('.');
-+			fflush(stdout);
-+			continue;
-+		}
-+		if (dscr2 != dscr1) {
-+			printf(" FAIL\n");
-+			exit(EXIT_FAILURE);
-+		} else {
-+			printf(" OK\n");
-+			exit(EXIT_SUCCESS);
-+		}
-+	}
-+}
+ 	return 0;
 -- 
 1.9.1
 
