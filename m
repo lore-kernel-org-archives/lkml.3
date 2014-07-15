@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934226AbaGOWBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:01:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54702 "EHLO
+	id S934237AbaGOWCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:02:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54697 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933916AbaGOVhr (ORCPT
+	with ESMTP id S932859AbaGOVhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 17:37:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jason Baron <jbaron@akamai.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 039/198] HID: core: fix validation of report id 0
-Date: Tue, 15 Jul 2014 14:28:29 -0700
-Message-Id: <1405459868-15089-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 149/198] epoll: fix use-after-free in eventpoll_release_file
+Date: Tue, 15 Jul 2014 14:30:19 -0700
+Message-Id: <1405459868-15089-150-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,56 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Konstantin Khlebnikov <koct9i@gmail.com>
 
-commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
+commit ebe06187bf2aec10d537ce4595e416035367d703 upstream.
 
-Some drivers use the first HID report in the list instead of using an
-index. In these cases, validation uses ID 0, which was supposed to mean
-"first known report". This fixes the problem, which was causing at least
-the lgff family of devices to stop working since hid_validate_values
-was being called with ID 0, but the devices used single numbered IDs
-for their reports:
+This fixes use-after-free of epi->fllink.next inside list loop macro.
+This loop actually releases elements in the body.  The list is
+rcu-protected but here we cannot hold rcu_read_lock because we need to
+lock mutex inside.
 
-0x05, 0x01,         /*  Usage Page (Desktop),                   */
-0x09, 0x05,         /*  Usage (Gamepad),                        */
-0xA1, 0x01,         /*  Collection (Application),               */
-0xA1, 0x02,         /*      Collection (Logical),               */
-0x85, 0x01,         /*          Report ID (1),                  */
-...
+The obvious solution is to use list_for_each_entry_safe().  RCU-ness
+isn't essential because nobody can change this list under us, it's final
+fput for this file.
 
-Reported-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+The bug was introduced by ae10b2b4eb01 ("epoll: optimize EPOLL_CTL_DEL
+using rcu")
+
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jason Baron <jbaron@akamai.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-core.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ fs/eventpoll.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 12f1a45..5b9e996 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -842,7 +842,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index af90312..ead0046 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -910,7 +910,7 @@ static const struct file_operations eventpoll_fops = {
+ void eventpoll_release_file(struct file *file)
+ {
+ 	struct eventpoll *ep;
+-	struct epitem *epi;
++	struct epitem *epi, *next;
+ 
+ 	/*
+ 	 * We don't want to get "file->f_lock" because it is not
+@@ -926,7 +926,7 @@ void eventpoll_release_file(struct file *file)
+ 	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
  	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
-+	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
+ 	mutex_lock(&epmutex);
+-	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
++	list_for_each_entry_safe(epi, next, &file->f_ep_links, fllink) {
+ 		ep = epi->ep;
+ 		mutex_lock_nested(&ep->mtx, 0);
+ 		ep_remove(ep, epi);
 -- 
 1.9.1
 
