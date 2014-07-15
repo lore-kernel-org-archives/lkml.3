@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934056AbaGOVjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:39:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55007 "EHLO
+	id S934055AbaGOVjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:39:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55012 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964826AbaGOVjA (ORCPT
+	with ESMTP id S934025AbaGOVjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:00 -0400
+	Tue, 15 Jul 2014 17:39:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 143/198] drm/i915: Avoid div-by-zero when pixel_multiplier is zero
-Date: Tue, 15 Jul 2014 14:30:13 -0700
-Message-Id: <1405459868-15089-144-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 161/198] ALSA: control: Handle numid overflow
+Date: Tue, 15 Jul 2014 14:30:31 -0700
+Message-Id: <1405459868-15089-162-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,58 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 2b85886a5457f5c5dbcd32edbd4e6bba0f4e8678 upstream.
+commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
 
-On certain platforms pixel_multiplier is read out in
-.get_pipe_config(), but it also gets used to calculate the
-pixel clock in intel_sdvo_get_config(). If the pipe is disable
-but some SDVO outputs are active, we may end up dividing by zero
-in intel_sdvo_get_config().
+Each control gets automatically assigned its numids when the control is created.
+The allocation is done by incrementing the numid by the amount of allocated
+numids per allocation. This means that excessive creation and destruction of
+controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
+eventually overflow. Currently when this happens for the control that caused the
+overflow kctl->id.numid + kctl->count will also over flow causing it to be
+smaller than kctl->id.numid. Most of the code assumes that this is something
+that can not happen, so we need to make sure that it won't happen
 
-To avoid the problem simply check for zero pixel_multiplier and skip
-the division. Another attempt at fixing this involved populating
-pixel_multiplier to 1 even for disabled pipes, but that triggered a
-WARN because SDVO_CMD_GET_CLOCK_RATE_MULT command failed and thus
-encoder_pixel_multiplier was left at zero and didn't match
-pipe_config->pixel_multiplier.
-
-The "divide by pixel_multiplier" operation got introduced here:
- commit 18442d08786472c63a0a80c27f92b033dffc26de
- Author: Ville SyrjÃ¤lÃ¤ <ville.syrjala@linux.intel.com>
- Date:   Fri Sep 13 16:00:08 2013 +0300
-
-    drm/i915: Fix port_clock and adjusted_mode.clock readout all over
-
-and it has caused a regression on certain machines since they would
-hit the div-by-zero during resume.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76520
-Tested-by: Tim Richardson <tim@tim-richardson.net>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/core/control.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index a583e8f..9528239 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1364,7 +1364,9 @@ static void intel_sdvo_get_config(struct intel_encoder *encoder,
- 			 >> SDVO_PORT_MULTIPLY_SHIFT) + 1;
- 	}
+diff --git a/sound/core/control.c b/sound/core/control.c
+index d4a597f..93215b4 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -289,6 +289,10 @@ static bool snd_ctl_remove_numid_conflict(struct snd_card *card,
+ {
+ 	struct snd_kcontrol *kctl;
  
--	dotclock = pipe_config->port_clock / pipe_config->pixel_multiplier;
-+	dotclock = pipe_config->port_clock;
-+	if (pipe_config->pixel_multiplier)
-+		dotclock /= pipe_config->pixel_multiplier;
- 
- 	if (HAS_PCH_SPLIT(dev))
- 		ironlake_check_encoder_dotclock(pipe_config, dotclock);
++	/* Make sure that the ids assigned to the control do not wrap around */
++	if (card->last_numid >= UINT_MAX - count)
++		card->last_numid = 0;
++
+ 	list_for_each_entry(kctl, &card->controls, list) {
+ 		if (kctl->id.numid < card->last_numid + 1 + count &&
+ 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
 -- 
 1.9.1
 
