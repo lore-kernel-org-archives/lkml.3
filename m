@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760350AbaGOXtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:49:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S933657AbaGOXNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:13:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933669AbaGOXNy (ORCPT
+	with ESMTP id S932713AbaGOXNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:54 -0400
+	Tue, 15 Jul 2014 19:13:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 40/66] intel_pstate: dont touch turbo bit if turbo disabled or unavailable.
-Date: Tue, 15 Jul 2014 16:17:34 -0700
-Message-Id: <20140715231703.880349937@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 39/44] x86, espfix: Move espfix definitions into a separate header file
+Date: Tue, 15 Jul 2014 16:17:37 -0700
+Message-Id: <20140715231647.853382522@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,108 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit dd5fbf70f96dbfd7ee432096a1f979b2b3267856 upstream.
+commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
 
-If turbo is disabled in the BIOS bit 38 should be set in
-MSR_IA32_MISC_ENABLE register per section 14.3.2.1 of the SDM Vol 3
-document 325384-050US Feb 2014.  If this bit is set do *not* attempt
-to disable trubo via the MSR_IA32_PERF_CTL register.  On some systems
-trying to disable turbo via MSR_IA32_PERF_CTL will cause subsequent
-writes to MSR_IA32_PERF_CTL not take affect, in fact reading
-MSR_IA32_PERF_CTL will not show the IDA/Turbo DISENGAGE bit(32) as
-set. A write of bit 32 to zero returns to normal operation.
+Sparse warns that the percpu variables aren't declared before they are
+defined.  Rather than hacking around it, move espfix definitions into
+a proper header file.
 
-Also deal with the case where the processor does not support
-turbo and the BIOS does not report the fact in MSR_IA32_MISC_ENABLE
-but does report the max and turbo P states as the same value.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=64251
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/espfix.h |   16 ++++++++++++++++
+ arch/x86/include/asm/setup.h  |    5 ++---
+ arch/x86/kernel/espfix_64.c   |    1 +
+ 3 files changed, 19 insertions(+), 3 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -132,6 +132,7 @@ static struct pstate_funcs pstate_funcs;
+--- /dev/null
++++ b/arch/x86/include/asm/espfix.h
+@@ -0,0 +1,16 @@
++#ifdef _ASM_X86_ESPFIX_H
++#define _ASM_X86_ESPFIX_H
++
++#ifdef CONFIG_X86_64
++
++#include <asm/percpu.h>
++
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
++#endif /* CONFIG_X86_64 */
++
++#endif /* _ASM_X86_ESPFIX_H */
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -60,11 +60,10 @@ extern void x86_ce4100_early_setup(void)
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
  
- struct perf_limits {
- 	int no_turbo;
-+	int turbo_disabled;
- 	int max_perf_pct;
- 	int min_perf_pct;
- 	int32_t max_perf;
-@@ -291,7 +292,10 @@ static ssize_t store_no_turbo(struct kob
- 	if (ret != 1)
- 		return -EINVAL;
- 	limits.no_turbo = clamp_t(int, input, 0 , 1);
+-extern void init_espfix_bsp(void);
+-extern void init_espfix_ap(void);
 -
-+	if (limits.turbo_disabled) {
-+		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
-+		limits.no_turbo = limits.turbo_disabled;
-+	}
- 	return count;
- }
+ #ifndef _SETUP
  
-@@ -385,7 +389,7 @@ static void byt_set_pstate(struct cpudat
- 	u32 vid;
++#include <asm/espfix.h>
++
+ /*
+  * This is set up by the setup-routine at boot-time
+  */
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -40,6 +40,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/setup.h>
++#include <asm/espfix.h>
  
- 	val = pstate << 8;
--	if (limits.no_turbo)
-+	if (limits.no_turbo && !limits.turbo_disabled)
- 		val |= (u64)1 << 32;
- 
- 	vid_fp = cpudata->vid.min + mul_fp(
-@@ -452,7 +456,7 @@ static void core_set_pstate(struct cpuda
- 	u64 val;
- 
- 	val = pstate << 8;
--	if (limits.no_turbo)
-+	if (limits.no_turbo && !limits.turbo_disabled)
- 		val |= (u64)1 << 32;
- 
- 	wrmsrl(MSR_IA32_PERF_CTL, val);
-@@ -750,7 +754,7 @@ static int intel_pstate_set_policy(struc
- 		limits.min_perf = int_tofp(1);
- 		limits.max_perf_pct = 100;
- 		limits.max_perf = int_tofp(1);
--		limits.no_turbo = 0;
-+		limits.no_turbo = limits.turbo_disabled;
- 		return 0;
- 	}
- 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
-@@ -790,6 +794,7 @@ static int intel_pstate_cpu_init(struct
- {
- 	struct cpudata *cpu;
- 	int rc;
-+	u64 misc_en;
- 
- 	rc = intel_pstate_init_cpu(policy->cpu);
- 	if (rc)
-@@ -797,8 +802,13 @@ static int intel_pstate_cpu_init(struct
- 
- 	cpu = all_cpu_data[policy->cpu];
- 
--	if (!limits.no_turbo &&
--		limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
-+	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
-+	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
-+		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
-+		limits.turbo_disabled = 1;
-+		limits.no_turbo = 1;
-+	}
-+	if (limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
- 		policy->policy = CPUFREQ_POLICY_PERFORMANCE;
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
+ /*
+  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
 
 
