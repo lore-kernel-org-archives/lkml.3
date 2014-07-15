@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182AbaGOW5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:57:49 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:33101 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaGOW5r (ORCPT
+	id S1757996AbaGOW7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:59:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45435 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865AbaGOW7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 18:57:47 -0400
-Message-ID: <53C5B1F7.3000409@gmail.com>
-Date: Tue, 15 Jul 2014 18:57:59 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: josh@joshtriplett.org
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
-References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com> <1405463509-2468-2-git-send-email-bobby.prani@gmail.com> <20140715225313.GB24290@cloud>
-In-Reply-To: <20140715225313.GB24290@cloud>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jul 2014 18:59:45 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Clark <robdclark@gmail.com>
+Subject: [PATCH 0/2] APQ8064 multimedia clock driver
+Date: Tue, 15 Jul 2014 15:59:40 -0700
+Message-Id: <1405465182-925-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These two patches add support for the APQ8064 multimedia clock
+controller. They rely on a couple other patches to this
+driver[1][2].
 
-On 07/15/2014 06:53 PM, josh@joshtriplett.org wrote:
-> On Tue, Jul 15, 2014 at 06:31:48PM -0400, Pranith Kumar wrote:
->> This commit removes a stale comment in rcu/tree.c.
->> FYI, an updated comment exists a few lines below this.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> In general, when removing a stale comment, I'd suggest explaining why
-> the comment is stale.  Was code removed without removing the
-> corresponding comment, or was code changed such that the comment no
-> longer applies, or...?
+Stephen Boyd (2):
+  clk: qcom: pll: Add support for configuring SR PLLs
+  clk: qcom: Add support for APQ8064 multimedia clocks
 
-I guess it was left out when code was moved around previously. And I did mention that an updated comment is there a few lines below.
+ .../devicetree/bindings/clock/qcom,mmcc.txt        |   1 +
+ drivers/clk/qcom/clk-pll.c                         |  15 +-
+ drivers/clk/qcom/clk-pll.h                         |   2 +
+ drivers/clk/qcom/mmcc-msm8960.c                    | 433 ++++++++++++++++++++-
+ include/dt-bindings/clock/qcom,mmcc-msm8960.h      |   8 +
+ include/dt-bindings/reset/qcom,mmcc-msm8960.h      |   8 +
+ 6 files changed, 462 insertions(+), 5 deletions(-)
 
-For reference this is the new comment which is below the old comment, they mean the same :)
+[1] https://patchwork.kernel.org/patch/4561071/
+[2] https://patchwork.kernel.org/patch/4510951/
 
-    /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
