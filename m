@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030378AbaGOXoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:44:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S933799AbaGOXOA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:14:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933806AbaGOXOB (ORCPT
+	with ESMTP id S932930AbaGOXNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:01 -0400
+	Tue, 15 Jul 2014 19:13:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.15 19/84] hwmon: (adm1031) Fix writes to limit registers
-Date: Tue, 15 Jul 2014 16:17:16 -0700
-Message-Id: <20140715231713.776654177@linuxfoundation.org>
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 10/66] cpuset,mempolicy: fix sleeping function called from invalid context
+Date: Tue, 15 Jul 2014 16:17:04 -0700
+Message-Id: <20140715231702.538107463@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
+In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
+References: <20140715231702.156040999@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,79 +25,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
+commit 391acf970d21219a2a5446282d3b20eace0c0d7a upstream.
 
-Upper limit for write operations to temperature limit registers
-was clamped to a fractional value. However, limit registers do
-not support fractional values. As a result, upper limits of 127.5
-degrees C or higher resulted in a rounded limit of 128 degrees C.
-Since limit registers are signed, this was stored as -128 degrees C.
-Clamp limits to (-55, +127) degrees C to solve the problem.
+When runing with the kernel(3.15-rc7+), the follow bug occurs:
+[ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+[ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
+[ 9969.441175] INFO: lockdep is turned off.
+[ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
+[ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
+[ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
+[ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
+[ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
+[ 9969.974071] Call Trace:
+[ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
+[ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
+[ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
+[ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
+[ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
+[ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+[ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
+[ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+[ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
+[ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
+[ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
+[ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
+[ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
+[ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
+[ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
+[ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
+[ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
 
-Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
-clamped at all, but masked. As a result, out-of-range writes resulted
-in a more or less arbitrary limit. Clamp those attributes to (0, 127)
-degrees C for more predictable results.
+The cause is that cpuset_mems_allowed() try to take
+mutex_lock(&callback_mutex) under the rcu_read_lock(which was hold in
+__mpol_dup()). And in cpuset_mems_allowed(), the access to cpuset is
+under rcu_read_lock, so in __mpol_dup, we can reduce the rcu_read_lock
+protection region to protect the access to cpuset only in
+current_cpuset_is_being_rebound(). So that we can avoid this bug.
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This patch is a temporary solution that just addresses the bug
+mentioned above, can not fix the long-standing issue about cpuset.mems
+rebinding on fork():
+
+"When the forker's task_struct is duplicated (which includes
+ ->mems_allowed) and it races with an update to cpuset_being_rebound
+ in update_tasks_nodemask() then the task's mems_allowed doesn't get
+ updated. And the child task's mems_allowed can be wrong if the
+ cpuset's nodemask changes before the child has been added to the
+ cgroup's tasklist."
+
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/adm1031.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/cpuset.c |    8 +++++++-
+ mm/mempolicy.c  |    2 --
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/hwmon/adm1031.c
-+++ b/drivers/hwmon/adm1031.c
-@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, st
- 	if (ret)
- 		return ret;
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1236,7 +1236,13 @@ done:
  
-+	val = clamp_val(val, 0, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
- 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
-@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, st
- 	if (ret)
- 		return ret;
+ int current_cpuset_is_being_rebound(void)
+ {
+-	return task_cs(current) == cpuset_being_rebound;
++	int ret;
++
++	rcu_read_lock();
++	ret = task_cs(current) == cpuset_being_rebound;
++	rcu_read_unlock();
++
++	return ret;
+ }
  
-+	val = clamp_val(val, 0, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
- 						  data->pwm[nr]);
-@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct devic
- 	if (ret)
- 		return ret;
+ static int update_relax_domain_level(struct cpuset *cs, s64 val)
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2170,7 +2170,6 @@ struct mempolicy *__mpol_dup(struct memp
+ 	} else
+ 		*new = *old;
  
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
-@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct devic
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
-@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct devi
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_crit[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
+-	rcu_read_lock();
+ 	if (current_cpuset_is_being_rebound()) {
+ 		nodemask_t mems = cpuset_mems_allowed(current);
+ 		if (new->flags & MPOL_F_REBINDING)
+@@ -2178,7 +2177,6 @@ struct mempolicy *__mpol_dup(struct memp
+ 		else
+ 			mpol_rebind_policy(new, &mems, MPOL_REBIND_ONCE);
+ 	}
+-	rcu_read_unlock();
+ 	atomic_set(&new->refcnt, 1);
+ 	return new;
+ }
 
 
