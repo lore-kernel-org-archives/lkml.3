@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934571AbaGPAH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:07:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S933601AbaGPAHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:07:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759924AbaGOXNc (ORCPT
+	with ESMTP id S1759914AbaGOXNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:32 -0400
+	Tue, 15 Jul 2014 19:13:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3.10 41/44] x86, espfix: Make espfix64 a Kconfig option, fix UML
-Date: Tue, 15 Jul 2014 16:17:39 -0700
-Message-Id: <20140715231647.911536128@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 40/44] x86, espfix: Fix broken header guard
+Date: Tue, 15 Jul 2014 16:17:38 -0700
+Message-Id: <20140715231647.882733087@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -29,77 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 197725de65477bc8509b41388157c1a2283542bb upstream.
+commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
 
-Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
-build which had broken due to the non-existence of init_espfix_bsp()
-in UML: since UML uses its own Kconfig, this option does not appear in
-the UML build.
+Header guard is #ifndef, not #ifdef...
 
-This also makes it possible to make support for 16-bit segments a
-configuration option, for the people who want to minimize the size of
-the kernel.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Richard Weinberger <richard@nod.at>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig          |    4 ++++
- arch/x86/kernel/Makefile  |    2 +-
- arch/x86/kernel/smpboot.c |    2 +-
- init/main.c               |    2 +-
- 4 files changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/espfix.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -956,6 +956,10 @@ config VM86
- 	  XFree86 to initialize some video cards via BIOS. Disabling this
- 	  option saves about 6k.
+--- a/arch/x86/include/asm/espfix.h
++++ b/arch/x86/include/asm/espfix.h
+@@ -1,4 +1,4 @@
+-#ifdef _ASM_X86_ESPFIX_H
++#ifndef _ASM_X86_ESPFIX_H
+ #define _ASM_X86_ESPFIX_H
  
-+config X86_ESPFIX64
-+	def_bool y
-+	depends on X86_64
-+
- config TOSHIBA
- 	tristate "Toshiba Laptop support"
- 	depends on X86_32
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -27,7 +27,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x86
- obj-y			+= syscall_$(BITS).o
- obj-$(CONFIG_X86_64)	+= vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
--obj-$(CONFIG_X86_64)	+= espfix_64.o
-+obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -267,7 +267,7 @@ notrace static void __cpuinit start_seco
- 	/*
- 	 * Enable the espfix hack for this CPU
- 	 */
--#ifdef CONFIG_X86_64
-+#ifdef CONFIG_X86_ESPFIX64
- 	init_espfix_ap();
- #endif
- 
---- a/init/main.c
-+++ b/init/main.c
-@@ -606,7 +606,7 @@ asmlinkage void __init start_kernel(void
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
- #endif
--#ifdef CONFIG_X86_64
-+#ifdef CONFIG_X86_ESPFIX64
- 	/* Should be run before the first non-init thread is created */
- 	init_espfix_bsp();
- #endif
+ #ifdef CONFIG_X86_64
 
 
