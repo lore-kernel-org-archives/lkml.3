@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaGOOjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:39:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54917 "EHLO
+	id S1754010AbaGOOjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:39:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54905 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752836AbaGOOj2 (ORCPT
+	with ESMTP id S1753809AbaGOOj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:39:28 -0400
+	Tue, 15 Jul 2014 10:39:27 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
@@ -18,9 +18,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 8/8] usb: chipidea: add support to the generic PHY framework in ChipIdea
-Date: Tue, 15 Jul 2014 16:39:16 +0200
-Message-Id: <1405435156-27297-9-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v2 7/8] usb: rename transceiver and phy to usb_phy in ChipIdea
+Date: Tue, 15 Jul 2014 16:39:15 +0200
+Message-Id: <1405435156-27297-8-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -31,266 +31,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support of the PHY framework for ChipIdea drivers.
-Changes are done in both the ChipIdea common code and in the drivers
-accessing the PHY. This is done by adding a new PHY member in
-ChipIdea's structures and by taking care of it in the code.
+This patch prepares the introduction of the generic PHY support in the
+USB ChipIdea common functions. The USB PHY member of the ChipIdea
+structure ('transceiver') is renamed to 'usb_phy', the 'phy' member of
+the ChipIdea pdata structure is renamed to 'usb_phy' and modifications
+are done in all drivers accessing it. Renaming this pointer will allow
+to keep the compatibility for USB PHY drivers.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- drivers/usb/chipidea/ci.h      |  5 ++-
- drivers/usb/chipidea/core.c    | 71 ++++++++++++++++++++++++++++++++++--------
- drivers/usb/chipidea/debug.c   |  4 ++-
- drivers/usb/chipidea/host.c    | 18 +++++++----
- drivers/usb/chipidea/otg_fsm.c |  6 ++--
- include/linux/usb/chipidea.h   |  2 ++
- 6 files changed, 83 insertions(+), 23 deletions(-)
+ drivers/usb/chipidea/ci.h          |  4 ++--
+ drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
+ drivers/usb/chipidea/ci_hdrc_msm.c |  8 ++++----
+ drivers/usb/chipidea/core.c        | 20 ++++++++++----------
+ drivers/usb/chipidea/debug.c       |  2 +-
+ drivers/usb/chipidea/host.c        |  4 ++--
+ drivers/usb/chipidea/otg_fsm.c     |  4 ++--
+ drivers/usb/chipidea/udc.c         |  4 ++--
+ include/linux/usb/chipidea.h       |  2 +-
+ 9 files changed, 25 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-index b2caa1772712..f219588f4ce6 100644
+index 9563cb56d564..b2caa1772712 100644
 --- a/drivers/usb/chipidea/ci.h
 +++ b/drivers/usb/chipidea/ci.h
-@@ -161,7 +161,8 @@ struct hw_bank {
+@@ -161,7 +161,7 @@ struct hw_bank {
   * @test_mode: the selected test mode
   * @platdata: platform specific information supplied by parent device
   * @vbus_active: is VBUS active
-- * @usb_phy: pointer to USB PHY, if any
-+ * @phy: pointer to PHY, if any
-+ * @usb_phy: pointer to USB PHY, if any and if using the USB PHY framework
+- * @transceiver: pointer to USB PHY, if any
++ * @usb_phy: pointer to USB PHY, if any
   * @hcd: pointer to usb_hcd for ehci host driver
   * @debugfs: root dentry for this controller in debugfs
   * @id_event: indicates there is an id event, and handled at ci_otg_work
-@@ -201,6 +202,8 @@ struct ci_hdrc {
+@@ -201,7 +201,7 @@ struct ci_hdrc {
  
  	struct ci_hdrc_platform_data	*platdata;
  	int				vbus_active;
-+	struct phy			*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy			*usb_phy;
+-	struct usb_phy			*transceiver;
++	struct usb_phy			*usb_phy;
  	struct usb_hcd			*hcd;
  	struct dentry			*debugfs;
+ 	bool				id_event;
+diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
+index 2e58f8dfd311..33b982dddac5 100644
+--- a/drivers/usb/chipidea/ci_hdrc_imx.c
++++ b/drivers/usb/chipidea/ci_hdrc_imx.c
+@@ -136,7 +136,7 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ 		goto err_clk;
+ 	}
+ 
+-	pdata.phy = data->phy;
++	pdata.usb_phy = data->phy;
+ 
+ 	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
+ 		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
+diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+index d72b9d2de2c5..94cd7c3e12a3 100644
+--- a/drivers/usb/chipidea/ci_hdrc_msm.c
++++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+@@ -31,13 +31,13 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+ 	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
+ 		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
+ 		/*
+-		 * Put the transceiver in non-driving mode. Otherwise host
++		 * Put the phy in non-driving mode. Otherwise host
+ 		 * may not detect soft-disconnection.
+ 		 */
+-		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
++		val = usb_phy_io_read(ci->usb_phy, ULPI_FUNC_CTRL);
+ 		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
+ 		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
+-		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
++		usb_phy_io_write(ci->usb_phy, val, ULPI_FUNC_CTRL);
+ 		break;
+ 	default:
+ 		dev_dbg(dev, "unknown ci_hdrc event\n");
+@@ -71,7 +71,7 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
+ 	if (IS_ERR(phy))
+ 		return PTR_ERR(phy);
+ 
+-	ci_hdrc_msm_platdata.phy = phy;
++	ci_hdrc_msm_platdata.usb_phy = phy;
+ 
+ 	plat_ci = ci_hdrc_add_device(&pdev->dev,
+ 				pdev->resource, pdev->num_resources,
 diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index a8cd35fd8175..28bcefcdbd9a 100644
+index 619d13e29995..a8cd35fd8175 100644
 --- a/drivers/usb/chipidea/core.c
 +++ b/drivers/usb/chipidea/core.c
-@@ -47,6 +47,7 @@
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/dma-mapping.h>
-+#include <linux/phy/phy.h>
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/idr.h>
-@@ -293,6 +294,46 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
- }
- 
- /**
-+ * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
-+ * interfaces
-+ * @ci: the controller
-+ *
-+ * This function returns an error code if the phy failed to init
-+ */
-+static int _ci_usb_phy_init(struct ci_hdrc *ci)
-+{
-+	int ret;
-+
-+	if (ci->phy) {
-+		ret = phy_init(ci->phy);
-+		if (ret) {
-+			phy_exit(ci->phy);
-+			return ret;
-+		}
-+		ret = phy_power_on(ci->phy);
-+	} else {
-+		ret = usb_phy_init(ci->usb_phy);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * _ci_usb_phy_exit: deinitialize phy taking in account both phy and usb_phy
-+ * interfaces
-+ * @ci: the controller
-+ */
-+static void ci_usb_phy_exit(struct ci_hdrc *ci)
-+{
-+	if (ci->phy) {
-+		phy_power_off(ci->phy);
-+		phy_exit(ci->phy);
-+	} else {
-+		usb_phy_shutdown(ci->usb_phy);
-+	}
-+}
-+
-+/**
-  * ci_usb_phy_init: initialize phy according to different phy type
-  * @ci: the controller
-   *
-@@ -306,7 +347,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+@@ -306,7 +306,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
  	case USBPHY_INTERFACE_MODE_UTMI:
  	case USBPHY_INTERFACE_MODE_UTMIW:
  	case USBPHY_INTERFACE_MODE_HSIC:
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
+-		ret = usb_phy_init(ci->transceiver);
++		ret = usb_phy_init(ci->usb_phy);
  		if (ret)
  			return ret;
  		hw_phymode_configure(ci);
-@@ -314,12 +355,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+@@ -314,12 +314,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
  	case USBPHY_INTERFACE_MODE_ULPI:
  	case USBPHY_INTERFACE_MODE_SERIAL:
  		hw_phymode_configure(ci);
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
+-		ret = usb_phy_init(ci->transceiver);
++		ret = usb_phy_init(ci->usb_phy);
  		if (ret)
  			return ret;
  		break;
  	default:
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
+-		ret = usb_phy_init(ci->transceiver);
++		ret = usb_phy_init(ci->usb_phy);
  	}
  
  	return ret;
-@@ -595,23 +636,27 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+@@ -595,13 +595,13 @@ static int ci_hdrc_probe(struct platform_device *pdev)
  		return -ENODEV;
  	}
  
--	if (ci->platdata->usb_phy)
-+	if (ci->platdata->phy)
-+		ci->phy = ci->platdata->phy;
-+	else if (ci->platdata->usb_phy)
- 		ci->usb_phy = ci->platdata->usb_phy;
+-	if (ci->platdata->phy)
+-		ci->transceiver = ci->platdata->phy;
++	if (ci->platdata->usb_phy)
++		ci->usb_phy = ci->platdata->usb_phy;
  	else
--		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+		ci->phy = of_phy_get(dev->of_node, 0);
+-		ci->transceiver = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
  
--	if (IS_ERR(ci->usb_phy)) {
--		ret = PTR_ERR(ci->usb_phy);
-+	if (IS_ERR(ci->phy)) {
+-	if (IS_ERR(ci->transceiver)) {
+-		ret = PTR_ERR(ci->transceiver);
++	if (IS_ERR(ci->usb_phy)) {
++		ret = PTR_ERR(ci->usb_phy);
  		/*
  		 * if -ENXIO is returned, it means PHY layer wasn't
  		 * enabled, so it makes no sense to return -EPROBE_DEFER
- 		 * in that case, since no PHY driver will ever probe.
- 		 */
--		if (ret == -ENXIO)
--			return ret;
-+		if (PTR_ERR(ci->phy) == -ENXIO)
-+			return -ENXIO;
- 
--		dev_err(dev, "no usb2 phy configured\n");
--		return -EPROBE_DEFER;
-+		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+		if (IS_ERR(ci->usb_phy)) {
-+			dev_err(dev, "no usb2 phy configured\n");
-+			return -EPROBE_DEFER;
-+		}
- 	}
- 
- 	ret = ci_usb_phy_init(ci);
-@@ -718,7 +763,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+@@ -718,7 +718,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
  stop:
  	ci_role_destroy(ci);
  deinit_phy:
--	usb_phy_shutdown(ci->usb_phy);
-+	ci_usb_phy_exit(ci);
+-	usb_phy_shutdown(ci->transceiver);
++	usb_phy_shutdown(ci->usb_phy);
  
  	return ret;
  }
-@@ -731,7 +776,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
+@@ -731,7 +731,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
  	free_irq(ci->irq, ci);
  	ci_role_destroy(ci);
  	ci_hdrc_enter_lpm(ci, true);
--	usb_phy_shutdown(ci->usb_phy);
-+	ci_usb_phy_exit(ci);
+-	usb_phy_shutdown(ci->transceiver);
++	usb_phy_shutdown(ci->usb_phy);
  	kfree(ci->hw_bank.regmap);
  
  	return 0;
 diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-index d47cddd38e4a..77881a5ce48f 100644
+index 9a9702773e43..d47cddd38e4a 100644
 --- a/drivers/usb/chipidea/debug.c
 +++ b/drivers/usb/chipidea/debug.c
-@@ -219,7 +219,9 @@ int ci_otg_show(struct seq_file *s, void *unused)
+@@ -219,7 +219,7 @@ int ci_otg_show(struct seq_file *s, void *unused)
  	fsm = &ci->fsm;
  
  	/* ------ State ----- */
--		usb_otg_state_string(ci->usb_phy->otg.state));
-+	if (ci->usb_phy)
-+		seq_printf(s, "OTG state: %s\n\n",
-+			usb_otg_state_string(ci->usb_phy->otg->state));
+-		usb_otg_state_string(ci->transceiver->otg.state));
++		usb_otg_state_string(ci->usb_phy->otg.state));
  
  	/* ------ State Machine Variables ----- */
  	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
 diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index 0b67d78dd953..794349ab66af 100644
+index fc7541c906a2..0b67d78dd953 100644
 --- a/drivers/usb/chipidea/host.c
 +++ b/drivers/usb/chipidea/host.c
-@@ -59,7 +59,10 @@ static int host_start(struct ci_hdrc *ci)
+@@ -59,7 +59,7 @@ static int host_start(struct ci_hdrc *ci)
  	hcd->has_tt = 1;
  
  	hcd->power_budget = ci->platdata->power_budget;
--	hcd->usb_phy = ci->usb_phy;
-+	if (ci->phy)
-+		hcd->phy = ci->phy;
-+	else
-+		hcd->usb_phy = ci->usb_phy;
+-	hcd->usb_phy = ci->transceiver;
++	hcd->usb_phy = ci->usb_phy;
  
  	ehci = hcd_to_ehci(hcd);
  	ehci->caps = ci->hw_bank.cap;
-@@ -85,13 +88,16 @@ static int host_start(struct ci_hdrc *ci)
+@@ -85,7 +85,7 @@ static int host_start(struct ci_hdrc *ci)
  	if (ret) {
  		goto disable_reg;
  	} else {
--		struct usb_otg *otg = ci->usb_phy->otg;
-+		if (ci->usb_phy) {
-+			struct usb_otg *otg = ci->usb_phy->otg;
+-		struct usb_otg *otg = ci->transceiver->otg;
++		struct usb_otg *otg = ci->usb_phy->otg;
  
--		ci->hcd = hcd;
--		if (otg) {
--			otg->host = &hcd->self;
--			hcd->self.otg_port = 1;
-+			if (otg) {
-+				otg->host = &hcd->self;
-+				hcd->self.otg_port = 1;
-+			}
- 		}
-+
-+		ci->hcd = hcd;
- 	}
- 
- 	if (ci->platdata->flags & CI_HDRC_DISABLE_STREAMING)
+ 		ci->hcd = hcd;
+ 		if (otg) {
 diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-index 8a64ce87364e..2c11f260633c 100644
+index d8490e758a74..8a64ce87364e 100644
 --- a/drivers/usb/chipidea/otg_fsm.c
 +++ b/drivers/usb/chipidea/otg_fsm.c
-@@ -788,10 +788,12 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
+@@ -788,10 +788,10 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
  		return -ENOMEM;
  	}
  
--	otg->usb_phy = ci->usb_phy;
-+	if (ci->phy)
-+		otg->phy = ci->phy;
-+	else
-+		otg->usb_phy = ci->usb_phy;
+-	otg->usb_phy = ci->transceiver;
++	otg->usb_phy = ci->usb_phy;
  	otg->gadget = &ci->gadget;
  	ci->fsm.otg = otg;
--	ci->usb_phy->otg = ci->fsm.otg;
+-	ci->transceiver->otg = ci->fsm.otg;
++	ci->usb_phy->otg = ci->fsm.otg;
  	ci->fsm.power_up = 1;
  	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
  	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index 9d2b673f90e3..9d3966308942 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1519,8 +1519,8 @@ static int ci_udc_vbus_draw(struct usb_gadget *_gadget, unsigned ma)
+ {
+ 	struct ci_hdrc *ci = container_of(_gadget, struct ci_hdrc, gadget);
+ 
+-	if (ci->transceiver)
+-		return usb_phy_set_power(ci->transceiver, ma);
++	if (ci->usb_phy)
++		return usb_phy_set_power(ci->usb_phy, ma);
+ 	return -ENOTSUPP;
+ }
+ 
 diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
-index 57d757a1aa83..a0285623b9c1 100644
+index bbe779f640be..57d757a1aa83 100644
 --- a/include/linux/usb/chipidea.h
 +++ b/include/linux/usb/chipidea.h
-@@ -13,6 +13,8 @@ struct ci_hdrc_platform_data {
+@@ -13,7 +13,7 @@ struct ci_hdrc_platform_data {
  	/* offset of the capability registers */
  	uintptr_t	 capoffset;
  	unsigned	 power_budget;
-+	struct phy	*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy	*usb_phy;
+-	struct usb_phy	*phy;
++	struct usb_phy	*usb_phy;
  	enum usb_phy_interface phy_mode;
  	unsigned long	 flags;
+ #define CI_HDRC_REGS_SHARED		BIT(0)
 -- 
 1.9.1
 
