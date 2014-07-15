@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933914AbaGOVhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:37:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54642 "EHLO
+	id S933933AbaGOVhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:37:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54680 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933883AbaGOVhf (ORCPT
+	with ESMTP id S933883AbaGOVhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:37:35 -0400
+	Tue, 15 Jul 2014 17:37:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@fb.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 045/198] reiserfs: call truncate_setsize under tailpack mutex
-Date: Tue, 15 Jul 2014 14:28:35 -0700
-Message-Id: <1405459868-15089-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 171/198] blkcg: fix use-after-free in __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
+Date: Tue, 15 Jul 2014 14:30:41 -0700
+Message-Id: <1405459868-15089-172-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,49 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
+commit a5049a8ae34950249a7ae94c385d7c5c98914412 upstream.
 
-Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
-truncates serialized on i_mutex. They mostly still do, with the exception
-of reiserfs_file_release. That blocks out other writers via the tailpack
-mutex and the inode openers counter adjusted in reiserfs_file_open.
+Hello,
 
-However, NFS will call reiserfs_setattr without having called ->open, so
-we end up with a race when nfs is calling ->setattr while another
-process is releasing the file. Ultimately, it triggers the
-BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
+So, this patch should do.  Joe, Vivek, can one of you guys please
+verify that the oops goes away with this patch?
 
-The solution is to pull the lock into reiserfs_setattr to encompass the
-truncate_setsize call as well.
+Jens, the original thread can be read at
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+  http://thread.gmane.org/gmane.linux.kernel/1720729
+
+The fix converts blkg->refcnt from int to atomic_t.  It does some
+overhead but it should be minute compared to everything else which is
+going on and the involved cacheline bouncing, so I think it's highly
+unlikely to cause any noticeable difference.  Also, the refcnt in
+question should be converted to a perpcu_ref for blk-mq anyway, so the
+atomic_t is likely to go away pretty soon anyway.
+
+Thanks.
+
+------- 8< -------
+__blkg_release_rcu() may be invoked after the associated request_queue
+is released with a RCU grace period inbetween.  As such, the function
+and callbacks invoked from it must not dereference the associated
+request_queue.  This is clearly indicated in the comment above the
+function.
+
+Unfortunately, while trying to fix a different issue, 2a4fd070ee85
+("blkcg: move bulk of blkcg_gq release operations to the RCU
+callback") ignored this and added [un]locking of @blkg->q->queue_lock
+to __blkg_release_rcu().  This of course can cause oops as the
+request_queue may be long gone by the time this code gets executed.
+
+  general protection fault: 0000 [#1] SMP
+  CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
+  Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
+  task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
+  RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+  RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
+  RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
+  RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
+  RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
+  R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
+  R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
+  FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
+  Stack:
+   ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
+   ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
+   ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
+  Call Trace:
+   [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
+   [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
+   [<ffffffff81091d81>] kthread+0xe1/0x100
+   [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
+  Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
+  +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
+  +b7
+  RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+   RSP <ffff88085403fdf0>
+
+The request_queue locking was added because blkcg_gq->refcnt is an int
+protected with the queue lock and __blkg_release_rcu() needs to put
+the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
+dropping queue locking in the function.
+
+Given the general heavy weight of the current request_queue and blkcg
+operations, this is unlikely to cause any noticeable overhead.
+Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
+the near future, so whatever (most likely negligible) overhead it may
+add is temporary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/reiserfs/inode.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ block/blk-cgroup.c |  7 ++-----
+ block/blk-cgroup.h | 17 +++++++----------
+ 2 files changed, 9 insertions(+), 15 deletions(-)
 
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index ad62bdb..1e4cf9d 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3220,8 +3220,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
- 	    attr->ia_size != i_size_read(inode)) {
- 		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (!error) {
-+			/*
-+			 * Could race against reiserfs_file_release
-+			 * if called from NFS, so take tailpack mutex.
-+			 */
-+			mutex_lock(&REISERFS_I(inode)->tailpack);
- 			truncate_setsize(inode, attr->ia_size);
--			reiserfs_vfs_truncate_file(inode);
-+			reiserfs_truncate_file(inode, 1);
-+			mutex_unlock(&REISERFS_I(inode)->tailpack);
- 		}
- 	}
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 4e491d9..dd0dd2d 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
+ 	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
+ 	blkg->blkcg = blkcg;
+-	blkg->refcnt = 1;
++	atomic_set(&blkg->refcnt, 1);
+ 
+ 	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
+ 	if (blkcg != &blkcg_root) {
+@@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head *rcu_head)
+ 
+ 	/* release the blkcg and parent blkg refs this blkg has been holding */
+ 	css_put(&blkg->blkcg->css);
+-	if (blkg->parent) {
+-		spin_lock_irq(blkg->q->queue_lock);
++	if (blkg->parent)
+ 		blkg_put(blkg->parent);
+-		spin_unlock_irq(blkg->q->queue_lock);
+-	}
+ 
+ 	blkg_free(blkg);
+ }
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 86154ea..c135f56 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -18,6 +18,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/radix-tree.h>
+ #include <linux/blkdev.h>
++#include <linux/atomic.h>
+ 
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
+@@ -104,7 +105,7 @@ struct blkcg_gq {
+ 	struct request_list		rl;
+ 
+ 	/* reference count */
+-	int				refcnt;
++	atomic_t			refcnt;
+ 
+ 	/* is this blkg online? protected by both blkcg and q locks */
+ 	bool				online;
+@@ -253,13 +254,12 @@ static inline int blkg_path(struct blkcg_gq *blkg, char *buf, int buflen)
+  * blkg_get - get a blkg reference
+  * @blkg: blkg to get
+  *
+- * The caller should be holding queue_lock and an existing reference.
++ * The caller should be holding an existing reference.
+  */
+ static inline void blkg_get(struct blkcg_gq *blkg)
+ {
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	WARN_ON_ONCE(!blkg->refcnt);
+-	blkg->refcnt++;
++	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
++	atomic_inc(&blkg->refcnt);
+ }
+ 
+ void __blkg_release_rcu(struct rcu_head *rcu);
+@@ -267,14 +267,11 @@ void __blkg_release_rcu(struct rcu_head *rcu);
+ /**
+  * blkg_put - put a blkg reference
+  * @blkg: blkg to put
+- *
+- * The caller should be holding queue_lock.
+  */
+ static inline void blkg_put(struct blkcg_gq *blkg)
+ {
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	WARN_ON_ONCE(blkg->refcnt <= 0);
+-	if (!--blkg->refcnt)
++	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
++	if (atomic_dec_and_test(&blkg->refcnt))
+ 		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
+ }
  
 -- 
 1.9.1
