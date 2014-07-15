@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968AbaGOR0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:26:01 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:62631 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220AbaGORCI (ORCPT
+	id S1759136AbaGOR1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:27:40 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:54760 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086AbaGORCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:02:08 -0400
+	Tue, 15 Jul 2014 13:02:07 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Himangi Saraogi <himangi774@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>,
         Mike Turquette <mturquette@linaro.org>,
         sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 15/94] clk: sunxi: fix devm_ioremap_resource error detection code
-Date: Tue, 15 Jul 2014 20:00:30 +0300
-Message-Id: <1405443709-15288-15-git-send-email-asadi.samuel@gmail.com>
+Subject: [PATCH 08/94] clk: samsung: exynos4: Remove SRC_MASK_ISP gates
+Date: Tue, 15 Jul 2014 20:00:23 +0300
+Message-Id: <1405443709-15288-8-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -23,46 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
+From: Tomasz Figa <t.figa@samsung.com>
 
-devm_ioremap_resource returns an ERR_PTR value, not NULL, on failure.
+ISP special clocks have dedicated gating registers and so MUX SRC_MASK
+register should not be used. This patch fixes the problem of
+Exynos4x12-based boards freezing on system suspend, because those
+mux outputs need not to be masked while suspending.
 
-A simplified version of the semantic match that finds this problem is as
-follows:
-
-// <smpl>
-@@
-expression e,e1;
-statement S;
-@@
-
-*e = devm_ioremap_resource(...);
-if (!e1) S
-
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-Acked-by Boris BREZILLON <boris.brezillon@free-electrons.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Cc: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- drivers/clk/sunxi/clk-sun6i-apb0-gates.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/clk/samsung/clk-exynos4.c |   16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
-index 44cd27c..670f90d 100644
---- a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
-+++ b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
-@@ -29,7 +29,7 @@ static int sun6i_a31_apb0_gates_clk_probe(struct platform_device *pdev)
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	reg = devm_ioremap_resource(&pdev->dev, r);
--	if (!reg)
-+	if (IS_ERR(reg))
- 		return PTR_ERR(reg);
- 
- 	clk_parent = of_clk_get_parent_name(np, 0);
+diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
+index 4f150c9..7f4a473 100644
+--- a/drivers/clk/samsung/clk-exynos4.c
++++ b/drivers/clk/samsung/clk-exynos4.c
+@@ -925,21 +925,13 @@ static struct samsung_gate_clock exynos4x12_gate_clks[] __initdata = {
+ 	GATE(CLK_RTC, "rtc", "aclk100", E4X12_GATE_IP_PERIR, 15,
+ 			0, 0),
+ 	GATE(CLK_KEYIF, "keyif", "aclk100", E4X12_GATE_IP_PERIR, 16, 0, 0),
+-	GATE(CLK_SCLK_PWM_ISP, "sclk_pwm_isp", "div_pwm_isp",
+-			E4X12_SRC_MASK_ISP, 0, CLK_SET_RATE_PARENT, 0),
+-	GATE(CLK_SCLK_SPI0_ISP, "sclk_spi0_isp", "div_spi0_isp_pre",
+-			E4X12_SRC_MASK_ISP, 4, CLK_SET_RATE_PARENT, 0),
+-	GATE(CLK_SCLK_SPI1_ISP, "sclk_spi1_isp", "div_spi1_isp_pre",
+-			E4X12_SRC_MASK_ISP, 8, CLK_SET_RATE_PARENT, 0),
+-	GATE(CLK_SCLK_UART_ISP, "sclk_uart_isp", "div_uart_isp",
+-			E4X12_SRC_MASK_ISP, 12, CLK_SET_RATE_PARENT, 0),
+-	GATE(CLK_PWM_ISP_SCLK, "pwm_isp_sclk", "sclk_pwm_isp",
++	GATE(CLK_PWM_ISP_SCLK, "pwm_isp_sclk", "div_pwm_isp",
+ 			E4X12_GATE_IP_ISP, 0, 0, 0),
+-	GATE(CLK_SPI0_ISP_SCLK, "spi0_isp_sclk", "sclk_spi0_isp",
++	GATE(CLK_SPI0_ISP_SCLK, "spi0_isp_sclk", "div_spi0_isp_pre",
+ 			E4X12_GATE_IP_ISP, 1, 0, 0),
+-	GATE(CLK_SPI1_ISP_SCLK, "spi1_isp_sclk", "sclk_spi1_isp",
++	GATE(CLK_SPI1_ISP_SCLK, "spi1_isp_sclk", "div_spi1_isp_pre",
+ 			E4X12_GATE_IP_ISP, 2, 0, 0),
+-	GATE(CLK_UART_ISP_SCLK, "uart_isp_sclk", "sclk_uart_isp",
++	GATE(CLK_UART_ISP_SCLK, "uart_isp_sclk", "div_uart_isp",
+ 			E4X12_GATE_IP_ISP, 3, 0, 0),
+ 	GATE(CLK_WDT, "watchdog", "aclk100", E4X12_GATE_IP_PERIR, 14, 0, 0),
+ 	GATE(CLK_PCM0, "pcm0", "aclk100", E4X12_GATE_IP_MAUDIO, 2,
 -- 
 1.7.10.4
 
