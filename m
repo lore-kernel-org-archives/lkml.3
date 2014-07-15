@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000AbaGORO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:14:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:32897 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734AbaGORCO (ORCPT
+	id S1758117AbaGOROj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:14:39 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:50838 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708AbaGORCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:02:14 -0400
+	Tue, 15 Jul 2014 13:02:13 -0400
 From: Sam Asadi <asadi.samuel@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@freescale.com>, Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 52/94] ARM: imx: fix shared gate clock
-Date: Tue, 15 Jul 2014 20:01:07 +0300
-Message-Id: <1405443709-15288-52-git-send-email-asadi.samuel@gmail.com>
+Subject: [PATCH 28/94] iio: hid-sensor-als: Fix return values
+Date: Tue, 15 Jul 2014 20:00:43 +0300
+Message-Id: <1405443709-15288-28-git-send-email-asadi.samuel@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
@@ -22,100 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Guo <shawn.guo@freescale.com>
+From: Sachin Kamat <sachin.kamat@samsung.com>
 
-Let's say clock A and B are two gate clocks that share the same register
-bit in hardware.  Therefore they are registered as shared gate clocks
-with imx_clk_gate2_shared().
+IIO_CHAN_INFO_SAMP_FREQ and IIO_CHAN_INFO_HYSTERESIS cases ignored
+the actual return values (which could be -EINVAL) and instead
+returned IIO_VAL_INT_PLUS_MICRO always. Return the actual value
+obtained from the functions. Both functions return IIO_VAL_INT_PLUS_MICRO
+upon success.
 
-In a scenario that only clock A is enabled by clk_enable(A) while B is
-not used, the shared gate will be unexpectedly disabled in hardware.
-It happens because clk_enable(A) increments the share_count from 0 to 1,
-while clock B is unused to clock core, and therefore the core function
-will just disable B by calling clk->ops->disable() directly.  The
-consequence of that call is share_count is decremented to 0 and the gate
-is disabled in hardware, even though clock A is still in use.
-
-The patch fixes the issue by initializing the share_count per hardware
-state and returns enable state per share_count from .is_enabled() hook,
-in case it's a shared gate.
-
-While at it, add a check in clk_gate2_disable() to ensure it's never
-called with a zero share_count.
-
-Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
-Fixes: f9f28cdf2167 ("ARM: imx: add shared gate clock support")
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 ---
- arch/arm/mach-imx/clk-gate2.c |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/iio/light/hid-sensor-als.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-imx/clk-gate2.c b/arch/arm/mach-imx/clk-gate2.c
-index 4ba587d..84acdfd 100644
---- a/arch/arm/mach-imx/clk-gate2.c
-+++ b/arch/arm/mach-imx/clk-gate2.c
-@@ -67,8 +67,12 @@ static void clk_gate2_disable(struct clk_hw *hw)
+diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
+index f34c943..96e71e1 100644
+--- a/drivers/iio/light/hid-sensor-als.c
++++ b/drivers/iio/light/hid-sensor-als.c
+@@ -79,7 +79,6 @@ static int als_read_raw(struct iio_dev *indio_dev,
+ 	struct als_state *als_state = iio_priv(indio_dev);
+ 	int report_id = -1;
+ 	u32 address;
+-	int ret;
+ 	int ret_type;
+ 	s32 poll_value;
  
- 	spin_lock_irqsave(gate->lock, flags);
- 
--	if (gate->share_count && --(*gate->share_count) > 0)
--		goto out;
-+	if (gate->share_count) {
-+		if (WARN_ON(*gate->share_count == 0))
-+			goto out;
-+		else if (--(*gate->share_count) > 0)
-+			goto out;
-+	}
- 
- 	reg = readl(gate->reg);
- 	reg &= ~(3 << gate->bit_idx);
-@@ -78,19 +82,26 @@ out:
- 	spin_unlock_irqrestore(gate->lock, flags);
- }
- 
--static int clk_gate2_is_enabled(struct clk_hw *hw)
-+static int clk_gate2_reg_is_enabled(void __iomem *reg, u8 bit_idx)
- {
--	u32 reg;
--	struct clk_gate2 *gate = to_clk_gate2(hw);
-+	u32 val = readl(reg);
- 
--	reg = readl(gate->reg);
--
--	if (((reg >> gate->bit_idx) & 1) == 1)
-+	if (((val >> bit_idx) & 1) == 1)
- 		return 1;
- 
- 	return 0;
- }
- 
-+static int clk_gate2_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_gate2 *gate = to_clk_gate2(hw);
-+
-+	if (gate->share_count)
-+		return !!(*gate->share_count);
-+	else
-+		return clk_gate2_reg_is_enabled(gate->reg, gate->bit_idx);
-+}
-+
- static struct clk_ops clk_gate2_ops = {
- 	.enable = clk_gate2_enable,
- 	.disable = clk_gate2_disable,
-@@ -116,6 +127,10 @@ struct clk *clk_register_gate2(struct device *dev, const char *name,
- 	gate->bit_idx = bit_idx;
- 	gate->flags = clk_gate2_flags;
- 	gate->lock = lock;
-+
-+	/* Initialize share_count per hardware state */
-+	if (share_count)
-+		*share_count = clk_gate2_reg_is_enabled(reg, bit_idx) ? 1 : 0;
- 	gate->share_count = share_count;
- 
- 	init.name = name;
+@@ -129,14 +128,12 @@ static int als_read_raw(struct iio_dev *indio_dev,
+ 		ret_type = IIO_VAL_INT;
+ 		break;
+ 	case IIO_CHAN_INFO_SAMP_FREQ:
+-		ret = hid_sensor_read_samp_freq_value(
++		ret_type = hid_sensor_read_samp_freq_value(
+ 				&als_state->common_attributes, val, val2);
+-		ret_type = IIO_VAL_INT_PLUS_MICRO;
+ 		break;
+ 	case IIO_CHAN_INFO_HYSTERESIS:
+-		ret = hid_sensor_read_raw_hyst_value(
++		ret_type = hid_sensor_read_raw_hyst_value(
+ 				&als_state->common_attributes, val, val2);
+-		ret_type = IIO_VAL_INT_PLUS_MICRO;
+ 		break;
+ 	default:
+ 		ret_type = -EINVAL;
 -- 
 1.7.10.4
 
