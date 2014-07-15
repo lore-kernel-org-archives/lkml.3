@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836AbaGOVbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:31:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53887 "EHLO
+	id S1759612AbaGOW0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:26:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53938 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758023AbaGOVbY (ORCPT
+	with ESMTP id S932816AbaGOVbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:31:24 -0400
+	Tue, 15 Jul 2014 17:31:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fathi Boudra <fathi.boudra@linaro.org>, Michal Marek <mmarek@suse.cz>,
+Cc: Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 017/198] builddeb: use $OBJCOPY variable instead of objcopy
-Date: Tue, 15 Jul 2014 14:28:07 -0700
-Message-Id: <1405459868-15089-18-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 095/198] mm/memory-failure.c: don't let collect_procs() skip over processes for MF_ACTION_REQUIRED
+Date: Tue, 15 Jul 2014 14:29:25 -0700
+Message-Id: <1405459868-15089-96-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,45 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fathi Boudra <fathi.boudra@linaro.org>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
+commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
 
-In cross-build environment, we expect to use the cross-compiler objcopy
-instead of the host objcopy.
+When Linux sees an "action optional" machine check (where h/w has reported
+an error that is not in the current execution path) we generally do not
+want to signal a process, since most processes do not have a SIGBUS
+handler - we'd just prematurely terminate the process for a problem that
+they might never actually see.
 
-It fixes following build failures:
-objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
-objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
+task_early_kill() decides whether to consider a process - and it checks
+whether this specific process has been marked for early signals with
+"prctl", or if the system administrator has requested early signals for
+all processes using /proc/sys/vm/memory_failure_early_kill.
 
-Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
-Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
+execution path of the current thread so we must send the SIGBUS
+immediatley.
+
+Fix by passing a flag argument through collect_procs*() to
+task_early_kill() so it knows whether we can defer or must take action.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- scripts/package/builddeb | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memory-failure.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index c1bb9be..6d02fd5d 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
- 			for module in $(find lib/modules/ -name *.ko); do
- 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
- 				# only keep debug symbols in the debug file
--				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
-+				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
- 				# strip original module from debug symbols
--				objcopy --strip-debug $module
-+				$OBJCOPY --strip-debug $module
- 				# then add a link to those
--				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
-+				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
- 			done
- 		)
- 	fi
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2b5da71..e5f7031 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -384,10 +384,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
+ 	}
+ }
+ 
+-static int task_early_kill(struct task_struct *tsk)
++static int task_early_kill(struct task_struct *tsk, int force_early)
+ {
+ 	if (!tsk->mm)
+ 		return 0;
++	if (force_early)
++		return 1;
+ 	if (tsk->flags & PF_MCE_PROCESS)
+ 		return !!(tsk->flags & PF_MCE_EARLY);
+ 	return sysctl_memory_failure_early_kill;
+@@ -397,7 +399,7 @@ static int task_early_kill(struct task_struct *tsk)
+  * Collect processes when the error hit an anonymous page.
+  */
+ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -413,7 +415,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
+ 
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
+ 					       pgoff, pgoff) {
+@@ -432,7 +434,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+  * Collect processes when the error hit a file mapped page.
+  */
+ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -443,7 +445,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 
+ 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
+@@ -469,7 +471,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+  * First preallocate one tokill structure outside the spin locks,
+  * so that we can kill at least one process reasonably reliable.
+  */
+-static void collect_procs(struct page *page, struct list_head *tokill)
++static void collect_procs(struct page *page, struct list_head *tokill,
++				int force_early)
+ {
+ 	struct to_kill *tk;
+ 
+@@ -480,9 +483,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
+ 	if (!tk)
+ 		return;
+ 	if (PageAnon(page))
+-		collect_procs_anon(page, tokill, &tk);
++		collect_procs_anon(page, tokill, &tk, force_early);
+ 	else
+-		collect_procs_file(page, tokill, &tk);
++		collect_procs_file(page, tokill, &tk, force_early);
+ 	kfree(tk);
+ }
+ 
+@@ -967,7 +970,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(ppage, &tokill);
++		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ 
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
 -- 
 1.9.1
 
