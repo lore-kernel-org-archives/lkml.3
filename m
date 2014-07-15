@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965211AbaGOXTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:19:46 -0400
-Received: from g6t1525.atlanta.hp.com ([15.193.200.68]:16601 "EHLO
-	g6t1525.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933576AbaGOXTm (ORCPT
+	id S965112AbaGOXPa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933000AbaGOXOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:19:42 -0400
-X-Greylist: delayed 12894 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jul 2014 19:19:42 EDT
-Message-ID: <1405465801.28702.34.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to
- handle WT type
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
-Date: Tue, 15 Jul 2014 17:10:01 -0600
-In-Reply-To: <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
-	 <1405452884-25688-4-git-send-email-toshi.kani@hp.com>
-	 <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jul 2014 19:14:06 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Joel Stanley <joel@jms.id.au>, Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.15 31/84] powerpc/perf: Clear MMCR2 when enabling PMU
+Date: Tue, 15 Jul 2014 16:17:28 -0700
+Message-Id: <20140715231714.137359817@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 12:56 -0700, Andy Lutomirski wrote:
-> On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > This patch changes reserve_memtype() to handle the new WT type.
-> > When (!pat_enabled && new_type), it continues to set either WB
-> > or UC- to *new_type.  When pat_enabled, it can reserve a given
-> > non-RAM range for WT.  At this point, it may not reserve a RAM
-> > range for WT since reserve_ram_pages_type() uses the page flags
-> > limited to three memory types, WB, WC and UC.
-> 
-> FWIW, last time I looked at this, it seemed like all the fancy
-> reserve_ram_pages stuff was unnecessary: shouldn't the RAM type be
-> easy to track in the direct map page tables?
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Are you referring the direct map page tables as the kernel page
-directory tables (pgd/pud/..)?
+------------------
 
-I think it needs to be able to keep track of the memory type per a
-physical memory range, not per a translation, in order to prevent
-aliasing of the memory type.
+From: Joel Stanley <joel@jms.id.au>
 
-Thanks,
--Toshi
+commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
+
+On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
+the PMU counters. Aside from on boot they are then never reset,
+resulting in stuck perf counters for any user in the guest or host.
+
+We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
+state for perf to use the PMU counters under either the guest or the
+host.
+
+This was manifesting as a bug with ppc64_cpu --frequency:
+
+    $ sudo ppc64_cpu --frequency
+    WARNING: couldn't run on cpu 0
+    WARNING: couldn't run on cpu 8
+      ...
+    WARNING: couldn't run on cpu 144
+    WARNING: couldn't run on cpu 152
+    min:    18446744073.710 GHz (cpu -1)
+    max:    0.000 GHz (cpu -1)
+    avg:    0.000 GHz
+
+The command uses a perf counter to measure CPU cycles over a fixed
+amount of time, in order to approximate the frequency of the machine.
+The counters were returning zero once a guest was started, regardless of
+weather it was still running or had been shut down.
+
+By dumping the value of MMCR2, it was observed that once a guest is
+running MMCR2 is set to 1s - which stops counters from running:
+
+    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
+    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
+    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
+    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
+    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
+    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
+    EBBRR: 0000000000000000 BESCR: 0000000000000000
+    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
+
+This is done unconditionally in book3s_hv_interrupts.S upon entering the
+guest, and the original value is only save/restored if the host has
+indicated it was using the PMU. This is okay, however the user of the
+PMU needs to ensure that it is in a defined state when it starts using
+it.
+
+Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
+Signed-off-by: Joel Stanley <joel@jms.id.au>
+Acked-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/perf/core-book3s.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1315,6 +1315,9 @@ static void power_pmu_enable(struct pmu
+ 
+ 	write_mmcr0(cpuhw, mmcr0);
+ 
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
++
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
+
 
