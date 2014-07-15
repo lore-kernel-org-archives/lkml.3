@@ -1,111 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982AbaGOTFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:05:14 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57546 "EHLO zene.cmpxchg.org"
+	id S932994AbaGOTHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:07:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932827AbaGOTFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:05:10 -0400
-Date: Tue, 15 Jul 2014 15:04:54 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140715190454.GW29639@cmpxchg.org>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715155537.GA19454@nhori.bos.redhat.com>
- <20140715160735.GB29269@dhcp22.suse.cz>
- <20140715173439.GU29639@cmpxchg.org>
- <20140715184358.GA31550@nhori.bos.redhat.com>
+	id S932760AbaGOTHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:07:16 -0400
+Date: Tue, 15 Jul 2014 15:07:02 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH] HID: rmi: add additional checks for the existence of
+ optional queries in order to compute the address of Query 12.
+Message-ID: <20140715190702.GB21045@mail.corp.redhat.com>
+References: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140715184358.GA31550@nhori.bos.redhat.com>
+In-Reply-To: <1405114551-24354-1-git-send-email-aduggan@synaptics.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 02:43:58PM -0400, Naoya Horiguchi wrote:
-> On Tue, Jul 15, 2014 at 01:34:39PM -0400, Johannes Weiner wrote:
-> > On Tue, Jul 15, 2014 at 06:07:35PM +0200, Michal Hocko wrote:
-> > > On Tue 15-07-14 11:55:37, Naoya Horiguchi wrote:
-> > > > On Wed, Jun 18, 2014 at 04:40:45PM -0400, Johannes Weiner wrote:
-> > > > ...
-> > > > > diff --git a/mm/swap.c b/mm/swap.c
-> > > > > index a98f48626359..3074210f245d 100644
-> > > > > --- a/mm/swap.c
-> > > > > +++ b/mm/swap.c
-> > > > > @@ -62,6 +62,7 @@ static void __page_cache_release(struct page *page)
-> > > > >  		del_page_from_lru_list(page, lruvec, page_off_lru(page));
-> > > > >  		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > > > >  	}
-> > > > > +	mem_cgroup_uncharge(page);
-> > > > >  }
-> > > > >  
-> > > > >  static void __put_single_page(struct page *page)
-> > > > 
-> > > > This seems to cause a list breakage in hstate->hugepage_activelist
-> > > > when freeing a hugetlbfs page.
-> > > 
-> > > This looks like a fall out from
-> > > http://marc.info/?l=linux-mm&m=140475936311294&w=2
-> > > 
-> > > I didn't get to review this one but the easiest fix seems to be check
-> > > HugePage and do not call uncharge.
-> > 
-> > Yes, that makes sense.  I'm also moving the uncharge call into
-> > __put_single_page() and __put_compound_page() so that PageHuge(), a
-> > function call, only needs to be checked for compound pages.
-> > 
-> > > > For hugetlbfs, we uncharge in free_huge_page() which is called after
-> > > > __page_cache_release(), so I think that we don't have to uncharge here.
-> > > > 
-> > > > In my testing, moving mem_cgroup_uncharge() inside if (PageLRU) block
-> > > > fixed the problem, so if that works for you, could you fold the change
-> > > > into your patch?
-> > 
-> > Memcg pages that *do* need uncharging might not necessarily be on the
-> > LRU list.
+On Jul 11 2014 or thereabouts, Andrew Duggan wrote:
+> There are additional queries which are optional and may not be present depending on the configuration of the firmware. Knowing which queries are present is needed to properly compute the address of Query 12 and all subsequent queries. Additional bits in Query 1 are used to indicate the presence of these optional queries.
 > 
-> OK.
-> 
-> > Does the following work for you?
-> 
-> Unfortunately, with this change I saw the following bug message when
-> stressing with hugepage migration.
-> move_to_new_page() is called by unmap_and_move_huge_page() too, so
-> we need some hugetlb related code around mem_cgroup_migrate().
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+> ---
 
-Can we just move hugetlb_cgroup_migrate() into move_to_new_page()?  It
-doesn't seem to be dependent of any page-specific state.
+Looks good to me
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 7f5a42403fae..219da52d2f43 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -781,7 +781,10 @@ static int move_to_new_page(struct page *newpage, struct page *page,
- 		if (!PageAnon(newpage))
- 			newpage->mapping = NULL;
- 	} else {
--		mem_cgroup_migrate(page, newpage, false);
-+		if (PageHuge(page))
-+			hugetlb_cgroup_migrate(hpage, new_hpage);
-+		else
-+			mem_cgroup_migrate(page, newpage, false);
- 		if (remap_swapcache)
- 			remove_migration_ptes(page, newpage);
- 		if (!PageAnon(page))
-@@ -1064,9 +1067,6 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 	if (anon_vma)
- 		put_anon_vma(anon_vma);
- 
--	if (rc == MIGRATEPAGE_SUCCESS)
--		hugetlb_cgroup_migrate(hpage, new_hpage);
--
- 	unlock_page(hpage);
- out:
- 	if (rc != -EAGAIN)
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Cheers,
+Benjamin
+
+>  drivers/hid/hid-rmi.c | 35 +++++++++++++++++++++++++----------
+>  1 file changed, 25 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> index 578bbe6..3221a95 100644
+> --- a/drivers/hid/hid-rmi.c
+> +++ b/drivers/hid/hid-rmi.c
+> @@ -549,10 +549,12 @@ static int rmi_populate_f11(struct hid_device *hdev)
+>  	u8 buf[20];
+>  	int ret;
+>  	bool has_query9;
+> -	bool has_query10;
+> +	bool has_query10 = false;
+>  	bool has_query11;
+>  	bool has_query12;
+>  	bool has_physical_props;
+> +	bool has_gestures;
+> +	bool has_rel;
+>  	unsigned x_size, y_size;
+>  	u16 query12_offset;
+>  
+> @@ -589,19 +591,32 @@ static int rmi_populate_f11(struct hid_device *hdev)
+>  		return -ENODEV;
+>  	}
+>  
+> -	/* query 8 to find out if query 10 exists */
+> -	ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
+> -	if (ret) {
+> -		hid_err(hdev, "can not read gesture information: %d.\n", ret);
+> -		return ret;
+> +	has_rel = !!(buf[0] & BIT(3));
+> +	has_gestures = !!(buf[0] & BIT(5));
+> +
+> +	if (has_gestures) {
+> +		/* query 8 to find out if query 10 exists */
+> +		ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
+> +		if (ret) {
+> +			hid_err(hdev, "can not read gesture information: %d.\n",
+> +				ret);
+> +			return ret;
+> +		}
+> +		has_query10 = !!(buf[0] & BIT(2));
+>  	}
+> -	has_query10 = !!(buf[0] & BIT(2));
+>  
+>  	/*
+> -	 * At least 8 queries are guaranteed to be present in F11
+> -	 * +1 for query12.
+> +	 * At least 4 queries are guaranteed to be present in F11
+> +	 * +1 for query 5 which is present since absolute events are
+> +	 * reported and +1 for query 12.
+>  	 */
+> -	query12_offset = 9;
+> +	query12_offset = 6;
+> +
+> +	if (has_rel)
+> +		++query12_offset; /* query 6 is present */
+> +
+> +	if (has_gestures)
+> +		query12_offset += 2; /* query 7 and 8 are present */
+>  
+>  	if (has_query9)
+>  		++query12_offset;
+> -- 
+> 1.9.1
+> 
