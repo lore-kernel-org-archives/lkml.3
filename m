@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761184AbaGPAWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:22:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44914 "EHLO
+	id S1761108AbaGPAWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:22:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758747AbaGOXNG (ORCPT
+	with ESMTP id S1758824AbaGOXNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 07/22] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
-Date: Tue, 15 Jul 2014 16:17:12 -0700
-Message-Id: <20140715231622.342248992@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.4 18/22] x86, espfix: Fix broken header guard
+Date: Tue, 15 Jul 2014 16:17:23 -0700
+Message-Id: <20140715231622.689293509@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -29,57 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
+commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
 
-We are seeing a lot of PMU warnings on POWER8:
+Header guard is #ifndef, not #ifdef...
 
-    Can't find PMC that caused IRQ
-
-Looking closer, the active PMC is 0 at this point and we took a PMU
-exception on the transition from negative to 0. Some versions of POWER8
-have an issue where they edge detect and not level detect PMC overflows.
-
-A number of places program the PMC with (0x80000000 - period_left),
-where period_left can be negative. We can either fix all of these or
-just ensure that period_left is always >= 1.
-
-This patch takes the second option.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/espfix.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -472,7 +472,22 @@ static void power_pmu_read(struct perf_e
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
+--- a/arch/x86/include/asm/espfix.h
++++ b/arch/x86/include/asm/espfix.h
+@@ -1,4 +1,4 @@
+-#ifdef _ASM_X86_ESPFIX_H
++#ifndef _ASM_X86_ESPFIX_H
+ #define _ASM_X86_ESPFIX_H
  
- 	local64_add(delta, &event->count);
--	local64_sub(delta, &event->hw.period_left);
-+
-+	/*
-+	 * A number of places program the PMC with (0x80000000 - period_left).
-+	 * We never want period_left to be less than 1 because we will program
-+	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
-+	 * roll around to 0 before taking an exception. We have seen this
-+	 * on POWER8.
-+	 *
-+	 * To fix this, clamp the minimum value of period_left to 1.
-+	 */
-+	do {
-+		prev = local64_read(&event->hw.period_left);
-+		val = prev - delta;
-+		if (val < 1)
-+			val = 1;
-+	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
- }
- 
- /*
+ #ifdef CONFIG_X86_64
 
 
