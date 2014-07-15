@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934503AbaGOXmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:42:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S965417AbaGOXmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:42:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45437 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933877AbaGOXOF (ORCPT
+	with ESMTP id S933881AbaGOXOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:14:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 29/84] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
-Date: Tue, 15 Jul 2014 16:17:26 -0700
-Message-Id: <20140715231714.080927645@linuxfoundation.org>
+        Bert Vermeulen <bert@biot.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.15 03/84] USB: ftdi_sio: Add extra PID.
+Date: Tue, 15 Jul 2014 16:17:00 -0700
+Message-Id: <20140715231713.293842542@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,57 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Bert Vermeulen <bert@biot.com>
 
-commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
+commit 5a7fbe7e9ea0b1b9d7ffdba64db1faa3a259164c upstream.
 
-We are seeing a lot of PMU warnings on POWER8:
+This patch adds PID 0x0003 to the VID 0x128d (Testo). At least the
+Testo 435-4 uses this, likely other gear as well.
 
-    Can't find PMC that caused IRQ
-
-Looking closer, the active PMC is 0 at this point and we took a PMU
-exception on the transition from negative to 0. Some versions of POWER8
-have an issue where they edge detect and not level detect PMC overflows.
-
-A number of places program the PMC with (0x80000000 - period_left),
-where period_left can be negative. We can either fix all of these or
-just ensure that period_left is always >= 1.
-
-This patch takes the second option.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Bert Vermeulen <bert@biot.com>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    3 ++-
+ drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -996,7 +996,22 @@ static void power_pmu_read(struct perf_e
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
- 
- 	local64_add(delta, &event->count);
--	local64_sub(delta, &event->hw.period_left);
-+
-+	/*
-+	 * A number of places program the PMC with (0x80000000 - period_left).
-+	 * We never want period_left to be less than 1 because we will program
-+	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
-+	 * roll around to 0 before taking an exception. We have seen this
-+	 * on POWER8.
-+	 *
-+	 * To fix this, clamp the minimum value of period_left to 1.
-+	 */
-+	do {
-+		prev = local64_read(&event->hw.period_left);
-+		val = prev - delta;
-+		if (val < 1)
-+			val = 1;
-+	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -720,7 +720,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+-	{ USB_DEVICE(TESTO_VID, TESTO_USB_INTERFACE_PID) },
++	{ USB_DEVICE(TESTO_VID, TESTO_1_PID) },
++	{ USB_DEVICE(TESTO_VID, TESTO_3_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_GAMMA_SCOUT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13M_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13S_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -798,7 +798,8 @@
+  * Submitted by Colin Leroy
+  */
+ #define TESTO_VID			0x128D
+-#define TESTO_USB_INTERFACE_PID		0x0001
++#define TESTO_1_PID			0x0001
++#define TESTO_3_PID			0x0003
  
  /*
+  * Mobility Electronics products.
 
 
