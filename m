@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965195AbaGOXYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:24:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
+	id S934428AbaGOXYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:24:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45609 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934167AbaGOXO1 (ORCPT
+	with ESMTP id S934155AbaGOXO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:27 -0400
+	Tue, 15 Jul 2014 19:14:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Jander <david@protonic.nl>, Matteo Croce <technoboy85@gmail.com>,
-        Eric Whitney <enwlinux@gmail.com>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.15 53/84] ext4: revert commit which was causing fs corruption after journal replays
-Date: Tue, 15 Jul 2014 16:17:50 -0700
-Message-Id: <20140715231714.792685674@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.15 51/84] ext4: clarify ext4_error message in ext4_mb_generate_buddy_error()
+Date: Tue, 15 Jul 2014 16:17:48 -0700
+Message-Id: <20140715231714.736103677@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -31,141 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit f9ae9cf5d72b3926ca48ea60e15bdbb840f42372 upstream.
+commit 94d4c066a4ff170a2671b1a9b153febbf36796f6 upstream.
 
-Commit 007649375f6af2 ("ext4: initialize multi-block allocator before
-checking block descriptors") causes the block group descriptor's count
-of the number of free blocks to become inconsistent with the number of
-free blocks in the allocation bitmap.  This is a harmless form of fs
-corruption, but it causes the kernel to potentially remount the file
-system read-only, or to panic, depending on the file systems's error
-behavior.
+We are spending a lot of time explaining to users what this error
+means.  Let's try to improve the message to avoid this problem.
 
-Thanks to Eric Whitney for his tireless work to reproduce and to find
-the guilty commit.
-
-Fixes: 007649375f6af2 ("ext4: initialize multi-block allocator before checking block descriptors"
-
-Reported-by: David Jander <david@protonic.nl>
-Reported-by: Matteo Croce <technoboy85@gmail.com>
-Tested-by: Eric Whitney <enwlinux@gmail.com>
-Suggested-by: Eric Whitney <enwlinux@gmail.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |   51 ++++++++++++++++++++++++---------------------------
- 1 file changed, 24 insertions(+), 27 deletions(-)
+ fs/ext4/mballoc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3868,38 +3868,19 @@ static int ext4_fill_super(struct super_
- 			goto failed_mount2;
- 		}
- 	}
--
--	/*
--	 * set up enough so that it can read an inode,
--	 * and create new inode for buddy allocator
--	 */
--	sbi->s_gdb_count = db_count;
--	if (!test_opt(sb, NOLOAD) &&
--	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
--		sb->s_op = &ext4_sops;
--	else
--		sb->s_op = &ext4_nojournal_sops;
--
--	ext4_ext_init(sb);
--	err = ext4_mb_init(sb);
--	if (err) {
--		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
--			 err);
--		goto failed_mount2;
--	}
--
- 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
- 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
--		goto failed_mount2a;
-+		goto failed_mount2;
- 	}
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
- 		if (!ext4_fill_flex_info(sb)) {
- 			ext4_msg(sb, KERN_ERR,
- 			       "unable to initialize "
- 			       "flex_bg meta info!");
--			goto failed_mount2a;
-+			goto failed_mount2;
- 		}
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -751,8 +751,8 @@ void ext4_mb_generate_buddy(struct super
  
-+	sbi->s_gdb_count = db_count;
- 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
- 	spin_lock_init(&sbi->s_next_gen_lock);
- 
-@@ -3934,6 +3915,14 @@ static int ext4_fill_super(struct super_
- 	sbi->s_stripe = ext4_get_stripe_size(sbi);
- 	sbi->s_extent_max_zeroout_kb = 32;
- 
-+	/*
-+	 * set up enough so that it can read an inode
-+	 */
-+	if (!test_opt(sb, NOLOAD) &&
-+	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
-+		sb->s_op = &ext4_sops;
-+	else
-+		sb->s_op = &ext4_nojournal_sops;
- 	sb->s_export_op = &ext4_export_ops;
- 	sb->s_xattr = ext4_xattr_handlers;
- #ifdef CONFIG_QUOTA
-@@ -4123,13 +4112,21 @@ no_journal:
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
- 			 "reserved pool", ext4_calculate_resv_clusters(sb));
--		goto failed_mount5;
-+		goto failed_mount4a;
- 	}
- 
- 	err = ext4_setup_system_zone(sb);
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
- 			 "zone (%d)", err);
-+		goto failed_mount4a;
-+	}
-+
-+	ext4_ext_init(sb);
-+	err = ext4_mb_init(sb);
-+	if (err) {
-+		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
-+			 err);
- 		goto failed_mount5;
- 	}
- 
-@@ -4206,8 +4203,11 @@ failed_mount8:
- failed_mount7:
- 	ext4_unregister_li_request(sb);
- failed_mount6:
--	ext4_release_system_zone(sb);
-+	ext4_mb_release(sb);
- failed_mount5:
-+	ext4_ext_release(sb);
-+	ext4_release_system_zone(sb);
-+failed_mount4a:
- 	dput(sb->s_root);
- 	sb->s_root = NULL;
- failed_mount4:
-@@ -4231,14 +4231,11 @@ failed_mount3:
- 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
- 	if (sbi->s_mmp_tsk)
- 		kthread_stop(sbi->s_mmp_tsk);
--failed_mount2a:
--	ext4_mb_release(sb);
- failed_mount2:
- 	for (i = 0; i < db_count; i++)
- 		brelse(sbi->s_group_desc[i]);
- 	ext4_kvfree(sbi->s_group_desc);
- failed_mount:
--	ext4_ext_release(sb);
- 	if (sbi->s_chksum_driver)
- 		crypto_free_shash(sbi->s_chksum_driver);
- 	if (sbi->s_proc) {
+ 	if (free != grp->bb_free) {
+ 		ext4_grp_locked_error(sb, group, 0, 0,
+-				      "%u clusters in bitmap, %u in gd; "
+-				      "block bitmap corrupt.",
++				      "block bitmap and bg descriptor "
++				      "inconsistent: %u vs %u free clusters",
+ 				      free, grp->bb_free);
+ 		/*
+ 		 * If we intend to continue, we consider group descriptor
 
 
