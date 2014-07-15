@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaGOPWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:22:55 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:50651 "EHLO
+	id S1754489AbaGOPZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:25:08 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:51723 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754456AbaGOPWs (ORCPT
+	by vger.kernel.org with ESMTP id S1754592AbaGOPWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:22:48 -0400
+	Tue, 15 Jul 2014 11:22:51 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
@@ -14,71 +14,64 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v3 00/15] Add Flexgen Clock support
-Date: Tue, 15 Jul 2014 17:20:16 +0200
-Message-Id: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: [PATCH v3 13/15] drivers: clk: st: STiH407: Support for clockgenA9
+Date: Tue, 15 Jul 2014 17:20:29 +0200
+Message-Id: <1405437631-23623-14-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
  definitions=2014-07-15_05:2014-07-15,2014-07-15,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v3:
- - Change commit message
- - Remove uncessary (void *) cast
- - add a block diagram for flexgen clock binding documentation
+The patch added support for DT registration of ClockGenA9
+It includes c32 type PLL.
 
-Changes in v2:
- - use static const for clkgen_pll_data and stm_fs tables (from
-   Peter Griffin review)
- - add 326 and 333 Mhz frequencies
- - cosmetic correction in st,clkgen-vcc.txt
- - use of kcalloc instead of kzalloc in drivers/clk/st/clk-flexgen.c
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ drivers/clk/st/clkgen-pll.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-The goal of this series is to add Flexgen clock support to ST SoCs.
-
-A Flexgen clock is composed by:
-  - a clock cross bar (represented by a mux element)
-  - a pre and final dividers (represented by a divider and gate elements)
-
-Tested on B2120 board.
-
-Gabriel Fernandez (15):
-  clk: st: Update ST clock binding documentation
-  drivers: clk: st: use static const for stm_fs tables
-  drivers: clk: st: use static const for clkgen_pll_data tables
-  drivers: clk: st: Remove uncessary (void *) cast
-  clk: st: Adds Flexgen clock binding
-  drivers: clk: st: STiH407: Support for Flexgen Clocks
-  drivers: clk: st: STiH407: Support for A9 MUX Clocks
-  drivers: clk: st: STiH407: Support for clockgenA0
-  drivers: clk: st: Add polarity bit indication
-  drivers: clk: st: Add quadfs reset handling
-  drivers: clk: st: STiH407: Support for clockgenC0
-  drivers: clk: st: STiH407: Support for clockgenD0/D2/D3
-  drivers: clk: st: STiH407: Support for clockgenA9
-  drivers: clk: st: Update frequency tables for fs660c32 and fs432c65
-  drivers: clk: st: Use round to closest divider flag
-
- .../bindings/clock/st/st,clkgen-divmux.txt         |  28 +-
- .../devicetree/bindings/clock/st/st,clkgen-mux.txt |   6 +-
- .../devicetree/bindings/clock/st/st,clkgen-pll.txt |  17 +-
- .../bindings/clock/st/st,clkgen-prediv.txt         |   8 +-
- .../devicetree/bindings/clock/st/st,clkgen-vcc.txt |  34 ++-
- .../devicetree/bindings/clock/st/st,clkgen.txt     |  59 ++--
- .../devicetree/bindings/clock/st/st,flexgen.txt    | 119 ++++++++
- .../devicetree/bindings/clock/st/st,quadfs.txt     |  15 +-
- drivers/clk/st/Makefile                            |   2 +-
- drivers/clk/st/clk-flexgen.c                       | 331 +++++++++++++++++++++
- drivers/clk/st/clkgen-fsyn.c                       | 223 +++++++++++---
- drivers/clk/st/clkgen-mux.c                        |  12 +-
- drivers/clk/st/clkgen-pll.c                        |  94 +++++-
- 13 files changed, 828 insertions(+), 120 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/st/st,flexgen.txt
- create mode 100644 drivers/clk/st/clk-flexgen.c
-
+diff --git a/drivers/clk/st/clkgen-pll.c b/drivers/clk/st/clkgen-pll.c
+index 5327a74..29769d7 100644
+--- a/drivers/clk/st/clkgen-pll.c
++++ b/drivers/clk/st/clkgen-pll.c
+@@ -216,6 +216,18 @@ static const struct clkgen_pll_data st_pll3200c32_407_c0_1 = {
+ 	.ops		= &stm_pll3200c32_ops,
+ };
+ 
++static const struct clkgen_pll_data st_pll3200c32_407_a9 = {
++	/* 407 A9 */
++	.pdn_status	= CLKGEN_FIELD(0x1a8,	0x1,			0),
++	.locked_status	= CLKGEN_FIELD(0x87c,	0x1,			0),
++	.ndiv		= CLKGEN_FIELD(0x1b0,	C32_NDIV_MASK,		0),
++	.idf		= CLKGEN_FIELD(0x1a8,	C32_IDF_MASK,		25),
++	.num_odfs = 1,
++	.odf		= { CLKGEN_FIELD(0x1b0, C32_ODF_MASK,		8) },
++	.odf_gate	= { CLKGEN_FIELD(0x1ac, 0x1,			28) },
++	.ops		= &stm_pll3200c32_ops,
++};
++
+ /**
+  * DOC: Clock Generated by PLL, rate set and enabled by bootloader
+  *
+@@ -618,6 +630,10 @@ static struct of_device_id c32_pll_of_match[] = {
+ 		.compatible = "st,stih407-plls-c32-c0_1",
+ 		.data = &st_pll3200c32_407_c0_1,
+ 	},
++	{
++		.compatible = "st,stih407-plls-c32-a9",
++		.data = &st_pll3200c32_407_a9,
++	},
+ 	{}
+ };
+ 
 -- 
 1.9.1
 
