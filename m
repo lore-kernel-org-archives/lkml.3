@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548AbaGOIs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:48:59 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:52036
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S932530AbaGOIsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:48:55 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:16394
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932461AbaGOIsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932452AbaGOIsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 04:48:46 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 23/29] nios2: Nios2 registers
-Date: Tue, 15 Jul 2014 16:45:50 +0800
-Message-ID: <1405413956-2772-24-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 28/29] Documentation: Add documentation for Nios2 architecture
+Date: Tue, 15 Jul 2014 16:45:55 +0800
+Message-ID: <1405413956-2772-29-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(77156001)(99396002)(81542001)(64706001)(95666004)(76176999)(76482001)(88136002)(68736004)(36756003)(84676001)(81342001)(20776003)(85306003)(229853001)(4396001)(21056001)(50226001)(47776003)(80022001)(85852003)(50986999)(107046002)(62966002)(83072002)(104166001)(105596002)(79102001)(77096002)(86362001)(33646002)(92566001)(74662001)(106466001)(31966008)(2201001)(97736001)(93916002)(92726001)(77982001)(83322001)(19580395003)(87936001)(19580405001)(74502001)(6806004)(102836001)(89996001)(48376002)(15975445006)(44976005)(46102001)(42186005)(87286001)(15202345003)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB033;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(106466001)(84676001)(93916002)(79102001)(99396002)(64706001)(229853001)(15975445006)(105596002)(62966002)(95666004)(104166001)(85306003)(19580395003)(86362001)(2201001)(47776003)(15202345003)(97736001)(107046002)(21056001)(36756003)(77156001)(76482001)(76176999)(50986999)(80022001)(77982001)(19580405001)(74662001)(85852003)(46102001)(88136002)(92726001)(68736004)(42186005)(48376002)(81342001)(83322001)(81542001)(50226001)(77096002)(4396001)(102836001)(87936001)(89996001)(87286001)(20776003)(44976005)(83072002)(92566001)(31966008)(74502001)(6806004)(33646002)(19627235001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB307;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,91 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file contains constants for the instruction macros, cpu registers, fields and bits.
-
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/registers.h | 71 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 71 insertions(+)
- create mode 100644 arch/nios2/include/asm/registers.h
+ Documentation/nios2/README | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/nios2/README
 
-diff --git a/arch/nios2/include/asm/registers.h b/arch/nios2/include/asm/registers.h
+diff --git a/Documentation/nios2/README b/Documentation/nios2/README
 new file mode 100644
-index 0000000..615bce1
+index 0000000..054a67d
 --- /dev/null
-+++ b/arch/nios2/include/asm/registers.h
-@@ -0,0 +1,71 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
++++ b/Documentation/nios2/README
+@@ -0,0 +1,23 @@
++Linux on the Nios II architecture
++=================================
 +
-+#ifndef _ASM_NIOS2_REGISTERS_H
-+#define _ASM_NIOS2_REGISTERS_H
++This is a port of Linux to Nios II (nios2) processor.
 +
-+#ifndef __ASSEMBLY__
-+#include <asm/cpuinfo.h>
-+#endif
++In order to compile for Nios II, you need a version of GCC with support for the generic
++system call ABI. Please see this link for more information on how compiling and booting
++software for the Nios II platform:
++http://www.rocketboards.org/foswiki/Documentation/NiosIILinuxUserManual
 +
-+/* control register numbers */
-+#define CTL_STATUS	0
-+#define CTL_ESTATUS	1
-+#define CTL_BSTATUS	2
-+#define CTL_IENABLE	3
-+#define CTL_IPENDING	4
-+#define CTL_CPUID	5
-+#define CTL_RSV1	6
-+#define CTL_EXCEPTION	7
-+#define CTL_PTEADDR	8
-+#define CTL_TLBACC	9
-+#define CTL_TLBMISC	10
-+#define CTL_RSV2	11
-+#define CTL_BADADDR	12
-+#define CTL_CONFIG	13
-+#define CTL_MPUBASE	14
-+#define CTL_MPUACC	15
++For reference, please see the following link:
++http://www.altera.com/literature/lit-nio2.jsp
 +
-+/* access control registers using GCC builtins */
-+#define RDCTL(r)	__builtin_rdctl(r)
-+#define WRCTL(r, v)	__builtin_wrctl(r, v)
++What is Nios II?
++================
++Nios II is a 32-bit embedded-processor architecture designed specifically for the
++Altera family of FPGAs. In order to support Linux, Nios II needs to be configured
++with MMU and hardware multiplier enabled.
 +
-+/* status register bits */
-+#define STATUS_PIE	(1 << 0)	/* processor interrupt enable */
-+#define STATUS_U	(1 << 1)	/* user mode */
-+#define STATUS_EH	(1 << 2)	/* Exception mode */
-+
-+/* estatus register bits */
-+#define ESTATUS_EPIE	(1 << 0)	/* processor interrupt enable */
-+#define ESTATUS_EU	(1 << 1)	/* user mode */
-+#define ESTATUS_EH	(1 << 2)	/* Exception mode */
-+
-+/* tlbmisc register bits */
-+#define TLBMISC_PID_SHIFT	4
-+#ifndef __ASSEMBLY__
-+#define TLBMISC_PID_MASK	((1UL << cpuinfo.tlb_pid_num_bits) - 1)
-+#endif
-+#define TLBMISC_WAY_MASK	0xf
-+#define TLBMISC_WAY_SHIFT	20
-+
-+#define TLBMISC_PID	(TLBMISC_PID_MASK << TLBMISC_PID_SHIFT)	/* TLB PID */
-+#define TLBMISC_WE	(1 << 18)	/* TLB write enable */
-+#define TLBMISC_RD	(1 << 19)	/* TLB read */
-+#define TLBMISC_WAY	(TLBMISC_WAY_MASK << TLBMISC_WAY_SHIFT) /* TLB way */
-+
-+#endif /* _ASM_NIOS2_REGISTERS_H */
++Nios II ABI
++===========
++Please refer to chapter "Application Binary Interface" in Nios II Processor Reference
++Handbook.
 -- 
 1.8.2.1
 
