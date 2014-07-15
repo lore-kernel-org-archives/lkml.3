@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761249AbaGPAMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:12:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45032 "EHLO
+	id S932935AbaGPAMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:12:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277AbaGOXN0 (ORCPT
+	with ESMTP id S1759795AbaGOXNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:26 -0400
+	Tue, 15 Jul 2014 19:13:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bert Vermeulen <bert@biot.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 03/44] USB: ftdi_sio: Add extra PID.
-Date: Tue, 15 Jul 2014 16:17:01 -0700
-Message-Id: <20140715231646.792056446@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 28/44] ring-buffer: Check if buffer exists before polling
+Date: Tue, 15 Jul 2014 16:17:26 -0700
+Message-Id: <20140715231647.530531384@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -28,45 +29,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bert Vermeulen <bert@biot.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 5a7fbe7e9ea0b1b9d7ffdba64db1faa3a259164c upstream.
+commit 8b8b36834d0fff67fc8668093f4312dd04dcf21d upstream.
 
-This patch adds PID 0x0003 to the VID 0x128d (Testo). At least the
-Testo 435-4 uses this, likely other gear as well.
+The per_cpu buffers are created one per possible CPU. But these do
+not mean that those CPUs are online, nor do they even exist.
 
-Signed-off-by: Bert Vermeulen <bert@biot.com>
-Cc: Johan Hovold <johan@kernel.org>
+With the addition of the ring buffer polling, it assumes that the
+caller polls on an existing buffer. But this is not the case if
+the user reads trace_pipe from a CPU that does not exist, and this
+causes the kernel to crash.
+
+Simple fix is to check the cpu against buffer bitmask against to see
+if the buffer was allocated or not and return -ENODEV if it is
+not.
+
+More updates were done to pass the -ENODEV back up to userspace.
+
+Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    3 ++-
- drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ include/linux/ring_buffer.h |    2 +-
+ kernel/trace/ring_buffer.c  |    5 ++++-
+ kernel/trace/trace.c        |   25 ++++++++++++++++++-------
+ kernel/trace/trace.h        |    4 ++--
+ 4 files changed, 25 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -723,7 +723,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
--	{ USB_DEVICE(TESTO_VID, TESTO_USB_INTERFACE_PID) },
-+	{ USB_DEVICE(TESTO_VID, TESTO_1_PID) },
-+	{ USB_DEVICE(TESTO_VID, TESTO_3_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_GAMMA_SCOUT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13M_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13S_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -798,7 +798,8 @@
-  * Submitted by Colin Leroy
-  */
- #define TESTO_VID			0x128D
--#define TESTO_USB_INTERFACE_PID		0x0001
-+#define TESTO_1_PID			0x0001
-+#define TESTO_3_PID			0x0003
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size,
+ 	__ring_buffer_alloc((size), (flags), &__key);	\
+ })
  
- /*
-  * Mobility Electronics products.
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
+ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 			  struct file *filp, poll_table *poll_table);
+ 
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct ir
+  * as data is added to any of the @buffer's cpu buffers. Otherwise
+  * it will wait for data to be added to a specific cpu buffer.
+  */
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	DEFINE_WAIT(wait);
+@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
++		if (!cpumask_test_cpu(cpu, buffer->cpumask))
++			return -ENODEV;
+ 		cpu_buffer = buffer->buffers[cpu];
+ 		work = &cpu_buffer->irq_work;
+ 	}
+@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer
+ 		schedule();
+ 
+ 	finish_wait(&work->waiters, &wait);
++	return 0;
+ }
+ 
+ /**
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1027,13 +1027,13 @@ update_max_tr_single(struct trace_array
+ }
+ #endif /* CONFIG_TRACER_MAX_TRACE */
+ 
+-static void default_wait_pipe(struct trace_iterator *iter)
++static int default_wait_pipe(struct trace_iterator *iter)
+ {
+ 	/* Iterators are static, they should be filled or empty */
+ 	if (trace_buffer_iter(iter, iter->cpu_file))
+-		return;
++		return 0;
+ 
+-	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
++	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
+ }
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+@@ -4054,17 +4054,19 @@ tracing_poll_pipe(struct file *filp, pol
+  *
+  *     Anyway, this is really very primitive wakeup.
+  */
+-void poll_wait_pipe(struct trace_iterator *iter)
++int poll_wait_pipe(struct trace_iterator *iter)
+ {
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	/* sleep for 100 msecs, and try again. */
+ 	schedule_timeout(HZ / 10);
++	return 0;
+ }
+ 
+ /* Must be called with trace_types_lock mutex held. */
+ static int tracing_wait_pipe(struct file *filp)
+ {
+ 	struct trace_iterator *iter = filp->private_data;
++	int ret;
+ 
+ 	while (trace_empty(iter)) {
+ 
+@@ -4074,10 +4076,13 @@ static int tracing_wait_pipe(struct file
+ 
+ 		mutex_unlock(&iter->mutex);
+ 
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 
+ 		mutex_lock(&iter->mutex);
+ 
++		if (ret)
++			return ret;
++
+ 		if (signal_pending(current))
+ 			return -EINTR;
+ 
+@@ -5011,8 +5016,12 @@ tracing_buffers_read(struct file *filp,
+ 				goto out_unlock;
+ 			}
+ 			mutex_unlock(&trace_types_lock);
+-			iter->trace->wait_pipe(iter);
++			ret = iter->trace->wait_pipe(iter);
+ 			mutex_lock(&trace_types_lock);
++			if (ret) {
++				size = ret;
++				goto out_unlock;
++			}
+ 			if (signal_pending(current)) {
+ 				size = -EINTR;
+ 				goto out_unlock;
+@@ -5224,8 +5233,10 @@ tracing_buffers_splice_read(struct file
+ 			goto out;
+ 		}
+ 		mutex_unlock(&trace_types_lock);
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 		mutex_lock(&trace_types_lock);
++		if (ret)
++			goto out;
+ 		if (signal_pending(current)) {
+ 			ret = -EINTR;
+ 			goto out;
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -342,7 +342,7 @@ struct tracer {
+ 	void			(*stop)(struct trace_array *tr);
+ 	void			(*open)(struct trace_iterator *iter);
+ 	void			(*pipe_open)(struct trace_iterator *iter);
+-	void			(*wait_pipe)(struct trace_iterator *iter);
++	int			(*wait_pipe)(struct trace_iterator *iter);
+ 	void			(*close)(struct trace_iterator *iter);
+ 	void			(*pipe_close)(struct trace_iterator *iter);
+ 	ssize_t			(*read)(struct trace_iterator *iter,
+@@ -557,7 +557,7 @@ void trace_init_global_iter(struct trace
+ 
+ void tracing_iter_reset(struct trace_iterator *iter, int cpu);
+ 
+-void poll_wait_pipe(struct trace_iterator *iter);
++int poll_wait_pipe(struct trace_iterator *iter);
+ 
+ void ftrace(struct trace_array *tr,
+ 			    struct trace_array_cpu *data,
 
 
