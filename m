@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760706AbaGOXwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:52:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S1760692AbaGOXwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:52:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933559AbaGOXNu (ORCPT
+	with ESMTP id S933592AbaGOXNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 55/66] ring-buffer: Check if buffer exists before polling
-Date: Tue, 15 Jul 2014 16:17:49 -0700
-Message-Id: <20140715231704.517464812@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 39/66] intel_pstate: Fix setting VID
+Date: Tue, 15 Jul 2014 16:17:33 -0700
+Message-Id: <20140715231703.838778636@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,176 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit 8b8b36834d0fff67fc8668093f4312dd04dcf21d upstream.
+commit c16ed06024a6e699c332831dd50d8276744e3de8 upstream.
 
-The per_cpu buffers are created one per possible CPU. But these do
-not mean that those CPUs are online, nor do they even exist.
+Commit 21855ff5 (intel_pstate: Set turbo VID for BayTrail) introduced
+setting the turbo VID which is required to prevent a machine check on
+some Baytrail SKUs under heavy graphics based workloads.  The
+docmumentation update that brought the requirement to light also
+changed the bit mask used for enumerating P state and VID values from
+0x7f to 0x3f.
 
-With the addition of the ring buffer polling, it assumes that the
-caller polls on an existing buffer. But this is not the case if
-the user reads trace_pipe from a CPU that does not exist, and this
-causes the kernel to crash.
+This change returns the mask value to 0x7f.
 
-Simple fix is to check the cpu against buffer bitmask against to see
-if the buffer was allocated or not and return -ENODEV if it is
-not.
+Tested with the Intel NUC DN2820FYK,
+BIOS version FYBYT10H.86A.0034.2014.0513.1413 with v3.16-rc1 and
+v3.14.8 kernel versions.
 
-More updates were done to pass the -ENODEV back up to userspace.
-
-Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fixes: 21855ff5 (intel_pstate: Set turbo VID for BayTrail)
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=77951
+Reported-and-tested-by: Rune Reterson <rune@megahurts.dk>
+Reported-and-tested-by: Eric Eickmeyer <erich@ericheickmeyer.com>
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ring_buffer.h |    2 +-
- kernel/trace/ring_buffer.c  |    5 ++++-
- kernel/trace/trace.c        |   25 ++++++++++++++++++-------
- kernel/trace/trace.h        |    4 ++--
- 4 files changed, 25 insertions(+), 11 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size,
- 	__ring_buffer_alloc((size), (flags), &__key);	\
- })
- 
--void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
- int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
- 			  struct file *filp, poll_table *poll_table);
- 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct ir
-  * as data is added to any of the @buffer's cpu buffers. Otherwise
-  * it will wait for data to be added to a specific cpu buffer.
-  */
--void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -361,21 +361,21 @@ static int byt_get_min_pstate(void)
  {
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	DEFINE_WAIT(wait);
-@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer
- 	if (cpu == RING_BUFFER_ALL_CPUS)
- 		work = &buffer->irq_work;
- 	else {
-+		if (!cpumask_test_cpu(cpu, buffer->cpumask))
-+			return -ENODEV;
- 		cpu_buffer = buffer->buffers[cpu];
- 		work = &cpu_buffer->irq_work;
- 	}
-@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer
- 		schedule();
- 
- 	finish_wait(&work->waiters, &wait);
-+	return 0;
+ 	u64 value;
+ 	rdmsrl(BYT_RATIOS, value);
+-	return (value >> 8) & 0x3F;
++	return (value >> 8) & 0x7F;
  }
  
- /**
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1091,13 +1091,13 @@ update_max_tr_single(struct trace_array
- }
- #endif /* CONFIG_TRACER_MAX_TRACE */
- 
--static void default_wait_pipe(struct trace_iterator *iter)
-+static int default_wait_pipe(struct trace_iterator *iter)
+ static int byt_get_max_pstate(void)
  {
- 	/* Iterators are static, they should be filled or empty */
- 	if (trace_buffer_iter(iter, iter->cpu_file))
--		return;
-+		return 0;
- 
--	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
-+	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
+ 	u64 value;
+ 	rdmsrl(BYT_RATIOS, value);
+-	return (value >> 16) & 0x3F;
++	return (value >> 16) & 0x7F;
  }
  
- #ifdef CONFIG_FTRACE_STARTUP_TEST
-@@ -4160,17 +4160,19 @@ tracing_poll_pipe(struct file *filp, pol
-  *
-  *     Anyway, this is really very primitive wakeup.
-  */
--void poll_wait_pipe(struct trace_iterator *iter)
-+int poll_wait_pipe(struct trace_iterator *iter)
+ static int byt_get_turbo_pstate(void)
  {
- 	set_current_state(TASK_INTERRUPTIBLE);
- 	/* sleep for 100 msecs, and try again. */
- 	schedule_timeout(HZ / 10);
-+	return 0;
+ 	u64 value;
+ 	rdmsrl(BYT_TURBO_RATIOS, value);
+-	return value & 0x3F;
++	return value & 0x7F;
  }
  
- /* Must be called with trace_types_lock mutex held. */
- static int tracing_wait_pipe(struct file *filp)
- {
- 	struct trace_iterator *iter = filp->private_data;
-+	int ret;
+ static void byt_set_pstate(struct cpudata *cpudata, int pstate)
+@@ -409,8 +409,8 @@ static void byt_get_vid(struct cpudata *
  
- 	while (trace_empty(iter)) {
  
-@@ -4180,10 +4182,13 @@ static int tracing_wait_pipe(struct file
- 
- 		mutex_unlock(&iter->mutex);
- 
--		iter->trace->wait_pipe(iter);
-+		ret = iter->trace->wait_pipe(iter);
- 
- 		mutex_lock(&iter->mutex);
- 
-+		if (ret)
-+			return ret;
-+
- 		if (signal_pending(current))
- 			return -EINTR;
- 
-@@ -5111,8 +5116,12 @@ tracing_buffers_read(struct file *filp,
- 				goto out_unlock;
- 			}
- 			mutex_unlock(&trace_types_lock);
--			iter->trace->wait_pipe(iter);
-+			ret = iter->trace->wait_pipe(iter);
- 			mutex_lock(&trace_types_lock);
-+			if (ret) {
-+				size = ret;
-+				goto out_unlock;
-+			}
- 			if (signal_pending(current)) {
- 				size = -EINTR;
- 				goto out_unlock;
-@@ -5324,8 +5333,10 @@ tracing_buffers_splice_read(struct file
- 			goto out;
- 		}
- 		mutex_unlock(&trace_types_lock);
--		iter->trace->wait_pipe(iter);
-+		ret = iter->trace->wait_pipe(iter);
- 		mutex_lock(&trace_types_lock);
-+		if (ret)
-+			goto out;
- 		if (signal_pending(current)) {
- 			ret = -EINTR;
- 			goto out;
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -336,7 +336,7 @@ struct tracer {
- 	void			(*stop)(struct trace_array *tr);
- 	void			(*open)(struct trace_iterator *iter);
- 	void			(*pipe_open)(struct trace_iterator *iter);
--	void			(*wait_pipe)(struct trace_iterator *iter);
-+	int			(*wait_pipe)(struct trace_iterator *iter);
- 	void			(*close)(struct trace_iterator *iter);
- 	void			(*pipe_close)(struct trace_iterator *iter);
- 	ssize_t			(*read)(struct trace_iterator *iter,
-@@ -552,7 +552,7 @@ void trace_init_global_iter(struct trace
- 
- void tracing_iter_reset(struct trace_iterator *iter, int cpu);
- 
--void poll_wait_pipe(struct trace_iterator *iter);
-+int poll_wait_pipe(struct trace_iterator *iter);
- 
- void tracing_sched_switch_trace(struct trace_array *tr,
- 				struct task_struct *prev,
+ 	rdmsrl(BYT_VIDS, value);
+-	cpudata->vid.min = int_tofp((value >> 8) & 0x3f);
+-	cpudata->vid.max = int_tofp((value >> 16) & 0x3f);
++	cpudata->vid.min = int_tofp((value >> 8) & 0x7f);
++	cpudata->vid.max = int_tofp((value >> 16) & 0x7f);
+ 	cpudata->vid.ratio = div_fp(
+ 		cpudata->vid.max - cpudata->vid.min,
+ 		int_tofp(cpudata->pstate.max_pstate -
 
 
