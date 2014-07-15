@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760719AbaGOXwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:52:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S1760706AbaGOXwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:52:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933565AbaGOXNt (ORCPT
+	with ESMTP id S933559AbaGOXNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:49 -0400
+	Tue, 15 Jul 2014 19:13:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 54/66] DMA, CMA: fix possible memory leak
-Date: Tue, 15 Jul 2014 16:17:48 -0700
-Message-Id: <20140715231704.434495312@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 55/66] ring-buffer: Check if buffer exists before polling
+Date: Tue, 15 Jul 2014 16:17:49 -0700
+Message-Id: <20140715231704.517464812@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -39,64 +29,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit fe8eea4f4a3f299ef83ed090d5354698ebe4fda8 upstream.
+commit 8b8b36834d0fff67fc8668093f4312dd04dcf21d upstream.
 
-We should free memory for bitmap when we find zone mismatch, otherwise
-this memory will leak.
+The per_cpu buffers are created one per possible CPU. But these do
+not mean that those CPUs are online, nor do they even exist.
 
-Additionally, I copy code comment from PPC KVM's CMA code to inform why
-we need to check zone mis-match.
+With the addition of the ring buffer polling, it assumes that the
+caller polls on an existing buffer. But this is not the case if
+the user reads trace_pipe from a CPU that does not exist, and this
+causes the kernel to crash.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Simple fix is to check the cpu against buffer bitmask against to see
+if the buffer was allocated or not and return -ENODEV if it is
+not.
+
+More updates were done to pass the -ENODEV back up to userspace.
+
+Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/base/dma-contiguous.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ include/linux/ring_buffer.h |    2 +-
+ kernel/trace/ring_buffer.c  |    5 ++++-
+ kernel/trace/trace.c        |   25 ++++++++++++++++++-------
+ kernel/trace/trace.h        |    4 ++--
+ 4 files changed, 25 insertions(+), 11 deletions(-)
 
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -155,13 +155,23 @@ static int __init cma_activate_area(stru
- 		base_pfn = pfn;
- 		for (j = pageblock_nr_pages; j; --j, pfn++) {
- 			WARN_ON_ONCE(!pfn_valid(pfn));
-+			/*
-+			 * alloc_contig_range requires the pfn range
-+			 * specified to be in the same zone. Make this
-+			 * simple by forcing the entire CMA resv range
-+			 * to be in the same zone.
-+			 */
- 			if (page_zone(pfn_to_page(pfn)) != zone)
--				return -EINVAL;
-+				goto err;
- 		}
- 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
- 	} while (--i);
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size,
+ 	__ring_buffer_alloc((size), (flags), &__key);	\
+ })
  
- 	return 0;
-+
-+err:
-+	kfree(cma->bitmap);
-+	return -EINVAL;
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
+ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 			  struct file *filp, poll_table *poll_table);
+ 
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct ir
+  * as data is added to any of the @buffer's cpu buffers. Otherwise
+  * it will wait for data to be added to a specific cpu buffer.
+  */
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	DEFINE_WAIT(wait);
+@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
++		if (!cpumask_test_cpu(cpu, buffer->cpumask))
++			return -ENODEV;
+ 		cpu_buffer = buffer->buffers[cpu];
+ 		work = &cpu_buffer->irq_work;
+ 	}
+@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer
+ 		schedule();
+ 
+ 	finish_wait(&work->waiters, &wait);
++	return 0;
  }
  
- static struct cma cma_areas[MAX_CMA_AREAS];
+ /**
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1091,13 +1091,13 @@ update_max_tr_single(struct trace_array
+ }
+ #endif /* CONFIG_TRACER_MAX_TRACE */
+ 
+-static void default_wait_pipe(struct trace_iterator *iter)
++static int default_wait_pipe(struct trace_iterator *iter)
+ {
+ 	/* Iterators are static, they should be filled or empty */
+ 	if (trace_buffer_iter(iter, iter->cpu_file))
+-		return;
++		return 0;
+ 
+-	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
++	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
+ }
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+@@ -4160,17 +4160,19 @@ tracing_poll_pipe(struct file *filp, pol
+  *
+  *     Anyway, this is really very primitive wakeup.
+  */
+-void poll_wait_pipe(struct trace_iterator *iter)
++int poll_wait_pipe(struct trace_iterator *iter)
+ {
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	/* sleep for 100 msecs, and try again. */
+ 	schedule_timeout(HZ / 10);
++	return 0;
+ }
+ 
+ /* Must be called with trace_types_lock mutex held. */
+ static int tracing_wait_pipe(struct file *filp)
+ {
+ 	struct trace_iterator *iter = filp->private_data;
++	int ret;
+ 
+ 	while (trace_empty(iter)) {
+ 
+@@ -4180,10 +4182,13 @@ static int tracing_wait_pipe(struct file
+ 
+ 		mutex_unlock(&iter->mutex);
+ 
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 
+ 		mutex_lock(&iter->mutex);
+ 
++		if (ret)
++			return ret;
++
+ 		if (signal_pending(current))
+ 			return -EINTR;
+ 
+@@ -5111,8 +5116,12 @@ tracing_buffers_read(struct file *filp,
+ 				goto out_unlock;
+ 			}
+ 			mutex_unlock(&trace_types_lock);
+-			iter->trace->wait_pipe(iter);
++			ret = iter->trace->wait_pipe(iter);
+ 			mutex_lock(&trace_types_lock);
++			if (ret) {
++				size = ret;
++				goto out_unlock;
++			}
+ 			if (signal_pending(current)) {
+ 				size = -EINTR;
+ 				goto out_unlock;
+@@ -5324,8 +5333,10 @@ tracing_buffers_splice_read(struct file
+ 			goto out;
+ 		}
+ 		mutex_unlock(&trace_types_lock);
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 		mutex_lock(&trace_types_lock);
++		if (ret)
++			goto out;
+ 		if (signal_pending(current)) {
+ 			ret = -EINTR;
+ 			goto out;
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -336,7 +336,7 @@ struct tracer {
+ 	void			(*stop)(struct trace_array *tr);
+ 	void			(*open)(struct trace_iterator *iter);
+ 	void			(*pipe_open)(struct trace_iterator *iter);
+-	void			(*wait_pipe)(struct trace_iterator *iter);
++	int			(*wait_pipe)(struct trace_iterator *iter);
+ 	void			(*close)(struct trace_iterator *iter);
+ 	void			(*pipe_close)(struct trace_iterator *iter);
+ 	ssize_t			(*read)(struct trace_iterator *iter,
+@@ -552,7 +552,7 @@ void trace_init_global_iter(struct trace
+ 
+ void tracing_iter_reset(struct trace_iterator *iter, int cpu);
+ 
+-void poll_wait_pipe(struct trace_iterator *iter);
++int poll_wait_pipe(struct trace_iterator *iter);
+ 
+ void tracing_sched_switch_trace(struct trace_array *tr,
+ 				struct task_struct *prev,
 
 
