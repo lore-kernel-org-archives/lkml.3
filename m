@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760779AbaGOXzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:55:13 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:41372 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760764AbaGOXzH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:55:07 -0400
+	id S1760790AbaGOXzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:55:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60768 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757199AbaGOXzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:55:35 -0400
+Message-ID: <53C5BF46.3070604@zytor.com>
+Date: Tue, 15 Jul 2014 16:54:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53C5BD3E.2010600@zytor.com>
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
- <1405452884-25688-4-git-send-email-toshi.kani@hp.com> <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
- <1405465801.28702.34.camel@misato.fc.hp.com> <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com>
- <53C5BD3E.2010600@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 15 Jul 2014 16:54:45 -0700
-Message-ID: <CALCETrUV2NseM8u6YqQ3trqLy+10_A6sd7nmfkgO3Rnw3GSxiQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to handle
- WT type
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+CC: Fabio Coatti <fabio.coatti@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
+References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>	<CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>	<20140710200527.GA15190@google.com>	<3524198.dm6HbYTJqK@calvin>	<CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>	<CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com> <CAE9FiQVN1WLigYt7YGHsd1f+BreApubYbjC9j9tzrCe-p5f=HA@mail.gmail.com>
+In-Reply-To: <CAE9FiQVN1WLigYt7YGHsd1f+BreApubYbjC9j9tzrCe-p5f=HA@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 4:46 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/15/2014 04:36 PM, Andy Lutomirski wrote:
->> On Tue, Jul 15, 2014 at 4:10 PM, Toshi Kani <toshi.kani@hp.com> wrote:
->>> On Tue, 2014-07-15 at 12:56 -0700, Andy Lutomirski wrote:
->>>> On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
->>>>> This patch changes reserve_memtype() to handle the new WT type.
->>>>> When (!pat_enabled && new_type), it continues to set either WB
->>>>> or UC- to *new_type.  When pat_enabled, it can reserve a given
->>>>> non-RAM range for WT.  At this point, it may not reserve a RAM
->>>>> range for WT since reserve_ram_pages_type() uses the page flags
->>>>> limited to three memory types, WB, WC and UC.
->>>>
->>>> FWIW, last time I looked at this, it seemed like all the fancy
->>>> reserve_ram_pages stuff was unnecessary: shouldn't the RAM type be
->>>> easy to track in the direct map page tables?
->>>
->>> Are you referring the direct map page tables as the kernel page
->>> directory tables (pgd/pud/..)?
->>>
->>> I think it needs to be able to keep track of the memory type per a
->>> physical memory range, not per a translation, in order to prevent
->>> aliasing of the memory type.
+On 07/15/2014 04:40 PM, Yinghai Lu wrote:
 >>
->> Actual RAM (the lowmem kind, which is all of it on x86_64) is mapped
->> linearly somewhere in kernel address space.  The pagetables for that
->> mapping could be used as the canonical source of the memory type for
->> the ram range in question.
+>> One of the reasons for iomem_resource is so we don't hand out the same
+>> address space to two different devices.  We *could* do that by keeping
+>> track of the union of all devices and reserved areas that we know
+>> about.
 >>
->> This only works for lowmem, so maybe it's not a good idea to rely on it.
+>> But the current resource code is more strict: it enforces a hierarchy.
+>> For example, in this case, it rejects the 00:00 PNP resource because
+>> it is larger than the e820 entry.  The problem with rejecting it is
+>> that we might hand out [mem 0xfed14000-0xfed17fff] to another device
+>> even though PNP told us that it's in use.
 >>
->
-> We could do that, but would it be better?
+>> I'm about to head out for a few weeks of vacation, so I won't be able
+>> to do anything with this.
+> 
+> In that case, we could reserve the whole MCH range in e820 from
+> trim_snb_memory() instead.
+> 
+> HPA, what is your idea about it?
+> 
+> Yinghai
+> 
 
->From vague memory, the current mechanism for tracking RAM memtypes (as
-opposed to memtypes for everything that isn't RAM) is limited to a
-very small number of types, leading to oddities like not being able to
-create WT ram with this patchset.
+We could quirk it, but we would have to make bloody darn sure that we
+don't break any systems because of unusual configuration and so on.
 
-Using the pagetables directly would be simpler (no extra data
-structure) and would automatically exactly track the set of memtypes
-that can fit in the pagetable structures.
+I agree that we need to treat fixed resources as equivalent to reserved.
+ This is also a BIOS bug (it should reserve the whole region), but that
+happens far too frequently.  I don't know if we have any way to do that
+without massive surgery to the current code, though.
 
---Andy
+	-hpa
+
