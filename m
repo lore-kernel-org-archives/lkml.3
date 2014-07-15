@@ -1,106 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566AbaGORF6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:05:58 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65498 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039AbaGORCX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:02:23 -0400
-From: Sam Asadi <asadi.samuel@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        sam-the-6 <asadi.samuel@gmail.com>
-Subject: [PATCH 88/94] clk: spear3xx: Set proper clock parent of uart1/2
-Date: Tue, 15 Jul 2014 20:01:43 +0300
-Message-Id: <1405443709-15288-88-git-send-email-asadi.samuel@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
-References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
+	id S1755986AbaGORHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:07:11 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:17702
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751576AbaGORHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 13:07:06 -0400
+X-WSS-ID: 0N8RJJL-07-TJF-02
+X-M-MSG: 
+From: "Bridgman, John" <John.Bridgman@amd.com>
+To: Dave Airlie <airlied@gmail.com>,
+        =?utf-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+CC: Jerome Glisse <j.glisse@gmail.com>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: RE: [PATCH 00/83] AMD HSA kernel driver
+Thread-Topic: [PATCH 00/83] AMD HSA kernel driver
+Thread-Index: AQHPnIhRgu4cBSEvqEGszfo01ez7ZpuaJWaAgAAHkICAAXhzgIABnKmAgABkh4CAAHT6oIAAYx0AgAEJCoCAAU6ggIAAixtA
+Date: Tue, 15 Jul 2014 17:06:56 +0000
+Message-ID: <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
+References: <1405028727-5276-1-git-send-email-oded.gabbay@amd.com>
+	<20140710222423.GA14219@gmail.com>
+	<019CCE693E457142B37B791721487FD91809E4C2@storexdag01.amd.com>
+	<20140711211850.GU1870@gmail.com>
+	<019CCE693E457142B37B791721487FD9180A193B@storexdag01.amd.com>
+	<20140713035535.GB5301@gmail.com>
+	<D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
+	<20140713164901.GB10624@gmail.com>	<53C396D3.9000600@vodafone.de>
+ <CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
+In-Reply-To: <CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.34.48]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(13464003)(377454003)(51704005)(199002)(189002)(4396001)(20776003)(47776003)(79102001)(23676002)(86362001)(64706001)(106466001)(44976005)(74662001)(31966008)(81542001)(81342001)(68736004)(19580405001)(19580395003)(84676001)(83322001)(101416001)(33656002)(50466002)(74502001)(107046002)(99396002)(92566001)(92726001)(80022001)(76482001)(85306003)(106116001)(21056001)(95666004)(83072002)(53416004)(97736001)(105586002)(85852003)(77982001)(77096002)(93886003)(76176999)(55846006)(2656002)(50986999)(87936001)(46102001)(54356999)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB045;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027367F73D
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=John.Bridgman@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6FH7ITV016499
 
-From: Thomas Gleixner <tglx@linutronix.de>
 
-The uarts only work when the parent is ras_ahb_clk. The stale 3.5
-based ST tree does this in the board file.
 
-Add it to the clk init function. Not pretty, but the mess there is
-amazing anyway.
+>-----Original Message-----
+>From: Dave Airlie [mailto:airlied@gmail.com]
+>Sent: Tuesday, July 15, 2014 12:35 AM
+>To: Christian K√∂nig
+>Cc: Jerome Glisse; Bridgman, John; Lewycky, Andrew; linux-
+>kernel@vger.kernel.org; dri-devel@lists.freedesktop.org; Deucher,
+>Alexander; akpm@linux-foundation.org
+>Subject: Re: [PATCH 00/83] AMD HSA kernel driver
+>
+>On 14 July 2014 18:37, Christian K√∂nig <deathsimple@vodafone.de> wrote:
+>>> I vote for HSA module that expose ioctl and is an intermediary with
+>>> the kernel driver that handle the hardware. This gives a single point
+>>> for HSA hardware and yes this enforce things for any hardware
+>manufacturer.
+>>> I am more than happy to tell them that this is it and nothing else if
+>>> they want to get upstream.
+>>
+>> I think we should still discuss this single point of entry a bit more.
+>>
+>> Just to make it clear the plan is to expose all physical HSA capable
+>> devices through a single /dev/hsa device node to userspace.
+>
+>This is why we don't design kernel interfaces in secret foundations, and
+>expect anyone to like them.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
----
- drivers/clk/spear/spear3xx_clock.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+Understood and agree. In this case though this isn't a cross-vendor interface designed by a secret committee, it's supposed to be more of an inoffensive little single-vendor interface designed *for* a secret committee. I'm hoping that's better ;)
 
-diff --git a/drivers/clk/spear/spear3xx_clock.c b/drivers/clk/spear/spear3xx_clock.c
-index 125eba8..bb5f387 100644
---- a/drivers/clk/spear/spear3xx_clock.c
-+++ b/drivers/clk/spear/spear3xx_clock.c
-@@ -245,7 +245,8 @@ static const char *smii0_parents[] = { "smii_125m_pad", "ras_pll2_clk",
- 	"ras_syn0_gclk", };
- static const char *uartx_parents[] = { "ras_syn1_gclk", "ras_apb_clk", };
- 
--static void __init spear320_clk_init(void __iomem *soc_config_base)
-+static void __init spear320_clk_init(void __iomem *soc_config_base,
-+				     struct clk *ras_apb_clk)
- {
- 	struct clk *clk;
- 
-@@ -342,6 +343,8 @@ static void __init spear320_clk_init(void __iomem *soc_config_base)
- 			SPEAR320_CONTROL_REG, UART1_PCLK_SHIFT, UART1_PCLK_MASK,
- 			0, &_lock);
- 	clk_register_clkdev(clk, NULL, "a3000000.serial");
-+	/* Enforce ras_apb_clk */
-+	clk_set_parent(clk, ras_apb_clk);
- 
- 	clk = clk_register_mux(NULL, "uart2_clk", uartx_parents,
- 			ARRAY_SIZE(uartx_parents),
-@@ -349,6 +352,8 @@ static void __init spear320_clk_init(void __iomem *soc_config_base)
- 			SPEAR320_EXT_CTRL_REG, SPEAR320_UART2_PCLK_SHIFT,
- 			SPEAR320_UARTX_PCLK_MASK, 0, &_lock);
- 	clk_register_clkdev(clk, NULL, "a4000000.serial");
-+	/* Enforce ras_apb_clk */
-+	clk_set_parent(clk, ras_apb_clk);
- 
- 	clk = clk_register_mux(NULL, "uart3_clk", uartx_parents,
- 			ARRAY_SIZE(uartx_parents),
-@@ -379,12 +384,12 @@ static void __init spear320_clk_init(void __iomem *soc_config_base)
- 	clk_register_clkdev(clk, NULL, "60100000.serial");
- }
- #else
--static inline void spear320_clk_init(void __iomem *soc_config_base) { }
-+static inline void spear320_clk_init(void __iomem *sb, struct clk *rc) { }
- #endif
- 
- void __init spear3xx_clk_init(void __iomem *misc_base, void __iomem *soc_config_base)
- {
--	struct clk *clk, *clk1;
-+	struct clk *clk, *clk1, *ras_apb_clk;
- 
- 	clk = clk_register_fixed_rate(NULL, "osc_32k_clk", NULL, CLK_IS_ROOT,
- 			32000);
-@@ -613,6 +618,7 @@ void __init spear3xx_clk_init(void __iomem *misc_base, void __iomem *soc_config_
- 	clk = clk_register_gate(NULL, "ras_apb_clk", "apb_clk", 0, RAS_CLK_ENB,
- 			RAS_APB_CLK_ENB, 0, &_lock);
- 	clk_register_clkdev(clk, "ras_apb_clk", NULL);
-+	ras_apb_clk = clk;
- 
- 	clk = clk_register_gate(NULL, "ras_32k_clk", "osc_32k_clk", 0,
- 			RAS_CLK_ENB, RAS_32K_CLK_ENB, 0, &_lock);
-@@ -659,5 +665,5 @@ void __init spear3xx_clk_init(void __iomem *misc_base, void __iomem *soc_config_
- 	else if (of_machine_is_compatible("st,spear310"))
- 		spear310_clk_init();
- 	else if (of_machine_is_compatible("st,spear320"))
--		spear320_clk_init(soc_config_base);
-+		spear320_clk_init(soc_config_base, ras_apb_clk);
- }
--- 
-1.7.10.4
+>
+>So before we go any further, how is this stuff planned to work for multiple
+>GPUs/accelerators?
 
+Three classes of "multiple" :
+
+1. Single CPU with IOMMUv2 and multiple GPUs:
+
+- all devices accessible via /dev/kfd
+- topology information identifies CPU + GPUs, each has "node ID" at top of userspace API, "global ID" at user/kernel interface
+ (don't think we've implemented CPU part yet though)
+- userspace builds snapshot from sysfs info & exposes to HSAIL runtime, which in turn exposes the "standard" API
+- kfd sets up ATC aperture so GPUs can access system RAM via IOMMUv2 (fast for APU, relatively less so for dGPU over PCIE)
+- to-be-added memory operations allow allocation & residency control (within existing gfx driver limits) of buffers in VRAM & carved-out system RAM
+- queue operations specify a node ID to userspace library, which translates to "global ID" before calling kfd
+
+2. Multiple CPUs connected via fabric (eg HyperTransport) each with 0 or more GPUs:
+
+- topology information exposes CPUs & GPUs, along with affinity info showing what is connected to what
+- everything else works as in (1) above
+
+3. Multiple CPUs not connected via fabric (eg a blade server) each with 0 or more GPUs
+
+- no attempt to cover this with HSA topology, each CPU and associated GPUs is accessed independently via separate /dev/kfd instances
+
+>
+>Do we have a userspace to exercise this interface so we can see how such a
+>thing would look?
+
+Yes -- initial IP review done, legal stuff done, sanitizing WIP, hoping for final approval this week
+
+There's a separate test harness to exercise the userspace lib calls, haven't started IP review or sanitizing for that but legal stuff is done
+
+>
+>Dave.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
