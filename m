@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934667AbaGPAUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:20:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44914 "EHLO
+	id S1761035AbaGPAVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:21:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759099AbaGOXNI (ORCPT
+	with ESMTP id S1758913AbaGOXNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:08 -0400
+	Tue, 15 Jul 2014 19:13:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.4 10/22] tracing: Remove ftrace_stop/start() from reading the trace file
-Date: Tue, 15 Jul 2014 16:17:15 -0700
-Message-Id: <20140715231622.427041266@linuxfoundation.org>
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3.4 19/22] x86, espfix: Make espfix64 a Kconfig option, fix UML
+Date: Tue, 15 Jul 2014 16:17:24 -0700
+Message-Id: <20140715231622.717451871@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
 References: <20140715231622.121816073@linuxfoundation.org>
@@ -29,40 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
+commit 197725de65477bc8509b41388157c1a2283542bb upstream.
 
-Disabling reading and writing to the trace file should not be able to
-disable all function tracing callbacks. There's other users today
-(like kprobes and perf). Reading a trace file should not stop those
-from happening.
+Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
+build which had broken due to the non-existence of init_espfix_bsp()
+in UML: since UML uses its own Kconfig, this option does not appear in
+the UML build.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This also makes it possible to make support for 16-bit segments a
+configuration option, for the people who want to minimize the size of
+the kernel.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/x86/Kconfig          |    4 ++++
+ arch/x86/kernel/Makefile  |    2 +-
+ arch/x86/kernel/smpboot.c |    2 +-
+ init/main.c               |    2 +-
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1052,7 +1052,6 @@ void tracing_start(void)
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -920,6 +920,10 @@ config VM86
+ 	  XFree86 to initialize some video cards via BIOS. Disabling this
+ 	  option saves about 6k.
  
- 	arch_spin_unlock(&ftrace_max_lock);
++config X86_ESPFIX64
++	def_bool y
++	depends on X86_64
++
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+ 	depends on X86_32
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -28,7 +28,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x86
+ obj-y			+= syscall_$(BITS).o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+-obj-$(CONFIG_X86_64)	+= espfix_64.o
++obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -273,7 +273,7 @@ notrace static void __cpuinit start_seco
+ 	/*
+ 	 * Enable the espfix hack for this CPU
+ 	 */
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	init_espfix_ap();
+ #endif
  
--	ftrace_start();
-  out:
- 	raw_spin_unlock_irqrestore(&tracing_start_lock, flags);
- }
-@@ -1068,7 +1067,6 @@ void tracing_stop(void)
- 	struct ring_buffer *buffer;
- 	unsigned long flags;
- 
--	ftrace_stop();
- 	raw_spin_lock_irqsave(&tracing_start_lock, flags);
- 	if (trace_stop_count++)
- 		goto out;
+--- a/init/main.c
++++ b/init/main.c
+@@ -606,7 +606,7 @@ asmlinkage void __init start_kernel(void
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	/* Should be run before the first non-init thread is created */
+ 	init_espfix_bsp();
+ #endif
 
 
