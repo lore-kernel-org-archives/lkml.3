@@ -1,100 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965181AbaGOXVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:21:34 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:53020 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaGOXVa (ORCPT
+	id S1030210AbaGOXWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:22:11 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:53123 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933219AbaGOXWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:21:30 -0400
+	Tue, 15 Jul 2014 19:22:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140715152929.GA8844@kroah.com>
-References: <20140715091144.GA19080@devel.8.8.4.4>
-	<20140715152929.GA8844@kroah.com>
-Date: Wed, 16 Jul 2014 08:21:30 +0900
-Message-ID: <CAHb8M2B0EAjDr=yTfWQ_YsRcX9JumU8rUQ1mQeoqMWeBbY4gnQ@mail.gmail.com>
-Subject: Re: [PATCH 6/8 V2] staging: dgap: remove unneeded dgap_err()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
-        devel <devel@driverdev.osuosl.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 15 Jul 2014 16:21:46 -0700
+Message-ID: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
+Subject: DO NOT APPLY: x86-64, espfix: Don't leak bits 31:16 of %esp returning
+ to 16-bit stack
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dirk Hohndel <dirk@hohndel.org>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        comex <comexk@gmail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 15, 2014 at 2:28 PM, Kamal Mostafa <kamal@canonical.com> wrote:
+> 3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
+>
+> commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
 
-2014-07-16 0:29 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Tue, Jul 15, 2014 at 06:11:44PM +0900, Daeseok Youn wrote:
->> The dgap_err() is printing a message with pr_err(),
->> so all those are replaced.
->>
->> Use definition "pr_fmt" and then all of "dgap:" in
->> the beginning of print messages are removed.
->>
->> And also removed "out of memory" message because
->> the kernel has own message for that.
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->> V2: use pr_fmt "dgap:" prefix on print message on dgap.
->>     remove "out of memory" message.
->>
->>     Adds Mark to TO list and CC list for checking send
->>     this email properly to him.
->>
->>  drivers/staging/dgap/dgap.c |  306 +++++++++++++++++++------------------------
->>  1 files changed, 133 insertions(+), 173 deletions(-)
->>
->> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
->> index 06c55cb..9e750fb 100644
->> --- a/drivers/staging/dgap/dgap.c
->> +++ b/drivers/staging/dgap/dgap.c
->> @@ -41,6 +41,8 @@
->>   */
->>  #undef DIGI_CONCENTRATORS_SUPPORTED
->>
->> +#define pr_fmt(fmt) "dgap: " fmt
->> +
->>  #include <linux/kernel.h>
->>  #include <linux/module.h>
->>  #include <linux/pci.h>
->> @@ -153,7 +155,6 @@ static void dgap_firmware_reset_port(struct channel_t *ch);
->>  static int dgap_gettok(char **in);
->>  static char *dgap_getword(char **in);
->>  static int dgap_checknode(struct cnode *p);
->> -static void dgap_err(char *s);
->>
->>  /*
->>   * Function prototypes from dgap_sysfs.h
->> @@ -815,7 +816,7 @@ static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
->>       if (ret)
->>               goto free_brd;
->>
->> -     pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
->> +     pr_info("board %d: %s (rev %d), irq %ld\n",
->>               boardnum, brd->name, brd->rev, brd->irq);
->
-> Almost all of the pr_*() calls in this driver should be converted over
-> to use dev_*() calls instead.  And some of them, like this one, should
-> be removed entirely (no need for a driver to be "noisy" when a device
-> for it is found, it should be quiet if at all possible, unless something
-> went wrong.)
->
-> So can you do that here instead?  I've applied the earlier patches in
-> this series, and stopped here.
-OK. I can. pr_*() calls are replaced with dev_*() calls.
-And also removes some of print message which are useless like "out
-of memory"
+Do not apply to any -stable release yet.  This causes nasty regressions on Xen.
 
-Thanks.
-
-regards,
-Daeseok Youn
->
-> thanks,
->
-> greg k-h
+--Andy
