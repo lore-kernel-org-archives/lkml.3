@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933781AbaGOVfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:35:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54311 "EHLO
+	id S965115AbaGOWNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:13:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54330 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933759AbaGOVfK (ORCPT
+	with ESMTP id S1753671AbaGOVfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:10 -0400
+	Tue, 15 Jul 2014 17:35:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@fb.com>,
+Cc: Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 077/198] block: virtio_blk: don't hold spin lock during world switch
-Date: Tue, 15 Jul 2014 14:29:07 -0700
-Message-Id: <1405459868-15089-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 184/198] aio: fix aio request leak when events are reaped by userspace
+Date: Tue, 15 Jul 2014 14:30:54 -0700
+Message-Id: <1405459868-15089-185-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -30,75 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit e8edca6f7f92234202d6dd163c118ef495244d7c upstream.
+commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
 
-Firstly, it isn't necessary to hold lock of vblk->vq_lock
-when notifying hypervisor about queued I/O.
+The aio cleanups and optimizations by kmo that were merged into the 3.10
+tree added a regression for userspace event reaping.  Specifically, the
+reference counts are not decremented if the event is reaped in userspace,
+leading to the application being unable to submit further aio requests.
+This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
+This issue was uncovered as part of CVE-2014-0206.
 
-Secondly, virtqueue_notify() will cause world switch and
-it may take long time on some hypervisors(such as, qemu-arm),
-so it isn't good to hold the lock and block other vCPUs.
-
-On arm64 quad core VM(qemu-kvm), the patch can increase I/O
-performance a lot with VIRTIO_RING_F_EVENT_IDX enabled:
-	- without the patch: 14K IOPS
-	- with the patch: 34K IOPS
-
-fio script:
-	[global]
-	direct=1
-	bsrange=4k-4k
-	timeout=10
-	numjobs=4
-	ioengine=libaio
-	iodepth=64
-
-	filename=/dev/vdc
-	group_reporting=1
-
-	[f1]
-	rw=randread
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/virtio_blk.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ fs/aio.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 9b734f2..53e3db6 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -159,6 +159,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	unsigned int num;
- 	const bool last = (req->cmd_flags & REQ_END) != 0;
- 	int err;
-+	bool notify = false;
+diff --git a/fs/aio.c b/fs/aio.c
+index 04cd768..e9566f2 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1007,6 +1007,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
  
- 	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
+ 	/* everything turned out well, dispose of the aiocb. */
+ 	kiocb_free(iocb);
++	put_reqs_available(ctx, 1);
  
-@@ -211,10 +212,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 		return BLK_MQ_RQ_QUEUE_ERROR;
- 	}
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
+@@ -1086,8 +1087,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	flush_dcache_page(ctx->ring_pages[0]);
  
--	if (last)
--		virtqueue_kick(vblk->vq);
+ 	pr_debug("%li  h%u t%u\n", ret, head, tail);
 -
-+	if (last && virtqueue_kick_prepare(vblk->vq))
-+		notify = true;
- 	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+
-+	if (notify)
-+		virtqueue_notify(vblk->vq);
- 	return BLK_MQ_RQ_QUEUE_OK;
- }
+-	put_reqs_available(ctx, ret);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
  
 -- 
 1.9.1
