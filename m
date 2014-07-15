@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500AbaGOJre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:47:34 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:56245 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757530AbaGOJrc (ORCPT
+	id S1758560AbaGOJsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:48:31 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37188 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757874AbaGOJs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:47:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v2 20/29] nios2: Cpuinfo handling
-Date: Tue, 15 Jul 2014 11:47:28 +0200
-Message-ID: <7103938.6xzUh5tnai@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405413956-2772-21-git-send-email-lftan@altera.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <1405413956-2772-21-git-send-email-lftan@altera.com>
+	Tue, 15 Jul 2014 05:48:29 -0400
+Date: Tue, 15 Jul 2014 18:47:11 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8 RESEND] staging: dgap: remove redundant error value check
+Message-ID: <20140715094711.GA19232@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:CXUO2LLNHEntqzk0KqdWohbIotamj5bSwg5A7NmmAz9
- YTsv7u0MYu33fZJ0ur122It9FwnIL7sMTf6uyvrZXTIE7iLsHY
- sIgn9JMWFDm1RbyPctMQg2wLmnuSyQkQ3E8O1j9i7cmDfPPzMk
- J2OakFz0MojpgbjdFzCBICPKP3bH3jz9QCnnqrkn2Bf+BDX+yU
- LNANiBOX4VkYelYaRk/nxEQjr4ygJxscwWGXsJPiURl0/3Rabs
- w2g3mk4Ahc6iUNWJMntWHwXaJX7qLURPyjDs8iYZVbI44EThWh
- 87Ro0fGq3a3XNGTiQ9nzNc+XYTp1oI7vwfgnk3weEsL28uW9CM
- JEaFxgVOhO4RAbqFH5yw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 July 2014 16:45:47 Ley Foon Tan wrote:
-> +static void *cpuinfo_start(struct seq_file *m, loff_t *pos)
-> +{
-> +       unsigned long i = *pos;
-> +
-> +       return i < num_possible_cpus() ? (void *) (i + 1) : NULL;
-> +}
-> +
-> +static void *cpuinfo_next(struct seq_file *m, void *v, loff_t *pos)
-> +{
-> +       ++*pos;
-> +       return cpuinfo_start(m, pos);
-> +}
+The retval in dgap_block_til_ready() is initialized to zero,
+and if no error has occurred in this function, the retval has a zero.
+So it doesn't need to check "retval" itself.
 
-Do you actually have SMP support?
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+RESEND: Adds Mark to TO list and CC list for checking
+send this email properly to him.
 
-> +const struct seq_operations cpuinfo_op = {
-> +       .start  = cpuinfo_start,
-> +       .next   = cpuinfo_next,
-> +       .stop   = cpuinfo_stop,
-> +       .show   = show_cpuinfo
-> +};
+ drivers/staging/dgap/dgap.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-If not, you can use single_start/next/stop here rather than defining your own.
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 32988a8..10bd0f2 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -2181,10 +2181,7 @@ static int dgap_block_til_ready(struct tty_struct *tty, struct file *file,
+ 
+ 	spin_unlock_irqrestore(&ch->ch_lock, lock_flags);
+ 
+-	if (retval)
+-		return retval;
+-
+-	return 0;
++	return retval;
+ }
+ 
+ /*
+-- 
+1.7.1
 
-	Arnd
