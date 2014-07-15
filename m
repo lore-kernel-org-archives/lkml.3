@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758829AbaGOLxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 07:53:35 -0400
-Received: from mout.web.de ([212.227.15.4]:58151 "EHLO mout.web.de"
+	id S1758853AbaGOLzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 07:55:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41760 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758376AbaGOLxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 07:53:32 -0400
-Message-ID: <53C51608.4080109@web.de>
-Date: Tue, 15 Jul 2014 13:52:40 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>
-CC: mtosatti@redhat.com, nadav.amit@gmail.com, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page
- in memory.
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com> <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com> <20140712080442.GH4399@minantech.com> <53C38D55.2040307@cn.fujitsu.com> <20140714145822.GK4399@minantech.com>
-In-Reply-To: <20140714145822.GK4399@minantech.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="DtHITanR3VJulkIV9TaTaWcBIaWU2S0jt"
-X-Provags-ID: V03:K0:njPLXlVhKOg/2+kXuxEjlGoIKCj8gS9d/Vrr2SCuOtN1XHq27MZ
- hnU+h2Tg1Sb9Y9+J7ZD6G0kZeiKVmmO1i/uz5GP4IkmWW4twD7jJGH3+4bBTlHs7WnGFxJQ
- jwXP8DzkuiaF+x/vyFySROZMsAoUKwleYCa9WGBKXUN4G3oC/pPcnrEx4JIdIdnmpH127KH
- xEin1gPcmkcwjRZrpaMBQ==
+	id S1758039AbaGOLzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 07:55:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,665,1400050800"; 
+   d="scan'208";a="543565589"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Korb <ingo.korb@tu-dortmund.de>,
+        Ning Qu <quning@google.com>, Dave Jones <davej@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CALYGNiM3tQUCvSPxPbum5jkhNOPeKpAVL=x3ggFmZH-QaqULcA@mail.gmail.com>
+References: <748020aaaf5c5c2924a16232313e0175.squirrel@webmail.tu-dortmund.de>
+ <alpine.LSU.2.11.1407141209160.17242@eggly.anvils>
+ <CALYGNiM9Fu9-i7hXMQNTUP69RfydN+2NqO29wZYd+4Gn25GbCQ@mail.gmail.com>
+ <20140715105547.C4832E00A3@blue.fi.intel.com>
+ <CALYGNiM3tQUCvSPxPbum5jkhNOPeKpAVL=x3ggFmZH-QaqULcA@mail.gmail.com>
+Subject: Re: PROBLEM: repeated remap_file_pages on tmpfs triggers bug on
+ process exit
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140715115456.32886E00A3@blue.fi.intel.com>
+Date: Tue, 15 Jul 2014 14:54:56 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---DtHITanR3VJulkIV9TaTaWcBIaWU2S0jt
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Konstantin Khlebnikov wrote:
+> On Tue, Jul 15, 2014 at 2:55 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > Konstantin Khlebnikov wrote:
+> >> It seems boundng logic in do_fault_around is wrong:
+> >>
+> >> start_addr = max(address & fault_around_mask(), vma->vm_start);
+> >> off = ((address - start_addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1);
+> >> pte -= off;
+> >> pgoff -= off;
+> >>
+> >> Ok, off  <= 511, but it might be bigger than pte offset in pte table.
+> >
+> > I don't see how it possible: fault_around_mask() cannot be more than 0x1ff000
+> > (x86-64, fault_around_bytes == 2M). It means start_addr will be aligned to 2M
+> > boundary in this case which is start of the page table pte belong to.
+> >
+> > Do I miss something?
+> 
+> Nope, you're right. This fixes kernel crash but not the original problem.
+> 
+> Problem is caused by calling do_fault_around for _non-linear_ faiult.
+> In this case pgoff is shifted and might become negative during calculation.
+> I'll send another patch.
 
-On 2014-07-14 16:58, Gleb Natapov wrote:
->>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>>> index ffbe557..7080eda 100644
->>>> --- a/arch/x86/kvm/x86.c
->>>> +++ b/arch/x86/kvm/x86.c
->>>> @@ -5929,6 +5929,18 @@ static void vcpu_scan_ioapic(struct kvm_vcpu =
-*vcpu)
->>>>  	kvm_apic_update_tmr(vcpu, tmr);
->>>>  }
->>>>
->>>> +static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->>>> +{
->>>> +	/*
->>>> +	 * When the page is being migrated, GUP will wait till the migrate=
+I've got to the same conclusion. My patch is below.
 
->>>> +	 * entry is replaced with the new pte entry pointing to the new pa=
-ge.
->>>> +	 */
->>>> +	struct page *page =3D gfn_to_page_no_pin(vcpu->kvm,
->>>> +					APIC_DEFAULT_PHYS_BASE>>  PAGE_SHIFT);
->>> If you do not use kvm->arch.apic_access_page to get current address w=
-hy not drop it entirely?
->>>
->>
->> I should also update kvm->arch.apic_access_page here. It is used in ot=
-her
->> places
->> in kvm, so I don't think we should drop it. Will update the patch.
-> What other places? The only other place I see is in nested kvm code and=
- you can call
-> gfn_to_page_no_pin() there instead of using kvm->arch.apic_access_page =
-directly. But
-> as far as I see nested kvm code cannot handle change of APIC_ACCESS_ADD=
-R phys address.
-> If APIC_ACCESS_ADDR changes during nested guest run, non nested vmcs wi=
-ll still have old
-> physical address. One way to fix that is to set KVM_REQ_APIC_PAGE_RELOA=
-D during nested exit.
+>From dd761b693cd06c649499e913713ae5bc7c029f6e Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Tue, 15 Jul 2014 14:40:02 +0300
+Subject: [PATCH] mm: avoid do_fault_around() on non-linear mappings
 
-I cannot follow your concerns yet. Specifically, how should
-APIC_ACCESS_ADDR (the VMCS field, right?) change while L2 is running? We
-currently pin/unpin on L1->L2/L2->L1, respectively. Or what do you mean?
+Originally, I've wrongly assumed that non-linear mapping are always
+populated at least with pte_file() entries there, so !pte_none() check
+will catch them. It's not always the case: we can get there from
+__mm_populte in remap_file_pages() and pte will be clear.
 
-Jan
+Let's put explicit check for non-linear mapping.
 
+This is a root cause of recent "kernel BUG at mm/filemap.c:202!".
 
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: stable@vger.kernel.org # 3.15+
+---
+ mm/memory.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---DtHITanR3VJulkIV9TaTaWcBIaWU2S0jt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+diff --git a/mm/memory.c b/mm/memory.c
+index d67fd9fcf1f2..440ad48266d6 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2882,7 +2882,8 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * if page by the offset is not ready to be mapped (cold cache or
+ 	 * something).
+ 	 */
+-	if (vma->vm_ops->map_pages && fault_around_pages() > 1) {
++	if (vma->vm_ops->map_pages && fault_around_pages() > 1 &&
++			!(vma->vm_flags & VM_NONLINEAR)) {
+ 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		do_fault_around(vma, address, pte, pgoff, flags);
+ 		if (!pte_same(*pte, orig_pte))
+-- 
+2.0.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlPFFgwACgkQitSsb3rl5xR6/ACg4nroWhrJtQB/9IVJh6PKEOhs
-PvYAn1wKiG9aGZarsd3XRCwOfOo5v5Ag
-=xpYu
------END PGP SIGNATURE-----
-
---DtHITanR3VJulkIV9TaTaWcBIaWU2S0jt--
+-- 
+ Kirill A. Shutemov
