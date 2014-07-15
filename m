@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728AbaGOSIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:08:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60969 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaGOSIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:08:17 -0400
-Date: Tue, 15 Jul 2014 15:08:01 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Guenter Roeck <linux@roeck-us.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140715150801.7f8099b1@recife.lan>
-In-Reply-To: <20140715155547.25959587@canb.auug.org.au>
-References: <20140715132946.771def89@canb.auug.org.au>
-	<53C4BF8E.4010509@roeck-us.net>
-	<20140715155547.25959587@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S932758AbaGOSLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:11:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:45241 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754573AbaGOSLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:11:06 -0400
+Message-ID: <53C56F40.1070304@kernel.org>
+Date: Tue, 15 Jul 2014 19:13:20 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/Sak35ldwC4.qG_Q8EpC/0h3"; protocol="application/pgp-signature"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
+        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 0/4] iio: exynos-adc: use syscon instead of ioremap
+References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Sak35ldwC4.qG_Q8EpC/0h3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 11/07/14 10:06, Naveen Krishna Chatradhi wrote:
+> This patch does the following
+> 1. Use the syscon and Regmap API instead of ioremappaing the
+>     ADC_PHY register from PMU.
+> 2. Moves the exynos-adc.txt from bindings/arm/samsung/
+>     to bindings/iio/adc/.
+> 3. Updates the Documentation in exynos-adc.txt with syscon phandle
+>     for the ADC nodes.
+> 4. Updates the Dts files for Exynos3250, Exynos4x12, Exynos5250,
+>     Exynos5420 with the syscon phandle.
+>
+> Tested on Exynos5420 based Peach PIT and Exynos5800 based Peach PI
+> by verifying sysfs entries provided by HWMON based NTC thermistors.
+>
+> Tested-By for Exynos3250, Exynos4x12 would be appreciated.
+>
+This series all looks fine to me.  Took me a minute to work out what the point
+of the syscon change was (perhaps a little description in the cover letter
+would have been nice ;)
 
-Hi Guenter,
+Anyhow, with the device tree changes in here we'll have to let it sit for
+a while.  I'll also definitely want an ack from
+Kukjin Kim <kgene.kim@samsung.com> for the device tree changes.
 
-Em Tue, 15 Jul 2014 15:55:47 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+Jonathan
+> Naveen Krishna Chatradhi (4):
+>    iio: exyno-adc: use syscon for PMU register access
+>    Documentation: dt-bindings: move exynos-adc.txt to more iio/adc/
+>    Documentation: dt-bindings: update exynos-adc.txt with syscon handle
+>    ARM: dts: exynos: Add sysreg phandle to ADC node
+>
+>   .../devicetree/bindings/arm/samsung/exynos-adc.txt |   82 ------------------
+>   .../devicetree/bindings/iio/adc/exynos-adc.txt     |   87 ++++++++++++++++++++
+>   arch/arm/boot/dts/exynos3250.dtsi                  |    3 +-
+>   arch/arm/boot/dts/exynos4x12.dtsi                  |    3 +-
+>   arch/arm/boot/dts/exynos5250.dtsi                  |    3 +-
+>   arch/arm/boot/dts/exynos5420.dtsi                  |    3 +-
+>   drivers/iio/adc/exynos_adc.c                       |   29 +++++--
+>   7 files changed, 115 insertions(+), 95 deletions(-)
+>   delete mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>   create mode 100644 Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
+>
 
-> Hi Guenter,
->=20
-> On Mon, 14 Jul 2014 22:43:42 -0700 Guenter Roeck <linux@roeck-us.net> wro=
-te:
-> >
-> > On 07/14/2014 08:29 PM, Stephen Rothwell wrote:
-> > >
-> > > After merging the v4l-dvb tree, today's linux-next build (powerpc ppc=
-64_defconfig)
-> > > failed like this:
-> > >
-> > > arch/powerpc/kernel/smp.c:764:2: error: initialization from incompati=
-ble pointer type [-Werror]
-> > >    { cpu_smt_mask, powerpc_smt_flags, SD_INIT_NAME(SMT) },
-> > >    ^
-> > > arch/powerpc/kernel/smp.c:764:2: error: (near initialization for 'pow=
-erpc_topology[0].sd_flags') [-Werror]
-> > >
-> > > Caused by commit 6a0b50087a89 ("Merge branch 'patchwork' into
-> > > to_next").  The change to include/linux/sched.h in this merge commit
-> > > does not seem to appear in either of the parents of the merge.
-> > >
-> > > Its also a change that (when suggested) was shown to cause more
-> > > problems than it was worth and dropped.  I can't imagine how it ended
-> > > up in the merge commit.
-> > >
-
-Sorry, it was merged there by mistake. I had to apply that quick hack
-to be able check if everything was ok on my tree before pushing it
-upstream (as I do my tests with W=3D1). Without that hack, it is almost
-impossible to see anything at the compilation logs, as it generates
-hundreds of warnings like:
-
-In file included from include/linux/i2c.h:31:0,
-                 from drivers/staging/media/go7007/go7007-fw.c:31:
-include/linux/sched.h:875:25: warning: type qualifiers ignored on function =
-return type [-Wignored-qualifiers]
- static inline const int cpu_smt_flags(void)
-                         ^
-include/linux/sched.h:882:25: warning: type qualifiers ignored on function =
-return type [-Wignored-qualifiers]
- static inline const int cpu_core_flags(void)
-                         ^
-include/linux/sched.h:1002:21: warning: type qualifiers ignored on function=
- return type [-Wignored-qualifiers]
- typedef const int (*sched_domain_flags_f)(void);
-                     ^
-
-even when compiling just drivers/media and drivers/staging/media.
-
-> >=20
-> > Do you mean b6220ad66 (sched: Fix compiler warnings) ? I thought that w=
-as accepted
-> > a week or so ago.
->=20
-> That is in the tip tree and includes the fixups to powerpc and arm.  I
-> don't merge the tip tree till well after the v4l-dvb tree.  The merge
-> in the v4l-dvb tree included only the change to include/linus/sched.h
-> and neither parent fo that merge was based on the tip tree ...
->=20
-Stephen,=20
-
-Do you know if/when this patch will be merged upstream? It doesn't
-seem to be at 2.6.16-rc5. Otherwise, I'll likely cherry-pick it on
-my trees, as the lack of this fixup is making hard for me to check
-if a media tree patch isn't introducing new warnings.
-
-Thanks,
-Mauro
-
---Sig_/Sak35ldwC4.qG_Q8EpC/0h3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxW4KAAoJEAhfPr2O5OEVVuoP/RzrjuYSI8kFNBD1Mwh9+5w/
-au2X/AcKmy457ia5wGifgkGQys25/sC+pOsBNT5Jzu0lh6q6VRsDkadEnYVLt682
-7yCPDS4oekgqlSPBrLAe/mqdCFt9N5ZKpjXUF2kq+egppep4IDLf/Yn/NnU+MMpP
-TUXyer4UxAwuhJ9wxTAV//o58i1TTwAlWpya8VPS6V0TyYdzrhsPxpwh6sy2IKZM
-KzHA3BlCAnv6/4Bvsex7wDLOnVwo8t8M7VApwaRX1UeY948goxiIVymjhY78GKkT
-mKLb3XfvVOvghJDgLpTrQCx1gXPaKtMCy4c8/ewJb9hpJYYLdVG3HWxgasQyHfjn
-Nqki81LJ74DrvOhuU/FmG+BCoR/bGfPNLGyX2oCklYmPyXiAbZsFdzzfB519VKEs
-B5hS496e0ok9QO8AJZXFw6XYAWS8HDjeTnm64wgzLP7L/bQkScKP1PWkd0REWCQ0
-6m/4Agq3XYGviSbRDxwuuTMCbNi/SZ1tV61Xn8fjOL7KDY7av6REzBb9aApPLcPa
-LNl5kFDPK2qApYxgPBlgn4rsdOUOlFuVzuy9DlAY/K3w7jDuTp0cdhySPOKpcET3
-r2ENJbJOKcpqvY6QD78HH46+LJhJ8x8xCNljeLOwJGlo5ZqB/cl2vwQ8DPE+3/TH
-T1i8qh7XjcYnX54wdAZ+
-=mNws
------END PGP SIGNATURE-----
-
---Sig_/Sak35ldwC4.qG_Q8EpC/0h3--
