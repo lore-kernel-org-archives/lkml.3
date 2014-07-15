@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933776AbaGPADi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:03:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S1761198AbaGPADg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:03:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45184 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933198AbaGOXNh (ORCPT
+	with ESMTP id S933235AbaGOXNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 19/66] Revert "ACPI / AC: Remove ACs proc directory."
-Date: Tue, 15 Jul 2014 16:17:13 -0700
-Message-Id: <20140715231702.900618201@linuxfoundation.org>
+        Andras Kovacs <andras@sth.sze.hu>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 02/66] USB: cp210x: add support for Corsair usb dongle
+Date: Tue, 15 Jul 2014 16:16:56 -0700
+Message-Id: <20140715231702.239023169@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,228 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Andras Kovacs <andras@sth.sze.hu>
 
-commit e63f6e28dda6de3de2392ddca321e211fd860925 upstream.
+commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
 
-Revert commit ab0fd674d6ce (ACPI / AC: Remove AC's proc directory.),
-because some old tools (e.g. kpowersave from kde 3.5.10) are still
-using /proc/acpi/ac_adapter.
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-Fixes: ab0fd674d6ce (ACPI / AC: Remove AC's proc directory.)
-Reported-and-tested-by: Sorin Manolache <sorinm@gmail.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
+
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ac.c |  130 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 128 insertions(+), 2 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -30,6 +30,10 @@
- #include <linux/types.h>
- #include <linux/dmi.h>
- #include <linux/delay.h>
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
-+#endif
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <linux/acpi.h>
-@@ -51,6 +55,7 @@ MODULE_AUTHOR("Paul Diefenbaugh");
- MODULE_DESCRIPTION("ACPI AC Adapter Driver");
- MODULE_LICENSE("GPL");
- 
-+
- static int acpi_ac_add(struct acpi_device *device);
- static int acpi_ac_remove(struct acpi_device *device);
- static void acpi_ac_notify(struct acpi_device *device, u32 event);
-@@ -66,6 +71,13 @@ static int acpi_ac_resume(struct device
- #endif
- static SIMPLE_DEV_PM_OPS(acpi_ac_pm, NULL, acpi_ac_resume);
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+extern struct proc_dir_entry *acpi_lock_ac_dir(void);
-+extern void *acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir);
-+static int acpi_ac_open_fs(struct inode *inode, struct file *file);
-+#endif
-+
-+
- static int ac_sleep_before_get_state_ms;
- 
- static struct acpi_driver acpi_ac_driver = {
-@@ -89,6 +101,16 @@ struct acpi_ac {
- 
- #define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+static const struct file_operations acpi_ac_fops = {
-+	.owner = THIS_MODULE,
-+	.open = acpi_ac_open_fs,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+#endif
-+
- /* --------------------------------------------------------------------------
-                                AC Adapter Management
-    -------------------------------------------------------------------------- */
-@@ -141,6 +163,83 @@ static enum power_supply_property ac_pro
- 	POWER_SUPPLY_PROP_ONLINE,
- };
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+/* --------------------------------------------------------------------------
-+                              FS Interface (/proc)
-+   -------------------------------------------------------------------------- */
-+
-+static struct proc_dir_entry *acpi_ac_dir;
-+
-+static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
-+{
-+	struct acpi_ac *ac = seq->private;
-+
-+
-+	if (!ac)
-+		return 0;
-+
-+	if (acpi_ac_get_state(ac)) {
-+		seq_puts(seq, "ERROR: Unable to read AC Adapter state\n");
-+		return 0;
-+	}
-+
-+	seq_puts(seq, "state:                   ");
-+	switch (ac->state) {
-+	case ACPI_AC_STATUS_OFFLINE:
-+		seq_puts(seq, "off-line\n");
-+		break;
-+	case ACPI_AC_STATUS_ONLINE:
-+		seq_puts(seq, "on-line\n");
-+		break;
-+	default:
-+		seq_puts(seq, "unknown\n");
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int acpi_ac_open_fs(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, acpi_ac_seq_show, PDE_DATA(inode));
-+}
-+
-+static int acpi_ac_add_fs(struct acpi_ac *ac)
-+{
-+	struct proc_dir_entry *entry = NULL;
-+
-+	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
-+			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
-+	if (!acpi_device_dir(ac->device)) {
-+		acpi_device_dir(ac->device) =
-+			proc_mkdir(acpi_device_bid(ac->device), acpi_ac_dir);
-+		if (!acpi_device_dir(ac->device))
-+			return -ENODEV;
-+	}
-+
-+	/* 'state' [R] */
-+	entry = proc_create_data(ACPI_AC_FILE_STATE,
-+				 S_IRUGO, acpi_device_dir(ac->device),
-+				 &acpi_ac_fops, ac);
-+	if (!entry)
-+		return -ENODEV;
-+	return 0;
-+}
-+
-+static int acpi_ac_remove_fs(struct acpi_ac *ac)
-+{
-+
-+	if (acpi_device_dir(ac->device)) {
-+		remove_proc_entry(ACPI_AC_FILE_STATE,
-+				  acpi_device_dir(ac->device));
-+		remove_proc_entry(acpi_device_bid(ac->device), acpi_ac_dir);
-+		acpi_device_dir(ac->device) = NULL;
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
- /* --------------------------------------------------------------------------
-                                    Driver Model
-    -------------------------------------------------------------------------- */
-@@ -221,6 +320,11 @@ static int acpi_ac_add(struct acpi_devic
- 		goto end;
- 
- 	ac->charger.name = acpi_device_bid(device);
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	result = acpi_ac_add_fs(ac);
-+	if (result)
-+		goto end;
-+#endif
- 	ac->charger.type = POWER_SUPPLY_TYPE_MAINS;
- 	ac->charger.properties = ac_props;
- 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
-@@ -234,8 +338,12 @@ static int acpi_ac_add(struct acpi_devic
- 	       ac->state ? "on-line" : "off-line");
- 
- end:
--	if (result)
-+	if (result) {
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+		acpi_ac_remove_fs(ac);
-+#endif
- 		kfree(ac);
-+	}
- 
- 	dmi_check_system(ac_dmi_table);
- 	return result;
-@@ -278,6 +386,10 @@ static int acpi_ac_remove(struct acpi_de
- 	if (ac->charger.dev)
- 		power_supply_unregister(&ac->charger);
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	acpi_ac_remove_fs(ac);
-+#endif
-+
- 	kfree(ac);
- 
- 	return 0;
-@@ -290,9 +402,20 @@ static int __init acpi_ac_init(void)
- 	if (acpi_disabled)
- 		return -ENODEV;
- 
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	acpi_ac_dir = acpi_lock_ac_dir();
-+	if (!acpi_ac_dir)
-+		return -ENODEV;
-+#endif
-+
-+
- 	result = acpi_bus_register_driver(&acpi_ac_driver);
--	if (result < 0)
-+	if (result < 0) {
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+		acpi_unlock_ac_dir(acpi_ac_dir);
-+#endif
- 		return -ENODEV;
-+	}
- 
- 	return 0;
- }
-@@ -300,6 +423,9 @@ static int __init acpi_ac_init(void)
- static void __exit acpi_ac_exit(void)
- {
- 	acpi_bus_unregister_driver(&acpi_ac_driver);
-+#ifdef CONFIG_ACPI_PROCFS_POWER
-+	acpi_unlock_ac_dir(acpi_ac_dir);
-+#endif
- }
- module_init(acpi_ac_init);
- module_exit(acpi_ac_exit);
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -153,6 +153,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 
 
