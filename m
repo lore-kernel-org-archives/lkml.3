@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbaGOPwg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:52:36 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:52172 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbaGOPwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:52:34 -0400
+	id S1754878AbaGOPws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:52:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54740 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751739AbaGOPwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:52:44 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+	<1405431640-649-3-git-send-email-vkuznets@redhat.com>
+	<20140715150938.GO3403@laptop.dumpdata.com>
+Date: Tue, 15 Jul 2014 17:52:33 +0200
+In-Reply-To: <20140715150938.GO3403@laptop.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Tue, 15 Jul 2014 11:09:38 -0400")
+Message-ID: <87r41mty9q.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140715.002844.679028486034873225.davem@davemloft.net>
-References: <20140715.002844.679028486034873225.davem@davemloft.net>
-Date: Tue, 15 Jul 2014 08:52:33 -0700
-X-Google-Sender-Auth: 8sC8aPRwUzks5Q4l7oINiyNqXLk
-Message-ID: <CA+55aFw9=c_jSb7GOXDoityxWGiDs9y7LsdasyPHXESiZR75bg@mail.gmail.com>
-Subject: Re: [GIT] Networking
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>, John Linville <linville@tuxdriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ugh, I wanted to point this out, since looking at the history it's
-really ugly with silly extraneous merges for no good reason:
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
-John, take a look at this:
-
-On Tue, Jul 15, 2014 at 12:28 AM, David Miller <davem@davemloft.net> wrote:
+> On Tue, Jul 15, 2014 at 03:40:38PM +0200, Vitaly Kuznetsov wrote:
+>> PVHVM guest requires special actions before kexec. Register specific
+>> xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
+>> 
 >
-> John W. Linville (7):
->       Merge git://git.kernel.org/.../jberg/mac80211
->       Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
->       Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
->       Merge branch 'ath-current' of git://github.com/kvalo/ath
->       Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
->       Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
->       Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+> This looks close to what I had sent as an RFC to you?
+>
 
-and notice that there are two different kinds of merges in there. One
-is the "merge from downstream developers" (good), but the other...
+Yes, I stole that part from your "RFC: VCPU_reset_cpu_info" patch to
+call xen_unmap_all_pirqs() on shutdown. I'm looking at SMP issues your
+patches address as well.
 
-You're not the only one that does a "merge into for-upstream", but it
-really is very noticeable in the resulting history. When David them
-merges, you now get *two* merges, and the history is actually rather
-less readable than it should/could be.
+>> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>> ---
+>>  arch/x86/xen/enlighten.c | 9 +++++++++
+>>  arch/x86/xen/smp.c       | 9 +++++++++
+>>  arch/x86/xen/smp.h       | 1 +
+>>  3 files changed, 19 insertions(+)
+>> 
+>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>> index a11af62..8074e4a 100644
+>> --- a/arch/x86/xen/enlighten.c
+>> +++ b/arch/x86/xen/enlighten.c
+>> @@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
+>>  	.notifier_call	= xen_hvm_cpu_notify,
+>>  };
+>>  
+>> +static void xen_pvhvm_kexec_shutdown(void)
+>> +{
+>> +	xen_kexec_shutdown();
+>> +	native_machine_shutdown();
+>> +}
+>> +
+>>  static void __init xen_hvm_guest_init(void)
+>>  {
+>>  	init_hvm_pv_info();
+>> @@ -1849,6 +1855,9 @@ static void __init xen_hvm_guest_init(void)
+>>  	x86_init.irqs.intr_init = xen_init_IRQ;
+>>  	xen_hvm_init_time_ops();
+>>  	xen_hvm_init_mmu_ops();
+>> +#ifdef CONFIG_KEXEC
+>> +	machine_ops.shutdown = xen_pvhvm_kexec_shutdown;
+>> +#endif
+>>  }
+>>  
+>>  static uint32_t __init xen_hvm_platform(void)
+>> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+>> index 7005974..35dcf39 100644
+>> --- a/arch/x86/xen/smp.c
+>> +++ b/arch/x86/xen/smp.c
+>> @@ -18,6 +18,7 @@
+>>  #include <linux/smp.h>
+>>  #include <linux/irq_work.h>
+>>  #include <linux/tick.h>
+>> +#include <linux/kexec.h>
+>>  
+>>  #include <asm/paravirt.h>
+>>  #include <asm/desc.h>
+>> @@ -762,6 +763,14 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+>>  	native_cpu_die(cpu);
+>>  }
+>>  
+>> +void xen_kexec_shutdown(void)
+>> +{
+>> +#ifdef CONFIG_KEXEC
+>> +	if (!kexec_in_progress)
+>> +		return;
+>> +#endif
+>> +}
+>> +
+>>  void __init xen_hvm_smp_init(void)
+>>  {
+>>  	if (!xen_have_vector_callback)
+>> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+>> index c7c2d89..1af0493 100644
+>> --- a/arch/x86/xen/smp.h
+>> +++ b/arch/x86/xen/smp.h
+>> @@ -8,4 +8,5 @@ extern void xen_send_IPI_allbutself(int vector);
+>>  extern void xen_send_IPI_all(int vector);
+>>  extern void xen_send_IPI_self(int vector);
+>>  
+>> +extern void xen_kexec_shutdown(void);
+>>  #endif
+>> -- 
+>> 1.9.3
+>> 
 
-Maybe David has *asked* you to do this to resolve any merge conflicts
-before sending it to him? I doubt it, though.
-
-There's no reason for "merge into for-davem". Just send David that
-thing you want merged. *Without* the extra merge. See what I'm saying?
-
-This is the kind of thing I usually ask for from my direct pull
-requests, for the same reason: it makes the history easier to see.
-Merges should be down *by* upstream, not *for* upstream.
-
-So those "into for-davem" merges are pointless and ugly.
-
-And if David actually asks for these, my apologies..
-
-                  Linus
+-- 
+  Vitaly
