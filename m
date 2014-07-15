@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875AbaGOVjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:39:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55076 "EHLO
+	id S964971AbaGOVoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:44:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55086 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934025AbaGOVjT (ORCPT
+	with ESMTP id S934059AbaGOVjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:19 -0400
+	Tue, 15 Jul 2014 17:39:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 063/198] mei: me: fix hw ready reset flow
-Date: Tue, 15 Jul 2014 14:28:53 -0700
-Message-Id: <1405459868-15089-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 060/198] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
+Date: Tue, 15 Jul 2014 14:28:50 -0700
+Message-Id: <1405459868-15089-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,64 +28,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit b04ada92ffaabb868497a1fce8e4f6bf74e5488f upstream.
+commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
 
-We cleared H_RST for H_CSR on spurious interrupt generated when ME_RDY
-while cleared and not while  ME_RDY is set. The spurious interrupt
-is not delivered on all platforms in this case the
-driver may fail to initialize.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data type larger than 4 bytes: on most ABIs a padding must be added at
+end of the structures, while it is not required on i386.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ kamal: backport to 3.13-stable: context ]
+So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
+aligned on a 8 bytes multiple, while for i386, such padding is not
+added.
+
+Tool pahole could be used to find such implicit padding:
+
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name mlx5_ib_create_srq \
+           drivers/infiniband/hw/mlx5/mlx5_ib.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
+  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
+  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
+          __u64                      db_addr;              /*     8     8 */
+          __u32                      flags;                /*    16     4 */
+
+  -       /* size: 20, cachelines: 1, members: 3 */
+  -       /* last cacheline: 20 bytes */
+  +       /* size: 24, cachelines: 1, members: 3 */
+  +       /* padding: 4 */
+  +       /* last cacheline: 24 bytes */
+   };
+
+ABI disagreement will make an x86_64 kernel try to read past
+the buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will
+refuse to read past the i386 userspace provided buffer and the
+uverb will fail.
+
+Anyway, if the structure lay in memory on a page boundary and
+next page is not mapped, ib_copy_from_udata() will fail and the
+uverb will fail.
+
+This patch makes create_srq_user() takes care of the input
+data size to handle the case where no padding was provided.
+
+This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
+as sent by unpatched and patched i386 libmlx5.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/misc/mei/hw-me.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/infiniband/hw/mlx5/srq.c  | 14 +++++++++++++-
+ drivers/infiniband/hw/mlx5/user.h |  1 +
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 3412adc..f285dc1 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -164,6 +164,9 @@ static void mei_me_hw_reset_release(struct mei_device *dev)
- 	hcsr |= H_IG;
- 	hcsr &= ~H_RST;
- 	mei_hcsr_set(hw, hcsr);
-+
-+	/* complete this write before we set host ready on another CPU */
-+	mmiowb();
- }
- /**
-  * mei_me_hw_reset - resets fw via mei csr register.
-@@ -201,6 +204,7 @@ static int mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
- static void mei_me_host_set_ready(struct mei_device *dev)
- {
- 	struct mei_me_hw *hw = to_me_hw(dev);
-+	hw->host_hw_state = mei_hcsr_read(hw);
- 	hw->host_hw_state |= H_IE | H_IG | H_RDY;
- 	mei_hcsr_set(hw, hw->host_hw_state);
- }
-@@ -496,6 +500,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
- 	/*  check if we need to start the dev */
- 	if (!mei_host_is_ready(dev)) {
- 		if (mei_hw_is_ready(dev)) {
-+			mei_me_hw_reset_release(dev);
- 			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
+diff --git a/drivers/infiniband/hw/mlx5/srq.c b/drivers/infiniband/hw/mlx5/srq.c
+index 210b3ea..384af6d 100644
+--- a/drivers/infiniband/hw/mlx5/srq.c
++++ b/drivers/infiniband/hw/mlx5/srq.c
+@@ -35,6 +35,7 @@
+ #include <linux/mlx5/srq.h>
+ #include <linux/slab.h>
+ #include <rdma/ib_umem.h>
++#include <rdma/ib_user_verbs.h>
  
- 			dev->recvd_hw_ready = true;
-@@ -504,8 +509,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
- 			mutex_unlock(&dev->device_lock);
- 			return IRQ_HANDLED;
- 		} else {
--			dev_dbg(&dev->pdev->dev, "Reset Completed.\n");
--			mei_me_hw_reset_release(dev);
-+			dev_dbg(&dev->pdev->dev, "Spurious Interrupt\n");
- 			mutex_unlock(&dev->device_lock);
- 			return IRQ_HANDLED;
- 		}
+ #include "mlx5_ib.h"
+ #include "user.h"
+@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd *pd, struct mlx5_ib_srq *srq,
+ {
+ 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
+ 	struct mlx5_ib_create_srq ucmd;
++	size_t ucmdlen;
+ 	int err;
+ 	int npages;
+ 	int page_shift;
+ 	int ncont;
+ 	u32 offset;
+ 
+-	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
++	ucmdlen =
++		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
++		 sizeof(ucmd)) ? (sizeof(ucmd) -
++				  sizeof(ucmd.reserved)) : sizeof(ucmd);
++
++	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
+ 		mlx5_ib_dbg(dev, "failed copy udata\n");
+ 		return -EFAULT;
+ 	}
++
++	if (ucmdlen == sizeof(ucmd) &&
++	    ucmd.reserved != 0)
++		return -EINVAL;
++
+ 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
+ 
+ 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
+diff --git a/drivers/infiniband/hw/mlx5/user.h b/drivers/infiniband/hw/mlx5/user.h
+index e7da977..84fea5d 100644
+--- a/drivers/infiniband/hw/mlx5/user.h
++++ b/drivers/infiniband/hw/mlx5/user.h
+@@ -100,6 +100,7 @@ struct mlx5_ib_create_srq {
+ 	__u64	buf_addr;
+ 	__u64	db_addr;
+ 	__u32	flags;
++	__u32	reserved; /* explicit padding (optional on i386) */
+ };
+ 
+ struct mlx5_ib_create_srq_resp {
 -- 
 1.9.1
 
