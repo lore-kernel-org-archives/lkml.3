@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607AbaGPACv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:02:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933240AbaGOXNi (ORCPT
+	id S933736AbaGPAC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:02:57 -0400
+Received: from g6t1525.atlanta.hp.com ([15.193.200.68]:28559 "EHLO
+	g6t1525.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933254AbaGPACr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>, Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 20/66] ACPI / resources: only reject zero length resources based at address zero
-Date: Tue, 15 Jul 2014 16:17:14 -0700
-Message-Id: <20140715231702.961676059@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Jul 2014 20:02:47 -0400
+Message-ID: <1405468387.28702.53.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to
+ handle WT type
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
+Date: Tue, 15 Jul 2014 17:53:07 -0600
+In-Reply-To: <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+	 <1405452884-25688-4-git-send-email-toshi.kani@hp.com>
+	 <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
+	 <1405465801.28702.34.camel@misato.fc.hp.com>
+	 <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-07-15 at 16:36 -0700, Andy Lutomirski wrote:
+> On Tue, Jul 15, 2014 at 4:10 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > On Tue, 2014-07-15 at 12:56 -0700, Andy Lutomirski wrote:
+> >> On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> >> > This patch changes reserve_memtype() to handle the new WT type.
+> >> > When (!pat_enabled && new_type), it continues to set either WB
+> >> > or UC- to *new_type.  When pat_enabled, it can reserve a given
+> >> > non-RAM range for WT.  At this point, it may not reserve a RAM
+> >> > range for WT since reserve_ram_pages_type() uses the page flags
+> >> > limited to three memory types, WB, WC and UC.
+> >>
+> >> FWIW, last time I looked at this, it seemed like all the fancy
+> >> reserve_ram_pages stuff was unnecessary: shouldn't the RAM type be
+> >> easy to track in the direct map page tables?
+> >
+> > Are you referring the direct map page tables as the kernel page
+> > directory tables (pgd/pud/..)?
+> >
+> > I think it needs to be able to keep track of the memory type per a
+> > physical memory range, not per a translation, in order to prevent
+> > aliasing of the memory type.
+> 
+> Actual RAM (the lowmem kind, which is all of it on x86_64) is mapped
+> linearly somewhere in kernel address space.  The pagetables for that
+> mapping could be used as the canonical source of the memory type for
+> the ram range in question.
+>
+> This only works for lowmem, so maybe it's not a good idea to rely on it.
 
-------------------
+Right.
 
-From: Andy Whitcroft <apw@canonical.com>
+I think using struct page table for the RAM ranges is a good way for
+saving memory, but I wonder how often the RAM ranges are mapped other
+than WB...  If not often, reserve_memtype() could simply call
+rbt_memtype_check_insert() for all ranges, including RAM.
 
-commit 867f9d463b82462793ea4610e748be0b04b37fc7 upstream.
+In this patch, I left using reserve_ram_pages_type() since I do not see
+much reason to use WT for RAM, either.
 
-The recently merged change (in v3.14-rc6) to ACPI resource detection
-(below) causes all zero length ACPI resources to be elided from the
-table:
-
-  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
-  Author: Zhang Rui <rui.zhang@intel.com>
-  Date:   Thu Feb 27 11:37:15 2014 +0800
-
-    ACPI / resources: ignore invalid ACPI device resources
-
-This change has caused a regression in (at least) serial port detection
-for a number of machines (see LP#1313981 [1]).  These seem to represent
-their IO regions (presumably incorrectly) as a zero length region.
-Reverting the above commit restores these serial devices.
-
-Only elide zero length resources which lie at address 0.
-
-Fixes: b355cee88e3b (ACPI / resources: ignore invalid ACPI device resources)
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
-Acked-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/acpi/resource.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -77,7 +77,7 @@ bool acpi_dev_resource_memory(struct acp
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_MEMORY24:
- 		memory24 = &ares->data.memory24;
--		if (!memory24->address_length)
-+		if (!memory24->minimum && !memory24->address_length)
- 			return false;
- 		acpi_dev_get_memresource(res, memory24->minimum,
- 					 memory24->address_length,
-@@ -85,7 +85,7 @@ bool acpi_dev_resource_memory(struct acp
- 		break;
- 	case ACPI_RESOURCE_TYPE_MEMORY32:
- 		memory32 = &ares->data.memory32;
--		if (!memory32->address_length)
-+		if (!memory32->minimum && !memory32->address_length)
- 			return false;
- 		acpi_dev_get_memresource(res, memory32->minimum,
- 					 memory32->address_length,
-@@ -93,7 +93,7 @@ bool acpi_dev_resource_memory(struct acp
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
- 		fixed_memory32 = &ares->data.fixed_memory32;
--		if (!fixed_memory32->address_length)
-+		if (!fixed_memory32->address && !fixed_memory32->address_length)
- 			return false;
- 		acpi_dev_get_memresource(res, fixed_memory32->address,
- 					 fixed_memory32->address_length,
-@@ -150,7 +150,7 @@ bool acpi_dev_resource_io(struct acpi_re
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_IO:
- 		io = &ares->data.io;
--		if (!io->address_length)
-+		if (!io->minimum && !io->address_length)
- 			return false;
- 		acpi_dev_get_ioresource(res, io->minimum,
- 					io->address_length,
-@@ -158,7 +158,7 @@ bool acpi_dev_resource_io(struct acpi_re
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_IO:
- 		fixed_io = &ares->data.fixed_io;
--		if (!fixed_io->address_length)
-+		if (!fixed_io->address && !fixed_io->address_length)
- 			return false;
- 		acpi_dev_get_ioresource(res, fixed_io->address,
- 					fixed_io->address_length,
-
+Thanks,
+-Toshi
 
