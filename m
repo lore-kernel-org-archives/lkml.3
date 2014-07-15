@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933895AbaGOWZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:25:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53946 "EHLO
+	id S932836AbaGOVbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:31:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53887 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758706AbaGOVby (ORCPT
+	with ESMTP id S1758023AbaGOVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:31:54 -0400
+	Tue, 15 Jul 2014 17:31:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Fathi Boudra <fathi.boudra@linaro.org>, Michal Marek <mmarek@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 109/198] Input: elantech - deal with clickpads reporting right button events
-Date: Tue, 15 Jul 2014 14:29:39 -0700
-Message-Id: <1405459868-15089-110-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 017/198] builddeb: use $OBJCOPY variable instead of objcopy
+Date: Tue, 15 Jul 2014 14:28:07 -0700
+Message-Id: <1405459868-15089-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,81 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Fathi Boudra <fathi.boudra@linaro.org>
 
-commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
+commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
 
-At least the Dell Vostro 5470 elantech *clickpad* reports right button
-clicks when clicked in the right bottom area:
+In cross-build environment, we expect to use the cross-compiler objcopy
+instead of the host objcopy.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1103528
+It fixes following build failures:
+objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
+objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
 
-This is different from how (elantech) clickpads normally operate, normally
-no matter where the user clicks on the pad the pad always reports a left
-button event, since there is only 1 hardware button beneath the path.
-
-It looks like Dell has put 2 buttons under the pad, one under each bottom
-corner, causing this.
-
-Since this however still clearly is a real clickpad hardware-wise, we still
-want to report it as such to userspace, so that things like finger movement
-in the bottom area can be properly ignored as it should be on clickpads.
-
-So deal with this weirdness by simply mapping a right click to a left click
-on elantech clickpads. As an added advantage this is something which we can
-simply do on all elantech clickpads, so no need to add special quirks for
-this weird model.
-
-Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
+Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mouse/elantech.c | 22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ scripts/package/builddeb | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 230cdcf..360e46b 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -473,8 +473,15 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
- 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_report_abs(dev, ABS_PRESSURE, pres);
- 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
- 
-@@ -484,10 +491,17 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
- static void elantech_input_sync_v4(struct psmouse *psmouse)
- {
- 	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
- 
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
- }
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index c1bb9be..6d02fd5d 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
+ 			for module in $(find lib/modules/ -name *.ko); do
+ 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
+ 				# only keep debug symbols in the debug file
+-				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
++				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
+ 				# strip original module from debug symbols
+-				objcopy --strip-debug $module
++				$OBJCOPY --strip-debug $module
+ 				# then add a link to those
+-				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
++				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
+ 			done
+ 		)
+ 	fi
 -- 
 1.9.1
 
