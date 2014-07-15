@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965015AbaGOVpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:45:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55055 "EHLO
+	id S934186AbaGOVpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:45:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55049 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934037AbaGOVjM (ORCPT
+	with ESMTP id S934028AbaGOVjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:12 -0400
+	Tue, 15 Jul 2014 17:39:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 179/198] mm, pcp: allow restoring percpu_pagelist_fraction default
-Date: Tue, 15 Jul 2014 14:30:49 -0700
-Message-Id: <1405459868-15089-180-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 141/198] rtmutex: Detect changes in the pi lock chain
+Date: Tue, 15 Jul 2014 14:30:11 -0700
+Message-Id: <1405459868-15089-142-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,171 +28,302 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 7cd2b0a34ab8e4db971920eef8982f985441adfb upstream.
+commit 82084984383babe728e6e3c9a8e5c46278091315 upstream.
 
-Oleg reports a division by zero error on zero-length write() to the
-percpu_pagelist_fraction sysctl:
+When we walk the lock chain, we drop all locks after each step. So the
+lock chain can change under us before we reacquire the locks. That's
+harmless in principle as we just follow the wrong lock path. But it
+can lead to a false positive in the dead lock detection logic:
 
-    divide error: 0000 [#1] SMP DEBUG_PAGEALLOC
-    CPU: 1 PID: 9142 Comm: badarea_io Not tainted 3.15.0-rc2-vm-nfs+ #19
-    Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-    task: ffff8800d5aeb6e0 ti: ffff8800d87a2000 task.ti: ffff8800d87a2000
-    RIP: 0010: percpu_pagelist_fraction_sysctl_handler+0x84/0x120
-    RSP: 0018:ffff8800d87a3e78  EFLAGS: 00010246
-    RAX: 0000000000000f89 RBX: ffff88011f7fd000 RCX: 0000000000000000
-    RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000010
-    RBP: ffff8800d87a3e98 R08: ffffffff81d002c8 R09: ffff8800d87a3f50
-    R10: 000000000000000b R11: 0000000000000246 R12: 0000000000000060
-    R13: ffffffff81c3c3e0 R14: ffffffff81cfddf8 R15: ffff8801193b0800
-    FS:  00007f614f1e9740(0000) GS:ffff88011f440000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-    CR2: 00007f614f1fa000 CR3: 00000000d9291000 CR4: 00000000000006e0
-    Call Trace:
-      proc_sys_call_handler+0xb3/0xc0
-      proc_sys_write+0x14/0x20
-      vfs_write+0xba/0x1e0
-      SyS_write+0x46/0xb0
-      tracesys+0xe1/0xe6
+T0 holds L0
+T0 blocks on L1 held by T1
+T1 blocks on L2 held by T2
+T2 blocks on L3 held by T3
+T4 blocks on L4 held by T4
 
-However, if the percpu_pagelist_fraction sysctl is set by the user, it
-is also impossible to restore it to the kernel default since the user
-cannot write 0 to the sysctl.
+Now we walk the chain
 
-This patch allows the user to write 0 to restore the default behavior.
-It still requires a fraction equal to or larger than 8, however, as
-stated by the documentation for sanity.  If a value in the range [1, 7]
-is written, the sysctl will return EINVAL.
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 ->
+     lock T2 ->  adjust T2 ->  drop locks
 
-This successfully solves the divide by zero issue at the same time.
+T2 times out and blocks on L0
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Oleg Drokin <green@linuxhacker.ru>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Now we continue:
+
+lock T2 -> lock L0 -> deadlock detected, but it's not a deadlock at all.
+
+Brad tried to work around that in the deadlock detection logic itself,
+but the more I looked at it the less I liked it, because it's crystal
+ball magic after the fact.
+
+We actually can detect a chain change very simple:
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
+
+     next_lock = T2->pi_blocked_on->lock;
+
+drop locks
+
+T2 times out and blocks on L0
+
+Now we continue:
+
+lock T2 ->
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+So if we detect that T2 is now blocked on a different lock we stop the
+chain walk. That's also correct in the following scenario:
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
+
+     next_lock = T2->pi_blocked_on->lock;
+
+drop locks
+
+T3 times out and drops L3
+T2 acquires L3 and blocks on L4 now
+
+Now we continue:
+
+lock T2 ->
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+We don't have to follow up the chain at that point, because T2
+propagated our priority up to T4 already.
+
+[ Folded a cleanup patch from peterz ]
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Brad Mouring <bmouring@ni.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140605152801.930031935@linutronix.de
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- Documentation/sysctl/vm.txt |  3 ++-
- kernel/sysctl.c             |  3 +--
- mm/page_alloc.c             | 40 ++++++++++++++++++++++++++++------------
- 3 files changed, 31 insertions(+), 15 deletions(-)
+ kernel/locking/rtmutex.c | 95 ++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 71 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 1fbd4eb..afb8f2e 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -669,7 +669,8 @@ The batch value of each per cpu pagelist is also updated as a result.  It is
- set to pcp->high/4.  The upper limit of batch is (PAGE_SHIFT * 8)
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index 1029a85..ff24a43 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -142,27 +142,36 @@ static void rt_mutex_adjust_prio(struct task_struct *task)
+  */
+ int max_lock_depth = 1024;
  
- The initial value is zero.  Kernel does not use this value at boot time to set
--the high water marks for each per cpu page list.
-+the high water marks for each per cpu page list.  If the user writes '0' to this
-+sysctl, it will revert to this default behavior.
- 
- ==============================================================
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index fcdced1..bbf0a95 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -138,7 +138,6 @@ static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
- /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
- static int maxolduid = 65535;
- static int minolduid;
--static int min_percpu_pagelist_fract = 8;
- 
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
-@@ -1310,7 +1309,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen		= sizeof(percpu_pagelist_fraction),
- 		.mode		= 0644,
- 		.proc_handler	= percpu_pagelist_fraction_sysctl_handler,
--		.extra1		= &min_percpu_pagelist_fract,
-+		.extra1		= &zero,
- 	},
- #ifdef CONFIG_MMU
- 	{
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e864d6..856d95c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -69,6 +69,7 @@
- 
- /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
- static DEFINE_MUTEX(pcp_batch_high_lock);
-+#define MIN_PERCPU_PAGELIST_FRACTION	(8)
- 
- #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
- DEFINE_PER_CPU(int, numa_node);
-@@ -4071,7 +4072,7 @@ static void __meminit zone_init_free_lists(struct zone *zone)
- 	memmap_init_zone((size), (nid), (zone), (start_pfn), MEMMAP_EARLY)
- #endif
- 
--static int __meminit zone_batchsize(struct zone *zone)
-+static int zone_batchsize(struct zone *zone)
++static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
++{
++	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
++}
++
+ /*
+  * Adjust the priority chain. Also used for deadlock detection.
+  * Decreases task's usage by one - may thus free the task.
+  *
+- * @task: the task owning the mutex (owner) for which a chain walk is probably
+- *	  needed
++ * @task:	the task owning the mutex (owner) for which a chain walk is
++ *		probably needed
+  * @deadlock_detect: do we have to carry out deadlock detection?
+- * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
+- * 	       things for a task that has just got its priority adjusted, and
+- *	       is waiting on a mutex)
++ * @orig_lock:	the mutex (can be NULL if we are walking the chain to recheck
++ *		things for a task that has just got its priority adjusted, and
++ *		is waiting on a mutex)
++ * @next_lock:	the mutex on which the owner of @orig_lock was blocked before
++ *		we dropped its pi_lock. Is never dereferenced, only used for
++ *		comparison to detect lock chain changes.
+  * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
+- *		 its priority to the mutex owner (can be NULL in the case
+- *		 depicted above or if the top waiter is gone away and we are
+- *		 actually deboosting the owner)
+- * @top_task: the current top waiter
++ *		its priority to the mutex owner (can be NULL in the case
++ *		depicted above or if the top waiter is gone away and we are
++ *		actually deboosting the owner)
++ * @top_task:	the current top waiter
+  *
+  * Returns 0 or -EDEADLK.
+  */
+ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 				      int deadlock_detect,
+ 				      struct rt_mutex *orig_lock,
++				      struct rt_mutex *next_lock,
+ 				      struct rt_mutex_waiter *orig_waiter,
+ 				      struct task_struct *top_task)
  {
- #ifdef CONFIG_MMU
- 	int batch;
-@@ -4187,8 +4188,8 @@ static void pageset_set_high(struct per_cpu_pageset *p,
- 	pageset_update(&p->pcp, high, batch);
- }
+@@ -221,6 +230,18 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 		goto out_unlock_pi;
  
--static void __meminit pageset_set_high_and_batch(struct zone *zone,
--		struct per_cpu_pageset *pcp)
-+static void pageset_set_high_and_batch(struct zone *zone,
-+				       struct per_cpu_pageset *pcp)
- {
- 	if (percpu_pagelist_fraction)
- 		pageset_set_high(pcp,
-@@ -5781,23 +5782,38 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	struct zone *zone;
--	unsigned int cpu;
-+	int old_percpu_pagelist_fraction;
- 	int ret;
- 
-+	mutex_lock(&pcp_batch_high_lock);
-+	old_percpu_pagelist_fraction = percpu_pagelist_fraction;
+ 	/*
++	 * We dropped all locks after taking a refcount on @task, so
++	 * the task might have moved on in the lock chain or even left
++	 * the chain completely and blocks now on an unrelated lock or
++	 * on @orig_lock.
++	 *
++	 * We stored the lock on which @task was blocked in @next_lock,
++	 * so we can detect the chain change.
++	 */
++	if (next_lock != waiter->lock)
++		goto out_unlock_pi;
 +
- 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
--	if (!write || (ret < 0))
--		return ret;
-+	if (!write || ret < 0)
-+		goto out;
-+
-+	/* Sanity checking to avoid pcp imbalance */
-+	if (percpu_pagelist_fraction &&
-+	    percpu_pagelist_fraction < MIN_PERCPU_PAGELIST_FRACTION) {
-+		percpu_pagelist_fraction = old_percpu_pagelist_fraction;
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* No change? */
-+	if (percpu_pagelist_fraction == old_percpu_pagelist_fraction)
-+		goto out;
- 
--	mutex_lock(&pcp_batch_high_lock);
- 	for_each_populated_zone(zone) {
--		unsigned long  high;
--		high = zone->managed_pages / percpu_pagelist_fraction;
-+		unsigned int cpu;
-+
- 		for_each_possible_cpu(cpu)
--			pageset_set_high(per_cpu_ptr(zone->pageset, cpu),
--					 high);
-+			pageset_set_high_and_batch(zone,
-+					per_cpu_ptr(zone->pageset, cpu));
++	/*
+ 	 * Drop out, when the task has no waiters. Note,
+ 	 * top_waiter can be NULL, when we are in the deboosting
+ 	 * mode!
+@@ -306,11 +327,26 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 		__rt_mutex_adjust_prio(task);
  	}
-+out:
- 	mutex_unlock(&pcp_batch_high_lock);
--	return 0;
-+	return ret;
+ 
++	/*
++	 * Check whether the task which owns the current lock is pi
++	 * blocked itself. If yes we store a pointer to the lock for
++	 * the lock chain change detection above. After we dropped
++	 * task->pi_lock next_lock cannot be dereferenced anymore.
++	 */
++	next_lock = task_blocked_on_lock(task);
++
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
++	/*
++	 * We reached the end of the lock chain. Stop right here. No
++	 * point to go back just to figure that out.
++	 */
++	if (!next_lock)
++		goto out_put_task;
++
+ 	if (!detect_deadlock && waiter != top_waiter)
+ 		goto out_put_task;
+ 
+@@ -421,8 +457,9 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ {
+ 	struct task_struct *owner = rt_mutex_owner(lock);
+ 	struct rt_mutex_waiter *top_waiter = waiter;
+-	unsigned long flags;
++	struct rt_mutex *next_lock;
+ 	int chain_walk = 0, res;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * Early deadlock detection. We really don't want the task to
+@@ -455,20 +492,28 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 	if (!owner)
+ 		return 0;
+ 
++	raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+-		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+ 		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+ 			chain_walk = 1;
+-		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+-	}
+-	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
++	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
+ 		chain_walk = 1;
++	}
+ 
+-	if (!chain_walk)
++	/* Store the lock on which owner is blocked or NULL */
++	next_lock = task_blocked_on_lock(owner);
++
++	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
++	/*
++	 * Even if full deadlock detection is on, if the owner is not
++	 * blocked itself, we can avoid finding this out in the chain
++	 * walk.
++	 */
++	if (!chain_walk || !next_lock)
+ 		return 0;
+ 
+ 	/*
+@@ -480,8 +525,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
+-					 task);
++	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
++					 next_lock, waiter, task);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -530,8 +575,8 @@ static void remove_waiter(struct rt_mutex *lock,
+ {
+ 	int first = (waiter == rt_mutex_top_waiter(lock));
+ 	struct task_struct *owner = rt_mutex_owner(lock);
++	struct rt_mutex *next_lock = NULL;
+ 	unsigned long flags;
+-	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+ 	plist_del(&waiter->list_entry, &lock->wait_list);
+@@ -555,15 +600,15 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+-		if (owner->pi_blocked_on)
+-			chain_walk = 1;
++		/* Store the lock on which owner is blocked or NULL */
++		next_lock = task_blocked_on_lock(owner);
+ 
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+ 	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 
+-	if (!chain_walk)
++	if (!next_lock)
+ 		return;
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+@@ -571,7 +616,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
++	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ }
+@@ -584,6 +629,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ void rt_mutex_adjust_pi(struct task_struct *task)
+ {
+ 	struct rt_mutex_waiter *waiter;
++	struct rt_mutex *next_lock;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -593,12 +639,13 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+-
++	next_lock = waiter->lock;
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+ 	get_task_struct(task);
+-	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
++
++	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
  }
  
- int hashdist = HASHDIST_DEFAULT;
+ /**
 -- 
 1.9.1
 
