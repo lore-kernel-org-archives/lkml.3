@@ -1,142 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaGOPS1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:18:27 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59347 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037AbaGOPSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:18:22 -0400
-Message-ID: <53C5460E.8010306@ti.com>
-Date: Tue, 15 Jul 2014 20:47:34 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753829AbaGOPTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:19:20 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:45664 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaGOPTS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 11:19:18 -0400
+Date: Tue, 15 Jul 2014 19:19:07 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Remove "memcg/slab: reintroduce dead cache self-destruction" from
+ mmotm
+Message-ID: <20140715151907.GA23103@esperanza>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: <linux-ide@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <sboyd@codeaurora.org>,
-        <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v5 1/2] phy: qcom: Add driver for QCOM IPQ806x SATA PHY
-References: <1403030008-20675-1-git-send-email-galak@codeaurora.org> <53C54497.4010704@ti.com>
-In-Reply-To: <53C54497.4010704@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
+Could you drop the following patches please?
 
-On Tuesday 15 July 2014 08:41 PM, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Wednesday 18 June 2014 12:03 AM, Kumar Gala wrote:
->> Add a PHY driver for uses with AHCI based SATA controller driver on the
->> IPQ806x family of SoCs.
->>
->> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->> ---
->> v5:
->> * Fix copy/paste error when killing qcom_ipq806x_sata_delay_us
->>
->> v4:
->> * removed qcom_ipq806x_sata_delay_us as it was only used one
->>
->> v3:
->> * Added Kconfig HAS_IOMEM dep
->> * re-ordered probe function so phy_provider_register is last
->>  
->> v2:
->> * dropped unused dev pointer in struct qcom_ipq806x_sata_phy
->> * remove unnecessary reg initializaiton
->> * Removed unneeded error message
->> * Added remove function to disable the clock
->>
->>  drivers/phy/Kconfig                 |   7 ++
->>  drivers/phy/Makefile                |   1 +
->>  drivers/phy/phy-qcom-ipq806x-sata.c | 206 ++++++++++++++++++++++++++++++++++++
->>  3 files changed, 214 insertions(+)
->>  create mode 100644 drivers/phy/phy-qcom-ipq806x-sata.c
->>
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index 16a2f06..b7b6bce 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -178,4 +178,11 @@ config PHY_XGENE
->>  	help
->>  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
->>
-> .
-> .
-> <snip>
-> .
-> .
->> +
->> +static int qcom_ipq806x_sata_phy_probe(struct platform_device *pdev)
->> +{
->> +	struct qcom_ipq806x_sata_phy *phy;
->> +	struct device *dev = &pdev->dev;
->> +	struct resource *res;
->> +	struct phy_provider *phy_provider;
->> +	struct phy *generic_phy;
->> +	int ret;
->> +
->> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
->> +	if (!phy) {
->> +		dev_err(dev, "%s: failed to allocate phy\n", __func__);
->> +		return -ENOMEM;
->> +	}
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	phy->mmio = devm_ioremap_resource(dev, res);
->> +	if (IS_ERR(phy->mmio))
->> +		return PTR_ERR(phy->mmio);
->> +
->> +	generic_phy = devm_phy_create(dev, &qcom_ipq806x_sata_phy_ops, NULL);
->> +	if (IS_ERR(generic_phy)) {
->> +		dev_err(dev, "%s: failed to create phy\n", __func__);
->> +		return PTR_ERR(generic_phy);
->> +	}
->> +
->> +	phy_set_drvdata(generic_phy, phy);
->> +
->> +	phy->cfg_clk = devm_clk_get(dev, "cfg");
->> +	if (IS_ERR(phy->cfg_clk)) {
->> +		dev_err(dev, "Failed to get sata cfg clock\n");
->> +		return PTR_ERR(phy->cfg_clk);
->> +	}
->> +
->> +	ret = clk_prepare_enable(phy->cfg_clk);
->> +	if (ret)
->> +		return ret;
->> +
->> +	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
->> +	if (IS_ERR(phy_provider)) {
->> +		clk_disable_unprepare(phy->cfg_clk);
->> +		dev_err(dev, "%s: failed to register phy\n", __func__);
->> +		return PTR_ERR(phy_provider);
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static int qcom_ipq806x_sata_phy_remove(struct platform_device *pdev)
->> +{
->> +	struct qcom_ipq806x_sata_phy *phy = platform_get_drvdata(pdev);
-> 
-> Where is platform_set_drvdata()?
+slub-kmem_cache_shrink-check-if-partial-list-is-empty-under-list_lock.patch
+slab-set-free_limit-for-dead-caches-to-0.patch
+slab-do-not-keep-free-objects-slabs-on-dead-memcg-caches.patch
+slub-make-dead-memcg-caches-discard-free-slabs-immediately.patch
+memcg-wait-for-kfrees-to-finish-before-destroying-cache.patch
+slub-make-slab_free-non-preemptable.patch
+slub-dont-fail-kmem_cache_shrink-if-slab-placement-optimization-fails.patch
+memcg-mark-caches-that-belong-to-offline-memcgs-as-dead.patch
+memcg-destroy-kmem-caches-when-last-slab-is-freed.patch
+memcg-cleanup-memcg_cache_params-refcnt-usage.patch
 
-Btw the patch subject says 1/2 but I couldn't find the second patch. Can you
-re-send both the patches?
+The patches implement self-destruction of kmem caches that belong to
+dead memory cgroups (see https://lkml.org/lkml/2014/6/12/681). They were
+needed for re-parenting kmem charges on memcg offline.
 
-Thanks
-Kishon
-> 
-> Thanks
-> Kishon
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+However, as Johannes explained, recent changes to the cgroup core made
+re-parenting of memcg charges unnecessary, because now we can iterate
+over offline css's on memory pressure and reclaim their charges, just as
+we do with online css's (see https://lkml.org/lkml/2014/7/7/335). As a
+result, it isn't strictly necessary to destroy dead kmem caches as soon
+as the last object is freed, because we can add a per memcg slab
+shrinker for them.
+
+Since the implementation of kmem cache self-destruction is quite
+intrusive to the slab core and, what is worse, degrades kfree
+performance for dead caches noticeably (especially for SLAB, see
+https://lkml.org/lkml/2014/6/25/520), I propose to drop it.
+
+Thanks.
