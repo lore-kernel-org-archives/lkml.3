@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370AbaGOJcH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:32:07 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:36192 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758336AbaGOJcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:32:01 -0400
-X-IronPort-AV: E=Sophos;i="5.00,895,1396972800"; 
-   d="scan'208";a="33286562"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH] workqueue: alloc struct worker on its local node
-Date: Tue, 15 Jul 2014 17:24:15 +0800
-Message-ID: <1405416264-11611-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1758413AbaGOJcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:32:24 -0400
+Received: from imap.thunk.org ([74.207.234.97]:35446 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758340AbaGOJcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:32:02 -0400
+Date: Tue, 15 Jul 2014 05:31:54 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/ext4/super.c: Let 'counters' switched by SMP
+Message-ID: <20140715093154.GB1451@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Chen Gang <gang.chen.5i5j@gmail.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <53C47E59.8030502@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C47E59.8030502@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the create_worker() is called from non-manager, the struct worker
-is allocated from the node of the caller which may be different from the
-node of pool->node.
+On Tue, Jul 15, 2014 at 09:05:29AM +0800, Chen Gang wrote:
+> When SMP is disabled, 'struct percpu_counter' has no 'counters' member,
+> so need skip it when in !SMP.
+> 
+> The related git commit:
+> 
+>   "feab139 ext4: rearrange initialization to fix EXT4FS_DEBUG".
+> 
+> The related error (with allmodconfig under score):
+> 
+>     CC [M]  fs/ext4/super.o
+>   fs/ext4/super.c: In function 'ext4_commit_super':
+>   fs/ext4/super.c:4546:41: error: 'struct percpu_counter' has no member named 'counters'
+>     if (EXT4_SB(sb)->s_freeclusters_counter.counters)
+>                                            ^
+>   fs/ext4/super.c:4550:39: error: 'struct percpu_counter' has no member named 'counters'
+>     if (EXT4_SB(sb)->s_freeinodes_counter.counters)
 
-So we add a node ID argument for the alloc_worker() to ensure the
-struct worker is allocated from the preferable node.
+Thanks for the pointing out the problem.  I though think the right way
+of fixing this problem, though, instead of using the #ifdef
+CONFIG_SMP, is to do this:
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+       if (percpu_counter_initialized(&EXT4_SB(sb)->s_freeclusters_counter))
+       	  ...
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index e83c42a..a4a5364 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1614,11 +1614,11 @@ static void worker_leave_idle(struct worker *worker)
- 	list_del_init(&worker->entry);
- }
- 
--static struct worker *alloc_worker(void)
-+static struct worker *alloc_worker(int nid)
- {
- 	struct worker *worker;
- 
--	worker = kzalloc(sizeof(*worker), GFP_KERNEL);
-+	worker = kzalloc_node(sizeof(*worker), GFP_KERNEL, nid);
- 	if (worker) {
- 		INIT_LIST_HEAD(&worker->entry);
- 		INIT_LIST_HEAD(&worker->scheduled);
-@@ -1713,7 +1713,7 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	if (id < 0)
- 		goto fail;
- 
--	worker = alloc_worker();
-+	worker = alloc_worker(pool->node);
- 	if (!worker)
- 		goto fail;
- 
-@@ -4129,7 +4129,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 	if (flags & WQ_MEM_RECLAIM) {
- 		struct worker *rescuer;
- 
--		rescuer = alloc_worker();
-+		rescuer = alloc_worker(NUMA_NO_NODE);
- 		if (!rescuer)
- 			goto err_destroy;
- 
--- 
-1.7.4.4
+I'll respin the "ext4: rearrange initialization to fix EXT4FS_DEBUG"
+commit to include this fix and give you credit in the commit logs for
+pointing out this issue.
+
+Cheers,
+
+						- Ted
 
