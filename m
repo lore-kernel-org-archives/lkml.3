@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541AbaGOKlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 06:41:53 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45366 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038AbaGOKlv (ORCPT
+	id S1758677AbaGOKoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 06:44:15 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:33135 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758104AbaGOKoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 06:41:51 -0400
-Date: Tue, 15 Jul 2014 12:41:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH v2 4/7] perf, x86: large PEBS interrupt threshold
-Message-ID: <20140715104139.GA9918@twins.programming.kicks-ass.net>
-References: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com>
- <1405414739-31455-5-git-send-email-zheng.z.yan@intel.com>
+	Tue, 15 Jul 2014 06:44:12 -0400
+Date: Tue, 15 Jul 2014 12:44:09 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Rob Herring <robh+dt@kernel.org>, David Airlie <airlied@linux.ie>,
+        Randy Dunlap <rdunlap@infradead.org>, dri-devel@lists.freedesktop.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] DT: add vendor prefix for Foxlink Group
+Message-ID: <20140715104408.GC6616@ulmo>
+References: <1401976412-27436-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1401976412-27436-2-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vYzPTKoKRdF40tnF"
+	protocol="application/pgp-signature"; boundary="eHhjakXzOLJAF9wJ"
 Content-Disposition: inline
-In-Reply-To: <1405414739-31455-5-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1401976412-27436-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---vYzPTKoKRdF40tnF
-Content-Type: text/plain; charset=us-ascii
+--eHhjakXzOLJAF9wJ
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 15, 2014 at 04:58:56PM +0800, Yan, Zheng wrote:
-> PEBS always had the capability to log samples to its buffers without
-> an interrupt. Traditionally perf has not used this but always set the
-> PEBS threshold to one.
+On Thu, Jun 05, 2014 at 03:53:31PM +0200, Boris BREZILLON wrote:
+> Add vendor prefix for Foxlink Group.
 >=20
-> For frequently occuring events (like cycles or branches or load/stores)
-> this in term requires using a relatively high sampling period to avoid
-> overloading the system, by only processing PMIs. This in term increases
-> sampling error.
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
 >=20
-> For the common cases we still need to use the PMI because the PEBS
-> hardware has various limitations. The biggest one is that it can not
-> supply a callgraph. It also requires setting a fixed period, as the
-> hardware does not support adaptive period. Another issue is that it
-> cannot supply a time stamp and some other options. To supply a TID it
-> requires flushing on context switch. It can however supply the IP, the
-> load/store address, TSX information, registers, and some other things.
->=20
-> So we can make PEBS work for some specific cases, basically as long as
-> you can do without a callgraph and can set the period you can use this
-> new PEBS mode.
->=20
-> The main benefit is the ability to support much lower sampling period
-> (down to -c 1000) without extensive overhead.
->=20
-> One use cases is for example to increase the resolution of the c2c tool.
-> Another is double checking when you suspect the standard sampling has
-> too much sampling error.
->=20
-> Some numbers on the overhead, using cycle soak, comparing
-> "perf record --no-time -e cycles:p -c" to "perf record -e cycles:p -c"
->=20
-> period    plain  multi  delta
-> 10003     15     5      10
-> 20003     15.7   4      11.7
-> 40003     8.7    2.5    6.2
-> 80003     4.1    1.4    2.7
-> 100003    3.6    1.2    2.4
-> 800003    4.4    1.4    3
-> 1000003   0.6    0.4    0.2
-> 2000003   0.4    0.3    0.1
-> 4000003   0.3    0.2    0.1
-> 10000003  0.3    0.2    0.1
->=20
-> The interesting part is the delta between multi-pebs and normal pebs. Abo=
-ve
-> -c 1000003 it does not really matter because the basic overhead is so low.
-> With periods below 80003 it becomes interesting.
->=20
-> Note in some other workloads (e.g. kernbench) the smaller sampling periods
-> cause much more overhead without multi-pebs,  upto 80% (and throttling) h=
-ave
-> been observed with -c 10003. multi pebs generally does not throttle.
->=20
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Docu=
+mentation/devicetree/bindings/vendor-prefixes.txt
+> index abc3080..71c7749 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -46,6 +46,7 @@ epson	Seiko Epson Corp.
+>  est	ESTeem Wireless Modems
+>  eukrea  Eukr=C3=A9a Electromatique
+>  excito	Excito
+> +foxlink	Foxlink Group
+>  fsl	Freescale Semiconductor
+>  GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+>  gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+> --=20
+> 1.8.3.2
 
-And not a single word on the multiplex horror we talked about. That
-should be mentioned, in detail.
+Rob,
 
---vYzPTKoKRdF40tnF
+are you going to take this via the DT tree or do you want me to pick it
+up along with patch 2/2? In the latter case, can I have your Acked-by?
+
+Thierry
+
+--eHhjakXzOLJAF9wJ
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTxQVjAAoJEHZH4aRLwOS64hsP/i+WaI87Ip0/ZFBlv0h8Xt/w
-4OoPDXgXFg3LRqbDvW55bYkRewR1/37dz4tMtzOKmriut1Y29MFGvFXClFtgXZx9
-AOxy4DiZGbuuYOISzbN66p6RbnDHbch3oELB+C5w3/9iFAnILr/QgHD74PiNMDHH
-+iIGjoT0mrCuSMf2Db7ElORZKpHL29motVI68qmqpfj3M42ImkGCM96pgu60/GtF
-2un1Zgx/fC6qIkhJU3bFAxs8V2r7RJz2bvxXRJyYizMJHeiy44pEI1Yg1fBMjTVs
-y0qPvUoOKNQB4Y8cQlPFLzPCD/MAy9cyo7YT4ftYPAbLlFZxmwTDQQuEAtAKGHZ9
-biFNTT7kEHUPuSatSWS9/gpaVKOcxkcN2Vw1W7UC6VO+y+SEF56XCSr0+trPZfeK
-c6ti4nytg6ajx7THOqfcwSNx2IM/vcbtxET7To8fQbthO5z3eQ7R3KyDPruttjqw
-L6duaaW7qNrD53QvfLTk2uyyCRKcqt4Miv9JZu7a5OCcwobmI8eSBJ/hGgJDOmAD
-dlTIp+4QVPBmp4ChvK5S/2BWRIhDsIZnqNteT4cQsSF0pWlhTW00VzxSSnoYZr1w
-RSxA9hm0amS3x+ys+l9svX6UCEKkBcE/aXfYSFrFYG4+bRrJBs3hAIrW8Ikx0Rlq
-FWrlKAqw+dti2Ze8KOI0
-=2QNc
+iQIcBAEBAgAGBQJTxQX4AAoJEN0jrNd/PrOhX7cP/iDo+2ymOYGGAdIrGEWRg9GU
+rKaEfMhWOYlbAWwhAaDMSn6Qojgbq9uGlPX2RNeyOHAaowNmyHySu9WqdxJ0AtkW
+C45bQ75Qx+Oro8ShQ/p4xQj06P7e6EBgGNBywahmrbwmDDWLRVXPPrTe9a4xfFbX
+NcFylN9k4QSXEOoYWOXwl5aRVSeal3C7k6LmsozhWEt43vMFB34nPusTLKPkOIFL
+V/iK7vj+EneWZoN/5R677dVhUt15WSgMut0wuVzs0g3DgW6G6vRWKdq+N5MVhKsJ
+adgEMiBP/gfmQ3qD2b1xXVCn2qJ5CsYa9kkPXtPWZYILkr8u/dEzqrwMVSZH5jnw
+KdFOCgpHfbm8qB/pyEk9yiey3DYG0Or+0Eq0FdZbc1CDHhG9SaiPjB6ONktTEFeV
+4dNoq4FgNOcSO4eOc91XroUp/NMUKV/LFxFE9CDcpVv79asedf6gzpmflf6iWMQ+
+m5XwEzVMr1XYhnjkOSAM4g+uD5fdgSROPT1Hp6getoXydKcmyKXZFqN+ND5gYgEp
+/49hKNuJiPQY87CxNfLLCVvND8/pO4ETCtrpx2z7CxXyYHUYtEEx5T+CFOYPkxrp
+xlMKYGF0qUflDj1NuzCwOnQ4iNAyJzS5CS0E9sVQpo2CDGAIkxjGeZcmc3k7KF8n
+71Qk01I1+EVhadyCVuiv
+=HnAT
 -----END PGP SIGNATURE-----
 
---vYzPTKoKRdF40tnF--
+--eHhjakXzOLJAF9wJ--
