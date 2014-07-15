@@ -1,76 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934145AbaGOWME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:12:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54353 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933786AbaGOVfT (ORCPT
+	id S1754279AbaGOWMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:12:21 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57934 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634AbaGOWMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:19 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 196/198] lz4: fix another possible overrun
-Date: Tue, 15 Jul 2014 14:31:06 -0700
-Message-Id: <1405459868-15089-197-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 15 Jul 2014 18:12:15 -0400
+Message-ID: <1405462329.2124.12.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [Linux-ima-devel] [PATCH v1 1/3] ima: provide flag to identify
+ new empty files
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-ima-devel@lists.sourceforge.net
+Date: Tue, 15 Jul 2014 18:12:09 -0400
+In-Reply-To: <1405432827.21720.20.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <cover.1405078844.git.d.kasatkin@samsung.com>
+	 <ac60392e0118902ce9b308fdae09d633da1682af.1405078844.git.d.kasatkin@samsung.com>
+	 <1405432827.21720.20.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071522-1542-0000-0000-0000035014FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-07-15 at 10:00 -0400, Mimi Zohar wrote: 
+> On Fri, 2014-07-11 at 14:46 +0300, Dmitry Kasatkin wrote: 
+> > Newly created empty files do not get initial security.ima
+> > value because iversion does not change. It can be checked from
+> > the shell as:
+> > 
+> >   $ (exec >foo)
+> >   $ getfattr -h -e hex -d -m security foo
 
-------------------
+This is a change in behavior.  Please include the commit number that
+introduced this change in the patch description.
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Mimi
 
-commit 4148c1f67abf823099b2d7db6851e4aea407f5ee upstream.
+> > This patch defines IMA_NEW_FILE flag which is set when IMA detects that new
+> > file is created. It is checked upon ima_file_free hook to set initial
+> > security.ima value.
+> 
+> Other than rebasing on top of #next, this patch set looks good.
+> 
+> thanks,
+> 
+> Mimi
+> 
+> > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> 
+> > ---
+> >  security/integrity/ima/ima_appraise.c |  7 +++++--
+> >  security/integrity/ima/ima_main.c     | 12 +++++++-----
+> >  security/integrity/integrity.h        |  1 +
+> >  3 files changed, 13 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> > index 9dd18b5..3a4beb3 100644
+> > --- a/security/integrity/ima/ima_appraise.c
+> > +++ b/security/integrity/ima/ima_appraise.c
+> > @@ -194,8 +194,11 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+> >  			goto out;
+> > 
+> >  		cause = "missing-hash";
+> > -		status =
+> > -		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
+> > +		status = INTEGRITY_NOLABEL;
+> > +		if (inode->i_size == 0) {
+> > +			iint->flags |= IMA_NEW_FILE;
+> > +			status = INTEGRITY_PASS;
+> > +		}
+> >  		goto out;
+> >  	}
+> > 
+> > diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+> > index e51e0d5..5a870e7 100644
+> > --- a/security/integrity/ima/ima_main.c
+> > +++ b/security/integrity/ima/ima_main.c
+> > @@ -124,11 +124,13 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
+> >  		return;
+> > 
+> >  	mutex_lock(&iint->mutex);
+> > -	if (atomic_read(&inode->i_writecount) == 1 &&
+> > -	    iint->version != inode->i_version) {
+> > -		iint->flags &= ~IMA_DONE_MASK;
+> > -		if (iint->flags & IMA_APPRAISE)
+> > -			ima_update_xattr(iint, file);
+> > +	if (atomic_read(&inode->i_writecount) == 1) {
+> > +		if ((iint->version != inode->i_version) ||
+> > +		    (iint->flags & IMA_NEW_FILE)) {
+> > +			iint->flags &= ~(IMA_DONE_MASK | IMA_NEW_FILE);
+> > +			if (iint->flags & IMA_APPRAISE)
+> > +				ima_update_xattr(iint, file);
+> > +		}
+> >  	}
+> >  	mutex_unlock(&iint->mutex);
+> >  }
+> > diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+> > index 92c1083..7656d47 100644
+> > --- a/security/integrity/integrity.h
+> > +++ b/security/integrity/integrity.h
+> > @@ -30,6 +30,7 @@
+> >  #define IMA_ACTION_FLAGS	0xff000000
+> >  #define IMA_DIGSIG_REQUIRED	0x01000000
+> >  #define IMA_PERMIT_DIRECTIO	0x02000000
+> > +#define IMA_NEW_FILE		0x04000000
+> > 
+> >  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+> >  				 IMA_APPRAISE_SUBMASK)
+> 
+> 
+> 
+> ------------------------------------------------------------------------------
+> Want fast and easy access to all the code in your enterprise? Index and
+> search up to 200,000 lines of code with a free copy of Black Duck
+> Code Sight - the same software that powers the world's largest code
+> search on Ohloh, the Black Duck Open Hub! Try it now.
+> http://p.sf.net/sfu/bds
+> _______________________________________________
+> Linux-ima-devel mailing list
+> Linux-ima-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
+> 
 
-There is one other possible overrun in the lz4 code as implemented by
-Linux at this point in time (which differs from the upstream lz4
-codebase, but will get synced at in a future kernel release.)  As
-pointed out by Don, we also need to check the overflow in the data
-itself.
-
-While we are at it, replace the odd error return value with just a
-"simple" -1 value as the return value is never used for anything other
-than a basic "did this work or not" check.
-
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Reported-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- lib/lz4/lz4_decompress.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-index 99a03ac..b74da44 100644
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -108,6 +108,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
- 		if (length == ML_MASK) {
- 			for (; *ip == 255; length += 255)
- 				ip++;
-+			if (unlikely(length > (size_t)(length + *ip)))
-+				goto _output_error;
- 			length += *ip++;
- 		}
- 
-@@ -157,7 +159,7 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
- 
- 	/* write overflow error detected */
- _output_error:
--	return (int) (-(((char *)ip) - source));
-+	return -1;
- }
- 
- static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
--- 
-1.9.1
 
