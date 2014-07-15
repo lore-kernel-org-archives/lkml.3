@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760790AbaGOXzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:55:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60768 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757199AbaGOXzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:55:35 -0400
-Message-ID: <53C5BF46.3070604@zytor.com>
-Date: Tue, 15 Jul 2014 16:54:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933170AbaGOX4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:56:00 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:44581 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756826AbaGOXz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:55:56 -0400
+Date: Wed, 16 Jul 2014 08:55:53 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Sam Asadi <asadi.samuel@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/94] ARM: shmobile: Add DT and defconfigs to MAINTAINERS
+Message-ID: <20140715235553.GI557@verge.net.au>
+References: <1405443280-15138-1-git-send-email-asadi.samuel@gmail.com>
+ <20140715170530.GA16841@kroah.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-CC: Fabio Coatti <fabio.coatti@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
-References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>	<CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>	<20140710200527.GA15190@google.com>	<3524198.dm6HbYTJqK@calvin>	<CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>	<CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com> <CAE9FiQVN1WLigYt7YGHsd1f+BreApubYbjC9j9tzrCe-p5f=HA@mail.gmail.com>
-In-Reply-To: <CAE9FiQVN1WLigYt7YGHsd1f+BreApubYbjC9j9tzrCe-p5f=HA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715170530.GA16841@kroah.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 04:40 PM, Yinghai Lu wrote:
->>
->> One of the reasons for iomem_resource is so we don't hand out the same
->> address space to two different devices.  We *could* do that by keeping
->> track of the union of all devices and reserved areas that we know
->> about.
->>
->> But the current resource code is more strict: it enforces a hierarchy.
->> For example, in this case, it rejects the 00:00 PNP resource because
->> it is larger than the e820 entry.  The problem with rejecting it is
->> that we might hand out [mem 0xfed14000-0xfed17fff] to another device
->> even though PNP told us that it's in use.
->>
->> I'm about to head out for a few weeks of vacation, so I won't be able
->> to do anything with this.
+On Tue, Jul 15, 2014 at 10:05:30AM -0700, Greg KH wrote:
+> On Tue, Jul 15, 2014 at 07:53:07PM +0300, Sam Asadi wrote:
+> > From: Simon Horman <horms+renesas@verge.net.au>
+> > 
+> > There are a number of DT and defconfig files which
+> > are maintained as part of shmobile but have not been
+> > listed as such in the MAINTAINERS file. This creates
+> > confusion from time to time.
+> > 
+> > Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+> > Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
 > 
-> In that case, we could reserve the whole MCH range in e820 from
-> trim_snb_memory() instead.
+> Really?  We need a "real" name here.
 > 
-> HPA, what is your idea about it?
+> And why are you passing on Simon's patches, why would I care about this
+> patch to the MAINTAINERS file?
 > 
-> Yinghai
-> 
+> confused,
 
-We could quirk it, but we would have to make bloody darn sure that we
-don't break any systems because of unusual configuration and so on.
-
-I agree that we need to treat fixed resources as equivalent to reserved.
- This is also a BIOS bug (it should reserve the whole region), but that
-happens far too frequently.  I don't know if we have any way to do that
-without massive surgery to the current code, though.
-
-	-hpa
-
+I'm also a little confused as this same patch is sitting in my tree
+and has been queued up for v3.17 by in the arm-soc tree.
