@@ -1,55 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536AbaGOJIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:08:18 -0400
-Received: from sym2.noone.org ([178.63.92.236]:54849 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932500AbaGOJIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:08:15 -0400
-Date: Tue, 15 Jul 2014 11:08:13 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v2 00/29] nios2 Linux kernel port
-Message-ID: <20140715090813.GE7668@distanz.ch>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	id S932572AbaGOJJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:09:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52574 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932500AbaGOJJr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:09:47 -0400
+Date: Tue, 15 Jul 2014 11:09:42 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Peter.Chen@freescale.com, kishon <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        alexandre.belloni@free-electrons.com,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        zhiming Xu <zmxu@marvell.com>, jszhang@marvell.com,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Subject: Re: [PATCH 3/4] usb: add support to the PHY framework for HCD
+Message-ID: <20140715090942.GC1011@kwain>
+References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1404901036-27682-4-git-send-email-antoine.tenart@free-electrons.com>
+ <CAFp+6iELkaXOQiM0=JzUj=YZGqfMjOPFt+-dnEs4=Q3EzyBJBQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
-X-Editor: Vi IMproved 7.3
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFp+6iELkaXOQiM0=JzUj=YZGqfMjOPFt+-dnEs4=Q3EzyBJBQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-15 at 10:45:27 +0200, Ley Foon Tan <lftan@altera.com> wrote:
-> This is the 2nd version of patchset adds the Linux kernel port for Nios II processor from
-> Altera. All of the feedback from v1 patchseries has been addressed. Thanks to all who
-> provided feedback on the previous version.
-> 
-> About Nios II Cores
-> -------------------
-> Nios II is a 32-bit embedded-processor architecture designed specifically for the
-> Altera family of FPGAs.
-> More information is available  at http://www.altera.com/devices/processor/nios2/ni2-index.html
-> 
-> Instruction set and architecture overview documents can be found on the
-> following page:
-> http://www.altera.com/literature/lit-nio2.jsp
-> 
-> Nios2 GCC port is in mainline and will be in the FSF 4.9 release.
-> 
-> The patchset are based on v3.16-rc5 and can also be found in the following git tree:
-> git://git.rocketboards.org/linux-socfpga-next.git  nios2-upstream
+Hi Vivek,
 
-Very nice work Ley Foon! It's great to see the Nios II port finally
-making it upstream.
+On Mon, Jul 14, 2014 at 02:38:03PM +0530, Vivek Gautam wrote:
+> On Wed, Jul 9, 2014 at 3:47 PM, Antoine Ténart
+> <antoine.tenart@free-electrons.com> wrote:
+> > diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+> > index bec31e2efb88..b985af5b167c 100644
+> > --- a/drivers/usb/core/hcd.c
+> > +++ b/drivers/usb/core/hcd.c
+> > @@ -42,6 +42,7 @@
+> >  #include <linux/pm_runtime.h>
+> >  #include <linux/types.h>
+> >
+> > +#include <linux/phy/phy.h>
+> >  #include <linux/usb.h>
+> >  #include <linux/usb/hcd.h>
+> >  #include <linux/usb/phy.h>
+> > @@ -2631,21 +2632,35 @@ int usb_add_hcd(struct usb_hcd *hcd,
+> >         int retval;
+> >         struct usb_device *rhdev;
+> >
+> > -       if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->phy) {
+> > -               struct usb_phy *phy = usb_get_phy_dev(hcd->self.controller, 0);
+> > +       if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->phy && !hcd->usb_phy) {
+> > +               struct phy *phy = of_phy_get(hcd->self.controller->of_node, 0);
+> >
+> > -               if (IS_ERR(phy)) {
+> > -                       retval = PTR_ERR(phy);
+> > -                       if (retval == -EPROBE_DEFER)
+> > -                               return retval;
+> > -               } else {
+> > -                       retval = usb_phy_init(phy);
+> > +               if (!IS_ERR(phy)) {
+> > +                       retval = phy_init(hcd->phy);
+> >                         if (retval) {
+> > -                               usb_put_phy(phy);
+> > +                               phy_exit(hcd->phy);
+> >                                 return retval;
+> >                         }
+> > +                       retval = phy_power_on(hcd->phy);
+> >                         hcd->phy = phy;
+> >                         hcd->remove_phy = 1;
+> > +               } else {
+> > +                       struct usb_phy *phy =
+> > +                               usb_get_phy_dev(hcd->self.controller, 0);
+> > +
+> > +                       if (IS_ERR(phy)) {
+> > +                               retval = PTR_ERR(phy);
+> > +                               if (retval == -EPROBE_DEFER)
+> > +                                       return retval;
+> > +                       } else {
+> > +                               retval = usb_phy_init(phy);
+> > +                               if (retval) {
+> > +                                       usb_put_phy(phy);
+> > +                                       return retval;
+> > +                               }
+> > +                               hcd->usb_phy = phy;
+> > +                               hcd->remove_phy = 1;
+> > +                       }
+> >                 }
+> >         }
+> 
+> Just a note here:
+> There had already been a patch for adding the generic phy support in
+> usb/core/hcd.c in 3.16 cycle by
+> Sergei and Yoshihiro [1], though structurally a bit different, was not
+> picked since there wasn't any user of the patch
+> till then. Do you mind modifying on top of that patch
+> 
+> [1] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.html
 
-I'll test the series on the NEEK and my custom board some time this
-week.
+Sure, I'll rework my series taking in account this patch. I'll cook a v2
+for later today.
 
-Cheers
-Tobias
+Thanks!
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
