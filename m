@@ -1,107 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943AbaGOXHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:07:53 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63202 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758985AbaGOXHU (ORCPT
+	id S1757688AbaGOXM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:12:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44886 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706AbaGOXMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:07:20 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: viro@zeniv.linux.org.uk, clm@fb.com, jbacik@fb.com
-Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffm@suse.com, fdmanana@suse.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [RFC 2/2] btrfs: use the new VFS super_block_dev
-Date: Tue, 15 Jul 2014 16:07:05 -0700
-Message-Id: <1405465625-1122-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com>
+	Tue, 15 Jul 2014 19:12:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.4 00/22] 3.4.99-stable review
+Date: Tue, 15 Jul 2014 16:17:05 -0700
+Message-Id: <20140715231622.121816073@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+This is the start of the stable review cycle for the 3.4.99 release.
+There are 22 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Use the new VFS layer struct super_block_dev instead of carrying
-the anonymous bdev's on our own. This makes the VFS layer aware of
-all of our anonymous dev's on the super block.
+Responses should be made by Thu Jul 17 23:16:04 UTC 2014.
+Anything received after that time might be too late.
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- fs/btrfs/ctree.h   |  7 ++-----
- fs/btrfs/disk-io.c | 10 +++++-----
- fs/btrfs/inode.c   |  2 +-
- 3 files changed, 8 insertions(+), 11 deletions(-)
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.99-rc1.gz
+and the diffstat can be found below.
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index be91397..34247f6 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1846,11 +1846,8 @@ struct btrfs_root {
- 	 * protected by inode_lock
- 	 */
- 	struct radix_tree_root delayed_nodes_tree;
--	/*
--	 * right now this just gets used so that a root has its own devid
--	 * for stat.  It may be used for more later
--	 */
--	dev_t anon_dev;
-+
-+	struct super_block_dev *sbdev;
- 
- 	spinlock_t root_item_lock;
- 	atomic_t refs;
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 8bb4aa1..edc64a8 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1269,7 +1269,6 @@ static void __setup_root(u32 nodesize, u32 leafsize, u32 sectorsize,
- 		root->defrag_trans_start = 0;
- 	init_completion(&root->kobj_unregister);
- 	root->root_key.objectid = objectid;
--	root->anon_dev = 0;
- 
- 	spin_lock_init(&root->root_item_lock);
- }
-@@ -1572,9 +1571,11 @@ int btrfs_init_fs_root(struct btrfs_root *root)
- 	spin_lock_init(&root->cache_lock);
- 	init_waitqueue_head(&root->cache_wait);
- 
--	ret = get_anon_bdev(&root->anon_dev);
--	if (ret)
-+	root->sbdev = get_anon_sbdev(root->fs_info->sb);
-+	if (!root->sbdev) {
-+		ret = -ENOMEM;
- 		goto free_writers;
-+	}
- 	return 0;
- 
- free_writers:
-@@ -3529,8 +3530,7 @@ static void free_fs_root(struct btrfs_root *root)
- 	WARN_ON(!RB_EMPTY_ROOT(&root->inode_tree));
- 	btrfs_free_block_rsv(root, root->orphan_block_rsv);
- 	root->orphan_block_rsv = NULL;
--	if (root->anon_dev)
--		free_anon_bdev(root->anon_dev);
-+	free_anon_sbdev(root->sbdev);
- 	if (root->subv_writers)
- 		btrfs_free_subvolume_writers(root->subv_writers);
- 	free_extent_buffer(root->node);
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 3668048..41a8bab 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -8277,7 +8277,7 @@ static int btrfs_getattr(struct vfsmount *mnt,
- 	u32 blocksize = inode->i_sb->s_blocksize;
- 
- 	generic_fillattr(inode, stat);
--	stat->dev = BTRFS_I(inode)->root->anon_dev;
-+	stat->dev = BTRFS_I(inode)->root->sbdev->anon_dev;
- 	stat->blksize = PAGE_CACHE_SIZE;
- 
- 	spin_lock(&BTRFS_I(inode)->lock);
--- 
-2.0.1
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.99-rc1
+
+Lan Tianyu <tianyu.lan@intel.com>
+    ACPI / battery: Retry to get battery information if failed during probing
+
+Roland Dreier <roland@purestorage.com>
+    x86, ioremap: Speed up check for RAM pages
+
+H. Peter Anvin <hpa@zytor.com>
+    x86, espfix: Make it possible to disable 16-bit support
+
+H. Peter Anvin <hpa@zytor.com>
+    x86, espfix: Make espfix64 a Kconfig option, fix UML
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, espfix: Fix broken header guard
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, espfix: Move espfix definitions into a separate header file
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+
+H. Peter Anvin <hpa@zytor.com>
+    Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Plug slow unlock race
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Handle deadlock detection smarter
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Detect changes in the pi lock chain
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Fix deadlock detector for real
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    tracing: Remove ftrace_stop/start() from reading the trace file
+
+Christian König <christian.koenig@amd.com>
+    drm/radeon: stop poisoning the GART TLB
+
+Theodore Ts'o <tytso@mit.edu>
+    ext4: clarify error count warning messages
+
+Anton Blanchard <anton@samba.org>
+    powerpc/perf: Never program book3s PMCs with values >= 0x80000000
+
+Axel Lin <axel.lin@ingics.com>
+    hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
+
+Axel Lin <axel.lin@ingics.com>
+    hwmon: (amc6821) Fix permissions for temp2_input
+
+Gu Zheng <guz.fnst@cn.fujitsu.com>
+    cpuset,mempolicy: fix sleeping function called from invalid context
+
+Bert Vermeulen <bert@biot.com>
+    USB: ftdi_sio: Add extra PID.
+
+Andras Kovacs <andras@sth.sze.hu>
+    USB: cp210x: add support for Corsair usb dongle
+
+Bernd Wachter <bernd.wachter@jolla.com>
+    usb: option: Add ID for Telewell TW-LTE 4G v2
+
+
+-------------
+
+Diffstat:
+
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ Makefile                                |   4 +-
+ arch/powerpc/perf/core-book3s.c         |  17 ++-
+ arch/x86/Kconfig                        |  25 +++-
+ arch/x86/include/asm/espfix.h           |  16 ++
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   2 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_32.S              |  12 ++
+ arch/x86/kernel/entry_64.S              |  81 +++++++++-
+ arch/x86/kernel/espfix_64.c             | 209 ++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  10 +-
+ arch/x86/kernel/smpboot.c               |   7 +
+ arch/x86/mm/dump_pagetables.c           |  31 ++--
+ arch/x86/mm/ioremap.c                   |  26 +++-
+ arch/x86/vdso/vdso32-setup.c            |   8 -
+ drivers/acpi/battery.c                  |  27 +++-
+ drivers/gpu/drm/radeon/rs600.c          |   6 +-
+ drivers/hwmon/adm1029.c                 |   3 +
+ drivers/hwmon/amc6821.c                 |   2 +-
+ drivers/usb/serial/cp210x.c             |   1 +
+ drivers/usb/serial/ftdi_sio.c           |   3 +-
+ drivers/usb/serial/ftdi_sio_ids.h       |   3 +-
+ drivers/usb/serial/option.c             |   2 +
+ fs/ext4/super.c                         |   7 +-
+ init/main.c                             |   4 +
+ kernel/cpuset.c                         |   8 +-
+ kernel/rtmutex-debug.h                  |   5 +
+ kernel/rtmutex.c                        | 252 ++++++++++++++++++++++++++++----
+ kernel/rtmutex.h                        |   5 +
+ kernel/trace/trace.c                    |   2 -
+ mm/mempolicy.c                          |   2 -
+ 32 files changed, 696 insertions(+), 89 deletions(-)
+
 
