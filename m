@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759270AbaGOVcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:32:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54036 "EHLO
+	id S932908AbaGOVdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:33:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54059 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759202AbaGOVcl (ORCPT
+	with ESMTP id S1752963AbaGOVcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:41 -0400
+	Tue, 15 Jul 2014 17:32:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 097/198] powerpc/serial: Use saner flags when creating legacy ports
-Date: Tue, 15 Jul 2014 14:29:27 -0700
-Message-Id: <1405459868-15089-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 110/198] Input: elantech - don't set bit 1 of reg_10 when the no_hw_res quirk is set
+Date: Tue, 15 Jul 2014 14:29:40 -0700
+Message-Id: <1405459868-15089-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,84 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit c4cad90f9e9dcb85afc5e75a02ae3522ed077296 upstream.
+commit fb4f8f568a9def02240ef9bf7aabd246dc63a081 upstream.
 
-We had a mix & match of flags used when creating legacy ports
-depending on where we found them in the device-tree. Among others
-we were missing UPF_SKIP_TEST for some kind of ISA ports which is
-a problem as quite a few UARTs out there don't support the loopback
-test (such as a lot of BMCs).
+The touchpad on the GIGABYTE U2442 not only stops communicating when we try
+to set bit 3 (enable real hardware resolution) of reg_10, but on some BIOS
+versions also when we set bit 1 (enable two finger mode auto correct).
 
-Let's pick the set of flags used by the SoC code and generalize it
-which means autoconf, no loopback test, irq maybe shared and fixed
-port.
+I've asked the original reporter of:
+https://bugzilla.kernel.org/show_bug.cgi?id=61151
 
-Sending to stable as the lack of UPF_SKIP_TEST is breaking
-serial on some machines so I want this back into distros
+To check that not setting bit 1 does not lead to any adverse effects on his
+model / BIOS revision, and it does not, so this commit fixes the touchpad
+not working on these versions by simply never setting bit 1 for laptop
+models with the no_hw_res quirk.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-and-tested-by: James Lademann <jwlademann@gmail.com>
+Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/legacy_serial.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/input/mouse/elantech.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
-index 40bd7bd..8a8b722 100644
---- a/arch/powerpc/kernel/legacy_serial.c
-+++ b/arch/powerpc/kernel/legacy_serial.c
-@@ -48,6 +48,9 @@ static struct of_device_id legacy_serial_parents[] __initdata = {
- static unsigned int legacy_serial_count;
- static int legacy_serial_console = -1;
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 360e46b..233516a 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -849,7 +849,7 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+ 		if (etd->set_hw_resolution)
+ 			etd->reg_10 = 0x0b;
+ 		else
+-			etd->reg_10 = 0x03;
++			etd->reg_10 = 0x01;
  
-+static const upf_t legacy_port_flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST |
-+	UPF_SHARE_IRQ | UPF_FIXED_PORT;
-+
- static unsigned int tsi_serial_in(struct uart_port *p, int offset)
- {
- 	unsigned int tmp;
-@@ -153,8 +156,6 @@ static int __init add_legacy_soc_port(struct device_node *np,
- {
- 	u64 addr;
- 	const __be32 *addrp;
--	upf_t flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST | UPF_SHARE_IRQ
--		| UPF_FIXED_PORT;
- 	struct device_node *tsi = of_get_parent(np);
- 
- 	/* We only support ports that have a clock frequency properly
-@@ -185,9 +186,11 @@ static int __init add_legacy_soc_port(struct device_node *np,
- 	 * IO port value. It will be fixed up later along with the irq
- 	 */
- 	if (tsi && !strcmp(tsi->type, "tsi-bridge"))
--		return add_legacy_port(np, -1, UPIO_TSI, addr, addr, NO_IRQ, flags, 0);
-+		return add_legacy_port(np, -1, UPIO_TSI, addr, addr,
-+				       NO_IRQ, legacy_port_flags, 0);
- 	else
--		return add_legacy_port(np, -1, UPIO_MEM, addr, addr, NO_IRQ, flags, 0);
-+		return add_legacy_port(np, -1, UPIO_MEM, addr, addr,
-+				       NO_IRQ, legacy_port_flags, 0);
+ 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+ 			rc = -1;
+@@ -1350,7 +1350,8 @@ static int elantech_reconnect(struct psmouse *psmouse)
  }
  
- static int __init add_legacy_isa_port(struct device_node *np,
-@@ -233,7 +236,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
- 
- 	/* Add port, irq will be dealt with later */
- 	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]),
--			       taddr, NO_IRQ, UPF_BOOT_AUTOCONF, 0);
-+			       taddr, NO_IRQ, legacy_port_flags, 0);
- 
- }
- 
-@@ -306,7 +309,7 @@ static int __init add_legacy_pci_port(struct device_node *np,
- 	 * IO port value. It will be fixed up later along with the irq
- 	 */
- 	return add_legacy_port(np, index, iotype, base, addr, NO_IRQ,
--			       UPF_BOOT_AUTOCONF, np != pci_dev);
-+			       legacy_port_flags, np != pci_dev);
- }
- #endif
- 
+ /*
+- * Some hw_version 3 models go into error state when we try to set bit 3 of r10
++ * Some hw_version 3 models go into error state when we try to set
++ * bit 3 and/or bit 1 of r10.
+  */
+ static const struct dmi_system_id no_hw_res_dmi_table[] = {
+ #if defined(CONFIG_DMI) && defined(CONFIG_X86)
 -- 
 1.9.1
 
