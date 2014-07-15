@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965366AbaGOXk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:40:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S965392AbaGOXlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:41:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933920AbaGOXOI (ORCPT
+	with ESMTP id S933913AbaGOXOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:08 -0400
+	Tue, 15 Jul 2014 19:14:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.15 37/84] clk: spear3xx: Use proper control register offset
-Date: Tue, 15 Jul 2014 16:17:34 -0700
-Message-Id: <20140715231714.314935180@linuxfoundation.org>
+        Colin Cross <ccross@android.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.15 35/84] arm64: implement TASK_SIZE_OF
+Date: Tue, 15 Jul 2014 16:17:32 -0700
+Message-Id: <20140715231714.259005264@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -30,32 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Colin Cross <ccross@android.com>
 
-commit 15ebb05248d025534773c9ef64915bd888f04e4b upstream.
+commit fa2ec3ea10bd377f9d55772b1dab65178425a1a2 upstream.
 
-The control register is at offset 0x10, not 0x0. This is wreckaged
-since commit 5df33a62c (SPEAr: Switch to common clock framework).
+include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
+is not set by the architecture headers.  TASK_SIZE uses the
+current task to determine the size of the virtual address space.
+On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
+64-bit process from a 32-bit process to return EOF when it reads
+past 0xffffffff.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
+test_tsk_thread_flag instead of test_thread_flag.
+
+Signed-off-by: Colin Cross <ccross@android.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/spear/spear3xx_clock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/include/asm/memory.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/clk/spear/spear3xx_clock.c
-+++ b/drivers/clk/spear/spear3xx_clock.c
-@@ -211,7 +211,7 @@ static inline void spear310_clk_init(voi
- /* array of all spear 320 clock lookups */
- #ifdef CONFIG_MACH_SPEAR320
- 
--#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0000)
-+#define SPEAR320_CONTROL_REG		(soc_config_base + 0x0010)
- #define SPEAR320_EXT_CTRL_REG		(soc_config_base + 0x0018)
- 
- 	#define SPEAR320_UARTX_PCLK_MASK		0x1
+--- a/arch/arm64/include/asm/memory.h
++++ b/arch/arm64/include/asm/memory.h
+@@ -56,6 +56,8 @@
+ #define TASK_SIZE_32		UL(0x100000000)
+ #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
+ 				TASK_SIZE_32 : TASK_SIZE_64)
++#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
++				TASK_SIZE_32 : TASK_SIZE_64)
+ #else
+ #define TASK_SIZE		TASK_SIZE_64
+ #endif /* CONFIG_COMPAT */
 
 
