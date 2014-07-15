@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733AbaGOQst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 12:48:49 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43802 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363AbaGOQsf (ORCPT
+	id S1754768AbaGOQvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 12:51:44 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34923 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaGOQvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 12:48:35 -0400
-From: Adithya Krishnamurthy <linux.challenge1@gmail.com>
-To: omar.ramirez@copitl.com, gregkh@linuxfoundation.org,
-        rashika.kheria@gmail.com, freemangordon@abv.bg,
-        dan.carpenter@oracle.com, ody.guru@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Adithya Krishnamurthy <linux.challenge1@gmail.com>
-Subject: [PATCH] Staging:tidspbridge Fix minor checkpatch.pl warining Unnecessary parentheses
-Date: Tue, 15 Jul 2014 22:18:20 +0530
-Message-Id: <1405442900-6977-3-git-send-email-linux.challenge1@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405442900-6977-2-git-send-email-linux.challenge1@gmail.com>
-References: <y>
- <1405442900-6977-1-git-send-email-linux.challenge1@gmail.com>
- <1405442900-6977-2-git-send-email-linux.challenge1@gmail.com>
+	Tue, 15 Jul 2014 12:51:41 -0400
+To: "Reddy\, Sreekanth" <Sreekanth.Reddy@avagotech.com>
+Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
+        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
+        <Nagalakshmi.Nandigama@avagotech.com>, <linux-kernel@vger.kernel.org>,
+        <hch@infradead.org>, <martin.petersen@oracle.com>
+Subject: Re: [RESEND][PATCH 10/10][SCSI]mpt2sas: Bump mpt2sas driver version to 18.100.00.00
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140625103640.GA12969@avagotech.com>
+Date: Tue, 15 Jul 2014 12:51:07 -0400
+In-Reply-To: <20140625103640.GA12969@avagotech.com> (Sreekanth Reddy's message
+	of "Wed, 25 Jun 2014 16:06:40 +0530")
+Message-ID: <yq14myiwop0.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adithya Krishnamurthy <linux.challenge1@gmail.com>
+>>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
 
-Fixed checkpatch "WARNING: Unnecessary parentheses"
+Sreekanth> Bump mpt2sas driver version to 18.100.00.00. 
 
-Signed-off-by: Adithya Krishnamurthy <linux.challenge1@gmail.com>
----
- drivers/staging/tidspbridge/dynload/cload.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 
-diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
-index 83f2106..b306349 100644
---- a/drivers/staging/tidspbridge/dynload/cload.c
-+++ b/drivers/staging/tidspbridge/dynload/cload.c
-@@ -376,7 +376,7 @@ void dload_headers(struct dload_state *dlthis)
- 		return;
- 	}
- 	/* Check for valid file format */
--	if ((dlthis->dfile_hdr.df_doff_version != DOFF0)) {
-+	if (dlthis->dfile_hdr.df_doff_version != DOFF0) {
- 		dload_error(dlthis, "Bad DOFF version 0x%x",
- 			    dlthis->dfile_hdr.df_doff_version);
- 		return;
 -- 
-1.7.9.5
-
+Martin K. Petersen	Oracle Linux Engineering
