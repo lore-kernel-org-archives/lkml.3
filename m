@@ -1,64 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344AbaGOXXf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:23:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45719 "EHLO
+	id S965195AbaGOXYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:24:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416AbaGOXXc (ORCPT
+	with ESMTP id S934167AbaGOXO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:23:32 -0400
-Date: Tue, 15 Jul 2014 16:23:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/8] printk: Provide pi_<level> / pe_<level> macros
- for __init / __exit code
-Message-Id: <20140715162330.f9b18b79c0f32b84cb7a9071@linux-foundation.org>
-In-Reply-To: <1405176212-12175-3-git-send-email-minipli@googlemail.com>
-References: <1405176212-12175-1-git-send-email-minipli@googlemail.com>
-	<1405176212-12175-3-git-send-email-minipli@googlemail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jul 2014 19:14:27 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Jander <david@protonic.nl>, Matteo Croce <technoboy85@gmail.com>,
+        Eric Whitney <enwlinux@gmail.com>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.15 53/84] ext4: revert commit which was causing fs corruption after journal replays
+Date: Tue, 15 Jul 2014 16:17:50 -0700
+Message-Id: <20140715231714.792685674@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Jul 2014 16:43:26 +0200 Mathias Krause <minipli@googlemail.com> wrote:
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-> The memory used for functions marked with __init will be released after
-> initialization, albeit static data referenced by such code will not, if
-> not explicitly marked this way, too. This is especially true for format
-> strings used in messages printed by such code. Those are not marked and
-> therefore will survive the __init cleanup -- dangling in memory without
-> ever being referenced again.
-> 
-> Ideally we would like the compiler to automatically recognise such
-> constructs but it does not and it's not as simple as it might sound, as
-> strings used in initialization code might latter still be used, e.g. as
-> a slab cache name. Therefore we need to explicitly mark the strings we
-> want to release together with the function itself.
-> 
-> For a seamless integration of the necessary __init_str() / __exit_str()
-> macros to mark the format strings, this patch provides new variants of
-> the well known pr_<level>() macros as pi_<level>() for __init code and
-> pe_<level>() for __exit code. Changing existing code should thereby be
-> as simple as changing a single letter.
-> 
-> For code that cannot be changed to use the pi_<level>() / pe_<level>()
-> macros printk_init() and printk_exit() macros are provided, too.
-> 
-> One remark, though: We cannot provide appropriate p[ie]_debug() macros
-> for the CONFIG_DYNAMIC_DEBUG case as there is (currently) no way to
-> remove entries from dyndbg after initialization. But supporting that
-> scenario would require more work (and code), therefore not necessarily
-> justifying the memory savings.
+------------------
 
-I assume that if a programmer gets this wrong,
-CONFIG_DEBUG_SECTION_MISMATCH will detect and report the error?
+From: Theodore Ts'o <tytso@mit.edu>
 
-Please thoroughly test this if you have not done so.
+commit f9ae9cf5d72b3926ca48ea60e15bdbb840f42372 upstream.
+
+Commit 007649375f6af2 ("ext4: initialize multi-block allocator before
+checking block descriptors") causes the block group descriptor's count
+of the number of free blocks to become inconsistent with the number of
+free blocks in the allocation bitmap.  This is a harmless form of fs
+corruption, but it causes the kernel to potentially remount the file
+system read-only, or to panic, depending on the file systems's error
+behavior.
+
+Thanks to Eric Whitney for his tireless work to reproduce and to find
+the guilty commit.
+
+Fixes: 007649375f6af2 ("ext4: initialize multi-block allocator before checking block descriptors"
+
+Reported-by: David Jander <david@protonic.nl>
+Reported-by: Matteo Croce <technoboy85@gmail.com>
+Tested-by: Eric Whitney <enwlinux@gmail.com>
+Suggested-by: Eric Whitney <enwlinux@gmail.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/super.c |   51 ++++++++++++++++++++++++---------------------------
+ 1 file changed, 24 insertions(+), 27 deletions(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3868,38 +3868,19 @@ static int ext4_fill_super(struct super_
+ 			goto failed_mount2;
+ 		}
+ 	}
+-
+-	/*
+-	 * set up enough so that it can read an inode,
+-	 * and create new inode for buddy allocator
+-	 */
+-	sbi->s_gdb_count = db_count;
+-	if (!test_opt(sb, NOLOAD) &&
+-	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
+-		sb->s_op = &ext4_sops;
+-	else
+-		sb->s_op = &ext4_nojournal_sops;
+-
+-	ext4_ext_init(sb);
+-	err = ext4_mb_init(sb);
+-	if (err) {
+-		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
+-			 err);
+-		goto failed_mount2;
+-	}
+-
+ 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
+ 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
+-		goto failed_mount2a;
++		goto failed_mount2;
+ 	}
+ 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
+ 		if (!ext4_fill_flex_info(sb)) {
+ 			ext4_msg(sb, KERN_ERR,
+ 			       "unable to initialize "
+ 			       "flex_bg meta info!");
+-			goto failed_mount2a;
++			goto failed_mount2;
+ 		}
+ 
++	sbi->s_gdb_count = db_count;
+ 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
+ 	spin_lock_init(&sbi->s_next_gen_lock);
+ 
+@@ -3934,6 +3915,14 @@ static int ext4_fill_super(struct super_
+ 	sbi->s_stripe = ext4_get_stripe_size(sbi);
+ 	sbi->s_extent_max_zeroout_kb = 32;
+ 
++	/*
++	 * set up enough so that it can read an inode
++	 */
++	if (!test_opt(sb, NOLOAD) &&
++	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
++		sb->s_op = &ext4_sops;
++	else
++		sb->s_op = &ext4_nojournal_sops;
+ 	sb->s_export_op = &ext4_export_ops;
+ 	sb->s_xattr = ext4_xattr_handlers;
+ #ifdef CONFIG_QUOTA
+@@ -4123,13 +4112,21 @@ no_journal:
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
+ 			 "reserved pool", ext4_calculate_resv_clusters(sb));
+-		goto failed_mount5;
++		goto failed_mount4a;
+ 	}
+ 
+ 	err = ext4_setup_system_zone(sb);
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
+ 			 "zone (%d)", err);
++		goto failed_mount4a;
++	}
++
++	ext4_ext_init(sb);
++	err = ext4_mb_init(sb);
++	if (err) {
++		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
++			 err);
+ 		goto failed_mount5;
+ 	}
+ 
+@@ -4206,8 +4203,11 @@ failed_mount8:
+ failed_mount7:
+ 	ext4_unregister_li_request(sb);
+ failed_mount6:
+-	ext4_release_system_zone(sb);
++	ext4_mb_release(sb);
+ failed_mount5:
++	ext4_ext_release(sb);
++	ext4_release_system_zone(sb);
++failed_mount4a:
+ 	dput(sb->s_root);
+ 	sb->s_root = NULL;
+ failed_mount4:
+@@ -4231,14 +4231,11 @@ failed_mount3:
+ 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
+ 	if (sbi->s_mmp_tsk)
+ 		kthread_stop(sbi->s_mmp_tsk);
+-failed_mount2a:
+-	ext4_mb_release(sb);
+ failed_mount2:
+ 	for (i = 0; i < db_count; i++)
+ 		brelse(sbi->s_group_desc[i]);
+ 	ext4_kvfree(sbi->s_group_desc);
+ failed_mount:
+-	ext4_ext_release(sb);
+ 	if (sbi->s_chksum_driver)
+ 		crypto_free_shash(sbi->s_chksum_driver);
+ 	if (sbi->s_proc) {
+
+
