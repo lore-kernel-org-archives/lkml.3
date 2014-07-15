@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaGOOia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:38:30 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58214 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaGOOh4 (ORCPT
+	id S1753576AbaGOOii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:38:38 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:37964 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaGOOic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:37:56 -0400
-Date: Tue, 15 Jul 2014 16:37:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: perf: FORMAT_GROUP on attached process stops working in 3.16-rc
-Message-ID: <20140715143745.GK9918@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.11.1407151030550.20353@vincent-weaver-1.umelst.maine.edu>
+	Tue, 15 Jul 2014 10:38:32 -0400
+Message-ID: <53C53CE1.4090803@gmail.com>
+Date: Tue, 15 Jul 2014 22:38:25 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2KNN3gYh9MUZz6n4"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1407151030550.20353@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org, arnd@arndb.de,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at> <53C3994C.1010309@metafoo.de> <53C39B66.4060500@nod.at> <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com> <53C47725.8000005@gmail.com> <53C47B76.4080306@roeck-us.net> <53C47FB7.6080304@gmail.com>
+In-Reply-To: <53C47FB7.6080304@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/15/2014 09:11 AM, Chen Gang wrote:
+> 
+> 
+> On 07/15/2014 08:53 AM, Guenter Roeck wrote:
+>> On 07/14/2014 05:34 PM, Chen Gang wrote:
+>>> On 07/14/2014 05:22 PM, Chen Gang wrote:
+>>>>
+>>>> 在 2014年7月14日，下午4:57，Richard Weinberger <richard@nod.at> 写道：
+>>>>
+>>>>> Am 14.07.2014 10:48, schrieb Lars-Peter Clausen:
+>>>>>> On 07/14/2014 10:31 AM, Richard Weinberger wrote:
+>>>>>>> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
+>>>>>>>> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
+>>>>>>>>> Maybe we could add COMPILE_TEST to the version string too?
+>>>>>>>>> Just to detect such kernels fast in user bug reports...
+>>>>>>>>
+>>>>>>>> What kind of bug report are you going to get?
+>>>>>>>
+>>>>>>> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
+>>>>>>> complains that it does not work. :)
+>>>>>>
+>>>>>> These drivers are typically drivers for some SoC peripheral and the
+>>>>>> device will simply physically not exist on a platform that does not
+>>>>>> provide HAS_IOMEM. This is not really any
+>>>>>> different from making the driver selectable via COMPILE_TEST for
+>>>>>> any other platform. To hit the issue you'd have to instantiate a
+>>>>>> device driver instance for a device that
+>>>>>> physically does not exist. This will always result in a failure.
+>>>>>
+>>>>> Okay, you have convinced me. :)
+>>>>>
+>>>
+>>> After search the history patches, I found one related patch which made
+>>> by myself (when I am in Asianux):
+>>>
+>>>    "https://lkml.org/lkml/2013/7/1/641"
+>>>
+>>> For me, it is a long discussion, and forced many members have to join
+>>> in. Please help check again.
+>>>
+>>
+>> One thing you could try would be to return NULL (or where appropriate
+>> an error) in the #else case of CONFIG_HAS_IOMEM and CONFIG_HAS_IOPORT,
+>> ie dont take COMPILE_TEST into account at all. Obviously that means
+>> you won't be able to dump a warning message in the COMPILE_TEST
+>> case, but at least the code would compile. The rejection of above patch
+>> would make a good case for this approach.
+>>
+> 
+> OK, thanks: at least, it can be improved.  But still welcome any other
+> opinions of another related members.
+> 
 
---2KNN3gYh9MUZz6n4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If no reply within 3 days (2014-07-18), I shall try to send related
+patch for it within this week end (2014-07-20).
 
-On Tue, Jul 15, 2014 at 10:36:33AM -0400, Vince Weaver wrote:
-> Hello
->=20
-> I noticed in the 3.16-rc kernels that one of my regression tests was=20
-> failing, specifically
-> 	https://github.com/deater/perf_event_tests/blob/master/tests/bugs/read_g=
-roup_attached.c
->=20
-> This test creates an event group with two events and PERF_FORMAT_GROUP
-> set.
->=20
-> It creates a child process, stops it, attaches the event group to it,=20
-> starts the events and the child, waits for the child to finish, stops the
-> events, then reads the value.
->=20
-> In theory a subsequent read from the group leader should return values fo=
-r=20
-> *both* events (due to PERF_FORMAT_GROUP) but this stopped working, it onl=
-y=20
-> returns the value for the leader.
->=20
-> I've bisected it down to change: 15a2d4de0eab5=20
-> 	"perf: Always destroy groups on exit"
->=20
-> So is this expected behavior due to this patch, or is it a regression?
+Thanks.
+-- 
+Chen Gang
 
-Regression, lemme try and wrap my head around it. Thanks!
-
---2KNN3gYh9MUZz6n4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTxTy5AAoJEHZH4aRLwOS6NC0P/jpHgZIPIZzaJxJgrj2NNR0j
-mNjpMh4p5Qg8xxStXI1/gsip0cyr4SXwytEA/FxmmEg2hdKDqMb7ukSMCVLgy6wq
-py6RIq50ubzsEaXqQ6x3laRRf5BsleHCkprlgLuvTuLEnPRstUFovLXi4aej7ndy
-gOLO5e0FjJFnxq0mY7QJgjSCss6H3qIAiy0Qy/wiDhAjGXIwyH1u4R2uH7WGaog7
-rU/+6OSNaJVRFQImGrvfdo2Q/Otz7O/8F2iErDlYz+msQTUUAYpT3+hrbZzYasvv
-3k2SdOXTaFzUi0Z2h4HHkMuAht3gv8FghB1i+0ODoPDYj+WMNBR+bBALBiXTb0qe
-BsUIn3zZkMWX02l7YS2NUIcPRS/mwUqzTmHlu5xVV0vBbqkKEc+Z24VB9SI/ArTk
-8Abq6m5Ah7P47RJWVviIKsscjf2azecVh++RMZd+8DZdNKr9QxmiWrtUYqtEPpya
-MPTBcqgpHDsAP97TGbOKRbWPO8AyrcKzRTvo7I3TpzgZ8DVKek4s6llP8GOQUVnK
-ZK4Mfp9kc6KuzO8mIFZYh9ePj1v0h/VqaqeUIzl+S9hZdT6hzyZm7p3VNDbiXK1q
-b/0TpFTliwJUb2x/6VLwXe5AI/JbQC1U2uvvAtTEPVKtjnvGeko8JyB+4CQxGv2B
-vRztpz8YL+IocAoJ7CBj
-=/O6A
------END PGP SIGNATURE-----
-
---2KNN3gYh9MUZz6n4--
+Open share and attitude like air water and life which God blessed
