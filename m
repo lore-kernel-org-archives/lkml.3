@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966AbaGOG0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:26:03 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50160 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801AbaGOGZg (ORCPT
+	id S1757942AbaGOGZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:25:58 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:60471 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757770AbaGOGZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:25:36 -0400
+	Tue, 15 Jul 2014 02:25:35 -0400
 From: Zi Shen Lim <zlim.lnx@gmail.com>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Jiang Liu <liuj97@gmail.com>,
@@ -16,9 +16,9 @@ To: Catalin Marinas <catalin.marinas@arm.com>,
         Alexei Starovoitov <ast@plumgrid.com>
 Cc: Zi Shen Lim <zlim.lnx@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: [PATCH RFCv3 04/14] arm64: introduce aarch64_insn_gen_load_store_reg()
-Date: Mon, 14 Jul 2014 23:25:02 -0700
-Message-Id: <1405405512-4423-5-git-send-email-zlim.lnx@gmail.com>
+Subject: [PATCH RFCv3 03/14] arm64: introduce aarch64_insn_gen_cond_branch_imm()
+Date: Mon, 14 Jul 2014 23:25:01 -0700
+Message-Id: <1405405512-4423-4-git-send-email-zlim.lnx@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
 References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
@@ -26,150 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce function to generate load/store (register offset)
+Introduce function to generate conditional branch (immediate)
 instructions.
 
 Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
 ---
- arch/arm64/include/asm/insn.h | 20 ++++++++++++++
- arch/arm64/kernel/insn.c      | 62 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
+ arch/arm64/include/asm/insn.h | 21 +++++++++++++++++++++
+ arch/arm64/kernel/insn.c      | 17 +++++++++++++++++
+ 2 files changed, 38 insertions(+)
 
 diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index 86a8a9c..5bc1cc3 100644
+index 5080962..86a8a9c 100644
 --- a/arch/arm64/include/asm/insn.h
 +++ b/arch/arm64/include/asm/insn.h
-@@ -72,6 +72,7 @@ enum aarch64_insn_imm_type {
- enum aarch64_insn_register_type {
- 	AARCH64_INSN_REGTYPE_RT,
- 	AARCH64_INSN_REGTYPE_RN,
-+	AARCH64_INSN_REGTYPE_RM,
+@@ -117,6 +117,24 @@ enum aarch64_insn_variant {
+ 	AARCH64_INSN_VARIANT_64BIT
  };
  
- enum aarch64_insn_register {
-@@ -143,12 +144,26 @@ enum aarch64_insn_branch_type {
- 	AARCH64_INSN_BRANCH_COMP_NONZERO,
- };
- 
-+enum aarch64_insn_size_type {
-+	AARCH64_INSN_SIZE_8,
-+	AARCH64_INSN_SIZE_16,
-+	AARCH64_INSN_SIZE_32,
-+	AARCH64_INSN_SIZE_64,
++enum aarch64_insn_condition {
++	AARCH64_INSN_COND_EQ = 0x0, /* == */
++	AARCH64_INSN_COND_NE = 0x1, /* != */
++	AARCH64_INSN_COND_CS = 0x2, /* unsigned >= */
++	AARCH64_INSN_COND_CC = 0x3, /* unsigned < */
++	AARCH64_INSN_COND_MI = 0x4, /* < 0 */
++	AARCH64_INSN_COND_PL = 0x5, /* >= 0 */
++	AARCH64_INSN_COND_VS = 0x6, /* overflow */
++	AARCH64_INSN_COND_VC = 0x7, /* no overflow */
++	AARCH64_INSN_COND_HI = 0x8, /* unsigned > */
++	AARCH64_INSN_COND_LS = 0x9, /* unsigned <= */
++	AARCH64_INSN_COND_GE = 0xa, /* signed >= */
++	AARCH64_INSN_COND_LT = 0xb, /* signed < */
++	AARCH64_INSN_COND_GT = 0xc, /* signed > */
++	AARCH64_INSN_COND_LE = 0xd, /* signed <= */
++	AARCH64_INSN_COND_AL = 0xe, /* always */
 +};
 +
-+enum aarch64_insn_ldst_type {
-+	AARCH64_INSN_LDST_LOAD_REG_OFFSET,
-+	AARCH64_INSN_LDST_STORE_REG_OFFSET,
-+};
-+
- #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
- static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
- { return (code & (mask)) == (val); } \
- static __always_inline u32 aarch64_insn_get_##abbr##_value(void) \
- { return (val); }
- 
-+__AARCH64_INSN_FUNCS(str_reg,	0x3FE0EC00, 0x38206800)
-+__AARCH64_INSN_FUNCS(ldr_reg,	0x3FE0EC00, 0x38606800)
- __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
+ enum aarch64_insn_branch_type {
+ 	AARCH64_INSN_BRANCH_NOLINK,
+ 	AARCH64_INSN_BRANCH_LINK,
+@@ -135,6 +153,7 @@ __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
  __AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
  __AARCH64_INSN_FUNCS(cbz,	0xFE000000, 0x34000000)
-@@ -184,6 +199,11 @@ u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op);
+ __AARCH64_INSN_FUNCS(cbnz,	0xFE000000, 0x35000000)
++__AARCH64_INSN_FUNCS(bcond,	0xFF000010, 0x54000000)
+ __AARCH64_INSN_FUNCS(svc,	0xFFE0001F, 0xD4000001)
+ __AARCH64_INSN_FUNCS(hvc,	0xFFE0001F, 0xD4000002)
+ __AARCH64_INSN_FUNCS(smc,	0xFFE0001F, 0xD4000003)
+@@ -159,6 +178,8 @@ u32 aarch64_insn_gen_comp_branch_imm(unsigned long pc, unsigned long addr,
+ 				     enum aarch64_insn_register reg,
+ 				     enum aarch64_insn_variant variant,
+ 				     enum aarch64_insn_branch_type type);
++u32 aarch64_insn_gen_cond_branch_imm(unsigned long pc, unsigned long addr,
++				     enum aarch64_insn_condition cond);
+ u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op);
  u32 aarch64_insn_gen_nop(void);
  u32 aarch64_insn_gen_branch_reg(enum aarch64_insn_register reg,
- 				enum aarch64_insn_branch_type type);
-+u32 aarch64_insn_gen_load_store_reg(enum aarch64_insn_register reg,
-+				    enum aarch64_insn_register base,
-+				    enum aarch64_insn_register offset,
-+				    enum aarch64_insn_size_type size,
-+				    enum aarch64_insn_ldst_type type);
- 
- bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
- 
 diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index f2cf8ab..447ad63 100644
+index 50193d5..f2cf8ab 100644
 --- a/arch/arm64/kernel/insn.c
 +++ b/arch/arm64/kernel/insn.c
-@@ -284,6 +284,9 @@ static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
- 	case AARCH64_INSN_REGTYPE_RN:
- 		shift = 5;
- 		break;
-+	case AARCH64_INSN_REGTYPE_RM:
-+		shift = 16;
-+		break;
- 	default:
- 		pr_err("%s: unknown register type encoding %d\n", __func__,
- 		       type);
-@@ -296,6 +299,35 @@ static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
- 	return insn;
+@@ -378,6 +378,23 @@ u32 aarch64_insn_gen_comp_branch_imm(unsigned long pc, unsigned long addr,
+ 					     offset >> 2);
  }
  
-+static u32 aarch64_insn_encode_ldst_size(enum aarch64_insn_size_type type,
-+					 u32 insn)
-+{
-+	u32 size;
-+
-+	switch (type) {
-+	case AARCH64_INSN_SIZE_8:
-+		size = 0;
-+		break;
-+	case AARCH64_INSN_SIZE_16:
-+		size = 1;
-+		break;
-+	case AARCH64_INSN_SIZE_32:
-+		size = 2;
-+		break;
-+	case AARCH64_INSN_SIZE_64:
-+		size = 3;
-+		break;
-+	default:
-+		pr_err("%s: unknown size encoding %d\n", __func__, type);
-+		return 0;
-+	}
-+
-+	insn &= ~GENMASK(31, 30);
-+	insn |= size << 30;
-+
-+	return insn;
-+}
-+
- static inline long branch_imm_common(unsigned long pc, unsigned long addr,
- 				     long range)
- {
-@@ -426,3 +458,33 @@ u32 aarch64_insn_gen_branch_reg(enum aarch64_insn_register reg,
- 
- 	return aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn, reg);
- }
-+
-+u32 aarch64_insn_gen_load_store_reg(enum aarch64_insn_register reg,
-+				    enum aarch64_insn_register base,
-+				    enum aarch64_insn_register offset,
-+				    enum aarch64_insn_size_type size,
-+				    enum aarch64_insn_ldst_type type)
++u32 aarch64_insn_gen_cond_branch_imm(unsigned long pc, unsigned long addr,
++				     enum aarch64_insn_condition cond)
 +{
 +	u32 insn;
++	long offset;
 +
-+	switch (type) {
-+	case AARCH64_INSN_LDST_LOAD_REG_OFFSET:
-+		insn = aarch64_insn_get_ldr_reg_value();
-+		break;
-+	case AARCH64_INSN_LDST_STORE_REG_OFFSET:
-+		insn = aarch64_insn_get_str_reg_value();
-+		break;
-+	default:
-+		BUG_ON(1);
-+	}
++	offset = branch_imm_common(pc, addr, SZ_1M);
 +
-+	insn = aarch64_insn_encode_ldst_size(size, insn);
++	insn = aarch64_insn_get_bcond_value();
 +
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RT, insn, reg);
++	BUG_ON(cond < AARCH64_INSN_COND_EQ || cond > AARCH64_INSN_COND_AL);
++	insn |= cond;
 +
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn,
-+					    base);
-+
-+	return aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RM, insn,
-+					    offset);
++	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_19, insn,
++					     offset >> 2);
 +}
++
+ u32 __kprobes aarch64_insn_gen_hint(enum aarch64_insn_hint_op op)
+ {
+ 	return aarch64_insn_get_hint_value() | op;
 -- 
 1.9.1
 
