@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920AbaGOGfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:35:43 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:42176 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757803AbaGOGfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:35:40 -0400
-Message-ID: <1405406114.13503.40.camel@iivanov-dev>
-Subject: Re: [PATCH 2/3] pinctrl: Device tree bindings for Qualcomm pm8xxx
- gpio block
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Bjorn Andersson <bjorn@kryo.se>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+	id S1757929AbaGOGjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:39:45 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:56446 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689AbaGOGjl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 02:39:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140714150749.GH26465@leverpostej>
+References: <1405340169-2820-1-git-send-email-harinik@xilinx.com>
+	<1405340169-2820-2-git-send-email-harinik@xilinx.com>
+	<20140714150749.GH26465@leverpostej>
+Date: Tue, 15 Jul 2014 12:09:40 +0530
+Message-ID: <CAFcVECK9U_3+3htTAu7r-agi43mC9Z2pqHeS9TpHTbZ3=o-o8w@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] devicetree: Add Cadence WDT devicetree bindings documentation
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "wim@iguana.be" <wim@iguana.be>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "michals@xilinx.com" <michals@xilinx.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Date: Tue, 15 Jul 2014 09:35:14 +0300
-In-Reply-To: <53C449A3.2010404@codeaurora.org>
-References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
-	  <1404782785-1824-3-git-send-email-bjorn.andersson@sonymobile.com>
-	  <CACRpkdZ2hekBGe1-9GV-amqi50heghWhXJ9raW7P_Nif_Ci88g@mail.gmail.com>
-	  <CAJAp7OghZoTXutxw7hAsq1XA_wAhOXDNFO0tz8u9ceQ1fD9W1w@mail.gmail.com>
-	  <CACRpkdai=q3nmPk5OWQWn_UMdXmqcbFXJ90rxREBG9k6gdy88Q@mail.gmail.com>
-	  <53C095EA.90000@codeaurora.org> <1405346335.13503.25.camel@iivanov-dev>
-	 <53C449A3.2010404@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "harini.katakam@xilinx.com" <harini.katakam@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-14 at 14:20 -0700, Stephen Boyd wrote:
-> On 07/14/14 06:58, Ivan T. Ivanov wrote:
-> > On Fri, 2014-07-11 at 18:56 -0700, Stephen Boyd wrote:
-> >> On 07/10/14 02:53, Linus Walleij wrote:
-> >>> On Wed, Jul 9, 2014 at 11:18 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
-> >>>> On Wed, Jul 9, 2014 at 1:53 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> >>>>> On Tue, Jul 8, 2014 at 3:26 AM, Bjorn Andersson
-> >>>>> <bjorn.andersson@sonymobile.com> wrote:
-> >>>>>
-> >>>>> +- function:
-> >>>>> +       Usage: optional
-> >>>>> +       Value type: <string>
-> >>>>> +       Definition: Specify the alternative function to be configured for the
-> >>>>> +                   specified pins.  Valid values are:
-> >>>>> +                       "normal",
-> >>>>> +                       "paired",
-> >>>>> +                       "func1",
-> >>>>> +                       "func2",
-> >>>>> +                       "dtest1",
-> >>>>> +                       "dtest2",
-> >>>>> +                       "dtest3",
-> >>>>> +                       "dtest4"
-> >>>>> These are a bit ambigous, why doesn't the driver present functions that
-> >>>>> are more specific than "func1", "func2"? Or "dtest1"?
-> >>>> I agree, unfortunately I have only seen traces of the actual function matrix;
-> >>>> for pm8xxx I have no documentation and for pm8x41 they are only listed as
-> >>>> func[1-2] and dtest[1-4].
-> >>>>
-> >>>> Maybe if someone at Qualcomm could release such a list we could provide a
-> >>>> proper table instead.
-> >>> I guess Stephen Boyd can help us. (?)
-> >> Ok. "normal" is pretty much gpio mode, i.e. don't mux anything. "paired"
-> >> is where we take the output of the gpio next to it and loop it back into
-> >> this gpio (and vice versa). So gpio1 is paired with gpio2, gpio 3 is
-> >> paired with gpio 4, etc. This allows us to make level translators by
-> >> choosing different supply voltages for the paired gpios. "func1" and
-> >> "func2" are used for muxing things internally. "dtest" is used to mux
-> >> specific things out for testing purposes, not really used in any
-> >> end-products but still useful while debugging. I can provide the
-> >> function to pin mapping if necessary. There are lots of pmics.
-> > Thank you Stephen. If understand it right, this is more like option for
-> > the pin when it is GPIO. Next generation of PMIC's have support for pin
-> > acting like analog-input/output and current sink.
-> 
-> Isn't this document only for the gpios? I think you're talking about the
-> MPPs, which also exist on these generation of pmics. We should probably
-> avoid mixing the two (gpios and mpps) in one binding because they're
-> really different hardware.
+Hi Mark,
 
-I don't know. For me "gpio" looks like function of the pin hardware.
+On Mon, Jul 14, 2014 at 8:37 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Mon, Jul 14, 2014 at 01:16:09PM +0100, Harini Katakam wrote:
+>> Add cadence-wdt bindings documentation.
+>>
+>> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+>> ---
+>>
+>> v3 changes:
+>> - Change reset property type and improve description.
+>> - Improve description of clocks and interrupts.
+>> - Use watchdog@ in the example.
+>> - Use only cdns compatible string for now.
+>>
+>> v2:
+>> No changes
+>>
+>> ---
+>>  .../devicetree/bindings/watchdog/cadence-wdt.txt   |   27 ++++++++++++++++++++
+>>  1 file changed, 27 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+>> new file mode 100644
+>> index 0000000..ab23e38
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+>> @@ -0,0 +1,27 @@
+>> +Zynq Watchdog Device Tree Bindings
+>> +-------------------------------------------
+>> +
+>> +Required properties:
+>> +- compatible         : Should be "cdns,wdt-r1p2".
+>> +- clocks             : Input clock specifier. This should be the ref clk.
+>
+> This wording makes it sound like the watchdog block has more than one
+> clock input. Does it?
 
-> 
-> >  So I will like
-> > to keep "function" property for selecting one of the above functions.
-> > Choosing between "normal", "paired"... options in QPNP pinctrl driver
-> > is supported trough passing values, defined in DT header file, to
-> > "output-high" property. Please don't kill me :-).
-> 
-> Overloading output-high to choose the MPP mode doesn't seem to follow
-> the generic pinconfig binding. Does output-high even take a value? Why
-> can't we use the function property?
+It doesn't. It has one APB clock - named pclk.
 
-No, no.  using value of the output-high|low" is just to select
-"normal", "paired"... thing. Function selection is via "function" 
-property. Currently QPNP support following functions "gpio", "mpp-ain",
-"mpp-aout", "mpp-cs".
+>
+>> +- reg                        : Physical base address and size of WDT registers map.
+>> +- interrupts         : Property with a value describing the interrupt
+>> +                       number. This interrupt is used for indication
+>> +                       when the watchdog times out.
+>
+> Just say "the watchdog timeout interrupt", or (better) use the name of
+> the interrupt from the documentation.
+
+OK. Yeah I'll do that. The interrupt name is wd_irq.
+
+>
+>> +- interrupt-parent   : Must be core interrupt controller.
+>> +
+>> +Optional properties
+>> +- reset                      : If this property exists, then a reset is done
+>> +                       when watchdog times out.
+>
+> That's a bit of an ambiguous name (too easy to misconstrue as a reset
+> device reference). Do any other watchdogs have similar properties?
+
+I could change it to "reset-on-timeout" if that better.
+>From the documentation of other drivers, there seems to be a reset-type
+property in atmel. Dint find any other reset related properties.
 
 Regards,
-Ivan
-
-
-
+Harini
