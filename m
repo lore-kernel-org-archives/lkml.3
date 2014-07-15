@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935AbaGPAMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:12:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S1761274AbaGPAML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:12:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759795AbaGOXNZ (ORCPT
+	with ESMTP id S1759803AbaGOXN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:25 -0400
+	Tue, 15 Jul 2014 19:13:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 28/44] ring-buffer: Check if buffer exists before polling
-Date: Tue, 15 Jul 2014 16:17:26 -0700
-Message-Id: <20140715231647.530531384@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: [PATCH 3.10 29/44] rtmutex: Fix deadlock detector for real
+Date: Tue, 15 Jul 2014 16:17:27 -0700
+Message-Id: <20140715231647.559614715@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -29,176 +32,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 8b8b36834d0fff67fc8668093f4312dd04dcf21d upstream.
+commit 397335f004f41e5fcf7a795e94eb3ab83411a17c upstream.
 
-The per_cpu buffers are created one per possible CPU. But these do
-not mean that those CPUs are online, nor do they even exist.
+The current deadlock detection logic does not work reliably due to the
+following early exit path:
 
-With the addition of the ring buffer polling, it assumes that the
-caller polls on an existing buffer. But this is not the case if
-the user reads trace_pipe from a CPU that does not exist, and this
-causes the kernel to crash.
+	/*
+	 * Drop out, when the task has no waiters. Note,
+	 * top_waiter can be NULL, when we are in the deboosting
+	 * mode!
+	 */
+	if (top_waiter && (!task_has_pi_waiters(task) ||
+			   top_waiter != task_top_pi_waiter(task)))
+		goto out_unlock_pi;
 
-Simple fix is to check the cpu against buffer bitmask against to see
-if the buffer was allocated or not and return -ENODEV if it is
-not.
+So this not only exits when the task has no waiters, it also exits
+unconditionally when the current waiter is not the top priority waiter
+of the task.
 
-More updates were done to pass the -ENODEV back up to userspace.
+So in a nested locking scenario, it might abort the lock chain walk
+and therefor miss a potential deadlock.
 
-Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
+Simple fix: Continue the chain walk, when deadlock detection is
+enabled.
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+We also avoid the whole enqueue, if we detect the deadlock right away
+(A-A). It's an optimization, but also prevents that another waiter who
+comes in after the detection and before the task has undone the damage
+observes the situation and detects the deadlock and returns
+-EDEADLOCK, which is wrong as the other task is not in a deadlock
+situation.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/20140522031949.725272460@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ring_buffer.h |    2 +-
- kernel/trace/ring_buffer.c  |    5 ++++-
- kernel/trace/trace.c        |   25 ++++++++++++++++++-------
- kernel/trace/trace.h        |    4 ++--
- 4 files changed, 25 insertions(+), 11 deletions(-)
+ kernel/rtmutex.c |   32 ++++++++++++++++++++++++++++----
+ 1 file changed, 28 insertions(+), 4 deletions(-)
 
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size,
- 	__ring_buffer_alloc((size), (flags), &__key);	\
- })
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -212,9 +212,16 @@ static int rt_mutex_adjust_prio_chain(st
+ 	 * top_waiter can be NULL, when we are in the deboosting
+ 	 * mode!
+ 	 */
+-	if (top_waiter && (!task_has_pi_waiters(task) ||
+-			   top_waiter != task_top_pi_waiter(task)))
+-		goto out_unlock_pi;
++	if (top_waiter) {
++		if (!task_has_pi_waiters(task))
++			goto out_unlock_pi;
++		/*
++		 * If deadlock detection is off, we stop here if we
++		 * are not the top pi waiter of the task.
++		 */
++		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
++			goto out_unlock_pi;
++	}
  
--void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
- int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
- 			  struct file *filp, poll_table *poll_table);
- 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct ir
-  * as data is added to any of the @buffer's cpu buffers. Otherwise
-  * it will wait for data to be added to a specific cpu buffer.
-  */
--void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
- {
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	DEFINE_WAIT(wait);
-@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer
- 	if (cpu == RING_BUFFER_ALL_CPUS)
- 		work = &buffer->irq_work;
- 	else {
-+		if (!cpumask_test_cpu(cpu, buffer->cpumask))
-+			return -ENODEV;
- 		cpu_buffer = buffer->buffers[cpu];
- 		work = &cpu_buffer->irq_work;
+ 	/*
+ 	 * When deadlock detection is off then we check, if further
+@@ -230,7 +237,12 @@ static int rt_mutex_adjust_prio_chain(st
+ 		goto retry;
  	}
-@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer
- 		schedule();
  
- 	finish_wait(&work->waiters, &wait);
-+	return 0;
- }
+-	/* Deadlock detection */
++	/*
++	 * Deadlock detection. If the lock is the same as the original
++	 * lock which caused us to walk the lock chain or if the
++	 * current lock is owned by the task which initiated the chain
++	 * walk, we detected a deadlock.
++	 */
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+@@ -399,6 +411,18 @@ static int task_blocks_on_rt_mutex(struc
+ 	unsigned long flags;
+ 	int chain_walk = 0, res;
  
- /**
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1027,13 +1027,13 @@ update_max_tr_single(struct trace_array
- }
- #endif /* CONFIG_TRACER_MAX_TRACE */
- 
--static void default_wait_pipe(struct trace_iterator *iter)
-+static int default_wait_pipe(struct trace_iterator *iter)
- {
- 	/* Iterators are static, they should be filled or empty */
- 	if (trace_buffer_iter(iter, iter->cpu_file))
--		return;
-+		return 0;
- 
--	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
-+	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
- }
- 
- #ifdef CONFIG_FTRACE_STARTUP_TEST
-@@ -4054,17 +4054,19 @@ tracing_poll_pipe(struct file *filp, pol
-  *
-  *     Anyway, this is really very primitive wakeup.
-  */
--void poll_wait_pipe(struct trace_iterator *iter)
-+int poll_wait_pipe(struct trace_iterator *iter)
- {
- 	set_current_state(TASK_INTERRUPTIBLE);
- 	/* sleep for 100 msecs, and try again. */
- 	schedule_timeout(HZ / 10);
-+	return 0;
- }
- 
- /* Must be called with trace_types_lock mutex held. */
- static int tracing_wait_pipe(struct file *filp)
- {
- 	struct trace_iterator *iter = filp->private_data;
-+	int ret;
- 
- 	while (trace_empty(iter)) {
- 
-@@ -4074,10 +4076,13 @@ static int tracing_wait_pipe(struct file
- 
- 		mutex_unlock(&iter->mutex);
- 
--		iter->trace->wait_pipe(iter);
-+		ret = iter->trace->wait_pipe(iter);
- 
- 		mutex_lock(&iter->mutex);
- 
-+		if (ret)
-+			return ret;
++	/*
++	 * Early deadlock detection. We really don't want the task to
++	 * enqueue on itself just to untangle the mess later. It's not
++	 * only an optimization. We drop the locks, so another waiter
++	 * can come in before the chain walk detects the deadlock. So
++	 * the other will detect the deadlock and return -EDEADLOCK,
++	 * which is wrong, as the other waiter is not in a deadlock
++	 * situation.
++	 */
++	if (detect_deadlock && owner == task)
++		return -EDEADLK;
 +
- 		if (signal_pending(current))
- 			return -EINTR;
- 
-@@ -5011,8 +5016,12 @@ tracing_buffers_read(struct file *filp,
- 				goto out_unlock;
- 			}
- 			mutex_unlock(&trace_types_lock);
--			iter->trace->wait_pipe(iter);
-+			ret = iter->trace->wait_pipe(iter);
- 			mutex_lock(&trace_types_lock);
-+			if (ret) {
-+				size = ret;
-+				goto out_unlock;
-+			}
- 			if (signal_pending(current)) {
- 				size = -EINTR;
- 				goto out_unlock;
-@@ -5224,8 +5233,10 @@ tracing_buffers_splice_read(struct file
- 			goto out;
- 		}
- 		mutex_unlock(&trace_types_lock);
--		iter->trace->wait_pipe(iter);
-+		ret = iter->trace->wait_pipe(iter);
- 		mutex_lock(&trace_types_lock);
-+		if (ret)
-+			goto out;
- 		if (signal_pending(current)) {
- 			ret = -EINTR;
- 			goto out;
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -342,7 +342,7 @@ struct tracer {
- 	void			(*stop)(struct trace_array *tr);
- 	void			(*open)(struct trace_iterator *iter);
- 	void			(*pipe_open)(struct trace_iterator *iter);
--	void			(*wait_pipe)(struct trace_iterator *iter);
-+	int			(*wait_pipe)(struct trace_iterator *iter);
- 	void			(*close)(struct trace_iterator *iter);
- 	void			(*pipe_close)(struct trace_iterator *iter);
- 	ssize_t			(*read)(struct trace_iterator *iter,
-@@ -557,7 +557,7 @@ void trace_init_global_iter(struct trace
- 
- void tracing_iter_reset(struct trace_iterator *iter, int cpu);
- 
--void poll_wait_pipe(struct trace_iterator *iter);
-+int poll_wait_pipe(struct trace_iterator *iter);
- 
- void ftrace(struct trace_array *tr,
- 			    struct trace_array_cpu *data,
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task = task;
 
 
