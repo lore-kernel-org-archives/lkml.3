@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761102AbaGPABY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:01:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45170 "EHLO
+	id S1761129AbaGPABk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:01:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759624AbaGOXNl (ORCPT
+	with ESMTP id S1758364AbaGOXNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:41 -0400
+	Tue, 15 Jul 2014 19:13:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 29/66] crypto: sha512_ssse3 - fix byte count to bit count conversion
-Date: Tue, 15 Jul 2014 16:17:23 -0700
-Message-Id: <20140715231703.341590468@linuxfoundation.org>
+        Joel Stanley <joel@jms.id.au>, Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 27/66] powerpc/perf: Clear MMCR2 when enabling PMU
+Date: Tue, 15 Jul 2014 16:17:21 -0700
+Message-Id: <20140715231703.275842645@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -30,38 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Joel Stanley <joel@jms.id.au>
 
-commit cfe82d4f45c7cc39332a2be7c4c1d3bf279bbd3d upstream.
+commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
 
-Byte-to-bit-count computation is only partly converted to big-endian and is
-mixing in CPU-endian values. Problem was noticed by sparce with warning:
+On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
+the PMU counters. Aside from on boot they are then never reset,
+resulting in stuck perf counters for any user in the guest or host.
 
-  CHECK   arch/x86/crypto/sha512_ssse3_glue.c
-arch/x86/crypto/sha512_ssse3_glue.c:144:19: warning: restricted __be64 degrades to integer
-arch/x86/crypto/sha512_ssse3_glue.c:144:17: warning: incorrect type in assignment (different base types)
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    expected restricted __be64 <noident>
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    got unsigned long long
+We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
+state for perf to use the PMU counters under either the guest or the
+host.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+This was manifesting as a bug with ppc64_cpu --frequency:
+
+    $ sudo ppc64_cpu --frequency
+    WARNING: couldn't run on cpu 0
+    WARNING: couldn't run on cpu 8
+      ...
+    WARNING: couldn't run on cpu 144
+    WARNING: couldn't run on cpu 152
+    min:    18446744073.710 GHz (cpu -1)
+    max:    0.000 GHz (cpu -1)
+    avg:    0.000 GHz
+
+The command uses a perf counter to measure CPU cycles over a fixed
+amount of time, in order to approximate the frequency of the machine.
+The counters were returning zero once a guest was started, regardless of
+weather it was still running or had been shut down.
+
+By dumping the value of MMCR2, it was observed that once a guest is
+running MMCR2 is set to 1s - which stops counters from running:
+
+    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
+    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
+    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
+    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
+    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
+    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
+    EBBRR: 0000000000000000 BESCR: 0000000000000000
+    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
+
+This is done unconditionally in book3s_hv_interrupts.S upon entering the
+guest, and the original value is only save/restored if the host has
+indicated it was using the PMU. This is okay, however the user of the
+PMU needs to ensure that it is in a defined state when it starts using
+it.
+
+Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
+Signed-off-by: Joel Stanley <joel@jms.id.au>
+Acked-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/crypto/sha512_ssse3_glue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/perf/core-book3s.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/crypto/sha512_ssse3_glue.c
-+++ b/arch/x86/crypto/sha512_ssse3_glue.c
-@@ -141,7 +141,7 @@ static int sha512_ssse3_final(struct sha
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1167,6 +1167,9 @@ static void power_pmu_enable(struct pmu
  
- 	/* save number of bits */
- 	bits[1] = cpu_to_be64(sctx->count[0] << 3);
--	bits[0] = cpu_to_be64(sctx->count[1] << 3) | sctx->count[0] >> 61;
-+	bits[0] = cpu_to_be64(sctx->count[1] << 3 | sctx->count[0] >> 61);
+ 	write_mmcr0(cpuhw, mmcr0);
  
- 	/* Pad out to 112 mod 128 and append length */
- 	index = sctx->count[0] & 0x7f;
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
++
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
 
 
