@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaGOVX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:23:57 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:60853 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571AbaGOVXx (ORCPT
+	id S932507AbaGOVYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:24:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62985 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaGOVXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:23:53 -0400
+	Tue, 15 Jul 2014 17:23:54 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org
 Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V5 3/4] staging: vt6556: Cleanup coding style: lines over 80 chars
-Date: Tue, 15 Jul 2014 23:23:26 +0200
-Message-Id: <1405459407-9311-3-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH V5 4/4] staging: vt6556: Cleanup coding style: indentation
+Date: Tue, 15 Jul 2014 23:23:27 +0200
+Message-Id: <1405459407-9311-4-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405459407-9311-1-git-send-email-peter.senna@gmail.com>
 References: <1405459407-9311-1-git-send-email-peter.senna@gmail.com>
@@ -23,9 +23,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch cleanup the follwoing coding style issues:
- - line over 80 chars
- - spaces on the beginning of a line
- - put { and } on the correct places
+ - indentation style
+ - new line after declaration
 
 Tested by compilation only.
 
@@ -34,87 +33,77 @@ Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Changes from V4:
  - Splitted [PATCH V4 1/6] in 4 smaller patches
 
- drivers/staging/vt6656/baseband.c | 8 +++++---
- drivers/staging/vt6656/card.c     | 9 +++++----
- drivers/staging/vt6656/main_usb.c | 5 +++--
- 3 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/staging/vt6656/main_usb.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
-index 7adc8db..8678b41 100644
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -123,8 +123,9 @@ static u8 vnt_vt3184_vt3226d0[] = {
- 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 0xff */
- };
- 
--static const u16 awcFrameTime[MAX_RATE] =
--{10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216};
-+static const u16 awcFrameTime[MAX_RATE] = {
-+	10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216
-+};
- 
- /*
-  * Description: Calculate data frame transmitting time
-@@ -468,7 +469,8 @@ int BBbVT3184Init(struct vnt_private *priv)
- 		priv->ldBmThreshold[2] = 0;
- 		priv->ldBmThreshold[3] = 0;
- 		/* Fix VT3226 DFC system timing issue */
--		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2, SOFTPWRCTL_RFLEOPT);
-+		vnt_mac_reg_bits_on(priv, MAC_REG_SOFTPWRCTL2,
-+				    SOFTPWRCTL_RFLEOPT);
- 	} else {
- 		return true;
- 	}
-diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
-index 6a6e614..37cd96b 100644
---- a/drivers/staging/vt6656/card.c
-+++ b/drivers/staging/vt6656/card.c
-@@ -58,8 +58,9 @@
- /* const u16 cwRXBCNTSFOff[MAX_RATE] =
-    {17, 34, 96, 192, 34, 23, 17, 11, 8, 5, 4, 3}; */
- 
--static const u16 cwRXBCNTSFOff[MAX_RATE] =
--{192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3};
-+static const u16 cwRXBCNTSFOff[MAX_RATE] = {
-+	192, 96, 34, 17, 34, 23, 17, 11, 8, 5, 4, 3
-+};
- 
- /*
-  * Description: Set NIC media channel
-@@ -477,7 +478,7 @@ void vnt_update_top_rates(struct vnt_private *priv)
- 	}
- 
- 	priv->byTopCCKBasicRate = top_cck;
-- }
-+}
- 
- int vnt_ofdm_min_rate(struct vnt_private *priv)
- {
-@@ -710,7 +711,7 @@ void vnt_update_next_tbtt(struct vnt_private *priv, u64 tsf,
- 	data[7] = (u8)(tsf >> 56);
- 
- 	vnt_control_out(priv, MESSAGE_TYPE_SET_TSFTBTT,
--		MESSAGE_REQUEST_TBTT, 0, 8, data);
-+			MESSAGE_REQUEST_TBTT, 0, 8, data);
- 
- 	dev_dbg(&priv->usb->dev, "%s TBTT: %8llx\n", __func__, tsf);
- 
 diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index 95a87ef..d103df1 100644
+index d103df1..ba5c8a9 100644
 --- a/drivers/staging/vt6656/main_usb.c
 +++ b/drivers/staging/vt6656/main_usb.c
-@@ -526,8 +526,9 @@ static void device_free_rx_bufs(struct vnt_private *priv)
+@@ -62,7 +62,7 @@
+ #include "int.h"
  
- static void usb_device_reset(struct vnt_private *pDevice)
+ /* static int msglevel = MSG_LEVEL_DEBUG; */
+-static int          msglevel                =MSG_LEVEL_INFO;
++static int msglevel = MSG_LEVEL_INFO;
+ 
+ /*
+  * define module options
+@@ -177,13 +177,12 @@ static struct usb_device_id vt6656_table[] = {
+ /* frequency list (map channels to frequencies) */
+ /*
+ static const long frequency_list[] = {
+-    2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457, 2462, 2467, 2472, 2484,
+-    4915, 4920, 4925, 4935, 4940, 4945, 4960, 4980,
+-    5035, 5040, 5045, 5055, 5060, 5080, 5170, 5180, 5190, 5200, 5210, 5220, 5230, 5240,
+-    5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620, 5640, 5660, 5680,
+-    5700, 5745, 5765, 5785, 5805, 5825
+-	};
+-
++	2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457, 2462, 2467,
++	2472, 2484, 4915, 4920, 4925, 4935, 4940, 4945, 4960, 4980, 5035, 5040,
++	5045, 5055, 5060, 5080, 5170, 5180, 5190, 5200, 5210, 5220, 5230, 5240,
++	5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620, 5640,
++	5660, 5680, 5700, 5745, 5765, 5785, 5805, 5825
++};
+ */
+ 
+ static int vt6656_probe(struct usb_interface *intf,
+@@ -206,16 +205,16 @@ static void usb_device_reset(struct vnt_private *pDevice);
+ 
+ static void
+ device_set_options(struct vnt_private *pDevice) {
+-    pDevice->cbTD = TX_DESC_DEF0;
+-    pDevice->cbRD = RX_DESC_DEF0;
+-    pDevice->byShortRetryLimit = SHORT_RETRY_DEF;
+-    pDevice->byLongRetryLimit = LONG_RETRY_DEF;
+-    pDevice->op_mode = NL80211_IFTYPE_UNSPECIFIED;
+-    pDevice->byBBType = BBP_TYPE_DEF;
+-    pDevice->byPacketType = pDevice->byBBType;
+-    pDevice->byAutoFBCtrl = AUTO_FB_0;
+-    pDevice->byPreambleType = 0;
+-    pDevice->bExistSWNetAddr = false;
++	pDevice->cbTD = TX_DESC_DEF0;
++	pDevice->cbRD = RX_DESC_DEF0;
++	pDevice->byShortRetryLimit = SHORT_RETRY_DEF;
++	pDevice->byLongRetryLimit = LONG_RETRY_DEF;
++	pDevice->op_mode = NL80211_IFTYPE_UNSPECIFIED;
++	pDevice->byBBType = BBP_TYPE_DEF;
++	pDevice->byPacketType = pDevice->byBBType;
++	pDevice->byAutoFBCtrl = AUTO_FB_0;
++	pDevice->byPreambleType = 0;
++	pDevice->bExistSWNetAddr = false;
+ }
+ 
+ /*
+@@ -837,6 +836,7 @@ static void vnt_bss_info_changed(struct ieee80211_hw *hw,
+ 		u32 changed)
  {
-- int status;
-- status = usb_reset_device(pDevice->usb);
-+	int status;
+ 	struct vnt_private *priv = hw->priv;
 +
-+	status = usb_reset_device(pDevice->usb);
- 	if (status)
-             printk("usb_device_reset fail status=%d\n",status);
- 	return ;
+ 	priv->current_aid = conf->aid;
+ 
+ 	if (changed & BSS_CHANGED_BSSID)
 -- 
 1.9.3
 
