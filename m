@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934292AbaGPAEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:04:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
+	id S934235AbaGPAEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:04:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137AbaGOXNg (ORCPT
+	with ESMTP id S933112AbaGOXNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
-Subject: [PATCH 3.14 17/66] hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
-Date: Tue, 15 Jul 2014 16:17:11 -0700
-Message-Id: <20140715231702.838611410@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.14 15/66] hwmon: (emc2103) Clamp limits instead of bailing out
+Date: Tue, 15 Jul 2014 16:17:09 -0700
+Message-Id: <20140715231702.772573714@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,36 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
+commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
 
-Writing to fanX_div does not clear the cache. As a result, reading
-from fanX_div may return the old value for up to two seconds
-after writing a new value.
+It is customary to clamp limits instead of bailing out with an error
+if a configured limit is out of the range supported by the driver.
+This simplifies limit configuration, since the user will not typically
+know chip and/or driver specific limits.
 
-This patch ensures the fan_div cache is updated in set_fan_div().
-
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/adm1029.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hwmon/emc2103.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
---- a/drivers/hwmon/adm1029.c
-+++ b/drivers/hwmon/adm1029.c
-@@ -232,6 +232,9 @@ static ssize_t set_fan_div(struct device
- 	/* Update the value */
- 	reg = (reg & 0x3F) | (val << 6);
+--- a/drivers/hwmon/emc2103.c
++++ b/drivers/hwmon/emc2103.c
+@@ -250,9 +250,7 @@ static ssize_t set_temp_min(struct devic
+ 	if (result < 0)
+ 		return result;
  
-+	/* Update the cache */
-+	data->fan_div[attr->index] = reg;
-+
- 	/* Write value */
- 	i2c_smbus_write_byte_data(client,
- 				  ADM1029_REG_FAN_DIV[attr->index], reg);
+-	val = DIV_ROUND_CLOSEST(val, 1000);
+-	if ((val < -63) || (val > 127))
+-		return -EINVAL;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
+ 
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = val;
+@@ -274,9 +272,7 @@ static ssize_t set_temp_max(struct devic
+ 	if (result < 0)
+ 		return result;
+ 
+-	val = DIV_ROUND_CLOSEST(val, 1000);
+-	if ((val < -63) || (val > 127))
+-		return -EINVAL;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
+ 
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = val;
+@@ -390,15 +386,14 @@ static ssize_t set_fan_target(struct dev
+ {
+ 	struct emc2103_data *data = emc2103_update_device(dev);
+ 	struct i2c_client *client = to_i2c_client(dev);
+-	long rpm_target;
++	unsigned long rpm_target;
+ 
+-	int result = kstrtol(buf, 10, &rpm_target);
++	int result = kstrtoul(buf, 10, &rpm_target);
+ 	if (result < 0)
+ 		return result;
+ 
+ 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
+-	if ((rpm_target < 0) || (rpm_target > 16384))
+-		return -EINVAL;
++	rpm_target = clamp_val(rpm_target, 0, 16384);
+ 
+ 	mutex_lock(&data->update_lock);
+ 
 
 
