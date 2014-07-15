@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759668AbaGPARO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:17:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44991 "EHLO
+	id S1759609AbaGOXNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:13:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759617AbaGOXNU (ORCPT
+	with ESMTP id S1758364AbaGOXNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:20 -0400
+	Tue, 15 Jul 2014 19:13:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joel Stanley <joel@jms.id.au>, Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 15/44] powerpc/perf: Add PPMU_ARCH_207S define
-Date: Tue, 15 Jul 2014 16:17:13 -0700
-Message-Id: <20140715231647.147472512@linuxfoundation.org>
+        Andras Kovacs <andras@sth.sze.hu>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.4 02/22] USB: cp210x: add support for Corsair usb dongle
+Date: Tue, 15 Jul 2014 16:17:07 -0700
+Message-Id: <20140715231622.194813561@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
-References: <20140715231646.690728348@linuxfoundation.org>
+In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
+References: <20140715231622.121816073@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,62 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joel Stanley <joel@jms.id.au>
+From: Andras Kovacs <andras@sth.sze.hu>
 
-commit 4d9690dd56b0d18f2af8a9d4a279cb205aae3345 upstream.
+commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
 
-Instead of separate bits for every POWER8 PMU feature, have a single one
-for v2.07 of the architecture.
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-This saves us adding a MMCR2 define for a future patch.
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
 
-Signed-off-by: Joel Stanley <joel@jms.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/perf_event_server.h |    2 +-
- arch/powerpc/perf/core-book3s.c              |    2 +-
- arch/powerpc/perf/power8-pmu.c               |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -59,7 +59,7 @@ struct power_pmu {
- #define PPMU_SIAR_VALID		0x00000010 /* Processor has SIAR Valid bit */
- #define PPMU_HAS_SSLOT		0x00000020 /* Has sampled slot in MMCRA */
- #define PPMU_HAS_SIER		0x00000040 /* Has SIER */
--#define PPMU_BHRB		0x00000080 /* has BHRB feature enabled */
-+#define PPMU_ARCH_207S		0x00000080 /* PMC is architecture v2.07S */
- 
- /*
-  * Values for flags to get_alternatives()
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1436,7 +1436,7 @@ static int power_pmu_event_init(struct p
- 
- 	if (has_branch_stack(event)) {
- 	        /* PMU has BHRB enabled */
--		if (!(ppmu->flags & PPMU_BHRB))
-+		if (!(ppmu->flags & PPMU_ARCH_207S))
- 			return -EOPNOTSUPP;
- 	}
- 
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -592,7 +592,7 @@ static struct power_pmu power8_pmu = {
- 	.get_constraint		= power8_get_constraint,
- 	.get_alternatives	= power8_get_alternatives,
- 	.disable_pmc		= power8_disable_pmc,
--	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_BHRB,
-+	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_ARCH_207S,
- 	.n_generic		= ARRAY_SIZE(power8_generic_events),
- 	.generic_events		= power8_generic_events,
- 	.attr_groups		= power8_pmu_attr_groups,
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -159,6 +159,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 
 
