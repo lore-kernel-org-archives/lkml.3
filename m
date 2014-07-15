@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760601AbaGOXvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:51:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45341 "EHLO
+	id S1760637AbaGOXvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:51:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933635AbaGOXNw (ORCPT
+	with ESMTP id S933610AbaGOXNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:52 -0400
+	Tue, 15 Jul 2014 19:13:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 61/66] x86, espfix: Move espfix definitions into a separate header file
-Date: Tue, 15 Jul 2014 16:17:55 -0700
-Message-Id: <20140715231704.757425186@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 58/66] powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+Date: Tue, 15 Jul 2014 16:17:52 -0700
+Message-Id: <20140715231704.615538555@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,68 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
+commit fb43e8477ed9006c4f397f904c691a120503038c upstream.
 
-Sparse warns that the percpu variables aren't declared before they are
-defined.  Rather than hacking around it, move espfix definitions into
-a proper header file.
+powerpc:allmodconfig has been failing for some time with the following
+error.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
+
+A number of attempts to fix the problem by moving around code have been
+unsuccessful and resulted in failed builds for some configurations and
+the discovery of toolchain bugs.
+
+Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
+While this is less than perfect, it avoids substantial code changes
+which would otherwise be necessary just to make COMPILE_TEST builds
+happy and might have undesired side effects.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/espfix.h |   16 ++++++++++++++++
- arch/x86/include/asm/setup.h  |    5 ++---
- arch/x86/kernel/espfix_64.c   |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ arch/powerpc/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- /dev/null
-+++ b/arch/x86/include/asm/espfix.h
-@@ -0,0 +1,16 @@
-+#ifdef _ASM_X86_ESPFIX_H
-+#define _ASM_X86_ESPFIX_H
-+
-+#ifdef CONFIG_X86_64
-+
-+#include <asm/percpu.h>
-+
-+DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
-+DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
-+
-+extern void init_espfix_bsp(void);
-+extern void init_espfix_ap(void);
-+
-+#endif /* CONFIG_X86_64 */
-+
-+#endif /* _ASM_X86_ESPFIX_H */
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -63,11 +63,10 @@ extern void x86_ce4100_early_setup(void)
- static inline void x86_ce4100_early_setup(void) { }
- #endif
- 
--extern void init_espfix_bsp(void);
--extern void init_espfix_ap(void);
--
- #ifndef _SETUP
- 
-+#include <asm/espfix.h>
-+
- /*
-  * This is set up by the setup-routine at boot-time
-  */
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -40,6 +40,7 @@
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/setup.h>
-+#include <asm/espfix.h>
- 
- /*
-  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -410,7 +410,7 @@ config KEXEC
+ config CRASH_DUMP
+ 	bool "Build a kdump crash kernel"
+ 	depends on PPC64 || 6xx || FSL_BOOKE || (44x && !SMP)
+-	select RELOCATABLE if PPC64 || 44x || FSL_BOOKE
++	select RELOCATABLE if (PPC64 && !COMPILE_TEST) || 44x || FSL_BOOKE
+ 	help
+ 	  Build a kernel suitable for use as a kdump capture kernel.
+ 	  The same kernel binary can be used as production kernel and dump
+@@ -1000,6 +1000,7 @@ endmenu
+ if PPC64
+ config RELOCATABLE
+ 	bool "Build a relocatable kernel"
++	depends on !COMPILE_TEST
+ 	select NONSTATIC_KERNEL
+ 	help
+ 	  This builds a kernel image that is capable of running anywhere
 
 
