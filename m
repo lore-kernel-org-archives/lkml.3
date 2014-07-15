@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933523AbaGOUzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 16:55:15 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:54629 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901AbaGOUzM (ORCPT
+	id S1753904AbaGOU4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 16:56:54 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:41009 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaGOU4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 16:55:12 -0400
+	Tue, 15 Jul 2014 16:56:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <1740704.38rBxHAFD3@vostro.rjw.lan>
-References: <1740704.38rBxHAFD3@vostro.rjw.lan>
+In-Reply-To: <5388095.MjHqc07ajT@vostro.rjw.lan>
+References: <5388095.MjHqc07ajT@vostro.rjw.lan>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 15 Jul 2014 14:54:51 -0600
-Message-ID: <CAErSpo4WpaRYyU6tmbGiOHFgmV=5bvc-ixTPtCR0cQ6vreaTgA@mail.gmail.com>
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Eliminate acpiphp_dev_to_bridge()
+Date: Tue, 15 Jul 2014 14:56:29 -0600
+Message-ID: <CAErSpo5BYyC-A3qXE2OsgkkGJg8Lvr2B+ASMJ63N-S9xm8wUow@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / hotplug: Simplify acpi_set_hp_context()
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 2:34 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+On Mon, Jul 14, 2014 at 2:36 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> Since acpiphp_dev_to_bridge() is only called by acpiphp_check_host_bridge(),
-> move the code from it to that function directly which reduces the call
-> chain depth and makes the code slightly easier to follow.
+> Since all of the acpi_set_hp_context() callers pass at least one NULL
+> function pointer and one caller passes NULL function pointers only
+> to it, drop function pointer arguments from acpi_set_hp_context()
+> and make the callers initialize the function pointers in struct
+> acpi_hotplug_context by themselves before passing it to
+> acpi_set_hp_context().
 >
 > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
 Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
 > ---
->  drivers/pci/hotplug/acpiphp_glue.c |   24 ++++++++----------------
->  1 file changed, 8 insertions(+), 16 deletions(-)
+>  drivers/acpi/scan.c                |    4 +++-
+>  drivers/pci/hotplug/acpiphp_glue.c |    7 ++++---
+>  include/acpi/acpi_bus.h            |    8 +-------
+>  3 files changed, 8 insertions(+), 11 deletions(-)
 >
+> Index: linux-pm/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux-pm.orig/include/acpi/acpi_bus.h
+> +++ linux-pm/include/acpi/acpi_bus.h
+> @@ -372,15 +372,9 @@ static inline void acpi_set_device_statu
+>  }
+>
+>  static inline void acpi_set_hp_context(struct acpi_device *adev,
+> -                                      struct acpi_hotplug_context *hp,
+> -                                      int (*notify)(struct acpi_device *, u32),
+> -                                      void (*uevent)(struct acpi_device *, u32),
+> -                                      void (*fixup)(struct acpi_device *))
+> +                                      struct acpi_hotplug_context *hp)
+>  {
+>         hp->self = adev;
+> -       hp->notify = notify;
+> -       hp->uevent = uevent;
+> -       hp->fixup = fixup;
+>         adev->hp = hp;
+>  }
+>
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -77,7 +77,9 @@ void acpi_initialize_hp_context(struct a
+>                                 void (*uevent)(struct acpi_device *, u32))
+>  {
+>         acpi_lock_hp_context();
+> -       acpi_set_hp_context(adev, hp, notify, uevent, NULL);
+> +       hp->notify = notify;
+> +       hp->uevent = uevent;
+> +       acpi_set_hp_context(adev, hp);
+>         acpi_unlock_hp_context();
+>  }
+>  EXPORT_SYMBOL_GPL(acpi_initialize_hp_context);
 > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 > ===================================================================
 > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -369,20 +369,6 @@ static acpi_status acpiphp_add_context(a
->         return AE_OK;
+> @@ -80,8 +80,9 @@ static struct acpiphp_context *acpiphp_i
+>                 return NULL;
+>
+>         context->refcount = 1;
+> -       acpi_set_hp_context(adev, &context->hp, acpiphp_hotplug_notify, NULL,
+> -                           acpiphp_post_dock_fixup);
+> +       context->hp.notify = acpiphp_hotplug_notify;
+> +       context->hp.fixup = acpiphp_post_dock_fixup;
+> +       acpi_set_hp_context(adev, &context->hp);
+>         return context;
 >  }
 >
-> -static struct acpiphp_bridge *acpiphp_dev_to_bridge(struct acpi_device *adev)
-> -{
-> -       struct acpiphp_bridge *bridge = NULL;
-> -
-> -       acpi_lock_hp_context();
-> -       if (adev->hp) {
-> -               bridge = to_acpiphp_root_context(adev->hp)->root_bridge;
-> -               if (bridge)
-> -                       get_bridge(bridge);
-> -       }
-> -       acpi_unlock_hp_context();
-> -       return bridge;
-> -}
-> -
->  static void cleanup_bridge(struct acpiphp_bridge *bridge)
->  {
->         struct acpiphp_slot *slot;
-> @@ -753,9 +739,15 @@ static void acpiphp_sanitize_bus(struct
+> @@ -876,7 +877,7 @@ void acpiphp_enumerate_slots(struct pci_
+>                         goto err;
 >
->  void acpiphp_check_host_bridge(struct acpi_device *adev)
->  {
-> -       struct acpiphp_bridge *bridge;
-> +       struct acpiphp_bridge *bridge = NULL;
->
-> -       bridge = acpiphp_dev_to_bridge(adev);
-> +       acpi_lock_hp_context();
-> +       if (adev->hp) {
-> +               bridge = to_acpiphp_root_context(adev->hp)->root_bridge;
-> +               if (bridge)
-> +                       get_bridge(bridge);
-> +       }
-> +       acpi_unlock_hp_context();
->         if (bridge) {
->                 pci_lock_rescan_remove();
+>                 root_context->root_bridge = bridge;
+> -               acpi_set_hp_context(adev, &root_context->hp, NULL, NULL, NULL);
+> +               acpi_set_hp_context(adev, &root_context->hp);
+>         } else {
+>                 struct acpiphp_context *context;
 >
 >
