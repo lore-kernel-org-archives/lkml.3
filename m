@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668AbaGOLBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 07:01:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53103 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585AbaGOLBt (ORCPT
+	id S932691AbaGOLCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 07:02:04 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23420 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S932675AbaGOLB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 07:01:49 -0400
-Date: Tue, 15 Jul 2014 04:01:10 -0700
-From: "tip-bot for Rafael J. Wysocki" <tipbot@zytor.com>
-Message-ID: <tip-d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rafael.j.wysocki@intel.com, aubrey.li@linux.intel.com,
-        gnomes@lxorguk.ukuu.org.uk, dmitry.torokhov@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, aubrey.li@linux.intel.com,
-        gnomes@lxorguk.ukuu.org.uk, dmitry.torokhov@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <4679574.kGUnqAuNl9@vostro.rjw.lan>
-References: <4679574.kGUnqAuNl9@vostro.rjw.lan>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] PM / sleep / irq: Do not suspend wakeup interrupts
-Git-Commit-ID: d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 15 Jul 2014 07:01:59 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-11-53c509f48a8c
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Daniel Drake <drake@endlessm.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v3 0/4] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
+ secure firmware enabled
+Date: Tue, 15 Jul 2014 13:00:30 +0200
+Message-id: <12227526.hKTn2dDzxP@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <CAD8Lp46mp-tHcwGpFd0YHRDE4pKWDoPpUvu-Y0QzxSi-jnYtWg@mail.gmail.com>
+References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+ <CAD8Lp46mp-tHcwGpFd0YHRDE4pKWDoPpUvu-Y0QzxSi-jnYtWg@mail.gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xoO4XzqPBBicPqlrM+yxr8Wj+Y2aL
+	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
+	fvVw4PVY9D3L4861PWwem5fUe9z+95jZY8vVdhaPvi2rGD0+b5ILYI/isklJzcksSy3St0vg
+	ylj5qoG54ChPxY5Fu9kbGP9xdjFyckgImEhs3fqACcIWk7hwbz1bFyMXh5DAdEaJT39PsUM4
+	LUwS++/sYgOpYhOwkpjYvooRxBYRUJX4tbyZFaSIWeAus0TT833MIAlhgQyJDfMWsYPYLEBF
+	TycuZQGxeQW0JDY/eAE2SFTAU2LH9pVgNqdAsMTzVVdZIbb1M0p8WPqTEaJBUOLH5HtgzcwC
+	8hL79k9lhbDVJSbNW8Q8gVFgFpKyWUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
+	dxMjOGaeSe9gXNVgcYhRgINRiYdX4t3hYCHWxLLiytxDjBIczEoivPX/jgQL8aYkVlalFuXH
+	F5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYDRMqirJOry2ZWXSq/stF+7M
+	+fz0U+tGR4s79r7HgrdPXZ0b2PL4tI9WZ9RbicMdD4JbgmvT7eVXTNg2by/jZ/F5dfFem38X
+	6jA/frWpmzf99AfeRZPzJG/vOeWg8eHltiuNYasKXDNW1vcvm1Dxurr1p9prOZ9Vq67KrZ3/
+	ol8upEZdM/DoqilKLMUZiYZazEXFiQBg/pFHlQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1
-Gitweb:     http://git.kernel.org/tip/d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1
-Author:     Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-AuthorDate: Thu, 10 Jul 2014 23:37:54 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 15 Jul 2014 12:57:26 +0200
+On Monday, July 14, 2014 04:41:25 PM Daniel Drake wrote:
+> Hi Bartlomiej,
 
-PM / sleep / irq: Do not suspend wakeup interrupts
+Hi,
 
-If an IRQ has been configured for wakeup via enable_irq_wake(), the
-driver who has done that must be prepared for receiving interrupts
-after suspend_device_irqs() has returned, so there is no need to
-"suspend" such IRQs.  Moreover, if drivers using enable_irq_wake()
-actually want to receive interrupts after suspend_device_irqs() has
-returned, they need to add IRQF_NO_SUSPEND to the IRQ flags while
-requesting the IRQs, which shouldn't be necessary (it also goes a bit
-too far, as IRQF_NO_SUSPEND causes the IRQ to be ignored by
-suspend_device_irqs() all the time regardless of whether or not it
-has been configured for signaling wakeup).
+> On Wed, Jul 9, 2014 at 6:17 PM, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+> > This patch series adds support for AFTR idle mode on boards with
+> > secure firmware enabled and allows EXYNOS cpuidle driver usage on
+> > Exynos4x12 SoCs.
+> >
+> > It has been tested on Trats2 board (using Exynos4412 SoC with secure
+> > firmware enabled) on which AFTR mode reduces power consumption by ~12%
+> > when EXYNOS cpuidle driver is enabled (in both cases the default
+> > exynos_defconfig config is used and CPU1-3 are offlined).
+> 
+> Thanks for this, I have tested it on ODROID-U2.
+> 
+> I don't have any equipment to measure the power usage, but after
+> offlining CPUs 1,2,3 via sysfs "online" file, a printk I added
+> confirms that the system is going to enter aftr mode, and system
+> stability seems as good as ever.
 
-For the above reasons, make __disable_irq() ignore IRQ descriptors
-with IRQD_WAKEUP_STATE set when its suspend argument is true which
-effectively causes them to behave like IRQs with IRQF_NO_SUSPEND
-set.
+Thank you for testing!
 
-This also allows IRQs configured for wakeup via enable_irq_wake()
-to work as wakeup interrupts for the "freeze" (suspend-to-idle)
-sleep mode automatically just like for any other sleep states.
+> Is there any automatic way that the cpus should be offlined, or is the
+> intention that it must be done "by hand" like this?
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Li Aubrey <aubrey.li@linux.intel.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Link: http://lkml.kernel.org/r/4679574.kGUnqAuNl9@vostro.rjw.lan
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+AFAIK Android kernel disables unused CPUs by itself.  There is also
+ongoing work on Exynos coupled cpuidle driver for upstream kernels
+which will handle offlining of CPUs for AFTR mode transparently to
+the kernel (currently only Exynos4210 SoC is supported by the driver
+posted by Daniel Lezcano, we are working on Exynos3250 SoC support
+and once it is done we might try to also do Exynos4x12 SoCs version).
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 3dc6a61..88657d7 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -385,7 +385,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
- {
- 	if (suspend) {
--		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
-+		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND) ||
-+		    irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
- 			return;
- 		desc->istate |= IRQS_SUSPENDED;
- 	}
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
