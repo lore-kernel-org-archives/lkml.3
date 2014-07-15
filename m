@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933979AbaGOVin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:38:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54876 "EHLO
+	id S933059AbaGOVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:51:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932903AbaGOVia (ORCPT
+	with ESMTP id S933978AbaGOVin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:30 -0400
+	Tue, 15 Jul 2014 17:38:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 146/198] rtmutex: Plug slow unlock race
-Date: Tue, 15 Jul 2014 14:30:16 -0700
-Message-Id: <1405459868-15089-147-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 166/198] Bluetooth: Fix locking of hdev when calling into SMP code
+Date: Tue, 15 Jul 2014 14:30:36 -0700
+Message-Id: <1405459868-15089-167-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,239 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
+commit c73f94b8c093a615ce80eabbde0ac6eb9abfe31a upstream.
 
-When the rtmutex fast path is enabled the slow unlock function can
-create the following situation:
+The SMP code expects hdev to be unlocked since e.g. crypto functions
+will try to (re)lock it. Therefore, we need to release the lock before
+calling into smp.c from mgmt.c. Without this we risk a deadlock whenever
+the smp_user_confirm_reply() function is called.
 
-spin_lock(foo->m->wait_lock);
-foo->m->owner = NULL;
-	    			rt_mutex_lock(foo->m); <-- fast path
-				free = atomic_dec_and_test(foo->refcnt);
-				rt_mutex_unlock(foo->m); <-- fast path
-				if (free)
-				   kfree(foo);
-
-spin_unlock(foo->m->wait_lock); <--- Use after free.
-
-Plug the race by changing the slow unlock to the following scheme:
-
-     while (!rt_mutex_has_waiters(m)) {
-     	    /* Clear the waiters bit in m->owner */
-	    clear_rt_mutex_waiters(m);
-      	    owner = rt_mutex_owner(m);
-      	    spin_unlock(m->wait_lock);
-      	    if (cmpxchg(m->owner, owner, 0) == owner)
-      	       return;
-      	    spin_lock(m->wait_lock);
-     }
-
-So in case of a new waiter incoming while the owner tries the slow
-path unlock we have two situations:
-
- unlock(wait_lock);
-					lock(wait_lock);
- cmpxchg(p, owner, 0) == owner
- 	    	   			mark_rt_mutex_waiters(lock);
-	 				acquire(lock);
-
-Or:
-
- unlock(wait_lock);
-					lock(wait_lock);
-	 				mark_rt_mutex_waiters(lock);
- cmpxchg(p, owner, 0) != owner
-					enqueue_waiter();
-					unlock(wait_lock);
- lock(wait_lock);
- wakeup_next waiter();
- unlock(wait_lock);
-					lock(wait_lock);
-					acquire(lock);
-
-If the fast path is disabled, then the simple
-
-   m->owner = NULL;
-   unlock(m->wait_lock);
-
-is sufficient as all access to m->owner is serialized via
-m->wait_lock;
-
-Also document and clarify the wakeup_next_waiter function as suggested
-by Oleg Nesterov.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Lukasz Rymanowski <lukasz.rymanowski@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/locking/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 109 insertions(+), 6 deletions(-)
+ net/bluetooth/mgmt.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index ff24a43..51a8334 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -82,6 +82,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -89,6 +130,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
- #endif
- 
- /*
-@@ -536,7 +588,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -557,10 +610,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 */
- 	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
- 
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
- }
- 
-@@ -813,12 +879,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
- 
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
--		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
+diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
+index 074d836..75c2ecb 100644
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2826,8 +2826,13 @@ static int user_pairing_resp(struct sock *sk, struct hci_dev *hdev,
  	}
  
-+	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
-+	 */
- 	wakeup_next_waiter(lock);
+ 	if (addr->type == BDADDR_LE_PUBLIC || addr->type == BDADDR_LE_RANDOM) {
+-		/* Continue with pairing via SMP */
++		/* Continue with pairing via SMP. The hdev lock must be
++		 * released as SMP may try to recquire it for crypto
++		 * purposes.
++		 */
++		hci_dev_unlock(hdev);
+ 		err = smp_user_confirm_reply(conn, mgmt_op, passkey);
++		hci_dev_lock(hdev);
  
- 	raw_spin_unlock(&lock->wait_lock);
+ 		if (!err)
+ 			err = cmd_complete(sk, hdev->id, mgmt_op,
 -- 
 1.9.1
 
