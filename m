@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632AbaGODTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:19:35 -0400
-Received: from ozlabs.org ([103.22.144.67]:53544 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757402AbaGODTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 23:19:32 -0400
-Message-ID: <1405394370.17767.7.camel@concordia>
-Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
-        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Tue, 15 Jul 2014 13:19:30 +1000
-In-Reply-To: <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
-References: <1404276081.7254.1.camel@concordia>
-	 <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757699AbaGODUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 23:20:46 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:35132 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970AbaGODUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:20:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrUrAZsoPttFhAd384OJ27ixwC_NCYFMWuMzyDqoKBmTmQ@mail.gmail.com>
+References: <CALCETrXrVNKNQtxncfOth5OqaSOC7KygerbB-+QQb4_VKESVsA@mail.gmail.com>
+ <53C40D83.3090501@zytor.com> <CALCETrU44CM5=hSOMQGB6eEM2g-h6y5_+-SwoMwu+-qp-Pxd7g@mail.gmail.com>
+ <CALCETrVz7a7RVLhYTrGvHkJR2dGHJbRuATOaWaXgkrSABR7YFA@mail.gmail.com>
+ <CALCETrU9dmM+bsQYwULjiqw5+erKsu5yUmHJDGYUW1wpcdp-5Q@mail.gmail.com>
+ <CALCETrWG-dQL8ipJ8cO3wfbYKA=mAv3CS4-1JFwmBXF3pUbAwg@mail.gmail.com>
+ <53C45857.6050605@zytor.com> <CALCETrUrAZsoPttFhAd384OJ27ixwC_NCYFMWuMzyDqoKBmTmQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 14 Jul 2014 20:20:22 -0700
+Message-ID: <CALCETrUdtyQYtXVBtgZELX6HYFutUzLwYSfnVsmtqOAUteht6Q@mail.gmail.com>
+Subject: Re: Is espfix64's double-fault thing OK on Xen?
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 07:00 +0000, Masami Hiramatsu wrote:
-> On ia64 and ppc64, the function pointer does not point the
-> entry address of the function, but the address of function
-> discriptor (which contains the entry address and misc
-> data.) Since the kprobes passes the function pointer stored
-> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
-> initalizing its blacklist, it fails and reports many errors
-> as below.
-> 
->   Failed to find blacklist 0001013168300000
->   Failed to find blacklist 0001013000f0a000
->   Failed to find blacklist 000101315f70a000
->   Failed to find blacklist 000101324c80a000
->   Failed to find blacklist 0001013063f0a000
->   Failed to find blacklist 000101327800a000
->   Failed to find blacklist 0001013277f0a000
->   Failed to find blacklist 000101315a70a000
->   Failed to find blacklist 0001013277e0a000
->   Failed to find blacklist 000101305a20a000
->   Failed to find blacklist 0001013277d0a000
->   Failed to find blacklist 00010130bdc0a000
->   Failed to find blacklist 00010130dc20a000
->   Failed to find blacklist 000101309a00a000
->   Failed to find blacklist 0001013277c0a000
->   Failed to find blacklist 0001013277b0a000
->   Failed to find blacklist 0001013277a0a000
->   Failed to find blacklist 000101327790a000
->   Failed to find blacklist 000101303140a000
->   Failed to find blacklist 0001013a3280a000
-> 
-> To fix this bug, this introduces function_entry() macro to
-> retrieve the entry address from the given function pointer,
-> and uses for kallsyms_lookup_size_offset() while initializing
-> blacklist.
-> 
-> Changes in v5:
->  - Use arch_deref_entry_point() instead of function_entry().
-> 
-> Changes in v4:
->  - Add kernel_text_address() check for verifying the address.
->  - Moved on the latest linus tree.
-> 
-> Changes in v3:
->  - Fix a bug to get blacklist address based on function entry
->    instead of function descriptor. (Suzuki's work, Thanks!)
-> 
-> Changes in V2:
->  - Use function_entry() macro when lookin up symbols instead
->    of storing it.
->  - Update for the latest -next.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Tony Luck <tony.luck@gmail.com>
-> Tested-by: Tony Luck <tony.luck@intel.com>
-> Cc: Michael Ellerman <mpe@ellerman.id.au>
+On Mon, Jul 14, 2014 at 7:46 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Jul 14, 2014 at 3:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/14/2014 02:35 PM, Andy Lutomirski wrote:
+>>> Presumably the problem is here:
+>>>
+>>> ENTRY(xen_iret)
+>>>     pushq $0
+>>> 1:    jmp hypercall_iret
+>>> ENDPATCH(xen_iret)
+>>>
+>>> This seems rather unlikely to work on the espfix stack.
+>>>
+>>> Maybe espfix64 should be disabled when running on Xen and Xen should
+>>> implement its own espfix64 in the hypervisor.
+>>
+>> Perhaps the first question is: is espfix even necessary on Xen?  How
+>> does the Xen PV IRET handle returning to a 16-bit stack segment?
+>>
+>
+> Test case here:
+>
+> https://gitorious.org/linux-test-utils/linux-clock-tests/source/dbfe196a0f6efedc119deb1cdbb0139dbdf609ee:
+>
+> It's sigreturn_32 and sigreturn_64.  Summary:
+>
+> (sigreturn_64 always fails unless my SS patch is applied.  results
+> below for sigreturn_64 assume the patch is applied.  This is on KVM
+> (-cpu host) on Sandy Bridge.)
+>
+> On Xen with espfix, both OOPS intermittently.
+>
+> On espfix-less kernels (Xen and non-Xen), 16-bit CS w/ 16-bit SS
+> always fails.  Native (32-bit or 64-bit, according to the binary) CS
+> with 16-bit SS fails for sigreturn_32, but passes for sigreturn_64.  I
+> find this somewhat odd.  Native ss always passes.
+>
+> So I think that Xen makes no difference here, aside from the bug.
+>
+> That being said, I don't know whether Linux can do espfix64 at all
+> when Xen is running -- for all I know, the IRET hypercall switches
+> stacks to a Xen stack.
 
-Tested-by: Michael Ellerman <mpe@ellerman.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au> (for powerpc)
+Microcode is weird.  Without espfix:
 
-Ben, can you take this in your tree?
+[RUN]    64-bit CS (33), 32-bit SS (2b)
+    SP: 8badf00d5aadc0de -> 8badf00d5aadc0de
+[OK]    all registers okay
+[RUN]    32-bit CS (23), 32-bit SS (2b)
+    SP: 8badf00d5aadc0de -> 5aadc0de
+[OK]    all registers okay
+[RUN]    16-bit CS (7), 32-bit SS (2b)
+    SP: 8badf00d5aadc0de -> 5aadc0de
+[OK]    all registers okay
+[RUN]    64-bit CS (33), 16-bit SS (f)
+    SP: 8badf00d5aadc0de -> 8badf00d5aadc0de
+[OK]    all registers okay
+[RUN]    32-bit CS (23), 16-bit SS (f)
+    SP: 8badf00d5aadc0de -> 5ae3c0de
+[FAIL]    Reg 15 mismatch: requested 0x8badf00d5aadc0de; got 0x5ae3c0de
+[RUN]    16-bit CS (7), 16-bit SS (f)
+    SP: 8badf00d5aadc0de -> 5ae3c0de
+[FAIL]    Reg 15 mismatch: requested 0x8badf00d5aadc0de; got 0x5ae3c0de
 
-cheers
-
-
+--Andy
