@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002AbaGOICo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:02:44 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33808 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757946AbaGOICg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:02:36 -0400
-Message-ID: <1405408602.9343.75.camel@pasglop>
-Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
-        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+	id S1757801AbaGOIM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:12:59 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:58221 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaGOIMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:12:53 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 15 Jul 2014 17:18:52 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Tue, 15 Jul 2014 17:16:42 +1000
-In-Reply-To: <1405394370.17767.7.camel@concordia>
-References: <1404276081.7254.1.camel@concordia>
-	 <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
-	 <1405394370.17767.7.camel@concordia>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 14/21] mm: slub: kasan: disable kasan
+ when touching unaccessible memory
+Message-ID: <20140715081852.GL11317@js1304-P5Q-DELUXE>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-15-git-send-email-a.ryabinin@samsung.com>
+ <20140715060405.GI11317@js1304-P5Q-DELUXE>
+ <53C4DA54.3010502@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C4DA54.3010502@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 13:19 +1000, Michael Ellerman wrote:
-
-> > Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > Reported-by: Tony Luck <tony.luck@gmail.com>
-> > Tested-by: Tony Luck <tony.luck@intel.com>
-> > Cc: Michael Ellerman <mpe@ellerman.id.au>
+On Tue, Jul 15, 2014 at 11:37:56AM +0400, Andrey Ryabinin wrote:
+> On 07/15/14 10:04, Joonsoo Kim wrote:
+> > On Wed, Jul 09, 2014 at 03:30:08PM +0400, Andrey Ryabinin wrote:
+> >> Some code in slub could validly touch memory marked by kasan as unaccessible.
+> >> Even though slub.c doesn't instrumented, functions called in it are instrumented,
+> >> so to avoid false positive reports such places are protected by
+> >> kasan_disable_local()/kasan_enable_local() calls.
+> >>
+> >> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> >> ---
+> >>  mm/slub.c | 21 +++++++++++++++++++--
+> >>  1 file changed, 19 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/mm/slub.c b/mm/slub.c
+> >> index 6ddedf9..c8dbea7 100644
+> >> --- a/mm/slub.c
+> >> +++ b/mm/slub.c
+> >> @@ -560,8 +560,10 @@ static void print_tracking(struct kmem_cache *s, void *object)
+> >>  	if (!(s->flags & SLAB_STORE_USER))
+> >>  		return;
+> >>  
+> >> +	kasan_disable_local();
+> >>  	print_track("Allocated", get_track(s, object, TRACK_ALLOC));
+> >>  	print_track("Freed", get_track(s, object, TRACK_FREE));
+> >> +	kasan_enable_local();
+> > 
+> > I don't think that this is needed since print_track() doesn't call
+> > external function with object pointer. print_track() call pr_err(), but,
+> > before calling, it retrieve t->addrs[i] so memory access only occurs
+> > in slub.c.
+> > 
+> Agree.
 > 
-> Tested-by: Michael Ellerman <mpe@ellerman.id.au>
-> Acked-by: Michael Ellerman <mpe@ellerman.id.au> (for powerpc)
+> >>  }
+> >>  
+> >>  static void print_page_info(struct page *page)
+> >> @@ -604,6 +606,8 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+> >>  	unsigned int off;	/* Offset of last byte */
+> >>  	u8 *addr = page_address(page);
+> >>  
+> >> +	kasan_disable_local();
+> >> +
+> >>  	print_tracking(s, p);
+> >>  
+> >>  	print_page_info(page);
+> >> @@ -632,6 +636,8 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+> >>  		/* Beginning of the filler is the free pointer */
+> >>  		print_section("Padding ", p + off, s->size - off);
+> >>  
+> >> +	kasan_enable_local();
+> >> +
+> >>  	dump_stack();
+> >>  }
+> > 
+> > And, I recommend that you put this hook on right place.
+> > At a glance, the problematic function is print_section() which have
+> > external function call, print_hex_dump(), with object pointer.
+> > If you disable kasan in print_section, all the below thing won't be
+> > needed, I guess.
+> > 
 > 
-> Ben, can you take this in your tree?
+> Nope, at least memchr_inv() call in slab_pad_check will be a problem.
+> 
+> I think putting disable/enable only where we strictly need them might be a problem for future maintenance of slub.
+> If someone is going to add a new function call somewhere, he must ensure that it this call won't be a problem
+> for kasan.
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+I don't agree with this.
 
-That looks more like generic material. Do we have a kprobes maintainer ?
-Andrew, do you want to take this ?
+If someone is going to add a slab_pad_check() in other places in
+slub.c, we should disable/enable kasan there, too. This looks same
+maintenance problem to me. Putting disable/enable only where we
+strictly need at least ensures that we don't need to care when using
+slub internal functions.
 
-I'm happy to put it in powerpc and send it to Linus tomorrow if nobody
-cares :-)
+And, if memchr_inv() is problem, I think that you also need to add hook
+into validate_slab_cache().
 
-Cheers,
-Ben.
+validate_slab_cache() -> validate_slab_slab() -> validate_slab() ->
+check_object() -> check_bytes_and_report() -> memchr_inv()
 
-
+Thanks.
