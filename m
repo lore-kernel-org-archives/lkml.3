@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934235AbaGPAEe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:04:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45170 "EHLO
+	id S934383AbaGPAFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:05:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933112AbaGOXNg (ORCPT
+	with ESMTP id S933078AbaGOXNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:36 -0400
+	Tue, 15 Jul 2014 19:13:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 15/66] hwmon: (emc2103) Clamp limits instead of bailing out
-Date: Tue, 15 Jul 2014 16:17:09 -0700
-Message-Id: <20140715231702.772573714@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.14 14/66] hwmon: (amc6821) Fix permissions for temp2_input
+Date: Tue, 15 Jul 2014 16:17:08 -0700
+Message-Id: <20140715231702.738544621@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,65 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
+commit df86754b746e9a0ff6f863f690b1c01d408e3cdc upstream.
 
-It is customary to clamp limits instead of bailing out with an error
-if a configured limit is out of the range supported by the driver.
-This simplifies limit configuration, since the user will not typically
-know chip and/or driver specific limits.
+temp2_input should not be writable, fix it.
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/emc2103.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/hwmon/amc6821.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/emc2103.c
-+++ b/drivers/hwmon/emc2103.c
-@@ -250,9 +250,7 @@ static ssize_t set_temp_min(struct devic
- 	if (result < 0)
- 		return result;
- 
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = val;
-@@ -274,9 +272,7 @@ static ssize_t set_temp_max(struct devic
- 	if (result < 0)
- 		return result;
- 
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = val;
-@@ -390,15 +386,14 @@ static ssize_t set_fan_target(struct dev
- {
- 	struct emc2103_data *data = emc2103_update_device(dev);
- 	struct i2c_client *client = to_i2c_client(dev);
--	long rpm_target;
-+	unsigned long rpm_target;
- 
--	int result = kstrtol(buf, 10, &rpm_target);
-+	int result = kstrtoul(buf, 10, &rpm_target);
- 	if (result < 0)
- 		return result;
- 
- 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
--	if ((rpm_target < 0) || (rpm_target > 16384))
--		return -EINVAL;
-+	rpm_target = clamp_val(rpm_target, 0, 16384);
- 
- 	mutex_lock(&data->update_lock);
- 
+--- a/drivers/hwmon/amc6821.c
++++ b/drivers/hwmon/amc6821.c
+@@ -704,7 +704,7 @@ static SENSOR_DEVICE_ATTR(temp1_max_alar
+ 	get_temp_alarm, NULL, IDX_TEMP1_MAX);
+ static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO,
+ 	get_temp_alarm, NULL, IDX_TEMP1_CRIT);
+-static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO | S_IWUSR,
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
+ 	get_temp, NULL, IDX_TEMP2_INPUT);
+ static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO | S_IWUSR, get_temp,
+ 	set_temp, IDX_TEMP2_MIN);
 
 
