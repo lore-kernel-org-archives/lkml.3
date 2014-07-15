@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760618AbaGOXv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:51:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S1760601AbaGOXvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:51:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45341 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618AbaGOXNw (ORCPT
+	with ESMTP id S933635AbaGOXNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.14 59/66] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
-Date: Tue, 15 Jul 2014 16:17:53 -0700
-Message-Id: <20140715231704.645515277@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 61/66] x86, espfix: Move espfix definitions into a separate header file
+Date: Tue, 15 Jul 2014 16:17:55 -0700
+Message-Id: <20140715231704.757425186@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -28,64 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
+commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
 
-This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
-preparation of merging in the proper fix (espfix64).
+Sparse warns that the percpu variables aren't declared before they are
+defined.  Rather than hacking around it, move espfix definitions into
+a proper header file.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c        |    4 +---
- arch/x86/vdso/vdso32-setup.c |    8 --------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+ arch/x86/include/asm/espfix.h |   16 ++++++++++++++++
+ arch/x86/include/asm/setup.h  |    5 ++---
+ arch/x86/kernel/espfix_64.c   |    1 +
+ 3 files changed, 19 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,8 +20,6 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
- 
--int sysctl_ldt16 = 0;
--
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
-+	if (!ldt_info.seg_32bit) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,7 +41,6 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
--extern int sysctl_ldt16;
+--- /dev/null
++++ b/arch/x86/include/asm/espfix.h
+@@ -0,0 +1,16 @@
++#ifdef _ASM_X86_ESPFIX_H
++#define _ASM_X86_ESPFIX_H
++
++#ifdef CONFIG_X86_64
++
++#include <asm/percpu.h>
++
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
++#endif /* CONFIG_X86_64 */
++
++#endif /* _ASM_X86_ESPFIX_H */
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -63,11 +63,10 @@ extern void x86_ce4100_early_setup(void)
+ static inline void x86_ce4100_early_setup(void) { }
  #endif
  
+-extern void init_espfix_bsp(void);
+-extern void init_espfix_ap(void);
+-
+ #ifndef _SETUP
+ 
++#include <asm/espfix.h>
++
  /*
-@@ -380,13 +379,6 @@ static struct ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
--	},
--	{
--		.procname	= "ldt16",
--		.data		= &sysctl_ldt16,
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+  * This is set up by the setup-routine at boot-time
+  */
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -40,6 +40,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/setup.h>
++#include <asm/espfix.h>
+ 
+ /*
+  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
 
 
