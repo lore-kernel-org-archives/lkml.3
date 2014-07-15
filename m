@@ -1,123 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759119AbaGOM2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:28:04 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59530 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758794AbaGOM2B (ORCPT
+	id S1758989AbaGOM3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:29:03 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61513 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758714AbaGOM27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:28:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chung-Lin Tang <cltang@codesourcery.com>
-Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        lftan.linux@gmail.com
-Subject: Re: [PATCH v2 22/29] nios2: Miscellaneous header files
-Date: Tue, 15 Jul 2014 14:27:57 +0200
-Message-ID: <4477048.XUlURsz4uq@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53C50A87.6000902@codesourcery.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <4999408.jEEY9BVX9F@wuerfel> <53C50A87.6000902@codesourcery.com>
+	Tue, 15 Jul 2014 08:28:59 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / sleep: Fix request_firmware() error at resume
+Date: Tue, 15 Jul 2014 14:47:13 +0200
+Message-ID: <3026958.0fOrQtDZlF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405407087-19493-1-git-send-email-tiwai@suse.de>
+References: <1405407087-19493-1-git-send-email-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cBKcQD74rC6srcP5kuf+zQ8RSxYAGbGkbYrczf/6Hpo
- 50ENY+CS9iCWqLtmxDswfVROy54UpDhCE8XvS0iFYeFxg72mnx
- LVztZZ/6AhD6gLUoITrOn4ARVqeTg1i5itIHkxndkadRbdsvXa
- Y67ihGj8ICZLDI8w/KdRpqNdIpldHX6vj6cKt1JVseWAk4EYv7
- xW81BVUoIC5UyQNfGUZJ5sWhhTZ00vijt8/sFa9ZVEWkAVu1KK
- hjhflthkDUbcqMY91ooIsrinNeJ8f3F5KMsdGrOGEjiwrFOq+U
- dIioI/9MknP1IlXFjHLvXIdz1IaFDob2cCo6Zd1VHZvJEEeOKm
- o0cFq6oIDKdD0MYu/05k=
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 July 2014 19:03:35 Chung-Lin Tang wrote:
-> On 2014/7/15 06:22 PM, Arnd Bergmann wrote:
-> >> +
-> >> > +#ifndef _UAPI_ASM_NIOS2_STATFS_H
-> >> > +#define _UAPI_ASM_NIOS2_STATFS_H
-> >> > +
-> >> > +#define __statfs_word __s32
-> > Why this? Every other architecture except parisc uses the default __u32 here.
+On Tuesday, July 15, 2014 08:51:27 AM Takashi Iwai wrote:
+> The commit [247bc037: PM / Sleep: Mitigate race between the freezer
+> and request_firmware()] introduced the finer state control, but it
+> also leads to a new bug; for example, a bug report regarding the
+> firmware loading of intel BT device at suspend/resume:
+>   https://bugzilla.novell.com/show_bug.cgi?id=873790
 > 
-> Because include/uapi/asm/statfs.h has this:
+> The root cause seems to be a small window between the process resume
+> and the clear of usermodehelper lock.  The request_firmware() function
+> checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
+> is for avoiding the invalid  f/w loading during suspend/resume phase.
+> The problem is, however, that usermodehelper_enable() is called at the
+> end of thaw_processes().  Thus, a thawed process in between can kick
+> off the f/w loader code path (in this case, via btusb_setup_intel())
+> even before the call of usermodehelper_enable().  Then
+> usermodehelper_read_trylock() returns an error and request_firmware()
+> spews WARN_ON() in the end.
 > 
-> #ifndef __statfs_word
-> #if __BITS_PER_LONG == 64
-> #define __statfs_word __kernel_long_t
-> #else
-> #define __statfs_word __u32
-> #endif
-> #endif
-> ...
-> struct statfs64 {
->         __statfs_word f_type;
->         __statfs_word f_bsize;
->         __u64 f_blocks;
->         __u64 f_bfree;
-> ...
+> This oneliner patch fixes the issue just by setting to UMH_FREEZING
+> state again before restarting tasks, so that the call of
+> request_firmware() will be blocked until the end of this function
+> instead of returning an error.
 > 
-> While the bits/statfs.h header in glibc has this:
-> struct statfs
->   {
->     __SWORD_TYPE f_type;
->     __SWORD_TYPE f_bsize;
->     __field64(__fsblkcnt_t, __fsblkcnt64_t, f_blocks);
-> ...
-> struct statfs64
->   {
->     __SWORD_TYPE f_type;
->     __SWORD_TYPE f_bsize;
->     __fsblkcnt64_t f_blocks;
-> ...
-> 
-> Where __SWORD_TYPE is always a signed integer (int or long int depending
-> on 32/64-bit word size).  Hence we define the kernel __statfs_word to be
-> signed 32-bit to match.
-> 
-> Supposedly, tilepro should have a similar issue too, though I guess this
-> is quite obscure in practice. We so far haven't encountered any issues
-> on nios2 without this __s32 override either, it's just by observation.
+> Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=873790
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-I think you should just do what x86 (and presumably most other
-architectures) has, that also uses a signed type in user space
-and unsigned in kernel space.
+Applied, thanks for fixing this up!
 
-It's not really clean, but it doesn't seem to cause problems
-elsewhere, and in cases like this you're normally better off
-copying the mistakes that everybody else made than doing something
-unusual.
-
-> >> > +#include <linux/types.h>
-> >> > +#include <asm-generic/swab.h>
-> >> > +
-> >> > +#ifdef CONFIG_NIOS2_CI_SWAB_SUPPORT
-> >> > +#ifdef __GNUC__
-> >> > +
-> >> > +#define __nios2_swab(x)		\
-> >> > +	__builtin_custom_ini(CONFIG_NIOS2_CI_SWAB_NO, (x))
-> >> > +
-> >> > +static inline __attribute__((const)) __u16 __arch_swab16(__u16 x)
-> >> > +{
-> >> > +	return (__u16) __nios2_swab(((__u32) x) << 16);
-> >> > +}
-> > Is this actually better than ___constant_swab16()?
-> > 
-> > Also, have you checked if you need to support old compiler versions that
-> > don't have __builtin_bswap16/32/64? With newer compilers you don't need
-> > to define any of these yourself.
+> ---
+>  kernel/power/process.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> This swap is configured/implemented using Nios II's custom instruction
-> facility; it is not part of the compiler supported Nios II core
-> instruction set. In fact, even the exact opcode allocated is not fixed.
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index 0ca8d83e2369..4ee194eb524b 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -186,6 +186,7 @@ void thaw_processes(void)
+>  
+>  	printk("Restarting tasks ... ");
+>  
+> +	__usermodehelper_set_disable_depth(UMH_FREEZING);
+>  	thaw_workqueues();
+>  
+>  	read_lock(&tasklist_lock);
 > 
-> So the custom swap will not be in a form usable by the compiler, and
-> hence no use of it during code generation (if it is, you might not even
-> need to use __builtin_swap*(), there's a optimization pass that
-> recognizes the shift+or-ing C code patterns).
 
-Ok, I see.
-
-	Arnd
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
