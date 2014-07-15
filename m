@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527AbaGOVhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:37:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54608 "EHLO
+	id S933877AbaGOVhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:37:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54620 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933865AbaGOVhR (ORCPT
+	with ESMTP id S1759521AbaGOVhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:37:17 -0400
+	Tue, 15 Jul 2014 17:37:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/198] ARM: stacktrace: avoid listing stacktrace functions in stacktrace
-Date: Tue, 15 Jul 2014 14:28:36 -0700
-Message-Id: <1405459868-15089-47-git-send-email-kamal@canonical.com>
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 033/198] ASoC: max98090: Fix reset at resume time
+Date: Tue, 15 Jul 2014 14:28:23 -0700
+Message-Id: <1405459868-15089-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,92 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
 
-commit 3683f44c42e991d313dc301504ee0fca1aeb8580 upstream.
+commit 25b4ab430f8e166c9b63f4db28e7e812d5a59396 upstream.
 
-While debugging the FEC ethernet driver using stacktrace, it was noticed
-that the stacktraces always begin as follows:
+Reset needs to wait 20ms before other codec IO is performed. This wait
+was not being performed. Fix this by making sure the reset register is not
+restored with the cache, but use the manual reset method in resume with
+the wait.
 
- [<c00117b4>] save_stack_trace_tsk+0x0/0x98
- [<c0011870>] save_stack_trace+0x24/0x28
- ...
-
-This is because the stack trace code includes the stack frames for itself.
-This is incorrect behaviour, and also leads to "skip" doing the wrong
-thing (which is the number of stack frames to avoid recording.)
-
-Perversely, it does the right thing when passed a non-current thread.  Fix
-this by ensuring that we have a known constant number of frames above the
-main stack trace function, and always skip these.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/stacktrace.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ sound/soc/codecs/max98090.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index af4e8c8..6582c4a 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -83,13 +83,16 @@ static int save_trace(struct stackframe *frame, void *d)
- 	return trace->nr_entries >= trace->max_entries;
- }
- 
--void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+/* This must be noinline to so that our skip calculation works correctly */
-+static noinline void __save_stack_trace(struct task_struct *tsk,
-+	struct stack_trace *trace, unsigned int nosched)
+diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
+index 8bddf3f..9ad8f01 100644
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -255,6 +255,7 @@ static struct reg_default max98090_reg[] = {
+ static bool max98090_volatile_register(struct device *dev, unsigned int reg)
  {
- 	struct stack_trace_data data;
- 	struct stackframe frame;
+ 	switch (reg) {
++	case M98090_REG_SOFTWARE_RESET:
+ 	case M98090_REG_DEVICE_STATUS:
+ 	case M98090_REG_JACK_STATUS:
+ 	case M98090_REG_REVISION_ID:
+@@ -2360,6 +2361,8 @@ static int max98090_runtime_resume(struct device *dev)
  
- 	data.trace = trace;
- 	data.skip = trace->skip;
-+	data.no_sched_functions = nosched;
+ 	regcache_cache_only(max98090->regmap, false);
  
- 	if (tsk != current) {
- #ifdef CONFIG_SMP
-@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 			trace->entries[trace->nr_entries++] = ULONG_MAX;
- 		return;
- #else
--		data.no_sched_functions = 1;
- 		frame.fp = thread_saved_fp(tsk);
- 		frame.sp = thread_saved_sp(tsk);
- 		frame.lr = 0;		/* recovered from the stack */
-@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 	} else {
- 		register unsigned long current_sp asm ("sp");
- 
--		data.no_sched_functions = 0;
-+		/* We don't want this function nor the caller */
-+		data.skip += 2;
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
- 		frame.sp = current_sp;
- 		frame.lr = (unsigned long)__builtin_return_address(0);
--		frame.pc = (unsigned long)save_stack_trace_tsk;
-+		frame.pc = (unsigned long)__save_stack_trace;
- 	}
- 
- 	walk_stackframe(&frame, save_trace, &data);
-@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	__save_stack_trace(tsk, trace, 1);
-+}
++	max98090_reset(max98090);
 +
- void save_stack_trace(struct stack_trace *trace)
- {
--	save_stack_trace_tsk(current, trace);
-+	__save_stack_trace(current, trace, 0);
- }
- EXPORT_SYMBOL_GPL(save_stack_trace);
- #endif
+ 	regcache_sync(max98090->regmap);
+ 
+ 	return 0;
 -- 
 1.9.1
 
