@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965270AbaGOXgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:36:52 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61135 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933982AbaGOXgs (ORCPT
+	id S965311AbaGOXhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:37:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933979AbaGOXON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:36:48 -0400
+	Tue, 15 Jul 2014 19:14:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maxime Bizon <mbizon@freebox.fr>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.15 09/84] workqueue: fix dev_set_uevent_suppress() imbalance
+Date: Tue, 15 Jul 2014 16:17:06 -0700
+Message-Id: <20140715231713.472471207@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <1405465801.28702.34.camel@misato.fc.hp.com>
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
- <1405452884-25688-4-git-send-email-toshi.kani@hp.com> <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>
- <1405465801.28702.34.camel@misato.fc.hp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 15 Jul 2014 16:36:26 -0700
-Message-ID: <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to handle
- WT type
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 4:10 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Tue, 2014-07-15 at 12:56 -0700, Andy Lutomirski wrote:
->> On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
->> > This patch changes reserve_memtype() to handle the new WT type.
->> > When (!pat_enabled && new_type), it continues to set either WB
->> > or UC- to *new_type.  When pat_enabled, it can reserve a given
->> > non-RAM range for WT.  At this point, it may not reserve a RAM
->> > range for WT since reserve_ram_pages_type() uses the page flags
->> > limited to three memory types, WB, WC and UC.
->>
->> FWIW, last time I looked at this, it seemed like all the fancy
->> reserve_ram_pages stuff was unnecessary: shouldn't the RAM type be
->> easy to track in the direct map page tables?
->
-> Are you referring the direct map page tables as the kernel page
-> directory tables (pgd/pud/..)?
->
-> I think it needs to be able to keep track of the memory type per a
-> physical memory range, not per a translation, in order to prevent
-> aliasing of the memory type.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Actual RAM (the lowmem kind, which is all of it on x86_64) is mapped
-linearly somewhere in kernel address space.  The pagetables for that
-mapping could be used as the canonical source of the memory type for
-the ram range in question.
+------------------
 
-This only works for lowmem, so maybe it's not a good idea to rely on it.
+From: Maxime Bizon <mbizon@freebox.fr>
 
---Andy
+commit bddbceb688c6d0decaabc7884fede319d02f96c8 upstream.
+
+Uevents are suppressed during attributes registration, but never
+restored, so kobject_uevent() does nothing.
+
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 226223ab3c4118ddd10688cc2c131135848371ab
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/workqueue.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3422,6 +3422,7 @@ int workqueue_sysfs_register(struct work
+ 		}
+ 	}
+ 
++	dev_set_uevent_suppress(&wq_dev->dev, false);
+ 	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
+ 	return 0;
+ }
+
+
