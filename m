@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845AbaGORBf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:01:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50862 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaGORBc (ORCPT
+	id S1755324AbaGORCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:02:08 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48598 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898AbaGORCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:01:32 -0400
-Date: Tue, 15 Jul 2014 10:01:07 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] net: clean up some sparse endianness warnings in ipv6.h
-Message-ID: <20140715170107.GA1722@infradead.org>
-References: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 15 Jul 2014 13:02:05 -0400
+From: Sam Asadi <asadi.samuel@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tero Kristo <t-kristo@ti.com>, sam-the-6 <asadi.samuel@gmail.com>
+Subject: [PATCH 02/94] clk: ti: apll: not allocating enough data
+Date: Tue, 15 Jul 2014 20:00:17 +0300
+Message-Id: <1405443709-15288-2-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
+References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
-> -	const unsigned long *ul = (const unsigned long *)a;
-> +	const __be64 *be = (const __be64 *)a;
->  
-> -	return (ul[0] | (ul[1] ^ cpu_to_be64(1))) == 0UL;
-> +	return (be[0] | (be[1] ^ cpu_to_be64(1))) == cpu_to_be64(0UL);
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Do you need the swap for 0UL?  I know sparse treats 0 as special, so why
-wouldn't it treat 0UL special?  Or just remove the 0UL postfix, no need
-for it in a simple comparism.
+There is a cut and paste bug here which will lead to memory corruption
+because we don't allocate enough data.
 
-Otherwise looks fine to me.
+Fixes: 4d008589e271 ('CLK: TI: APLL: add support for omap2 aplls')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
+---
+ drivers/clk/ti/apll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/ti/apll.c b/drivers/clk/ti/apll.c
+index 5428c9c..18dbaf12 100644
+--- a/drivers/clk/ti/apll.c
++++ b/drivers/clk/ti/apll.c
+@@ -338,7 +338,7 @@ static void __init of_omap2_apll_setup(struct device_node *node)
+ 	const char *parent_name;
+ 	u32 val;
+ 
+-	ad = kzalloc(sizeof(*clk_hw), GFP_KERNEL);
++	ad = kzalloc(sizeof(*ad), GFP_KERNEL);
+ 	clk_hw = kzalloc(sizeof(*clk_hw), GFP_KERNEL);
+ 	init = kzalloc(sizeof(*init), GFP_KERNEL);
+ 
+-- 
+1.7.10.4
+
