@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507AbaGOAxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:53:15 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54221 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516AbaGOAxN (ORCPT
+	id S1754734AbaGOAxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 20:53:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58988 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753568AbaGOAxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:53:13 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53C47B76.4080306@roeck-us.net>
-Date: Mon, 14 Jul 2014 17:53:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 20:53:36 -0400
+Date: Mon, 14 Jul 2014 20:53:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH RT 0/3] Linux 3.10.47-rt50-rc1
+Message-ID: <20140714205333.6d28ed1f@gandalf.local.home>
+In-Reply-To: <53C4714C.8000103@mvista.com>
+References: <20140714200420.805309842@goodmis.org>
+	<53C4714C.8000103@mvista.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, Richard Weinberger <richard@nod.at>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org, arnd@arndb.de,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at> <53C3994C.1010309@metafoo.de> <53C39B66.4060500@nod.at> <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com> <53C47725.8000005@gmail.com>
-In-Reply-To: <53C47725.8000005@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 05:34 PM, Chen Gang wrote:
-> On 07/14/2014 05:22 PM, Chen Gang wrote:
->>
->> 在 2014年7月14日，下午4:57，Richard Weinberger <richard@nod.at> 写道：
->>
->>> Am 14.07.2014 10:48, schrieb Lars-Peter Clausen:
->>>> On 07/14/2014 10:31 AM, Richard Weinberger wrote:
->>>>> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
->>>>>> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
->>>>>>> Maybe we could add COMPILE_TEST to the version string too?
->>>>>>> Just to detect such kernels fast in user bug reports...
->>>>>>
->>>>>> What kind of bug report are you going to get?
->>>>>
->>>>> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
->>>>> complains that it does not work. :)
->>>>
->>>> These drivers are typically drivers for some SoC peripheral and the device will simply physically not exist on a platform that does not provide HAS_IOMEM. This is not really any
->>>> different from making the driver selectable via COMPILE_TEST for any other platform. To hit the issue you'd have to instantiate a device driver instance for a device that
->>>> physically does not exist. This will always result in a failure.
->>>
->>> Okay, you have convinced me. :)
->>>
->
-> After search the history patches, I found one related patch which made
-> by myself (when I am in Asianux):
->
->    "https://lkml.org/lkml/2013/7/1/641"
->
-> For me, it is a long discussion, and forced many members have to join
-> in. Please help check again.
->
+On Mon, 14 Jul 2014 19:09:48 -0500
+Corey Minyard <cminyard@mvista.com> wrote:
 
-One thing you could try would be to return NULL (or where appropriate
-an error) in the #else case of CONFIG_HAS_IOMEM and CONFIG_HAS_IOPORT,
-ie dont take COMPILE_TEST into account at all. Obviously that means
-you won't be able to dump a warning message in the COMPILE_TEST
-case, but at least the code would compile. The rejection of above patch
-would make a good case for this approach.
+> Can we get:
+> 
+> tracing-use-migrate_disable-to-prevent-beeing-pushed.patch
 
-Guenter
+Sure except that patch is buggy:
 
+-               preempt_disable();
++               migrate_disable();
+                /* The update must run on the CPU that is being updated. */
+                if (cpu_id == smp_processor_id() || !cpu_online(cpu_id))
+                        rb_update_pages(cpu_buffer);
+                else {
+-                       /*
+-                        * Can not disable preemption for schedule_work_on()
+-                        * on PREEMPT_RT.
+-                        */
+-                       preempt_enable();
+                        schedule_work_on(cpu_id,
+                                         &cpu_buffer->update_pages_work);
+                        wait_for_completion(&cpu_buffer->update_done);
+-                       preempt_disable();
+                }
+-               preempt_enable();
++               migrate_enable();
+
+migrate_disable() on non-PREEMPT_RT is preempt_disable(). You can't
+call wait_or_completion with preemption disabled.
+
+When that gets fixed in mainline -rt, I'll add it to the stable
+branches too.
+
+-- Steve
+
+
+
+> 
+> into 3.10, also?
+> 
