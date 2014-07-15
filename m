@@ -1,64 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002AbaGONDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 09:03:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36665 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757665AbaGONDK (ORCPT
+	id S1759037AbaGONEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:04:07 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:46805 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758991AbaGONEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 09:03:10 -0400
-Date: Tue, 15 Jul 2014 15:03:08 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: IMA: kernel reading files opened with O_DIRECT
-Message-ID: <20140715130308.GA4109@amd.pavel.ucw.cz>
-References: <53B3D3AA.3000408@samsung.com>
- <x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
- <20140702184050.GA24583@infradead.org>
- <20140711201054.GB18033@amd.pavel.ucw.cz>
- <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
+	Tue, 15 Jul 2014 09:04:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53C4F745.3070701@linaro.org>
+References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
+	<1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
+	<CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com>
+	<53C4F745.3070701@linaro.org>
+Date: Tue, 15 Jul 2014 15:04:04 +0200
+Message-ID: <CAB5oZtBSZJVqyO8GKdKqh0+3=GDkCyuqrAOQhMRxN0JFBnmZ6w@mail.gmail.com>
+Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
+From: Harro Haan <hrhaan@gmail.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
+        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-07-12 01:22:04, Dmitry Kasatkin wrote:
-> On 11 July 2014 23:10, Pavel Machek <pavel@ucw.cz> wrote:
-> > On Wed 2014-07-02 11:40:50, Christoph Hellwig wrote:
-> >> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
-> >> > It's acceptable.
-> >>
-> >> It's not because it will then also affect other reads going on at the
-> >> same time.
-> >>
-> >> The whole concept of ima is just broken, and if you want to do these
-> >> sort of verification they need to happen inside the filesystem and not
-> >> above it.
-> >
-> > ...and doing it at filesystem layer would also permit verification of
-> > per-block (64KB? 1MB?) hashes.
-> 
-> Please design one single and the best universal filesystem which
-> does it.
+On 15 July 2014 11:41, Daniel Thompson <daniel.thompson@linaro.org> wrote:
+> On 14/07/14 14:51, Harro Haan wrote:
+>> On 10 July 2014 10:03, Daniel Thompson <daniel.thompson@linaro.org> wrote:
+>>>
+>>> This patchset makes it possible to use kgdb's NMI infrastructure on ARM
+>>> platforms.
+>>>
+>>> The patches have been previously circulated as part of a large patchset
+>>> mixing together ARM architecture code and driver changes
+>>> (http://thread.gmane.org/gmane.linux.ports.arm.kernel/333901 ). This
+>>> patchset is dramatically cut down to include only the arch/arm code. The
+>>> driver code (irqchip and tty/serial) will follow when/if the arch code
+>>> is accepted.
+>>>
+>>> The first two patches modify the FIQ infrastructure to allow interrupt
+>>> controller drivers to register callbacks (the fiq_chip structure) to
+>>> manage FIQ routings and to ACK and EOI the FIQ. This makes it possible
+>>> to use FIQ in multi-platform kernels and with recent ARM interrupt
+>>> controllers.
+>>>
+>>
+>> Daniel,
+>>
+>> Thanks for the patches. I have tested the fiq and irq-gic patches on
+>> an i.MX6 (SabreSD board) for a different purpose:
+>> A FIQ timer interrupt at 1 kHz. The TWD watchdog block is used in
+>> timer mode for this (interrupt ID 30). The GIC affinity is set to CPU
+>> core 0 only for this interrupt ID.
+>>
+>> I was surprised by the following behavior:
+>> $ cat /proc/interrupts
+>>            CPU0       CPU1       CPU2       CPU3
+>>  29:       5459       3381       3175       3029       GIC  29  twd
+>>  30:         11          0          0          0       GIC  30  fake-fiq
+>>
+>> Once every few seconds is interrupt ID 30 handled by the regular GIC
+>> handler instead of the FIQ exception path (which causes for example a
+>> bit more latencies). The other thousands of FIQ's are handled by the
+>> FIQ exception path. The problem is also confirmed by the following
+>> stackframe of the Lauterbach tooling:
+>> fake_fiq_handler(irq = 30, ...)
+>> handle_percpu_devid_irq(irq = 30, ...)
+>> generic_handle_irq(irq = 30)
+>> handle_IRQ(irq = 30, ...)
+>> gic_handle_irq
+>> __irq_svc
+>> -->exception
+>>
+>> Notes:
+>> - The problem will occur more often by executing the following command:
+>>   $ while true; do hackbench 20; done &
+>> - Reading the GIC_CPU_INTACK register returns the interrupt ID of the
+>> highest priority pending interrupt.
+>> - The GIC_CPU_INTACK register (used by fiq_ack) will return spurious
+>> interrupt ID 0x3FF when read in fake_fiq_handler, because
+>> GIC_CPU_INTACK is already read by gic_handle_irq.
+>> - The FIQ exception will not occur anymore after gic_handle_irq
+>> read/acknowledges the FIQ by reading the GIC_CPU_INTACK register
+>>
+>> From the behavior above I conclude that the GIC_CPU_INTACK register is
+>> first updated before the FIQ exception is generated, so there is a
+>> small period of time that gic_handle_irq can read/acknowledge the FIQ.
+>
+> Makes sense.
+>
+> Avoiding this problem on GICv2 is easy (thanks to the aliased intack
+> register) but on iMX.6 we have only a GICv1.
+>
+>
+>> I can reduce the number of occurrences (not prevent it) by adding the
+>> following hack to irq-gic.c
+>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
+>> gic_handle_irq(struct pt_regs *regs
+>>   u32 irqstat, irqnr;
+>>   struct gic_chip_data *gic = &gic_data[0];
+>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
+>>
+>>   do {
+>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
+>> & (1 << 30))
+>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
+>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+>>   irqnr = irqstat & ~0x1c00;
+>
+> I've made a more complete attempt to fix this. Could you test the
+> following? (and be prepared to fuzz the line numbers)
 
-Given the overhead whole-file hashing has, you don't need single best
-operating system. All you need it either ext4 or btrfs.. depending on
-when you want it in production.
+Thanks Daniel, I have tested it, see the comments below.
 
-									Pavel
+>
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 73ae896..309bf2c 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -303,6 +303,28 @@ static int gic_set_wake(struct irq_data *d,
+> unsigned int on)
+>  #define gic_set_wake   NULL
+>  #endif
+>
+> +/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
+> + * workaround will only work for level triggered interrupts (and in
+> + * its current form is actively harmful on systems that don't support
+> + * FIQ).
+> + */
+> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32
+> irqstat)
+> +{
+> +       u32 irqnr = irqstat & GICC_IAR_INT_ID_MASK;
+> +
+> +       if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
+> +               return irqnr;
+> +
+> +       if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
+> +                         (irqnr / 32 * 4)) &
+> +           BIT(irqnr % 32))
+> +               return irqnr;
+> +
+> +       /* this interrupt was spurious (needs to be handled as FIQ) */
+> +       writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+This will NOT work, because of the note I mentioned above:
+"The FIQ exception will not occur anymore after gic_handle_irq
+read/acknowledges the FIQ by reading the GIC_CPU_INTACK register"
+So with this code you will say End Of Interrupt at the GIC level,
+without actually handling the interrupt, so you are missing an
+interrupt.
+I did the following test to confirm the missing interrupt:
+I have changed the periodic timer interrupt by an one-shot timer
+interrupt. The one-shot timer interrupt is programmed by the FIQ
+handler for the next FIQ interrupt. As expected: When the problem
+occurs, no more FIQ interrupts are generated.
+
+> +       return 1023;
+> +}
+> +
+>  static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+>  {
+>         u32 irqstat, irqnr;
+> @@ -310,8 +332,10 @@ static void __exception_irq_entry
+> gic_handle_irq(struct pt_regs *regs)
+>         void __iomem *cpu_base = gic_data_cpu_base(gic);
+>
+>         do {
+> +               local_fiq_disable();
+
+It is a bit weird to disable the "Non-Maskable Interrupt" at every
+interrupt, because of a problem that occurs once every few thousand
+interrupts
+
+>                 irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+> -               irqnr = irqstat & GICC_IAR_INT_ID_MASK;
+> +               irqnr = gic_handle_spurious_group_0(gic, irqstat);
+> +               local_fiq_enable();
+>
+>                 if (likely(irqnr > 15 && irqnr < 1021)) {
+>                         irqnr = irq_find_mapping(gic->domain, irqnr);
+
+
+The following type of changes could fix the problem for me:
+
+@@ -290,19 +290,66 @@ static int gic_set_wake(struct irq_data *d,
+unsigned int on)
+
+ #else
+ #define gic_set_wake NULL
+ #endif
+
++extern void (*fiq_handler)(void);
++
++/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
++ * workaround will only work for level triggered interrupts (and in
++ * its current form is actively harmful on systems that don't support
++ * FIQ).
++ */
++static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32 irqstat)
++{
++ u32 irqnr = irqstat & ~0x1c00;
++
++ if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
++ return irqnr;
++
++ if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
++  (irqnr / 32 * 4)) & BIT(irqnr % 32))
++ return irqnr;
++
++ /*
++ * The FIQ should be disabled before the next FIQ interrupt occurs,
++ * so this only works when the next FIQ interrupt is not "too fast"
++ * after the previous one.
++ */
++ local_fiq_disable();
++
++ /*
++ * Notes:
++ * - The FIQ exception will not occur anymore for this current
++ *   interrupt, because gic_handle_irq has already read/acknowledged
++ *   the GIC_CPU_INTACK register. So handle the FIQ here.
++ * - The fiq_handler below should not call ack_fiq and eoi_fiq,
++ *   because rereading the GIC_CPU_INTACK register returns spurious
++ *   interrupt ID 0x3FF. So probably you will have to add sometime like
++ *   the following to fiq_handler:
++ *   u32 cpsr, irqstat;
++ *   __asm__("mrs %0, cpsr" : "=r" (cpsr));
++ *   if ((cpsr & MODE_MASK) == FIQ_MODE)
++ *   irqstat = ack_fiq();
++ */
++ (*fiq_handler)();
++
++ writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
++ local_fiq_enable();
++
++ return 1023;
++}
++
+ static asmlinkage void __exception_irq_entry gic_handle_irq(struct
+pt_regs *regs)
+ {
+  u32 irqstat, irqnr;
+  struct gic_chip_data *gic = &gic_data[0];
+  void __iomem *cpu_base = gic_data_cpu_base(gic);
+
+  do {
+  irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+- irqnr = irqstat & ~0x1c00;
++ irqnr = gic_handle_spurious_group_0(gic, irqstat);
+
+  if (likely(irqnr > 15 && irqnr < 1021)) {
+
+Regards,
+
+Harro
