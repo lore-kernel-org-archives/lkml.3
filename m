@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273AbaGOT01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:26:27 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:49986 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932850AbaGOT0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:26:25 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao0RANx/xVNbsm9N/2dsb2JhbABZgw6BKaw8CwUBbpQzh02BEBd1hAsCJC8jgQIHETeILgMVAcMUDYcLF4V7hyOCLR2ELQWQH4gNbIIAi1mCMIYcg0Y7Lw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 1/1] fs/ubifs/super.c: replace seq_printf by seq_puts
-Date: Tue, 15 Jul 2014 21:26:35 +0200
-Message-Id: <1405452395-9296-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S933321AbaGOT0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:26:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933286AbaGOT0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:26:40 -0400
+Date: Tue, 15 Jul 2014 15:26:10 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Christoph Hellwig <hch@infradead.org>
+cc: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: ANNOUNCE: SCSI XCOPY support for the kernel and device mapper
+In-Reply-To: <20140715185513.GA5331@infradead.org>
+Message-ID: <alpine.LRH.2.02.1407151523120.14632@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1407151359430.5499@file01.intranet.prod.int.rdu2.redhat.com> <20140715185513.GA5331@infradead.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warnings:
-"WARNING: Prefer seq_puts to seq_printf"
 
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ubifs/super.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 3904c85..e5bd068 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -424,19 +424,19 @@ static int ubifs_show_options(struct seq_file *s, struct dentry *root)
- 	struct ubifs_info *c = root->d_sb->s_fs_info;
- 
- 	if (c->mount_opts.unmount_mode == 2)
--		seq_printf(s, ",fast_unmount");
-+		seq_puts(s, ",fast_unmount");
- 	else if (c->mount_opts.unmount_mode == 1)
--		seq_printf(s, ",norm_unmount");
-+		seq_puts(s, ",norm_unmount");
- 
- 	if (c->mount_opts.bulk_read == 2)
--		seq_printf(s, ",bulk_read");
-+		seq_puts(s, ",bulk_read");
- 	else if (c->mount_opts.bulk_read == 1)
--		seq_printf(s, ",no_bulk_read");
-+		seq_puts(s, ",no_bulk_read");
- 
- 	if (c->mount_opts.chk_data_crc == 2)
--		seq_printf(s, ",chk_data_crc");
-+		seq_puts(s, ",chk_data_crc");
- 	else if (c->mount_opts.chk_data_crc == 1)
--		seq_printf(s, ",no_chk_data_crc");
-+		seq_puts(s, ",no_chk_data_crc");
- 
- 	if (c->mount_opts.override_compr) {
- 		seq_printf(s, ",compr=%s",
--- 
-1.8.4.5
+On Tue, 15 Jul 2014, Christoph Hellwig wrote:
 
+> On Tue, Jul 15, 2014 at 02:33:13PM -0400, Mikulas Patocka wrote:
+> > Hi
+> > 
+> > I annouce that I released the first version of a patch set that makes it 
+> > possible to use SCSI XCOPY offload for the block layer and device mapper.
+> > 
+> > The patchset is at 
+> > http://people.redhat.com/~mpatocka/patches/kernel/xcopy/series.html It 
+> > requires kernel version at least 3.16-rc4. It was tested on target-core 
+> > iSCSI implementation.
+> 
+> Can you send the series to the mainling list(s)?  That makes it a lot
+> easier to do a quick review.
+
+I'll post them to the lists.
+
+> > The dm-kcopyd subsystem is modified to use the XCOPY command, so device 
+> > mapper targets that use it (mirror, snapshot, thin, cache) take advantage 
+> > of copy offload automatically.
+> 
+> That sounds good, do you have any benchmarking data that shows the
+> advantage of using XCOPY?
+
+dm-mirror resynchronization is 4 times faster with XCOPY offload, but it 
+is just a benchmark on a network with iSCSI between two slow machines.
+
+I hope that we get some benchmarks on a real hardware.
+
+Mikulas
