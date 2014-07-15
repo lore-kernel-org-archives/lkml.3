@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759116AbaGOVc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:32:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54002 "EHLO
+	id S1759199AbaGOVch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:32:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54015 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759054AbaGOVcX (ORCPT
+	with ESMTP id S1759055AbaGOVc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:23 -0400
+	Tue, 15 Jul 2014 17:32:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Kamil Iskra <iskra@mcs.anl.gov>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.jf.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 108/198] idr: fix overflow bug during maximum ID calculation at maximum height
-Date: Tue, 15 Jul 2014 14:29:38 -0700
-Message-Id: <1405459868-15089-109-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 096/198] mm/memory-failure.c: support use of a dedicated thread to handle SIGBUS(BUS_MCEERR_AO)
+Date: Tue, 15 Jul 2014 14:29:26 -0700
+Message-Id: <1405459868-15089-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,79 +31,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
+commit 3ba08129e38437561df44c36b7ea9081185d5333 upstream.
 
-idr_replace() open-codes the logic to calculate the maximum valid ID
-given the height of the idr tree; unfortunately, the open-coded logic
-doesn't account for the fact that the top layer may have unused slots
-and over-shifts the limit to zero when the tree is at its maximum
-height.
+Currently memory error handler handles action optional errors in the
+deferred manner by default.  And if a recovery aware application wants
+to handle it immediately, it can do it by setting PF_MCE_EARLY flag.
+However, such signal can be sent only to the main thread, so it's
+problematic if the application wants to have a dedicated thread to
+handler such signals.
 
-The following test code shows it fails to replace the value for
-id=((1<<27)+42):
+So this patch adds dedicated thread support to memory error handler.  We
+have PF_MCE_EARLY flags for each thread separately, so with this patch
+AO signal is sent to the thread with PF_MCE_EARLY flag set, not the main
+thread.  If you want to implement a dedicated thread, you call prctl()
+to set PF_MCE_EARLY on the thread.
 
-  static void test5(void)
-  {
-        int id;
-        DEFINE_IDR(test_idr);
-  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+Memory error handler collects processes to be killed, so this patch lets
+it check PF_MCE_EARLY flag on each thread in the collecting routines.
 
-        printk(KERN_INFO "Start test5\n");
-        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
-        BUG_ON(id != TEST5_START);
-        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
-        idr_destroy(&test_idr);
-        printk(KERN_INFO "End of test5\n");
-  }
+No behavioral change for all non-early kill cases.
 
-Fix the bug by using idr_max() which correctly takes into account the
-maximum allowed shift.
+Tony said:
 
-sub_alloc() shares the same problem and may incorrectly fail with
--EAGAIN; however, this bug doesn't affect correct operation because
-idr_get_empty_slot(), which already uses idr_max(), retries with the
-increased @id in such cases.
+: The old behavior was crazy - someone with a multithreaded process might
+: well expect that if they call prctl(PF_MCE_EARLY) in just one thread, then
+: that thread would see the SIGBUS with si_code = BUS_MCEERR_A0 - even if
+: that thread wasn't the main thread for the process.
 
-[tj@kernel.org: Updated patch description.]
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Tony Luck <tony.luck@intel.com>
+Cc: Kamil Iskra <iskra@mcs.anl.gov>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- lib/idr.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ Documentation/vm/hwpoison.txt |  5 ++++
+ mm/memory-failure.c           | 56 +++++++++++++++++++++++++++++++++----------
+ 2 files changed, 48 insertions(+), 13 deletions(-)
 
-diff --git a/lib/idr.c b/lib/idr.c
-index bfe4db4..674c30b 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -250,7 +250,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+diff --git a/Documentation/vm/hwpoison.txt b/Documentation/vm/hwpoison.txt
+index 5500684..6ae89a9 100644
+--- a/Documentation/vm/hwpoison.txt
++++ b/Documentation/vm/hwpoison.txt
+@@ -84,6 +84,11 @@ PR_MCE_KILL
+ 		PR_MCE_KILL_EARLY: Early kill
+ 		PR_MCE_KILL_LATE:  Late kill
+ 		PR_MCE_KILL_DEFAULT: Use system global default
++	Note that if you want to have a dedicated thread which handles
++	the SIGBUS(BUS_MCEERR_AO) on behalf of the process, you should
++	call prctl(PR_MCE_KILL_EARLY) on the designated thread. Otherwise,
++	the SIGBUS is sent to the main thread.
++
+ PR_MCE_KILL_GET
+ 	return current mode
  
- 			/* if already at the top layer, we need to grow */
--			if (id >= 1 << (idp->layers * IDR_BITS)) {
-+			if (id > idr_max(idp->layers)) {
- 				*starting_id = id;
- 				return -EAGAIN;
- 			}
-@@ -827,12 +827,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
- 	if (!p)
- 		return ERR_PTR(-EINVAL);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index e5f7031..ba1ab14 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -384,15 +384,44 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
+ 	}
+ }
  
--	n = (p->layer+1) * IDR_BITS;
+-static int task_early_kill(struct task_struct *tsk, int force_early)
++/*
++ * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
++ * on behalf of the thread group. Return task_struct of the (first found)
++ * dedicated thread if found, and return NULL otherwise.
++ *
++ * We already hold read_lock(&tasklist_lock) in the caller, so we don't
++ * have to call rcu_read_lock/unlock() in this function.
++ */
++static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
++{
++	struct task_struct *t;
++
++	for_each_thread(tsk, t)
++		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
++			return t;
++	return NULL;
++}
++
++/*
++ * Determine whether a given process is "early kill" process which expects
++ * to be signaled when some page under the process is hwpoisoned.
++ * Return task_struct of the dedicated thread (main thread unless explicitly
++ * specified) if the process is "early kill," and otherwise returns NULL.
++ */
++static struct task_struct *task_early_kill(struct task_struct *tsk,
++					   int force_early)
+ {
++	struct task_struct *t;
+ 	if (!tsk->mm)
+-		return 0;
++		return NULL;
+ 	if (force_early)
+-		return 1;
+-	if (tsk->flags & PF_MCE_PROCESS)
+-		return !!(tsk->flags & PF_MCE_EARLY);
+-	return sysctl_memory_failure_early_kill;
++		return tsk;
++	t = find_early_kill_thread(tsk);
++	if (t)
++		return t;
++	if (sysctl_memory_failure_early_kill)
++		return tsk;
++	return NULL;
+ }
+ 
+ /*
+@@ -414,16 +443,17 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+ 	read_lock(&tasklist_lock);
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
++		struct task_struct *t = task_early_kill(tsk, force_early);
+ 
+-		if (!task_early_kill(tsk, force_early))
++		if (!t)
+ 			continue;
+ 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
+ 					       pgoff, pgoff) {
+ 			vma = vmac->vma;
+ 			if (!page_mapped_in_vma(page, vma))
+ 				continue;
+-			if (vma->vm_mm == tsk->mm)
+-				add_to_kill(tsk, page, vma, to_kill, tkc);
++			if (vma->vm_mm == t->mm)
++				add_to_kill(t, page, vma, to_kill, tkc);
+ 		}
+ 	}
+ 	read_unlock(&tasklist_lock);
+@@ -444,10 +474,10 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+ 	read_lock(&tasklist_lock);
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++		struct task_struct *t = task_early_kill(tsk, force_early);
+ 
+-		if (!task_early_kill(tsk, force_early))
++		if (!t)
+ 			continue;
 -
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return ERR_PTR(-EINVAL);
- 
--	n -= IDR_BITS;
-+	n = p->layer * IDR_BITS;
- 	while ((n > 0) && p) {
- 		p = p->ary[(id >> n) & IDR_MASK];
- 		n -= IDR_BITS;
+ 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
+ 				      pgoff) {
+ 			/*
+@@ -457,8 +487,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+ 			 * Assume applications who requested early kill want
+ 			 * to be informed of all such data corruptions.
+ 			 */
+-			if (vma->vm_mm == tsk->mm)
+-				add_to_kill(tsk, page, vma, to_kill, tkc);
++			if (vma->vm_mm == t->mm)
++				add_to_kill(t, page, vma, to_kill, tkc);
+ 		}
+ 	}
+ 	read_unlock(&tasklist_lock);
 -- 
 1.9.1
 
