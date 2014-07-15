@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068AbaGOU20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 16:28:26 -0400
-Received: from [95.130.255.143] ([95.130.255.143]:65277 "EHLO radon.swed.at"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214AbaGOU2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 16:28:25 -0400
-Message-ID: <53C58EC6.8060508@nod.at>
-Date: Tue, 15 Jul 2014 22:27:50 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933090AbaGOUeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 16:34:07 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:53073 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932797AbaGOUeE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 16:34:04 -0400
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Ley Foon Tan <lftan@altera.com>, Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>, cltang@codesourcery.com
-Subject: Re: [PATCH v2 00/29] nios2 Linux kernel port
-References: <CAFLxGvw_fnG1KTVXrcZxHZzKPnG5DA117VmcZBvw3EYgXw-DVw@mail.gmail.com> <1405413956-2772-1-git-send-email-lftan@altera.com> <4213.1405430178@warthog.procyon.org.uk> <20544.1405434031@warthog.procyon.org.uk>
-In-Reply-To: <20544.1405434031@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
+References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
+ <CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
+ <20140710200527.GA15190@google.com> <3524198.dm6HbYTJqK@calvin> <CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 15 Jul 2014 14:33:41 -0600
+Message-ID: <CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com>
+Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.07.2014 16:20, schrieb David Howells:
-> Richard Weinberger <richard.weinberger@gmail.com> wrote:
-> 
->> Having it on https://www.kernel.org/pub/tools/crosstool/ would be also nice.
-> 
-> Does the Fedora cross-compiler suite fit with your set?  All the fedora
-> cross-compilers are build from a single pair of SRPMS into a slew of binary
-> RPMs and none of the resulting RPMs are relocatable (they all end up in /usr).
+[+cc Yinghai, Rafael]
 
-I'm not using Fedora.
-
-> The easiest way to install them is:
-> 
-> 	yum install gcc-\*-linux-gnu
-> 
-> For reference, the current rawhide SRPMs can be found here:
-> 
-> 	https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS/c/cross-binutils-2.24-4.fc21.src.rpm
-> 	https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS/c/cross-gcc-4.9.0-3.fc21.src.rpm
-> 
-> I haven't yet pushed the NIOS2 arch changes (I'm waiting on a fix to allow me
-> to build libgcc for Cris).
-> 
-> I haven't applied any of your patches, though I do apply the same patches that
-> are applied to the core Fedora binutils and gcc.  Note that this URL linked to
-> on your page:
-> 
-> 	https://www.kernel.org/pub/tools/crosstool/patches/
-> 
-> does not seem to exist.
-> 
-> The compilers that I have managed to produce and install on my system are:
-> 
-> 	gcc-aarch64-linux-gnu
-> 	gcc-alpha-linux-gnu
-> 	gcc-arm-linux-gnu
-> 	gcc-avr32-linux-gnu
-> 	gcc-bfin-linux-gnu
-> 	gcc-c6x-linux-gnu
-> 	gcc-cris-linux-gnu
-> 	gcc-frv-linux-gnu
-> 	gcc-h8300-linux-gnu
-> 	gcc-hppa-linux-gnu
-> 	gcc-hppa64-linux-gnu
-> 	gcc-ia64-linux-gnu
-> 	gcc-m32r-linux-gnu
-> 	gcc-m68k-linux-gnu
-> 	gcc-microblaze-linux-gnu
-> 	gcc-mips64-linux-gnu
-> 	gcc-mn10300-linux-gnu
-> 	gcc-nios2-linux-gnu
-> 	gcc-powerpc64-linux-gnu
-> 	gcc-ppc64-linux-gnu
-> 	gcc-s390x-linux-gnu
-> 	gcc-sh-linux-gnu
-> 	gcc-sh64-linux-gnu
-> 	gcc-sparc64-linux-gnu
-> 	gcc-tile-linux-gnu
-> 	gcc-x86_64-linux-gnu
-> 	gcc-xtensa-linux-gnu
+On Fri, Jul 11, 2014 at 12:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Jul 11, 2014 at 1:38 AM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
+>> In data giovedì 10 luglio 2014 14:05:27, Bjorn Helgaas ha scritto:
+>>> ...
+>>> Fabio, can you pastebin your complete dmesg log?
+>>
+>> Sure, here you go:
+>>
+>> http://pastebin.com/FiL7N64b
 >
+> I opened this bugzilla:
+> https://bugzilla.kernel.org/show_bug.cgi?id=80041 and attached your
+> dmesg to it.  I see what the problem is, but I don't have a good idea
+> yet for how to fix it.
+>
+> The problem is that we don't handle e820 and PNP device resource
+> information correctly.  From the attached dmesg, we have this:
+>
+>   BIOS-e820: [mem 0x00000000fed10000-0x00000000fed13fff] reserved
+>   system 00:00: [mem 0xfed10000-0xfed17fff] could not be reserved
+>
+> The 00:00 PNP device describes the correct 32K range for the Intel MCH
+> (see [1] for details).  But the [mem 0xfed10000-0xfed13fff] entry from
+> e820 was added to the resource map first, and it covers only the first
+> 16K of the MCH range.  This caused the subsequent PNP reservation to
+> fail.  Then the snb_uncore_imc_init_box() reservation caused the
+> warning, because it would be a child of the e820 entry but it covers
+> more space.
+>
+> [1] fixed a similar issue where the PNP device described only the
+> first 16K of the MCH range.  This case is slightly different because
+> here it's the e820 entry that is incorrect.
+>
+> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
 
+One of the reasons for iomem_resource is so we don't hand out the same
+address space to two different devices.  We *could* do that by keeping
+track of the union of all devices and reserved areas that we know
+about.
 
-Nice collection. Let's see whether I can repack your RPMs for openSUSE.
+But the current resource code is more strict: it enforces a hierarchy.
+For example, in this case, it rejects the 00:00 PNP resource because
+it is larger than the e820 entry.  The problem with rejecting it is
+that we might hand out [mem 0xfed14000-0xfed17fff] to another device
+even though PNP told us that it's in use.
 
-Thanks,
-//richard
+I'm about to head out for a few weeks of vacation, so I won't be able
+to do anything with this.
+
+Bjorn
