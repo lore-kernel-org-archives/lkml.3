@@ -1,53 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283AbaGOSxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:53:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23364 "EHLO mx1.redhat.com"
+	id S933269AbaGOSxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:53:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40713 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932901AbaGOSp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932902AbaGOSp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 14:45:56 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 03/23] Input - wacom: create a separate input device for pads
-Date: Tue, 15 Jul 2014 14:45:26 -0400
-Message-Id: <1405449946-11515-4-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 06/23] Input - wacom: split out the pad device for DTUS
+Date: Tue, 15 Jul 2014 14:45:29 -0400
+Message-Id: <1405449946-11515-7-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the pad events are sent through the stylus input device
-for the Intuos/Cintiqs, and through the touch input device for the
-Bamboos.
-
-To differentiate the buttons pressed on the pad from the ones pressed
-on the stylus, the Intuos/Cintiq uses MISC_SERIAL and ABS_MISC. This
-lead to a multiplexing of the events into one device, which are then
-splitted out in xf86-input-wacom. Bamboos are not using MISC events
-because the pad is attached to the touch interface, and only BTN_TOUCH
-is used for the finger (and DOUBLE_TAP, etc...). However, the user space
-driver still splits out the pad from the touch interface in the same
-way it does for the pro line devices.
-
-The other problem we can see with this fact is that some of the Intuos
-and Cintiq have a wheel, and the effective range of the reported values
-is [0..71]. Unfortunately, the airbrush stylus also sends wheel events
-(there is a small wheel on it), but in the range [0..1023]. From the user
-space point of view it is kind of difficult to understand that because
-the wheel on the pad are quite common, while the airbrush tool is not.
-
-A solution to fix all of these problems is to split out the pad device
-from the stylus/touch. This decision makes more sense because the pad is
-not linked to the absolute position of the finger or pen, and usually, the
-events from the pad are filtered out by the compositor, which then convert
-them into actions or keyboard shortcuts.
-
-For backward compatibility with current xf86-input-wacom, the pad devices
-still present the ABS_X, ABS_Y and ABS_MISC events, but they can be
-completely ignored in the new implementation.
+MSC_SERIAL can be safely removed from the pad device.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Reviewed-by: Ping Cheng <pingc@wacom.com>
@@ -56,221 +28,72 @@ Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 
 no changes in v2
 
- drivers/input/tablet/wacom.h     |  2 ++
- drivers/input/tablet/wacom_sys.c | 63 +++++++++++++++++++++++++++++++++++-----
- drivers/input/tablet/wacom_wac.c | 27 ++++++++++++++++-
- drivers/input/tablet/wacom_wac.h |  2 ++
- 4 files changed, 85 insertions(+), 9 deletions(-)
+ drivers/input/tablet/wacom_wac.c | 18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/input/tablet/wacom.h b/drivers/input/tablet/wacom.h
-index 9ebf0ed..caa59ca 100644
---- a/drivers/input/tablet/wacom.h
-+++ b/drivers/input/tablet/wacom.h
-@@ -136,4 +136,6 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len);
- void wacom_setup_device_quirks(struct wacom_features *features);
- int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 				   struct wacom_wac *wacom_wac);
-+int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
-+				       struct wacom_wac *wacom_wac);
- #endif
-diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index 7cd0886..b258485 100644
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -135,6 +135,9 @@ static int wacom_open(struct input_dev *dev)
- 
- 	mutex_lock(&wacom->lock);
- 
-+	if (wacom->open)
-+		goto out;
-+
- 	if (usb_submit_urb(wacom->irq, GFP_KERNEL)) {
- 		retval = -EIO;
- 		goto out;
-@@ -157,9 +160,14 @@ static void wacom_close(struct input_dev *dev)
- 	autopm_error = usb_autopm_get_interface(wacom->intf);
- 
- 	mutex_lock(&wacom->lock);
-+	if (!wacom->open)
-+		goto out;
-+
- 	usb_kill_urb(wacom->irq);
- 	wacom->open = false;
- 	wacom->intf->needs_remote_wakeup = 0;
-+
-+out:
- 	mutex_unlock(&wacom->lock);
- 
- 	if (!autopm_error)
-@@ -1112,19 +1120,16 @@ static void wacom_destroy_battery(struct wacom *wacom)
- 	}
- }
- 
--static int wacom_register_input(struct wacom *wacom)
-+static struct input_dev *wacom_allocate_input(struct wacom *wacom)
- {
- 	struct input_dev *input_dev;
- 	struct usb_interface *intf = wacom->intf;
- 	struct usb_device *dev = interface_to_usbdev(intf);
- 	struct wacom_wac *wacom_wac = &(wacom->wacom_wac);
--	int error;
- 
- 	input_dev = input_allocate_device();
--	if (!input_dev) {
--		error = -ENOMEM;
--		goto fail1;
--	}
-+	if (!input_dev)
-+		return NULL;
- 
- 	input_dev->name = wacom_wac->name;
- 	input_dev->phys = wacom->phys;
-@@ -1134,21 +1139,59 @@ static int wacom_register_input(struct wacom *wacom)
- 	usb_to_input_id(dev, &input_dev->id);
- 	input_set_drvdata(input_dev, wacom);
- 
-+	return input_dev;
-+}
-+
-+static int wacom_register_input(struct wacom *wacom)
-+{
-+	struct input_dev *input_dev, *pad_input_dev;
-+	struct wacom_wac *wacom_wac = &(wacom->wacom_wac);
-+	int error;
-+
-+	input_dev = wacom_allocate_input(wacom);
-+	pad_input_dev = wacom_allocate_input(wacom);
-+	if (!input_dev || !pad_input_dev) {
-+		error = -ENOMEM;
-+		goto fail1;
-+	}
-+
- 	wacom_wac->input = input_dev;
-+	wacom_wac->pad_input = pad_input_dev;
-+	wacom_wac->pad_input->name = wacom_wac->pad_name;
-+
- 	error = wacom_setup_input_capabilities(input_dev, wacom_wac);
- 	if (error)
--		goto fail1;
-+		goto fail2;
- 
- 	error = input_register_device(input_dev);
- 	if (error)
- 		goto fail2;
- 
-+	error = wacom_setup_pad_input_capabilities(pad_input_dev, wacom_wac);
-+	if (error) {
-+		/* no pad in use on this interface */
-+		input_free_device(pad_input_dev);
-+		wacom_wac->pad_input = NULL;
-+		pad_input_dev = NULL;
-+	} else {
-+		error = input_register_device(pad_input_dev);
-+		if (error)
-+			goto fail3;
-+	}
-+
- 	return 0;
- 
-+fail3:
-+	input_unregister_device(input_dev);
-+	input_dev = NULL;
- fail2:
--	input_free_device(input_dev);
- 	wacom_wac->input = NULL;
-+	wacom_wac->pad_input = NULL;
- fail1:
-+	if (input_dev)
-+		input_free_device(input_dev);
-+	if (pad_input_dev)
-+		input_free_device(pad_input_dev);
- 	return error;
- }
- 
-@@ -1367,6 +1410,8 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
- 	wacom_calculate_res(features);
- 
- 	strlcpy(wacom_wac->name, features->name, sizeof(wacom_wac->name));
-+	snprintf(wacom_wac->pad_name, sizeof(wacom_wac->pad_name),
-+		"%s Pad", features->name);
- 
- 	if (features->quirks & WACOM_QUIRK_MULTI_INPUT) {
- 		struct usb_device *other_dev;
-@@ -1441,6 +1486,8 @@ static void wacom_disconnect(struct usb_interface *intf)
- 	cancel_work_sync(&wacom->work);
- 	if (wacom->wacom_wac.input)
- 		input_unregister_device(wacom->wacom_wac.input);
-+	if (wacom->wacom_wac.pad_input)
-+		input_unregister_device(wacom->wacom_wac.pad_input);
- 	wacom_destroy_battery(wacom);
- 	wacom_destroy_leds(wacom);
- 	usb_free_urb(wacom->irq);
 diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index e73cf2c..11c7c4e 100644
+index 4a40381..e7ce16e 100644
 --- a/drivers/input/tablet/wacom_wac.c
 +++ b/drivers/input/tablet/wacom_wac.c
-@@ -1489,8 +1489,11 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
- 		break;
+@@ -217,17 +217,13 @@ static int wacom_dtus_irq(struct wacom_wac *wacom)
+ 			"%s: received unknown report #%d", __func__, data[0]);
+ 		return 0;
+ 	} else if (data[0] == WACOM_REPORT_DTUSPAD) {
++		input = wacom->pad_input;
+ 		input_report_key(input, BTN_0, (data[1] & 0x01));
+ 		input_report_key(input, BTN_1, (data[1] & 0x02));
+ 		input_report_key(input, BTN_2, (data[1] & 0x04));
+ 		input_report_key(input, BTN_3, (data[1] & 0x08));
+ 		input_report_abs(input, ABS_MISC,
+ 				 data[1] & 0x0f ? PAD_DEVICE_ID : 0);
+-		/*
+-		 * Serial number is required when expresskeys are
+-		 * reported through pen interface.
+-		 */
+-		input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+ 		return 1;
+ 	} else {
+ 		prox = data[1] & 0x80;
+@@ -257,7 +253,6 @@ static int wacom_dtus_irq(struct wacom_wac *wacom)
+ 			wacom->id[0] = 0;
+ 		input_report_key(input, wacom->tool[0], prox);
+ 		input_report_abs(input, ABS_MISC, wacom->id[0]);
+-		input_event(input, EV_MSC, MSC_SERIAL, 1);
+ 		return 1;
  	}
- 
--	if (sync)
-+	if (sync) {
- 		input_sync(wacom_wac->input);
-+		if (wacom_wac->pad_input)
-+			input_sync(wacom_wac->pad_input);
-+	}
  }
+@@ -1615,7 +1610,6 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 				   struct wacom_wac *wacom_wac)
+ {
+ 	struct wacom_features *features = &wacom_wac->features;
+-	int i;
  
- static void wacom_setup_cintiq(struct wacom_wac *wacom_wac)
-@@ -1925,6 +1928,28 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 	return 0;
- }
+ 	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
  
-+int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
-+				   struct wacom_wac *wacom_wac)
-+{
-+	struct wacom_features *features = &wacom_wac->features;
-+
-+	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-+
-+	/* kept for making legacy xf86-input-wacom working with the wheels */
-+	__set_bit(ABS_MISC, input_dev->absbit);
-+
-+	/* kept for making legacy xf86-input-wacom accepting the pad */
-+	input_set_abs_params(input_dev, ABS_X, 0, 1, 0, 0);
-+	input_set_abs_params(input_dev, ABS_Y, 0, 1, 0, 0);
-+
-+	switch (features->type) {
-+	default:
-+		/* no pad supported */
-+		return 1;
-+	}
-+	return 0;
-+}
-+
- static const struct wacom_features wacom_features_0x00 =
- 	{ "Wacom Penpartner",     WACOM_PKGLEN_PENPRTN,    5040,  3780,  255,
- 	  0, PENPARTNER, WACOM_PENPRTN_RES, WACOM_PENPRTN_RES };
-diff --git a/drivers/input/tablet/wacom_wac.h b/drivers/input/tablet/wacom_wac.h
-index b2c9a9c..f48164c 100644
---- a/drivers/input/tablet/wacom_wac.h
-+++ b/drivers/input/tablet/wacom_wac.h
-@@ -150,6 +150,7 @@ struct wacom_shared {
+@@ -1759,11 +1753,6 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 	case DTUS:
+ 	case PL:
+ 	case DTU:
+-		if (features->type == DTUS) {
+-			input_set_capability(input_dev, EV_MSC, MSC_SERIAL);
+-			for (i = 0; i < 4; i++)
+-				__set_bit(BTN_0 + i, input_dev->keybit);
+-		}
+ 		__set_bit(BTN_TOOL_PEN, input_dev->keybit);
+ 		__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
+ 		__set_bit(BTN_STYLUS, input_dev->keybit);
+@@ -1971,6 +1960,11 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
  
- struct wacom_wac {
- 	char name[WACOM_NAME_MAX];
-+	char pad_name[WACOM_NAME_MAX];
- 	unsigned char *data;
- 	int tool[2];
- 	int id[2];
-@@ -157,6 +158,7 @@ struct wacom_wac {
- 	struct wacom_features features;
- 	struct wacom_shared *shared;
- 	struct input_dev *input;
-+	struct input_dev *pad_input;
- 	int pid;
- 	int battery_capacity;
- 	int num_contacts_left;
+ 		break;
+ 
++	case DTUS:
++		for (i = 0; i < 4; i++)
++			__set_bit(BTN_0 + i, input_dev->keybit);
++		break;
++
+ 	case INTUOSHT:
+ 	case BAMBOO_PT:
+ 		/* pad device is on the touch interface */
 -- 
 2.0.0
 
