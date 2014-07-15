@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275AbaGOWYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:24:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53989 "EHLO
+	id S933680AbaGOWYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:24:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53955 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaGOVcR (ORCPT
+	with ESMTP id S1758823AbaGOVb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:17 -0400
+	Tue, 15 Jul 2014 17:31:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Mason <clm@fb.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 112/198] Btrfs: fix double free in find_lock_delalloc_range
-Date: Tue, 15 Jul 2014 14:29:42 -0700
-Message-Id: <1405459868-15089-113-git-send-email-kamal@canonical.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 092/198] memcg: do not hang on OOM when killed by userspace OOM access to memory reserves
+Date: Tue, 15 Jul 2014 14:29:22 -0700
+Message-Id: <1405459868-15089-93-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -26,31 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 7d78874273463a784759916fc3e0b4e2eb141c70 upstream.
+commit d8dc595ce3909fbc131bdf5ab8c9808fe624b18d upstream.
 
-We need to NULL the cached_state after freeing it, otherwise
-we might free it again if find_delalloc_range doesn't find anything.
+Eric has reported that he can see task(s) stuck in memcg OOM handler
+regularly.  The only way out is to
 
-Signed-off-by: Chris Mason <clm@fb.com>
+	echo 0 > $GROUP/memory.oom_control
+
+His usecase is:
+
+- Setup a hierarchy with memory and the freezer (disable kernel oom and
+  have a process watch for oom).
+
+- In that memory cgroup add a process with one thread per cpu.
+
+- In one thread slowly allocate once per second I think it is 16M of ram
+  and mlock and dirty it (just to force the pages into ram and stay
+  there).
+
+- When oom is achieved loop:
+  * attempt to freeze all of the tasks.
+  * if frozen send every task SIGKILL, unfreeze, remove the directory in
+    cgroupfs.
+
+Eric has then pinpointed the issue to be memcg specific.
+
+All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+Those that have received fatal signal will bypass the charge and should
+continue on their way out.  The tricky part is that the exit path might
+trigger a page fault (e.g.  exit_robust_list), thus the memcg charge,
+while its memcg is still under OOM because nobody has released any charges
+yet.
+
+Unlike with the in-kernel OOM handler the exiting task doesn't get
+TIF_MEMDIE set so it doesn't shortcut further charges of the killed task
+and falls to the memcg OOM again without any way out of it as there are no
+fatal signals pending anymore.
+
+This patch fixes the issue by checking PF_EXITING early in
+mem_cgroup_try_charge and bypass the charge same as if it had fatal
+signal pending or TIF_MEMDIE set.
+
+Normally exiting tasks (aka not killed) will bypass the charge now but
+this should be OK as the task is leaving and will release memory and
+increasing the memory pressure just to release it in a moment seems
+dubious wasting of cycles.  Besides that charges after exit_signals should
+be rare.
+
+I am bringing this patch again (rebased on the current mmotm tree). I
+hope we can move forward finally. If there is still an opposition then
+I would really appreciate a concurrent approach so that we can discuss
+alternatives.
+
+http://comments.gmane.org/gmane.linux.kernel.stable/77650 is a reference
+to the followup discussion when the patch has been dropped from the mmotm
+last time.
+
+Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.13: whitespace ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/btrfs/extent_io.c | 1 +
- 1 file changed, 1 insertion(+)
+ mm/memcontrol.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index ff43802..809bbe1 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1644,6 +1644,7 @@ again:
- 		 * shortening the size of the delalloc range we're searching
- 		 */
- 		free_extent_state(cached_state);
-+		cached_state = NULL;
- 		if (!loops) {
- 			max_bytes = PAGE_CACHE_SIZE;
- 			loops = 1;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f506001..44b0eec 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2706,8 +2706,9 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 	 * in system level. So, allow to go ahead dying process in addition to
+ 	 * MEMDIE process.
+ 	 */
+-	if (unlikely(test_thread_flag(TIF_MEMDIE)
+-		     || fatal_signal_pending(current)))
++	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
++		     fatal_signal_pending(current) ||
++		     current->flags & PF_EXITING))
+ 		goto bypass;
+ 
+ 	if (unlikely(task_in_memcg_oom(current)))
 -- 
 1.9.1
 
