@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759306AbaGOVxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:53:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54849 "EHLO
+	id S1759650AbaGOVyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:54:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54843 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759536AbaGOViX (ORCPT
+	with ESMTP id S1753342AbaGOViV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:23 -0400
+	Tue, 15 Jul 2014 17:38:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pekon Gupta <pekon@ti.com>, Brian Norris <computersforpeace@gmail.com>,
+Cc: Victor Kamensky <victor.kamensky@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 044/198] mtd: eLBC NAND: fix subpage write support
-Date: Tue, 15 Jul 2014 14:28:34 -0700
-Message-Id: <1405459868-15089-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 156/198] arm64: ptrace: fix empty registers set in prstatus of aarch32 process core
+Date: Tue, 15 Jul 2014 14:30:26 -0700
+Message-Id: <1405459868-15089-157-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,61 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekon Gupta <pekon@ti.com>
+From: Victor Kamensky <victor.kamensky@linaro.org>
 
-commit f034d87def51f026b735d1e2877e9387011b2ba3 upstream.
+commit 2227901a0230d8fde81ba9c602d649839390f56b upstream.
 
-As subpage write is enabled by default for all drivers, nand_write_subpage_hwecc
-causes a crash if the driver did not register ecc->hwctl or ecc->calculate.
-This behavior was introduced in
-   commit 837a6ba4f3b6d23026674e6af6b6849a4634fff9
-   "mtd: nand: subpage write support for hardware based ECC schemes".
+Currently core file of aarch32 process prstatus note has empty
+registers set. As result aarch32 core files create by V8 kernel are
+not very useful.
 
-This fixes a crash by emulating subpage write support by padding sub-page data
-with 0xff on either sides to make it full page compatible.
+It happens because compat_gpr_get and compat_gpr_set functions can
+copy registers values to/from either kbuf or ubuf. ELF core file
+collection function fill_thread_core_info calls compat_gpr_get
+with kbuf set and ubuf set to 0. But current compat_gpr_get and
+compat_gpr_set function handle copy to/from only ubuf case.
 
-Reported-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Tested-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: Pekon Gupta <pekon@ti.com>
-Reviewed-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Fix is to handle kbuf and ubuf as two separate cases in similar
+way as other functions like user_regset_copyout, user_regset_copyin do.
+
+Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mtd/nand/fsl_elbc_nand.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/arm64/kernel/ptrace.c | 28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
-index c966fc7..6ce1fd2 100644
---- a/drivers/mtd/nand/fsl_elbc_nand.c
-+++ b/drivers/mtd/nand/fsl_elbc_nand.c
-@@ -724,6 +724,19 @@ static int fsl_elbc_write_page(struct mtd_info *mtd, struct nand_chip *chip,
- 	return 0;
- }
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index bf288e4..7a50b86 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -650,11 +650,16 @@ static int compat_gpr_get(struct task_struct *target,
+ 			reg = task_pt_regs(target)->regs[idx];
+ 		}
  
-+/* ECC will be calculated automatically, and errors will be detected in
-+ * waitfunc.
-+ */
-+static int fsl_elbc_write_subpage(struct mtd_info *mtd, struct nand_chip *chip,
-+				uint32_t offset, uint32_t data_len,
-+				const uint8_t *buf, int oob_required)
-+{
-+	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
-+	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
+-		ret = copy_to_user(ubuf, &reg, sizeof(reg));
+-		if (ret)
+-			break;
+-
+-		ubuf += sizeof(reg);
++		if (kbuf) {
++			memcpy(kbuf, &reg, sizeof(reg));
++			kbuf += sizeof(reg);
++		} else {
++			ret = copy_to_user(ubuf, &reg, sizeof(reg));
++			if (ret)
++				break;
 +
-+	return 0;
-+}
-+
- static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
- {
- 	struct fsl_lbc_ctrl *ctrl = priv->ctrl;
-@@ -762,6 +775,7 @@ static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
++			ubuf += sizeof(reg);
++		}
+ 	}
  
- 	chip->ecc.read_page = fsl_elbc_read_page;
- 	chip->ecc.write_page = fsl_elbc_write_page;
-+	chip->ecc.write_subpage = fsl_elbc_write_subpage;
+ 	return ret;
+@@ -684,11 +689,16 @@ static int compat_gpr_set(struct task_struct *target,
+ 		unsigned int idx = start + i;
+ 		compat_ulong_t reg;
  
- 	/* If CS Base Register selects full hardware ECC then use it */
- 	if ((in_be32(&lbc->bank[priv->bank].br) & BR_DECC) ==
+-		ret = copy_from_user(&reg, ubuf, sizeof(reg));
+-		if (ret)
+-			return ret;
++		if (kbuf) {
++			memcpy(&reg, kbuf, sizeof(reg));
++			kbuf += sizeof(reg);
++		} else {
++			ret = copy_from_user(&reg, ubuf, sizeof(reg));
++			if (ret)
++				return ret;
+ 
+-		ubuf += sizeof(reg);
++			ubuf += sizeof(reg);
++		}
+ 
+ 		switch (idx) {
+ 		case 15:
 -- 
 1.9.1
 
