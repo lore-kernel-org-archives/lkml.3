@@ -1,268 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaGOGAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 02:00:48 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39564 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757668AbaGOGAo (ORCPT
+	id S932467AbaGOGDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 02:03:38 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49063 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaGOGDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 02:00:44 -0400
-Subject: [PATCH ftrace/core v3 3/3] kprobes: Set IPMODIFY flag only if the
- probe can change regs->ip
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 06:00:35 +0000
-Message-ID: <20140715060035.12195.47782.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal>
-References: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.17-dirty
+	Tue, 15 Jul 2014 02:03:34 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 15 Jul 2014 15:09:32 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 15/21] mm: slub: add kernel address
+ sanitizer hooks to slub allocator
+Message-ID: <20140715060932.GJ11317@js1304-P5Q-DELUXE>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-16-git-send-email-a.ryabinin@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404905415-9046-16-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set FTRACE_OPS_FL_IPMODIFY flag only for the probes which can change
-regs->ip, which has kprobe->break_handler.
-Currently we can not put jprobe and another ftrace handler which
-changes regs->ip on the same function because all kprobes have
-FTRACE_OPS_FL_IPMODIFY flag. This removes FTRACE_OPS_FL_IPMODIFY
-flag from kprobes and only when the user uses jprobe (or the
-kprobe.break_handler != NULL) we add additinal ftrace_ops with
-FTRACE_OPS_FL_IPMODIFY on target function.
+On Wed, Jul 09, 2014 at 03:30:09PM +0400, Andrey Ryabinin wrote:
+> With this patch kasan will be able to catch bugs in memory allocated
+> by slub.
+> Allocated slab page, this whole page marked as unaccessible
+> in corresponding shadow memory.
+> On allocation of slub object requested allocation size marked as
+> accessible, and the rest of the object (including slub's metadata)
+> marked as redzone (unaccessible).
+> 
+> We also mark object as accessible if ksize was called for this object.
+> There is some places in kernel where ksize function is called to inquire
+> size of really allocated area. Such callers could validly access whole
+> allocated memory, so it should be marked as accessible by kasan_krealloc call.
+> 
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  include/linux/kasan.h |  22 ++++++++++
+>  include/linux/slab.h  |  19 +++++++--
+>  lib/Kconfig.kasan     |   2 +
+>  mm/kasan/kasan.c      | 110 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/kasan/kasan.h      |   5 +++
+>  mm/kasan/report.c     |  23 +++++++++++
+>  mm/slab.h             |   2 +-
+>  mm/slab_common.c      |   9 +++--
+>  mm/slub.c             |  24 ++++++++++-
+>  9 files changed, 208 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+> index 4adc0a1..583c011 100644
+> --- a/include/linux/kasan.h
+> +++ b/include/linux/kasan.h
+> @@ -20,6 +20,17 @@ void kasan_init_shadow(void);
+>  void kasan_alloc_pages(struct page *page, unsigned int order);
+>  void kasan_free_pages(struct page *page, unsigned int order);
+>  
+> +void kasan_kmalloc_large(const void *ptr, size_t size);
+> +void kasan_kfree_large(const void *ptr);
+> +void kasan_kmalloc(struct kmem_cache *s, const void *object, size_t size);
+> +void kasan_krealloc(const void *object, size_t new_size);
+> +
+> +void kasan_slab_alloc(struct kmem_cache *s, void *object);
+> +void kasan_slab_free(struct kmem_cache *s, void *object);
+> +
+> +void kasan_alloc_slab_pages(struct page *page, int order);
+> +void kasan_free_slab_pages(struct page *page, int order);
+> +
+>  #else /* CONFIG_KASAN */
+>  
+>  static inline void unpoison_shadow(const void *address, size_t size) {}
+> @@ -34,6 +45,17 @@ static inline void kasan_alloc_shadow(void) {}
+>  static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
+>  static inline void kasan_free_pages(struct page *page, unsigned int order) {}
+>  
+> +static inline void kasan_kmalloc_large(void *ptr, size_t size) {}
+> +static inline void kasan_kfree_large(const void *ptr) {}
+> +static inline void kasan_kmalloc(struct kmem_cache *s, const void *object, size_t size) {}
+> +static inline void kasan_krealloc(const void *object, size_t new_size) {}
+> +
+> +static inline void kasan_slab_alloc(struct kmem_cache *s, void *object) {}
+> +static inline void kasan_slab_free(struct kmem_cache *s, void *object) {}
+> +
+> +static inline void kasan_alloc_slab_pages(struct page *page, int order) {}
+> +static inline void kasan_free_slab_pages(struct page *page, int order) {}
+> +
+>  #endif /* CONFIG_KASAN */
+>  
+>  #endif /* LINUX_KASAN_H */
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index 68b1feab..a9513e9 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -104,6 +104,7 @@
+>  				(unsigned long)ZERO_SIZE_PTR)
+>  
+>  #include <linux/kmemleak.h>
+> +#include <linux/kasan.h>
+>  
+>  struct mem_cgroup;
+>  /*
+> @@ -444,6 +445,8 @@ static __always_inline void *kmalloc_large(size_t size, gfp_t flags)
+>   */
+>  static __always_inline void *kmalloc(size_t size, gfp_t flags)
+>  {
+> +	void *ret;
+> +
+>  	if (__builtin_constant_p(size)) {
+>  		if (size > KMALLOC_MAX_CACHE_SIZE)
+>  			return kmalloc_large(size, flags);
+> @@ -454,8 +457,12 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+>  			if (!index)
+>  				return ZERO_SIZE_PTR;
+>  
+> -			return kmem_cache_alloc_trace(kmalloc_caches[index],
+> +			ret = kmem_cache_alloc_trace(kmalloc_caches[index],
+>  					flags, size);
+> +
+> +			kasan_kmalloc(kmalloc_caches[index], ret, size);
+> +
+> +			return ret;
+>  		}
+>  #endif
+>  	}
+> @@ -485,6 +492,8 @@ static __always_inline int kmalloc_size(int n)
+>  static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+>  {
+>  #ifndef CONFIG_SLOB
+> +	void *ret;
+> +
+>  	if (__builtin_constant_p(size) &&
+>  		size <= KMALLOC_MAX_CACHE_SIZE && !(flags & GFP_DMA)) {
+>  		int i = kmalloc_index(size);
+> @@ -492,8 +501,12 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+>  		if (!i)
+>  			return ZERO_SIZE_PTR;
+>  
+> -		return kmem_cache_alloc_node_trace(kmalloc_caches[i],
+> -						flags, node, size);
+> +		ret = kmem_cache_alloc_node_trace(kmalloc_caches[i],
+> +						  flags, node, size);
+> +
+> +		kasan_kmalloc(kmalloc_caches[i], ret, size);
+> +
+> +		return ret;
+>  	}
+>  #endif
+>  	return __kmalloc_node(size, flags, node);
+> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
+> index 2bfff78..289a624 100644
+> --- a/lib/Kconfig.kasan
+> +++ b/lib/Kconfig.kasan
+> @@ -5,6 +5,8 @@ if HAVE_ARCH_KASAN
+>  
+>  config KASAN
+>  	bool "AddressSanitizer: dynamic memory error detector"
+> +	depends on SLUB
+> +	select STACKTRACE
+>  	default n
+>  	help
+>  	  Enables AddressSanitizer - dynamic memory error detector,
+> diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+> index 109478e..9b5182a 100644
+> --- a/mm/kasan/kasan.c
+> +++ b/mm/kasan/kasan.c
+> @@ -177,6 +177,116 @@ void __init kasan_init_shadow(void)
+>  	}
+>  }
+>  
+> +void kasan_alloc_slab_pages(struct page *page, int order)
+> +{
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_SLAB_REDZONE);
+> +}
+> +
+> +void kasan_free_slab_pages(struct page *page, int order)
+> +{
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_SLAB_FREE);
+> +}
+> +
+> +void kasan_slab_alloc(struct kmem_cache *cache, void *object)
+> +{
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	if (unlikely(object == NULL))
+> +		return;
+> +
+> +	poison_shadow(object, cache->size, KASAN_KMALLOC_REDZONE);
+> +	unpoison_shadow(object, cache->alloc_size);
+> +}
+> +
+> +void kasan_slab_free(struct kmem_cache *cache, void *object)
+> +{
+> +	unsigned long size = cache->size;
+> +	unsigned long rounded_up_size = round_up(size, KASAN_SHADOW_SCALE_SIZE);
+> +
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	poison_shadow(object, rounded_up_size, KASAN_KMALLOC_FREE);
+> +}
+> +
+> +void kasan_kmalloc(struct kmem_cache *cache, const void *object, size_t size)
+> +{
+> +	unsigned long redzone_start;
+> +	unsigned long redzone_end;
+> +
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	if (unlikely(object == NULL))
+> +		return;
+> +
+> +	redzone_start = round_up((unsigned long)(object + size),
+> +				KASAN_SHADOW_SCALE_SIZE);
+> +	redzone_end = (unsigned long)object + cache->size;
+> +
+> +	unpoison_shadow(object, size);
+> +	poison_shadow((void *)redzone_start, redzone_end - redzone_start,
+> +		KASAN_KMALLOC_REDZONE);
+> +
+> +}
+> +EXPORT_SYMBOL(kasan_kmalloc);
+> +
+> +void kasan_kmalloc_large(const void *ptr, size_t size)
+> +{
+> +	struct page *page;
+> +	unsigned long redzone_start;
+> +	unsigned long redzone_end;
+> +
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	if (unlikely(ptr == NULL))
+> +		return;
+> +
+> +	page = virt_to_page(ptr);
+> +	redzone_start = round_up((unsigned long)(ptr + size),
+> +				KASAN_SHADOW_SCALE_SIZE);
+> +	redzone_end = (unsigned long)ptr + (PAGE_SIZE << compound_order(page));
+> +
+> +	unpoison_shadow(ptr, size);
+> +	poison_shadow((void *)redzone_start, redzone_end - redzone_start,
+> +		KASAN_PAGE_REDZONE);
+> +}
+> +EXPORT_SYMBOL(kasan_kmalloc_large);
+> +
+> +void kasan_krealloc(const void *object, size_t size)
+> +{
+> +	struct page *page;
+> +
+> +	if (unlikely(object == ZERO_SIZE_PTR))
+> +		return;
+> +
+> +	page = virt_to_head_page(object);
+> +
+> +	if (unlikely(!PageSlab(page)))
+> +		kasan_kmalloc_large(object, size);
+> +	else
+> +		kasan_kmalloc(page->slab_cache, object, size);
+> +}
+> +
+> +void kasan_kfree_large(const void *ptr)
+> +{
+> +	struct page *page;
+> +
+> +	if (unlikely(!kasan_initialized))
+> +		return;
+> +
+> +	page = virt_to_page(ptr);
+> +	poison_shadow(ptr, PAGE_SIZE << compound_order(page), KASAN_FREE_PAGE);
+> +}
+> +
+>  void kasan_alloc_pages(struct page *page, unsigned int order)
+>  {
+>  	if (unlikely(!kasan_initialized))
+> diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+> index be9597e..f925d03 100644
+> --- a/mm/kasan/kasan.h
+> +++ b/mm/kasan/kasan.h
+> @@ -6,6 +6,11 @@
+>  #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+>  
+>  #define KASAN_FREE_PAGE         0xFF  /* page was freed */
+> +#define KASAN_PAGE_REDZONE      0xFE  /* redzone for kmalloc_large allocations */
+> +#define KASAN_SLAB_REDZONE      0xFD  /* Slab page redzone, does not belong to any slub object */
+> +#define KASAN_KMALLOC_REDZONE   0xFC  /* redzone inside slub object */
+> +#define KASAN_KMALLOC_FREE      0xFB  /* object was freed (kmem_cache_free/kfree) */
+> +#define KASAN_SLAB_FREE         0xFA  /* free slab page */
+>  #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+>  
+>  struct access_info {
+> diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+> index 6ef9e57..6d829af 100644
+> --- a/mm/kasan/report.c
+> +++ b/mm/kasan/report.c
+> @@ -43,10 +43,15 @@ static void print_error_description(struct access_info *info)
+>  	u8 shadow_val = *(u8 *)kasan_mem_to_shadow(info->access_addr);
+>  
+>  	switch (shadow_val) {
+> +	case KASAN_PAGE_REDZONE:
+> +	case KASAN_SLAB_REDZONE:
+> +	case KASAN_KMALLOC_REDZONE:
+>  	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+>  		bug_type = "buffer overflow";
+>  		break;
+>  	case KASAN_FREE_PAGE:
+> +	case KASAN_SLAB_FREE:
+> +	case KASAN_KMALLOC_FREE:
+>  		bug_type = "use after free";
+>  		break;
+>  	case KASAN_SHADOW_GAP:
+> @@ -70,7 +75,25 @@ static void print_address_description(struct access_info *info)
+>  	page = virt_to_page(info->access_addr);
+>  
+>  	switch (shadow_val) {
+> +	case KASAN_SLAB_REDZONE:
+> +		cache = virt_to_cache((void *)info->access_addr);
+> +		slab_err(cache, page, "access to slab redzone");
 
-Note about the implementation: This uses a dummy ftrace_ops to
-reserve IPMODIFY flag on the given ftrace address, for the case
-that we have a enabled kprobe on a function entry and a jprobe
-is added on the same point. In that case, we already have a
-ftrace_ops without IPMODIFY flag on the entry, and we have to
-add another ftrace_ops with IPMODIFY on the same address.
-If we put a same handler on both ftrace_ops, the handler can
-be called twice on that entry until the first one is removed.
-This means that the kprobe and the jprobe are called twice too,
-and that will not what kprobes expected.
-Thus I added a dummy ftrace_ops just for reserving IPMODIFY flag.
+We need head page of invalid access address for slab_err() since head
+page has all meta data of this slab. So, instead of, virt_to_cache,
+use virt_to_head_page() and page->slab_cache.
 
-Changes in v3:
- - Update __ftrace_add/remove_filter_ip() according to
-   Namhyng's comments (thanks!)
- - Split out regs->ip recovering code from this patch.
+> +		dump_stack();
+> +		break;
+> +	case KASAN_KMALLOC_FREE:
+> +	case KASAN_KMALLOC_REDZONE:
+> +	case 1 ... KASAN_SHADOW_SCALE_SIZE - 1:
+> +		if (PageSlab(page)) {
+> +			cache = virt_to_cache((void *)info->access_addr);
+> +			slab_start = page_address(virt_to_head_page((void *)info->access_addr));
+> +			object = virt_to_obj(cache, slab_start,
+> +					(void *)info->access_addr);
+> +			object_err(cache, page, object, "kasan error");
+> +			break;
+> +		}
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
- Documentation/kprobes.txt |   12 ++--
- kernel/kprobes.c          |  124 +++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 113 insertions(+), 23 deletions(-)
+Same here, page should be head page.
 
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 4bbeca8..177f051 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -264,15 +264,13 @@ stop-machine method that ksplice uses for supporting a CONFIG_PREEMPT=y
- kernel.
- 
- NOTE for geeks:
--The jump optimization changes the kprobe's pre_handler behavior.
--Without optimization, the pre_handler can change the kernel's execution
-+The jump optimization (and ftrace-based kprobes) changes the kprobe's
-+pre_handler behavior.
-+Without optimizations, the pre_handler can change the kernel's execution
- path by changing regs->ip and returning 1.  However, when the probe
- is optimized, that modification is ignored.  Thus, if you want to
--tweak the kernel's execution path, you need to suppress optimization,
--using one of the following techniques:
--- Specify an empty function for the kprobe's post_handler or break_handler.
-- or
--- Execute 'sysctl -w debug.kprobes_optimization=n'
-+tweak the kernel's execution path, you need to suppress optimization or
-+notify your handler will modify regs->ip by setting p->break_handler.
- 
- 1.5 Blacklist
- 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index e52d86f..7d05bb0 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -915,10 +915,92 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS,
- };
- static int kprobe_ftrace_enabled;
- 
-+static void kprobe_ftrace_stub(unsigned long a0, unsigned long a1,
-+			struct ftrace_ops *op, struct pt_regs *regs)
-+{
-+	/* Do nothing. This is just a dummy handler */
-+}
-+
-+/* This is only for checking conflict with other ftrace users */
-+static struct ftrace_ops kprobe_ipmod_ftrace_ops __read_mostly = {
-+	.func = kprobe_ftrace_stub,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+};
-+static int kprobe_ipmod_ftrace_enabled;
-+
-+static int __ftrace_add_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+				  int *ref)
-+{
-+	int ret;
-+
-+	/* Try to set given ip to filter */
-+	ret = ftrace_set_filter_ip(ops, ip, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	(*ref)++;
-+	if (*ref == 1) {
-+		ret = register_ftrace_function(ops);
-+		if (ret < 0) {
-+			/* Rollback refcounter and filter */
-+			(*ref)--;
-+			ftrace_set_filter_ip(ops, ip, 1, 0);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int __ftrace_remove_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+				     int *ref)
-+{
-+	int ret;
-+
-+	if (*ref == 1) {
-+		ret = unregister_ftrace_function(ops);
-+		if (ret < 0)
-+			return ret;
-+		/*Ignore failure, because it is already unregistered */
-+		ftrace_set_filter_ip(ops, ip, 1, 0);
-+	} else {
-+		/* Try to remove given ip to filter */
-+		ret = ftrace_set_filter_ip(ops, ip, 1, 0);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	(*ref)--;
-+
-+	return 0;
-+}
-+
-+static int try_reserve_ftrace_ipmodify(struct kprobe *p)
-+{
-+	if (!p->break_handler)
-+		return 0;
-+
-+	return __ftrace_add_filter_ip(&kprobe_ipmod_ftrace_ops,
-+				      (unsigned long)p->addr,
-+				      &kprobe_ipmod_ftrace_enabled);
-+}
-+
-+static void release_ftrace_ipmodify(struct kprobe *p)
-+{
-+	int ret;
-+
-+	if (p->break_handler) {
-+		ret = __ftrace_remove_filter_ip(&kprobe_ipmod_ftrace_ops,
-+						(unsigned long)p->addr,
-+						&kprobe_ipmod_ftrace_enabled);
-+		WARN(ret < 0, "Failed to release ftrace at %p (%d)\n",
-+		     p->addr, ret);
-+	}
-+}
-+
- /* Must ensure p->addr is really on ftrace */
- static int prepare_kprobe(struct kprobe *p)
- {
-@@ -933,14 +1015,10 @@ static void arm_kprobe_ftrace(struct kprobe *p)
- {
- 	int ret;
- 
--	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
--				   (unsigned long)p->addr, 0, 0);
-+	ret = __ftrace_add_filter_ip(&kprobe_ftrace_ops,
-+				     (unsigned long)p->addr,
-+				     &kprobe_ftrace_enabled);
- 	WARN(ret < 0, "Failed to arm kprobe-ftrace at %p (%d)\n", p->addr, ret);
--	kprobe_ftrace_enabled++;
--	if (kprobe_ftrace_enabled == 1) {
--		ret = register_ftrace_function(&kprobe_ftrace_ops);
--		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
--	}
- }
- 
- /* Caller must lock kprobe_mutex */
-@@ -948,17 +1026,16 @@ static void disarm_kprobe_ftrace(struct kprobe *p)
- {
- 	int ret;
- 
--	kprobe_ftrace_enabled--;
--	if (kprobe_ftrace_enabled == 0) {
--		ret = unregister_ftrace_function(&kprobe_ftrace_ops);
--		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
--	}
--	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
--			   (unsigned long)p->addr, 1, 0);
--	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
-+	ret = __ftrace_remove_filter_ip(&kprobe_ftrace_ops,
-+					(unsigned long)p->addr,
-+					&kprobe_ftrace_enabled);
-+	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n",
-+	     p->addr, ret);
- }
- #else	/* !CONFIG_KPROBES_ON_FTRACE */
- #define prepare_kprobe(p)	arch_prepare_kprobe(p)
-+#define try_reserve_ftrace_ipmodify(p)	(0)
-+#define release_ftrace_ipmodify(p)	do {} while (0)
- #define arm_kprobe_ftrace(p)	do {} while (0)
- #define disarm_kprobe_ftrace(p)	do {} while (0)
- #endif
-@@ -1502,6 +1579,14 @@ int register_kprobe(struct kprobe *p)
- 	mutex_lock(&kprobe_mutex);
- 
- 	old_p = get_kprobe(p->addr);
-+
-+	/* Try to reserve ftrace ipmodify if needed */
-+	if (kprobe_ftrace(p) && (!old_p || !old_p->break_handler)) {
-+		ret = try_reserve_ftrace_ipmodify(p);
-+		if (ret < 0)
-+			goto out_noreserve;
-+	}
-+
- 	if (old_p) {
- 		/* Since this may unoptimize old_p, locking text_mutex. */
- 		ret = register_aggr_kprobe(old_p, p);
-@@ -1525,6 +1610,9 @@ int register_kprobe(struct kprobe *p)
- 	try_to_optimize_kprobe(p);
- 
- out:
-+	if (ret < 0 && kprobe_ftrace(p))
-+		release_ftrace_ipmodify(p);
-+out_noreserve:
- 	mutex_unlock(&kprobe_mutex);
- 
- 	if (probed_mod)
-@@ -1639,6 +1727,10 @@ static void __unregister_kprobe_bottom(struct kprobe *p)
- {
- 	struct kprobe *ap;
- 
-+	/* Release reserved ftrace ipmodify if needed */
-+	if (kprobe_ftrace(p))
-+		release_ftrace_ipmodify(p);
-+
- 	if (list_empty(&p->list))
- 		/* This is an independent kprobe */
- 		arch_remove_kprobe(p);
-
-
+Thanks.
