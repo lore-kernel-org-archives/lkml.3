@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895AbaGOMWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:22:04 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:51770 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758633AbaGOMWB (ORCPT
+	id S1758899AbaGOMYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:24:23 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:53605 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758321AbaGOMYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:22:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        lftan.linux@gmail.com, cltang@codesourcery.com
-Subject: Re: [PATCH v2 24/29] nios2: Module support
-Date: Tue, 15 Jul 2014 14:21:49 +0200
-Message-ID: <5671533.7yANBX1RSQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140715111237.GF7668@distanz.ch>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <6364841.e2Acy30lOs@wuerfel> <20140715111237.GF7668@distanz.ch>
+	Tue, 15 Jul 2014 08:24:20 -0400
+Date: Tue, 15 Jul 2014 14:24:10 +0200
+From: Josef Gajdusek <atx@atx.name>
+To: linux-iio@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
+        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
+        dan.carpenter@oracle.com, lars@metafoo.de
+Subject: [PATCH v4 0/5] staging:iio:hmc5843: Few adjustments and support for
+ hmc5983
+Message-ID: <20140715122410.GA30770@dashie>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:lO6qkya8pYT/VA4KVrlHo7zValWTyjNYeVs7xyRLBjS
- 17A62pbCOK/gnsJjROq7bOh4yjkh2us2UJbQu2e+8kVpueQsGp
- 0VaVuwYSLV9zyFukBeUoVfjZSA3E7QzezmQgnfyZpyBfGtkmAP
- K4sbqmB7cebjM3tudWw2RY4P8V7qhNAnWb3Z1QVFt0bUL19mzC
- rB5HxFM+rXzHTOGGZANLCiEa+h7dRPez/R2d1VJ4E4L1k5qvSj
- OUHUYCT9mM/k4LHR9ZUp5nQe52Nr7rHPCRfiYX2emT6ueTwjA8
- pB5Nbhy1BBnnMlJyK0UKCn20VS0VVoIaHaAgA72xghhFeUUam3
- 3k6ofFLSYezAwR9JXWD8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 July 2014 13:12:37 Tobias Klauser wrote:
-> On 2014-07-15 at 12:24:46 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 15 July 2014 16:45:51 Ley Foon Tan wrote:
-> > > +void *module_alloc(unsigned long size)
-> > > +{
-> > > +   if (size == 0)
-> > > +           return NULL;
-> > > +   return kmalloc(size, GFP_KERNEL);
-> > > +}
-> > > +
-> > > +/* Free memory returned from module_alloc */
-> > > +void module_free(struct module *mod, void *module_region)
-> > > +{
-> > > +   kfree(module_region);
-> > > +}
-> > 
-> > Any particular reason for defining these to use kmalloc rather than
-> > the default vmalloc based functions?
-> 
-> AFAIR this is due to relocation issues, as the FIXME comment in the
-> "original" code [1] states. I don't know whether this still applies,
-> though (or what would be the proper fix for this to overcome the
-> relocation issues).
-> 
-> [1] https://github.com/tklauser/linux-nios2/blob/nios2/arch/nios2/kernel/module.c#L45
-> 
+This patch series modifies the hmc5843 driver to support the hmc5983 i2c and
+spi interfaces.
 
-Ah, I see. Please at least copy over that comment then.
+v2:
+	* Reverted the changed order of iio unregister and setting hmc mode to sleep
 
-A long-term solution would be to copy what ARM does, since that
-has the same problem. The modules are allocated with
-__vmalloc_node_range, passing a virtual address range that
-is just before the kernel virtual address, taken out of the
-top 16MB of the user space addresses.
+v3:
+	* Fixed bug introduced in the first patch
+	* Readded few comment lines which have gone missing in the hmc5843.c ->
+	  hmc5843_core.c move
 
-	Arnd
+v4: 
+    * Changes suggested by Lars in https://lkml.org/lkml/2014/7/14/968
+	  * The i2c and spi drivers are now user-selectable with the core driver
+	    being selected automatically
+	  * The regmap_config structs in both _spi and _i2c files are now static
+	  * The iio_dev allocation is now done in the common function
+	  * pm ops are now defined in the header file and the same definition is
+	    shared between both interface-specific drivers
+	* regmap tables in hmc5843.h are not longer static (this fixed bunch of 
+	  variable not used warnings)
+
+Jonathan, the patch series applies cleanly against mainline (for me at least), 
+maybe you already have some hmc5843 related patches in your tree which are not 
+yet in upstream? (probably https://lkml.org/lkml/2014/2/14/312)
+
+Josef Gajdusek (5):
+  staging:iio:hmc5843: Added regmap support
+  staging:iio:hmc5843: Split hmc5843.c to multiple files
+  staging:iio:hmc5843: register <-> value arrays now can have different
+    lengths
+  staging:iio:hmc5843: Add support for i2c hmc5983
+  staging:iio:hmc5843: Add support for spi hmc5983
+
+ drivers/staging/iio/magnetometer/Kconfig        |  30 +-
+ drivers/staging/iio/magnetometer/Makefile       |   4 +-
+ drivers/staging/iio/magnetometer/hmc5843.c      | 652 ------------------------
+ drivers/staging/iio/magnetometer/hmc5843.h      |  86 ++++
+ drivers/staging/iio/magnetometer/hmc5843_core.c | 638 +++++++++++++++++++++++
+ drivers/staging/iio/magnetometer/hmc5843_i2c.c  |  74 +++
+ drivers/staging/iio/magnetometer/hmc5843_spi.c  |  73 +++
+ 7 files changed, 900 insertions(+), 657 deletions(-)
+ delete mode 100644 drivers/staging/iio/magnetometer/hmc5843.c
+ create mode 100644 drivers/staging/iio/magnetometer/hmc5843.h
+ create mode 100644 drivers/staging/iio/magnetometer/hmc5843_core.c
+ create mode 100644 drivers/staging/iio/magnetometer/hmc5843_i2c.c
+ create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
+
+-- 
+1.8.5.5
+
