@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934100AbaGOVxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:53:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54872 "EHLO
+	id S1759628AbaGOViW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:38:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54751 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759651AbaGOVi3 (ORCPT
+	with ESMTP id S1759536AbaGOVh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:38:29 -0400
+	Tue, 15 Jul 2014 17:37:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olivier Langlois <olivier@trillion01.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 048/198] [media] uvcvideo: Fix clock param realtime setting
-Date: Tue, 15 Jul 2014 14:28:38 -0700
-Message-Id: <1405459868-15089-49-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 180/198] DMA, CMA: fix possible memory leak
+Date: Tue, 15 Jul 2014 14:30:50 -0700
+Message-Id: <1405459868-15089-181-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,75 +36,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Langlois <olivier@trillion01.com>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
+commit fe8eea4f4a3f299ef83ed090d5354698ebe4fda8 upstream.
 
-timestamps in v4l2 buffers returned to userspace are updated in
-uvc_video_clock_update() which uses timestamps fetched from
-uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+We should free memory for bitmap when we find zone mismatch, otherwise
+this memory will leak.
 
-Hence setting the module clock param to realtime has no effect before
-this patch.
+Additionally, I copy code comment from PPC KVM's CMA code to inform why
+we need to check zone mis-match.
 
-This has been tested with ffmpeg:
-
-ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
- -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
- -c:v libx264 -preset ultrafast \
- -c:a libfdk_aac \
- out.mkv
-
-and inspecting the v4l2 input starting timestamp.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/uvc/uvc_video.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/base/dma-contiguous.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
-index e32d6a5..2ef5b0f8 100644
---- a/drivers/media/usb/uvc/uvc_video.c
-+++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_streaming *stream,
-  * Clocks and timestamps
-  */
- 
-+static inline void uvc_video_get_ts(struct timespec *ts)
-+{
-+	if (uvc_clock_param == CLOCK_MONOTONIC)
-+		ktime_get_ts(ts);
-+	else
-+		ktime_get_real_ts(ts);
-+}
-+
- static void
- uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 		       const __u8 *data, int len)
-@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 	stream->clock.last_sof = dev_sof;
- 
- 	host_sof = usb_get_current_frame_number(stream->dev->udev);
--	ktime_get_ts(&ts);
-+	uvc_video_get_ts(&ts);
- 
- 	/* The UVC specification allows device implementations that can't obtain
- 	 * the USB frame number to keep their own frame counters as long as they
-@@ -1011,10 +1019,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
- 			return -ENODATA;
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 165c2c2..d3bffa4 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -155,13 +155,23 @@ static int __init cma_activate_area(struct cma *cma)
+ 		base_pfn = pfn;
+ 		for (j = pageblock_nr_pages; j; --j, pfn++) {
+ 			WARN_ON_ONCE(!pfn_valid(pfn));
++			/*
++			 * alloc_contig_range requires the pfn range
++			 * specified to be in the same zone. Make this
++			 * simple by forcing the entire CMA resv range
++			 * to be in the same zone.
++			 */
+ 			if (page_zone(pfn_to_page(pfn)) != zone)
+-				return -EINVAL;
++				goto err;
  		}
+ 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
+ 	} while (--i);
  
--		if (uvc_clock_param == CLOCK_MONOTONIC)
--			ktime_get_ts(&ts);
--		else
--			ktime_get_real_ts(&ts);
-+		uvc_video_get_ts(&ts);
+ 	return 0;
++
++err:
++	kfree(cma->bitmap);
++	return -EINVAL;
+ }
  
- 		buf->buf.v4l2_buf.sequence = stream->sequence;
- 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
+ static struct cma cma_areas[MAX_CMA_AREAS];
 -- 
 1.9.1
 
