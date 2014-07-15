@@ -1,117 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398AbaGOTd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:33:29 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39613 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933369AbaGOTdT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:33:19 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>,
-        James Morris <james.l.morris@oracle.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 7/7] x86_64,entry: Use split-phase syscall_trace_enter for 64-bit syscalls
-Date: Tue, 15 Jul 2014 12:32:36 -0700
-Message-Id: <5cb038436f48107f7b855ce2431bb6d63d3e9294.1405452484.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1405452484.git.luto@amacapital.net>
-References: <cover.1405452484.git.luto@amacapital.net>
-In-Reply-To: <cover.1405452484.git.luto@amacapital.net>
-References: <cover.1405452484.git.luto@amacapital.net>
+	id S933412AbaGOTdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:33:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48796 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933264AbaGOTdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:33:35 -0400
+Date: Tue, 15 Jul 2014 16:33:31 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 02/41] perf tools: Fix map groups of threads with unknown
+ pids
+Message-ID: <20140715193331.GD6312@kernel.org>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-3-git-send-email-adrian.hunter@intel.com>
+ <20140714201829.GA9449@kernel.org>
+ <53C5116D.1030905@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C5116D.1030905@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On KVM on my box, this reduces the overhead from an always-accept
-seccomp filter from ~130ns to ~17ns.  Most of that comes from
-avoiding IRET on every syscall when seccomp is enabled.
+Em Tue, Jul 15, 2014 at 02:33:01PM +0300, Adrian Hunter escreveu:
+> On 07/14/2014 11:18 PM, Arnaldo Carvalho de Melo wrote:
+> > Because there is nothing in this function (thread__join_map_groups),
+> > checking if it is operating on a thread that has an unknown pid.
 
-In extremely approximate hacked-up benchmarking, just bypassing IRET
-saves about 80ns, so there's another 43ns of savings here from
-simplifying the seccomp path.
+> > So, please consider merging this and its sole caller,
+> > machine__update_thread_pid, so that the test is in the same function as
+> > the assumption that it is operating on a thread with an unknown pid.
 
-The diffstat is also rather nice :)
+> You have it in your tree now.  Do you want another patch
+> to do that?
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/kernel/entry_64.S | 40 ++++++++++++++++------------------------
- 1 file changed, 16 insertions(+), 24 deletions(-)
+Sorry, ended up push it together with the rest, fixed up now, removed it
+and added some more from your kit, please work from there.
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 432c190..13e0c1d 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -479,22 +479,6 @@ sysret_signal:
- 
- #ifdef CONFIG_AUDITSYSCALL
- 	/*
--	 * Fast path for syscall audit without full syscall trace.
--	 * We just call __audit_syscall_entry() directly, and then
--	 * jump back to the normal fast path.
--	 */
--auditsys:
--	movq %r10,%r9			/* 6th arg: 4th syscall arg */
--	movq %rdx,%r8			/* 5th arg: 3rd syscall arg */
--	movq %rsi,%rcx			/* 4th arg: 2nd syscall arg */
--	movq %rdi,%rdx			/* 3rd arg: 1st syscall arg */
--	movq %rax,%rsi			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_X86_64,%edi	/* 1st arg: audit arch */
--	call __audit_syscall_entry
--	LOAD_ARGS 0		/* reload call-clobbered registers */
--	jmp system_call_fastpath
--
--	/*
- 	 * Return fast path for syscall audit.  Call __audit_syscall_exit()
- 	 * directly and then jump back to the fast path with TIF_SYSCALL_AUDIT
- 	 * masked off.
-@@ -511,17 +495,25 @@ sysret_audit:
- 
- 	/* Do syscall tracing */
- tracesys:
--#ifdef CONFIG_AUDITSYSCALL
--	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	jz auditsys
--#endif
-+	leaq -REST_SKIP(%rsp), %rdi
-+	movq $AUDIT_ARCH_X86_64, %rsi
-+	call syscall_trace_enter_phase1
-+	test %rax, %rax
-+	jnz tracesys_phase2		/* if needed, run the slow path */
-+	LOAD_ARGS 0			/* else restore clobbered regs */
-+	jmp system_call_fastpath	/*      and return to the fast path */
-+
-+tracesys_phase2:
- 	SAVE_REST
- 	FIXUP_TOP_OF_STACK %rdi
--	movq %rsp,%rdi
--	call syscall_trace_enter
-+	movq %rsp, %rdi
-+	movq $AUDIT_ARCH_X86_64, %rsi
-+	movq %rax,%rdx
-+	call syscall_trace_enter_phase2
-+
- 	/*
- 	 * Reload arg registers from stack in case ptrace changed them.
--	 * We don't reload %rax because syscall_trace_enter() returned
-+	 * We don't reload %rax because syscall_trace_entry_phase2() returned
- 	 * the value it wants us to use in the table lookup.
- 	 */
- 	LOAD_ARGS ARGOFFSET, 1
-@@ -532,7 +524,7 @@ tracesys:
- 	andl $__SYSCALL_MASK,%eax
- 	cmpl $__NR_syscall_max,%eax
- #endif
--	ja   int_ret_from_sys_call	/* RAX(%rsp) set to -ENOSYS above */
-+	ja   int_ret_from_sys_call	/* RAX(%rsp) is already set */
- 	movq %r10,%rcx	/* fixup for C */
- 	call *sys_call_table(,%rax,8)
- 	movq %rax,RAX-ARGOFFSET(%rsp)
--- 
-1.9.3
+Let me know if you find any problem with the merge process so far.
 
+Thanks,
+
+- Arnaldo
