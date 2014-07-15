@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280AbaGOM64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:58:56 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32821 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757682AbaGOM4V (ORCPT
+	id S1759296AbaGONAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 09:00:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48260 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758798AbaGONAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:56:21 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-03-53c524e97a5e
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v1 1/4] ima: provide hook to load IMA keys when rootfs is ready
-Date: Tue, 15 Jul 2014 15:54:20 +0300
-Message-id: <2b20badc350112abc405751e67a7eaf3e3932358.1405428802.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <cover.1405428802.git.d.kasatkin@samsung.com>
-References: <cover.1405428802.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1405428802.git.d.kasatkin@samsung.com>
-References: <cover.1405428802.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xK7ovVY4GG2z6Y2YxZ/0aNotbf/cy
-	W7xr+s1i8WVpncXLGfPYLS7vmsNm8aHnEZvFpxWTmB04PHbOusvucWLGbxaPB4c2s3jsXvCZ
-	yeP9vqtsHn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJVx7vZbxoIZ3BWNp2cxNzBO5uxi5OSQ
-	EDCRaFo3jx3CFpO4cG89WxcjF4eQwFJGifbNn6GcTiaJFTvmM4FUsQnoSWxo/sEOkhARaGeU
-	OHD9NFg7s0CNxMOeRSwgtrCAv8TaWStZQWwWAVWJf3+nMYPYvAJxEstfnGCEWCcncfLYZLAa
-	TgErictLDwHN4QDaZilx7UIADuEJjPwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE
-	6JcdjIuPWR1iFOBgVOLhrRA7HCzEmlhWXJl7iFGCg1lJhLdQ6WiwEG9KYmVValF+fFFpTmrx
-	IUYmDk6pBkZRlTUMH7cfjG+MyA2W5f/4YuMCD6mDkRzFVdOCF9p0mihfa3jaMSMxTvF6AZ+L
-	w+6c3fe15aaIFly9FBfFvfja5ytVOQJXvFKalx0QDfvpv1vb9S+/pFGG9uFX2vuUVGY76QSX
-	9X9xtFuaFrWOZbdH6HI93/jeGwY8uc2nJl0I4KkUZvg0VYmlOCPRUIu5qDgRALm5R5wuAgAA
+	Tue, 15 Jul 2014 09:00:09 -0400
+Date: Tue, 15 Jul 2014 14:59:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/7] sched: add function nr_running_cpu to expose
+ number of tasks running on cpu
+In-Reply-To: <20140715120728.GR3588@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1407151452370.24854@nanos>
+References: <1405110784.2970.655.camel@schen9-DESK> <20140714101611.GS9918@twins.programming.kicks-ass.net> <1405354214.2970.663.camel@schen9-DESK> <20140714161432.GC9918@twins.programming.kicks-ass.net> <1405357534.2970.701.camel@schen9-DESK>
+ <20140714181738.GI9918@twins.programming.kicks-ass.net> <1405364908.2970.729.camel@schen9-DESK> <20140714191504.GO9918@twins.programming.kicks-ass.net> <1405367450.2970.750.camel@schen9-DESK> <20140715095045.GV9918@twins.programming.kicks-ass.net>
+ <20140715120728.GR3588@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keys can only be loaded when rootfs is mounted. Initcalls
-are not suitable for that. Provide a special hook.
+On Tue, 15 Jul 2014, Peter Zijlstra wrote:
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- include/linux/ima.h | 9 +++++++++
- init/main.c         | 6 +++++-
- 2 files changed, 14 insertions(+), 1 deletion(-)
+> On Tue, Jul 15, 2014 at 11:50:45AM +0200, Peter Zijlstra wrote:
+> > So you already have an idle notifier (which is x86 only, we should fix
+> > that I suppose), and you then double check there really isn't anything
+> > else running.
+> 
+> Note that we've already done a large part of the expense of going idle
+> by the time we call that idle notifier -- in specific, we've
+> reprogrammed the clock to stop the tick.
+> 
+> Its really wasteful to then generate work again, which means we have to
+> again reprogram the clock etc.
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 23a87a4..b617c1a 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -73,4 +73,13 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
- 	return 0;
- }
- #endif /* CONFIG_IMA_APPRAISE */
-+
-+#ifdef CONFIG_IMA_APPRAISE_SIGNED_INIT
-+extern void __init ima_prepare_keys(void);
-+#else
-+static inline void ima_prepare_keys(void)
-+{
-+}
-+#endif
-+
- #endif /* _LINUX_IMA_H */
-diff --git a/init/main.c b/init/main.c
-index e8ae1fe..b24cfaa 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -78,6 +78,7 @@
- #include <linux/context_tracking.h>
- #include <linux/random.h>
- #include <linux/list.h>
-+#include <linux/ima.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -1028,6 +1029,9 @@ static noinline void __init kernel_init_freeable(void)
- 	 * initmem segments and start the user-mode stuff..
- 	 */
- 
--	/* rootfs is available now, try loading default modules */
-+	/* rootfs is available now */
-+	/* try loading public keys */
-+	ima_prepare_keys();
-+	/* try loading default modules */
- 	load_default_modules();
- }
--- 
-1.9.1
+Doing anything which is not related to idle itself in the idle
+notifier is just plain wrong.
+
+If that stuff wants to utilize idle slots, we really need to come up
+with a generic and general solution. Otherwise we'll grow those warts
+all over the architecture space, with slightly different ways of
+wreckaging the world an some more.
+
+This whole attidute of people thinking that they need their own
+specialized scheduling around the real scheduler is a PITA. All this
+stuff is just damanging any sensible approach of power saving, load
+balancing, etc.
+
+What we really want is infrastructure, which allows the scheduler to
+actively query the async work situation and based on the results
+actively decide when to process it and where.
+
+Thanks,
+
+	tglx
 
