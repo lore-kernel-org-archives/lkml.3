@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933536AbaGOToT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:44:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36550 "EHLO mx1.redhat.com"
+	id S933407AbaGOTol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:44:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933133AbaGOToP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:44:15 -0400
-Date: Tue, 15 Jul 2014 15:42:51 -0400 (EDT)
+	id S933408AbaGOTof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:44:35 -0400
+Date: Tue, 15 Jul 2014 15:44:10 -0400 (EDT)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
@@ -16,9 +16,10 @@ To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
         Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
 cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org
-Subject: [PATCH 12/15] dm kcopyd: introduce the function submit_job
+Subject: [PATCH 15/15] dm kcopyd: call copy offload with asynchronous
+ callback
 In-Reply-To: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1407151541350.14632@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1407151543490.14632@file01.intranet.prod.int.rdu2.redhat.com>
 References: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
@@ -27,50 +28,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We move some code to a function submit_job. It is needed for the next
-patch that calls submit_job from another place.
+Change dm kcopyd so that it calls blkdev_issue_copy with an asynchronous
+callback. There can be large number of pending kcopyd requests and holding
+a process context for each of them may put too much load on the workqueue
+subsystem.
+
+This patch changes it so that blkdev_issue_copy returns after it submitted
+the requests and copy_offload_callback is called when the copy operation
+finishes.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
 ---
- drivers/md/dm-kcopyd.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/md/dm-kcopyd.c |   33 ++++++++++++++-------------------
+ 1 file changed, 14 insertions(+), 19 deletions(-)
 
 Index: linux-3.16-rc5/drivers/md/dm-kcopyd.c
 ===================================================================
---- linux-3.16-rc5.orig/drivers/md/dm-kcopyd.c	2014-07-14 16:45:23.000000000 +0200
-+++ linux-3.16-rc5/drivers/md/dm-kcopyd.c	2014-07-14 17:28:36.000000000 +0200
-@@ -698,6 +698,17 @@ static void split_job(struct kcopyd_job 
+--- linux-3.16-rc5.orig/drivers/md/dm-kcopyd.c	2014-07-15 19:24:20.000000000 +0200
++++ linux-3.16-rc5/drivers/md/dm-kcopyd.c	2014-07-15 19:24:54.000000000 +0200
+@@ -361,8 +361,6 @@ struct kcopyd_job {
+ 	sector_t progress;
+ 
+ 	struct kcopyd_job *master_job;
+-
+-	struct work_struct copy_work;
+ };
+ 
+ static struct kmem_cache *_job_cache;
+@@ -628,8 +626,9 @@ static void segment_complete(int read_er
+ 	struct kcopyd_job *sub_job = (struct kcopyd_job *) context;
+ 	struct kcopyd_job *job = sub_job->master_job;
+ 	struct dm_kcopyd_client *kc = job->kc;
++	unsigned long flags;
+ 
+-	spin_lock(&job->lock);
++	spin_lock_irqsave(&job->lock, flags);
+ 
+ 	/* update the error */
+ 	if (read_err)
+@@ -653,7 +652,7 @@ static void segment_complete(int read_er
+ 			job->progress += count;
+ 		}
+ 	}
+-	spin_unlock(&job->lock);
++	spin_unlock_irqrestore(&job->lock, flags);
+ 
+ 	if (count) {
+ 		int i;
+@@ -714,29 +713,25 @@ static void submit_job(struct kcopyd_job
  	}
  }
  
-+static void submit_job(struct kcopyd_job *job)
-+{
-+	if (job->source.count <= SUB_JOB_SIZE)
-+		dispatch_job(job);
-+	else {
-+		mutex_init(&job->lock);
-+		job->progress = 0;
-+		split_job(job);
-+	}
-+}
-+
- int dm_kcopyd_copy(struct dm_kcopyd_client *kc, struct dm_io_region *from,
- 		   unsigned int num_dests, struct dm_io_region *dests,
- 		   unsigned int flags, dm_kcopyd_notify_fn fn, void *context)
-@@ -746,13 +757,7 @@ int dm_kcopyd_copy(struct dm_kcopyd_clie
- 	job->context = context;
- 	job->master_job = job;
+-static void copy_offload_work(struct work_struct *work)
++static void copy_offload_callback(void *ptr, int error)
+ {
+-	struct kcopyd_job *job = container_of(work, struct kcopyd_job, copy_work);
+-	sector_t copied;
++	struct kcopyd_job *job = ptr;
  
--	if (job->source.count <= SUB_JOB_SIZE)
--		dispatch_job(job);
--	else {
--		mutex_init(&job->lock);
--		job->progress = 0;
--		split_job(job);
--	}
-+	submit_job(job);
+-	blkdev_issue_copy(job->source.bdev, job->source.sector,
+-			  job->dests[0].bdev, job->dests[0].sector,
+-			  job->source.count,
+-			  GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN,
+-			  NULL, NULL, &copied);
+-
+-	job->source.sector += copied;
+-	job->source.count -= copied;
+-	job->dests[0].sector += copied;
+-	job->dests[0].count -= copied;
++	job->source.sector += job->progress;
++	job->source.count -= job->progress;
++	job->dests[0].sector += job->progress;
++	job->dests[0].count -= job->progress;
  
- 	return 0;
+ 	submit_job(job);
  }
+ 
+ static void try_copy_offload(struct kcopyd_job *job)
+ {
+-	INIT_WORK(&job->copy_work, copy_offload_work);
+-	queue_work(job->kc->kcopyd_wq, &job->copy_work);
++	blkdev_issue_copy(job->source.bdev, job->source.sector,
++			  job->dests[0].bdev, job->dests[0].sector,
++			  job->source.count,
++			  GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN,
++			  copy_offload_callback, job, &job->progress);
+ }
+ 
+ int dm_kcopyd_copy(struct dm_kcopyd_client *kc, struct dm_io_region *from,
 
