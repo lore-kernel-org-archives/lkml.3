@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaGORA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 13:00:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42634 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaGORA5 (ORCPT
+	id S1754845AbaGORBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 13:01:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50862 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaGORBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 13:00:57 -0400
-Date: Tue, 15 Jul 2014 10:05:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sam Asadi <asadi.samuel@gmail.com>
-Cc: devel@driverdev.osuosl.org, Simon Horman <horms+renesas@verge.net.au>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/94] ARM: shmobile: Add DT and defconfigs to MAINTAINERS
-Message-ID: <20140715170530.GA16841@kroah.com>
-References: <1405443280-15138-1-git-send-email-asadi.samuel@gmail.com>
+	Tue, 15 Jul 2014 13:01:32 -0400
+Date: Tue, 15 Jul 2014 10:01:07 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] net: clean up some sparse endianness warnings in ipv6.h
+Message-ID: <20140715170107.GA1722@infradead.org>
+References: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405443280-15138-1-git-send-email-asadi.samuel@gmail.com>
+In-Reply-To: <1405340746-10678-1-git-send-email-jlayton@primarydata.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 07:53:07PM +0300, Sam Asadi wrote:
-> From: Simon Horman <horms+renesas@verge.net.au>
-> 
-> There are a number of DT and defconfig files which
-> are maintained as part of shmobile but have not been
-> listed as such in the MAINTAINERS file. This creates
-> confusion from time to time.
-> 
-> Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-> Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
+>  #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
+> -	const unsigned long *ul = (const unsigned long *)a;
+> +	const __be64 *be = (const __be64 *)a;
+>  
+> -	return (ul[0] | (ul[1] ^ cpu_to_be64(1))) == 0UL;
+> +	return (be[0] | (be[1] ^ cpu_to_be64(1))) == cpu_to_be64(0UL);
 
-Really?  We need a "real" name here.
+Do you need the swap for 0UL?  I know sparse treats 0 as special, so why
+wouldn't it treat 0UL special?  Or just remove the 0UL postfix, no need
+for it in a simple comparism.
 
-And why are you passing on Simon's patches, why would I care about this
-patch to the MAINTAINERS file?
-
-confused,
-
-greg k-h
+Otherwise looks fine to me.
