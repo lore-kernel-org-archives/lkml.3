@@ -1,68 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760946AbaGPAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:19:58 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60701 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759334AbaGPATx (ORCPT
+	id S1760855AbaGPATt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:19:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44926 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759369AbaGOXNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:19:53 -0400
+	Tue, 15 Jul 2014 19:13:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: [PATCH 3.4 13/22] rtmutex: Handle deadlock detection smarter
+Date: Tue, 15 Jul 2014 16:17:18 -0700
+Message-Id: <20140715231622.511964874@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
+References: <20140715231622.121816073@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <20140716000054.GA1192@mars.lan>
-References: <20140716000054.GA1192@mars.lan>
-Date: Tue, 15 Jul 2014 17:19:52 -0700
-X-Google-Sender-Auth: R1qBQusVwwmOK_wpb_tIWNJWhf8
-Message-ID: <CANLzEks7waVxoo+CNdcb_q8YX3PJJSsb2YZLVk97Tfvm9zKx=g@mail.gmail.com>
-Subject: Re: [PATCH] Add support for the acer c720p touchscreen.
-From: Benson Leung <bleung@chromium.org>
-To: Michael Mullin <masmullin@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dparker@chromium.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Thank you for adding this and verifying it works on your system.
+------------------
 
-On Tue, Jul 15, 2014 at 5:00 PM, Michael Mullin <masmullin@gmail.com> wrote:
-> Add support for the acer c720p touchscreen.
-> Tested manually by using the touchscreen on the acer c720p-2664
->
-> Based on the following patch by Dave Parker <dparker@chromium.org>:
-> https://chromium-review.googlesource.com/#/c/167136/
->
-> Signed-off-by: Michael Mullin <masmullin@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Reviewed-by: Benson Leung <bleung@chromium.org>
+commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
 
-> ---
->  drivers/platform/chrome/chromeos_laptop.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-> index a53fe76..15b1b16 100644
-> --- a/drivers/platform/chrome/chromeos_laptop.c
-> +++ b/drivers/platform/chrome/chromeos_laptop.c
-> @@ -419,6 +419,8 @@ static struct chromeos_laptop acer_ac700 = {
->
->  static struct chromeos_laptop acer_c720 = {
->         .i2c_peripherals = {
-> +               /* Touchscreen. */
-> +               { .add = setup_atmel_1664s_ts, I2C_ADAPTER_DESIGNWARE_1 },
->                 /* Touchpad. */
->                 { .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
->                 /* Light Sensor. */
-> --
-> 2.0.1
->
+Even in the case when deadlock detection is not requested by the
+caller, we can detect deadlocks. Right now the code stops the lock
+chain walk and keeps the waiter enqueued, even on itself. Silly not to
+yell when such a scenario is detected and to keep the waiter enqueued.
+
+Return -EDEADLK unconditionally and handle it at the call sites.
+
+The futex calls return -EDEADLK. The non futex ones dequeue the
+waiter, throw a warning and put the task into a schedule loop.
+
+Tagged for stable as it makes the code more robust.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Brad Mouring <bmouring@ni.com>
+Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/rtmutex-debug.h |    5 +++++
+ kernel/rtmutex.c       |   33 ++++++++++++++++++++++++++++-----
+ kernel/rtmutex.h       |    5 +++++
+ 3 files changed, 38 insertions(+), 5 deletions(-)
+
+--- a/kernel/rtmutex-debug.h
++++ b/kernel/rtmutex-debug.h
+@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_
+ {
+ 	return (waiter != NULL);
+ }
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	debug_rt_mutex_print_deadlock(w);
++}
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -188,7 +188,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 		}
+ 		put_task_struct(task);
+ 
+-		return deadlock_detect ? -EDEADLK : 0;
++		return -EDEADLK;
+ 	}
+  retry:
+ 	/*
+@@ -263,7 +263,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+-		ret = deadlock_detect ? -EDEADLK : 0;
++		ret = -EDEADLK;
+ 		goto out_unlock_pi;
+ 	}
+ 
+@@ -453,7 +453,7 @@ static int task_blocks_on_rt_mutex(struc
+ 	 * which is wrong, as the other waiter is not in a deadlock
+ 	 * situation.
+ 	 */
+-	if (detect_deadlock && owner == task)
++	if (owner == task)
+ 		return -EDEADLK;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -680,6 +680,26 @@ __rt_mutex_slowlock(struct rt_mutex *loc
+ 	return ret;
+ }
+ 
++static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
++				     struct rt_mutex_waiter *w)
++{
++	/*
++	 * If the result is not -EDEADLOCK or the caller requested
++	 * deadlock detection, nothing to do here.
++	 */
++	if (res != -EDEADLOCK || detect_deadlock)
++		return;
++
++	/*
++	 * Yell lowdly and stop the task right here.
++	 */
++	rt_mutex_print_deadlock(w);
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++	}
++}
++
+ /*
+  * Slow path lock function:
+  */
+@@ -717,8 +737,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+ 
+ 	set_current_state(TASK_RUNNING);
+ 
+-	if (unlikely(ret))
++	if (unlikely(ret)) {
+ 		remove_waiter(lock, &waiter);
++		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
++	}
+ 
+ 	/*
+ 	 * try_to_take_rt_mutex() sets the waiter bit
+@@ -1026,7 +1048,8 @@ int rt_mutex_start_proxy_lock(struct rt_
+ 		return 1;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
++	/* We enforce deadlock detection for futexes */
++	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
+ 
+ 	if (ret && !rt_mutex_owner(lock)) {
+ 		/*
+--- a/kernel/rtmutex.h
++++ b/kernel/rtmutex.h
+@@ -24,3 +24,8 @@
+ #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
+ #define debug_rt_mutex_detect_deadlock(w,d)		(d)
+ #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	WARN(1, "rtmutex deadlock detected\n");
++}
 
 
-
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
