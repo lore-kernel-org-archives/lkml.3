@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598AbaGOAff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:35:35 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:49487 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280AbaGOAfc (ORCPT
+	id S1753805AbaGOAln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 20:41:43 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:45416 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255AbaGOAll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:35:32 -0400
-Message-ID: <53C4774D.6040900@gmail.com>
-Date: Tue, 15 Jul 2014 08:35:25 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 14 Jul 2014 20:41:41 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org, arnd@arndb.de,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <CAF0htA60juBVkPo2HQKMDGcEr-wRzRVL_6JgHAa+7WVE_E8M0Q@mail.gmail.com> <53C25551.1050909@nod.at> <53C288F0.3070001@metafoo.de> <53C28C4A.70907@nod.at> <53C29015.5070607@metafoo.de> <53C291C8.6050303@nod.at> <53C296C2.30304@metafoo.de> <20140713192202.GA19090@kroah.com> <53C2DF12.6040507@nod.at> <20140713201753.GA29955@kroah.com> <53C39569.9020802@nod.at> <53C3994C.1010309@metafoo.de> <53C39B66.4060500@nod.at> <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com>
-In-Reply-To: <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com>
+In-Reply-To: <1405123575-17113-1-git-send-email-andi@firstfloor.org>
+References: <1405123575-17113-1-git-send-email-andi@firstfloor.org>
+Date: Tue, 15 Jul 2014 02:41:40 +0200
+Message-ID: <CABPqkBS0GB0bu2xRH2B+xc9DU88kfOc8z-T+hDv3_kc+644NjA@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Widen Haswell OFFCORE mask
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 05:22 PM, Chen Gang wrote:
-> 
-> 在 2014年7月14日，下午4:57，Richard Weinberger <richard@nod.at> 写道：
-> 
->> Am 14.07.2014 10:48, schrieb Lars-Peter Clausen:
->>> On 07/14/2014 10:31 AM, Richard Weinberger wrote:
->>>> Am 13.07.2014 22:17, schrieb Greg Kroah-Hartman:
->>>>> On Sun, Jul 13, 2014 at 09:33:38PM +0200, Richard Weinberger wrote:
->>>>>> Maybe we could add COMPILE_TEST to the version string too?
->>>>>> Just to detect such kernels fast in user bug reports...
->>>>>
->>>>> What kind of bug report are you going to get?
->>>>
->>>> User manages to enable CONFIG_FOO by selecting COMPILE_TEST and
->>>> complains that it does not work. :)
->>>
->>> These drivers are typically drivers for some SoC peripheral and the device will simply physically not exist on a platform that does not provide HAS_IOMEM. This is not really any
->>> different from making the driver selectable via COMPILE_TEST for any other platform. To hit the issue you'd have to instantiate a device driver instance for a device that
->>> physically does not exist. This will always result in a failure.
->>
->> Okay, you have convinced me. :)
->>
+On Sat, Jul 12, 2014 at 2:06 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Haswell supports more bits in the offcore_rsp_* MSRs than Sandy
+> Bridge. Previously the Haswell code was using the Sandy Bridge
+> extra register definitions, which prevented users from setting
+> all of these bits. This in term did not allow to set some valid
+> SNOOP_* bits, among others.
+>
+> I allowed all bits the CPU does not #GP on. This is ok because
+> it's protected by a model check.
+>
+> Add a new extra_regs table for Haswell and use. Except for the
+> widened mask it is identical to Sandy Bridge.
+>
+You're adding an extra_regs[] array which is identical to the one
+used by SNB-EP. So why not use that one instead of defining yet
+another extra_regs array?
 
-After search the history patches, I found one related patch which made
-by myself (when I am in Asianux):
 
-  "https://lkml.org/lkml/2013/7/1/641"
-
-For me, it is a long discussion, and forced many members have to join
-in. Please help check again.
-
-Thanks.
-
-> 
-> OK, thank all of you, and I shall send the related patch for it. 
-> 
-> I will try to finish it within this week.
-> 
-
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c | 10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index adb02aa..5d41e2b 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -189,6 +189,14 @@ static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
+>         EVENT_EXTRA_END
+>  };
+>
+> +static struct extra_reg intel_hsw_extra_regs[] __read_mostly = {
+> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
+> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
+> +       INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+> +       EVENT_EXTRA_END
+> +};
+> +
+>  EVENT_ATTR_STR(mem-loads,      mem_ld_nhm,     "event=0x0b,umask=0x10,ldlat=3");
+>  EVENT_ATTR_STR(mem-loads,      mem_ld_snb,     "event=0xcd,umask=0x1,ldlat=3");
+>  EVENT_ATTR_STR(mem-stores,     mem_st_snb,     "event=0xcd,umask=0x2");
+> @@ -2504,7 +2512,7 @@ __init int intel_pmu_init(void)
+>
+>                 x86_pmu.event_constraints = intel_hsw_event_constraints;
+>                 x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+> -               x86_pmu.extra_regs = intel_snb_extra_regs;
+> +               x86_pmu.extra_regs = intel_hsw_extra_regs;
+>                 x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+>                 /* all extra regs are per-cpu when HT is on */
+>                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
+> --
+> 1.9.3
+>
