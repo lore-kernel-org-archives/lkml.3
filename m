@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170AbaGOX4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:56:00 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:44581 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826AbaGOXz4 (ORCPT
+	id S1760047AbaGOXNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:13:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759882AbaGOXNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:55:56 -0400
-Date: Wed, 16 Jul 2014 08:55:53 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sam Asadi <asadi.samuel@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/94] ARM: shmobile: Add DT and defconfigs to MAINTAINERS
-Message-ID: <20140715235553.GI557@verge.net.au>
-References: <1405443280-15138-1-git-send-email-asadi.samuel@gmail.com>
- <20140715170530.GA16841@kroah.com>
+	Tue, 15 Jul 2014 19:13:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maxime Bizon <mbizon@freebox.fr>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 06/44] workqueue: fix dev_set_uevent_suppress() imbalance
+Date: Tue, 15 Jul 2014 16:17:04 -0700
+Message-Id: <20140715231646.877385105@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
+References: <20140715231646.690728348@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715170530.GA16841@kroah.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 10:05:30AM -0700, Greg KH wrote:
-> On Tue, Jul 15, 2014 at 07:53:07PM +0300, Sam Asadi wrote:
-> > From: Simon Horman <horms+renesas@verge.net.au>
-> > 
-> > There are a number of DT and defconfig files which
-> > are maintained as part of shmobile but have not been
-> > listed as such in the MAINTAINERS file. This creates
-> > confusion from time to time.
-> > 
-> > Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-> > Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
-> 
-> Really?  We need a "real" name here.
-> 
-> And why are you passing on Simon's patches, why would I care about this
-> patch to the MAINTAINERS file?
-> 
-> confused,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I'm also a little confused as this same patch is sitting in my tree
-and has been queued up for v3.17 by in the arm-soc tree.
+------------------
+
+From: Maxime Bizon <mbizon@freebox.fr>
+
+commit bddbceb688c6d0decaabc7884fede319d02f96c8 upstream.
+
+Uevents are suppressed during attributes registration, but never
+restored, so kobject_uevent() does nothing.
+
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 226223ab3c4118ddd10688cc2c131135848371ab
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/workqueue.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3373,6 +3373,7 @@ int workqueue_sysfs_register(struct work
+ 		}
+ 	}
+ 
++	dev_set_uevent_suppress(&wq_dev->dev, false);
+ 	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
+ 	return 0;
+ }
+
+
