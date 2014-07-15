@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaGOP3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:29:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42107 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341AbaGOP3v (ORCPT
+	id S1756189AbaGOP3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:29:09 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:38651 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754400AbaGOPWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:29:51 -0400
-Date: Tue, 15 Jul 2014 08:29:29 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: lidza.louina@gmail.com, markh@compro.net, devel@driverdev.osuosl.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8 V2] staging: dgap: remove unneeded dgap_err()
-Message-ID: <20140715152929.GA8844@kroah.com>
-References: <20140715091144.GA19080@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715091144.GA19080@devel.8.8.4.4>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 15 Jul 2014 11:22:47 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: [PATCH v3 07/15] drivers: clk: st: STiH407: Support for A9 MUX Clocks
+Date: Tue, 15 Jul 2014 17:20:23 +0200
+Message-Id: <1405437631-23623-8-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-15_05:2014-07-15,2014-07-15,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 06:11:44PM +0900, Daeseok Youn wrote:
-> The dgap_err() is printing a message with pr_err(),
-> so all those are replaced.
-> 
-> Use definition "pr_fmt" and then all of "dgap:" in
-> the beginning of print messages are removed.
-> 
-> And also removed "out of memory" message because
-> the kernel has own message for that.
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
-> V2: use pr_fmt "dgap:" prefix on print message on dgap.
->     remove "out of memory" message.
-> 
->     Adds Mark to TO list and CC list for checking send
->     this email properly to him.
-> 
->  drivers/staging/dgap/dgap.c |  306 +++++++++++++++++++------------------------
->  1 files changed, 133 insertions(+), 173 deletions(-)
-> 
-> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-> index 06c55cb..9e750fb 100644
-> --- a/drivers/staging/dgap/dgap.c
-> +++ b/drivers/staging/dgap/dgap.c
-> @@ -41,6 +41,8 @@
->   */
->  #undef DIGI_CONCENTRATORS_SUPPORTED
->  
-> +#define pr_fmt(fmt) "dgap: " fmt
-> +
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/pci.h>
-> @@ -153,7 +155,6 @@ static void dgap_firmware_reset_port(struct channel_t *ch);
->  static int dgap_gettok(char **in);
->  static char *dgap_getword(char **in);
->  static int dgap_checknode(struct cnode *p);
-> -static void dgap_err(char *s);
->  
->  /*
->   * Function prototypes from dgap_sysfs.h
-> @@ -815,7 +816,7 @@ static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
->  	if (ret)
->  		goto free_brd;
->  
-> -	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
-> +	pr_info("board %d: %s (rev %d), irq %ld\n",
->  		boardnum, brd->name, brd->rev, brd->irq);
+The patch supports the A9-mux clocks used by ClockGenA9
 
-Almost all of the pr_*() calls in this driver should be converted over
-to use dev_*() calls instead.  And some of them, like this one, should
-be removed entirely (no need for a driver to be "noisy" when a device
-for it is found, it should be quiet if at all possible, unless something
-went wrong.)
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ drivers/clk/st/clkgen-mux.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-So can you do that here instead?  I've applied the earlier patches in
-this series, and stopped here.
+diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
+index a329906..9bdedc8 100644
+--- a/drivers/clk/st/clkgen-mux.c
++++ b/drivers/clk/st/clkgen-mux.c
+@@ -580,6 +580,11 @@ static struct clkgen_mux_data stih416_a9_mux_data = {
+ 	.shift = 0,
+ 	.width = 2,
+ };
++static struct clkgen_mux_data stih407_a9_mux_data = {
++	.offset = 0x1a4,
++	.shift = 1,
++	.width = 2,
++};
+ 
+ static struct of_device_id mux_of_match[] = {
+ 	{
+@@ -610,6 +615,10 @@ static struct of_device_id mux_of_match[] = {
+ 		.compatible = "st,stih416-clkgen-a9-mux",
+ 		.data = &stih416_a9_mux_data,
+ 	},
++	{
++		.compatible = "st,stih407-clkgen-a9-mux",
++		.data = &stih407_a9_mux_data,
++	},
+ 	{}
+ };
+ 
+-- 
+1.9.1
 
-thanks,
-
-greg k-h
