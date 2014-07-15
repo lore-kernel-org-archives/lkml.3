@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933785AbaGPAMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:12:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
+	id S1761260AbaGPAMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:12:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759760AbaGOXNY (ORCPT
+	with ESMTP id S1759811AbaGOXN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:24 -0400
+	Tue, 15 Jul 2014 19:13:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 26/44] drm/radeon: fix typo in golden register setup on evergreen
-Date: Tue, 15 Jul 2014 16:17:24 -0700
-Message-Id: <20140715231647.473104936@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: [PATCH 3.10 31/44] rtmutex: Handle deadlock detection smarter
+Date: Tue, 15 Jul 2014 16:17:29 -0700
+Message-Id: <20140715231647.621290243@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -28,59 +31,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6abafb78f9881b4891baf74ab4e9f090ae45230e upstream.
+commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
 
-Fixes hangs on driver load on some cards.
+Even in the case when deadlock detection is not requested by the
+caller, we can detect deadlocks. Right now the code stops the lock
+chain walk and keeps the waiter enqueued, even on itself. Silly not to
+yell when such a scenario is detected and to keep the waiter enqueued.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=76998
+Return -EDEADLK unconditionally and handle it at the call sites.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The futex calls return -EDEADLK. The non futex ones dequeue the
+waiter, throw a warning and put the task into a schedule loop.
+
+Tagged for stable as it makes the code more robust.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Brad Mouring <bmouring@ni.com>
+Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/rtmutex-debug.h |    5 +++++
+ kernel/rtmutex.c       |   33 ++++++++++++++++++++++++++++-----
+ kernel/rtmutex.h       |    5 +++++
+ 3 files changed, 38 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -94,7 +94,7 @@ static const u32 evergreen_golden_regist
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002,
- 	0x913c, 0x0000000f, 0x0000000a
- };
-@@ -381,7 +381,7 @@ static const u32 cedar_golden_registers[
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002
- };
+--- a/kernel/rtmutex-debug.h
++++ b/kernel/rtmutex-debug.h
+@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_
+ {
+ 	return (waiter != NULL);
+ }
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	debug_rt_mutex_print_deadlock(w);
++}
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -189,7 +189,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 		}
+ 		put_task_struct(task);
  
-@@ -540,7 +540,7 @@ static const u32 juniper_mgcg_init[] =
- static const u32 supersumo_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
-@@ -624,7 +624,7 @@ static const u32 sumo_golden_registers[]
- static const u32 wrestler_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
+-		return deadlock_detect ? -EDEADLK : 0;
++		return -EDEADLK;
+ 	}
+  retry:
+ 	/*
+@@ -264,7 +264,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+-		ret = deadlock_detect ? -EDEADLK : 0;
++		ret = -EDEADLK;
+ 		goto out_unlock_pi;
+ 	}
+ 
+@@ -454,7 +454,7 @@ static int task_blocks_on_rt_mutex(struc
+ 	 * which is wrong, as the other waiter is not in a deadlock
+ 	 * situation.
+ 	 */
+-	if (detect_deadlock && owner == task)
++	if (owner == task)
+ 		return -EDEADLK;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -681,6 +681,26 @@ __rt_mutex_slowlock(struct rt_mutex *loc
+ 	return ret;
+ }
+ 
++static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
++				     struct rt_mutex_waiter *w)
++{
++	/*
++	 * If the result is not -EDEADLOCK or the caller requested
++	 * deadlock detection, nothing to do here.
++	 */
++	if (res != -EDEADLOCK || detect_deadlock)
++		return;
++
++	/*
++	 * Yell lowdly and stop the task right here.
++	 */
++	rt_mutex_print_deadlock(w);
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++	}
++}
++
+ /*
+  * Slow path lock function:
+  */
+@@ -718,8 +738,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+ 
+ 	set_current_state(TASK_RUNNING);
+ 
+-	if (unlikely(ret))
++	if (unlikely(ret)) {
+ 		remove_waiter(lock, &waiter);
++		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
++	}
+ 
+ 	/*
+ 	 * try_to_take_rt_mutex() sets the waiter bit
+@@ -1027,7 +1049,8 @@ int rt_mutex_start_proxy_lock(struct rt_
+ 		return 1;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
++	/* We enforce deadlock detection for futexes */
++	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
+ 
+ 	if (ret && !rt_mutex_owner(lock)) {
+ 		/*
+--- a/kernel/rtmutex.h
++++ b/kernel/rtmutex.h
+@@ -24,3 +24,8 @@
+ #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
+ #define debug_rt_mutex_detect_deadlock(w,d)		(d)
+ #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	WARN(1, "rtmutex deadlock detected\n");
++}
 
 
