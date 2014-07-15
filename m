@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759045AbaGOVcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:32:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53972 "EHLO
+	id S1758956AbaGOVcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:32:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53965 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758898AbaGOVcJ (ORCPT
+	with ESMTP id S1756214AbaGOVcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:09 -0400
+	Tue, 15 Jul 2014 17:32:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Dave Chinner <dchinner@redhat.com>, Dave Chinner <david@fromorbit.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 104/198] IB/umad: Fix use-after-free on close
-Date: Tue, 15 Jul 2014 14:29:34 -0700
-Message-Id: <1405459868-15089-105-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 103/198] xfs: block allocation work needs to be kswapd aware
+Date: Tue, 15 Jul 2014 14:29:33 -0700
+Message-Id: <1405459868-15089-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,167 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 60e1751cb52cc6d1ae04b6bd3c2b96e770b5823f upstream.
+commit 1f6d64829db78a7e1d63e15c9f48f0a5d2b5a679 upstream.
 
-Avoid that closing /dev/infiniband/umad<n> or /dev/infiniband/issm<n>
-triggers a use-after-free.  __fput() invokes f_op->release() before it
-invokes cdev_put().  Make sure that the ib_umad_device structure is
-freed by the cdev_put() call instead of f_op->release().  This avoids
-that changing the port mode from IB into Ethernet and back to IB
-followed by restarting opensmd triggers the following kernel oops:
+Upon memory pressure, kswapd calls xfs_vm_writepage() from
+shrink_page_list(). This can result in delayed allocation occurring
+and that gets deferred to the the allocation workqueue.
 
-    general protection fault: 0000 [#1] PREEMPT SMP
-    RIP: 0010:[<ffffffff810cc65c>]  [<ffffffff810cc65c>] module_put+0x2c/0x170
-    Call Trace:
-     [<ffffffff81190f20>] cdev_put+0x20/0x30
-     [<ffffffff8118e2ce>] __fput+0x1ae/0x1f0
-     [<ffffffff8118e35e>] ____fput+0xe/0x10
-     [<ffffffff810723bc>] task_work_run+0xac/0xe0
-     [<ffffffff81002a9f>] do_notify_resume+0x9f/0xc0
-     [<ffffffff814b8398>] int_signal+0x12/0x17
+The allocation then runs outside kswapd context, which means if it
+needs memory (and it does to demand page metadata from disk) it can
+block in shrink_inactive_list() waiting for IO congestion. These
+blocking waits are normally avoiding in kswapd context, so under
+memory pressure writeback from kswapd can be arbitrarily delayed by
+memory reclaim.
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75051
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+To avoid this, pass the kswapd context to the allocation being done
+by the workqueue, so that memory reclaim understands correctly that
+the work is being done for kswapd and therefore it is not blocked
+and does not delay memory reclaim.
+
+To avoid issues with int->char conversion of flag fields (as noticed
+in v1 of this patch) convert the flag fields in the struct
+xfs_bmalloca to bool types. pahole indicates these variables are
+still single byte variables, so no extra space is consumed by this
+change.
+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/core/user_mad.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ fs/xfs/xfs_bmap_util.c | 16 +++++++++++++---
+ fs/xfs/xfs_bmap_util.h | 13 +++++++------
+ 2 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index 9bdf576..1acb991 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -98,7 +98,7 @@ struct ib_umad_port {
+diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
+index 82e0dab..035d06a 100644
+--- a/fs/xfs/xfs_bmap_util.c
++++ b/fs/xfs/xfs_bmap_util.c
+@@ -258,14 +258,23 @@ xfs_bmapi_allocate_worker(
+ 	struct xfs_bmalloca	*args = container_of(work,
+ 						struct xfs_bmalloca, work);
+ 	unsigned long		pflags;
++	unsigned long		new_pflags = PF_FSTRANS;
  
- struct ib_umad_device {
- 	int                  start_port, end_port;
--	struct kref          ref;
-+	struct kobject       kobj;
- 	struct ib_umad_port  port[0];
- };
- 
-@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_MAX_PORTS);
- static void ib_umad_add_one(struct ib_device *device);
- static void ib_umad_remove_one(struct ib_device *device);
- 
--static void ib_umad_release_dev(struct kref *ref)
-+static void ib_umad_release_dev(struct kobject *kobj)
- {
- 	struct ib_umad_device *dev =
--		container_of(ref, struct ib_umad_device, ref);
-+		container_of(kobj, struct ib_umad_device, kobj);
- 
- 	kfree(dev);
- }
- 
-+static struct kobj_type ib_umad_dev_ktype = {
-+	.release = ib_umad_release_dev,
-+};
+-	/* we are in a transaction context here */
+-	current_set_flags_nested(&pflags, PF_FSTRANS);
++	/*
++	 * we are in a transaction context here, but may also be doing work
++	 * in kswapd context, and hence we may need to inherit that state
++	 * temporarily to ensure that we don't block waiting for memory reclaim
++	 * in any way.
++	 */
++	if (args->kswapd)
++		new_pflags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
 +
- static int hdr_size(struct ib_umad_file *file)
- {
- 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
-@@ -812,7 +816,7 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- 		goto out;
- 	}
++	current_set_flags_nested(&pflags, new_pflags);
  
--	kref_get(&port->umad_dev->ref);
-+	kobject_get(&port->umad_dev->kobj);
+ 	args->result = __xfs_bmapi_allocate(args);
+ 	complete(args->done);
  
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -851,7 +855,7 @@ static int ib_umad_close(struct inode *inode, struct file *filp)
- 	mutex_unlock(&file->port->file_mutex);
- 
- 	kfree(file);
--	kref_put(&dev->ref, ib_umad_release_dev);
-+	kobject_put(&dev->kobj);
- 
- 	return 0;
- }
-@@ -902,7 +906,7 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	if (ret)
- 		goto err_clr_sm_cap;
- 
--	kref_get(&port->umad_dev->ref);
-+	kobject_get(&port->umad_dev->kobj);
- 
- 	return 0;
- 
-@@ -932,7 +936,7 @@ static int ib_umad_sm_close(struct inode *inode, struct file *filp)
- 
- 	up(&port->sm_sem);
- 
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&port->umad_dev->kobj);
- 
- 	return ret;
- }
-@@ -1000,6 +1004,7 @@ static int find_overflow_devnum(void)
+-	current_restore_flags_nested(&pflags, PF_FSTRANS);
++	current_restore_flags_nested(&pflags, new_pflags);
  }
  
- static int ib_umad_init_port(struct ib_device *device, int port_num,
-+			     struct ib_umad_device *umad_dev,
- 			     struct ib_umad_port *port)
- {
- 	int devnum;
-@@ -1032,6 +1037,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
+ /*
+@@ -284,6 +293,7 @@ xfs_bmapi_allocate(
  
- 	cdev_init(&port->cdev, &umad_fops);
- 	port->cdev.owner = THIS_MODULE;
-+	port->cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
- 	if (cdev_add(&port->cdev, base, 1))
- 		goto err_cdev;
-@@ -1050,6 +1056,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
- 	base += IB_UMAD_MAX_PORTS;
- 	cdev_init(&port->sm_cdev, &umad_sm_fops);
- 	port->sm_cdev.owner = THIS_MODULE;
-+	port->sm_cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
- 	if (cdev_add(&port->sm_cdev, base, 1))
- 		goto err_sm_cdev;
-@@ -1143,7 +1150,7 @@ static void ib_umad_add_one(struct ib_device *device)
- 	if (!umad_dev)
- 		return;
  
--	kref_init(&umad_dev->ref);
-+	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
- 
- 	umad_dev->start_port = s;
- 	umad_dev->end_port   = e;
-@@ -1151,7 +1158,8 @@ static void ib_umad_add_one(struct ib_device *device)
- 	for (i = s; i <= e; ++i) {
- 		umad_dev->port[i - s].umad_dev = umad_dev;
- 
--		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
-+		if (ib_umad_init_port(device, i, umad_dev,
-+				      &umad_dev->port[i - s]))
- 			goto err;
- 	}
- 
-@@ -1163,7 +1171,7 @@ err:
- 	while (--i >= s)
- 		ib_umad_kill_port(&umad_dev->port[i - s]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static void ib_umad_remove_one(struct ib_device *device)
-@@ -1177,7 +1185,7 @@ static void ib_umad_remove_one(struct ib_device *device)
- 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
- 		ib_umad_kill_port(&umad_dev->port[i]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static char *umad_devnode(struct device *dev, umode_t *mode)
+ 	args->done = &done;
++	args->kswapd = current_is_kswapd();
+ 	INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
+ 	queue_work(xfs_alloc_wq, &args->work);
+ 	wait_for_completion(&done);
+diff --git a/fs/xfs/xfs_bmap_util.h b/fs/xfs/xfs_bmap_util.h
+index 900747b..f33711d 100644
+--- a/fs/xfs/xfs_bmap_util.h
++++ b/fs/xfs/xfs_bmap_util.h
+@@ -50,12 +50,13 @@ struct xfs_bmalloca {
+ 	xfs_extlen_t		total;	/* total blocks needed for xaction */
+ 	xfs_extlen_t		minlen;	/* minimum allocation size (blocks) */
+ 	xfs_extlen_t		minleft; /* amount must be left after alloc */
+-	char			eof;	/* set if allocating past last extent */
+-	char			wasdel;	/* replacing a delayed allocation */
+-	char			userdata;/* set if is user data */
+-	char			aeof;	/* allocated space at eof */
+-	char			conv;	/* overwriting unwritten extents */
+-	char			stack_switch;
++	bool			eof;	/* set if allocating past last extent */
++	bool			wasdel;	/* replacing a delayed allocation */
++	bool			userdata;/* set if is user data */
++	bool			aeof;	/* allocated space at eof */
++	bool			conv;	/* overwriting unwritten extents */
++	bool			stack_switch;
++	bool			kswapd;	/* allocation in kswapd context */
+ 	int			flags;
+ 	struct completion	*done;
+ 	struct work_struct	work;
 -- 
 1.9.1
 
