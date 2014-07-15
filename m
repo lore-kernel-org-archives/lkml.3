@@ -1,147 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808AbaGOLWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 07:22:00 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:59186 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039AbaGOLV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 07:21:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405372789-24733-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1405372789-24733-1-git-send-email-mcgrof@do-not-panic.com>
-From: Krishna Chaitanya <chaitanya.mgit@gmail.com>
-Date: Tue, 15 Jul 2014 16:51:35 +0530
-Message-ID: <CABPxzYJLrjDujjxvuZyv_Wbx3E=NXAKnxROHohmP8MY32q8-vQ@mail.gmail.com>
-Subject: Re: [PATCH] wireless: fixup genregdb.awk for remove of antenna gain
- from wireless-regd
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        John Walker <john@x109.net>, John Linville <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, tiwai@suse.de,
-        keescook@chromium.org, Felix Fietkau <nbd@openwrt.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758713AbaGOL1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 07:27:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758043AbaGOL1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 07:27:48 -0400
+From: Andrew Jones <drjones@redhat.com>
+To: vkuznets@redhat.com
+Cc: holzheu@linux.vnet.ibm.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        vgoyal@redhat.com, d.hatayama@jp.fujitsu.com
+Subject: Re: [PATCH v6] mmap_vmcore: skip non-ram pages reported by hypervisors
+Date: Tue, 15 Jul 2014 13:27:34 +0200
+Message-Id: <1405423654-7759-1-git-send-email-drjones@redhat.com>
+In-Reply-To: <1405343716-19495-1-git-send-email-vkuznets@redhat.com>
+References: <1405343716-19495-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 2:49 AM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->
-> Since "wireless-regdb: remove antenna gain" was merged in the
-> wireless-regdb tree, the awk script parser has been incompatible
-> with the 'official' regulatory database.  This fixes that up.
-> Without this change the max EIRP is set to 0 making 802.11 devices
-> useless.
->
-> The fragile nature of the awk parser must be replaced, but ideas
-> over how to do that in the most scalable way are being reviewed.
-> In the meantime update the documentation for CFG80211_INTERNAL_REGDB
-> so folks are aware of expectations for now.
->
-> Reported-by: John Walker <john@x109.net>
-> Reported-by: Krishna Chaitanya <chaitanya.mgit@gmail.com>
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+On Mon, Jul 14, 2014, Vitaly Kuznetsov wrote:
+> We have a special check in read_vmcore() handler to check if the page was
+> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
+> vmcore is read with mmap() no such check is performed. That can lead to
+> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
+> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
+> enormous load in both DomU and Dom0.
+> 
+> Fix the issue by mapping each non-ram page to the zero page. Keep direct
+> path with remap_oldmem_pfn_range() to avoid looping through all pages on
+> bare metal.
+> 
+> The issue can also be solved by overriding remap_oldmem_pfn_range() in
+> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
+> That, however, would involve non-obvious xen code path for all x86 builds
+> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
+> code on x86 arch from doing the same override.
+> 
+> Changes from v5:
+> - make len size_t to match do_unmap() interface
+> 
+> Changes from v4:
+> - change map_size type size_t -> unsigned long
+> - use prot instead of vma->vm_page_prot inside remap_oldmem_pfn_checked()
+> 
+> Changes from v3:
+> - multi line comment style changes
+> - minor code style changes
+> 
+> Changes from v2:
+> - make remap_oldmem_pfn_checked() interface exactly match
+>   remap_oldmem_pfn_range()
+> - unmap mapped part inside remap_oldmem_pfn_checked() in case of failure so
+>   we don't need to take care of it in mmap_vmcore()
+> - create vmcore_remap_oldmem_pfn() wrapper
+> 
+> Changes from v1:
+> - comment style changes
+> - change remap_oldmem_pfn_checked() interface to closer match the
+>   remap_oldmem_pfn() interface
+> - preserve formal parameters within the loop, make the loop conditions
+>   easier to understand
+> - use my_zero_pfn() for the zero page
+> - return remapped length instead of new offset
+> 
+> Reviewed-by: Andrew Jones <drjones@redhat.com>
+
+I somehow got dropped from the cc list, so I've missed v3-v5. Let me take
+a look at v6, considering my Reviewed-by is still here...
+
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
 > ---
->
-> !!! Note !!!
->
-> This means older kernels that upgrade wireless-regdb and use
-> CFG80211_INTERNAL_REGDB are bust too and they should then merge
-> the latest updates to the awk script if they want to synch the
-> wireless-regdb files with the kernel builds. The affected Linux
-> distributions would be the users of CFG80211_INTERNAL_REGDB which
-> should consists of OpenWrt which is reported to have this fixed
-> already and mobile platforms.
->
-> We are looking at a way to not have to deal with parsers all together
-> at build time, for that discussion see:
->
-> https://lkml.org/lkml/2014/7/14/706
->
->  net/wireless/Kconfig      |  6 ++++++
->  net/wireless/genregdb.awk | 35 ++++++++++++++++++++++-------------
->  2 files changed, 28 insertions(+), 13 deletions(-)
->
-> diff --git a/net/wireless/Kconfig b/net/wireless/Kconfig
-> index 405f3c4..29c8675 100644
-> --- a/net/wireless/Kconfig
-> +++ b/net/wireless/Kconfig
-> @@ -162,6 +162,12 @@ config CFG80211_INTERNAL_REGDB
->           and includes code to query that database.  This is an alternative
->           to using CRDA for defining regulatory rules for the kernel.
->
-> +         Using this option requires some parsing of the db.txt at build time,
-> +         the parser will be upkept with the latest wireless-regdb updates but
-> +         older wireless-regdb formats will be ignored. The parser may later
-> +         be replaced to avoid issues with conflicts on versions of
-> +         wireless-regdb.
+>  fs/proc/vmcore.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 80 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 382aa89..fa45923 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -328,6 +328,83 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
+>   * virtually contiguous user-space in ELF layout.
+>   */
+>  #ifdef CONFIG_MMU
+> +/*
+> + * remap_oldmem_pfn_checked - do remap_oldmem_pfn_range replacing all pages
+> + * reported as not being ram with the zero page.
+> + *
+> + * @vma: vm_area_struct describing requested mapping
+> + * @from: start remapping from
+> + * @pfn: page frame number to start remapping to
+> + * @size: remapping size
+> + * @prot: protection bits
+> + *
+> + * Returns zero on success, -EAGAIN on failure.
+> + */
+> +int remap_oldmem_pfn_checked(struct vm_area_struct *vma, unsigned long from,
+> +			     unsigned long pfn, unsigned long size,
+> +			     pgprot_t prot)
+> +{
+> +	unsigned long map_size;
+> +	unsigned long pos_start, pos_end, pos;
+> +	unsigned long zeropage_pfn = my_zero_pfn(0);
+> +	size_t len = 0;
 > +
->           For details see:
->
->           http://wireless.kernel.org/en/developers/Regulatory
-> diff --git a/net/wireless/genregdb.awk b/net/wireless/genregdb.awk
-> index 40c37fc..baf2426 100644
-> --- a/net/wireless/genregdb.awk
-> +++ b/net/wireless/genregdb.awk
-> @@ -51,32 +51,41 @@ function parse_country_head() {
->
->  function parse_reg_rule()
+> +	pos_start = pfn;
+> +	pos_end = pfn + (size >> PAGE_SHIFT);
+> +
+> +	for (pos = pos_start; pos < pos_end; ++pos) {
+> +		if (!pfn_is_ram(pos)) {
+> +			/*
+> +			 * We hit a page which is not ram. Remap the continuous
+> +			 * region between pos_start and pos-1 and replace
+> +			 * the non-ram page at pos with the zero page.
+> +			 */
+> +			if (pos > pos_start) {
+> +				/* Remap continuous region */
+> +				map_size = (pos - pos_start) << PAGE_SHIFT;
+> +				if (remap_oldmem_pfn_range(vma, from + len,
+> +							   pos_start, map_size,
+> +							   prot))
+> +					goto fail;
+> +				len += map_size;
+> +			}
+> +			/* Remap the zero page */
+> +			if (remap_oldmem_pfn_range(vma, from + len,
+> +						   zeropage_pfn,
+> +						   PAGE_SIZE, prot))
+> +				goto fail;
+> +			len += PAGE_SIZE;
+> +			pos_start = pos + 1;
+> +		}
+> +	}
+> +	if (pos > pos_start) {
+> +		/* Remap the rest */
+> +		map_size = (pos - pos_start) << PAGE_SHIFT;
+> +		if (remap_oldmem_pfn_range(vma, from + len, pos_start,
+> +					   map_size, prot))
+> +			goto fail;
+> +		len += map_size;
+
+This 'len +=' is unnecessary here. As that was in v2, I guess I missed it
+the first time through.
+
+> +	}
+> +	return 0;
+> +fail:
+> +	do_munmap(vma->vm_mm, from, len);
+> +	return -EAGAIN;
+> +}
+> +
+> +int vmcore_remap_oldmem_pfn(struct vm_area_struct *vma,
+> +			    unsigned long from, unsigned long pfn,
+> +			    unsigned long size, pgprot_t prot)
+> +{
+> +	/*
+> +	 * Check if oldmem_pfn_is_ram was registered to avoid
+> +	 * looping over all pages without a reason.
+> +	 */
+> +	if (oldmem_pfn_is_ram)
+> +		return remap_oldmem_pfn_checked(vma, from, pfn, size, prot);
+> +	else
+> +		return remap_oldmem_pfn_range(vma, from, pfn, size, prot);
+> +}
+> +
+>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
 >  {
-> +       flag_starts_at = 7
-> +
->         start = $1
->         sub(/\(/, "", start)
->         end = $3
->         bw = $5
->         sub(/\),/, "", bw)
-> -       gain = $6
-> -       sub(/\(/, "", gain)
-> -       sub(/,/, "", gain)
-> -       power = $7
-> -       sub(/\)/, "", power)
-> -       sub(/,/, "", power)
-> +       gain = 0
-> +       power = $6
->         # power might be in mW...
-> -       units = $8
-> +       units = $7
-> +       dfs_cac = 0
-> +
-> +       sub(/\(/, "", power)
-> +       sub(/\),/, "", power)
-> +       sub(/\),/, "", units)
->         sub(/\)/, "", units)
-> -       sub(/,/, "", units)
-> -       dfs_cac = $9
-> +
->         if (units == "mW") {
-> +               flag_starts_at = 8
->                 power = 10 * log(power)/log(10)
-> +               if ($8 ~ /[[:digit:]]/) {
-> +                       flag_starts_at = 9
-> +                       dfs_cac = $8
-> +               }
->         } else {
-> -               dfs_cac = $8
-> +               if ($7 ~ /[[:digit:]]/) {
-> +                       flag_starts_at = 8
-> +                       dfs_cac = $7
-> +               }
->         }
-> -       sub(/,/, "", dfs_cac)
->         sub(/\(/, "", dfs_cac)
-> -       sub(/\)/, "", dfs_cac)
-> +       sub(/\),/, "", dfs_cac)
->         flagstr = ""
-> -       for (i=8; i<=NF; i++)
-> +       for (i=flag_starts_at; i<=NF; i++)
->                 flagstr = flagstr $i
->         split(flagstr, flagarray, ",")
->         flags = ""
+>  	size_t size = vma->vm_end - vma->vm_start;
+> @@ -387,9 +464,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  
+>  			tsz = min_t(size_t, m->offset + m->size - start, size);
+>  			paddr = m->paddr + start - m->offset;
+> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+> -						   paddr >> PAGE_SHIFT, tsz,
+> -						   vma->vm_page_prot))
+> +			if (vmcore_remap_oldmem_pfn(vma, vma->vm_start + len,
+> +						    paddr >> PAGE_SHIFT, tsz,
+> +						    vma->vm_page_prot))
+>  				goto fail;
+>  			size -= tsz;
+>  			start += tsz;
+> -- 
+> 1.9.3
+> 
 
+Thanks to Vivek's suggestions, this looks much nicer.
 
-Acked-by:Krishna Chaitanya <chaitanya.mgit@gmail.com>
+Reviewed-by: Andrew Jones <drjones@redhat.com>
