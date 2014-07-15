@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654AbaGOIvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:51:36 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:12715
+	id S1758360AbaGOIsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:48:38 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:54220
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758362AbaGOIsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:48:39 -0400
+	id S1758330AbaGOIsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:48:31 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 15/29] nios2: System calls handling
-Date: Tue, 15 Jul 2014 16:45:42 +0800
-Message-ID: <1405413956-2772-16-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 14/29] nios2: ELF definitions
+Date: Tue, 15 Jul 2014 16:45:41 +0800
+Message-ID: <1405413956-2772-15-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(22564002)(189002)(50986999)(88136002)(74502001)(85306003)(81542001)(36756003)(85852003)(31966008)(89996001)(19580395003)(46102001)(87936001)(15975445006)(83322001)(92726001)(68736004)(44976005)(62966002)(95666004)(20776003)(64706001)(99396002)(102836001)(79102001)(84676001)(92566001)(105596002)(81342001)(106466001)(76176999)(21056001)(6806004)(80022001)(48376002)(77982001)(77096002)(83072002)(93916002)(2201001)(107046002)(15202345003)(42186005)(4396001)(47776003)(77156001)(76482001)(97736001)(19580405001)(104166001)(74662001)(229853001)(87286001)(86362001)(50226001)(33646002)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB320;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(79102001)(6806004)(107046002)(106466001)(95666004)(229853001)(81542001)(42186005)(92566001)(47776003)(83072002)(92726001)(20776003)(83322001)(19580405001)(87286001)(33646002)(68736004)(77982001)(4396001)(44976005)(76176999)(105596002)(62966002)(87936001)(85852003)(19580395003)(50226001)(48376002)(64706001)(84676001)(77156001)(2201001)(15202345003)(76482001)(102836001)(85306003)(74662001)(31966008)(99396002)(46102001)(93916002)(89996001)(104166001)(21056001)(15975445006)(81342001)(77096002)(88136002)(50986999)(97736001)(74502001)(36756003)(86362001)(80022001)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB314;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,337 +31,196 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for system calls from userspaces. It uses the
-asm-generic/unistd.h definitions with architecture spcific syscall. The sys_call_table
-is just an array defined in a C file and it contains pointers to the syscall functions.
+This patch adds definitions for the ELF format
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/syscall.h     | 138 +++++++++++++++++++++++++++++++++++
- arch/nios2/include/asm/syscalls.h    |  25 +++++++
- arch/nios2/include/uapi/asm/unistd.h |  25 +++++++
- arch/nios2/kernel/sys_nios2.c        |  66 +++++++++++++++++
- arch/nios2/kernel/syscall_table.c    |  29 ++++++++
- 5 files changed, 283 insertions(+)
- create mode 100644 arch/nios2/include/asm/syscall.h
- create mode 100644 arch/nios2/include/asm/syscalls.h
- create mode 100644 arch/nios2/include/uapi/asm/unistd.h
- create mode 100644 arch/nios2/kernel/sys_nios2.c
- create mode 100644 arch/nios2/kernel/syscall_table.c
+ arch/nios2/include/asm/elf.h      | 101 ++++++++++++++++++++++++++++++++++++++
+ arch/nios2/include/uapi/asm/elf.h |  67 +++++++++++++++++++++++++
+ 2 files changed, 168 insertions(+)
+ create mode 100644 arch/nios2/include/asm/elf.h
+ create mode 100644 arch/nios2/include/uapi/asm/elf.h
 
-diff --git a/arch/nios2/include/asm/syscall.h b/arch/nios2/include/asm/syscall.h
+diff --git a/arch/nios2/include/asm/elf.h b/arch/nios2/include/asm/elf.h
 new file mode 100644
-index 0000000..9de2208
+index 0000000..b7d655d
 --- /dev/null
-+++ b/arch/nios2/include/asm/syscall.h
-@@ -0,0 +1,138 @@
++++ b/arch/nios2/include/asm/elf.h
+@@ -0,0 +1,101 @@
 +/*
-+ * Copyright Altera Corporation (C) <2014>. All rights reserved
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifndef __ASM_NIOS2_SYSCALL_H__
-+#define __ASM_NIOS2_SYSCALL_H__
-+
-+#include <linux/err.h>
-+#include <linux/sched.h>
-+
-+static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
-+{
-+	return regs->r2;
-+}
-+
-+static inline void syscall_rollback(struct task_struct *task,
-+				struct pt_regs *regs)
-+{
-+	regs->r2 = regs->orig_r2;
-+	regs->r7 = regs->orig_r7;
-+}
-+
-+static inline long syscall_get_error(struct task_struct *task,
-+				struct pt_regs *regs)
-+{
-+	return regs->r7 ? regs->r2 : 0;
-+}
-+
-+static inline long syscall_get_return_value(struct task_struct *task,
-+	struct pt_regs *regs)
-+{
-+	return regs->r2;
-+}
-+
-+static inline void syscall_set_return_value(struct task_struct *task,
-+	struct pt_regs *regs, int error, long val)
-+{
-+	if (error) {
-+		/* error < 0, but nios2 uses > 0 return value */
-+		regs->r2 = -error;
-+		regs->r7 = 1;
-+	} else {
-+		regs->r2 = val;
-+		regs->r7 = 0;
-+	}
-+}
-+
-+static inline void syscall_get_arguments(struct task_struct *task,
-+	struct pt_regs *regs, unsigned int i, unsigned int n,
-+	unsigned long *args)
-+{
-+	BUG_ON(i + n > 6);
-+
-+	switch (i) {
-+	case 0:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r4;
-+	case 1:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r5;
-+	case 2:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r6;
-+	case 3:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r7;
-+	case 4:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r8;
-+	case 5:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r9;
-+	case 6:
-+		if (!n--)
-+			break;
-+	default:
-+		BUG();
-+	}
-+}
-+
-+static inline void syscall_set_arguments(struct task_struct *task,
-+	struct pt_regs *regs, unsigned int i, unsigned int n,
-+	const unsigned long *args)
-+{
-+	BUG_ON(i + n > 6);
-+
-+	switch (i) {
-+	case 0:
-+		if (!n--)
-+			break;
-+		regs->r4 = *args++;
-+	case 1:
-+		if (!n--)
-+			break;
-+		regs->r5 = *args++;
-+	case 2:
-+		if (!n--)
-+			break;
-+		regs->r6 = *args++;
-+	case 3:
-+		if (!n--)
-+			break;
-+		regs->r7 = *args++;
-+	case 4:
-+		if (!n--)
-+			break;
-+		regs->r8 = *args++;
-+	case 5:
-+		if (!n--)
-+			break;
-+		regs->r9 = *args++;
-+	case 6:
-+		if (!n)
-+			break;
-+	default:
-+		BUG();
-+	}
-+}
-+
-+#endif
-diff --git a/arch/nios2/include/asm/syscalls.h b/arch/nios2/include/asm/syscalls.h
-new file mode 100644
-index 0000000..0245d78
---- /dev/null
-+++ b/arch/nios2/include/asm/syscalls.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+#ifndef __ASM_NIOS2_SYSCALLS_H
-+#define __ASM_NIOS2_SYSCALLS_H
-+
-+int sys_cacheflush(unsigned long addr, unsigned long len,
-+				unsigned int op);
-+
-+#include <asm-generic/syscalls.h>
-+
-+#endif /* __ASM_NIOS2_SYSCALLS_H */
-diff --git a/arch/nios2/include/uapi/asm/unistd.h b/arch/nios2/include/uapi/asm/unistd.h
-new file mode 100644
-index 0000000..c4bf795
---- /dev/null
-+++ b/arch/nios2/include/uapi/asm/unistd.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + *
 + */
 +
-+ #define sys_mmap2 sys_mmap_pgoff
++#ifndef _ASM_NIOS2_ELF_H
++#define _ASM_NIOS2_ELF_H
 +
-+/* Use the standard ABI for syscalls */
-+#include <asm-generic/unistd.h>
++#include <uapi/asm/elf.h>
 +
-+/* Additional Nios II specific syscalls. */
-+#define __NR_cacheflush (__NR_arch_specific_syscall)
-+__SYSCALL(__NR_cacheflush, sys_cacheflush)
-diff --git a/arch/nios2/kernel/sys_nios2.c b/arch/nios2/kernel/sys_nios2.c
-new file mode 100644
-index 0000000..b418f7e
---- /dev/null
-+++ b/arch/nios2/kernel/sys_nios2.c
-@@ -0,0 +1,66 @@
 +/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011-2012 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ * This is used to ensure we don't load something for the wrong architecture.
++ */
++#define elf_check_arch(x) ((x)->e_machine == EM_ALTERA_NIOS2)
++
++#define ELF_PLAT_INIT(_r, load_addr)
++
++#define CORE_DUMP_USE_REGSET
++#define ELF_EXEC_PAGESIZE	4096
++
++/* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
++   use of this is to invoke "./ld.so someprog" to test out a new version of
++   the loader.  We need to make sure that it is out of the way of the program
++   that it will "exec", and that there is sufficient room for the brk.  */
++
++#define ELF_ET_DYN_BASE		0xD0000000UL
++
++/* regs is struct pt_regs, pr_reg is elf_gregset_t (which is
++   now struct_user_regs, they are different) */
++
++#define ARCH_HAS_SETUP_ADDITIONAL_PAGES	1
++struct linux_binprm;
++extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++	int uses_interp);
++#define ELF_CORE_COPY_REGS(pr_reg, regs)				\
++{ do {									\
++	/* Bleech. */							\
++	pr_reg[0]  = regs->r8;						\
++	pr_reg[1]  = regs->r9;						\
++	pr_reg[2]  = regs->r10;						\
++	pr_reg[3]  = regs->r11;						\
++	pr_reg[4]  = regs->r12;						\
++	pr_reg[5]  = regs->r13;						\
++	pr_reg[6]  = regs->r14;						\
++	pr_reg[7]  = regs->r15;						\
++	pr_reg[8]  = regs->r1;						\
++	pr_reg[9]  = regs->r2;						\
++	pr_reg[10] = regs->r3;						\
++	pr_reg[11] = regs->r4;						\
++	pr_reg[12] = regs->r5;						\
++	pr_reg[13] = regs->r6;						\
++	pr_reg[14] = regs->r7;						\
++	pr_reg[15] = regs->orig_r2;					\
++	pr_reg[16] = regs->ra;						\
++	pr_reg[17] = regs->fp;						\
++	pr_reg[18] = regs->sp;						\
++	pr_reg[19] = regs->gp;						\
++	pr_reg[20] = regs->estatus;					\
++	pr_reg[21] = regs->ea;						\
++	pr_reg[22] = regs->orig_r7;					\
++	{								\
++		struct switch_stack *sw = ((struct switch_stack *)regs) - 1; \
++		pr_reg[23] = sw->r16;					\
++		pr_reg[24] = sw->r17;					\
++		pr_reg[25] = sw->r18;					\
++		pr_reg[26] = sw->r19;					\
++		pr_reg[27] = sw->r20;					\
++		pr_reg[28] = sw->r21;					\
++		pr_reg[29] = sw->r22;					\
++		pr_reg[30] = sw->r23;					\
++		pr_reg[31] = sw->fp;					\
++		pr_reg[32] = sw->gp;					\
++		pr_reg[33] = sw->ra;					\
++	}								\
++} while (0); }
++
++/* This yields a mask that user programs can use to figure out what
++   instruction set this cpu supports.  */
++
++#define ELF_HWCAP	(0)
++
++/* This yields a string that ld.so will use to load implementation
++   specific libraries for optimization.  This is more specific in
++   intent than poking at uname or /proc/cpuinfo.  */
++
++#define ELF_PLATFORM  (NULL)
++
++#endif /* _ASM_NIOS2_ELF_H */
+diff --git a/arch/nios2/include/uapi/asm/elf.h b/arch/nios2/include/uapi/asm/elf.h
+new file mode 100644
+index 0000000..a5b91ae
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/elf.h
+@@ -0,0 +1,67 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
-+#include <linux/export.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/syscalls.h>
 +
-+#include <asm/cacheflush.h>
-+#include <asm/traps.h>
++#ifndef _UAPI_ASM_NIOS2_ELF_H
++#define _UAPI_ASM_NIOS2_ELF_H
 +
-+/* sys_cacheflush -- flush the processor cache. */
-+asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
-+				unsigned int op)
-+{
-+	struct vm_area_struct *vma;
++#include <linux/ptrace.h>
 +
-+	if (len == 0)
-+		return 0;
++/* Relocation types */
++#define R_NIOS2_NONE		0
++#define R_NIOS2_S16		1
++#define R_NIOS2_U16		2
++#define R_NIOS2_PCREL16		3
++#define R_NIOS2_CALL26		4
++#define R_NIOS2_IMM5		5
++#define R_NIOS2_CACHE_OPX	6
++#define R_NIOS2_IMM6		7
++#define R_NIOS2_IMM8		8
++#define R_NIOS2_HI16		9
++#define R_NIOS2_LO16		10
++#define R_NIOS2_HIADJ16		11
++#define R_NIOS2_BFD_RELOC_32	12
++#define R_NIOS2_BFD_RELOC_16	13
++#define R_NIOS2_BFD_RELOC_8	14
++#define R_NIOS2_GPREL		15
++#define R_NIOS2_GNU_VTINHERIT	16
++#define R_NIOS2_GNU_VTENTRY	17
++#define R_NIOS2_UJMP		18
++#define R_NIOS2_CJMP		19
++#define R_NIOS2_CALLR		20
++#define R_NIOS2_ALIGN		21
++/* Keep this the last entry.  */
++#define R_NIOS2_NUM		22
 +
-+	/* We only support op 0 now, return error if op is non-zero.*/
-+	if (op)
-+		return -EINVAL;
++typedef unsigned long elf_greg_t;
 +
-+	/* Check for overflow */
-+	if (addr + len < addr)
-+		return -EFAULT;
++#define ELF_NGREG	\
++	((sizeof(struct pt_regs) + sizeof(struct switch_stack)) /	\
++		sizeof(elf_greg_t))
++typedef elf_greg_t elf_gregset_t[ELF_NGREG];
 +
-+	/*
-+	 * Verify that the specified address region actually belongs
-+	 * to this process.
-+	 */
-+	vma = find_vma(current->mm, addr);
-+	if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
-+		return -EFAULT;
++typedef unsigned long elf_fpregset_t;
 +
-+	flush_cache_range(vma, addr, addr + len);
-+
-+	return 0;
-+}
-+
-+asmlinkage int sys_getpagesize(void)
-+{
-+	return PAGE_SIZE;
-+}
-+
-+#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
-+#include <linux/fb.h>
-+unsigned long get_fb_unmapped_area(struct file *filp, unsigned long orig_addr,
-+		unsigned long len, unsigned long pgoff, unsigned long flags)
-+{
-+
-+	struct fb_info *info = filp->private_data;
-+
-+	return info->screen_base;
-+}
-+EXPORT_SYMBOL(get_fb_unmapped_area);
-+#endif /* CONFIG_FB */
-diff --git a/arch/nios2/kernel/syscall_table.c b/arch/nios2/kernel/syscall_table.c
-new file mode 100644
-index 0000000..06e6ac1
---- /dev/null
-+++ b/arch/nios2/kernel/syscall_table.c
-@@ -0,0 +1,29 @@
 +/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * These are used to set parameters in the core dumps.
 + */
++#define ELF_CLASS	ELFCLASS32
++#define ELF_DATA	ELFDATA2LSB
++#define ELF_ARCH	EM_ALTERA_NIOS2
 +
-+#include <linux/syscalls.h>
-+#include <linux/signal.h>
-+#include <linux/unistd.h>
-+
-+#include <asm/syscalls.h>
-+
-+#undef __SYSCALL
-+#define __SYSCALL(nr, call) [nr] = (call),
-+
-+void *sys_call_table[__NR_syscalls] = {
-+#include <asm/unistd.h>
-+};
++#endif /* _UAPI_ASM_NIOS2_ELF_H */
 -- 
 1.8.2.1
 
