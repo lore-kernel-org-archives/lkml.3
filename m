@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225AbaGOJFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:05:03 -0400
-Received: from sym2.noone.org ([178.63.92.236]:54577 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757709AbaGOJFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:05:00 -0400
-Date: Tue, 15 Jul 2014 11:04:57 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v2 26/29] Add ELF machine define for Nios2
-Message-ID: <20140715090456.GD7668@distanz.ch>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
- <1405413956-2772-27-git-send-email-lftan@altera.com>
+	id S1758211AbaGOJFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:05:40 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:52936 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaGOJFh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 05:05:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405413956-2772-27-git-send-email-lftan@altera.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140715065116.GS25880@mwanda>
+References: <20140715030456.GA14420@devel.8.8.4.4>
+	<20140715065116.GS25880@mwanda>
+Date: Tue, 15 Jul 2014 18:05:35 +0900
+Message-ID: <CAHb8M2CS4wVKjP-Ur2UtkXA9KLMudS7+LbmnzpOFxq6hXqy2OQ@mail.gmail.com>
+Subject: Re: [PATCH 8/8] staging: dgap: fix memory leak in dgap_parsefile()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, devel <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-15 at 10:45:53 +0200, Ley Foon Tan <lftan@altera.com> wrote:
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+2014-07-15 15:51 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Tue, Jul 15, 2014 at 12:05:14PM +0900, Daeseok Youn wrote:
+>> The p->u.board.status is allocated and set a string as
+>> "No" once within allocating a node of BNODE type.
+>> But it also set again with kstrdup() in case of "STATUS"
+>> or "ID". If it is not allocated yet, use kstrdup().
+>> If not, use just memcpy().
+>
+> I don't think a 2 char buffer is always large enough to hold the new
+> strings.
+>
+> Just free it and allocate again.
+Yes, I will send this again.
 
-This should probably be sent/applied before "[PATCH v2 14/29] nios2: ELF
-definitions", since there EM_ALTERA_NIOS2 is already used.
+Thanks.
 
-> ---
->  include/uapi/linux/elf-em.h | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
-> index 01529bd..7f06c0d 100644
-> --- a/include/uapi/linux/elf-em.h
-> +++ b/include/uapi/linux/elf-em.h
-> @@ -33,6 +33,7 @@
->  #define EM_M32R		88	/* Renesas M32R */
->  #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
->  #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
-> +#define EM_ALTERA_NIOS2	113	/* Altera Nios II soft-core processor */
->  #define EM_TI_C6000	140	/* TI C6X DSPs */
->  #define EM_AARCH64	183	/* ARM 64 bit */
->  #define EM_FRV		0x5441	/* Fujitsu FR-V */
-> -- 
-> 1.8.2.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+regards,
+Daeseok Youn.
+>
+> regards,
+> dan carpenter
+>
