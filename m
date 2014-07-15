@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934094AbaGOVjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:39:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55125 "EHLO
+	id S964906AbaGOVjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:39:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55137 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934075AbaGOVja (ORCPT
+	with ESMTP id S964896AbaGOVjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:30 -0400
+	Tue, 15 Jul 2014 17:39:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Huang Rui <ray.huang@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 066/198] usb: usbtest: fix unlink write error with pattern 1
-Date: Tue, 15 Jul 2014 14:28:56 -0700
-Message-Id: <1405459868-15089-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 067/198] s390/lowcore: reserve 96 bytes for IRB in lowcore
+Date: Tue, 15 Jul 2014 14:28:57 -0700
+Message-Id: <1405459868-15089-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,71 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
+commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
 
-TEST 12 and TEST 24 unlinks the URB write request for N times. When
-host and gadget both initialize pattern 1 (mod 63) data series to
-transfer, the gadget side will complain the wrong data which is not
-expected.  Because in host side, usbtest doesn't fill the data buffer
-as mod 63 and this patch fixed it.
+The IRB might be 96 bytes if the extended-I/O-measurement facility is
+used. This feature is currently not used by Linux, but struct irb
+already has the emw defined. So let's make the irb in lowcore match the
+size of the internal data structure to be future proof.
+We also have to add a pad, to correctly align the paste.
 
-[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
-[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
-[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
-[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
-[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
-[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
-[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
-[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
-[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
-[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
+The bigger irb field also circumvents a bug in some QEMU versions that
+always write the emw field on test subchannel and therefore destroy the
+paste definitions of this CPU. Running under these QEMU version broke
+some timing functions in the VDSO and all users of these functions,
+e.g. some JREs.
 
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/misc/usbtest.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/s390/include/asm/lowcore.h | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index b415282..9cb3d13 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1303,6 +1303,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
+diff --git a/arch/s390/include/asm/lowcore.h b/arch/s390/include/asm/lowcore.h
+index bbf8141..2bed4f0 100644
+--- a/arch/s390/include/asm/lowcore.h
++++ b/arch/s390/include/asm/lowcore.h
+@@ -142,9 +142,9 @@ struct _lowcore {
+ 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
  
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1433,6 +1438,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
- 	}
+ 	/* Interrupt response block */
+-	__u8	irb[64];			/* 0x0300 */
++	__u8	irb[96];			/* 0x0300 */
  
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
+-	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
++	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
+@@ -288,12 +288,13 @@ struct _lowcore {
+ 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
+ 
+ 	/* Interrupt response block. */
+-	__u8	irb[64];			/* 0x0400 */
++	__u8	irb[96];			/* 0x0400 */
++	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
+ 
+ 	/* Per cpu primary space access list */
+-	__u32	paste[16];			/* 0x0440 */
++	__u32	paste[16];			/* 0x0480 */
+ 
+-	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
++	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
 -- 
 1.9.1
 
