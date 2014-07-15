@@ -1,339 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919AbaGOSp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 14:45:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2183 "EHLO mx1.redhat.com"
+	id S933256AbaGOSxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 14:53:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29914 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932650AbaGOSpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 14:45:54 -0400
+	id S932921AbaGOSp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 14:45:58 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 04/23] Input - wacom: split out the pad device for Intuos/Cintiq
-Date: Tue, 15 Jul 2014 14:45:27 -0400
-Message-Id: <1405449946-11515-5-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 09/23] Input - wacom: include and use linux/hid.h
+Date: Tue, 15 Jul 2014 14:45:32 -0400
+Message-Id: <1405449946-11515-10-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1405449946-11515-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MSC_SERIAL can be safely dropped for pad input devices.
+The current wacom code redefines constants that are already in linux/hid.h
+This patch includes the official implementation and use it accross the code.
+
+There is a conflict with HID_USAGE and others at the same level:
+- in the wacom.ko implementation, those are the #define regarding the
+  value of the field in the report descriptor
+- in the hid.h, those are bitmask
+So add HDESC_ in their current definition.
+
+Also, the struct hid_descriptor slightly differs from the linux/hid.h
+point of view, so mark it as custom for this driver.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Reviewed-by: Ping Cheng <pingc@wacom.com>
 Reviewed-by: Jason Gerecke <killertofu@gmail.com>
+Tested-by: Jason Gerecke <killertofu@gmail.com>
 ---
 
 no changes in v2
 
- drivers/input/tablet/wacom_wac.c | 208 +++++++++++++++++++++++----------------
- 1 file changed, 122 insertions(+), 86 deletions(-)
+ drivers/input/tablet/wacom_sys.c | 53 +++++++++++++++++-----------------------
+ 1 file changed, 22 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index 11c7c4e..0be2c73 100644
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -584,6 +584,7 @@ static int wacom_intuos_irq(struct wacom_wac *wacom)
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index dd0dbc2..c34791e 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -13,28 +13,19 @@
  
- 	/* pad packets. Works as a second tool and is always in prox */
- 	if (data[0] == WACOM_REPORT_INTUOSPAD || data[0] == WACOM_REPORT_INTUOS5PAD) {
-+		input = wacom->pad_input;
- 		if (features->type >= INTUOS4S && features->type <= INTUOS4L) {
- 			input_report_key(input, BTN_0, (data[2] & 0x01));
- 			input_report_key(input, BTN_1, (data[3] & 0x01));
-@@ -773,7 +774,6 @@ static int wacom_intuos_irq(struct wacom_wac *wacom)
- 				input_report_abs(input, ABS_MISC, 0);
- 			}
- 		}
--		input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
-                 return 1;
- 	}
+ #include "wacom_wac.h"
+ #include "wacom.h"
++#include <linux/hid.h>
  
-@@ -1656,61 +1656,20 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 		break;
- 
- 	case WACOM_24HD:
--		__set_bit(BTN_A, input_dev->keybit);
--		__set_bit(BTN_B, input_dev->keybit);
--		__set_bit(BTN_C, input_dev->keybit);
--		__set_bit(BTN_X, input_dev->keybit);
--		__set_bit(BTN_Y, input_dev->keybit);
--		__set_bit(BTN_Z, input_dev->keybit);
+ /* defines to get HID report descriptor */
+ #define HID_DEVICET_HID		(USB_TYPE_CLASS | 0x01)
+ #define HID_DEVICET_REPORT	(USB_TYPE_CLASS | 0x02)
+-#define HID_USAGE_UNDEFINED		0x00
+-#define HID_USAGE_PAGE			0x05
+-#define HID_USAGE_PAGE_DIGITIZER	0x0d
+-#define HID_USAGE_PAGE_DESKTOP		0x01
+-#define HID_USAGE			0x09
+-#define HID_USAGE_X			((HID_USAGE_PAGE_DESKTOP << 16) | 0x30)
+-#define HID_USAGE_Y			((HID_USAGE_PAGE_DESKTOP << 16) | 0x31)
+-#define HID_USAGE_PRESSURE		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x30)
+-#define HID_USAGE_X_TILT		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x3d)
+-#define HID_USAGE_Y_TILT		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x3e)
+-#define HID_USAGE_FINGER		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x22)
+-#define HID_USAGE_STYLUS		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x20)
+-#define HID_USAGE_CONTACTMAX		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x55)
+-#define HID_COLLECTION			0xa1
+-#define HID_COLLECTION_LOGICAL		0x02
+-#define HID_COLLECTION_END		0xc0
 -
--		for (i = 6; i < 10; i++)
--			__set_bit(BTN_0 + i, input_dev->keybit);
--
--		__set_bit(KEY_PROG1, input_dev->keybit);
--		__set_bit(KEY_PROG2, input_dev->keybit);
--		__set_bit(KEY_PROG3, input_dev->keybit);
--
- 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
- 		input_set_abs_params(input_dev, ABS_THROTTLE, 0, 71, 0, 0);
- 		/* fall through */
- 
- 	case DTK:
--		for (i = 0; i < 6; i++)
--			__set_bit(BTN_0 + i, input_dev->keybit);
--
- 		__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
- 
- 		wacom_setup_cintiq(wacom_wac);
- 		break;
- 
- 	case WACOM_22HD:
--		__set_bit(KEY_PROG1, input_dev->keybit);
--		__set_bit(KEY_PROG2, input_dev->keybit);
--		__set_bit(KEY_PROG3, input_dev->keybit);
--		/* fall through */
--
- 	case WACOM_21UX2:
--		__set_bit(BTN_A, input_dev->keybit);
--		__set_bit(BTN_B, input_dev->keybit);
--		__set_bit(BTN_C, input_dev->keybit);
--		__set_bit(BTN_X, input_dev->keybit);
--		__set_bit(BTN_Y, input_dev->keybit);
--		__set_bit(BTN_Z, input_dev->keybit);
--		__set_bit(BTN_BASE, input_dev->keybit);
--		__set_bit(BTN_BASE2, input_dev->keybit);
--		/* fall through */
--
- 	case WACOM_BEE:
--		__set_bit(BTN_8, input_dev->keybit);
--		__set_bit(BTN_9, input_dev->keybit);
--		/* fall through */
--
- 	case CINTIQ:
--		for (i = 0; i < 8; i++)
--			__set_bit(BTN_0 + i, input_dev->keybit);
--
--		input_set_abs_params(input_dev, ABS_RX, 0, 4096, 0, 0);
--		input_set_abs_params(input_dev, ABS_RY, 0, 4096, 0, 0);
- 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
- 
- 		__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
-@@ -1719,9 +1678,6 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 		break;
- 
- 	case WACOM_13HD:
--		for (i = 0; i < 9; i++)
--			__set_bit(BTN_0 + i, input_dev->keybit);
--
- 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
- 		__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
- 		wacom_setup_cintiq(wacom_wac);
-@@ -1729,21 +1685,7 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 
- 	case INTUOS3:
- 	case INTUOS3L:
--		__set_bit(BTN_4, input_dev->keybit);
--		__set_bit(BTN_5, input_dev->keybit);
--		__set_bit(BTN_6, input_dev->keybit);
--		__set_bit(BTN_7, input_dev->keybit);
--
--		input_set_abs_params(input_dev, ABS_RY, 0, 4096, 0, 0);
--		/* fall through */
--
- 	case INTUOS3S:
--		__set_bit(BTN_0, input_dev->keybit);
--		__set_bit(BTN_1, input_dev->keybit);
--		__set_bit(BTN_2, input_dev->keybit);
--		__set_bit(BTN_3, input_dev->keybit);
--
--		input_set_abs_params(input_dev, ABS_RX, 0, 4096, 0, 0);
- 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
- 		/* fall through */
- 
-@@ -1757,20 +1699,11 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 	case INTUOS5L:
- 	case INTUOSPM:
- 	case INTUOSPL:
--		if (features->device_type == BTN_TOOL_PEN) {
--			__set_bit(BTN_7, input_dev->keybit);
--			__set_bit(BTN_8, input_dev->keybit);
--		}
--		/* fall through */
--
- 	case INTUOS5S:
- 	case INTUOSPS:
- 		__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
- 
- 		if (features->device_type == BTN_TOOL_PEN) {
--			for (i = 0; i < 7; i++)
--				__set_bit(BTN_0 + i, input_dev->keybit);
--
- 			input_set_abs_params(input_dev, ABS_DISTANCE, 0,
- 					      features->distance_max,
- 					      0, 0);
-@@ -1791,14 +1724,7 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 
- 	case INTUOS4:
- 	case INTUOS4L:
--		__set_bit(BTN_7, input_dev->keybit);
--		__set_bit(BTN_8, input_dev->keybit);
--		/* fall through */
--
- 	case INTUOS4S:
--		for (i = 0; i < 7; i++)
--			__set_bit(BTN_0 + i, input_dev->keybit);
--
- 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
- 		wacom_setup_intuos(wacom_wac);
- 
-@@ -1908,17 +1834,6 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
- 		break;
- 
- 	case CINTIQ_HYBRID:
--		__set_bit(BTN_1, input_dev->keybit);
--		__set_bit(BTN_2, input_dev->keybit);
--		__set_bit(BTN_3, input_dev->keybit);
--		__set_bit(BTN_4, input_dev->keybit);
--
--		__set_bit(BTN_5, input_dev->keybit);
--		__set_bit(BTN_6, input_dev->keybit);
--		__set_bit(BTN_7, input_dev->keybit);
--		__set_bit(BTN_8, input_dev->keybit);
--		__set_bit(BTN_0, input_dev->keybit);
--
- 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
- 		__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
- 
-@@ -1932,6 +1847,7 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
- 				   struct wacom_wac *wacom_wac)
+-struct hid_descriptor {
++#define HID_HDESC_USAGE_UNDEFINED	0x00
++#define HID_HDESC_USAGE_PAGE		0x05
++#define HID_HDESC_USAGE			0x09
++#define HID_HDESC_COLLECTION		0xa1
++#define HID_HDESC_COLLECTION_LOGICAL	0x02
++#define HID_HDESC_COLLECTION_END	0xc0
++
++struct wac_hid_descriptor {
+ 	struct usb_descriptor_header header;
+ 	__le16   bcdHID;
+ 	u8       bCountryCode;
+@@ -301,7 +292,7 @@ static void wacom_retrieve_report_data(struct usb_interface *intf,
+  * this after returning from this function.
+  */
+ static int wacom_parse_hid(struct usb_interface *intf,
+-			   struct hid_descriptor *hid_desc,
++			   struct wac_hid_descriptor *hid_desc,
+ 			   struct wacom_features *features)
  {
- 	struct wacom_features *features = &wacom_wac->features;
-+	int i;
+ 	struct usb_device *dev = interface_to_usbdev(intf);
+@@ -334,14 +325,14 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 	for (i = 0; i < hid_desc->wDescriptorLength; i++) {
  
- 	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+ 		switch (report[i]) {
+-		case HID_USAGE_PAGE:
++		case HID_HDESC_USAGE_PAGE:
+ 			page = report[i + 1];
+ 			i++;
+ 			break;
  
-@@ -1943,6 +1859,126 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
- 	input_set_abs_params(input_dev, ABS_Y, 0, 1, 0, 0);
+-		case HID_USAGE:
++		case HID_HDESC_USAGE:
+ 			switch (page << 16 | report[i + 1]) {
+-			case HID_USAGE_X:
++			case HID_GD_X:
+ 				if (finger) {
+ 					features->device_type = BTN_TOOL_FINGER;
+ 					/* touch device at least supports one touch point */
+@@ -420,7 +411,7 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 				}
+ 				break;
  
- 	switch (features->type) {
-+	case WACOM_24HD:
-+		__set_bit(BTN_A, input_dev->keybit);
-+		__set_bit(BTN_B, input_dev->keybit);
-+		__set_bit(BTN_C, input_dev->keybit);
-+		__set_bit(BTN_X, input_dev->keybit);
-+		__set_bit(BTN_Y, input_dev->keybit);
-+		__set_bit(BTN_Z, input_dev->keybit);
-+
-+		for (i = 0; i < 10; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		__set_bit(KEY_PROG1, input_dev->keybit);
-+		__set_bit(KEY_PROG2, input_dev->keybit);
-+		__set_bit(KEY_PROG3, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
-+		input_set_abs_params(input_dev, ABS_THROTTLE, 0, 71, 0, 0);
-+		break;
-+
-+	case DTK:
-+		for (i = 0; i < 6; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		break;
-+
-+	case WACOM_22HD:
-+		__set_bit(KEY_PROG1, input_dev->keybit);
-+		__set_bit(KEY_PROG2, input_dev->keybit);
-+		__set_bit(KEY_PROG3, input_dev->keybit);
-+		/* fall through */
-+
-+	case WACOM_21UX2:
-+		__set_bit(BTN_A, input_dev->keybit);
-+		__set_bit(BTN_B, input_dev->keybit);
-+		__set_bit(BTN_C, input_dev->keybit);
-+		__set_bit(BTN_X, input_dev->keybit);
-+		__set_bit(BTN_Y, input_dev->keybit);
-+		__set_bit(BTN_Z, input_dev->keybit);
-+		__set_bit(BTN_BASE, input_dev->keybit);
-+		__set_bit(BTN_BASE2, input_dev->keybit);
-+		/* fall through */
-+
-+	case WACOM_BEE:
-+		__set_bit(BTN_8, input_dev->keybit);
-+		__set_bit(BTN_9, input_dev->keybit);
-+		/* fall through */
-+
-+	case CINTIQ:
-+		for (i = 0; i < 8; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_RX, 0, 4096, 0, 0);
-+		input_set_abs_params(input_dev, ABS_RY, 0, 4096, 0, 0);
-+		break;
-+
-+	case WACOM_13HD:
-+		for (i = 0; i < 9; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
-+		break;
-+
-+	case INTUOS3:
-+	case INTUOS3L:
-+		__set_bit(BTN_4, input_dev->keybit);
-+		__set_bit(BTN_5, input_dev->keybit);
-+		__set_bit(BTN_6, input_dev->keybit);
-+		__set_bit(BTN_7, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_RY, 0, 4096, 0, 0);
-+		/* fall through */
-+
-+	case INTUOS3S:
-+		__set_bit(BTN_0, input_dev->keybit);
-+		__set_bit(BTN_1, input_dev->keybit);
-+		__set_bit(BTN_2, input_dev->keybit);
-+		__set_bit(BTN_3, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_RX, 0, 4096, 0, 0);
-+		break;
-+
-+	case INTUOS5:
-+	case INTUOS5L:
-+	case INTUOSPM:
-+	case INTUOSPL:
-+		__set_bit(BTN_7, input_dev->keybit);
-+		__set_bit(BTN_8, input_dev->keybit);
-+		/* fall through */
-+
-+	case INTUOS5S:
-+	case INTUOSPS:
-+		/* touch interface does not have the pad device */
-+		if (features->device_type != BTN_TOOL_PEN)
-+			return 1;
-+
-+		for (i = 0; i < 7; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
-+		break;
-+
-+	case INTUOS4:
-+	case INTUOS4L:
-+		__set_bit(BTN_7, input_dev->keybit);
-+		__set_bit(BTN_8, input_dev->keybit);
-+		/* fall through */
-+
-+	case INTUOS4S:
-+		for (i = 0; i < 7; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
-+		break;
-+
-+	case CINTIQ_HYBRID:
-+		for (i = 0; i < 9; i++)
-+			__set_bit(BTN_0 + i, input_dev->keybit);
-+
-+		break;
-+
- 	default:
- 		/* no pad supported */
- 		return 1;
+-			case HID_USAGE_Y:
++			case HID_GD_Y:
+ 				if (finger) {
+ 					switch (features->type) {
+ 					case TABLETPC2FG:
+@@ -472,7 +463,7 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 				}
+ 				break;
+ 
+-			case HID_USAGE_FINGER:
++			case HID_DG_FINGER:
+ 				finger = 1;
+ 				i++;
+ 				break;
+@@ -482,19 +473,19 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 			 * X/Y values and some cases of invalid Digitizer X/Y
+ 			 * values commonly reported.
+ 			 */
+-			case HID_USAGE_STYLUS:
++			case HID_DG_STYLUS:
+ 				pen = 1;
+ 				i++;
+ 				break;
+ 
+-			case HID_USAGE_CONTACTMAX:
++			case HID_DG_CONTACTMAX:
+ 				/* leave touch_max as is if predefined */
+ 				if (!features->touch_max)
+ 					wacom_retrieve_report_data(intf, features);
+ 				i++;
+ 				break;
+ 
+-			case HID_USAGE_PRESSURE:
++			case HID_DG_TIPPRESSURE:
+ 				if (pen) {
+ 					features->pressure_max =
+ 						get_unaligned_le16(&report[i + 3]);
+@@ -504,15 +495,15 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 			}
+ 			break;
+ 
+-		case HID_COLLECTION_END:
++		case HID_HDESC_COLLECTION_END:
+ 			/* reset UsagePage and Finger */
+ 			finger = page = 0;
+ 			break;
+ 
+-		case HID_COLLECTION:
++		case HID_HDESC_COLLECTION:
+ 			i++;
+ 			switch (report[i]) {
+-			case HID_COLLECTION_LOGICAL:
++			case HID_HDESC_COLLECTION_LOGICAL:
+ 				i += wacom_parse_logical_collection(&report[i],
+ 								    features);
+ 				break;
+@@ -585,7 +576,7 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
+ {
+ 	int error = 0;
+ 	struct usb_host_interface *interface = intf->cur_altsetting;
+-	struct hid_descriptor *hid_desc;
++	struct wac_hid_descriptor *hid_desc;
+ 
+ 	/* default features */
+ 	features->device_type = BTN_TOOL_PEN;
 -- 
 2.0.0
 
