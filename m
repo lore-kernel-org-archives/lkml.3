@@ -1,134 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279AbaGOWMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:12:21 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57934 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634AbaGOWMP (ORCPT
+	id S965075AbaGOWMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:12:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54345 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933783AbaGOVfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 18:12:15 -0400
-Message-ID: <1405462329.2124.12.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [Linux-ima-devel] [PATCH v1 1/3] ima: provide flag to identify
- new empty files
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-ima-devel@lists.sourceforge.net
-Date: Tue, 15 Jul 2014 18:12:09 -0400
-In-Reply-To: <1405432827.21720.20.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <cover.1405078844.git.d.kasatkin@samsung.com>
-	 <ac60392e0118902ce9b308fdae09d633da1682af.1405078844.git.d.kasatkin@samsung.com>
-	 <1405432827.21720.20.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071522-1542-0000-0000-0000035014FE
+	Tue, 15 Jul 2014 17:35:18 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 198/198] iscsi-target: fix iscsit_del_np deadlock on unload
+Date: Tue, 15 Jul 2014 14:31:08 -0700
+Message-Id: <1405459868-15089-199-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 10:00 -0400, Mimi Zohar wrote: 
-> On Fri, 2014-07-11 at 14:46 +0300, Dmitry Kasatkin wrote: 
-> > Newly created empty files do not get initial security.ima
-> > value because iversion does not change. It can be checked from
-> > the shell as:
-> > 
-> >   $ (exec >foo)
-> >   $ getfattr -h -e hex -d -m security foo
+3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
 
-This is a change in behavior.  Please include the commit number that
-introduced this change in the patch description.
+------------------
 
-Mimi
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-> > This patch defines IMA_NEW_FILE flag which is set when IMA detects that new
-> > file is created. It is checked upon ima_file_free hook to set initial
-> > security.ima value.
-> 
-> Other than rebasing on top of #next, this patch set looks good.
-> 
-> thanks,
-> 
-> Mimi
-> 
-> > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> 
-> > ---
-> >  security/integrity/ima/ima_appraise.c |  7 +++++--
-> >  security/integrity/ima/ima_main.c     | 12 +++++++-----
-> >  security/integrity/integrity.h        |  1 +
-> >  3 files changed, 13 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-> > index 9dd18b5..3a4beb3 100644
-> > --- a/security/integrity/ima/ima_appraise.c
-> > +++ b/security/integrity/ima/ima_appraise.c
-> > @@ -194,8 +194,11 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
-> >  			goto out;
-> > 
-> >  		cause = "missing-hash";
-> > -		status =
-> > -		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
-> > +		status = INTEGRITY_NOLABEL;
-> > +		if (inode->i_size == 0) {
-> > +			iint->flags |= IMA_NEW_FILE;
-> > +			status = INTEGRITY_PASS;
-> > +		}
-> >  		goto out;
-> >  	}
-> > 
-> > diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> > index e51e0d5..5a870e7 100644
-> > --- a/security/integrity/ima/ima_main.c
-> > +++ b/security/integrity/ima/ima_main.c
-> > @@ -124,11 +124,13 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
-> >  		return;
-> > 
-> >  	mutex_lock(&iint->mutex);
-> > -	if (atomic_read(&inode->i_writecount) == 1 &&
-> > -	    iint->version != inode->i_version) {
-> > -		iint->flags &= ~IMA_DONE_MASK;
-> > -		if (iint->flags & IMA_APPRAISE)
-> > -			ima_update_xattr(iint, file);
-> > +	if (atomic_read(&inode->i_writecount) == 1) {
-> > +		if ((iint->version != inode->i_version) ||
-> > +		    (iint->flags & IMA_NEW_FILE)) {
-> > +			iint->flags &= ~(IMA_DONE_MASK | IMA_NEW_FILE);
-> > +			if (iint->flags & IMA_APPRAISE)
-> > +				ima_update_xattr(iint, file);
-> > +		}
-> >  	}
-> >  	mutex_unlock(&iint->mutex);
-> >  }
-> > diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-> > index 92c1083..7656d47 100644
-> > --- a/security/integrity/integrity.h
-> > +++ b/security/integrity/integrity.h
-> > @@ -30,6 +30,7 @@
-> >  #define IMA_ACTION_FLAGS	0xff000000
-> >  #define IMA_DIGSIG_REQUIRED	0x01000000
-> >  #define IMA_PERMIT_DIRECTIO	0x02000000
-> > +#define IMA_NEW_FILE		0x04000000
-> > 
-> >  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
-> >  				 IMA_APPRAISE_SUBMASK)
-> 
-> 
-> 
-> ------------------------------------------------------------------------------
-> Want fast and easy access to all the code in your enterprise? Index and
-> search up to 200,000 lines of code with a free copy of Black Duck
-> Code Sight - the same software that powers the world's largest code
-> search on Ohloh, the Black Duck Open Hub! Try it now.
-> http://p.sf.net/sfu/bds
-> _______________________________________________
-> Linux-ima-devel mailing list
-> Linux-ima-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
-> 
+commit 81a9c5e72bdf7109a65102ca61d8cbd722cf4021 upstream.
 
+On uniprocessor preemptible kernel, target core deadlocks on unload. The
+following events happen:
+* iscsit_del_np is called
+* it calls send_sig(SIGINT, np->np_thread, 1);
+* the scheduler switches to the np_thread
+* the np_thread is woken up, it sees that kthread_should_stop() returns
+  false, so it doesn't terminate
+* the np_thread clears signals with flush_signals(current); and goes back
+  to sleep in iscsit_accept_np
+* the scheduler switches back to iscsit_del_np
+* iscsit_del_np calls kthread_stop(np->np_thread);
+* the np_thread is waiting in iscsit_accept_np and it doesn't respond to
+  kthread_stop
+
+The deadlock could be resolved if the administrator sends SIGINT signal to
+the np_thread with killall -INT iscsi_np
+
+The reproducible deadlock was introduced in commit
+db6077fd0b7dd41dc6ff18329cec979379071f87, but the thread-stopping code was
+racy even before.
+
+This patch fixes the problem. Using kthread_should_stop to stop the
+np_thread is unreliable, so we test np_thread_state instead. If
+np_thread_state equals ISCSI_NP_THREAD_SHUTDOWN, the thread exits.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/target/iscsi/iscsi_target_login.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index 369ef10..1b2db7a 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1195,7 +1195,7 @@ old_sess_out:
+ static int __iscsi_target_login_thread(struct iscsi_np *np)
+ {
+ 	u8 *buffer, zero_tsih = 0;
+-	int ret = 0, rc, stop;
++	int ret = 0, rc;
+ 	struct iscsi_conn *conn = NULL;
+ 	struct iscsi_login *login;
+ 	struct iscsi_portal_group *tpg = NULL;
+@@ -1209,6 +1209,9 @@ static int __iscsi_target_login_thread(struct iscsi_np *np)
+ 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+ 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 		complete(&np->np_restart_comp);
++	} else if (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN) {
++		spin_unlock_bh(&np->np_thread_lock);
++		goto exit;
+ 	} else {
+ 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 	}
+@@ -1401,10 +1404,8 @@ old_sess_out:
+ 	}
+ 
+ out:
+-	stop = kthread_should_stop();
+-	/* Wait for another socket.. */
+-	if (!stop)
+-		return 1;
++	return 1;
++
+ exit:
+ 	iscsi_stop_login_thread_timer(np);
+ 	spin_lock_bh(&np->np_thread_lock);
+@@ -1421,7 +1422,7 @@ int iscsi_target_login_thread(void *arg)
+ 
+ 	allow_signal(SIGINT);
+ 
+-	while (!kthread_should_stop()) {
++	while (1) {
+ 		ret = __iscsi_target_login_thread(np);
+ 		/*
+ 		 * We break and exit here unless another sock_accept() call
+-- 
+1.9.1
 
