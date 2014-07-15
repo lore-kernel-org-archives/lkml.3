@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934292AbaGOXO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:14:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S965072AbaGOXPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45437 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933792AbaGOXOA (ORCPT
+	with ESMTP id S933860AbaGOXOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:00 -0400
+	Tue, 15 Jul 2014 19:14:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.15 16/84] hwmon: (adc128d818) Drop write support on inX_input attributes
-Date: Tue, 15 Jul 2014 16:17:13 -0700
-Message-Id: <20140715231713.685190197@linuxfoundation.org>
+        Barton Xu <tank.xuhan@gmail.com>,
+        Steffen Weber <steffen.weber@gmail.com>,
+        Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 25/84] ACPI / EC: Add asynchronous command byte write support
+Date: Tue, 15 Jul 2014 16:17:22 -0700
+Message-Id: <20140715231713.960331872@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -28,88 +31,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 7fe7381cbdadf16792e733789983690b3fa82880 upstream.
+commit f92fca0060fc4dc9227342d0072d75df98c1e5a5 upstream.
 
-Writes into input registers doesn't make sense, even more so since
-the writes actually ended up writing into the maximum limit registers.
-Drop it.
+Move the first command byte write into advance_transaction() so that all
+EC register accesses that can affect the command processing state machine
+can happen in this asynchronous state machine advancement function.
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The advance_transaction() function then can be a complete implementation
+of an asyncrhonous transaction for a single command so that:
+ 1. The first command byte can be written in the interrupt context;
+ 2. The command completion waiter can also be used to wait the first command
+    byte's timeout;
+ 3. In BURST mode, the follow-up command bytes can be written in the
+    interrupt context directly, so that it doesn't need to return to the
+    task context. Returning to the task context reduces the throughput of
+    the BURST mode and in the worst cases where the system workload is very
+    high, this leads to the hardware driven automatic BURST mode exit.
+
+In order not to increase memory consumption, convert 'done' into 'flags'
+to contain multiple indications:
+ 1. ACPI_EC_COMMAND_COMPLETE: converting from original 'done' condition,
+    indicating the completion of the command transaction.
+ 2. ACPI_EC_COMMAND_POLL: indicating the availability of writing the first
+    command byte. A new command can utilize this flag to compete for the
+    right of accessing the underlying hardware. There is a follow-up bug
+    fix that has utilized this new flag.
+
+The 2 flags are important because it also reflects a key concept of IO
+programs' design used in the system softwares. Normally an IO program
+running in the kernel should first be implemented in the asynchronous way.
+And the 2 flags are the most common way to implement its synchronous
+operations on top of the asynchronous operations:
+1. POLL: This flag can be used to block until the asynchronous operations
+         can happen.
+2. COMPLETE: This flag can be used to block until the asynchronous
+             operations have completed.
+By constructing code cleanly in this way, many difficult problems can be
+solved smoothly.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
+Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
+Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
+Reported-by: Barton Xu <tank.xuhan@gmail.com>
+Tested-by: Steffen Weber <steffen.weber@gmail.com>
+Tested-by: Arthur Chen <axchen@nvidia.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/adc128d818.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ drivers/acpi/ec.c |   83 +++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 48 insertions(+), 35 deletions(-)
 
---- a/drivers/hwmon/adc128d818.c
-+++ b/drivers/hwmon/adc128d818.c
-@@ -239,50 +239,50 @@ static ssize_t adc128_show_alarm(struct
- 	return sprintf(buf, "%u\n", !!(alarms & mask));
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -78,6 +78,9 @@ enum {
+ 	EC_FLAGS_BLOCKED,		/* Transactions are blocked */
+ };
+ 
++#define ACPI_EC_COMMAND_POLL		0x01 /* Available for command byte */
++#define ACPI_EC_COMMAND_COMPLETE	0x02 /* Completed last byte */
++
+ /* ec.c is compiled in acpi namespace so this shows up as acpi.ec_delay param */
+ static unsigned int ec_delay __read_mostly = ACPI_EC_DELAY;
+ module_param(ec_delay, uint, 0644);
+@@ -109,7 +112,7 @@ struct transaction {
+ 	u8 ri;
+ 	u8 wlen;
+ 	u8 rlen;
+-	bool done;
++	u8 flags;
+ };
+ 
+ struct acpi_ec *boot_ec, *first_ec;
+@@ -150,63 +153,68 @@ static inline void acpi_ec_write_data(st
+ 	outb(data, ec->data_addr);
  }
  
--static SENSOR_DEVICE_ATTR_2(in0_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 0, 0);
-+static SENSOR_DEVICE_ATTR_2(in0_input, S_IRUGO,
-+			    adc128_show_in, NULL, 0, 0);
- static SENSOR_DEVICE_ATTR_2(in0_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 0, 1);
- static SENSOR_DEVICE_ATTR_2(in0_max, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 0, 2);
+-static int ec_transaction_done(struct acpi_ec *ec)
++static int ec_transaction_completed(struct acpi_ec *ec)
+ {
+ 	unsigned long flags;
+ 	int ret = 0;
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	if (!ec->curr || ec->curr->done)
++	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
+ 		ret = 1;
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ 	return ret;
+ }
  
--static SENSOR_DEVICE_ATTR_2(in1_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 1, 0);
-+static SENSOR_DEVICE_ATTR_2(in1_input, S_IRUGO,
-+			    adc128_show_in, NULL, 1, 0);
- static SENSOR_DEVICE_ATTR_2(in1_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 1, 1);
- static SENSOR_DEVICE_ATTR_2(in1_max, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 1, 2);
+-static void start_transaction(struct acpi_ec *ec)
+-{
+-	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
+-	ec->curr->done = false;
+-	acpi_ec_write_cmd(ec, ec->curr->command);
+-}
+-
+ static void advance_transaction(struct acpi_ec *ec)
+ {
+-	unsigned long flags;
+ 	struct transaction *t;
+ 	u8 status;
  
--static SENSOR_DEVICE_ATTR_2(in2_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 2, 0);
-+static SENSOR_DEVICE_ATTR_2(in2_input, S_IRUGO,
-+			    adc128_show_in, NULL, 2, 0);
- static SENSOR_DEVICE_ATTR_2(in2_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 2, 1);
- static SENSOR_DEVICE_ATTR_2(in2_max, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 2, 2);
+-	spin_lock_irqsave(&ec->lock, flags);
+ 	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
+ 	status = acpi_ec_read_status(ec);
+ 	t = ec->curr;
+ 	if (!t)
+-		goto unlock;
+-	if (t->wlen > t->wi) {
+-		if ((status & ACPI_EC_FLAG_IBF) == 0)
+-			acpi_ec_write_data(ec,
+-				t->wdata[t->wi++]);
+-		else
+-			goto err;
+-	} else if (t->rlen > t->ri) {
+-		if ((status & ACPI_EC_FLAG_OBF) == 1) {
+-			t->rdata[t->ri++] = acpi_ec_read_data(ec);
+-			if (t->rlen == t->ri)
+-				t->done = true;
++		goto err;
++	if (t->flags & ACPI_EC_COMMAND_POLL) {
++		if (t->wlen > t->wi) {
++			if ((status & ACPI_EC_FLAG_IBF) == 0)
++				acpi_ec_write_data(ec, t->wdata[t->wi++]);
++			else
++				goto err;
++		} else if (t->rlen > t->ri) {
++			if ((status & ACPI_EC_FLAG_OBF) == 1) {
++				t->rdata[t->ri++] = acpi_ec_read_data(ec);
++				if (t->rlen == t->ri)
++					t->flags |= ACPI_EC_COMMAND_COMPLETE;
++			} else
++				goto err;
++		} else if (t->wlen == t->wi &&
++			   (status & ACPI_EC_FLAG_IBF) == 0)
++			t->flags |= ACPI_EC_COMMAND_COMPLETE;
++		return;
++	} else {
++		if ((status & ACPI_EC_FLAG_IBF) == 0) {
++			acpi_ec_write_cmd(ec, t->command);
++			t->flags |= ACPI_EC_COMMAND_POLL;
+ 		} else
+ 			goto err;
+-	} else if (t->wlen == t->wi &&
+-		   (status & ACPI_EC_FLAG_IBF) == 0)
+-		t->done = true;
+-	goto unlock;
++		return;
++	}
+ err:
+ 	/*
+ 	 * If SCI bit is set, then don't think it's a false IRQ
+ 	 * otherwise will take a not handled IRQ as a false one.
+ 	 */
+-	if (in_interrupt() && !(status & ACPI_EC_FLAG_SCI))
+-		++t->irq_count;
++	if (!(status & ACPI_EC_FLAG_SCI)) {
++		if (in_interrupt() && t)
++			++t->irq_count;
++	}
++}
  
--static SENSOR_DEVICE_ATTR_2(in3_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 3, 0);
-+static SENSOR_DEVICE_ATTR_2(in3_input, S_IRUGO,
-+			    adc128_show_in, NULL, 3, 0);
- static SENSOR_DEVICE_ATTR_2(in3_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 3, 1);
- static SENSOR_DEVICE_ATTR_2(in3_max, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 3, 2);
+-unlock:
+-	spin_unlock_irqrestore(&ec->lock, flags);
++static void start_transaction(struct acpi_ec *ec)
++{
++	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
++	ec->curr->flags = 0;
++	advance_transaction(ec);
+ }
  
--static SENSOR_DEVICE_ATTR_2(in4_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 4, 0);
-+static SENSOR_DEVICE_ATTR_2(in4_input, S_IRUGO,
-+			    adc128_show_in, NULL, 4, 0);
- static SENSOR_DEVICE_ATTR_2(in4_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 4, 1);
- static SENSOR_DEVICE_ATTR_2(in4_max, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 4, 2);
+ static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+@@ -231,15 +239,17 @@ static int ec_poll(struct acpi_ec *ec)
+ 			/* don't sleep with disabled interrupts */
+ 			if (EC_FLAGS_MSI || irqs_disabled()) {
+ 				udelay(ACPI_EC_MSI_UDELAY);
+-				if (ec_transaction_done(ec))
++				if (ec_transaction_completed(ec))
+ 					return 0;
+ 			} else {
+ 				if (wait_event_timeout(ec->wait,
+-						ec_transaction_done(ec),
++						ec_transaction_completed(ec),
+ 						msecs_to_jiffies(1)))
+ 					return 0;
+ 			}
++			spin_lock_irqsave(&ec->lock, flags);
+ 			advance_transaction(ec);
++			spin_unlock_irqrestore(&ec->lock, flags);
+ 		} while (time_before(jiffies, delay));
+ 		pr_debug("controller reset, restart transaction\n");
+ 		spin_lock_irqsave(&ec->lock, flags);
+@@ -637,10 +647,13 @@ static int ec_check_sci(struct acpi_ec *
+ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
+ 	u32 gpe_number, void *data)
+ {
++	unsigned long flags;
+ 	struct acpi_ec *ec = data;
  
--static SENSOR_DEVICE_ATTR_2(in5_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 5, 0);
-+static SENSOR_DEVICE_ATTR_2(in5_input, S_IRUGO,
-+			    adc128_show_in, NULL, 5, 0);
- static SENSOR_DEVICE_ATTR_2(in5_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 5, 1);
- static SENSOR_DEVICE_ATTR_2(in5_max, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 5, 2);
- 
--static SENSOR_DEVICE_ATTR_2(in6_input, S_IWUSR | S_IRUGO,
--			    adc128_show_in, adc128_set_in, 6, 0);
-+static SENSOR_DEVICE_ATTR_2(in6_input, S_IRUGO,
-+			    adc128_show_in, NULL, 6, 0);
- static SENSOR_DEVICE_ATTR_2(in6_min, S_IWUSR | S_IRUGO,
- 			    adc128_show_in, adc128_set_in, 6, 1);
- static SENSOR_DEVICE_ATTR_2(in6_max, S_IWUSR | S_IRUGO,
++	spin_lock_irqsave(&ec->lock, flags);
+ 	advance_transaction(ec);
+-	if (ec_transaction_done(ec) &&
++	spin_unlock_irqrestore(&ec->lock, flags);
++	if (ec_transaction_completed(ec) &&
+ 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
+ 		wake_up(&ec->wait);
+ 		ec_check_sci(ec, acpi_ec_read_status(ec));
 
 
