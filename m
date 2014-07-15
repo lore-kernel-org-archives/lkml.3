@@ -1,30 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760436AbaGOXdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:33:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45588 "EHLO
+	id S965108AbaGOXeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:34:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934067AbaGOXOR (ORCPT
+	with ESMTP id S934032AbaGOXOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:17 -0400
+	Tue, 15 Jul 2014 19:14:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 64/84] DMA, CMA: fix possible memory leak
-Date: Tue, 15 Jul 2014 16:18:01 -0700
-Message-Id: <20140715231715.110135616@linuxfoundation.org>
+        James Duley <jagduley@gmail.com>, Michael Mullin <masmullin@gmail.com>,
+        Jani Nikula <jani.nikula@intel.com>, Scot Doyle <lkml14@scotdoyle.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.15 60/84] drm/i915: quirk asserts controllable backlight presence, overriding VBT
+Date: Tue, 15 Jul 2014 16:17:57 -0700
+Message-Id: <20140715231714.995387345@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -39,64 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Scot Doyle <lkml14@scotdoyle.com>
 
-commit fe8eea4f4a3f299ef83ed090d5354698ebe4fda8 upstream.
+commit 9c72cc6f00d24711ef585772396dd1ae180881a6 upstream.
 
-We should free memory for bitmap when we find zone mismatch, otherwise
-this memory will leak.
+commit c675949ec58ca50d5a3ae3c757892f1560f6e896
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Wed Apr 9 11:31:37 2014 +0300
 
-Additionally, I copy code comment from PPC KVM's CMA code to inform why
-we need to check zone mis-match.
+    drm/i915: do not setup backlight if not available according to VBT
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+caused a regression on machines with a misconfigured VBT. Add a quirk to
+assert the presence of a controllable backlight. Use it to ignore the VBT
+backlight presence check during backlight setup.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=79813
+Tested-by: James Duley <jagduley@gmail.com>
+Tested-by: Michael Mullin <masmullin@gmail.com>
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+[danvet: Add cc: stable because the regressing commit is in 3.15.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/base/dma-contiguous.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    8 ++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |    8 ++++++--
+ 3 files changed, 15 insertions(+), 2 deletions(-)
 
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -155,13 +155,23 @@ static int __init cma_activate_area(stru
- 		base_pfn = pfn;
- 		for (j = pageblock_nr_pages; j; --j, pfn++) {
- 			WARN_ON_ONCE(!pfn_valid(pfn));
-+			/*
-+			 * alloc_contig_range requires the pfn range
-+			 * specified to be in the same zone. Make this
-+			 * simple by forcing the entire CMA resv range
-+			 * to be in the same zone.
-+			 */
- 			if (page_zone(pfn_to_page(pfn)) != zone)
--				return -EINVAL;
-+				goto err;
- 		}
- 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
- 	} while (--i);
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -803,6 +803,7 @@ enum intel_sbi_destination {
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
+ #define QUIRK_INVERT_BRIGHTNESS (1<<2)
++#define QUIRK_BACKLIGHT_PRESENT (1<<3)
  
- 	return 0;
-+
-+err:
-+	kfree(cma->bitmap);
-+	return -EINVAL;
+ struct intel_fbdev;
+ struct intel_fbc_work;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -11166,6 +11166,14 @@ static void quirk_invert_brightness(stru
+ 	DRM_INFO("applying inverted panel brightness quirk\n");
  }
  
- static struct cma cma_areas[MAX_CMA_AREAS];
++/* Some VBT's incorrectly indicate no backlight is present */
++static void quirk_backlight_present(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_BACKLIGHT_PRESENT;
++	DRM_INFO("applying backlight present quirk\n");
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -1065,8 +1065,12 @@ int intel_panel_setup_backlight(struct d
+ 	int ret;
+ 
+ 	if (!dev_priv->vbt.backlight.present) {
+-		DRM_DEBUG_KMS("native backlight control not available per VBT\n");
+-		return 0;
++		if (dev_priv->quirks & QUIRK_BACKLIGHT_PRESENT) {
++			DRM_DEBUG_KMS("no backlight present per VBT, but present per quirk\n");
++		} else {
++			DRM_DEBUG_KMS("no backlight present per VBT\n");
++			return 0;
++		}
+ 	}
+ 
+ 	/* set level and max in panel struct */
 
 
