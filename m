@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760263AbaGOWXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:23:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53994 "EHLO
+	id S1758996AbaGOVcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:32:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53984 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759007AbaGOVcU (ORCPT
+	with ESMTP id S1751413AbaGOVcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:32:20 -0400
+	Tue, 15 Jul 2014 17:32:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 098/198] powerpc: 64bit sendfile is capped at 2GB
-Date: Tue, 15 Jul 2014 14:29:28 -0700
-Message-Id: <1405459868-15089-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 094/198] mm/memory-failure.c-failure: send right signal code to correct thread
+Date: Tue, 15 Jul 2014 14:29:24 -0700
+Message-Id: <1405459868-15089-95-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,38 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
+commit a70ffcac741d31a406c1d2b832ae43d658e7e1cf upstream.
 
-commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
-implementation) changed the PowerPC 64bit sendfile call from
-sys_sendile64 to sys_sendfile.
+When a thread in a multi-threaded application hits a machine check because
+of an uncorrectable error in memory - we want to send the SIGBUS with
+si.si_code = BUS_MCEERR_AR to that thread.  Currently we fail to do that
+if the active thread is not the primary thread in the process.
+collect_procs() just finds primary threads and this test:
 
-Unfortunately this broke sendfile of lengths greater than 2G because
-sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
-fixes the bug.
+	if ((flags & MF_ACTION_REQUIRED) && t == current) {
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+will see that the thread we found isn't the current thread and so send a
+si.si_code = BUS_MCEERR_AO to the primary (and nothing to the active
+thread at this time).
+
+We can fix this by checking whether "current" shares the same mm with the
+process that collect_procs() said owned the page.  If so, we send the
+SIGBUS to current (with code BUS_MCEERR_AR).
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Otto Bruggeman <otto.g.bruggeman@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/include/asm/systbl.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memory-failure.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 43523fe..05fcdd8 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
- SYSCALL_SPU(capget)
- SYSCALL_SPU(capset)
- COMPAT_SYS(sigaltstack)
--COMPAT_SYS_SPU(sendfile)
-+SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
- SYSCALL(ni_syscall)
- SYSCALL(ni_syscall)
- PPC_SYS(vfork)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 3b0855b..2b5da71 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -208,9 +208,9 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
+ #endif
+ 	si.si_addr_lsb = compound_order(compound_head(page)) + PAGE_SHIFT;
+ 
+-	if ((flags & MF_ACTION_REQUIRED) && t == current) {
++	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+ 		si.si_code = BUS_MCEERR_AR;
+-		ret = force_sig_info(SIGBUS, &si, t);
++		ret = force_sig_info(SIGBUS, &si, current);
+ 	} else {
+ 		/*
+ 		 * Don't use force here, it's convenient if the signal
 -- 
 1.9.1
 
