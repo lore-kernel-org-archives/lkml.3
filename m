@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951AbaGOP6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:58:49 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49779 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751857AbaGOP6r (ORCPT
+	id S1755564AbaGOP7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:59:06 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30273 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498AbaGOP7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:58:47 -0400
-Date: Tue, 15 Jul 2014 11:58:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <Peter.Chen@freescale.com>,
-        <kishon@ti.com>, <sergei.shtylyov@cogentembedded.com>,
-        <yoshihiro.shimoda.uh@renesas.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/8] usb: add support for the generic PHY framework
-In-Reply-To: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
-Message-ID: <Pine.LNX.4.44L0.1407151157380.1206-100000@iolanthe.rowland.org>
+	Tue, 15 Jul 2014 11:59:04 -0400
+Date: Tue, 15 Jul 2014 11:58:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
+Message-ID: <20140715155850.GE7792@laptop.dumpdata.com>
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+ <1405431640-649-3-git-send-email-vkuznets@redhat.com>
+ <20140715150938.GO3403@laptop.dumpdata.com>
+ <87r41mty9q.fsf@vitty.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r41mty9q.fsf@vitty.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Antoine Ténart wrote:
+On Tue, Jul 15, 2014 at 05:52:33PM +0200, Vitaly Kuznetsov wrote:
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+> 
+> > On Tue, Jul 15, 2014 at 03:40:38PM +0200, Vitaly Kuznetsov wrote:
+> >> PVHVM guest requires special actions before kexec. Register specific
+> >> xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
+> >> 
+> >
+> > This looks close to what I had sent as an RFC to you?
+> >
+> 
+> Yes, I stole that part from your "RFC: VCPU_reset_cpu_info" patch to
+> call xen_unmap_all_pirqs() on shutdown. I'm looking at SMP issues your
+> patches address as well.
 
-> Hi all,
-> 
-> This is an attempt to add more common USB code aware of the generic PHY
-> framework, while keeping the compatibility for the USB PHY one. It does
-> not add the full support, some USB PHY specific functions not being
-> available currently in the generic PHY subsystem (e.g. usb_phy_set_power()).
-> But it allows to use the generic PHY framework in other cases, and might
-> help others to convert their USB PHY drivers.
-> 
-> A little background: I submitted a series to support USB on Berlin SoCs[1].
-> One patch added a new PHY driver in drivers/usb/phy and Felipe asked it to
-> be in the generic PHY framework instead[2]. This PHY being used by a ChipIdea
-> driver, changes were needed in ChipIdea, OTG and HCD.
-> 
-> This is done in 3 steps:
->         1. moving the OTG state from the USB PHY structure to the OTG one
->         2. renaming the field 'phy' to 'usb_phy'
->         3. adding a field for the generic framework PHY and dissociating its
->            use from the USB PHY one
-> 
-> Step 1 is in the first patch. Steps 2 and 3 are done for OTG, and ChipIdea
-> subsystems in patches 2-3 and 7-8.
-> 
-> HCD generic PHY support was made by Sergei and Yoshihiro[1]. I added some
-> modifications to make this support consistent with this series in patches
-> 4-6.
-> 
-> I tested it by using the ChipIdea driver I introduced, both with an USB PHY
-> and a PHY driver successfully. I also compiled a multi_v7 kernel (ARM), with
-> every driver I could enable in the USB section.
-> 
-> I'd like more people to test and your inputs and suggestions on these changes.
-> 
-> Feel free to add Ccs if others might be interested in this. If needed patches
-> can be squashed or divided, I tried there to group modifications by USB
-> framework parts (OTG, HCD, ChipIdea).
-> 
-> Patches can also be found at:
-> git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
-> 
-> The series applies on top of Sergei and Yoshihiro generic PHY support in
-> HCD[1].
+It is customary to attribute that in the patch. Such as:
 
-For the changes to hub.c, hcd.c, and the ehci and ohci drivers:
+"Original idea/patch from Konrad Rzeszutek Wilk" is suffice.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
+Thanks!
+> 
+> >> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> >> ---
+> >>  arch/x86/xen/enlighten.c | 9 +++++++++
+> >>  arch/x86/xen/smp.c       | 9 +++++++++
+> >>  arch/x86/xen/smp.h       | 1 +
+> >>  3 files changed, 19 insertions(+)
+> >> 
+> >> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> >> index a11af62..8074e4a 100644
+> >> --- a/arch/x86/xen/enlighten.c
+> >> +++ b/arch/x86/xen/enlighten.c
+> >> @@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
+> >>  	.notifier_call	= xen_hvm_cpu_notify,
+> >>  };
+> >>  
+> >> +static void xen_pvhvm_kexec_shutdown(void)
+> >> +{
+> >> +	xen_kexec_shutdown();
+> >> +	native_machine_shutdown();
+> >> +}
+> >> +
+> >>  static void __init xen_hvm_guest_init(void)
+> >>  {
+> >>  	init_hvm_pv_info();
+> >> @@ -1849,6 +1855,9 @@ static void __init xen_hvm_guest_init(void)
+> >>  	x86_init.irqs.intr_init = xen_init_IRQ;
+> >>  	xen_hvm_init_time_ops();
+> >>  	xen_hvm_init_mmu_ops();
+> >> +#ifdef CONFIG_KEXEC
+> >> +	machine_ops.shutdown = xen_pvhvm_kexec_shutdown;
+> >> +#endif
+> >>  }
+> >>  
+> >>  static uint32_t __init xen_hvm_platform(void)
+> >> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> >> index 7005974..35dcf39 100644
+> >> --- a/arch/x86/xen/smp.c
+> >> +++ b/arch/x86/xen/smp.c
+> >> @@ -18,6 +18,7 @@
+> >>  #include <linux/smp.h>
+> >>  #include <linux/irq_work.h>
+> >>  #include <linux/tick.h>
+> >> +#include <linux/kexec.h>
+> >>  
+> >>  #include <asm/paravirt.h>
+> >>  #include <asm/desc.h>
+> >> @@ -762,6 +763,14 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+> >>  	native_cpu_die(cpu);
+> >>  }
+> >>  
+> >> +void xen_kexec_shutdown(void)
+> >> +{
+> >> +#ifdef CONFIG_KEXEC
+> >> +	if (!kexec_in_progress)
+> >> +		return;
+> >> +#endif
+> >> +}
+> >> +
+> >>  void __init xen_hvm_smp_init(void)
+> >>  {
+> >>  	if (!xen_have_vector_callback)
+> >> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+> >> index c7c2d89..1af0493 100644
+> >> --- a/arch/x86/xen/smp.h
+> >> +++ b/arch/x86/xen/smp.h
+> >> @@ -8,4 +8,5 @@ extern void xen_send_IPI_allbutself(int vector);
+> >>  extern void xen_send_IPI_all(int vector);
+> >>  extern void xen_send_IPI_self(int vector);
+> >>  
+> >> +extern void xen_kexec_shutdown(void);
+> >>  #endif
+> >> -- 
+> >> 1.9.3
+> >> 
+> 
+> -- 
+>   Vitaly
