@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaGOHc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 03:32:29 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:38460 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949AbaGOHc1 (ORCPT
+	id S1757765AbaGOHdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 03:33:38 -0400
+Received: from canardo.mork.no ([148.122.252.1]:34569 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752416AbaGOHdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 03:32:27 -0400
+	Tue, 15 Jul 2014 03:33:35 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [BISECTED 3.16-rc REGREGRESSION] backlight control stopped working
+Organization: m
+References: <87pph8kse7.fsf@nemi.mork.no> <53C3D7C3.7090505@redhat.com>
+	<CA+55aFxYYKApOC+1TQkoxSzi-zTSB8OmkU=ypvNb_Gc2+K6Hmw@mail.gmail.com>
+	<53C4D17E.60206@redhat.com>
+Date: Tue, 15 Jul 2014 09:33:13 +0200
+In-Reply-To: <53C4D17E.60206@redhat.com> (Hans de Goede's message of "Tue, 15
+	Jul 2014 09:00:14 +0200")
+Message-ID: <87wqbfrs92.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140715064125.GQ25880@mwanda>
-References: <20140715030402.GA14411@devel.8.8.4.4>
-	<20140715064125.GQ25880@mwanda>
-Date: Tue, 15 Jul 2014 16:32:27 +0900
-Message-ID: <CAHb8M2CoFhQAwRc5cKqkK4zq77yM6n_8r_jvU+MwHYLWyHosxw@mail.gmail.com>
-Subject: Re: [PATCH 7/8] staging: dgap: introduce dgap_cleanup_nodes()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Lidza Louina <lidza.louina@gmail.com>, devel <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Hounschell <markh@compro.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-15 15:41 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Tue, Jul 15, 2014 at 12:04:02PM +0900, Daeseok Youn wrote:
->> When a configration file is parsed with dgap_parsefile(),
->> makes nodes for saving configrations for board.
->>
->> Making a node will allocate node memory and strings for saving
->> configrations with kstrdup().
->>
->> So these are freed when dgap is unloaded or failed to initialize.
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->> It MUST be needed to prevent memory leaks but
->> I'm not sure that I fix properly.
->>
->> Please review.
->
-> This thread doesn't have Mark on the CC list and he's the only person
-> who can actually test it properly.  Resend it and CC Mark
-> Hounschell <markh@compro.net>.
+Hans de Goede <hdegoede@redhat.com> writes:
 
-Really? I'd added Mark to CC list.
-hmm.. In your reply doesn't have Mark. I was checking sent-box, he is
-in the CC list.
+> It breaks things on exotic setups,
 
-OK. I will try to send this again after fixing 6/7 and 8/8.
-Thanks.
+I find your attitude extremely arrogant.  If you want to run a
+non-exotic setup then you should definitely not consider Linux for your
+desktop system...
 
-regards,
-Daeseok Youn
->
-> regards,
-> dan carpenter
->
+I am trying to help you sort out a bug in code you have written, before
+it hits a release.  I do not really expect to receive a beer for this,
+but maybe a little less of the "yes, I know there is a bug and I don't
+give a damn" attitude.
+
+Yes, I can of course fix *my* system, making your reported bug count go
+from 1 to 0. Does that help you in any way?  How does that make your
+projected number of affected users change?
+
+
+Bjørn
