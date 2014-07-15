@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaGOAcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 20:32:07 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39828 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbaGOAby (ORCPT
+	id S1755292AbaGOAcM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 20:32:12 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:47091 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124AbaGOAb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 20:31:54 -0400
+	Mon, 14 Jul 2014 20:31:58 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         acme@redhat.com, namhyung@kernel.org
-Subject: [PATCH v2 2/5] perf/x86: add support for sampling PEBS machine state registers
-Date: Tue, 15 Jul 2014 02:31:41 +0200
-Message-Id: <1405384304-26816-3-git-send-email-eranian@google.com>
+Subject: [PATCH v2 4/5] perf/tests: add interrupted state sample parsing test
+Date: Tue, 15 Jul 2014 02:31:43 +0200
+Message-Id: <1405384304-26816-5-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1405384304-26816-1-git-send-email-eranian@google.com>
 References: <1405384304-26816-1-git-send-email-eranian@google.com>
@@ -21,47 +21,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PEBS can capture machine state regs at retiremnt of the sampled
-instructions. When precise sampling is enabled on an event, PEBS
-is used, so substitute the interrupted state with the PEBS state.
-Note that not all registers are captured by PEBS. Those missing
-are replaced by the interrupt state counter-parts.
+This patch updates the sample parsing test with support
+for the sampling of machine interrupted state.
+
+The patch modifies the do_test() code to sahred the sample
+regts bitmask between user and intr regs.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ tools/perf/tests/sample-parsing.c |   55 +++++++++++++++++++++++++++----------
+ 1 file changed, 40 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 980970c..d612bcd 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -925,6 +925,25 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index 7ae8d17..47367fe 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -125,16 +125,28 @@ static bool samples_same(const struct perf_sample *s1,
+ 	if (type & PERF_SAMPLE_TRANSACTION)
+ 		COMP(transaction);
  
-+	if (sample_type & PERF_SAMPLE_REGS_INTR) {
-+		regs.ax = pebs->ax;
-+		regs.bx = pebs->bx;
-+		regs.cx = pebs->cx;
-+		regs.si = pebs->si;
-+		regs.di = pebs->di;
++	if (type & PERF_SAMPLE_REGS_INTR) {
++		size_t sz = hweight_long(s1->intr_regs.mask) * sizeof(u64);
 +
-+		regs.r8 = pebs->r8;
-+		regs.r9 = pebs->r9;
-+		regs.r10 = pebs->r10;
-+		regs.r11 = pebs->r11;
-+		regs.r12 = pebs->r12;
-+		regs.r13 = pebs->r13;
-+		regs.r14 = pebs->r14;
-+		regs.r14 = pebs->r15;
-+
-+		data.regs_intr.regs = &regs;
++		COMP(intr_regs.mask);
++		COMP(intr_regs.abi);
++		if (s1->intr_regs.abi &&
++		    (!s1->intr_regs.regs || !s2->intr_regs.regs ||
++		     memcmp(s1->intr_regs.regs, s2->intr_regs.regs, sz))) {
++			pr_debug("Samples differ at 'intr_regs'\n");
++			return false;
++		}
 +	}
 +
- 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
- 		regs.ip = pebs->real_ip;
- 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	return true;
+ }
+ 
+-static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
++static int do_test(u64 sample_type, u64 sample_regs, u64 read_format)
+ {
+ 	struct perf_evsel evsel = {
+ 		.needs_swap = false,
+ 		.attr = {
+ 			.sample_type = sample_type,
+-			.sample_regs_user = sample_regs_user,
+ 			.read_format = read_format,
+ 		},
+ 	};
+@@ -153,7 +165,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 		/* 1 branch_entry */
+ 		.data = {1, 211, 212, 213},
+ 	};
+-	u64 user_regs[64];
++	u64 regs[64];
+ 	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
+ 	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
+ 	struct perf_sample sample = {
+@@ -175,8 +187,8 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 		.branch_stack	= &branch_stack.branch_stack,
+ 		.user_regs	= {
+ 			.abi	= PERF_SAMPLE_REGS_ABI_64,
+-			.mask	= sample_regs_user,
+-			.regs	= user_regs,
++			.mask	= sample_regs,
++			.regs	= regs,
+ 		},
+ 		.user_stack	= {
+ 			.size	= sizeof(data),
+@@ -186,14 +198,25 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 			.time_enabled = 0x030a59d664fca7deULL,
+ 			.time_running = 0x011b6ae553eb98edULL,
+ 		},
++		.intr_regs	= {
++			.abi	= PERF_SAMPLE_REGS_ABI_64,
++			.mask	= sample_regs,
++			.regs	= regs,
++		},
+ 	};
+ 	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
+ 	struct perf_sample sample_out;
+ 	size_t i, sz, bufsz;
+ 	int err, ret = -1;
+ 
+-	for (i = 0; i < sizeof(user_regs); i++)
+-		*(i + (u8 *)user_regs) = i & 0xfe;
++	if (sample_type & PERF_SAMPLE_REGS_USER)
++		evsel.attr.sample_regs_user = sample_regs;
++
++	if (sample_type & PERF_SAMPLE_REGS_INTR)
++		evsel.attr.sample_regs_intr = sample_regs;
++
++	for (i = 0; i < sizeof(regs); i++)
++		*(i + (u8 *)regs) = i & 0xfe;
+ 
+ 	if (read_format & PERF_FORMAT_GROUP) {
+ 		sample.read.group.nr     = 4;
+@@ -270,7 +293,7 @@ int test__sample_parsing(void)
+ {
+ 	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
+ 	u64 sample_type;
+-	u64 sample_regs_user;
++	u64 sample_regs;
+ 	size_t i;
+ 	int err;
+ 
+@@ -279,7 +302,7 @@ int test__sample_parsing(void)
+ 	 * were added.  Please actually update the test rather than just change
+ 	 * the condition below.
+ 	 */
+-	if (PERF_SAMPLE_MAX > PERF_SAMPLE_TRANSACTION << 1) {
++	if (PERF_SAMPLE_MAX > PERF_SAMPLE_REGS_INTR << 1) {
+ 		pr_debug("sample format has changed, some new PERF_SAMPLE_ bit was introduced - test needs updating\n");
+ 		return -1;
+ 	}
+@@ -296,22 +319,24 @@ int test__sample_parsing(void)
+ 			}
+ 			continue;
+ 		}
++		sample_regs = 0;
+ 
+ 		if (sample_type == PERF_SAMPLE_REGS_USER)
+-			sample_regs_user = 0x3fff;
+-		else
+-			sample_regs_user = 0;
++			sample_regs = 0x3fff;
++
++		if (sample_type == PERF_SAMPLE_REGS_INTR)
++			sample_regs = 0xff0fff;
+ 
+-		err = do_test(sample_type, sample_regs_user, 0);
++		err = do_test(sample_type, sample_regs, 0);
+ 		if (err)
+ 			return err;
+ 	}
+ 
+ 	/* Test all sample format bits together */
+ 	sample_type = PERF_SAMPLE_MAX - 1;
+-	sample_regs_user = 0x3fff;
++	sample_regs = 0x3fff; /* shared yb intr and user regs */
+ 	for (i = 0; i < ARRAY_SIZE(rf); i++) {
+-		err = do_test(sample_type, sample_regs_user, rf[i]);
++		err = do_test(sample_type, sample_regs, rf[i]);
+ 		if (err)
+ 			return err;
+ 	}
 -- 
 1.7.9.5
 
