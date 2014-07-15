@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934527AbaGOXqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:46:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S934541AbaGOXqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:46:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933736AbaGOXN6 (ORCPT
+	with ESMTP id S1760056AbaGOXN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 19:13:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.15 12/84] ahci: imx: manage only sata_ref_clk in imx_sata_enable[disable]
-Date: Tue, 15 Jul 2014 16:17:09 -0700
-Message-Id: <20140715231713.557998579@linuxfoundation.org>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.15 11/84] workqueue: zero cpumask of wq_numa_possible_cpumask on init
+Date: Tue, 15 Jul 2014 16:17:08 -0700
+Message-Id: <20140715231713.531207163@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -30,157 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@freescale.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit e6dd42a917e62d916c6e513dbf87a4dec8cf3a1c upstream.
+commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
 
-Doing suspend/resume on imx6q and imx53 boards with no SATA disk
-attached will trigger the following warning.
+When hot-adding and onlining CPU, kernel panic occurs, showing following
+call trace.
 
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 661 at drivers/ata/libahci.c:224 ahci_enable_ahci+0x74/0x8)
-Modules linked in:
-CPU: 0 PID: 661 Comm: sh Tainted: G        W     3.15.0-rc5-next-20140521-000027
-Backtrace:
-[<80011c90>] (dump_backtrace) from [<80011e2c>] (show_stack+0x18/0x1c)
- r6:803a22f4 r5:00000000 r4:00000000 r3:00000000
-[<80011e14>] (show_stack) from [<80661e60>] (dump_stack+0x88/0xa4)
-[<80661dd8>] (dump_stack) from [<80028fdc>] (warn_slowpath_common+0x70/0x94)
- r5:00000009 r4:00000000
-[<80028f6c>] (warn_slowpath_common) from [<80029024>] (warn_slowpath_null+0x24/)
- r8:808f68c4 r7:00000000 r6:00000000 r5:00000000 r4:e0810004
-[<80029000>] (warn_slowpath_null) from [<803a22f4>] (ahci_enable_ahci+0x74/0x80)
-[<803a2280>] (ahci_enable_ahci) from [<803a2324>] (ahci_reset_controller+0x24/0)
- r8:ddcd9410 r7:80351178 r6:ddcd9444 r5:dde8b850 r4:e0810000 r3:ddf35e90
-[<803a2300>] (ahci_reset_controller) from [<803a2c68>] (ahci_platform_resume_ho)
- r7:80351178 r6:ddcd9444 r5:dde8b850 r4:ddcd9410
-[<803a2c30>] (ahci_platform_resume_host) from [<803a38f0>] (imx_ahci_resume+0x2)
- r5:00000000 r4:ddcd9410
-[<803a38c4>] (imx_ahci_resume) from [<803511ac>] (platform_pm_resume+0x34/0x54)
-....
+  BUG: unable to handle kernel paging request at 0000000000001d08
+  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
+  PGD 0
+  Oops: 0000 [#1] SMP
+  ...
+  Call Trace:
+   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
+   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
+   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
+   [<ffffffff811926f1>] new_slab+0x91/0x300
+   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
+   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
+   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
+   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
+   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
+   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
+   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
+   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
+   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
+   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
+   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
+   [<ffffffff81086652>] kthreadd+0x2c2/0x300
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
 
-The reason is that the SATA controller has no working clock at this
-point, and thus ahci_enable_ahci() fails to enable the controller.  In
-case that there is no SATA disk attached, the imx_sata_disable() gets
-called in ahci_imx_error_handler(), and both sata_clk and sata_ref_clk
-will be disabled there.  Because all the imx_sata_enable() calls
-afterward will return immediately due to imxpriv->no_device check, the
-SATA controller working clock sata_clk will never get any chance to be
-enabled again.
+In my investigation, I found the root cause is wq_numa_possible_cpumask.
+All entries of wq_numa_possible_cpumask is allocated by
+alloc_cpumask_var_node(). And these entries are used without initializing.
+So these entries have wrong value.
 
-This is a regression caused by commit 90870d79d4f2 (ahci-imx: Port to
-library-ised ahci_platform).  Before the commit, only sata_ref_clk is
-managed by the driver in enable/disable function.  But after the commit,
-all the clocks are enabled/disabled in a row by ahci platform helpers
-ahci_platform_enable[disable]_clks.  Since ahb_clk is a bus clock which
-does not have gate at all, and i.MX low-power hardware module already
-manages sata_clk across suspend/resume cycle, the only clock that needs
-to be managed by software is sata_ref_clk.
+When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
+wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
+calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
+as follow:
 
-So instead of using ahci_platform_enable[disable]_clks to manage all
-the clocks in a row from imx_sata_enable[disable], we should manage
-only sata_ref_clk in there.
+3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
+3593         if (wq_numa_enabled) {
+3594                 for_each_node(node) {
+3595                         if (cpumask_subset(pool->attrs->cpumask,
+3596                                            wq_numa_possible_cpumask[node])) {
+3597                                 pool->node = node;
+3598                                 break;
+3599                         }
+3600                 }
+3601         }
 
-Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
-Fixes: 90870d79d4f2 (ahci-imx: Port to library-ised ahci_platform)
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
+node is selected. As a result, kernel panic occurs.
+
+By this patch, all entries of wq_numa_possible_cpumask are allocated by
+zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci_imx.c |   35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+ kernel/workqueue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/ahci_imx.c
-+++ b/drivers/ata/ahci_imx.c
-@@ -58,6 +58,8 @@ enum ahci_imx_type {
- struct imx_ahci_priv {
- 	struct platform_device *ahci_pdev;
- 	enum ahci_imx_type type;
-+	struct clk *sata_clk;
-+	struct clk *sata_ref_clk;
- 	struct clk *ahb_clk;
- 	struct regmap *gpr;
- 	bool no_device;
-@@ -224,7 +226,7 @@ static int imx_sata_enable(struct ahci_h
- 			return ret;
- 	}
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -5034,7 +5034,7 @@ static void __init wq_numa_init(void)
+ 	BUG_ON(!tbl);
  
--	ret = ahci_platform_enable_clks(hpriv);
-+	ret = clk_prepare_enable(imxpriv->sata_ref_clk);
- 	if (ret < 0)
- 		goto disable_regulator;
+ 	for_each_node(node)
+-		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
++		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+ 				node_online(node) ? node : NUMA_NO_NODE));
  
-@@ -291,7 +293,7 @@ static void imx_sata_disable(struct ahci
- 				   !IMX6Q_GPR13_SATA_MPLL_CLK_EN);
- 	}
- 
--	ahci_platform_disable_clks(hpriv);
-+	clk_disable_unprepare(imxpriv->sata_ref_clk);
- 
- 	if (hpriv->target_pwr)
- 		regulator_disable(hpriv->target_pwr);
-@@ -385,6 +387,19 @@ static int imx_ahci_probe(struct platfor
- 	imxpriv->no_device = false;
- 	imxpriv->first_time = true;
- 	imxpriv->type = (enum ahci_imx_type)of_id->data;
-+
-+	imxpriv->sata_clk = devm_clk_get(dev, "sata");
-+	if (IS_ERR(imxpriv->sata_clk)) {
-+		dev_err(dev, "can't get sata clock.\n");
-+		return PTR_ERR(imxpriv->sata_clk);
-+	}
-+
-+	imxpriv->sata_ref_clk = devm_clk_get(dev, "sata_ref");
-+	if (IS_ERR(imxpriv->sata_ref_clk)) {
-+		dev_err(dev, "can't get sata_ref clock.\n");
-+		return PTR_ERR(imxpriv->sata_ref_clk);
-+	}
-+
- 	imxpriv->ahb_clk = devm_clk_get(dev, "ahb");
- 	if (IS_ERR(imxpriv->ahb_clk)) {
- 		dev_err(dev, "can't get ahb clock.\n");
-@@ -407,10 +422,14 @@ static int imx_ahci_probe(struct platfor
- 
- 	hpriv->plat_data = imxpriv;
- 
--	ret = imx_sata_enable(hpriv);
-+	ret = clk_prepare_enable(imxpriv->sata_clk);
- 	if (ret)
- 		return ret;
- 
-+	ret = imx_sata_enable(hpriv);
-+	if (ret)
-+		goto disable_clk;
-+
- 	/*
- 	 * Configure the HWINIT bits of the HOST_CAP and HOST_PORTS_IMPL,
- 	 * and IP vendor specific register IMX_TIMER1MS.
-@@ -434,16 +453,24 @@ static int imx_ahci_probe(struct platfor
- 
- 	ret = ahci_platform_init_host(pdev, hpriv, &ahci_imx_port_info, 0, 0);
- 	if (ret)
--		imx_sata_disable(hpriv);
-+		goto disable_sata;
-+
-+	return 0;
- 
-+disable_sata:
-+	imx_sata_disable(hpriv);
-+disable_clk:
-+	clk_disable_unprepare(imxpriv->sata_clk);
- 	return ret;
- }
- 
- static void ahci_imx_host_stop(struct ata_host *host)
- {
- 	struct ahci_host_priv *hpriv = host->private_data;
-+	struct imx_ahci_priv *imxpriv = hpriv->plat_data;
- 
- 	imx_sata_disable(hpriv);
-+	clk_disable_unprepare(imxpriv->sata_clk);
- }
- 
- #ifdef CONFIG_PM_SLEEP
+ 	for_each_possible_cpu(cpu) {
 
 
