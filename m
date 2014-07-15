@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761170AbaGPACE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:02:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45024 "EHLO
+	id S1761134AbaGPAB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:01:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933312AbaGOXNj (ORCPT
+	with ESMTP id S933341AbaGOXNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:39 -0400
+	Tue, 15 Jul 2014 19:13:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Barton Xu <tank.xuhan@gmail.com>,
-        Steffen Weber <steffen.weber@gmail.com>,
-        Arthur Chen <axchen@nvidia.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 23/66] ACPI / EC: Remove duplicated ec_wait_ibf0() waiter
-Date: Tue, 15 Jul 2014 16:17:17 -0700
-Message-Id: <20140715231703.061926159@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 25/66] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
+Date: Tue, 15 Jul 2014 16:17:19 -0700
+Message-Id: <20140715231703.148568740@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -31,93 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 9b80f0f73ae1583c22325ede341c74195847618c upstream.
+commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
 
-After we've added the first command byte write into advance_transaction(),
-the IBF=0 waiter is duplicated with the command completion waiter
-implemented in the ec_poll() because:
-   If IBF=1 blocked the first command byte write invoked in the task
-   context ec_poll(), it would be kicked off upon IBF=0 interrupt or timed
-   out and retried again in the task context.
+We are seeing a lot of PMU warnings on POWER8:
 
-Remove this seperate and duplicate IBF=0 waiter.  By doing so we can
-reduce the overall number of times to access the EC_SC(R) status
-register.
+    Can't find PMC that caused IRQ
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Looking closer, the active PMC is 0 at this point and we took a PMU
+exception on the transition from negative to 0. Some versions of POWER8
+have an issue where they edge detect and not level detect PMC overflows.
+
+A number of places program the PMC with (0x80000000 - period_left),
+where period_left can be negative. We can either fix all of these or
+just ensure that period_left is always >= 1.
+
+This patch takes the second option.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   27 +--------------------------
- 1 file changed, 1 insertion(+), 26 deletions(-)
+ arch/powerpc/perf/core-book3s.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -281,23 +281,6 @@ static int acpi_ec_transaction_unlocked(
- 	return ret;
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -851,7 +851,22 @@ static void power_pmu_read(struct perf_e
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
+ 
+ 	local64_add(delta, &event->count);
+-	local64_sub(delta, &event->hw.period_left);
++
++	/*
++	 * A number of places program the PMC with (0x80000000 - period_left).
++	 * We never want period_left to be less than 1 because we will program
++	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
++	 * roll around to 0 before taking an exception. We have seen this
++	 * on POWER8.
++	 *
++	 * To fix this, clamp the minimum value of period_left to 1.
++	 */
++	do {
++		prev = local64_read(&event->hw.period_left);
++		val = prev - delta;
++		if (val < 1)
++			val = 1;
++	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
  }
  
--static int ec_check_ibf0(struct acpi_ec *ec)
--{
--	u8 status = acpi_ec_read_status(ec);
--	return (status & ACPI_EC_FLAG_IBF) == 0;
--}
--
--static int ec_wait_ibf0(struct acpi_ec *ec)
--{
--	unsigned long delay = jiffies + msecs_to_jiffies(ec_delay);
--	/* interrupt wait manually if GPE mode is not active */
--	while (time_before(jiffies, delay))
--		if (wait_event_timeout(ec->wait, ec_check_ibf0(ec),
--					msecs_to_jiffies(1)))
--			return 0;
--	return -ETIME;
--}
--
- static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
- {
- 	int status;
-@@ -318,12 +301,6 @@ static int acpi_ec_transaction(struct ac
- 			goto unlock;
- 		}
- 	}
--	if (ec_wait_ibf0(ec)) {
--		pr_err("input buffer is not empty, "
--				"aborting transaction\n");
--		status = -ETIME;
--		goto end;
--	}
- 	pr_debug("transaction start (cmd=0x%02x, addr=0x%02x)\n",
- 			t->command, t->wdata ? t->wdata[0] : 0);
- 	/* disable GPE during transaction if storm is detected */
-@@ -347,7 +324,6 @@ static int acpi_ec_transaction(struct ac
- 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
- 	}
- 	pr_debug("transaction end\n");
--end:
- 	if (ec->global_lock)
- 		acpi_release_global_lock(glk);
- unlock:
-@@ -653,8 +629,7 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	spin_lock_irqsave(&ec->lock, flags);
- 	advance_transaction(ec);
- 	spin_unlock_irqrestore(&ec->lock, flags);
--	if (ec_transaction_completed(ec) &&
--	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
-+	if (ec_transaction_completed(ec)) {
- 		wake_up(&ec->wait);
- 		ec_check_sci(ec, acpi_ec_read_status(ec));
- 	}
+ /*
 
 
