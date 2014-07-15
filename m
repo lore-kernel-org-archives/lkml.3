@@ -1,124 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057AbaGOJPo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 05:15:44 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:43330 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaGOJPm (ORCPT
+	id S1758121AbaGOJQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 05:16:10 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:58021 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082AbaGOJQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 05:15:42 -0400
-Date: Tue, 15 Jul 2014 18:14:25 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8 RESEND] staging: dgap: introduce dgap_cleanup_nodes()
-Message-ID: <20140715091425.GA19095@devel.8.8.4.4>
+	Tue, 15 Jul 2014 05:16:08 -0400
+Message-ID: <53C4F154.3000009@suse.cz>
+Date: Tue, 15 Jul 2014 11:16:04 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: "Li, ZhenHua" <zhen-hual@hp.com>, Peter Hurley <peter@hurleysoftware.com>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver/tty: Fix a warning in check_tty_count
+References: <1405317257-5491-1-git-send-email-zhen-hual@hp.com> <53C3CC4E.9010000@hurleysoftware.com> <53C4EFA8.3080308@hp.com>
+In-Reply-To: <53C4EFA8.3080308@hp.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a configration file is parsed with dgap_parsefile(),
-makes nodes for saving configrations for board.
+Hi,
 
-Making a node will allocate node memory and strings for saving
-configrations with kstrdup().
+On 07/15/2014 11:08 AM, Li, ZhenHua wrote:
+> This bug  was founded in RHEL 6, kernel version 2.6.32.
+> 
+> But I also checked the file tty_io.c in  latest kernel, not all the code
+> protected by tty_lock(tty).
+> 
+> For example,  in function tty_del_file,
+> 
+>     if (--tty->count < 0) {
+>     }
+> and
+>     tty_del_file(filp);
+> are not surrounded by tty_lock(tty).
 
-So these are freed when dgap is unloaded or failed to initialize.
+Sure, but there is tty_lock_pair instead.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-RESEND: Adds Mark to TO list and CC list for
-	checking send this email properly to him.
-	And also he can verify this patch.
+> So I think the new lock is necessary.
 
- drivers/staging/dgap/dgap.c |   47 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+Nope, sorry, you have to complain to RedHat about this kernel. Unless
+you can reproduce this with the vanilla kernel.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 9e750fb..e4ea68b 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -202,6 +202,7 @@ static int dgap_test_fep(struct board_t *brd);
- static int dgap_tty_register_ports(struct board_t *brd);
- static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
- 			      struct board_t *brd);
-+static void dgap_cleanup_nodes(void);
- 
- static void dgap_cleanup_module(void);
- 
-@@ -620,6 +621,7 @@ unregister_tty:
- free_flipbuf:
- 	dgap_free_flipbuf(brd);
- cleanup_brd:
-+	dgap_cleanup_nodes();
- 	dgap_release_remap(brd);
- 	kfree(brd);
- 
-@@ -660,6 +662,8 @@ static void dgap_cleanup_module(void)
- 		dgap_cleanup_board(dgap_board[i]);
- 	}
- 
-+	dgap_cleanup_nodes();
-+
- 	if (dgap_numboards)
- 		pci_unregister_driver(&dgap_driver);
- }
-@@ -6324,6 +6328,49 @@ static void dgap_remove_tty_sysfs(struct device *c)
- 	sysfs_remove_group(&c->kobj, &dgap_tty_attribute_group);
- }
- 
-+static void dgap_cleanup_nodes(void)
-+{
-+	struct cnode *p;
-+
-+	p = &dgap_head;
-+
-+	while (p) {
-+		struct cnode *tmp = p->next;
-+
-+		switch (p->type) {
-+		case BNODE:
-+			kfree(p->u.board.portstr);
-+			kfree(p->u.board.addrstr);
-+			kfree(p->u.board.pcibusstr);
-+			kfree(p->u.board.pcislotstr);
-+			kfree(p->u.board.method);
-+			break;
-+		case CNODE:
-+			kfree(p->u.conc.id);
-+			kfree(p->u.conc.connect);
-+			break;
-+		case MNODE:
-+			kfree(p->u.module.id);
-+			break;
-+		case TNODE:
-+			kfree(p->u.ttyname);
-+			break;
-+		case CUNODE:
-+			kfree(p->u.cuname);
-+			break;
-+		case LNODE:
-+			kfree(p->u.line.cable);
-+			break;
-+		case PNODE:
-+			kfree(p->u.printname);
-+			break;
-+		}
-+
-+		kfree(p->u.board.status);
-+		kfree(p);
-+		p = tmp;
-+	}
-+}
- /*
-  * Parse a configuration file read into memory as a string.
-  */
+thanks,
 -- 
-1.7.1
-
+js
+suse labs
