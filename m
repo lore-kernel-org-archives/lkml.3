@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965094AbaGOXP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:15:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S965040AbaGOXPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:15:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933885AbaGOXOF (ORCPT
+	with ESMTP id S933846AbaGOXOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:05 -0400
+	Tue, 15 Jul 2014 19:14:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joel Stanley <joel@jms.id.au>, Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 30/84] powerpc/perf: Add PPMU_ARCH_207S define
-Date: Tue, 15 Jul 2014 16:17:27 -0700
-Message-Id: <20140715231714.109093757@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 22/84] Revert "ACPI / AC: Remove ACs proc directory."
+Date: Tue, 15 Jul 2014 16:17:19 -0700
+Message-Id: <20140715231713.868659775@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
 References: <20140715231713.193785557@linuxfoundation.org>
@@ -29,77 +29,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joel Stanley <joel@jms.id.au>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 4d9690dd56b0d18f2af8a9d4a279cb205aae3345 upstream.
+commit e63f6e28dda6de3de2392ddca321e211fd860925 upstream.
 
-Instead of separate bits for every POWER8 PMU feature, have a single one
-for v2.07 of the architecture.
+Revert commit ab0fd674d6ce (ACPI / AC: Remove AC's proc directory.),
+because some old tools (e.g. kpowersave from kde 3.5.10) are still
+using /proc/acpi/ac_adapter.
 
-This saves us adding a MMCR2 define for a future patch.
-
-Signed-off-by: Joel Stanley <joel@jms.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fixes: ab0fd674d6ce (ACPI / AC: Remove AC's proc directory.)
+Reported-and-tested-by: Sorin Manolache <sorinm@gmail.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/perf_event_server.h |    3 +--
- arch/powerpc/perf/core-book3s.c              |    6 +++---
- arch/powerpc/perf/power8-pmu.c               |    2 +-
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/acpi/ac.c |  130 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 128 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -61,8 +61,7 @@ struct power_pmu {
- #define PPMU_SIAR_VALID		0x00000010 /* Processor has SIAR Valid bit */
- #define PPMU_HAS_SSLOT		0x00000020 /* Has sampled slot in MMCRA */
- #define PPMU_HAS_SIER		0x00000040 /* Has SIER */
--#define PPMU_BHRB		0x00000080 /* has BHRB feature enabled */
--#define PPMU_EBB		0x00000100 /* supports event based branch */
-+#define PPMU_ARCH_207S		0x00000080 /* PMC is architecture v2.07S */
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -30,6 +30,10 @@
+ #include <linux/types.h>
+ #include <linux/dmi.h>
+ #include <linux/delay.h>
++#ifdef CONFIG_ACPI_PROCFS_POWER
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#endif
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
+ #include <linux/acpi.h>
+@@ -52,6 +56,7 @@ MODULE_AUTHOR("Paul Diefenbaugh");
+ MODULE_DESCRIPTION("ACPI AC Adapter Driver");
+ MODULE_LICENSE("GPL");
  
- /*
-  * Values for flags to get_alternatives()
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -485,7 +485,7 @@ static bool is_ebb_event(struct perf_eve
- 	 * check that the PMU supports EBB, meaning those that don't can still
- 	 * use bit 63 of the event code for something else if they wish.
- 	 */
--	return (ppmu->flags & PPMU_EBB) &&
-+	return (ppmu->flags & PPMU_ARCH_207S) &&
- 	       ((event->attr.config >> PERF_EVENT_CONFIG_EBB_SHIFT) & 1);
++
+ static int acpi_ac_add(struct acpi_device *device);
+ static int acpi_ac_remove(struct acpi_device *device);
+ static void acpi_ac_notify(struct acpi_device *device, u32 event);
+@@ -67,6 +72,13 @@ static int acpi_ac_resume(struct device
+ #endif
+ static SIMPLE_DEV_PM_OPS(acpi_ac_pm, NULL, acpi_ac_resume);
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++extern struct proc_dir_entry *acpi_lock_ac_dir(void);
++extern void *acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir);
++static int acpi_ac_open_fs(struct inode *inode, struct file *file);
++#endif
++
++
+ static int ac_sleep_before_get_state_ms;
+ 
+ static struct acpi_driver acpi_ac_driver = {
+@@ -91,6 +103,16 @@ struct acpi_ac {
+ 
+ #define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++static const struct file_operations acpi_ac_fops = {
++	.owner = THIS_MODULE,
++	.open = acpi_ac_open_fs,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++#endif
++
+ /* --------------------------------------------------------------------------
+                                AC Adapter Management
+    -------------------------------------------------------------------------- */
+@@ -143,6 +165,83 @@ static enum power_supply_property ac_pro
+ 	POWER_SUPPLY_PROP_ONLINE,
+ };
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++/* --------------------------------------------------------------------------
++                              FS Interface (/proc)
++   -------------------------------------------------------------------------- */
++
++static struct proc_dir_entry *acpi_ac_dir;
++
++static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
++{
++	struct acpi_ac *ac = seq->private;
++
++
++	if (!ac)
++		return 0;
++
++	if (acpi_ac_get_state(ac)) {
++		seq_puts(seq, "ERROR: Unable to read AC Adapter state\n");
++		return 0;
++	}
++
++	seq_puts(seq, "state:                   ");
++	switch (ac->state) {
++	case ACPI_AC_STATUS_OFFLINE:
++		seq_puts(seq, "off-line\n");
++		break;
++	case ACPI_AC_STATUS_ONLINE:
++		seq_puts(seq, "on-line\n");
++		break;
++	default:
++		seq_puts(seq, "unknown\n");
++		break;
++	}
++
++	return 0;
++}
++
++static int acpi_ac_open_fs(struct inode *inode, struct file *file)
++{
++	return single_open(file, acpi_ac_seq_show, PDE_DATA(inode));
++}
++
++static int acpi_ac_add_fs(struct acpi_ac *ac)
++{
++	struct proc_dir_entry *entry = NULL;
++
++	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
++			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
++	if (!acpi_device_dir(ac->device)) {
++		acpi_device_dir(ac->device) =
++			proc_mkdir(acpi_device_bid(ac->device), acpi_ac_dir);
++		if (!acpi_device_dir(ac->device))
++			return -ENODEV;
++	}
++
++	/* 'state' [R] */
++	entry = proc_create_data(ACPI_AC_FILE_STATE,
++				 S_IRUGO, acpi_device_dir(ac->device),
++				 &acpi_ac_fops, ac);
++	if (!entry)
++		return -ENODEV;
++	return 0;
++}
++
++static int acpi_ac_remove_fs(struct acpi_ac *ac)
++{
++
++	if (acpi_device_dir(ac->device)) {
++		remove_proc_entry(ACPI_AC_FILE_STATE,
++				  acpi_device_dir(ac->device));
++		remove_proc_entry(acpi_device_bid(ac->device), acpi_ac_dir);
++		acpi_device_dir(ac->device) = NULL;
++	}
++
++	return 0;
++}
++#endif
++
+ /* --------------------------------------------------------------------------
+                                    Driver Model
+    -------------------------------------------------------------------------- */
+@@ -243,6 +342,11 @@ static int acpi_ac_add(struct acpi_devic
+ 		goto end;
+ 
+ 	ac->charger.name = acpi_device_bid(device);
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	result = acpi_ac_add_fs(ac);
++	if (result)
++		goto end;
++#endif
+ 	ac->charger.type = POWER_SUPPLY_TYPE_MAINS;
+ 	ac->charger.properties = ac_props;
+ 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
+@@ -258,8 +362,12 @@ static int acpi_ac_add(struct acpi_devic
+ 	ac->battery_nb.notifier_call = acpi_ac_battery_notify;
+ 	register_acpi_notifier(&ac->battery_nb);
+ end:
+-	if (result)
++	if (result) {
++#ifdef CONFIG_ACPI_PROCFS_POWER
++		acpi_ac_remove_fs(ac);
++#endif
+ 		kfree(ac);
++	}
+ 
+ 	dmi_check_system(ac_dmi_table);
+ 	return result;
+@@ -303,6 +411,10 @@ static int acpi_ac_remove(struct acpi_de
+ 		power_supply_unregister(&ac->charger);
+ 	unregister_acpi_notifier(&ac->battery_nb);
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_ac_remove_fs(ac);
++#endif
++
+ 	kfree(ac);
+ 
+ 	return 0;
+@@ -315,9 +427,20 @@ static int __init acpi_ac_init(void)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_ac_dir = acpi_lock_ac_dir();
++	if (!acpi_ac_dir)
++		return -ENODEV;
++#endif
++
++
+ 	result = acpi_bus_register_driver(&acpi_ac_driver);
+-	if (result < 0)
++	if (result < 0) {
++#ifdef CONFIG_ACPI_PROCFS_POWER
++		acpi_unlock_ac_dir(acpi_ac_dir);
++#endif
+ 		return -ENODEV;
++	}
+ 
+ 	return 0;
  }
- 
-@@ -777,7 +777,7 @@ void perf_event_print_debug(void)
- 	if (ppmu->flags & PPMU_HAS_SIER)
- 		sier = mfspr(SPRN_SIER);
- 
--	if (ppmu->flags & PPMU_EBB) {
-+	if (ppmu->flags & PPMU_ARCH_207S) {
- 		pr_info("MMCR2: %016lx EBBHR: %016lx\n",
- 			mfspr(SPRN_MMCR2), mfspr(SPRN_EBBHR));
- 		pr_info("EBBRR: %016lx BESCR: %016lx\n",
-@@ -1711,7 +1711,7 @@ static int power_pmu_event_init(struct p
- 
- 	if (has_branch_stack(event)) {
- 	        /* PMU has BHRB enabled */
--		if (!(ppmu->flags & PPMU_BHRB))
-+		if (!(ppmu->flags & PPMU_ARCH_207S))
- 			return -EOPNOTSUPP;
- 	}
- 
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -792,7 +792,7 @@ static struct power_pmu power8_pmu = {
- 	.get_constraint		= power8_get_constraint,
- 	.get_alternatives	= power8_get_alternatives,
- 	.disable_pmc		= power8_disable_pmc,
--	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_BHRB | PPMU_EBB,
-+	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_ARCH_207S,
- 	.n_generic		= ARRAY_SIZE(power8_generic_events),
- 	.generic_events		= power8_generic_events,
- 	.cache_events		= &power8_cache_events,
+@@ -325,6 +448,9 @@ static int __init acpi_ac_init(void)
+ static void __exit acpi_ac_exit(void)
+ {
+ 	acpi_bus_unregister_driver(&acpi_ac_driver);
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_unlock_ac_dir(acpi_ac_dir);
++#endif
+ }
+ module_init(acpi_ac_init);
+ module_exit(acpi_ac_exit);
 
 
