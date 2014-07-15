@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaGOOkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:40:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54888 "EHLO
+	id S1753639AbaGOOjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:39:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54872 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753737AbaGOOj0 (ORCPT
+	with ESMTP id S1752553AbaGOOjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:39:26 -0400
+	Tue, 15 Jul 2014 10:39:20 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
@@ -18,12 +18,10 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/8] usb: allow to supply the PHY in the drivers when using HCD
-Date: Tue, 15 Jul 2014 16:39:14 +0200
-Message-Id: <1405435156-27297-7-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v2 0/8] usb: add support for the generic PHY framework
+Date: Tue, 15 Jul 2014 16:39:08 +0200
+Message-Id: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,56 +29,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modify the generic code handling PHYs to allow them to be
-supplied from the drivers. This adds checks to ensure no PHY was already
-there when looking for one in the generic code. This also makes sure we
-do not modify its state in the generic HCD functions, it it was
-provided by the driver.
+Hi all,
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- drivers/usb/core/hcd.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+This is an attempt to add more common USB code aware of the generic PHY
+framework, while keeping the compatibility for the USB PHY one. It does
+not add the full support, some USB PHY specific functions not being
+available currently in the generic PHY subsystem (e.g. usb_phy_set_power()).
+But it allows to use the generic PHY framework in other cases, and might
+help others to convert their USB PHY drivers.
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 228bad89f09b..ce9ea309ab0f 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2650,7 +2650,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 		}
- 	}
- 
--	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && !hcd->phy) {
- 		struct phy *phy = phy_get(hcd->self.controller, "usb");
- 
- 		if (IS_ERR(phy)) {
-@@ -2670,6 +2670,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 				goto err_phy;
- 			}
- 			hcd->phy = phy;
-+			hcd->remove_phy = 1;
- 		}
- 	}
- 
-@@ -2816,7 +2817,7 @@ err_allocate_root_hub:
- err_register_bus:
- 	hcd_buffer_destroy(hcd);
- err_create_buf:
--	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
- 		phy_power_off(hcd->phy);
- 		phy_exit(hcd->phy);
- 		phy_put(hcd->phy);
-@@ -2900,7 +2901,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
- 	usb_deregister_bus(&hcd->self);
- 	hcd_buffer_destroy(hcd);
- 
--	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
- 		phy_power_off(hcd->phy);
- 		phy_exit(hcd->phy);
- 		phy_put(hcd->phy);
+A little background: I submitted a series to support USB on Berlin SoCs[1].
+One patch added a new PHY driver in drivers/usb/phy and Felipe asked it to
+be in the generic PHY framework instead[2]. This PHY being used by a ChipIdea
+driver, changes were needed in ChipIdea, OTG and HCD.
+
+This is done in 3 steps:
+        1. moving the OTG state from the USB PHY structure to the OTG one
+        2. renaming the field 'phy' to 'usb_phy'
+        3. adding a field for the generic framework PHY and dissociating its
+           use from the USB PHY one
+
+Step 1 is in the first patch. Steps 2 and 3 are done for OTG, and ChipIdea
+subsystems in patches 2-3 and 7-8.
+
+HCD generic PHY support was made by Sergei and Yoshihiro[1]. I added some
+modifications to make this support consistent with this series in patches
+4-6.
+
+I tested it by using the ChipIdea driver I introduced, both with an USB PHY
+and a PHY driver successfully. I also compiled a multi_v7 kernel (ARM), with
+every driver I could enable in the USB section.
+
+I'd like more people to test and your inputs and suggestions on these changes.
+
+Feel free to add Ccs if others might be interested in this. If needed patches
+can be squashed or divided, I tried there to group modifications by USB
+framework parts (OTG, HCD, ChipIdea).
+
+Patches can also be found at:
+git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+
+The series applies on top of Sergei and Yoshihiro generic PHY support in
+HCD[1].
+
+Thanks a lot!
+
+Antoine
+
+Changes since v1:
+        - rebased the series on top of [1] (generic PHY support for HCD)
+        - split s/phy/usb_phy/ renaming and generic PHY support in separate
+          patches
+
+[1] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.html
+
+Antoine Ténart (8):
+  usb: move the OTG state from the USB PHY to the OTG structure
+  usb: rename phy to usb_phy in OTG
+  usb: add support to the generic PHY framework in OTG
+  usb: rename phy to usb_phy in HCD
+  usb: rename gen_phy to phy in HCD
+  usb: allow to supply the PHY in the drivers when using HCD
+  usb: rename transceiver and phy to usb_phy in ChipIdea
+  usb: chipidea: add support to the generic PHY framework in ChipIdea
+
+ drivers/phy/phy-omap-usb2.c         | 14 ++----
+ drivers/usb/chipidea/ci.h           |  7 ++-
+ drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
+ drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
+ drivers/usb/chipidea/core.c         | 71 ++++++++++++++++++++++-----
+ drivers/usb/chipidea/debug.c        |  5 +-
+ drivers/usb/chipidea/host.c         | 18 ++++---
+ drivers/usb/chipidea/otg_fsm.c      | 18 +++----
+ drivers/usb/chipidea/udc.c          |  4 +-
+ drivers/usb/common/usb-otg-fsm.c    |  8 ++--
+ drivers/usb/core/hcd.c              | 45 +++++++++---------
+ drivers/usb/core/hub.c              |  8 ++--
+ drivers/usb/host/ehci-fsl.c         | 16 +++----
+ drivers/usb/host/ehci-hub.c         |  2 +-
+ drivers/usb/host/ehci-msm.c         |  4 +-
+ drivers/usb/host/ehci-tegra.c       | 16 +++----
+ drivers/usb/host/ohci-omap.c        | 20 ++++----
+ drivers/usb/musb/am35x.c            | 28 +++++------
+ drivers/usb/musb/blackfin.c         | 18 +++----
+ drivers/usb/musb/da8xx.c            | 28 +++++------
+ drivers/usb/musb/davinci.c          | 18 +++----
+ drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
+ drivers/usb/musb/musb_dsps.c        | 26 +++++-----
+ drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
+ drivers/usb/musb/musb_host.c        |  8 ++--
+ drivers/usb/musb/musb_virthub.c     | 22 ++++-----
+ drivers/usb/musb/omap2430.c         | 30 ++++++------
+ drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
+ drivers/usb/musb/ux500.c            | 10 ++--
+ drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
+ drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
+ drivers/usb/phy/phy-generic.c       |  6 +--
+ drivers/usb/phy/phy-gpio-vbus-usb.c | 12 ++---
+ drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
+ drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
+ drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
+ drivers/usb/phy/phy-samsung-usb2.c  |  2 +-
+ drivers/usb/phy/phy-tahvo.c         |  8 ++--
+ drivers/usb/phy/phy-ulpi.c          |  6 +--
+ include/linux/usb/chipidea.h        |  4 +-
+ include/linux/usb/hcd.h             |  6 ++-
+ include/linux/usb/otg.h             |  7 ++-
+ include/linux/usb/phy.h             |  1 -
+ 43 files changed, 469 insertions(+), 401 deletions(-)
+
 -- 
 1.9.1
 
