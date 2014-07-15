@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934505AbaGPAGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:06:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44998 "EHLO
+	id S932932AbaGOXNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:13:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177AbaGOXNd (ORCPT
+	with ESMTP id S1758364AbaGOXNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:33 -0400
+	Tue, 15 Jul 2014 19:13:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 44/44] ACPI / battery: Retry to get battery information if failed during probing
-Date: Tue, 15 Jul 2014 16:17:42 -0700
-Message-Id: <20140715231647.998327037@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.10 12/44] hwmon: (adm1021) Fix cache problem when writing temperature limits
+Date: Tue, 15 Jul 2014 16:17:10 -0700
+Message-Id: <20140715231647.061910175@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231646.690728348@linuxfoundation.org>
 References: <20140715231646.690728348@linuxfoundation.org>
@@ -29,82 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
+commit c024044d4da2c9c3b32933b4235df1e409293b84 upstream.
 
-Some machines (eg. Lenovo Z480) ECs are not stable during boot up
-and causes battery driver fails to be loaded due to failure of getting
-battery information from EC sometimes. After several retries, the
-operation will work. This patch is to retry to get battery information 5
-times if the first try fails.
+The module test script for the adm1021 driver exposes a cache problem
+when writing temperature limits. temp_min and temp_max are expected
+to be stored in milli-degrees C but are stored in degrees C.
 
-[ backport to 3.14.5: removed second parameter in acpi_battery_update(),
-introduced by the commit 9e50bc14a7f58b5d8a55973b2d69355852ae2dae (ACPI /
-battery: Accelerate battery resume callback)]
-
-[naszar <naszar@ya.ru>: backport to 3.14.5]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
-Reported-and-tested-by: naszar <naszar@ya.ru>
-Cc: All applicable <stable@vger.kernel.org>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/acpi/battery.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/delay.h>
- #include <asm/unaligned.h>
+---
+ drivers/hwmon/adm1021.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+--- a/drivers/hwmon/adm1021.c
++++ b/drivers/hwmon/adm1021.c
+@@ -185,7 +185,7 @@ static ssize_t set_temp_max(struct devic
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adm1021_data *data = i2c_get_clientdata(client);
+ 	long temp;
+-	int err;
++	int reg_val, err;
  
- #ifdef CONFIG_ACPI_PROCFS_POWER
-@@ -1081,6 +1082,28 @@ static struct dmi_system_id bat_dmi_tabl
- 	{},
- };
+ 	err = kstrtol(buf, 10, &temp);
+ 	if (err)
+@@ -193,10 +193,11 @@ static ssize_t set_temp_max(struct devic
+ 	temp /= 1000;
  
-+/*
-+ * Some machines'(E,G Lenovo Z480) ECs are not stable
-+ * during boot up and this causes battery driver fails to be
-+ * probed due to failure of getting battery information
-+ * from EC sometimes. After several retries, the operation
-+ * may work. So add retry code here and 20ms sleep between
-+ * every retries.
-+ */
-+static int acpi_battery_update_retry(struct acpi_battery *battery)
-+{
-+	int retry, ret;
-+
-+	for (retry = 5; retry; retry--) {
-+		ret = acpi_battery_update(battery);
-+		if (!ret)
-+			break;
-+
-+		msleep(20);
-+	}
-+	return ret;
-+}
-+
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1100,9 +1123,11 @@ static int acpi_battery_add(struct acpi_
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	result = acpi_battery_update(battery);
-+
-+	result = acpi_battery_update_retry(battery);
- 	if (result)
- 		goto fail;
-+
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
+ 	mutex_lock(&data->update_lock);
+-	data->temp_max[index] = clamp_val(temp, -128, 127);
++	reg_val = clamp_val(temp, -128, 127);
++	data->temp_max[index] = reg_val * 1000;
+ 	if (!read_only)
+ 		i2c_smbus_write_byte_data(client, ADM1021_REG_TOS_W(index),
+-					  data->temp_max[index]);
++					  reg_val);
+ 	mutex_unlock(&data->update_lock);
+ 
+ 	return count;
+@@ -210,7 +211,7 @@ static ssize_t set_temp_min(struct devic
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adm1021_data *data = i2c_get_clientdata(client);
+ 	long temp;
+-	int err;
++	int reg_val, err;
+ 
+ 	err = kstrtol(buf, 10, &temp);
+ 	if (err)
+@@ -218,10 +219,11 @@ static ssize_t set_temp_min(struct devic
+ 	temp /= 1000;
+ 
+ 	mutex_lock(&data->update_lock);
+-	data->temp_min[index] = clamp_val(temp, -128, 127);
++	reg_val = clamp_val(temp, -128, 127);
++	data->temp_min[index] = reg_val * 1000;
+ 	if (!read_only)
+ 		i2c_smbus_write_byte_data(client, ADM1021_REG_THYST_W(index),
+-					  data->temp_min[index]);
++					  reg_val);
+ 	mutex_unlock(&data->update_lock);
+ 
+ 	return count;
 
 
