@@ -1,230 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759211AbaGOM5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 08:57:45 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:53206 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759191AbaGOM5m (ORCPT
+	id S1759237AbaGOM6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 08:58:07 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:45277 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758990AbaGOM42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 08:57:42 -0400
-Message-ID: <53C52541.50300@mentor.com>
-Date: Tue, 15 Jul 2014 05:57:37 -0700
-From: Jiada Wang <jiada_wang@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Linux Bluetooth mailing list 
-	<linux-bluetooth@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, <Dean_Jenkins@mentor.com>
-Subject: Re: [PATCH v2] Bluetooth: BCSP fails to ACK re-transmitted frames
- from the peer
-References: <1405417294-24832-1-git-send-email-jiada_wang@mentor.com> <B8E404C6-6A75-41E8-9506-0B05AA4C56D6@holtmann.org>
-In-Reply-To: <B8E404C6-6A75-41E8-9506-0B05AA4C56D6@holtmann.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Jul 2014 12:57:40.0051 (UTC) FILETIME=[5C0EC230:01CFA02C]
+	Tue, 15 Jul 2014 08:56:28 -0400
+From: Stefan Agner <stefan@agner.ch>
+To: shawn.guo@freescale.com, mkl@pengutronix.de
+Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stefan@agner.ch
+Subject: [PATCH v3 1/4] ARM: dts: vf610: add FlexCAN node
+Date: Tue, 15 Jul 2014 14:56:18 +0200
+Message-Id: <2be5a3885653a02dc07bf96ce086fddd71285f5a.1405428166.git.stefan@agner.ch>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <cover.1405428166.git.stefan@agner.ch>
+References: <cover.1405428166.git.stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcel
+Add FlexCAN node for the two FlexCAN IP instances in Vybrid.
 
-On 07/15/2014 04:42 AM, Marcel Holtmann wrote:
-> Hi Jiada,
->
->> Send an ACK frame with the current txack value in response to
->> every received reliable frame unless a TX reliable frame is being
->> sent. This modification allows re-transmitted frames from the remote
->> peer to be acknowledged rather than ignored. It means that the remote
->> peer knows which frame number to start re-transmitting from.
->>
->> Without this modification, the recovery time to a missing frame
->> from the remote peer was unnecessarily being extended because the
->> headers of the out of order reliable frames were being discarded rather
->> than being processed. The frame headers of received frames will
->> indicate whether the local peer's transmissions have been
->> acknowledged by the remote peer. Therefore, the local peer may
->> unnecessarily re-transmit despite the remote peer already indicating
->> that the frame had been acknowledged in out of order reliable frame.
->>
->> Signed-off-by: Dean Jenkins <djenkins@mvista.com>
->> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
->> ---
->> drivers/bluetooth/hci_bcsp.c | 94 ++++++++++++++++++++++++++++----------------
->> 1 file changed, 60 insertions(+), 34 deletions(-)
->>
->> diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
->> index 21cc45b..0f4664d 100644
->> --- a/drivers/bluetooth/hci_bcsp.c
->> +++ b/drivers/bluetooth/hci_bcsp.c
->> @@ -478,13 +478,29 @@ static inline void bcsp_unslip_one_byte(struct bcsp_struct *bcsp, unsigned char
->> static void bcsp_complete_rx_pkt(struct hci_uart *hu)
->> {
->> 	struct bcsp_struct *bcsp = hu->priv;
->> -	int pass_up;
->> +	int pass_up = 0;
->>
->> 	if (bcsp->rx_skb->data[0] & 0x80) {	/* reliable pkt */
->> 		BT_DBG("Received seqno %u from card", bcsp->rxseq_txack);
->> -		bcsp->rxseq_txack++;
->> -		bcsp->rxseq_txack %= 0x8;
->> -		bcsp->txack_req    = 1;
->> +
->> +		/* check the rx sequence number is as expected */
->> +		if ((bcsp->rx_skb->data[0] & 0x07) == bcsp->rxseq_txack) {
->> +			bcsp->rxseq_txack++;
->> +			bcsp->rxseq_txack %= 0x8;
->> +		} else {
->> +			/*
->> +			 * handle re-transmitted packet or
->> +			 * when packet was missed
->> +			 */
->
-> Comment style is wrong.
->
-> 	/* aaa
-> 	 * bbb
-> 	 */
->
->> +			BT_ERR ("Out-of-order packet arrived, got %u expected %u",
->> +				bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
->
-> It is BT_ERR(" and not BT_ERR (".
->
->> +
->> +			/* do not process out-of-order packet payload */
->> +			pass_up = 2;
->> +		}
->> +
->> +		/* send current txack value to all recieved reliable packets */
->> +		bcsp->txack_req = 1;
->>
->> 		/* If needed, transmit an ack pkt */
->> 		hci_uart_tx_wakeup(hu);
->> @@ -493,26 +509,36 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
->> 	bcsp->rxack = (bcsp->rx_skb->data[0] >> 3) & 0x07;
->> 	BT_DBG("Request for pkt %u from card", bcsp->rxack);
->>
->> +	/*
->> +	 * handle recieved ACK indications,
->> +	 * including those from out-of-order packets
->> +	 */
->
-> Same here. Please fix comment style.
->
->> 	bcsp_pkt_cull(bcsp);
->> -	if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
->> -			bcsp->rx_skb->data[0] & 0x80) {
->> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
->> -		pass_up = 1;
->> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
->> -			bcsp->rx_skb->data[0] & 0x80) {
->> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
->> -		pass_up = 1;
->> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
->> -		bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
->> -		pass_up = 1;
->> -	} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
->> -			!(bcsp->rx_skb->data[0] & 0x80)) {
->> -		bcsp_handle_le_pkt(hu);
->> -		pass_up = 0;
->> -	} else
->> -		pass_up = 0;
->> -
->> -	if (!pass_up) {
->> +
->> +	if (pass_up != 2) {
->> +		if ((bcsp->rx_skb->data[1] & 0x0f) == 6 &&
->> +				bcsp->rx_skb->data[0] & 0x80) {
->
-> Fix indentation here.
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ arch/arm/boot/dts/vf610.dtsi | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-Can you tell me what should be the correct indentation.
->
->> +			bt_cb(bcsp->rx_skb)->pkt_type = HCI_ACLDATA_PKT;
->> +			pass_up = 1;
->> +		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 5 &&
->> +				bcsp->rx_skb->data[0] & 0x80) {
->
-> And here.
->
->> +			bt_cb(bcsp->rx_skb)->pkt_type = HCI_EVENT_PKT;
->> +			pass_up = 1;
->> +		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 7) {
->> +			bt_cb(bcsp->rx_skb)->pkt_type = HCI_SCODATA_PKT;
->> +			pass_up = 1;
->> +		} else if ((bcsp->rx_skb->data[1] & 0x0f) == 1 &&
->> +				!(bcsp->rx_skb->data[0] & 0x80)) {
->
-> Same here.
->
->> +			bcsp_handle_le_pkt(hu);
->> +			pass_up = 0;
->> +		} else {
->> +			pass_up = 0;
->> +		}
->> +	}
->> +
->> +	switch (pass_up) {
->> +	case 0:
->> +	{
->> 		struct hci_event_hdr hdr;
->> 		u8 desc = (bcsp->rx_skb->data[1] & 0x0f);
->
-> In general I do not prefer using { } in case statements. Please declare the variables where they are needed or use if else.
->
->>
->> @@ -537,11 +563,21 @@ static void bcsp_complete_rx_pkt(struct hci_uart *hu)
->> 			}
->> 		} else
->> 			kfree_skb(bcsp->rx_skb);
->> -	} else {
->> +		break;
->> +	}
->> +	case 1:
->> 		/* Pull out BCSP hdr */
->> 		skb_pull(bcsp->rx_skb, 4);
->>
->> 		hci_recv_frame(hu->hdev, bcsp->rx_skb);
->> +		break;
->> +	default:
->> +		/*
->> +		 * ignore packet payload of already ACKed re-transmitted
->> +		 * packets or when a packet was missed in the BCSP window
->> +		 */
->
-> Fix up comment style.
->
->> +		kfree_skb(bcsp->rx_skb);
->> +		break;
->> 	}
->>
->> 	bcsp->rx_state = BCSP_W4_PKT_DELIMITER;
->> @@ -587,16 +623,6 @@ static int bcsp_recv(struct hci_uart *hu, void *data, int count)
->> 				bcsp->rx_count = 0;
->> 				continue;
->> 			}
->> -			if (bcsp->rx_skb->data[0] & 0x80	/* reliable pkt */
->> -			    		&& (bcsp->rx_skb->data[0] & 0x07) != bcsp->rxseq_txack) {
->> -				BT_ERR ("Out-of-order packet arrived, got %u expected %u",
->> -					bcsp->rx_skb->data[0] & 0x07, bcsp->rxseq_txack);
->> -
->> -				kfree_skb(bcsp->rx_skb);
->> -				bcsp->rx_state = BCSP_W4_PKT_DELIMITER;
->> -				bcsp->rx_count = 0;
->> -				continue;
->> -			}
->> 			bcsp->rx_state = BCSP_W4_DATA;
->> 			bcsp->rx_count = (bcsp->rx_skb->data[1] >> 4) +
->> 					(bcsp->rx_skb->data[2] << 4);	/* May be 0 */
->
-> Regards
->
-> Marcel
->
+diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+index 3fb127a..9404853 100644
+--- a/arch/arm/boot/dts/vf610.dtsi
++++ b/arch/arm/boot/dts/vf610.dtsi
+@@ -14,6 +14,8 @@
+ 
+ / {
+ 	aliases {
++		can0 = &can0;
++		can1 = &can1;
+ 		serial0 = &uart0;
+ 		serial1 = &uart1;
+ 		serial2 = &uart2;
+@@ -103,6 +105,16 @@
+ 					<&clks VF610_CLK_DMAMUX1>;
+ 			};
+ 
++			can0: flexcan@40020000 {
++				compatible = "fsl,vf610-flexcan";
++				reg = <0x40020000 0x4000>;
++				interrupts = <0 58 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clks VF610_CLK_FLEXCAN0>,
++					 <&clks VF610_CLK_FLEXCAN0>;
++				clock-names = "ipg", "per";
++				status = "disabled";
++			};
++
+ 			uart0: serial@40027000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x40027000 0x1000>;
+@@ -414,6 +426,17 @@
+ 				clock-names = "nfc";
+ 				status = "disabled";
+ 			};
++
++			can1: flexcan@400d4000 {
++				compatible = "fsl,vf610-flexcan";
++				reg = <0x400d4000 0x4000>;
++				interrupts = <0 59 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clks VF610_CLK_FLEXCAN1>,
++					 <&clks VF610_CLK_FLEXCAN1>;
++				clock-names = "ipg", "per";
++				status = "disabled";
++			};
++
+ 		};
+ 	};
+ };
+-- 
+2.0.1
 
-
-Thanks,
-Jiada
