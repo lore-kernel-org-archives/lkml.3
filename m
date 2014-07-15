@@ -1,46 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030368AbaGOXoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:44:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34080 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933812AbaGOXoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:44:16 -0400
-Date: Wed, 16 Jul 2014 01:44:14 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Rientjes <rientjes@google.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, tglx@linutronix.de,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] x86, platform, xen, kconfig: move kvmconfig
-	functionality to a helper
-Message-ID: <20140715234414.GL10393@wotan.suse.de>
-References: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com> <alpine.DEB.2.02.1406091401080.30620@chino.kir.corp.google.com>
+	id S1030378AbaGOXoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:44:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933806AbaGOXOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 19:14:01 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Axel Lin <axel.lin@ingics.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.15 19/84] hwmon: (adm1031) Fix writes to limit registers
+Date: Tue, 15 Jul 2014 16:17:16 -0700
+Message-Id: <20140715231713.776654177@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406091401080.30620@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 02:01:42PM -0700, David Rientjes wrote:
-> On Mon, 9 Jun 2014, Luis R. Rodriguez wrote:
-> 
-> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > 
-> > This can then be used by other virtual configs.
-> > 
-> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> 
-> Suggested-by: David Rientjes <rientjes@google.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Folks this series is not yet merged. They all apply cleanly
-as-is on linux-next next-20140715 so I don't think a resend
-is required.
+------------------
 
-Just a friendly reminder.
+From: Guenter Roeck <linux@roeck-us.net>
 
-  Luis
+commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
+
+Upper limit for write operations to temperature limit registers
+was clamped to a fractional value. However, limit registers do
+not support fractional values. As a result, upper limits of 127.5
+degrees C or higher resulted in a rounded limit of 128 degrees C.
+Since limit registers are signed, this was stored as -128 degrees C.
+Clamp limits to (-55, +127) degrees C to solve the problem.
+
+Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
+clamped at all, but masked. As a result, out-of-range writes resulted
+in a more or less arbitrary limit. Clamp those attributes to (0, 127)
+degrees C for more predictable results.
+
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hwmon/adm1031.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--- a/drivers/hwmon/adm1031.c
++++ b/drivers/hwmon/adm1031.c
+@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, st
+ 	if (ret)
+ 		return ret;
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
+ 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
+@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, st
+ 	if (ret)
+ 		return ret;
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
+ 						  data->pwm[nr]);
+@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct devic
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
+@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct devic
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
+@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct devi
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_crit[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
+
+
