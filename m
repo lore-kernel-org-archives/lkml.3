@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758360AbaGOIsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:48:38 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:54220
+	id S932671AbaGOIwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:52:05 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:55311
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758330AbaGOIsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:48:31 -0400
+	id S1758346AbaGOIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:48:36 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 14/29] nios2: ELF definitions
-Date: Tue, 15 Jul 2014 16:45:41 +0800
-Message-ID: <1405413956-2772-15-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 13/29] nios2: DMA mapping API
+Date: Tue, 15 Jul 2014 16:45:40 +0800
+Message-ID: <1405413956-2772-14-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(79102001)(6806004)(107046002)(106466001)(95666004)(229853001)(81542001)(42186005)(92566001)(47776003)(83072002)(92726001)(20776003)(83322001)(19580405001)(87286001)(33646002)(68736004)(77982001)(4396001)(44976005)(76176999)(105596002)(62966002)(87936001)(85852003)(19580395003)(50226001)(48376002)(64706001)(84676001)(77156001)(2201001)(15202345003)(76482001)(102836001)(85306003)(74662001)(31966008)(99396002)(46102001)(93916002)(89996001)(104166001)(21056001)(15975445006)(81342001)(77096002)(88136002)(50986999)(97736001)(74502001)(36756003)(86362001)(80022001)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB314;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(22564002)(189002)(199002)(84676001)(104166001)(46102001)(76482001)(77156001)(99396002)(97736001)(2201001)(92726001)(92566001)(83322001)(19580395003)(48376002)(68736004)(19580405001)(42186005)(50986999)(6806004)(76176999)(44976005)(87286001)(21056001)(79102001)(77982001)(89996001)(83072002)(85852003)(88136002)(87936001)(36756003)(229853001)(86362001)(93916002)(80022001)(85306003)(47776003)(107046002)(64706001)(20776003)(74502001)(74662001)(50226001)(4396001)(106466001)(102836001)(81342001)(62966002)(31966008)(95666004)(81542001)(77096002)(33646002)(105596002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB039;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,196 +31,320 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds definitions for the ELF format
+This patch adds support for the DMA mapping API.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/elf.h      | 101 ++++++++++++++++++++++++++++++++++++++
- arch/nios2/include/uapi/asm/elf.h |  67 +++++++++++++++++++++++++
- 2 files changed, 168 insertions(+)
- create mode 100644 arch/nios2/include/asm/elf.h
- create mode 100644 arch/nios2/include/uapi/asm/elf.h
+ arch/nios2/include/asm/dma-mapping.h | 106 ++++++++++++++++++++
+ arch/nios2/mm/dma-mapping.c          | 186 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 292 insertions(+)
+ create mode 100644 arch/nios2/include/asm/dma-mapping.h
+ create mode 100644 arch/nios2/mm/dma-mapping.c
 
-diff --git a/arch/nios2/include/asm/elf.h b/arch/nios2/include/asm/elf.h
+diff --git a/arch/nios2/include/asm/dma-mapping.h b/arch/nios2/include/asm/dma-mapping.h
 new file mode 100644
-index 0000000..b7d655d
+index 0000000..2db7ac3
 --- /dev/null
-+++ b/arch/nios2/include/asm/elf.h
-@@ -0,0 +1,101 @@
++++ b/arch/nios2/include/asm/dma-mapping.h
+@@ -0,0 +1,106 @@
 +/*
 + * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License.  See the file COPYING in the main directory of this
++ * archive for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_ELF_H
-+#define _ASM_NIOS2_ELF_H
++#ifndef _ASM_NIOS2_DMA_MAPPING_H
++#define _ASM_NIOS2_DMA_MAPPING_H
 +
-+#include <uapi/asm/elf.h>
++#include <linux/scatterlist.h>
++#include <linux/cache.h>
++#include <asm/cacheflush.h>
 +
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ */
-+#define elf_check_arch(x) ((x)->e_machine == EM_ALTERA_NIOS2)
++static inline void __dma_sync(void *vaddr, size_t size,
++			      enum dma_data_direction direction)
++{
++	switch (direction) {
++	case DMA_FROM_DEVICE:	/* invalidate cache */
++		invalidate_dcache_range((unsigned long)vaddr,
++			(unsigned long)(vaddr + size));
++		break;
++	case DMA_TO_DEVICE:	/* flush and invalidate cache */
++	case DMA_BIDIRECTIONAL:
++		flush_dcache_range((unsigned long)vaddr,
++			(unsigned long)(vaddr + size));
++		break;
++	default:
++		BUG();
++	}
++}
 +
-+#define ELF_PLAT_INIT(_r, load_addr)
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
++#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
 +
-+#define CORE_DUMP_USE_REGSET
-+#define ELF_EXEC_PAGESIZE	4096
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			   dma_addr_t *dma_handle, gfp_t flag);
 +
-+/* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
-+   use of this is to invoke "./ld.so someprog" to test out a new version of
-+   the loader.  We need to make sure that it is out of the way of the program
-+   that it will "exec", and that there is sufficient room for the brk.  */
++void dma_free_coherent(struct device *dev, size_t size,
++			 void *vaddr, dma_addr_t dma_handle);
 +
-+#define ELF_ET_DYN_BASE		0xD0000000UL
++static inline dma_addr_t dma_map_single(struct device *dev, void *ptr,
++					size_t size,
++					enum dma_data_direction direction)
++{
++	__dma_sync(ptr, size, direction);
++	return virt_to_phys(ptr);
++}
 +
-+/* regs is struct pt_regs, pr_reg is elf_gregset_t (which is
-+   now struct_user_regs, they are different) */
++static inline void dma_unmap_single(struct device *dev, dma_addr_t dma_addr,
++				size_t size, enum dma_data_direction direction)
++{
++}
 +
-+#define ARCH_HAS_SETUP_ADDITIONAL_PAGES	1
-+struct linux_binprm;
-+extern int arch_setup_additional_pages(struct linux_binprm *bprm,
-+	int uses_interp);
-+#define ELF_CORE_COPY_REGS(pr_reg, regs)				\
-+{ do {									\
-+	/* Bleech. */							\
-+	pr_reg[0]  = regs->r8;						\
-+	pr_reg[1]  = regs->r9;						\
-+	pr_reg[2]  = regs->r10;						\
-+	pr_reg[3]  = regs->r11;						\
-+	pr_reg[4]  = regs->r12;						\
-+	pr_reg[5]  = regs->r13;						\
-+	pr_reg[6]  = regs->r14;						\
-+	pr_reg[7]  = regs->r15;						\
-+	pr_reg[8]  = regs->r1;						\
-+	pr_reg[9]  = regs->r2;						\
-+	pr_reg[10] = regs->r3;						\
-+	pr_reg[11] = regs->r4;						\
-+	pr_reg[12] = regs->r5;						\
-+	pr_reg[13] = regs->r6;						\
-+	pr_reg[14] = regs->r7;						\
-+	pr_reg[15] = regs->orig_r2;					\
-+	pr_reg[16] = regs->ra;						\
-+	pr_reg[17] = regs->fp;						\
-+	pr_reg[18] = regs->sp;						\
-+	pr_reg[19] = regs->gp;						\
-+	pr_reg[20] = regs->estatus;					\
-+	pr_reg[21] = regs->ea;						\
-+	pr_reg[22] = regs->orig_r7;					\
-+	{								\
-+		struct switch_stack *sw = ((struct switch_stack *)regs) - 1; \
-+		pr_reg[23] = sw->r16;					\
-+		pr_reg[24] = sw->r17;					\
-+		pr_reg[25] = sw->r18;					\
-+		pr_reg[26] = sw->r19;					\
-+		pr_reg[27] = sw->r20;					\
-+		pr_reg[28] = sw->r21;					\
-+		pr_reg[29] = sw->r22;					\
-+		pr_reg[30] = sw->r23;					\
-+		pr_reg[31] = sw->fp;					\
-+		pr_reg[32] = sw->gp;					\
-+		pr_reg[33] = sw->ra;					\
-+	}								\
-+} while (0); }
++extern int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
++	enum dma_data_direction direction);
++extern dma_addr_t dma_map_page(struct device *dev, struct page *page,
++	unsigned long offset, size_t size, enum dma_data_direction direction);
++extern void dma_unmap_page(struct device *dev, dma_addr_t dma_address,
++	size_t size, enum dma_data_direction direction);
++extern void dma_unmap_sg(struct device *dev, struct scatterlist *sg,
++	int nhwentries, enum dma_data_direction direction);
++extern void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
++	size_t size, enum dma_data_direction direction);
++extern void dma_sync_single_for_device(struct device *dev,
++	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction);
++extern void dma_sync_single_range_for_cpu(struct device *dev,
++	dma_addr_t dma_handle, unsigned long offset, size_t size,
++	enum dma_data_direction direction);
++extern void dma_sync_single_range_for_device(struct device *dev,
++	dma_addr_t dma_handle, unsigned long offset, size_t size,
++	enum dma_data_direction direction);
++extern void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
++	int nelems, enum dma_data_direction direction);
++extern void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
++	int nelems, enum dma_data_direction direction);
 +
-+/* This yields a mask that user programs can use to figure out what
-+   instruction set this cpu supports.  */
++static inline int dma_supported(struct device *dev, u64 mask)
++{
++	return 1;
++}
 +
-+#define ELF_HWCAP	(0)
++static inline int dma_set_mask(struct device *dev, u64 mask)
++{
++	if (!dev->dma_mask || !dma_supported(dev, mask))
++		return -EIO;
 +
-+/* This yields a string that ld.so will use to load implementation
-+   specific libraries for optimization.  This is more specific in
-+   intent than poking at uname or /proc/cpuinfo.  */
++	*dev->dma_mask = mask;
 +
-+#define ELF_PLATFORM  (NULL)
++	return 0;
++}
 +
-+#endif /* _ASM_NIOS2_ELF_H */
-diff --git a/arch/nios2/include/uapi/asm/elf.h b/arch/nios2/include/uapi/asm/elf.h
++static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	return 0;
++}
++
++static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
++				  enum dma_data_direction direction)
++{
++	__dma_sync(vaddr, size, direction);
++}
++
++#endif /* _ASM_NIOS2_DMA_MAPPING_H */
+diff --git a/arch/nios2/mm/dma-mapping.c b/arch/nios2/mm/dma-mapping.c
 new file mode 100644
-index 0000000..a5b91ae
+index 0000000..a9bafe9
 --- /dev/null
-+++ b/arch/nios2/include/uapi/asm/elf.h
-@@ -0,0 +1,67 @@
++++ b/arch/nios2/mm/dma-mapping.c
+@@ -0,0 +1,186 @@
 +/*
 + * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *  Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Based on DMA code from MIPS.
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
++#include <linux/types.h>
++#include <linux/mm.h>
++#include <linux/export.h>
++#include <linux/string.h>
++#include <linux/scatterlist.h>
++#include <linux/dma-mapping.h>
++#include <linux/io.h>
++#include <linux/cache.h>
++#include <asm/cacheflush.h>
 +
-+#ifndef _UAPI_ASM_NIOS2_ELF_H
-+#define _UAPI_ASM_NIOS2_ELF_H
 +
-+#include <linux/ptrace.h>
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			    dma_addr_t *dma_handle, gfp_t gfp)
++{
++	void *ret;
 +
-+/* Relocation types */
-+#define R_NIOS2_NONE		0
-+#define R_NIOS2_S16		1
-+#define R_NIOS2_U16		2
-+#define R_NIOS2_PCREL16		3
-+#define R_NIOS2_CALL26		4
-+#define R_NIOS2_IMM5		5
-+#define R_NIOS2_CACHE_OPX	6
-+#define R_NIOS2_IMM6		7
-+#define R_NIOS2_IMM8		8
-+#define R_NIOS2_HI16		9
-+#define R_NIOS2_LO16		10
-+#define R_NIOS2_HIADJ16		11
-+#define R_NIOS2_BFD_RELOC_32	12
-+#define R_NIOS2_BFD_RELOC_16	13
-+#define R_NIOS2_BFD_RELOC_8	14
-+#define R_NIOS2_GPREL		15
-+#define R_NIOS2_GNU_VTINHERIT	16
-+#define R_NIOS2_GNU_VTENTRY	17
-+#define R_NIOS2_UJMP		18
-+#define R_NIOS2_CJMP		19
-+#define R_NIOS2_CALLR		20
-+#define R_NIOS2_ALIGN		21
-+/* Keep this the last entry.  */
-+#define R_NIOS2_NUM		22
++	/* ignore region specifiers */
++	gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
 +
-+typedef unsigned long elf_greg_t;
++	/* optimized page clearing */
++	gfp |= __GFP_ZERO;
 +
-+#define ELF_NGREG	\
-+	((sizeof(struct pt_regs) + sizeof(struct switch_stack)) /	\
-+		sizeof(elf_greg_t))
-+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
++	if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
++		gfp |= GFP_DMA;
 +
-+typedef unsigned long elf_fpregset_t;
++	ret = (void *) __get_free_pages(gfp, get_order(size));
++	if (ret != NULL) {
++		*dma_handle = virt_to_phys(ret);
++		flush_dcache_range((unsigned long) ret,
++			(unsigned long) ret + size);
++		ret = UNCAC_ADDR(ret);
++	}
 +
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#define ELF_CLASS	ELFCLASS32
-+#define ELF_DATA	ELFDATA2LSB
-+#define ELF_ARCH	EM_ALTERA_NIOS2
++	return ret;
++}
++EXPORT_SYMBOL(dma_alloc_coherent);
 +
-+#endif /* _UAPI_ASM_NIOS2_ELF_H */
++void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
++			dma_addr_t dma_handle)
++{
++	unsigned long addr = (unsigned long) CAC_ADDR((unsigned long) vaddr);
++	free_pages(addr, get_order(size));
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
++		enum dma_data_direction direction)
++{
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	for_each_sg(sg, sg, nents, i) {
++		void *addr;
++
++		addr = sg_virt(sg);
++		if (addr) {
++			__dma_sync(addr, sg->length, direction);
++			sg->dma_address = sg_phys(sg);
++		}
++	}
++
++	return nents;
++}
++EXPORT_SYMBOL(dma_map_sg);
++
++dma_addr_t dma_map_page(struct device *dev, struct page *page,
++			unsigned long offset, size_t size,
++			enum dma_data_direction direction)
++{
++	void *addr;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	addr = page_address(page) + offset;
++	__dma_sync(addr, size, direction);
++
++	return page_to_phys(page) + offset;
++}
++EXPORT_SYMBOL(dma_map_page);
++
++void dma_unmap_page(struct device *dev, dma_addr_t dma_address, size_t size,
++		    enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	if (direction != DMA_TO_DEVICE)
++		__dma_sync(phys_to_virt(dma_address), size, direction);
++}
++EXPORT_SYMBOL(dma_unmap_page);
++
++void dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nhwentries,
++		  enum dma_data_direction direction)
++{
++	void *addr;
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	if (direction == DMA_TO_DEVICE)
++		return;
++
++	for_each_sg(sg, sg, nhwentries, i) {
++		addr = sg_virt(sg);
++		if (addr)
++			__dma_sync(addr, sg->length, direction);
++	}
++}
++EXPORT_SYMBOL(dma_unmap_sg);
++
++void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
++			     size_t size, enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_for_cpu);
++
++void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
++				size_t size, enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_for_device);
++
++void dma_sync_single_range_for_cpu(struct device *dev, dma_addr_t dma_handle,
++					unsigned long offset, size_t size,
++					enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_range_for_cpu);
++
++void dma_sync_single_range_for_device(struct device *dev, dma_addr_t dma_handle,
++					unsigned long offset, size_t size,
++					enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_range_for_device);
++
++void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
++			 enum dma_data_direction direction)
++{
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	/* Make sure that gcc doesn't leave the empty loop body.  */
++	for_each_sg(sg, sg, nelems, i)
++		__dma_sync(sg_virt(sg), sg->length, direction);
++}
++EXPORT_SYMBOL(dma_sync_sg_for_cpu);
++
++void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
++				int nelems, enum dma_data_direction direction)
++{
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	/* Make sure that gcc doesn't leave the empty loop body.  */
++	for_each_sg(sg, sg, nelems, i)
++		__dma_sync(sg_virt(sg), sg->length, direction);
++
++}
++EXPORT_SYMBOL(dma_sync_sg_for_device);
 -- 
 1.8.2.1
 
