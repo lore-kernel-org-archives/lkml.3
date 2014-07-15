@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573AbaGODDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 23:03:05 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:36242 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757540AbaGODDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757549AbaGODDB (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 14 Jul 2014 23:03:01 -0400
-Date: Tue, 15 Jul 2014 12:01:45 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] staging: dgap: remove unused a parameter in dgap_gettok()
-Message-ID: <20140715030145.GA14394@devel.8.8.4.4>
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:34822 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007AbaGODC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 23:02:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <53C3F88A.8080005@samsung.com>
+References: <1405080036-6651-1-git-send-email-tushar.b@samsung.com>
+	<1405080036-6651-4-git-send-email-tushar.b@samsung.com>
+	<53C3F88A.8080005@samsung.com>
+Date: Tue, 15 Jul 2014 08:32:57 +0530
+X-Google-Sender-Auth: lnVv2U4KuvH2GlkgmYnu8b5LR74
+Message-ID: <CAC5m3Bwq5cGkN+kk+vWFdj6qjGJUCS3BduwhHMyVAQ6Mdbmh2A@mail.gmail.com>
+Subject: Re: [PATCH V2 3/3] clk: exynos-audss: Use samsung clock APIs to
+ register/unregister clocks
+From: Tushar Behera <tushar.b@samsung.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: ML Arch-Arm <linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "p" as parameter is unused.
+On Mon, Jul 14, 2014 at 9:04 PM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
+> On 11/07/14 14:00, Tushar Behera wrote:
+>> @@ -103,17 +140,11 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+>>               return PTR_ERR(reg_base);
+>>       }
+>>
+>> -     clk_table = devm_kzalloc(&pdev->dev,
+>> -                             sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
+>> -                             GFP_KERNEL);
+>> -     if (!clk_table)
+>> +     ctx = samsung_clk_init(pdev->dev.of_node, reg_base, nr_clks);
+>
+> There is an issue here that this registers the clk provider before all
+> its clocks are registered with the clk core. Therefore it introduces
+> a race condition.
+>
+> Please have a look at patch [1], you may want to rebase this series
+> onto that patch.
+>
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/dgap/dgap.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Thanks for the pointer. I will re-post.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 17514c8..1e52092 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -150,7 +150,7 @@ static void dgap_firmware_reset_port(struct channel_t *ch);
- /*
-  * Function prototypes from dgap_parse.c.
-  */
--static int dgap_gettok(char **in, struct cnode *p);
-+static int dgap_gettok(char **in);
- static char *dgap_getword(char **in);
- static struct cnode *dgap_newnode(int t);
- static int dgap_checknode(struct cnode *p);
-@@ -6342,7 +6342,7 @@ static int dgap_parsefile(char **in)
- 		p = p->next;
- 
- 	/* file must start with a BEGIN */
--	while ((rc = dgap_gettok(in, p)) != BEGIN) {
-+	while ((rc = dgap_gettok(in)) != BEGIN) {
- 		if (rc == 0) {
- 			dgap_err("unexpected EOF");
- 			return -1;
-@@ -6350,7 +6350,7 @@ static int dgap_parsefile(char **in)
- 	}
- 
- 	for (; ;) {
--		rc = dgap_gettok(in, p);
-+		rc = dgap_gettok(in);
- 		if (rc == 0) {
- 			dgap_err("unexpected EOF");
- 			return -1;
-@@ -7100,7 +7100,7 @@ static char *dgap_sindex(char *string, char *group)
- /*
-  * Get a token from the input file; return 0 if end of file is reached
-  */
--static int dgap_gettok(char **in, struct cnode *p)
-+static int dgap_gettok(char **in)
- {
- 	char *w;
- 	struct toklist *t;
--- 
-1.7.1
-
+>> +     samsung_clk_register_div(ctx, exynos_audss_div_clks,
+>> +                             ARRAY_SIZE(exynos_audss_div_clks));
+> [...]
+>> +     samsung_clk_register_gate(ctx, exynos_audss_gate_clks,
+>> +                             ARRAY_SIZE(exynos_audss_gate_clks));
+> [...]
+>> -     ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
+>> -                                     &clk_data);
+>> -     if (ret) {
+>> -             dev_err(&pdev->dev, "failed to add clock provider\n");
+>> -             goto unregister;
+>> +             samsung_clk_register_gate(ctx, exynos5420_audss_gate_clks,
+>> +                                     ARRAY_SIZE(exynos5420_audss_gate_clks));
+>>       }
+>
+> [1]
+> https://git.kernel.org/cgit/linux/kernel/git/tfiga/samsung-clk.git/commit/?h=samsung-clk-next&id=d5e136a21b2028fb1f45143ea7112d5869bfc6c7
+>
+> --
+> Regards,
+> Sylwester
