@@ -1,131 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564AbaGOP7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:59:06 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30273 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaGOP7E (ORCPT
+	id S1755236AbaGOP7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:59:37 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:43944 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaGOP7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:59:04 -0400
-Date: Tue, 15 Jul 2014 11:58:50 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
-Message-ID: <20140715155850.GE7792@laptop.dumpdata.com>
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
- <1405431640-649-3-git-send-email-vkuznets@redhat.com>
- <20140715150938.GO3403@laptop.dumpdata.com>
- <87r41mty9q.fsf@vitty.brq.redhat.com>
+	Tue, 15 Jul 2014 11:59:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r41mty9q.fsf@vitty.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <53C54042.2030507@linaro.org>
+References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
+	<1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
+	<CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com>
+	<53C4F745.3070701@linaro.org>
+	<CAB5oZtBSZJVqyO8GKdKqh0+3=GDkCyuqrAOQhMRxN0JFBnmZ6w@mail.gmail.com>
+	<53C54042.2030507@linaro.org>
+Date: Tue, 15 Jul 2014 17:59:31 +0200
+Message-ID: <CAB5oZtDy=TDz12_6ua_M3g=bQ+zB6cJTH3bUT9oA8snLDRBMTw@mail.gmail.com>
+Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
+From: Harro Haan <hrhaan@gmail.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
+        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 05:52:33PM +0200, Vitaly Kuznetsov wrote:
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-> 
-> > On Tue, Jul 15, 2014 at 03:40:38PM +0200, Vitaly Kuznetsov wrote:
-> >> PVHVM guest requires special actions before kexec. Register specific
-> >> xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
-> >> 
-> >
-> > This looks close to what I had sent as an RFC to you?
-> >
-> 
-> Yes, I stole that part from your "RFC: VCPU_reset_cpu_info" patch to
-> call xen_unmap_all_pirqs() on shutdown. I'm looking at SMP issues your
-> patches address as well.
+On 15 July 2014 16:52, Daniel Thompson <daniel.thompson@linaro.org> wrote:
+> On 15/07/14 14:04, Harro Haan wrote:
+>>> Makes sense.
+>>>
+>>> Avoiding this problem on GICv2 is easy (thanks to the aliased intack
+>>> register) but on iMX.6 we have only a GICv1.
+>>>
+>>>
+>>>> I can reduce the number of occurrences (not prevent it) by adding the
+>>>> following hack to irq-gic.c
+>>>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
+>>>> gic_handle_irq(struct pt_regs *regs
+>>>>   u32 irqstat, irqnr;
+>>>>   struct gic_chip_data *gic = &gic_data[0];
+>>>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
+>>>>
+>>>>   do {
+>>>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
+>>>> & (1 << 30))
+>>>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
+>>>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+>>>>   irqnr = irqstat & ~0x1c00;
+>>>
+>>> I've made a more complete attempt to fix this. Could you test the
+>>> following? (and be prepared to fuzz the line numbers)
+>>
+>> Thanks Daniel, I have tested it, see the comments below.
+>>
+>>>
+>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>> index 73ae896..309bf2c 100644
+>>> --- a/drivers/irqchip/irq-gic.c
+>>> +++ b/drivers/irqchip/irq-gic.c
+>>> @@ -303,6 +303,28 @@ static int gic_set_wake(struct irq_data *d,
+>>> unsigned int on)
+>>>  #define gic_set_wake   NULL
+>>>  #endif
+>>>
+>>> +/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
+>>> + * workaround will only work for level triggered interrupts (and in
+>>> + * its current form is actively harmful on systems that don't support
+>>> + * FIQ).
+>>> + */
+>>> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32
+>>> irqstat)
+>>> +{
+>>> +       u32 irqnr = irqstat & GICC_IAR_INT_ID_MASK;
+>>> +
+>>> +       if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
+>>> +               return irqnr;
+>>> +
+>>> +       if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
+>>> +                         (irqnr / 32 * 4)) &
+>>> +           BIT(irqnr % 32))
+>>> +               return irqnr;
+>>> +
+>>> +       /* this interrupt was spurious (needs to be handled as FIQ) */
+>>> +       writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
+>>
+>> This will NOT work, because of the note I mentioned above:
+>> "The FIQ exception will not occur anymore after gic_handle_irq
+>> read/acknowledges the FIQ by reading the GIC_CPU_INTACK register"
+>> So with this code you will say End Of Interrupt at the GIC level,
+>> without actually handling the interrupt, so you are missing an
+>> interrupt.
+>> I did the following test to confirm the missing interrupt:
+>> I have changed the periodic timer interrupt by an one-shot timer
+>> interrupt. The one-shot timer interrupt is programmed by the FIQ
+>> handler for the next FIQ interrupt. As expected: When the problem
+>> occurs, no more FIQ interrupts are generated.
+>
+> Can you confirm whether your timer interrupts are configured level or
+> edge triggered? Or whether EOIing the GIC causes them to be cleared by
+> some other means.
 
-It is customary to attribute that in the patch. Such as:
+>From page 48 of DDI0407I_cortex_a9_mpcore_r4p1_trm.pdf:
+Watchdog timers, PPI(3)
+Each Cortex-A9 processor has its own watchdog timers that can generate
+interrupts, using ID30.
 
-"Original idea/patch from Konrad Rzeszutek Wilk" is suffice.
+>From page 56:
+PPI[0], [2],and[3]:b11
+interrupt is rising-edge sensitive.
 
-Thanks!
-> 
-> >> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> >> ---
-> >>  arch/x86/xen/enlighten.c | 9 +++++++++
-> >>  arch/x86/xen/smp.c       | 9 +++++++++
-> >>  arch/x86/xen/smp.h       | 1 +
-> >>  3 files changed, 19 insertions(+)
-> >> 
-> >> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> >> index a11af62..8074e4a 100644
-> >> --- a/arch/x86/xen/enlighten.c
-> >> +++ b/arch/x86/xen/enlighten.c
-> >> @@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
-> >>  	.notifier_call	= xen_hvm_cpu_notify,
-> >>  };
-> >>  
-> >> +static void xen_pvhvm_kexec_shutdown(void)
-> >> +{
-> >> +	xen_kexec_shutdown();
-> >> +	native_machine_shutdown();
-> >> +}
-> >> +
-> >>  static void __init xen_hvm_guest_init(void)
-> >>  {
-> >>  	init_hvm_pv_info();
-> >> @@ -1849,6 +1855,9 @@ static void __init xen_hvm_guest_init(void)
-> >>  	x86_init.irqs.intr_init = xen_init_IRQ;
-> >>  	xen_hvm_init_time_ops();
-> >>  	xen_hvm_init_mmu_ops();
-> >> +#ifdef CONFIG_KEXEC
-> >> +	machine_ops.shutdown = xen_pvhvm_kexec_shutdown;
-> >> +#endif
-> >>  }
-> >>  
-> >>  static uint32_t __init xen_hvm_platform(void)
-> >> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> >> index 7005974..35dcf39 100644
-> >> --- a/arch/x86/xen/smp.c
-> >> +++ b/arch/x86/xen/smp.c
-> >> @@ -18,6 +18,7 @@
-> >>  #include <linux/smp.h>
-> >>  #include <linux/irq_work.h>
-> >>  #include <linux/tick.h>
-> >> +#include <linux/kexec.h>
-> >>  
-> >>  #include <asm/paravirt.h>
-> >>  #include <asm/desc.h>
-> >> @@ -762,6 +763,14 @@ static void xen_hvm_cpu_die(unsigned int cpu)
-> >>  	native_cpu_die(cpu);
-> >>  }
-> >>  
-> >> +void xen_kexec_shutdown(void)
-> >> +{
-> >> +#ifdef CONFIG_KEXEC
-> >> +	if (!kexec_in_progress)
-> >> +		return;
-> >> +#endif
-> >> +}
-> >> +
-> >>  void __init xen_hvm_smp_init(void)
-> >>  {
-> >>  	if (!xen_have_vector_callback)
-> >> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
-> >> index c7c2d89..1af0493 100644
-> >> --- a/arch/x86/xen/smp.h
-> >> +++ b/arch/x86/xen/smp.h
-> >> @@ -8,4 +8,5 @@ extern void xen_send_IPI_allbutself(int vector);
-> >>  extern void xen_send_IPI_all(int vector);
-> >>  extern void xen_send_IPI_self(int vector);
-> >>  
-> >> +extern void xen_kexec_shutdown(void);
-> >>  #endif
-> >> -- 
-> >> 1.9.3
-> >> 
-> 
-> -- 
->   Vitaly
+>
+> A level triggered interrupt that hasn't been serviced should return the
+> pending state (shouldn't it?).
+>
+>
+>>> +       return 1023;
+>>> +}
+>>> +
+>>>  static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+>>>  {
+>>>         u32 irqstat, irqnr;
+>>> @@ -310,8 +332,10 @@ static void __exception_irq_entry
+>>> gic_handle_irq(struct pt_regs *regs)
+>>>         void __iomem *cpu_base = gic_data_cpu_base(gic);
+>>>
+>>>         do {
+>>> +               local_fiq_disable();
+>>
+>> It is a bit weird to disable the "Non-Maskable Interrupt" at every
+>> interrupt, because of a problem that occurs once every few thousand
+>> interrupts
+>
+> Given that simply reading from GIC_CPU_INTACK has significantly
+> interferes with FIQ reception means that I'm not too worried about this.
+>
+> Note also that leaving the FIQ unmasked increases worst case latency
+> here because once we get a group 0 interrupt back from intack then
+> spurious entry to the FIQ handler (which would see an ACK of 1023) just
+> wastes cycles.
+>
+>
+>>>                 irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+>>> -               irqnr = irqstat & GICC_IAR_INT_ID_MASK;
+>>> +               irqnr = gic_handle_spurious_group_0(gic, irqstat);
+>>> +               local_fiq_enable();
+>>>
+>>>                 if (likely(irqnr > 15 && irqnr < 1021)) {
+>>>                         irqnr = irq_find_mapping(gic->domain, irqnr);
+>>
+>>
+>> The following type of changes could fix the problem for me:
+>>
+>> @@ -290,19 +290,66 @@ static int gic_set_wake(struct irq_data *d,
+>> unsigned int on)
+>>
+>>  #else
+>>  #define gic_set_wake NULL
+>>  #endif
+>>
+>> +extern void (*fiq_handler)(void);
+>> +
+>> +/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
+>> + * workaround will only work for level triggered interrupts (and in
+>> + * its current form is actively harmful on systems that don't support
+>> + * FIQ).
+>> + */
+>> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32 irqstat)
+>> +{
+>> + u32 irqnr = irqstat & ~0x1c00;
+>> +
+>> + if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
+>> + return irqnr;
+>> +
+>> + if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
+>> +  (irqnr / 32 * 4)) & BIT(irqnr % 32))
+>> + return irqnr;
+>> +
+>> + /*
+>> + * The FIQ should be disabled before the next FIQ interrupt occurs,
+>> + * so this only works when the next FIQ interrupt is not "too fast"
+>> + * after the previous one.
+>> + */
+>> + local_fiq_disable();
+>> +
+>> + /*
+>> + * Notes:
+>> + * - The FIQ exception will not occur anymore for this current
+>> + *   interrupt, because gic_handle_irq has already read/acknowledged
+>> + *   the GIC_CPU_INTACK register. So handle the FIQ here.
+>> + * - The fiq_handler below should not call ack_fiq and eoi_fiq,
+>> + *   because rereading the GIC_CPU_INTACK register returns spurious
+>> + *   interrupt ID 0x3FF. So probably you will have to add sometime like
+>> + *   the following to fiq_handler:
+>> + *   u32 cpsr, irqstat;
+>> + *   __asm__("mrs %0, cpsr" : "=r" (cpsr));
+>> + *   if ((cpsr & MODE_MASK) == FIQ_MODE)
+>> + *   irqstat = ack_fiq();
+>> + */
+>> + (*fiq_handler)();
+>
+> Any portable approach would have to switch to FIQ mode to run the
+> handler in order to provide the proper register banks for FIQ handlers
+> written in assembler.
+>
+> If we can't get level triggering to work then we have to:
+>
+> 1. Write code to jump correctly into FIQ mode.
+>
+> 2. Modify the gic's ack_fiq() callback to automatically avoid reading
+>    intack when the workaround is deployed.
+>
+> The above is why I wanted to see if we can make do with level triggering
+> (and automatic re-triggering for interrupts such as SGIs that are
+> cleared by EOI).
+
+But the re-triggering introduces extra latencies and a lot of use
+cases of FIQ's try to avoid that.
