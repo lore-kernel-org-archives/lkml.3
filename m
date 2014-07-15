@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761134AbaGPAB5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:01:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45209 "EHLO
+	id S933607AbaGPACv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:02:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341AbaGOXNk (ORCPT
+	with ESMTP id S933240AbaGOXNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:40 -0400
+	Tue, 15 Jul 2014 19:13:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 25/66] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
-Date: Tue, 15 Jul 2014 16:17:19 -0700
-Message-Id: <20140715231703.148568740@linuxfoundation.org>
+        Andy Whitcroft <apw@canonical.com>, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 20/66] ACPI / resources: only reject zero length resources based at address zero
+Date: Tue, 15 Jul 2014 16:17:14 -0700
+Message-Id: <20140715231702.961676059@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
 References: <20140715231702.156040999@linuxfoundation.org>
@@ -29,57 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Andy Whitcroft <apw@canonical.com>
 
-commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
+commit 867f9d463b82462793ea4610e748be0b04b37fc7 upstream.
 
-We are seeing a lot of PMU warnings on POWER8:
+The recently merged change (in v3.14-rc6) to ACPI resource detection
+(below) causes all zero length ACPI resources to be elided from the
+table:
 
-    Can't find PMC that caused IRQ
+  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
+  Author: Zhang Rui <rui.zhang@intel.com>
+  Date:   Thu Feb 27 11:37:15 2014 +0800
 
-Looking closer, the active PMC is 0 at this point and we took a PMU
-exception on the transition from negative to 0. Some versions of POWER8
-have an issue where they edge detect and not level detect PMC overflows.
+    ACPI / resources: ignore invalid ACPI device resources
 
-A number of places program the PMC with (0x80000000 - period_left),
-where period_left can be negative. We can either fix all of these or
-just ensure that period_left is always >= 1.
+This change has caused a regression in (at least) serial port detection
+for a number of machines (see LP#1313981 [1]).  These seem to represent
+their IO regions (presumably incorrectly) as a zero length region.
+Reverting the above commit restores these serial devices.
 
-This patch takes the second option.
+Only elide zero length resources which lie at address 0.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fixes: b355cee88e3b (ACPI / resources: ignore invalid ACPI device resources)
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Acked-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/acpi/resource.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -851,7 +851,22 @@ static void power_pmu_read(struct perf_e
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
- 
- 	local64_add(delta, &event->count);
--	local64_sub(delta, &event->hw.period_left);
-+
-+	/*
-+	 * A number of places program the PMC with (0x80000000 - period_left).
-+	 * We never want period_left to be less than 1 because we will program
-+	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
-+	 * roll around to 0 before taking an exception. We have seen this
-+	 * on POWER8.
-+	 *
-+	 * To fix this, clamp the minimum value of period_left to 1.
-+	 */
-+	do {
-+		prev = local64_read(&event->hw.period_left);
-+		val = prev - delta;
-+		if (val < 1)
-+			val = 1;
-+	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
- }
- 
- /*
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -77,7 +77,7 @@ bool acpi_dev_resource_memory(struct acp
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_MEMORY24:
+ 		memory24 = &ares->data.memory24;
+-		if (!memory24->address_length)
++		if (!memory24->minimum && !memory24->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, memory24->minimum,
+ 					 memory24->address_length,
+@@ -85,7 +85,7 @@ bool acpi_dev_resource_memory(struct acp
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_MEMORY32:
+ 		memory32 = &ares->data.memory32;
+-		if (!memory32->address_length)
++		if (!memory32->minimum && !memory32->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, memory32->minimum,
+ 					 memory32->address_length,
+@@ -93,7 +93,7 @@ bool acpi_dev_resource_memory(struct acp
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+ 		fixed_memory32 = &ares->data.fixed_memory32;
+-		if (!fixed_memory32->address_length)
++		if (!fixed_memory32->address && !fixed_memory32->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, fixed_memory32->address,
+ 					 fixed_memory32->address_length,
+@@ -150,7 +150,7 @@ bool acpi_dev_resource_io(struct acpi_re
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_IO:
+ 		io = &ares->data.io;
+-		if (!io->address_length)
++		if (!io->minimum && !io->address_length)
+ 			return false;
+ 		acpi_dev_get_ioresource(res, io->minimum,
+ 					io->address_length,
+@@ -158,7 +158,7 @@ bool acpi_dev_resource_io(struct acpi_re
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_IO:
+ 		fixed_io = &ares->data.fixed_io;
+-		if (!fixed_io->address_length)
++		if (!fixed_io->address && !fixed_io->address_length)
+ 			return false;
+ 		acpi_dev_get_ioresource(res, fixed_io->address,
+ 					fixed_io->address_length,
 
 
