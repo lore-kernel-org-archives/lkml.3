@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaGOP6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 11:58:11 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:39958 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154AbaGOP6J (ORCPT
+	id S1754951AbaGOP6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 11:58:49 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49779 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751857AbaGOP6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 11:58:09 -0400
-Date: Tue, 15 Jul 2014 11:58:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] workqueue: don't grab PENDING bit on some conditions
-Message-ID: <20140715155805.GD19570@htj.dyndns.org>
-References: <1405416610-12394-1-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 15 Jul 2014 11:58:47 -0400
+Date: Tue, 15 Jul 2014 11:58:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <Peter.Chen@freescale.com>,
+        <kishon@ti.com>, <sergei.shtylyov@cogentembedded.com>,
+        <yoshihiro.shimoda.uh@renesas.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/8] usb: add support for the generic PHY framework
+In-Reply-To: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
+Message-ID: <Pine.LNX.4.44L0.1407151157380.1206-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405416610-12394-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Tue, 15 Jul 2014, Antoine Ténart wrote:
 
-On Tue, Jul 15, 2014 at 05:30:10PM +0800, Lai Jiangshan wrote:
-> Thread1 expects that, after flush_delayed_work() returns, the known pending
-> work is guaranteed finished. But if Thread2 is scheduled a little later than
-> Thread1, the known pending work is dequeued and re-queued, it is considered
-> as two different works in the workqueue subsystem and the guarantee expected
-
-They are two separate queueing instances of the same work item.
-
-> by Thread1 is broken.
-
-The guarantee expected by thread 1 is that the most recent queueing
-instance of the work item is finished either through completing
-execution or being cancelled.  No guarantee is broken.
-
-> The guarantee expected by Thread1/workqueue-user is reasonable for me,
-> the workqueue subsystem should provide this guarantee. In another aspect,
-
-You're adding a new component to the existing set of guarantees.  You
-can argue for it but it's a new guarantee regardless.
-
-> the flush_delayed_work() is still working when mod_delayed_work_on() returns,
-> it is more acceptable that the flush_delayed_work() beats the
-> mod_delayed_work_on().
->
-> It is achieved by introducing a KEEP_FLUSHED flag for try_to_grab_pending().
-> If the work is being flushed and KEEP_FLUSHED flags is set,
-> we disallow try_to_grab_pending() to grab the pending of the work.
->
-> And there is another condition that the user want to speed up a delayed work.
+> Hi all,
 > 
-> When the user use "mod_delayed_work_on(..., 0 /* zero delay */);", his
-> attention is to accelerate the work and queue the work immediately.
+> This is an attempt to add more common USB code aware of the generic PHY
+> framework, while keeping the compatibility for the USB PHY one. It does
+> not add the full support, some USB PHY specific functions not being
+> available currently in the generic PHY subsystem (e.g. usb_phy_set_power()).
+> But it allows to use the generic PHY framework in other cases, and might
+> help others to convert their USB PHY drivers.
 > 
-> But the work does be slowed down when it is already queued on the worklist
-> due to the work is dequeued and re-queued. So we also disallow
-> try_to_grab_pending() to grab the pending of the work in this condition
-> by introducing KEEP_QUEUED flag.
+> A little background: I submitted a series to support USB on Berlin SoCs[1].
+> One patch added a new PHY driver in drivers/usb/phy and Felipe asked it to
+> be in the generic PHY framework instead[2]. This PHY being used by a ChipIdea
+> driver, changes were needed in ChipIdea, OTG and HCD.
+> 
+> This is done in 3 steps:
+>         1. moving the OTG state from the USB PHY structure to the OTG one
+>         2. renaming the field 'phy' to 'usb_phy'
+>         3. adding a field for the generic framework PHY and dissociating its
+>            use from the USB PHY one
+> 
+> Step 1 is in the first patch. Steps 2 and 3 are done for OTG, and ChipIdea
+> subsystems in patches 2-3 and 7-8.
+> 
+> HCD generic PHY support was made by Sergei and Yoshihiro[1]. I added some
+> modifications to make this support consistent with this series in patches
+> 4-6.
+> 
+> I tested it by using the ChipIdea driver I introduced, both with an USB PHY
+> and a PHY driver successfully. I also compiled a multi_v7 kernel (ARM), with
+> every driver I could enable in the USB section.
+> 
+> I'd like more people to test and your inputs and suggestions on these changes.
+> 
+> Feel free to add Ccs if others might be interested in this. If needed patches
+> can be squashed or divided, I tried there to group modifications by USB
+> framework parts (OTG, HCD, ChipIdea).
+> 
+> Patches can also be found at:
+> git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+> 
+> The series applies on top of Sergei and Yoshihiro generic PHY support in
+> HCD[1].
 
-Both are extremely marginal.  Do we have any actual cases any of these
-matters?  I can't see what we're gaining with the extra complexity.
+For the changes to hub.c, hcd.c, and the ehci and ohci drivers:
 
-> @@ -1212,6 +1220,13 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
->  	 */
->  	pwq = get_work_pwq(work);
->  	if (pwq && pwq->pool == pool) {
-> +		if ((keep_flags | KEEP_QUEUED) ||
-> +		    ((keep_flags | KEEP_FLUSHED) &&
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-This can't be right.
-
-Thanks.
-
--- 
-tejun
