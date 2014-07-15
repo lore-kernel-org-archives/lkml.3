@@ -1,69 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160AbaGOV5j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:57:39 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:39388 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759842AbaGOV5I (ORCPT
+	id S964810AbaGOV6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:58:12 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:59733 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759487AbaGOV5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:57:08 -0400
-Message-Id: <20140715215703.199905126@openvz.org>
+	Tue, 15 Jul 2014 17:57:07 -0400
+Message-Id: <20140715215451.499191426@openvz.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 16 Jul 2014 01:54:53 +0400
+Date: Wed, 16 Jul 2014 01:54:51 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: [patch 2/4] docs: procfs -- Document timerfd output
-References: <20140715215451.499191426@openvz.org>
-Content-Disposition: inline; filename=timerfd-doc-fdinfo
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 0/4] timerfd c/r support, v5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Andrey Vagin <avagin@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- Documentation/filesystems/proc.txt |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -1743,6 +1743,25 @@ pair provide additional information part
- 	While the first three lines are mandatory and always printed, the rest is
- 	optional and may be omitted if no marks created yet.
- 
-+	Timerfd files
-+	~~~~~~~~~~~~~
-+
-+	pos:	0
-+	flags:	02
-+	mnt_id:	9
-+	clockid: 0
-+	ticks: 0
-+	settime flags: 01
-+	it_value: (0, 49406829)
-+	it_interval: (1, 0)
-+
-+	where 'clockid' is the clock type and 'ticks' is the number of the timer expirations
-+	that have occurred [see timerfd_create(2) for details]. 'settime flags' are
-+	flags in octal form been used to setup the timer [see timerfd_settime(2) for
-+	details]. 'it_value' is remaining time until the timer exiration.
-+	'it_interval' is the interval for the timer. Note the timer might be set up
-+	with TIMER_ABSTIME option which will be shown in 'settime flags', but 'it_value'
-+	still exhibits timer's remaining time.
- 
- ------------------------------------------------------------------------------
- Configuring procfs
-
+Hi, sorry for spamming, but in v4 I simply messed up in the series,
+doing reply-to-reply with updated variants. So here are all patches
+up to date on top of -rc5. Sorry again for resend.
