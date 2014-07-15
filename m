@@ -1,110 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965207AbaGOX0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 19:26:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	id S965279AbaGOX1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 19:27:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760090AbaGOXOZ (ORCPT
+	with ESMTP id S965214AbaGOX0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:14:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 84/84] ACPI / battery: Retry to get battery information if failed during probing
-Date: Tue, 15 Jul 2014 16:18:21 -0700
-Message-Id: <20140715231715.690888281@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-References: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Jul 2014 19:26:55 -0400
+Date: Tue, 15 Jul 2014 16:26:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/8] Mark literal strings in __init / __exit code
+Message-Id: <20140715162654.9afca195c6c6410c72e61864@linux-foundation.org>
+In-Reply-To: <1405176212-12175-1-git-send-email-minipli@googlemail.com>
+References: <1405176212-12175-1-git-send-email-minipli@googlemail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Sat, 12 Jul 2014 16:43:24 +0200 Mathias Krause <minipli@googlemail.com> wrote:
 
-------------------
+> This is v2 of the patch series initially posted here:
+> 
+>   https://lkml.org/lkml/2014/6/22/149
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+That was a useful overall description.  But it got lost in the
+transition to v2 and is now out of date.
 
-commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
-
-Some machines (eg. Lenovo Z480) ECs are not stable during boot up
-and causes battery driver fails to be loaded due to failure of getting
-battery information from EC sometimes. After several retries, the
-operation will work. This patch is to retry to get battery information 5
-times if the first try fails.
-
-[ backport to 3.14.5: removed second parameter in acpi_battery_update(),
-introduced by the commit 9e50bc14a7f58b5d8a55973b2d69355852ae2dae (ACPI /
-battery: Accelerate battery resume callback)]
-
-[naszar <naszar@ya.ru>: backport to 3.14.5]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
-Reported-and-tested-by: naszar <naszar@ya.ru>
-Cc: All applicable <stable@vger.kernel.org>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/acpi/battery.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
-
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/delay.h>
- #include <asm/unaligned.h>
- 
- #ifdef CONFIG_ACPI_PROCFS_POWER
-@@ -1069,6 +1070,28 @@ static struct dmi_system_id bat_dmi_tabl
- 	{},
- };
- 
-+/*
-+ * Some machines'(E,G Lenovo Z480) ECs are not stable
-+ * during boot up and this causes battery driver fails to be
-+ * probed due to failure of getting battery information
-+ * from EC sometimes. After several retries, the operation
-+ * may work. So add retry code here and 20ms sleep between
-+ * every retries.
-+ */
-+static int acpi_battery_update_retry(struct acpi_battery *battery)
-+{
-+	int retry, ret;
-+
-+	for (retry = 5; retry; retry--) {
-+		ret = acpi_battery_update(battery);
-+		if (!ret)
-+			break;
-+
-+		msleep(20);
-+	}
-+	return ret;
-+}
-+
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1087,9 +1110,11 @@ static int acpi_battery_add(struct acpi_
- 	mutex_init(&battery->sysfs_lock);
- 	if (acpi_has_method(battery->device->handle, "_BIX"))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	result = acpi_battery_update(battery);
-+
-+	result = acpi_battery_update_retry(battery);
- 	if (result)
- 		goto fail;
-+
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
-
-
+Please resurrect it, and maintain it.
