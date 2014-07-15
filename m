@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965162AbaGOW2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:28:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53901 "EHLO
+	id S965176AbaGOW2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:28:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53884 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758105AbaGOVbZ (ORCPT
+	with ESMTP id S1757996AbaGOVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:31:25 -0400
+	Tue, 15 Jul 2014 17:31:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Binderman <dcb314@hotmail.com>, Bob Moore <robert.moore@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 011/198] ACPICA: utstring: Check array index bound before use.
-Date: Tue, 15 Jul 2014 14:28:01 -0700
-Message-Id: <1405459868-15089-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 015/198] extcon: max77693: Fix two NULL pointer exceptions on missing pdata
+Date: Tue, 15 Jul 2014 14:28:05 -0700
+Message-Id: <1405459868-15089-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -29,34 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Binderman <dcb314@hotmail.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 5d42b0fa25df7ef2f575107597c1aaebe2407d10 upstream.
+commit d5653f2b7304f05eeb45d84f123cf02f840b8537 upstream.
 
-ACPICA BZ 1077. David Binderman.
+Fix NULL pointer exceptions when platform data is not supplied.
 
-References: https://bugs.acpica.org/show_bug.cgi?id=1077
-Signed-off-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Trace of one exception:
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+pgd = c0004000
+[00000008] *pgd=00000000
+Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+Modules linked in:
+CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12045-gead5dd4687a6-dirty #1628
+task: eea80000 ti: eea88000 task.ti: eea88000
+PC is at max77693_muic_probe+0x27c/0x528
+LR is at regmap_write+0x50/0x60
+pc : [<c041d1c8>]    lr : [<c02eba60>]    psr: 20000113
+sp : eea89e38  ip : 00000000  fp : c098a834
+r10: ee1a5a10  r9 : 00000005  r8 : c098a83c
+r7 : 0000000a  r6 : c098a774  r5 : 00000005  r4 : eeb006d0
+r3 : c0697bd8  r2 : 00000000  r1 : 00000001  r0 : 00000000
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: 4000404a  DAC: 00000015
+Process swapper/0 (pid: 1, stack limit = 0xeea88240)
+Stack: (0xeea89e38 to 0xeea8a000)
+9e20:                                                       c08499fc eeb006d0
+9e40: 00000000 00000000 c0915f98 00000001 00000000 ee1a5a10 c098a730 c09a88b8
+9e60: 00000000 c098a730 c0915f98 00000000 00000000 c02d6aa0 c02d6a88 ee1a5a10
+9e80: c0a712c8 c02d54e4 00001204 c0628b00 ee1a5a10 c098a730 ee1a5a44 00000000
+9ea0: eea88000 c02d57b4 00000000 c098a730 c02d5728 c02d3a24 ee813e5c eeb9d534
+9ec0: c098a730 ee22f700 c097c720 c02d4b14 c08174ec c098a730 00000006 c098a730
+9ee0: 00000006 c092fd30 c09b8500 c02d5df8 00000000 c093cbb8 00000006 c0008928
+9f00: 000000c3 ef7fc785 00000000 ef7fc794 00000000 c08af968 00000072 eea89f30
+9f20: ef7fc85e c065f198 000000c3 c003e87c 00000003 00000000 c092fd3c 00000000
+9f40: c08af618 c0826d58 00000006 00000006 c0956f58 c093cbb8 00000006 c092fd30
+9f60: c09b8500 000000c3 c092fd3c c08e8510 00000000 c08e8bb0 00000006 00000006
+9f80: c08e8510 c0c0c0c0 00000000 c0628fac 00000000 00000000 00000000 00000000
+9fa0: 00000000 c0628fb4 00000000 c000f038 00000000 00000000 00000000 00000000
+9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+[<c041d1c8>] (max77693_muic_probe) from [<c02d6aa0>] (platform_drv_probe+0x18/0x48)
+[<c02d6aa0>] (platform_drv_probe) from [<c02d54e4>] (driver_probe_device+0x140/0x384)
+[<c02d54e4>] (driver_probe_device) from [<c02d57b4>] (__driver_attach+0x8c/0x90)
+[<c02d57b4>] (__driver_attach) from [<c02d3a24>] (bus_for_each_dev+0x54/0x88)
+[<c02d3a24>] (bus_for_each_dev) from [<c02d4b14>] (bus_add_driver+0xe8/0x204)
+[<c02d4b14>] (bus_add_driver) from [<c02d5df8>] (driver_register+0x78/0xf4)
+[<c02d5df8>] (driver_register) from [<c0008928>] (do_one_initcall+0xc4/0x174)
+[<c0008928>] (do_one_initcall) from [<c08e8bb0>] (kernel_init_freeable+0xfc/0x1c8)
+[<c08e8bb0>] (kernel_init_freeable) from [<c0628fb4>] (kernel_init+0x8/0xec)
+[<c0628fb4>] (kernel_init) from [<c000f038>] (ret_from_fork+0x14/0x3c)
+Code: caffffe7 e59d200c e3550001 b3a05001 (e5923008)
+---[ end trace 85db969ce011bde7 ]---
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 190d7cfc8632
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/acpica/utstring.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/extcon/extcon-max77693.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/acpica/utstring.c b/drivers/acpi/acpica/utstring.c
-index 45c0eb2..cd2047a 100644
---- a/drivers/acpi/acpica/utstring.c
-+++ b/drivers/acpi/acpica/utstring.c
-@@ -353,7 +353,7 @@ void acpi_ut_print_string(char *string, u16 max_length)
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index da268fb..4657a91 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1193,7 +1193,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 
+ 
+ 	/* Initialize MUIC register by using platform data or default data */
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		init_data = pdata->muic_data->init_data;
+ 		num_init_data = pdata->muic_data->num_init_data;
+ 	} else {
+@@ -1226,7 +1226,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 				= init_data[i].data;
  	}
  
- 	acpi_os_printf("\"");
--	for (i = 0; string[i] && (i < max_length); i++) {
-+	for (i = 0; (i < max_length) && string[i]; i++) {
- 
- 		/* Escape sequences */
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		struct max77693_muic_platform_data *muic_pdata
+ 						   = pdata->muic_data;
  
 -- 
 1.9.1
