@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687AbaGOIwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 04:52:09 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:31867
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1758312AbaGOIsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 04:48:25 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:54743
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758342AbaGOIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 04:48:36 -0400
+	id S1758138AbaGOIsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 04:48:21 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v2 25/29] nios2: ptrace support
-Date: Tue, 15 Jul 2014 16:45:52 +0800
-Message-ID: <1405413956-2772-26-git-send-email-lftan@altera.com>
+Subject: [PATCH v2 12/29] nios2: Interrupt handling
+Date: Tue, 15 Jul 2014 16:45:39 +0800
+Message-ID: <1405413956-2772-13-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405413956-2772-1-git-send-email-lftan@altera.com>
 References: <1405413956-2772-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(22564002)(106466001)(84676001)(93916002)(79102001)(99396002)(64706001)(229853001)(105596002)(62966002)(95666004)(104166001)(85306003)(19580395003)(86362001)(2201001)(47776003)(97736001)(107046002)(21056001)(36756003)(77156001)(76482001)(76176999)(50986999)(80022001)(77982001)(19580405001)(74662001)(85852003)(46102001)(88136002)(92726001)(68736004)(42186005)(48376002)(81342001)(83322001)(81542001)(50226001)(77096002)(4396001)(102836001)(87936001)(89996001)(87286001)(20776003)(44976005)(83072002)(92566001)(31966008)(74502001)(6806004)(33646002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB307;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(15202345003)(50226001)(93916002)(21056001)(86362001)(92566001)(81342001)(47776003)(15975445006)(95666004)(87936001)(83322001)(44976005)(68736004)(4396001)(19580395003)(76176999)(88136002)(50986999)(87286001)(33646002)(2201001)(36756003)(6806004)(85306003)(102836001)(105596002)(31966008)(106466001)(62966002)(77982001)(80022001)(42186005)(74502001)(92726001)(81542001)(79102001)(19580405001)(85852003)(64706001)(48376002)(84676001)(89996001)(20776003)(83072002)(97736001)(104166001)(74662001)(99396002)(77096002)(76482001)(107046002)(77156001)(46102001)(229853001)(2004002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB040;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027367F73D
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,368 +31,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ptrace support for nios2.
+This patch adds the support for IRQ handling.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/ptrace.h      |  33 +++++++
- arch/nios2/include/uapi/asm/ptrace.h | 120 +++++++++++++++++++++++
- arch/nios2/kernel/ptrace.c           | 180 +++++++++++++++++++++++++++++++++++
- 3 files changed, 333 insertions(+)
- create mode 100644 arch/nios2/include/asm/ptrace.h
- create mode 100644 arch/nios2/include/uapi/asm/ptrace.h
- create mode 100644 arch/nios2/kernel/ptrace.c
+ arch/nios2/include/asm/irq.h      | 34 +++++++++++++++
+ arch/nios2/include/asm/irqflags.h | 69 ++++++++++++++++++++++++++++++
+ arch/nios2/kernel/irq.c           | 90 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 193 insertions(+)
+ create mode 100644 arch/nios2/include/asm/irq.h
+ create mode 100644 arch/nios2/include/asm/irqflags.h
+ create mode 100644 arch/nios2/kernel/irq.c
 
-diff --git a/arch/nios2/include/asm/ptrace.h b/arch/nios2/include/asm/ptrace.h
+diff --git a/arch/nios2/include/asm/irq.h b/arch/nios2/include/asm/irq.h
 new file mode 100644
-index 0000000..20fb1cf
+index 0000000..f7e94b9
 --- /dev/null
-+++ b/arch/nios2/include/asm/ptrace.h
-@@ -0,0 +1,33 @@
++++ b/arch/nios2/include/asm/irq.h
+@@ -0,0 +1,34 @@
 +/*
 + * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
-+ * based on m68k asm/processor.h
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
-+#ifndef _ASM_NIOS2_PTRACE_H
-+#define _ASM_NIOS2_PTRACE_H
++#ifndef _ASM_NIOS2_IRQ_H
++#define _ASM_NIOS2_IRQ_H
 +
-+#include <uapi/asm/ptrace.h>
++#define NIOS2_CPU_NR_IRQS	32
++/* Reserve 32 additional interrupts for GPIO IRQs */
++#define NR_IRQS			(NIOS2_CPU_NR_IRQS + 32)
 +
-+#ifndef __ASSEMBLY__
-+#define user_mode(regs)	(((regs)->estatus & ESTATUS_EU))
++#ifndef NO_IRQ
++#define NO_IRQ			(-1)
++#endif
 +
-+#define instruction_pointer(regs)	((regs)->ra)
-+#define profile_pc(regs)		instruction_pointer(regs)
-+#define user_stack_pointer(regs)	((regs)->sp)
-+extern void show_regs(struct pt_regs *);
++#include <asm-generic/irq.h>
++#include <linux/irqdomain.h>
 +
-+#define current_pt_regs() \
-+	((struct pt_regs *)((unsigned long)current_thread_info() + THREAD_SIZE)\
-+		- 1)
-+
-+int do_syscall_trace_enter(void);
-+void do_syscall_trace_exit(void);
-+#endif /* __ASSEMBLY__ */
-+#endif /* _ASM_NIOS2_PTRACE_H */
-diff --git a/arch/nios2/include/uapi/asm/ptrace.h b/arch/nios2/include/uapi/asm/ptrace.h
++#endif
+diff --git a/arch/nios2/include/asm/irqflags.h b/arch/nios2/include/asm/irqflags.h
 new file mode 100644
-index 0000000..e83a7c9
+index 0000000..e91f4f0
 --- /dev/null
-+++ b/arch/nios2/include/uapi/asm/ptrace.h
-@@ -0,0 +1,120 @@
++++ b/arch/nios2/include/asm/irqflags.h
+@@ -0,0 +1,69 @@
 +/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
 + *
-+ * based on m68k asm/processor.h
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
++#ifndef _ASM_IRQFLAGS_H
++#define _ASM_IRQFLAGS_H
 +
-+#ifndef _UAPI_ASM_NIOS2_PTRACE_H
-+#define _UAPI_ASM_NIOS2_PTRACE_H
++#include <asm/registers.h>
 +
-+#ifndef __ASSEMBLY__
++static inline unsigned long arch_local_save_flags(void)
++{
++	return RDCTL(CTL_STATUS);
++}
 +
 +/*
-+ * Register numbers used by 'ptrace' system call interface.
++ * This will restore ALL status register flags, not only the interrupt
++ * mask flag.
 + */
++static inline void arch_local_irq_restore(unsigned long flags)
++{
++	WRCTL(CTL_STATUS, flags);
++}
 +
-+/* GP registers */
-+#define PTR_R0		0
-+#define PTR_R1		1
-+#define PTR_R2		2
-+#define PTR_R3		3
-+#define PTR_R4		4
-+#define PTR_R5		5
-+#define PTR_R6		6
-+#define PTR_R7		7
-+#define PTR_R8		8
-+#define PTR_R9		9
-+#define PTR_R10		10
-+#define PTR_R11		11
-+#define PTR_R12		12
-+#define PTR_R13		13
-+#define PTR_R14		14
-+#define PTR_R15		15
-+#define PTR_R16		16
-+#define PTR_R17		17
-+#define PTR_R18		18
-+#define PTR_R19		19
-+#define PTR_R20		20
-+#define PTR_R21		21
-+#define PTR_R22		22
-+#define PTR_R23		23
-+#define PTR_R24		24
-+#define PTR_R25		25
-+#define PTR_GP		26
-+#define PTR_SP		27
-+#define PTR_FP		28
-+#define PTR_EA		29
-+#define PTR_BA		30
-+#define PTR_RA		31
-+/* Control registers */
-+#define PTR_PC		32
-+#define PTR_STATUS	33
-+#define PTR_ESTATUS	34
-+#define PTR_BSTATUS	35
-+#define PTR_IENABLE	36
-+#define PTR_IPENDING	37
-+#define PTR_CPUID	38
-+#define PTR_CTL6	39
-+#define PTR_CTL7	40
-+#define PTR_PTEADDR	41
-+#define PTR_TLBACC	42
-+#define PTR_TLBMISC	43
++static inline void arch_local_irq_disable(void)
++{
++	unsigned long flags;
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags & ~STATUS_PIE);
++}
 +
-+#define NUM_PTRACE_REG (PTR_TLBMISC + 1)
++static inline void arch_local_irq_enable(void)
++{
++	unsigned long flags;
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags | STATUS_PIE);
++}
 +
-+/* this struct defines the way the registers are stored on the
-+   stack during a system call.
++static inline int arch_irqs_disabled_flags(unsigned long flags)
++{
++	return (flags & STATUS_PIE) == 0;
++}
 +
-+   There is a fake_regs in setup.c that has to match pt_regs.*/
++static inline int arch_irqs_disabled(void)
++{
++	return arch_irqs_disabled_flags(arch_local_save_flags());
++}
 +
-+struct pt_regs {
-+	unsigned long  r8;		/* r8-r15 Caller-saved GP registers */
-+	unsigned long  r9;
-+	unsigned long  r10;
-+	unsigned long  r11;
-+	unsigned long  r12;
-+	unsigned long  r13;
-+	unsigned long  r14;
-+	unsigned long  r15;
-+	unsigned long  r1;		/* Assembler temporary */
-+	unsigned long  r2;		/* Retval LS 32bits */
-+	unsigned long  r3;		/* Retval MS 32bits */
-+	unsigned long  r4;		/* r4-r7 Register arguments */
-+	unsigned long  r5;
-+	unsigned long  r6;
-+	unsigned long  r7;
-+	unsigned long  orig_r2;		/* Copy of r2 ?? */
-+	unsigned long  ra;		/* Return address */
-+	unsigned long  fp;		/* Frame pointer */
-+	unsigned long  sp;		/* Stack pointer */
-+	unsigned long  gp;		/* Global pointer */
-+	unsigned long  estatus;
-+	unsigned long  ea;		/* Exception return address (pc) */
-+	unsigned long  orig_r7;
-+};
++static inline unsigned long arch_local_irq_save(void)
++{
++	unsigned long flags;
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags & ~STATUS_PIE);
++	return flags;
++}
 +
-+/*
-+ * This is the extended stack used by signal handlers and the context
-+ * switcher: it's pushed after the normal "struct pt_regs".
-+ */
-+struct switch_stack {
-+	unsigned long  r16;		/* r16-r23 Callee-saved GP registers */
-+	unsigned long  r17;
-+	unsigned long  r18;
-+	unsigned long  r19;
-+	unsigned long  r20;
-+	unsigned long  r21;
-+	unsigned long  r22;
-+	unsigned long  r23;
-+	unsigned long  fp;
-+	unsigned long  gp;
-+	unsigned long  ra;
-+};
-+
-+#endif /* __ASSEMBLY__ */
-+#endif /* _UAPI_ASM_NIOS2_PTRACE_H */
-diff --git a/arch/nios2/kernel/ptrace.c b/arch/nios2/kernel/ptrace.c
++#endif /* _ASM_IRQFLAGS_H */
+diff --git a/arch/nios2/kernel/irq.c b/arch/nios2/kernel/irq.c
 new file mode 100644
-index 0000000..152b31c
+index 0000000..8770d50
 --- /dev/null
-+++ b/arch/nios2/kernel/ptrace.c
-@@ -0,0 +1,180 @@
++++ b/arch/nios2/kernel/irq.c
+@@ -0,0 +1,90 @@
 +/*
-+ * Copyright (C) 2014 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
 + *
-+ * based on arch/m68knommu/kernel/ptrace.c
++ * based on irq.c from m68k which is:
 + *
-+ * Copyright (C) 1994 by Hamish Macdonald
++ * Copyright (C) 2007 Greg Ungerer <gerg@snapgear.com>
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of this
-+ * archive for more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
-+#include <linux/elf.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/ptrace.h>
-+#include <linux/regset.h>
-+#include <linux/sched.h>
-+#include <linux/tracehook.h>
-+#include <linux/uaccess.h>
-+#include <linux/user.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/of.h>
 +
-+static int genregs_get(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       void *kbuf, void __user * ubuf)
++asmlinkage void do_IRQ(int hwirq, struct pt_regs *regs)
 +{
-+	const struct pt_regs *regs = task_pt_regs(target);
-+	const struct switch_stack *sw = (struct switch_stack *)regs - 1;
-+	int ret = 0;
++	struct pt_regs *oldregs = set_irq_regs(regs);
++	int irq;
 +
-+#define REG_O_ZERO_RANGE(START, END)		\
-+	if (!ret)					\
-+		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf, \
-+			START * 4, (END * 4) + 4);
++	irq_enter();
++	irq = irq_find_mapping(NULL, hwirq);
++	generic_handle_irq(irq);
++	irq_exit();
 +
-+#define REG_O_ONE(PTR, LOC)	\
-+	if (!ret)			\
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
-+			LOC * 4, (LOC * 4) + 4);
-+
-+#define REG_O_RANGE(PTR, START, END)	\
-+	if (!ret)				\
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
-+			START * 4, (END * 4) + 4);
-+
-+	REG_O_ZERO_RANGE(PTR_R0, PTR_R0);
-+	REG_O_RANGE(&regs->r1,PTR_R1, PTR_R7);
-+	REG_O_RANGE(&regs->r8,PTR_R8, PTR_R15);
-+	REG_O_RANGE(sw, PTR_R16, PTR_R23);
-+	REG_O_ZERO_RANGE(PTR_R24, PTR_R25); /* et and bt */
-+	REG_O_ONE(&regs->gp, PTR_GP);
-+	REG_O_ONE(&regs->sp, PTR_SP);
-+	REG_O_ONE(&regs->fp, PTR_FP);
-+	REG_O_ONE(&regs->ea, PTR_EA);
-+	REG_O_ZERO_RANGE(PTR_BA, PTR_BA);
-+	REG_O_ONE(&regs->ra, PTR_RA);
-+	REG_O_ONE(&regs->ea, PTR_PC); /* use ea for PC */
-+	if (!ret)
-+		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+					 PTR_STATUS * 4, -1);
-+
-+	return ret;
++	set_irq_regs(oldregs);
 +}
 +
-+/*
-+ * Set the thread state from a regset passed in via ptrace
-+ */
-+static int genregs_set(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       const void *kbuf, const void __user * ubuf)
++static void chip_unmask(struct irq_data *d)
 +{
-+	struct pt_regs *regs = task_pt_regs(target);
-+	const struct switch_stack *sw = (struct switch_stack *)regs - 1;
-+	int ret = 0;
-+
-+#define REG_IGNORE_RANGE(START, END)		\
-+	if (!ret)					\
-+		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, \
-+			START * 4, (END * 4) + 4);
-+
-+#define REG_IN_ONE(PTR, LOC)	\
-+	if (!ret)			\
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			(void *)(PTR), LOC * 4, (LOC * 4) + 4);
-+
-+#define REG_IN_RANGE(PTR, START, END)	\
-+	if (!ret)				\
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			(void *)(PTR), START * 4, (END * 4) + 4);
-+
-+	REG_IGNORE_RANGE(PTR_R0, PTR_R0);
-+	REG_IN_RANGE(&regs->r1,PTR_R1, PTR_R7);
-+	REG_IN_RANGE(&regs->r8,PTR_R8, PTR_R15);
-+	REG_IN_RANGE(sw, PTR_R16, PTR_R23);
-+	REG_IGNORE_RANGE(PTR_R24, PTR_R25); /* et and bt */
-+	REG_IN_ONE(&regs->gp, PTR_GP);
-+	REG_IN_ONE(&regs->sp, PTR_SP);
-+	REG_IN_ONE(&regs->fp, PTR_FP);
-+	REG_IN_ONE(&regs->ea, PTR_EA);
-+	REG_IGNORE_RANGE(PTR_BA, PTR_BA);
-+	REG_IN_ONE(&regs->ra, PTR_RA);
-+	REG_IN_ONE(&regs->ea, PTR_PC); /* use ea for PC */
-+	if (!ret)
-+		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
-+					 PTR_STATUS * 4, -1);
-+
-+	return ret;
++	u32 ien;
++	ien = RDCTL(CTL_IENABLE);
++	ien |= (1 << d->hwirq);
++	WRCTL(CTL_IENABLE, ien);
 +}
 +
-+/*
-+ * Define the register sets available on Nios2 under Linux
-+ */
-+enum nios2_regset {
-+	REGSET_GENERAL,
++static void chip_mask(struct irq_data *d)
++{
++	u32 ien;
++	ien = RDCTL(CTL_IENABLE);
++	ien &= ~(1 << d->hwirq);
++	WRCTL(CTL_IENABLE, ien);
++}
++
++static struct irq_chip m_irq_chip = {
++	.name		= "NIOS2-INTC",
++	.irq_unmask	= chip_unmask,
++	.irq_mask	= chip_mask,
 +};
 +
-+static const struct user_regset nios2_regsets[] = {
-+	[REGSET_GENERAL] = {
-+		.core_note_type = NT_PRSTATUS,
-+		.n = NUM_PTRACE_REG,
-+		.size = sizeof(unsigned long),
-+		.align = sizeof(unsigned long),
-+		.get = genregs_get,
-+		.set = genregs_set,
-+	}
++static int irq_map(struct irq_domain *h, unsigned int virq,
++				irq_hw_number_t hw_irq_num)
++{
++	irq_set_chip_and_handler(virq, &m_irq_chip, handle_level_irq);
++
++	return 0;
++}
++
++static struct irq_domain_ops irq_ops = {
++	.map	= irq_map,
++	.xlate	= irq_domain_xlate_onecell,
 +};
 +
-+static const struct user_regset_view nios2_user_view = {
-+	.name = "nios2",
-+	.e_machine = ELF_ARCH,
-+	.ei_osabi = ELF_OSABI,
-+	.regsets = nios2_regsets,
-+	.n = ARRAY_SIZE(nios2_regsets)
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++void __init init_IRQ(void)
 +{
-+	return &nios2_user_view;
-+}
++	struct irq_domain *domain;
++	struct device_node *node;
 +
-+void ptrace_disable(struct task_struct *child)
-+{
++	node = of_find_compatible_node(NULL, NULL, "altr,nios2-1.0");
++	BUG_ON(!node);
 +
-+}
++	domain = irq_domain_add_linear(node, NIOS2_CPU_NR_IRQS, &irq_ops, NULL);
++	BUG_ON(!domain);
 +
-+long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
-+		 unsigned long data)
-+{
-+	int ret = -EIO;
-+
-+	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
-+
-+	switch (request) {
-+	default:
-+		ret = ptrace_request(child, request, addr, data);
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+asmlinkage int do_syscall_trace_enter(void)
-+{
-+	int ret = 0;
-+
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		ret = tracehook_report_syscall_entry(task_pt_regs(current));
-+
-+	return ret;
-+}
-+
-+asmlinkage void do_syscall_trace_exit(void)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		tracehook_report_syscall_exit(task_pt_regs(current), 0);
++	irq_set_default_host(domain);
++	of_node_put(node);
 +}
 -- 
 1.8.2.1
