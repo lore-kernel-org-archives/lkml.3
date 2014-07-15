@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934186AbaGOVpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 17:45:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55049 "EHLO
+	id S1759055AbaGOVqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 17:46:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55042 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934028AbaGOVjK (ORCPT
+	with ESMTP id S964865AbaGOVjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:39:10 -0400
+	Tue, 15 Jul 2014 17:39:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 141/198] rtmutex: Detect changes in the pi lock chain
-Date: Tue, 15 Jul 2014 14:30:11 -0700
-Message-Id: <1405459868-15089-142-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 177/198] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
+Date: Tue, 15 Jul 2014 14:30:47 -0700
+Message-Id: <1405459868-15089-178-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -28,302 +30,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 82084984383babe728e6e3c9a8e5c46278091315 upstream.
+commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
 
-When we walk the lock chain, we drop all locks after each step. So the
-lock chain can change under us before we reacquire the locks. That's
-harmless in principle as we just follow the wrong lock path. But it
-can lead to a false positive in the dead lock detection logic:
+There's a race between fork() and hugepage migration, as a result we try
+to "dereference" a swap entry as a normal pte, causing kernel panic.
+The cause of the problem is that copy_hugetlb_page_range() can't handle
+"swap entry" family (migration entry and hwpoisoned entry) so let's fix
+it.
 
-T0 holds L0
-T0 blocks on L1 held by T1
-T1 blocks on L2 held by T2
-T2 blocks on L3 held by T3
-T4 blocks on L4 held by T4
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-Now we walk the chain
-
-lock T1 -> lock L2 -> adjust L2 -> unlock T1 ->
-     lock T2 ->  adjust T2 ->  drop locks
-
-T2 times out and blocks on L0
-
-Now we continue:
-
-lock T2 -> lock L0 -> deadlock detected, but it's not a deadlock at all.
-
-Brad tried to work around that in the deadlock detection logic itself,
-but the more I looked at it the less I liked it, because it's crystal
-ball magic after the fact.
-
-We actually can detect a chain change very simple:
-
-lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
-
-     next_lock = T2->pi_blocked_on->lock;
-
-drop locks
-
-T2 times out and blocks on L0
-
-Now we continue:
-
-lock T2 ->
-
-     if (next_lock != T2->pi_blocked_on->lock)
-     	   return;
-
-So if we detect that T2 is now blocked on a different lock we stop the
-chain walk. That's also correct in the following scenario:
-
-lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
-
-     next_lock = T2->pi_blocked_on->lock;
-
-drop locks
-
-T3 times out and drops L3
-T2 acquires L3 and blocks on L4 now
-
-Now we continue:
-
-lock T2 ->
-
-     if (next_lock != T2->pi_blocked_on->lock)
-     	   return;
-
-We don't have to follow up the chain at that point, because T2
-propagated our priority up to T4 already.
-
-[ Folded a cleanup patch from peterz ]
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reported-by: Brad Mouring <bmouring@ni.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140605152801.930031935@linutronix.de
-[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/locking/rtmutex.c | 95 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 71 insertions(+), 24 deletions(-)
+ mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 43 insertions(+), 28 deletions(-)
 
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 1029a85..ff24a43 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -142,27 +142,36 @@ static void rt_mutex_adjust_prio(struct task_struct *task)
-  */
- int max_lock_depth = 1024;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c8c4a03..1984a3d 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2347,6 +2347,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
+ 		update_mmu_cache(vma, address, ptep);
+ }
  
-+static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
++static int is_hugetlb_entry_migration(pte_t pte)
 +{
-+	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_migration_entry(swp))
++		return 1;
++	else
++		return 0;
 +}
 +
- /*
-  * Adjust the priority chain. Also used for deadlock detection.
-  * Decreases task's usage by one - may thus free the task.
-  *
-- * @task: the task owning the mutex (owner) for which a chain walk is probably
-- *	  needed
-+ * @task:	the task owning the mutex (owner) for which a chain walk is
-+ *		probably needed
-  * @deadlock_detect: do we have to carry out deadlock detection?
-- * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
-- * 	       things for a task that has just got its priority adjusted, and
-- *	       is waiting on a mutex)
-+ * @orig_lock:	the mutex (can be NULL if we are walking the chain to recheck
-+ *		things for a task that has just got its priority adjusted, and
-+ *		is waiting on a mutex)
-+ * @next_lock:	the mutex on which the owner of @orig_lock was blocked before
-+ *		we dropped its pi_lock. Is never dereferenced, only used for
-+ *		comparison to detect lock chain changes.
-  * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
-- *		 its priority to the mutex owner (can be NULL in the case
-- *		 depicted above or if the top waiter is gone away and we are
-- *		 actually deboosting the owner)
-- * @top_task: the current top waiter
-+ *		its priority to the mutex owner (can be NULL in the case
-+ *		depicted above or if the top waiter is gone away and we are
-+ *		actually deboosting the owner)
-+ * @top_task:	the current top waiter
-  *
-  * Returns 0 or -EDEADLK.
-  */
- static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 				      int deadlock_detect,
- 				      struct rt_mutex *orig_lock,
-+				      struct rt_mutex *next_lock,
- 				      struct rt_mutex_waiter *orig_waiter,
- 				      struct task_struct *top_task)
- {
-@@ -221,6 +230,18 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		goto out_unlock_pi;
- 
- 	/*
-+	 * We dropped all locks after taking a refcount on @task, so
-+	 * the task might have moved on in the lock chain or even left
-+	 * the chain completely and blocks now on an unrelated lock or
-+	 * on @orig_lock.
-+	 *
-+	 * We stored the lock on which @task was blocked in @next_lock,
-+	 * so we can detect the chain change.
-+	 */
-+	if (next_lock != waiter->lock)
-+		goto out_unlock_pi;
++static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	swp_entry_t swp;
 +
-+	/*
- 	 * Drop out, when the task has no waiters. Note,
- 	 * top_waiter can be NULL, when we are in the deboosting
- 	 * mode!
-@@ -306,11 +327,26 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		__rt_mutex_adjust_prio(task);
- 	}
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
++		return 1;
++	else
++		return 0;
++}
  
-+	/*
-+	 * Check whether the task which owns the current lock is pi
-+	 * blocked itself. If yes we store a pointer to the lock for
-+	 * the lock chain change detection above. After we dropped
-+	 * task->pi_lock next_lock cannot be dereferenced anymore.
-+	 */
-+	next_lock = task_blocked_on_lock(task);
+ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 			    struct vm_area_struct *vma)
+@@ -2376,10 +2401,26 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 		dst_ptl = huge_pte_lock(h, dst, dst_pte);
+ 		src_ptl = huge_pte_lockptr(h, src, src_pte);
+ 		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
+-		if (!huge_pte_none(huge_ptep_get(src_pte))) {
++		entry = huge_ptep_get(src_pte);
++		if (huge_pte_none(entry)) { /* skip none entry */
++			;
++		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
++				    is_hugetlb_entry_hwpoisoned(entry))) {
++			swp_entry_t swp_entry = pte_to_swp_entry(entry);
 +
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 
- 	top_waiter = rt_mutex_top_waiter(lock);
- 	raw_spin_unlock(&lock->wait_lock);
- 
-+	/*
-+	 * We reached the end of the lock chain. Stop right here. No
-+	 * point to go back just to figure that out.
-+	 */
-+	if (!next_lock)
-+		goto out_put_task;
-+
- 	if (!detect_deadlock && waiter != top_waiter)
- 		goto out_put_task;
- 
-@@ -421,8 +457,9 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- {
- 	struct task_struct *owner = rt_mutex_owner(lock);
- 	struct rt_mutex_waiter *top_waiter = waiter;
--	unsigned long flags;
-+	struct rt_mutex *next_lock;
- 	int chain_walk = 0, res;
-+	unsigned long flags;
- 
- 	/*
- 	 * Early deadlock detection. We really don't want the task to
-@@ -455,20 +492,28 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	if (!owner)
- 		return 0;
- 
-+	raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 	if (waiter == rt_mutex_top_waiter(lock)) {
--		raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
- 		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
- 
- 		__rt_mutex_adjust_prio(owner);
- 		if (owner->pi_blocked_on)
- 			chain_walk = 1;
--		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
--	}
--	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
-+	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
- 		chain_walk = 1;
-+	}
- 
--	if (!chain_walk)
-+	/* Store the lock on which owner is blocked or NULL */
-+	next_lock = task_blocked_on_lock(owner);
-+
-+	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
-+	/*
-+	 * Even if full deadlock detection is on, if the owner is not
-+	 * blocked itself, we can avoid finding this out in the chain
-+	 * walk.
-+	 */
-+	if (!chain_walk || !next_lock)
- 		return 0;
- 
- 	/*
-@@ -480,8 +525,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
--	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
--					 task);
-+	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
-+					 next_lock, waiter, task);
- 
- 	raw_spin_lock(&lock->wait_lock);
- 
-@@ -530,8 +575,8 @@ static void remove_waiter(struct rt_mutex *lock,
- {
- 	int first = (waiter == rt_mutex_top_waiter(lock));
- 	struct task_struct *owner = rt_mutex_owner(lock);
-+	struct rt_mutex *next_lock = NULL;
- 	unsigned long flags;
--	int chain_walk = 0;
- 
- 	raw_spin_lock_irqsave(&current->pi_lock, flags);
- 	plist_del(&waiter->list_entry, &lock->wait_list);
-@@ -555,15 +600,15 @@ static void remove_waiter(struct rt_mutex *lock,
- 		}
- 		__rt_mutex_adjust_prio(owner);
- 
--		if (owner->pi_blocked_on)
--			chain_walk = 1;
-+		/* Store the lock on which owner is blocked or NULL */
-+		next_lock = task_blocked_on_lock(owner);
- 
- 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
- 	}
- 
- 	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
- 
--	if (!chain_walk)
-+	if (!next_lock)
- 		return;
- 
- 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
-@@ -571,7 +616,7 @@ static void remove_waiter(struct rt_mutex *lock,
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
--	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
-+	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
- 
- 	raw_spin_lock(&lock->wait_lock);
++			if (is_write_migration_entry(swp_entry) && cow) {
++				/*
++				 * COW mappings require pages in both
++				 * parent and child to be set to read.
++				 */
++				make_migration_entry_read(&swp_entry);
++				entry = swp_entry_to_pte(swp_entry);
++				set_huge_pte_at(src, addr, src_pte, entry);
++			}
++			set_huge_pte_at(dst, addr, dst_pte, entry);
++		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
+-			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+@@ -2394,32 +2435,6 @@ nomem:
+ 	return -ENOMEM;
  }
-@@ -584,6 +629,7 @@ static void remove_waiter(struct rt_mutex *lock,
- void rt_mutex_adjust_pi(struct task_struct *task)
- {
- 	struct rt_mutex_waiter *waiter;
-+	struct rt_mutex *next_lock;
- 	unsigned long flags;
  
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -593,12 +639,13 @@ void rt_mutex_adjust_pi(struct task_struct *task)
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
+-static int is_hugetlb_entry_migration(pte_t pte)
+-{
+-	swp_entry_t swp;
 -
-+	next_lock = waiter->lock;
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 
- 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
- 	get_task_struct(task);
--	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
-+
-+	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
- }
- 
- /**
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_migration_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			    unsigned long start, unsigned long end,
+ 			    struct page *ref_page)
 -- 
 1.9.1
 
