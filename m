@@ -1,114 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933372AbaGOTvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 15:51:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933003AbaGOTvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 15:51:10 -0400
-Date: Tue, 15 Jul 2014 14:50:56 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Xypron <xypron.debian@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Seth Jennings <sjenning@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, kpatch@redhat.com
-Subject: Re: [PATCH v2 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140715195056.GB3788@treble.redhat.com>
-References: <cover.1405374204.git.jpoimboe@redhat.com>
- <53C5653E.8060102@gmx.de>
+	id S933414AbaGOTxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 15:53:55 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:54879 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933172AbaGOTxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 15:53:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53C5653E.8060102@gmx.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 15 Jul 2014 12:53:30 -0700
+Message-ID: <CALCETrVfqBpJaTJCnDH8pZf4-6x6oojv+8Vvm3XudJfhbstdOQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 07:30:38PM +0200, Xypron wrote:
-> Hello Josh,
-> 
-> being able to patch a live kernel is very interesting feature. I looked
-> through you patch and some questions remained:
-> 
-> In Documentation/kpatch.txt I found no description on how an out of kernel
-> program uses the new code.
-> See https://lkml.org/lkml/2014/7/14/862
+On Tue, Jul 15, 2014 at 12:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> This RFC patchset is aimed to seek comments/suggestions for the design
+> and changes to support of Write-Through (WT) mapping.  The study below
+> shows that using WT mapping may be useful for non-volatile memory.
+>
+>   http://www.hpl.hp.com/techreports/2012/HPL-2012-236.pdf
+>
+> There were idea & patches to support WT in the past, which stimulated
+> very valuable discussions on this topic.
+>
+>   https://lkml.org/lkml/2013/4/24/424
+>   https://lkml.org/lkml/2013/10/27/70
+>   https://lkml.org/lkml/2013/11/3/72
+>
+> This RFC patchset tries to address the issues raised by taking the
+> following design approach:
+>
+>  - Keep the MTRR interface
+>  - Keep the WB, WC, and UC- slots in the PAT MSR
+>  - Keep the PAT bit unused
+>  - Reassign the UC slot to WT in the PAT MSR
+>
+> There are 4 usable slots in the PAT MSR, which are currently assigned to:
+>
+>   PA0/4: WB, PA1/5: WC, PA2/6: UC-, PA3/7: UC
+>
+> The PAT bit is unused since it shares the same bit as the PSE bit and
+> there was a bug in older processors.  Among the 4 slots, the uncached
+> memory type consumes 2 slots, UC- and UC.  They are functionally
+> equivalent, but UC- allows MTRRs to overwrite it with WC.  All interfaces
+> that set the uncached memory type use UC- in order to work with MTRRs.
+> The PA3/7 slot is effectively unused today.  Therefore, this patchset
+> reassigns the PA3/7 slot to WT.  If MTRRs get deprecated in future,
+> UC- can be reassigned to UC, and there is still no need to consume
+> 2 slots for the uncached memory type.
 
-You're right, these interfaces aren't documented very well.  Currently
-the only user of these interfaces is the kpatch-build tool in our github
-repository.  It builds kernel patch modules which call kpatch_register()
-and kpatch_unregister().
+Note that MTRRs are already partially deprecated: all drivers *should*
+be using arch_phys_wc_add, not mtrr_add, and arch_phys_wc_add is a
+no-op on systems with working PAT.
 
-The interfaces are quite complex.  They require an intelligent
-generation tool to create a kernel module which uses them.  This is by
-necessity, in order to allow dynamic relocations so that patched
-functions can access unexported kernel symbols.
+Unfortunately, I never finished excising mtrr_add.  Finishing the job
+wouldn't be very hard.
 
-So I really wonder if it even makes sense to document them.  Instead
-maybe we should also try to put the kpatch-build tool in the Linux
-kernel tree in tools/kpatch.  Then we would just need to document the
-use of the kpatch-build tool.
-
-> Please, create man pages for kpatch_register and kpatch_unregister before
-> moving kpatch into the kernel (if these are the relevant API calls).
-
-I don't think kernel man pages would be appropriate because these
-interfaces aren't system calls.  They're meant to be called by kernel
-modules.
-
-> I saw some x86 specific code in
-> https://github.com/dynup/kpatch/tree/master/kpatch-build/insn/asm
-> How does your code apply to other architectures?
-
-Right now only x86_64 is supported, as it's the only architecture which
-has the ftrace features we need.  But we do hope to add support for more
-architectures, probably at least powerpc and s390.
-
-> For me the man pages on
-> https://github.com/dynup/kpatch/
-> do not yet include all information that a novice user of kpatch would like
-> to receive.
-
-The end user just needs to know how to use the kpatch-build and kpatch
-tools.  We already have man pages for those.  
-
-> The man pages do not match the format of the other kernel man pages.
-
-Hm, why do they need to match the format of kernel man pages?  They're
-user space tools.
-
-> The man pages are not linked to each other nor to Documentation/kpatch.txt.
-
-True, but it hasn't been merged yet :-)  But yes, the kpatch-build and
-kpatch man pages should probably refer to each other (and to any future
-kernel documentation).
-
-> What is the overall status of the complete kpatch solution? Is is still
-> beta?
-
-I would say it's still in an experimental phase.  But very close to
-being used more extensively by real users.
-
-> Should the kpatch and kpatch-build scripts be distributed with the kernel?
-> Or what are your plans?
-
-The more I think about it, the more it makes sense to put kpatch-build
-in the kernel tree, because of the tight dependencies between it and the
-kpatch core module.
-
-I'm not quite sure whether the kpatch script, which manages the patch
-modules after they have been built (e.g. loading/unloading, replacing,
-installing to initramfs), belongs in the kernel tree because it's much
-less loosely coupled to the kernel interfaces.
-
-> 
-> Best regards
-> 
-> Heinrich Schuchardt
-
--- 
-Josh
+--Andy
