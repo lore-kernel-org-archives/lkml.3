@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892AbaGOWLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 18:11:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54378 "EHLO
+	id S934145AbaGOWME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 18:12:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54353 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933805AbaGOVf2 (ORCPT
+	with ESMTP id S933786AbaGOVfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 17:35:28 -0400
+	Tue, 15 Jul 2014 17:35:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gabor Juhos <juhosg@openwrt.org>, Wim Van Sebroeck <wim@iguana.be>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 121/198] watchdog: ath79_wdt: avoid spurious restarts on AR934x
-Date: Tue, 15 Jul 2014 14:29:51 -0700
-Message-Id: <1405459868-15089-122-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 196/198] lz4: fix another possible overrun
+Date: Tue, 15 Jul 2014 14:31:06 -0700
+Message-Id: <1405459868-15089-197-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405459868-15089-1-git-send-email-kamal@canonical.com>
 References: <1405459868-15089-1-git-send-email-kamal@canonical.com>
@@ -27,57 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 23afeb613ec0e10aecfae7838a14d485db62ac52 upstream.
+commit 4148c1f67abf823099b2d7db6851e4aea407f5ee upstream.
 
-On some AR934x based systems, where the frequency of
-the AHB bus is relatively high, the built-in watchdog
-causes a spurious restart when it gets enabled.
+There is one other possible overrun in the lz4 code as implemented by
+Linux at this point in time (which differs from the upstream lz4
+codebase, but will get synced at in a future kernel release.)  As
+pointed out by Don, we also need to check the overflow in the data
+itself.
 
-The possible cause of these restarts is that the timeout
-value written into the TIMER register does not reaches
-the hardware in time.
+While we are at it, replace the odd error return value with just a
+"simple" -1 value as the return value is never used for anything other
+than a basic "did this work or not" check.
 
-Add an explicit delay into the ath79_wdt_enable function
-to avoid the spurious restarts.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Reported-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/watchdog/ath79_wdt.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ lib/lz4/lz4_decompress.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
-index 9fa1f69..61098cd 100644
---- a/drivers/watchdog/ath79_wdt.c
-+++ b/drivers/watchdog/ath79_wdt.c
-@@ -20,6 +20,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index 99a03ac..b74da44 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -108,6 +108,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
+ 		if (length == ML_MASK) {
+ 			for (; *ip == 255; length += 255)
+ 				ip++;
++			if (unlikely(length > (size_t)(length + *ip)))
++				goto _output_error;
+ 			length += *ip++;
+ 		}
  
- #include <linux/bitops.h>
-+#include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/fs.h>
- #include <linux/init.h>
-@@ -91,6 +92,15 @@ static inline void ath79_wdt_keepalive(void)
- static inline void ath79_wdt_enable(void)
- {
- 	ath79_wdt_keepalive();
-+
-+	/*
-+	 * Updating the TIMER register requires a few microseconds
-+	 * on the AR934x SoCs at least. Use a small delay to ensure
-+	 * that the TIMER register is updated within the hardware
-+	 * before enabling the watchdog.
-+	 */
-+	udelay(2);
-+
- 	ath79_wdt_wr(WDOG_REG_CTRL, WDOG_CTRL_ACTION_FCR);
- 	/* flush write */
- 	ath79_wdt_rr(WDOG_REG_CTRL);
+@@ -157,7 +159,7 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
+ 
+ 	/* write overflow error detected */
+ _output_error:
+-	return (int) (-(((char *)ip) - source));
++	return -1;
+ }
+ 
+ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
 -- 
 1.9.1
 
