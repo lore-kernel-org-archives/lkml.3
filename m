@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299AbaGOCKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jul 2014 22:10:37 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:9415 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaGOCKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jul 2014 22:10:33 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 14 Jul 2014 18:59:20 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH RESEND] drm/ttm: expose CPU address of DMA-allocated pages
-Date: Tue, 15 Jul 2014 11:10:06 +0900
-Message-ID: <1405390206-5081-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.1
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756728AbaGOCLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jul 2014 22:11:10 -0400
+Received: from ozlabs.org ([103.22.144.67]:36450 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753241AbaGOCLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jul 2014 22:11:06 -0400
+Message-ID: <1405390262.17767.5.camel@concordia>
+Subject: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 15 Jul 2014 12:11:02 +1000
+In-Reply-To: <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
+References: <1404276081.7254.1.camel@concordia>
+	 <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
+	 <53BBDEE6.1080800@hitachi.com>
+	 <CA+8MBbJH3EfiGctxLpXScGEtvBNXkNVYEnyahihnCie1FgO+9Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pages allocated using the DMA API have a coherent memory mapping. Make
-this mapping visible to drivers so they can decide to use it instead of
-creating their own redundant one.
+On Mon, 2014-07-14 at 10:17 -0700, Tony Luck wrote:
+> On Tue, Jul 8, 2014 at 5:07 AM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+> > Ping?
+> >
+> > This patch can be applied without 1/2, and will fix ia64/ppc64 problem.
+> 
+> Is somebody going to push this upstream? Another week has gone by,
+> we are at -rc5, and I'm still seeing the
+> 
+>   Failed to find blacklist a00000010133b150
+> 
+> messages on ia64.
 
-This is not a mere optimization: for instance, on ARM it is illegal to
-have several memory mappings to the same memory with different protection.
-The mapping provided by dma_alloc_coherent() and exposed by this patch is
-guaranteed to be safe, but subsequent mappings performed by drivers are
-not. Thus drivers using the DMA page allocator should use this mapping
-instead of creating their own.
+I don't see those messages on ppc64, I don't know where the original report
+that it was broken on ppc64 came from. So I'm a bit lukewarm on the patch.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
-This patch was previously part of a series but I figured it would make more
-sense to send it separately. It is to be used by Nouveau (and hopefully
-other drivers) on ARM.
+cheers
 
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 2 ++
- drivers/gpu/drm/ttm/ttm_tt.c             | 6 +++++-
- include/drm/ttm/ttm_bo_driver.h          | 2 ++
- 3 files changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index fb8259f69839..0301fac5badd 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -847,6 +847,7 @@ static int ttm_dma_pool_get_pages(struct dma_pool *pool,
- 	if (count) {
- 		d_page = list_first_entry(&pool->free_list, struct dma_page, page_list);
- 		ttm->pages[index] = d_page->p;
-+		ttm_dma->cpu_address[index] = d_page->vaddr;
- 		ttm_dma->dma_address[index] = d_page->dma;
- 		list_move_tail(&d_page->page_list, &ttm_dma->pages_list);
- 		r = 0;
-@@ -978,6 +979,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 	INIT_LIST_HEAD(&ttm_dma->pages_list);
- 	for (i = 0; i < ttm->num_pages; i++) {
- 		ttm->pages[i] = NULL;
-+		ttm_dma->cpu_address[i] = 0;
- 		ttm_dma->dma_address[i] = 0;
- 	}
- 
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index 75f319090043..341594ede596 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -58,6 +58,8 @@ static void ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
- 	ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages, sizeof(void*));
- 	ttm->dma_address = drm_calloc_large(ttm->ttm.num_pages,
- 					    sizeof(*ttm->dma_address));
-+	ttm->cpu_address = drm_calloc_large(ttm->ttm.num_pages,
-+					    sizeof(*ttm->cpu_address));
- }
- 
- #ifdef CONFIG_X86
-@@ -228,7 +230,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
- 
- 	INIT_LIST_HEAD(&ttm_dma->pages_list);
- 	ttm_dma_tt_alloc_page_directory(ttm_dma);
--	if (!ttm->pages || !ttm_dma->dma_address) {
-+	if (!ttm->pages || !ttm_dma->dma_address || !ttm_dma->cpu_address) {
- 		ttm_tt_destroy(ttm);
- 		pr_err("Failed allocating page table\n");
- 		return -ENOMEM;
-@@ -243,6 +245,8 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
- 
- 	drm_free_large(ttm->pages);
- 	ttm->pages = NULL;
-+	drm_free_large(ttm_dma->cpu_address);
-+	ttm_dma->cpu_address = NULL;
- 	drm_free_large(ttm_dma->dma_address);
- 	ttm_dma->dma_address = NULL;
- }
-diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index 202f0a7171e8..1d9f0f1ff52d 100644
---- a/include/drm/ttm/ttm_bo_driver.h
-+++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -133,6 +133,7 @@ struct ttm_tt {
-  * struct ttm_dma_tt
-  *
-  * @ttm: Base ttm_tt struct.
-+ * @cpu_address: The CPU address of the pages
-  * @dma_address: The DMA (bus) addresses of the pages
-  * @pages_list: used by some page allocation backend
-  *
-@@ -142,6 +143,7 @@ struct ttm_tt {
-  */
- struct ttm_dma_tt {
- 	struct ttm_tt ttm;
-+	void **cpu_address;
- 	dma_addr_t *dma_address;
- 	struct list_head pages_list;
- };
--- 
-2.0.1
 
