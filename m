@@ -1,294 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871AbaGOHsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 03:48:45 -0400
-Received: from sym2.noone.org ([178.63.92.236]:48103 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756482AbaGOHsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 03:48:41 -0400
-Date: Tue, 15 Jul 2014 09:48:31 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Iyappan Subramanian <isubramanian@apm.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH v9 4/4] drivers: net: Add APM X-Gene SoC ethernet driver
- support.
-Message-ID: <20140715074829.GC7668@distanz.ch>
-References: <1405376285-23008-1-git-send-email-isubramanian@apm.com>
- <1405376285-23008-5-git-send-email-isubramanian@apm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405376285-23008-5-git-send-email-isubramanian@apm.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757900AbaGOHvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 03:51:15 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:54164 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaGOHvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 03:51:12 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-b4-53c4dd5a6f35
+Message-id: <53C4DC0B.9070307@samsung.com>
+Date: Tue, 15 Jul 2014 11:45:15 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Alexey Preobrazhensky <preobr@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC/PATCH RESEND -next 15/21] mm: slub: add kernel address
+ sanitizer hooks to slub allocator
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1404905415-9046-16-git-send-email-a.ryabinin@samsung.com>
+ <20140715060932.GJ11317@js1304-P5Q-DELUXE>
+In-reply-to: <20140715060932.GJ11317@js1304-P5Q-DELUXE>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t/xq7pRd48EGxx8oGzxe+9MVos569ew
+	WVz/9obRYsLDNnaLld3NbBbbn71lsljZ+YDVYtPja6wWf3btYLK4vGsOm8W9Nf9ZLW5f5rW4
+	dGABk0XLvgtMFm2f/7Fa7Ft5HshaspHJYvGR28wW755NZrbYvGkqs8WPDY9ZHUQ9Wpp72Dx2
+	zrrL7rFgU6nHplWdbB6bPk1i9+h6e4XJ4925c+weJ2b8ZvF4cmU6k8fmJfUeH5/eYvF4v+8q
+	m8eZBUfYPT5vkgvgi+KySUnNySxLLdK3S+DKWLHCouBYVMWTSafYGhjne3YxcnJICJhI3J1z
+	nA3CFpO4cG89kM3FISSwlFHiyrPH7CAJIYFmJon+flYQm1dAS6J90mYwm0VAVeLv0/1MIDab
+	gJ7Ev1nbwQaJCkRIHOh7BlUvKPFj8j0WEFtEQENi9arNzCALmAXOs0rcf/ULqJmDQ1ggR2LL
+	1mCIxesZJfoX3AJbzClgLrHr4kWwQcwCOhL7W6exQdjyEpvXvGWewCgwC8mOWUjKZiEpW8DI
+	vIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJIq/7GBcfMzqEKMAB6MSD2+F2OFgIdbEsuLK
+	3EOMEhzMSiK8HouPBAvxpiRWVqUW5ccXleakFh9iZOLglGpgjCtb8svT1GNChFZ8/mfhVVwb
+	Vq+1zlq0syfj9dWZSRxMFutXM/7SODzPeIuIkRZ3bNZRz8fv57Zw/v9wrFt/xpTHz27LCunf
+	kbZgiprYPDs5U8lnWX6ur0ZhR0PwsWm99u3VfVIqXW3SJxY+vlbhYFbN0P/9Drv3vNYfRXLb
+	xUsZFqdvbnFWYinOSDTUYi4qTgQAg+8Yb8ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-15 at 00:18:05 +0200, Iyappan Subramanian <isubramanian@apm.com> wrote:
-> This patch adds network driver for APM X-Gene SoC ethernet.
+On 07/15/14 10:09, Joonsoo Kim wrote:
+> On Wed, Jul 09, 2014 at 03:30:09PM +0400, Andrey Ryabinin wrote:
+>> With this patch kasan will be able to catch bugs in memory allocated
+>> by slub.
+>> Allocated slab page, this whole page marked as unaccessible
+>> in corresponding shadow memory.
+>> On allocation of slub object requested allocation size marked as
+>> accessible, and the rest of the object (including slub's metadata)
+>> marked as redzone (unaccessible).
+>>
+>> We also mark object as accessible if ksize was called for this object.
+>> There is some places in kernel where ksize function is called to inquire
+>> size of really allocated area. Such callers could validly access whole
+>> allocated memory, so it should be marked as accessible by kasan_krealloc call.
+>>
+>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>> ---
+>>  include/linux/kasan.h |  22 ++++++++++
+>>  include/linux/slab.h  |  19 +++++++--
+>>  lib/Kconfig.kasan     |   2 +
+>>  mm/kasan/kasan.c      | 110 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  mm/kasan/kasan.h      |   5 +++
+>>  mm/kasan/report.c     |  23 +++++++++++
+>>  mm/slab.h             |   2 +-
+>>  mm/slab_common.c      |   9 +++--
+>>  mm/slub.c             |  24 ++++++++++-
+>>  9 files changed, 208 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+>> index 4adc0a1..583c011 100644
+>> --- a/include/linux/kasan.h
+>> +++ b/include/linux/kasan.h
+>> @@ -20,6 +20,17 @@ void kasan_init_shadow(void);
+>>  void kasan_alloc_pages(struct page *page, unsigned int order);
+>>  void kasan_free_pages(struct page *page, unsigned int order);
+>>  
+>> +void kasan_kmalloc_large(const void *ptr, size_t size);
+>> +void kasan_kfree_large(const void *ptr);
+>> +void kasan_kmalloc(struct kmem_cache *s, const void *object, size_t size);
+>> +void kasan_krealloc(const void *object, size_t new_size);
+>> +
+>> +void kasan_slab_alloc(struct kmem_cache *s, void *object);
+>> +void kasan_slab_free(struct kmem_cache *s, void *object);
+>> +
+>> +void kasan_alloc_slab_pages(struct page *page, int order);
+>> +void kasan_free_slab_pages(struct page *page, int order);
+>> +
+>>  #else /* CONFIG_KASAN */
+>>  
+>>  static inline void unpoison_shadow(const void *address, size_t size) {}
+>> @@ -34,6 +45,17 @@ static inline void kasan_alloc_shadow(void) {}
+>>  static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
+>>  static inline void kasan_free_pages(struct page *page, unsigned int order) {}
+>>  
+>> +static inline void kasan_kmalloc_large(void *ptr, size_t size) {}
+>> +static inline void kasan_kfree_large(const void *ptr) {}
+>> +static inline void kasan_kmalloc(struct kmem_cache *s, const void *object, size_t size) {}
+>> +static inline void kasan_krealloc(const void *object, size_t new_size) {}
+>> +
+>> +static inline void kasan_slab_alloc(struct kmem_cache *s, void *object) {}
+>> +static inline void kasan_slab_free(struct kmem_cache *s, void *object) {}
+>> +
+>> +static inline void kasan_alloc_slab_pages(struct page *page, int order) {}
+>> +static inline void kasan_free_slab_pages(struct page *page, int order) {}
+>> +
+>>  #endif /* CONFIG_KASAN */
+>>  
+>>  #endif /* LINUX_KASAN_H */
+>> diff --git a/include/linux/slab.h b/include/linux/slab.h
+>> index 68b1feab..a9513e9 100644
+>> --- a/include/linux/slab.h
+>> +++ b/include/linux/slab.h
+>> @@ -104,6 +104,7 @@
+>>  				(unsigned long)ZERO_SIZE_PTR)
+>>  
+>>  #include <linux/kmemleak.h>
+>> +#include <linux/kasan.h>
+>>  
+>>  struct mem_cgroup;
+>>  /*
+>> @@ -444,6 +445,8 @@ static __always_inline void *kmalloc_large(size_t size, gfp_t flags)
+>>   */
+>>  static __always_inline void *kmalloc(size_t size, gfp_t flags)
+>>  {
+>> +	void *ret;
+>> +
+>>  	if (__builtin_constant_p(size)) {
+>>  		if (size > KMALLOC_MAX_CACHE_SIZE)
+>>  			return kmalloc_large(size, flags);
+>> @@ -454,8 +457,12 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+>>  			if (!index)
+>>  				return ZERO_SIZE_PTR;
+>>  
+>> -			return kmem_cache_alloc_trace(kmalloc_caches[index],
+>> +			ret = kmem_cache_alloc_trace(kmalloc_caches[index],
+>>  					flags, size);
+>> +
+>> +			kasan_kmalloc(kmalloc_caches[index], ret, size);
+>> +
+>> +			return ret;
+>>  		}
+>>  #endif
+>>  	}
+>> @@ -485,6 +492,8 @@ static __always_inline int kmalloc_size(int n)
+>>  static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+>>  {
+>>  #ifndef CONFIG_SLOB
+>> +	void *ret;
+>> +
+>>  	if (__builtin_constant_p(size) &&
+>>  		size <= KMALLOC_MAX_CACHE_SIZE && !(flags & GFP_DMA)) {
+>>  		int i = kmalloc_index(size);
+>> @@ -492,8 +501,12 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+>>  		if (!i)
+>>  			return ZERO_SIZE_PTR;
+>>  
+>> -		return kmem_cache_alloc_node_trace(kmalloc_caches[i],
+>> -						flags, node, size);
+>> +		ret = kmem_cache_alloc_node_trace(kmalloc_caches[i],
+>> +						  flags, node, size);
+>> +
+>> +		kasan_kmalloc(kmalloc_caches[i], ret, size);
+>> +
+>> +		return ret;
+>>  	}
+>>  #endif
+>>  	return __kmalloc_node(size, flags, node);
+>> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
+>> index 2bfff78..289a624 100644
+>> --- a/lib/Kconfig.kasan
+>> +++ b/lib/Kconfig.kasan
+>> @@ -5,6 +5,8 @@ if HAVE_ARCH_KASAN
+>>  
+>>  config KASAN
+>>  	bool "AddressSanitizer: dynamic memory error detector"
+>> +	depends on SLUB
+>> +	select STACKTRACE
+>>  	default n
+>>  	help
+>>  	  Enables AddressSanitizer - dynamic memory error detector,
+>> diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+>> index 109478e..9b5182a 100644
+>> --- a/mm/kasan/kasan.c
+>> +++ b/mm/kasan/kasan.c
+>> @@ -177,6 +177,116 @@ void __init kasan_init_shadow(void)
+>>  	}
+>>  }
+>>  
+>> +void kasan_alloc_slab_pages(struct page *page, int order)
+>> +{
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_SLAB_REDZONE);
+>> +}
+>> +
+>> +void kasan_free_slab_pages(struct page *page, int order)
+>> +{
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	poison_shadow(page_address(page), PAGE_SIZE << order, KASAN_SLAB_FREE);
+>> +}
+>> +
+>> +void kasan_slab_alloc(struct kmem_cache *cache, void *object)
+>> +{
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	if (unlikely(object == NULL))
+>> +		return;
+>> +
+>> +	poison_shadow(object, cache->size, KASAN_KMALLOC_REDZONE);
+>> +	unpoison_shadow(object, cache->alloc_size);
+>> +}
+>> +
+>> +void kasan_slab_free(struct kmem_cache *cache, void *object)
+>> +{
+>> +	unsigned long size = cache->size;
+>> +	unsigned long rounded_up_size = round_up(size, KASAN_SHADOW_SCALE_SIZE);
+>> +
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	poison_shadow(object, rounded_up_size, KASAN_KMALLOC_FREE);
+>> +}
+>> +
+>> +void kasan_kmalloc(struct kmem_cache *cache, const void *object, size_t size)
+>> +{
+>> +	unsigned long redzone_start;
+>> +	unsigned long redzone_end;
+>> +
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	if (unlikely(object == NULL))
+>> +		return;
+>> +
+>> +	redzone_start = round_up((unsigned long)(object + size),
+>> +				KASAN_SHADOW_SCALE_SIZE);
+>> +	redzone_end = (unsigned long)object + cache->size;
+>> +
+>> +	unpoison_shadow(object, size);
+>> +	poison_shadow((void *)redzone_start, redzone_end - redzone_start,
+>> +		KASAN_KMALLOC_REDZONE);
+>> +
+>> +}
+>> +EXPORT_SYMBOL(kasan_kmalloc);
+>> +
+>> +void kasan_kmalloc_large(const void *ptr, size_t size)
+>> +{
+>> +	struct page *page;
+>> +	unsigned long redzone_start;
+>> +	unsigned long redzone_end;
+>> +
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	if (unlikely(ptr == NULL))
+>> +		return;
+>> +
+>> +	page = virt_to_page(ptr);
+>> +	redzone_start = round_up((unsigned long)(ptr + size),
+>> +				KASAN_SHADOW_SCALE_SIZE);
+>> +	redzone_end = (unsigned long)ptr + (PAGE_SIZE << compound_order(page));
+>> +
+>> +	unpoison_shadow(ptr, size);
+>> +	poison_shadow((void *)redzone_start, redzone_end - redzone_start,
+>> +		KASAN_PAGE_REDZONE);
+>> +}
+>> +EXPORT_SYMBOL(kasan_kmalloc_large);
+>> +
+>> +void kasan_krealloc(const void *object, size_t size)
+>> +{
+>> +	struct page *page;
+>> +
+>> +	if (unlikely(object == ZERO_SIZE_PTR))
+>> +		return;
+>> +
+>> +	page = virt_to_head_page(object);
+>> +
+>> +	if (unlikely(!PageSlab(page)))
+>> +		kasan_kmalloc_large(object, size);
+>> +	else
+>> +		kasan_kmalloc(page->slab_cache, object, size);
+>> +}
+>> +
+>> +void kasan_kfree_large(const void *ptr)
+>> +{
+>> +	struct page *page;
+>> +
+>> +	if (unlikely(!kasan_initialized))
+>> +		return;
+>> +
+>> +	page = virt_to_page(ptr);
+>> +	poison_shadow(ptr, PAGE_SIZE << compound_order(page), KASAN_FREE_PAGE);
+>> +}
+>> +
+>>  void kasan_alloc_pages(struct page *page, unsigned int order)
+>>  {
+>>  	if (unlikely(!kasan_initialized))
+>> diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+>> index be9597e..f925d03 100644
+>> --- a/mm/kasan/kasan.h
+>> +++ b/mm/kasan/kasan.h
+>> @@ -6,6 +6,11 @@
+>>  #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+>>  
+>>  #define KASAN_FREE_PAGE         0xFF  /* page was freed */
+>> +#define KASAN_PAGE_REDZONE      0xFE  /* redzone for kmalloc_large allocations */
+>> +#define KASAN_SLAB_REDZONE      0xFD  /* Slab page redzone, does not belong to any slub object */
+>> +#define KASAN_KMALLOC_REDZONE   0xFC  /* redzone inside slub object */
+>> +#define KASAN_KMALLOC_FREE      0xFB  /* object was freed (kmem_cache_free/kfree) */
+>> +#define KASAN_SLAB_FREE         0xFA  /* free slab page */
+>>  #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+>>  
+>>  struct access_info {
+>> diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+>> index 6ef9e57..6d829af 100644
+>> --- a/mm/kasan/report.c
+>> +++ b/mm/kasan/report.c
+>> @@ -43,10 +43,15 @@ static void print_error_description(struct access_info *info)
+>>  	u8 shadow_val = *(u8 *)kasan_mem_to_shadow(info->access_addr);
+>>  
+>>  	switch (shadow_val) {
+>> +	case KASAN_PAGE_REDZONE:
+>> +	case KASAN_SLAB_REDZONE:
+>> +	case KASAN_KMALLOC_REDZONE:
+>>  	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+>>  		bug_type = "buffer overflow";
+>>  		break;
+>>  	case KASAN_FREE_PAGE:
+>> +	case KASAN_SLAB_FREE:
+>> +	case KASAN_KMALLOC_FREE:
+>>  		bug_type = "use after free";
+>>  		break;
+>>  	case KASAN_SHADOW_GAP:
+>> @@ -70,7 +75,25 @@ static void print_address_description(struct access_info *info)
+>>  	page = virt_to_page(info->access_addr);
+>>  
+>>  	switch (shadow_val) {
+>> +	case KASAN_SLAB_REDZONE:
+>> +		cache = virt_to_cache((void *)info->access_addr);
+>> +		slab_err(cache, page, "access to slab redzone");
 > 
-> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-> Signed-off-by: Ravi Patel <rapatel@apm.com>
-> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
-> ---
->  drivers/net/ethernet/Kconfig                       |   1 +
->  drivers/net/ethernet/Makefile                      |   1 +
->  drivers/net/ethernet/apm/Kconfig                   |   1 +
->  drivers/net/ethernet/apm/Makefile                  |   5 +
->  drivers/net/ethernet/apm/xgene/Kconfig             |   9 +
->  drivers/net/ethernet/apm/xgene/Makefile            |   6 +
->  .../net/ethernet/apm/xgene/xgene_enet_ethtool.c    | 125 +++
->  drivers/net/ethernet/apm/xgene/xgene_enet_hw.c     | 747 ++++++++++++++++
->  drivers/net/ethernet/apm/xgene/xgene_enet_hw.h     | 375 ++++++++
->  drivers/net/ethernet/apm/xgene/xgene_enet_main.c   | 962 +++++++++++++++++++++
->  drivers/net/ethernet/apm/xgene/xgene_enet_main.h   | 107 +++
->  11 files changed, 2339 insertions(+)
->  create mode 100644 drivers/net/ethernet/apm/Kconfig
->  create mode 100644 drivers/net/ethernet/apm/Makefile
->  create mode 100644 drivers/net/ethernet/apm/xgene/Kconfig
->  create mode 100644 drivers/net/ethernet/apm/xgene/Makefile
->  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_ethtool.c
->  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
->  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_hw.h
->  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.c
->  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.h
+> We need head page of invalid access address for slab_err() since head
+> page has all meta data of this slab. So, instead of, virt_to_cache,
+> use virt_to_head_page() and page->slab_cache.
+> 
+>> +		dump_stack();
+>> +		break;
+>> +	case KASAN_KMALLOC_FREE:
+>> +	case KASAN_KMALLOC_REDZONE:
+>> +	case 1 ... KASAN_SHADOW_SCALE_SIZE - 1:
+>> +		if (PageSlab(page)) {
+>> +			cache = virt_to_cache((void *)info->access_addr);
+>> +			slab_start = page_address(virt_to_head_page((void *)info->access_addr));
+>> +			object = virt_to_obj(cache, slab_start,
+>> +					(void *)info->access_addr);
+>> +			object_err(cache, page, object, "kasan error");
+>> +			break;
+>> +		}
+> 
+> Same here, page should be head page.
+> 
 
-[...]
+Correct, I'll fix it.
 
-> diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c b/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
-> new file mode 100644
-> index 0000000..e52af60
-> --- /dev/null
-> +++ b/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
-> @@ -0,0 +1,747 @@
+Thanks.
 
-[...]
+> Thanks.
+> 
 
-> +int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
-> +{
-> +	struct net_device *ndev = pdata->ndev;
-> +	struct device *dev = &pdata->pdev->dev;
-> +	struct device_node *child_np;
-> +	struct device_node *mdio_np = NULL;
-> +	struct mii_bus *mdio_bus;
-> +	int ret;
-> +
-> +	for_each_child_of_node(dev->of_node, child_np) {
-> +		if (of_device_is_compatible(child_np, "apm,xgene-mdio")) {
-> +			mdio_np = child_np;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (!mdio_np) {
-> +		netdev_dbg(ndev, "No mdio node in the dts\n");
-> +		return -1;
-> +	}
-> +
-> +	mdio_bus = mdiobus_alloc();
-> +	if (!mdio_bus)
-> +		return -ENOMEM;
-> +
-> +	mdio_bus->name = "APM X-Gene MDIO bus";
-> +	mdio_bus->read = xgene_enet_mdio_read;
-> +	mdio_bus->write = xgene_enet_mdio_write;
-> +	snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s-%s", "xgene-mii",
-> +		 ndev->name);
-> +
-> +	mdio_bus->priv = pdata;
-> +	mdio_bus->parent = &ndev->dev;
-> +
-> +	ret = of_mdiobus_register(mdio_bus, mdio_np);
-> +	if (ret) {
-> +		netdev_err(ndev, "Failed to register MDIO bus\n");
-> +		goto err;
-> +	}
-> +	pdata->mdio_bus = mdio_bus;
-> +
-> +	ret = xgene_enet_phy_connect(ndev);
-> +	if (ret)
-
-mdiobus_unregister() should be called on this error path.
-
-> +		goto err;
-> +
-> +	return ret;
-> +
-> +err:
-> +	mdiobus_free(mdio_bus);
-> +
-> +	return ret;
-> +}
-
-[...]
-
-> diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_main.c b/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
-> new file mode 100644
-> index 0000000..756523a
-> --- /dev/null
-> +++ b/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
-
-[...]
-
-> +static struct rtnl_link_stats64 *xgene_enet_get_stats64(
-> +			struct net_device *ndev,
-> +			struct rtnl_link_stats64 *storage)
-> +{
-> +	struct xgene_enet_pdata *pdata = netdev_priv(ndev);
-> +	struct rtnl_link_stats64 *stats = &pdata->stats;
-> +
-> +	spin_lock(&pdata->stats_lock);
-
-What is the purpose of this spinlock? It doesn't seem to protect any
-hardware-specific stats readout. Is it really necessary?
-
-> +	stats->rx_errors += stats->rx_length_errors +
-> +			    stats->rx_crc_errors +
-> +			    stats->rx_frame_errors +
-> +			    stats->rx_fifo_errors;
-> +	memcpy(storage, &pdata->stats, sizeof(struct rtnl_link_stats64));
-> +	spin_unlock(&pdata->stats_lock);
-> +
-> +	return storage;
-> +}
-
-[...]
-
-> +static int xgene_enet_init_hw(struct xgene_enet_pdata *pdata)
-> +{
-> +	struct net_device *ndev = pdata->ndev;
-> +	struct xgene_enet_desc_ring *buf_pool;
-> +	u16 dst_ring_num;
-> +	int ret;
-> +
-> +	xgene_gmac_tx_disable(pdata);
-> +	xgene_gmac_rx_disable(pdata);
-> +
-> +	ret = xgene_enet_create_desc_rings(ndev);
-> +	if (ret) {
-> +		netdev_err(ndev, "Error in ring configuration\n");
-> +		return ret;
-> +	}
-> +
-> +	/* setup buffer pool */
-> +	buf_pool = pdata->rx_ring->buf_pool;
-> +	xgene_enet_init_bufpool(buf_pool);
-> +	ret = xgene_enet_refill_bufpool(buf_pool, pdata->rx_buff_cnt);
-> +	if (ret)
-
-Shouldn't xgene_enet_delete_desc_rings() be called here?
-
-> +		return ret;
-> +
-> +	dst_ring_num = xgene_enet_dst_ring_num(pdata->rx_ring);
-> +	xgene_enet_cle_bypass(pdata, dst_ring_num, buf_pool->id);
-> +
-> +	return ret;
-> +}
-> +
-> +static int xgene_enet_probe(struct platform_device *pdev)
-> +{
-> +	struct net_device *ndev;
-> +	struct xgene_enet_pdata *pdata;
-> +	struct device *dev = &pdev->dev;
-> +	struct napi_struct *napi;
-> +	int ret;
-> +
-> +	ndev = alloc_etherdev(sizeof(struct xgene_enet_pdata));
-> +	if (!ndev)
-> +		return -ENOMEM;
-> +
-> +	pdata = netdev_priv(ndev);
-> +
-> +	pdata->pdev = pdev;
-> +	pdata->ndev = ndev;
-> +	SET_NETDEV_DEV(ndev, dev);
-> +	platform_set_drvdata(pdev, pdata);
-> +	ndev->netdev_ops = &xgene_ndev_ops;
-> +	xgene_enet_set_ethtool_ops(ndev);
-> +	ndev->features |= NETIF_F_IP_CSUM |
-> +			  NETIF_F_GSO |
-> +			  NETIF_F_GRO;
-> +
-> +	ret = xgene_enet_get_resources(pdata);
-> +	if (ret)
-> +		goto err;
-> +
-> +	xgene_enet_reset(pdata);
-> +	xgene_gmac_init(pdata, SPEED_1000);
-> +
-> +	spin_lock_init(&pdata->stats_lock);
-> +	ret = register_netdev(ndev);
-> +	if (ret) {
-> +		netdev_err(ndev, "Failed to register netdev\n");
-> +		goto err;
-> +	}
-> +
-> +	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
-> +	if (ret) {
-> +		netdev_err(ndev, "No usable DMA configuration\n");
-> +		goto err;
-> +	}
-> +
-> +	ret = xgene_enet_init_hw(pdata);
-> +	if (ret)
-> +		goto err;
-> +
-> +	napi = &pdata->rx_ring->napi;
-> +	netif_napi_add(ndev, napi, xgene_enet_napi, NAPI_POLL_WEIGHT);
-> +	ret = xgene_enet_mdio_config(pdata);
-> +
-> +	return ret;
-> +err:
-> +	free_netdev(ndev);
-> +	return ret;
-> +}
-> +
-> +static int xgene_enet_remove(struct platform_device *pdev)
-> +{
-> +	struct xgene_enet_pdata *pdata;
-> +	struct net_device *ndev;
-> +
-> +	pdata = platform_get_drvdata(pdev);
-> +	ndev = pdata->ndev;
-> +
-> +	xgene_gmac_rx_disable(pdata);
-> +	xgene_gmac_tx_disable(pdata);
-> +
-> +	netif_napi_del(&pdata->rx_ring->napi);
-> +	xgene_enet_mdio_remove(pdata);
-> +	xgene_enet_delete_desc_rings(pdata);
-> +	unregister_netdev(ndev);
-> +	xgene_gport_shutdown(pdata);
-> +	free_netdev(ndev);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id xgene_enet_match[] = {
-> +	{.compatible = "apm,xgene-enet",},
-> +	{},
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, xgene_enet_match);
-> +
-> +static struct platform_driver xgene_enet_driver = {
-> +	.driver = {
-> +		   .name = "xgene-enet",
-> +		   .owner = THIS_MODULE,
-> +		   .of_match_table = xgene_enet_match,
-> +		   },
-> +	.probe = xgene_enet_probe,
-> +	.remove = xgene_enet_remove,
-> +};
-> +
-> +module_platform_driver(xgene_enet_driver);
-> +
-> +MODULE_DESCRIPTION("APM X-Gene SoC Ethernet driver");
-> +MODULE_VERSION(XGENE_DRV_VERSION);
-> +MODULE_AUTHOR("Keyur Chudgar <kchudgar@apm.com>");
-> +MODULE_LICENSE("GPL");
