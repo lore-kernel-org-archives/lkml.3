@@ -1,145 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758368AbaGPBzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:55:53 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:57903 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895AbaGPBzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:55:50 -0400
+	id S1752806AbaGPCAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 22:00:12 -0400
+Received: from ozlabs.org ([103.22.144.67]:36378 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540AbaGPCAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 22:00:10 -0400
+Date: Wed, 16 Jul 2014 12:00:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Gong Chen <gong.chen@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: linux-next: build warnings after merge of the ia64 tree
+Message-ID: <20140716120000.3523239b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Date: Wed, 16 Jul 2014 09:55:49 +0800
-Message-ID: <CABawtvONfFP8ffyVOyu5=DVXgqyiek5oaVSV_EbfiMyMSpU+UQ@mail.gmail.com>
-Subject: Hit bug with script/checkpatch.pl
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: joe@perches.com, anish@chelsio.com, apw@canonical.com
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/9J/5lXaP3FgQRMI5xrFXJKD"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-     I hit a bug when run script/checkpatch.pl to my patch, It
-reported a error with following
-macro definition, but in fact the macro is correct, I couldn't change
-that macro according to
-the error message output by script/checkpatch.pl. because of this bug,
-my patch was rejected by some guy's patchwork.
+--Sig_/9J/5lXaP3FgQRMI5xrFXJKD
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
- ./scripts/checkpatch.pl netxen.patch
-ERROR: Macros with complex values should be enclosed in parenthesis
-#38: FILE: drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c:45:
-+#define NETXEN_NIC_STAT(m)     NETXEN_STATS, \
-+                       sizeof(((struct netxen_adapter *)0)->m), \
-                        offsetof(struct netxen_adapter, m)
+After merging the ia64 tree, today's linux-next build (powerpc
+ppc64_defconfig) produced these warnings (though presumably it started
+yesterday):
 
-ERROR: Macros with complex values should be enclosed in parenthesis
-#42: FILE: drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c:49:
-+#define NETXEN_NETDEV_STAT(m)  NETDEV_STATS, \
-+                       sizeof(((struct rtnl_link_stats64 *)0)->m), \
-+                       offsetof(struct rtnl_link_stats64, m)
+In file included from include/ras/ras_event.h:11:0,
+                 from drivers/ras/ras.c:13:
+include/linux/aer.h:42:58: warning: 'struct pci_dev' declared inside parame=
+ter list
+ static inline int pci_enable_pcie_error_reporting(struct pci_dev *dev)
+                                                          ^
+include/linux/aer.h:42:58: warning: its scope is only this definition or de=
+claration, which is probably not what you want
+include/linux/aer.h:46:59: warning: 'struct pci_dev' declared inside parame=
+ter list
+ static inline int pci_disable_pcie_error_reporting(struct pci_dev *dev)
+                                                           ^
+include/linux/aer.h:50:65: warning: 'struct pci_dev' declared inside parame=
+ter list
+ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *d=
+ev)
+                                                                 ^
+include/linux/aer.h:57:14: warning: 'struct pci_dev' declared inside parame=
+ter list
+       struct aer_capability_regs *aer);
+              ^
 
-total: 2 errors, 0 warnings, 62 lines checked
+Introduced by commit 76ac8275f296 ("trace, RAS: Add basic RAS trace
+event") and following patches.
 
-netxen.patch has style problems, please review.
+So, presumably, aer.h either needs to include pci.h or, at least, have a
 
-If any of these errors are false positives, please report
+struct pci_dev;
 
+line in it.
 
-----------------
-Please check and fix it.
-Thanks,
-Ethan
-----------------------------------------------following is the patch
-hit the bug------------------------
-From: Ethan Zhao <ethan.zhao@oracle.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
-but it doesn't collect stats.rxdropped in driver, so we will get
-different rx_dropped statistic information while using ifconfig and ethtool.
-this patch fills stats.rxdropped field with data from net core
-with dev_get_stats() just as ixgbe driver did for some of its stats.
+--Sig_/9J/5lXaP3FgQRMI5xrFXJKD
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-V2: only fix the stats.rxdropped field.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Tested with last netxen 4.0.82
-Compiled with net-next branch 3.16-rc2
+iQIcBAEBCAAGBQJTxdylAAoJEMDTa8Ir7ZwVyCoP/jHrH9c1h9ZeimdcWRb4HbsR
+FwwKHjDNoMrSQjW56+brYraaQGIItfuMOHUrwUt5x0X7yoLMiFUGbuhMqi7xIemE
+UeZ4lJUYL44FIIl1hFnP3A/ppIjVLB75Fi6pkbZ2hvcGLfszZjjnFY/APTxOxTCs
+nJkUOaqKDIp9r5S4elzOE/Q0D0zjhxUf/sgOgxO0VzP3cEop8KqN3z+juhwusqoW
+JN7dgh/rPohs03gmfet50VQSDEVXWdJJuTfv6znRTS9m5j3COFR/PD0yK+aQeXCn
+siKLy7nNHK1HdzLwJNF+POj25ArTF7nrL3+2ahJWoGDYbI8P3rWYX+AuOqs23nkt
+6QJ4mSoT7WEzsaz+VhqnU2OSuPmbYLZeh9unqG0XkcaJCGwLiTLVRqS369wDKJ3H
+1yRTpDQZQp2eKugFAW48f3wsAeRaK7bo5uqwnvALeJhS2JzF7lYKU7MebNxYF4yZ
+Zlht5c+jNiHElpA84RF7mcIzrPJ1csBSYqZBi4ATqxtvY4D+HX0qnEKjYTXPr3LY
+/u7HStJarliMK2wWXBTS8L7jz7fm6E5g0V1o4lKquNN64VE7MBtVVxhEACnVRTKR
+1aAMojBul6FyGIfzcwZdz8lasB0zYpZjEKpRci6V3lBahb6sL3i5hqJWv8RcC72O
+uLBmk3xiK11H8Khxjxba
+=BZ4g
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
----
- .../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   34 +++++++++++++++++---
- 1 files changed, 29 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-index 4ca2c19..49e6a1b 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
-@@ -33,22 +33,30 @@
- #include "netxen_nic.h"
- #include "netxen_nic_hw.h"
-
-+enum {NETDEV_STATS, NETXEN_STATS};
-+
- struct netxen_nic_stats {
-        char stat_string[ETH_GSTRING_LEN];
-+       int type;
-        int sizeof_stat;
-        int stat_offset;
- };
-
--#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
-+#define NETXEN_NIC_STAT(m)     NETXEN_STATS, \
-+                       sizeof(((struct netxen_adapter *)0)->m), \
-                        offsetof(struct netxen_adapter, m)
-
-+#define NETXEN_NETDEV_STAT(m)  NETDEV_STATS, \
-+                       sizeof(((struct rtnl_link_stats64 *)0)->m), \
-+                       offsetof(struct rtnl_link_stats64, m)
-+
- #define NETXEN_NIC_PORT_WINDOW 0x10000
- #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
-
- static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
-        {"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
-        {"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
--       {"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
-+       {"rx_dropped", NETXEN_NETDEV_STAT(rx_dropped)},
-        {"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
-        {"csummed", NETXEN_NIC_STAT(stats.csummed)},
-        {"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)},
-@@ -679,11 +687,27 @@ netxen_nic_get_ethtool_stats(struct net_device *dev,
- {
-        struct netxen_adapter *adapter = netdev_priv(dev);
-        int index;
-+       struct rtnl_link_stats64 temp;
-+       const struct rtnl_link_stats64 *net_stats;
-+       char *p = NULL;
-
-+       net_stats = dev_get_stats(dev, &temp);
-        for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
--               char *p =
--                   (char *)adapter +
--                   netxen_nic_gstrings_stats[index].stat_offset;
-+
-+               switch (netxen_nic_gstrings_stats[index].type) {
-+               case NETDEV_STATS:
-+                       p = (char *)net_stats +
-+                               netxen_nic_gstrings_stats[index].stat_offset;
-+                       break;
-+               case NETXEN_STATS:
-+                       p = (char *)adapter +
-+                               netxen_nic_gstrings_stats[index].stat_offset;
-+                       break;
-+               default:
-+                       data[index] = 0;
-+                       continue;
-+               }
-+
-                data[index] =
-                    (netxen_nic_gstrings_stats[index].sizeof_stat ==
-                     sizeof(u64)) ? *(u64 *) p : *(u32 *) p;
--- 1.7.1
+--Sig_/9J/5lXaP3FgQRMI5xrFXJKD--
