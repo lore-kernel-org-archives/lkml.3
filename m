@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaGPCAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 22:00:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:36378 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540AbaGPCAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 22:00:10 -0400
-Date: Wed, 16 Jul 2014 12:00:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Gong Chen <gong.chen@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: linux-next: build warnings after merge of the ia64 tree
-Message-ID: <20140716120000.3523239b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1753785AbaGPCCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 22:02:54 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:36430 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862AbaGPCCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 22:02:52 -0400
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jul 2014 22:02:52 EDT
+X-PGP-Universal: processed;
+	by shaapppus01.asia.root.pri on Wed, 16 Jul 2014 10:02:28 +0800
+From: Huayi Li <huayi.li@csr.com>
+To: Thierry Reding <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <workgroup.linux@csr.com>,
+        <rongjun.ying@csr.com>, <barry.song@csr.com>,
+        Huayi Li <huayi.li@csr.com>
+Subject: [PATCH v5 2/4] pwm: sirf: add dt-binding document
+Date: Wed, 16 Jul 2014 10:01:53 +0800
+Message-ID: <1405476113-10127-1-git-send-email-huayi.li@csr.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/9J/5lXaP3FgQRMI5xrFXJKD"; protocol="application/pgp-signature"
+X-Originating-IP: [10.125.12.180]
+X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/9J/5lXaP3FgQRMI5xrFXJKD
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This patch adds dt-binding document for pwm-sirf. here the controller clock
+can't generate PWM signals, so we need seperate clock as signal source.
 
-Hi all,
+Signed-off-by: Huayi Li <huayi.li@csr.com>
+---
+ Documentation/devicetree/bindings/pwm/pwm-sirf.txt | 29 ++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sirf.txt
 
-After merging the ia64 tree, today's linux-next build (powerpc
-ppc64_defconfig) produced these warnings (though presumably it started
-yesterday):
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-sirf.txt b/Documentation/devicetree/bindings/pwm/pwm-sirf.txt
+new file mode 100644
+index 0000000..221e5d9
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/pwm-sirf.txt
+@@ -0,0 +1,29 @@
++SiRF prima2 & atlas6 PWM drivers
++
++Required properties:
++- compatible: "sirf,prima2-pwm"
++- reg: physical base address and length of the controller's registers
++- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
++  the cells format.
++- clocks: Must contain an entry for each entry in clock-names.
++  See ../clock/prima2-clock.txt for details.
++- clock-names: Must include the following entries:
++  of clock sources to generate PWM signal,
++  - pwmc: PWM controller clock
++  - sigsrc0: source clock 0 for PWM
++  - sigsrc1: source clock 1 for PWM
++  - sigsrc2: source clock 2 for PWM
++  - sigsrc3: source clock 3 for PWM
++  - sigsrc4: source clock 4 for PWM
++
++Example:
++
++pwm: pwm@b0130000 {
++	compatible = "sirf,prima2-pwm";
++	#pwm-cells = <2>;
++	reg = <0xb0130000 0x10000>;
++	clocks = <&clks 21>, <&clks 1>, <&clks 2>,
++	       <&clks 3>, <&clks 0>, <&clks 4>;
++	clock-names = "pwmc", "sigsrc0", "sigsrc1",
++		"sigsrc2", "sigsrc3", "sigsrc4";
++};
+-- 
+1.9.3
 
-In file included from include/ras/ras_event.h:11:0,
-                 from drivers/ras/ras.c:13:
-include/linux/aer.h:42:58: warning: 'struct pci_dev' declared inside parame=
-ter list
- static inline int pci_enable_pcie_error_reporting(struct pci_dev *dev)
-                                                          ^
-include/linux/aer.h:42:58: warning: its scope is only this definition or de=
-claration, which is probably not what you want
-include/linux/aer.h:46:59: warning: 'struct pci_dev' declared inside parame=
-ter list
- static inline int pci_disable_pcie_error_reporting(struct pci_dev *dev)
-                                                           ^
-include/linux/aer.h:50:65: warning: 'struct pci_dev' declared inside parame=
-ter list
- static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *d=
-ev)
-                                                                 ^
-include/linux/aer.h:57:14: warning: 'struct pci_dev' declared inside parame=
-ter list
-       struct aer_capability_regs *aer);
-              ^
 
-Introduced by commit 76ac8275f296 ("trace, RAS: Add basic RAS trace
-event") and following patches.
 
-So, presumably, aer.h either needs to include pci.h or, at least, have a
-
-struct pci_dev;
-
-line in it.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/9J/5lXaP3FgQRMI5xrFXJKD
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTxdylAAoJEMDTa8Ir7ZwVyCoP/jHrH9c1h9ZeimdcWRb4HbsR
-FwwKHjDNoMrSQjW56+brYraaQGIItfuMOHUrwUt5x0X7yoLMiFUGbuhMqi7xIemE
-UeZ4lJUYL44FIIl1hFnP3A/ppIjVLB75Fi6pkbZ2hvcGLfszZjjnFY/APTxOxTCs
-nJkUOaqKDIp9r5S4elzOE/Q0D0zjhxUf/sgOgxO0VzP3cEop8KqN3z+juhwusqoW
-JN7dgh/rPohs03gmfet50VQSDEVXWdJJuTfv6znRTS9m5j3COFR/PD0yK+aQeXCn
-siKLy7nNHK1HdzLwJNF+POj25ArTF7nrL3+2ahJWoGDYbI8P3rWYX+AuOqs23nkt
-6QJ4mSoT7WEzsaz+VhqnU2OSuPmbYLZeh9unqG0XkcaJCGwLiTLVRqS369wDKJ3H
-1yRTpDQZQp2eKugFAW48f3wsAeRaK7bo5uqwnvALeJhS2JzF7lYKU7MebNxYF4yZ
-Zlht5c+jNiHElpA84RF7mcIzrPJ1csBSYqZBi4ATqxtvY4D+HX0qnEKjYTXPr3LY
-/u7HStJarliMK2wWXBTS8L7jz7fm6E5g0V1o4lKquNN64VE7MBtVVxhEACnVRTKR
-1aAMojBul6FyGIfzcwZdz8lasB0zYpZjEKpRci6V3lBahb6sL3i5hqJWv8RcC72O
-uLBmk3xiK11H8Khxjxba
-=BZ4g
------END PGP SIGNATURE-----
-
---Sig_/9J/5lXaP3FgQRMI5xrFXJKD--
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Keep up to date with CSR on our technical blog, www.csr.com/blog, CSR people blog, www.csr.com/people, YouTube, www.youtube.com/user/CSRplc, Facebook, www.facebook.com/pages/CSR/191038434253534, or follow us on Twitter at www.twitter.com/CSR_plc.
+New for 2014, you can now access the wide range of products powered by aptX at www.aptx.com.
