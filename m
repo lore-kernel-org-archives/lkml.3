@@ -1,129 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030275AbaGPGbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 02:31:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7574 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934774AbaGPGbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 02:31:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
-   d="scan'208";a="570518895"
-Message-ID: <53C61C2C.2050808@linux.intel.com>
-Date: Wed, 16 Jul 2014 14:31:08 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1030292AbaGPGfr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 02:35:47 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:40307 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456AbaGPGfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 02:35:42 -0400
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lu@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [x86, irq, ACPI] WARNING: CPU: 13 PID: 11079 at fs/proc/generic.c:521
- remove_proc_entry+0x19f/0x1b0()
-References: <53c5f18d.gIBZ3dUDwRsg/ulf%fengguang.wu@intel.com> <53C5FD6F.6040907@intel.com>
-In-Reply-To: <53C5FD6F.6040907@intel.com>
+In-Reply-To: <1403030217-21554-1-git-send-email-galak@codeaurora.org>
+References: <1403030217-21554-1-git-send-email-galak@codeaurora.org>
+Date: Wed, 16 Jul 2014 12:05:42 +0530
+Message-ID: <CA+neC=MRMxh_QhWr1DhjfjZYbaA+i=Ltsi37F7HKXonAsLTxDw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host
+ controller driver
+From: kiran padwal <kiran.padwal21@gmail.com>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aaron,
-	Thanks for reporting this issue. Yinghai has already posted
-a patch to fix the issue by disabling freeing of irq in case of system
-shutdown. Please refer to:
-https://lkml.org/lkml/2014/6/26/619
+tested-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+This driver tested with APQ806x SATA PHY Driver.
 
-Or could you please help to try following patch, which USB free irq
-when shutting down USB controller.
---------------------------------------------------------
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index 82044b5d6113..efc953119ce2 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -380,6 +380,8 @@ void usb_hcd_pci_shutdown(struct pci_dev *dev)
-        if (test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags) &&
-                        hcd->driver->shutdown) {
-                hcd->driver->shutdown(hcd);
-+               if (usb_hcd_is_primary_hcd(hcd) && hcd->irq > 0)
-+                       free_irq(hcd->irq, hcd);
-                pci_disable_device(dev);
-        }
- }
-------------------------------------------------------
-Regards!
-Gerry
-
-On 2014/7/16 12:19, Aaron Lu wrote:
-> FYI, we noticed the below changes on
-> 
-> git://internal_merge_and_test_tree devel-athens-arm-201406220544
-> commit 6a38fa0e3c94dfd1394a71a2d47c9c4d47367374 ("x86, irq, ACPI: Release IOAPIC pin when PCI device is disabled")
-> 
-> +----------------------------------------------------------+------------+------------+
-> |                                                          | df334bead7 | 6a38fa0e3c |
-> +----------------------------------------------------------+------------+------------+
-> | boot_successes                                           | 25         | 10         |
-> | early-boot-hang                                          | 1          |            |
-> | boot_failures                                            | 0          | 8          |
-> | WARNING:CPU:PID:at_fs/proc/generic.c:remove_proc_entry() | 0          | 8          |
-> | backtrace:SYSC_reboot                                    | 0          | 8          |
-> | backtrace:SyS_reboot                                     | 0          | 8          |
-> +----------------------------------------------------------+------------+------------+
-> 
-> 
-> kexecing...
-> kexec -l /tmp//kernel/x86_64-rhel/aab037e6194df2251b558935d1ed497678a28a98/vmlinuz-3.16.0-rc5-01780-gaab037e --initrd=/tmp/initrd-10749 --append="user=lkp job=/lkp/scheduled/ivb43/cyclic_netperf-300s-25%-SCTP_STREAM-HEAD-aab037e6194df2251b558935d1ed497678a28a98.yaml ARCH=x86_64 BOOT_IMAGE=/kernel/x86_64-rhel/aab037e6194df2251b558935d1ed497678a28a98/vmlinuz-3.16.0-rc5-01780-gaab037e kconfig=x86_64-rhel commit=aab037e6194df2251b558935d1ed497678a28a98 initrd=/kernel-tests/initrd/lkp-rootfs.cgz root=/dev/ram0 bm_initrd=/lkp/benchmarks/netperf.cgz modules_initrd=/kernel/x86_64-rhel/aab037e6194df2251b558935d1ed497678a28a98/modules.cgz max_uptime=1500 RESULT_ROOT=/result/ivb43/netperf/300s-25%-SCTP_STREAM/x86_64-rhel/aab037e6194df2251b558935d1ed497678a28a98/0 ip=::::ivb43::dhcp oops=panic earlyprintk=ttyS0,115200 debug apic=debug sysrq_always_enabled rcupdate.rcu_cpu_stall_timeout=100 panic=10 softlockup_panic=1 nmi_watchdog=panic load_ramdisk=2 prompt_ramdisk=0 console=ttyS0,115200 cons
-ole=
-> tty0 vga=normal"
-> [  337.887999] remove_proc_entry: removing non-empty directory 'irq/20', leaking at least 'ehci_hcd:usb2'
-> [  337.898418] Modules linked in: sctp ipmi_watchdog dm_mod fuse mgag200 syscopyarea sysfillrect snd_pcm sysimgblt ttm snd_timer ahci drm_kms_helper libahci snd sb_edac soundcore libata drm edac_core i2c_i801 pcspkr wmi ipmi_si ipmi_msghandler
-> [  337.922594] CPU: 37 PID: 11079 Comm: kexec Not tainted 3.16.0-rc5-01780-gaab037e #1
-> [  337.931164] Hardware name: Intel Corporation S2600WP/S2600WP, BIOS SE5C600.86B.02.02.0002.122320131210 12/23/2013
-> [  337.942650]  0000000000000009 ffff880ffd1e3b30 ffffffff8182cb42 ffff880ffd1e3b78
-> [  337.950976]  ffff880ffd1e3b68 ffffffff8106d0cd ffff8808108e3a00 0000000000000002
-> [  337.959316]  ffff880ffd1e3c3e ffff880801a60ab0 ffff8808108e3a75 ffff880ffd1e3bc8
-> [  337.967653] Call Trace:
-> [  337.970396]  [<ffffffff8182cb42>] dump_stack+0x4d/0x66
-> [  337.976153]  [<ffffffff8106d0cd>] warn_slowpath_common+0x7d/0xa0
-> [  337.982867]  [<ffffffff8106d13c>] warn_slowpath_fmt+0x4c/0x50
-> [  337.989303]  [<ffffffff81233ccf>] remove_proc_entry+0x19f/0x1b0
-> [  337.995931]  [<ffffffff810d111f>] unregister_irq_proc+0xbf/0xd0
-> [  338.002558]  [<ffffffff810cb031>] free_desc+0x31/0x90
-> [  338.008212]  [<ffffffff810cb0cc>] irq_free_descs+0x3c/0x80
-> [  338.014354]  [<ffffffff810d08b6>] irq_dispose_mapping+0x36/0x50
-> [  338.020983]  [<ffffffff8104b741>] mp_unmap_irq+0x81/0xb0
-> [  338.026932]  [<ffffffff81041ed1>] acpi_unregister_gsi_ioapic+0x31/0x40
-> [  338.034239]  [<ffffffff81041dd7>] acpi_unregister_gsi+0x17/0x20
-> [  338.040869]  [<ffffffff814546a5>] acpi_pci_irq_disable+0x8f/0x98
-> [  338.047594]  [<ffffffff816dbaa0>] pcibios_disable_device+0x20/0x30
-> [  338.054517]  [<ffffffff81411e72>] do_pci_disable_device+0x52/0x60
-> [  338.061338]  [<ffffffff81411ec8>] pci_disable_device+0x48/0xb0
-> [  338.067870]  [<ffffffff8162004f>] usb_hcd_pci_shutdown+0x3f/0x50
-> [  338.074593]  [<ffffffff81413f96>] pci_device_shutdown+0x36/0x70
-> [  338.081222]  [<ffffffff814e2a38>] device_shutdown+0xc8/0x180
-> [  338.087558]  [<ffffffff810966f6>] kernel_restart_prepare+0x36/0x40
-> [  338.094479]  [<ffffffff810f150f>] kernel_kexec+0x15f/0x180
-> [  338.100620]  [<ffffffff81096ae5>] SYSC_reboot+0x215/0x240
-> [  338.106667]  [<ffffffff811de9a4>] ? dentry_free+0x34/0x40
-> [  338.112710]  [<ffffffff811dfa23>] ? __dentry_kill+0x153/0x1e0
-> [  338.119146]  [<ffffffff811dfb55>] ? dput+0xa5/0x180
-> [  338.124608]  [<ffffffff811e8874>] ? mntput+0x24/0x40
-> [  338.130168]  [<ffffffff811cae53>] ? __fput+0x1a3/0x230
-> [  338.135922]  [<ffffffff8108d62c>] ? task_work_run+0xcc/0xe0
-> [  338.142164]  [<ffffffff81013c27>] ? do_notify_resume+0x97/0xb0
-> [  338.148696]  [<ffffffff81096bae>] SyS_reboot+0xe/0x10
-> [  338.154353]  [<ffffffff81835969>] system_call_fastpath+0x16/0x1b
-> [  338.161078] ---[ end trace 658129a0d50846f5 ]---
-> [  338.166362] ------------[ cut here ]------------
-> 
-> 
-> 
-> Disclaimer:
-> Results have been estimated based on internal Intel analysis and are provided
-> for informational purposes only. Any difference in system hardware or software
-> design or configuration may affect actual performance.
-> 
-> Thanks,
-> Aaron
-> 
+On Wed, Jun 18, 2014 at 12:06 AM, Kumar Gala <galak@codeaurora.org> wrote:
+> Add support for the Qualcomm AHCI SATA controller that exists on several
+> SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
+> requires the associated IPQ806x SATA PHY Driver to be enabled as well.
+>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+> v3:
+> * Added comment about suspend/resume not supported
+> * Fixup ahci_platform_init_host for upstream change to interface
+> * cleanup error handling of rxoob clk, moved to devm_clk_get/put
+>
+> v2:
+> * Fixed MODULE_LICENSE to be GPL v2
+>
+>  drivers/ata/Kconfig     | 10 ++++++
+>  drivers/ata/Makefile    |  1 +
+>  drivers/ata/ahci_qcom.c | 90 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 101 insertions(+)
+>  create mode 100644 drivers/ata/ahci_qcom.c
+>
+> diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+> index 7671dba..aa88648 100644
+> --- a/drivers/ata/Kconfig
+> +++ b/drivers/ata/Kconfig
+> @@ -132,6 +132,16 @@ config AHCI_MVEBU
+>
+>           If unsure, say N.
+>
+> +config AHCI_QCOM
+> +       tristate "Qualcomm AHCI SATA support"
+> +       depends on ARCH_QCOM
+> +       help
+> +         This option enables support for AHCI SATA controller
+> +         integrated into Qualcomm ARM SoC chipsets. For more
+> +         information please refer to http://www.qualcomm.com/chipsets.
+> +
+> +         If unsure, say N.
+> +
+>  config AHCI_SUNXI
+>         tristate "Allwinner sunxi AHCI SATA support"
+>         depends on ARCH_SUNXI
+> diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+> index 5a02aee..15401e9 100644
+> --- a/drivers/ata/Makefile
+> +++ b/drivers/ata/Makefile
+> @@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)   += sata_highbank.o libahci.o
+>  obj-$(CONFIG_AHCI_DA850)       += ahci_da850.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_IMX)         += ahci_imx.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_MVEBU)       += ahci_mvebu.o libahci.o libahci_platform.o
+> +obj-$(CONFIG_AHCI_QCOM)                += ahci_qcom.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_SUNXI)       += ahci_sunxi.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_ST)          += ahci_st.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_XGENE)       += ahci_xgene.o libahci.o libahci_platform.o
+> diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
+> new file mode 100644
+> index 0000000..412e878
+> --- /dev/null
+> +++ b/drivers/ata/ahci_qcom.c
+> @@ -0,0 +1,90 @@
+> +/*
+> + * Qualcomm ARM SoC AHCI SATA platform driver
+> + *
+> + * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
+> + *
+> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/pm.h>
+> +#include <linux/device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/libata.h>
+> +#include <linux/ahci_platform.h>
+> +#include "ahci.h"
+> +
+> +static const struct ata_port_info qcom_ahci_port_info = {
+> +       .flags          = AHCI_FLAG_COMMON,
+> +       .pio_mask       = ATA_PIO4,
+> +       .udma_mask      = ATA_UDMA6,
+> +       .port_ops       = &ahci_platform_ops,
+> +};
+> +
+> +static int qcom_ahci_probe(struct platform_device *pdev)
+> +{
+> +       struct ahci_host_priv *hpriv;
+> +       struct clk *rxoob_clk;
+> +       int rc;
+> +
+> +       hpriv = ahci_platform_get_resources(pdev);
+> +       if (IS_ERR(hpriv))
+> +               return PTR_ERR(hpriv);
+> +
+> +       /* Try and set the rxoob clk to 100Mhz */
+> +       rxoob_clk = devm_clk_get(&pdev->dev, "rxoob");
+> +       if (IS_ERR(rxoob_clk))
+> +               return PTR_ERR(rxoob_clk);
+> +
+> +       rc = clk_set_rate(rxoob_clk, 100000000);
+> +       if (rc)
+> +               return rc;
+> +
+> +       devm_clk_put(&pdev->dev, rxoob_clk);
+> +
+> +       rc = ahci_platform_enable_resources(hpriv);
+> +       if (rc)
+> +               return rc;
+> +
+> +       rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info,
+> +                                    0, 0, 0);
+> +       if (rc)
+> +               goto disable_resources;
+> +
+> +       return 0;
+> +disable_resources:
+> +       ahci_platform_disable_resources(hpriv);
+> +       return rc;
+> +}
+> +
+> +static const struct of_device_id qcom_ahci_of_match[] = {
+> +       { .compatible = "qcom,msm-ahci", },
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
+> +
+> +static struct platform_driver qcom_ahci_driver = {
+> +       .probe = qcom_ahci_probe,
+> +       .remove = ata_platform_remove_one,
+> +       .driver = {
+> +               .name = "qcom_ahci_qcom",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = qcom_ahci_of_match,
+> +       },
+> +       /* suspend/resume not currently supported */
+> +};
+> +module_platform_driver(qcom_ahci_driver);
+> +
+> +MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("ahci:qcom");
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
