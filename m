@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617AbaGPMrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:47:35 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44898 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbaGPMrd (ORCPT
+	id S933687AbaGPMsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:48:37 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56608 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757574AbaGPMsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:47:33 -0400
-Date: Wed, 16 Jul 2014 05:47:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: josh@joshtriplett.org, Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
-Message-ID: <20140716124729.GR8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com>
- <1405463509-2468-2-git-send-email-bobby.prani@gmail.com>
- <20140715225313.GB24290@cloud>
- <53C5B1F7.3000409@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C5B1F7.3000409@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Jul 2014 08:48:32 -0400
+Message-ID: <1405514905.1466.34.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: IMA: kernel reading files opened with O_DIRECT
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Lukas Czerner <lczerner@redhat>
+Date: Wed, 16 Jul 2014 08:48:25 -0400
+In-Reply-To: <20140715130308.GA4109@amd.pavel.ucw.cz>
+References: <53B3D3AA.3000408@samsung.com>
+	 <x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
+	 <20140702184050.GA24583@infradead.org>
+	 <20140711201054.GB18033@amd.pavel.ucw.cz>
+	 <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
+	 <20140715130308.GA4109@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071612-9332-0000-0000-000001665F41
+x-cbid: 14071612-6688-0000-0000-000003543B7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 06:57:59PM -0400, Pranith Kumar wrote:
-> 
-> On 07/15/2014 06:53 PM, josh@joshtriplett.org wrote:
-> > On Tue, Jul 15, 2014 at 06:31:48PM -0400, Pranith Kumar wrote:
-> >> This commit removes a stale comment in rcu/tree.c.
-> >> FYI, an updated comment exists a few lines below this.
-> >>
-> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> > In general, when removing a stale comment, I'd suggest explaining why
-> > the comment is stale.  Was code removed without removing the
-> > corresponding comment, or was code changed such that the comment no
-> > longer applies, or...?
-> 
-> I guess it was left out when code was moved around previously. And I did mention that an updated comment is there a few lines below.
-> 
-> For reference this is the new comment which is below the old comment, they mean the same :)
-> 
->     /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+On Tue, 2014-07-15 at 15:03 +0200, Pavel Machek wrote: 
+> On Sat 2014-07-12 01:22:04, Dmitry Kasatkin wrote:
+> > On 11 July 2014 23:10, Pavel Machek <pavel@ucw.cz> wrote:
+> > > On Wed 2014-07-02 11:40:50, Christoph Hellwig wrote:
+> > >> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
+> > >> > It's acceptable.
+> > >>
+> > >> It's not because it will then also affect other reads going on at the
+> > >> same time.
+> > >>
+> > >> The whole concept of ima is just broken, and if you want to do these
+> > >> sort of verification they need to happen inside the filesystem and not
+> > >> above it.
 
-Indeed that is the case.
+Agreed, maintaining the file's integrity hash should be done at the
+filesystem layer.  IMA would then be relegated to using the integrity
+information to maintain the measurement list and enforce local file
+integrity.
 
-Please update the commit log with this explanation and resend.
+> > > ...and doing it at filesystem layer would also permit verification of
+> > > per-block (64KB? 1MB?) hashes.
+> > 
+> > Please design one single and the best universal filesystem which
+> > does it.
+> 
+> Given the overhead whole-file hashing has, you don't need single best
+> operating system. All you need it either ext4 or btrfs.. depending on
+> when you want it in production.
 
-								Thanx, Paul
+Mike Halcrow will be leading a discussion on EXT4 Encryption at LSS
+http://kernsec.org/wiki/index.php/Linux_Security_Summit_2014/Abstracts/Halcrow.
+One of the discussion topics will be the storage of file metadata
+integrity.  (Lukas Czerner's work.)  Hope you'll be able to attend.
+
+Mimi
 
