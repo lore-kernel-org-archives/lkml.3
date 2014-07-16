@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaGPVbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:31:39 -0400
-Received: from 203-174-129-26.bri.static-ipl.aapt.com.au ([203.174.129.26]:32910
-	"EHLO bne.vrt.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266AbaGPVbb (ORCPT
+	id S1753054AbaGPVcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:32:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34490 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016AbaGPVcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:31:31 -0400
-From: Stuart Longland <stuartl@vrt.com.au>
-To: Roman Fietze <roman.fietze@telemotive.de>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stuart Longland <stuartl@vrt.com.au>
-Subject: [PATCH 2/2] devicetree: Document binding for isl12022 driver
-Date: Thu, 17 Jul 2014 07:31:02 +1000
-Message-Id: <1405546262-4333-3-git-send-email-stuartl@vrt.com.au>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1405546262-4333-1-git-send-email-stuartl@vrt.com.au>
-References: <20140716085904.GA26951@leverpostej>
- <1405546262-4333-1-git-send-email-stuartl@vrt.com.au>
+	Wed, 16 Jul 2014 17:32:51 -0400
+Date: Thu, 17 Jul 2014 00:32:47 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 04/10] proc: fix PAGE_SIZE limit of /proc/$PID/cmdline
+Message-ID: <20140716213247.GC21290@p183.telecom.by>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stuart Longland <stuartl@vrt.com.au>
+Convert /proc/$PID/cmdline to seq_file interface.
+
+XXX
+
+This one must be buggy.
+
+seq_file buffer is adjustable, so userspace can execute itself
+with huge command line (which can be arbitrarily long now), then read 1 byte.
+
+Voila, whole command line now is in kmalloced/vmalloced memory.
+
+Imposing limit is trivial but equally lame to current PAGE_SIZE limit.
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index bef86e5..17e24e5 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -55,6 +55,7 @@ fsl,sgtl5000		SGTL5000: Ultra Low-Power Audio Codec
- gmt,g751		G751: Digital Temperature Sensor and Thermal Watchdog with Two-Wire Interface
- infineon,slb9635tt	Infineon SLB9635 (Soft-) I2C TPM (old protocol, max 100khz)
- infineon,slb9645tt	Infineon SLB9645 I2C TPM (new protocol, max 400khz)
-+isl,isl12022		Intersil ISL12020/ISL12022 I2C RTC Chip
- isl,isl12057		Intersil ISL12057 I2C RTC Chip
- maxim,ds1050		5 Bit Programmable, Pulse-Width Modulator
- maxim,max1237		Low-Power, 4-/12-Channel, 2-Wire Serial, 12-Bit ADCs
--- 
-1.8.5.5
+ fs/proc/base.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -200,9 +200,17 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
+ 	return result;
+ }
+ 
+-static int proc_pid_cmdline(struct task_struct *task, char *buffer)
++static int proc_pid_cmdline(struct seq_file *m, struct pid_namespace *ns,
++			    struct pid *pid, struct task_struct *task)
+ {
+-	return get_cmdline(task, buffer, PAGE_SIZE);
++	/*
++	 * Rely on struct seq_operations::show() being called once
++	 * per internal buffer allocation. See single_open(), traverse().
++	 *
++	 * Rely on internal buffer autoexpansion if it was entirely filled.
++	 */
++	m->count += get_cmdline(task, m->buf, m->size);
++	return 0;
+ }
+ 
+ static int proc_pid_auxv(struct seq_file *m, struct pid_namespace *ns,
+@@ -2567,7 +2575,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+ 	ONE("syscall",    S_IRUSR, proc_pid_syscall),
+ #endif
+-	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
++	ONE("cmdline",    S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+ 	ONE("statm",      S_IRUGO, proc_pid_statm),
+ 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
+@@ -2903,7 +2911,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+ 	ONE("syscall",   S_IRUSR, proc_pid_syscall),
+ #endif
+-	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
++	ONE("cmdline",   S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",      S_IRUGO, proc_tid_stat),
+ 	ONE("statm",     S_IRUGO, proc_pid_statm),
+ 	REG("maps",      S_IRUGO, proc_tid_maps_operations),
