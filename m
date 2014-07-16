@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965187AbaGPOWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:22:30 -0400
-Received: from mga14.intel.com ([192.55.52.115]:53594 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934205AbaGPOW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:22:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,672,1400050800"; 
-   d="scan'208";a="562677981"
-Message-ID: <53C68A9E.6060302@intel.com>
-Date: Wed, 16 Jul 2014 17:22:22 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 13/41] perf tools: Add machine__kernel_ip()
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-14-git-send-email-adrian.hunter@intel.com> <20140716141519.GC9441@krava.redhat.com>
-In-Reply-To: <20140716141519.GC9441@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S965216AbaGPOXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:23:52 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:45648 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964901AbaGPOXu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 10:23:50 -0400
+Subject: Re: [PATCH v6 2/7] arm64: Introduce VA_BITS and translation level options
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=windows-1252
+From: Jungseok Lee <jungseoklee85@gmail.com>
+In-Reply-To: <95F7642B-124A-4E03-ACDE-5BF9D70E8E15@arm.com>
+Date: Wed, 16 Jul 2014 23:23:42 +0900
+Cc: Joel Schopp <joel.schopp@amd.com>, Timur Tabi <timur@codeaurora.org>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "barami97@gmail.com" <barami97@gmail.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6986494B-04F6-45F0-9C39-303D1F5992D3@gmail.com>
+References: <000101cf6dc6$3b93d510$b2bb7f30$@samsung.com> <CAOZdJXWCu-zHuQoAUdiieqsKqCfG9BsZariFqQP=NCgQP-zpNA@mail.gmail.com> <53C43FE3.1050008@amd.com> <20140714224159.GA9829@arm.com> <3AF98E68-6818-416A-BC33-57148F1EC246@gmail.com> <95F7642B-124A-4E03-ACDE-5BF9D70E8E15@arm.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/2014 5:15 p.m., Jiri Olsa wrote:
-> On Mon, Jul 14, 2014 at 01:02:37PM +0300, Adrian Hunter wrote:
->
-> SNIP
->
->> +
->> +int machine__get_kernel_start(struct machine *machine)
->> +{
->> +	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
->> +	int err = 0;
->> +
->> +	/*
->> +	 * The only addresses above 2^63 are kernel addresses of a 64-bit
->> +	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
->> +	 * all addresses including kernel addresses are less than 2^32.  In
->> +	 * that case (32-bit system), if the kernel mapping is unknown, all
->> +	 * addresses will be assumed to be in user space - see
->> +	 * machine__kernel_ip().
->> +	 */
->> +	machine->kernel_start = 1ULL << 63;
->> +	if (map) {
->> +		err = map__load(map, machine->symbol_filter);
->> +		if (map->start)
->> +			machine->kernel_start = map->start;
->> +	}
->> +	return err;
->> +}
->
-> we just recently got machine__get_kernel_start_addr function,
-> I think we want just one function for this
+On Jul 16, 2014, at 6:44 AM, Catalin Marinas wrote:
+> On 15 Jul 2014, at 15:53, Jungseok Lee <jungseoklee85@gmail.com> wrote:
+>> On Jul 15, 2014, at 7:41 AM, Catalin Marinas wrote:
+>>> On Mon, Jul 14, 2014 at 09:38:59PM +0100, Joel Schopp wrote:
+>>>> I agree that these patches would be very useful.  I just rebased my fix
+>>>> for a VTTBR_BADDR_MASK bug on one of these patches that could be pulled
+>>>> out independently.  See
+>>>> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-July/010480.html
+>>>> 
+>>>> The original author Jungseok Lee is no longer available to work on
+>>>> future versions of these patches.  I was thinking that if they didn't
+>>>> get picked up as they are that with the original author's blessing I
+>>>> would pick them up and keep them forward ported/resubmitted.  I have an
+>>>> SOC to test them on.
+>>> 
+>>> The patches are pretty good. I'll give them a try tomorrow and if there
+>>> isn't something fundamental missing I'll consider taking them for 3.17.
+>> 
+>> Hi All,
+>> 
+>> If only stage1 side is taken and merged, KVM should be disabled under 4 level
+>> lookups with the following configuration adjustment. I've tested it on top of
+>> arm64/for-next/core branch and it works fine.
+>> 
+>> --- a/arch/arm64/kvm/Kconfig
+>> +++ b/arch/arm64/kvm/Kconfig
+>> @@ -18,6 +18,7 @@ if VIRTUALIZATION
+>> 
+>> config KVM
+>>       bool "Kernel-based Virtual Machine (KVM) support"
+>> +       depends on !ARM64_4_LEVELS
+>>       select MMU_NOTIFIER
+>>       select PREEMPT_NOTIFIERS
+>>       select ANON_INODES
+>> 
+>> However, I don't know whether it does make sense or not.
+> 
+> I added some patches on top of your series, I hope to be able to post
+> them tomorrow. My interim approach was to disable 4-levels if KVM is
+> enabled.
 
-They do quite different things.
+Hi Catalin,
 
+Thanks for the work!
+I will take a close look at them.
+
+- Jungseok Lee
