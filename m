@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123AbaGPMZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:25:04 -0400
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:33040 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaGPMZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:25:02 -0400
-From: Sam Asadi <asadi.samuel@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sam Asadi <asadi.samuel@gmail.com>
-Subject: [PATCH] Staging: comedi: adl_pci9118: a style issue fixed
-Date: Wed, 16 Jul 2014 15:24:12 +0300
-Message-Id: <1405513452-7628-1-git-send-email-asadi.samuel@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S933198AbaGPMZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:25:36 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:52707 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932961AbaGPMZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:25:34 -0400
+Message-ID: <53C66F3B.9020507@mm-sol.com>
+Date: Wed, 16 Jul 2014 15:25:31 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: pramod.gurav.etc@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Josh Cartwright <joshc@codeaurora.org>,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] regmap: Kconfig: Select SPMI when REGMAP_SPMI is selected
+References: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>  <53C66AEB.7030906@mm-sol.com> <1405512867.75389776@apps.rackspace.com>
+In-Reply-To: <1405512867.75389776@apps.rackspace.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'quoted string split across lines' warning in checkpatching fixed
-by group whole string in one line.
+<snip>
 
-Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
----
- drivers/staging/comedi/drivers/adl_pci9118.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+>>>
+>>>  config REGMAP_SPMI
+>>> +	select SPMI
+>>
+>> NO, IMO the CONFIG_SPMI should be enabled by qcom_defconfig and
+>> multi_v7_defconfig. See CONFIG_I2C and REGMAP_I2C for example.
+>>
+> 
+> I am using multi_v7_defconfig but its not enabling it. I ran qcom_defconfig which does.
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
-index 59a65cb..b2d25f5 100644
---- a/drivers/staging/comedi/drivers/adl_pci9118.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-@@ -412,8 +412,7 @@ static int check_channel_list(struct comedi_device *dev,
-			if ((CR_AREF(chanlist[i]) == AREF_DIFF) !=
-			    (differencial)) {
-				comedi_error(dev,
--					     "Differencial and single ended "
--						"inputs can't be mixtured!");
-+					     "Differencial and single ended inputs can't be mixtured!");
-				return 0;
-			}
-			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
---
-1.7.10.4
+yes, it seems reasonable to add it in multi_v7_defconfig also.
+
+
+-- 
+regards,
+Stan
