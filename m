@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaGPVEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:04:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59663 "EHLO
+	id S1753721AbaGPVSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:18:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59685 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaGPVEP (ORCPT
+	with ESMTP id S1752756AbaGPVEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:04:15 -0400
-Message-Id: <20140716205053.588740065@linutronix.de>
+	Wed, 16 Jul 2014 17:04:20 -0400
+Message-Id: <20140716205053.934443735@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Wed, 16 Jul 2014 21:04:13 -0000
+Date: Wed, 16 Jul 2014 21:04:19 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch V2 17/64] timekeeping: Provide ktime_get_with_offset()
+Subject: [patch V2 21/64] timekeeping: Use ktime_t data for
+ ktime_get_update_offsets_now()
 References: <20140716205018.175419210@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=timekeeping-provide-__ktime_get.patch
+Content-Disposition: inline;
+ filename=timekeeping-use-ktime-for-hrtimer-if.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,73 +28,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a helper function which lets us implement ktime_t based
-interfaces for real, boot and tai clocks.
+No need to juggle with timespecs.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/timekeeping.h |    9 +++++++++
- kernel/time/timekeeping.c   |   27 +++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+)
+ kernel/time/timekeeping.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-Index: tip/include/linux/timekeeping.h
-===================================================================
---- tip.orig/include/linux/timekeeping.h
-+++ tip/include/linux/timekeeping.h
-@@ -98,7 +98,16 @@ extern void getboottime(struct timespec
- /*
-  * ktime_t based interfaces
-  */
-+
-+enum tk_offsets {
-+	TK_OFFS_REAL,
-+	TK_OFFS_BOOT,
-+	TK_OFFS_TAI,
-+	TK_OFFS_MAX,
-+};
-+
- extern ktime_t ktime_get(void);
-+extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
- extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
- extern ktime_t ktime_get_monotonic_offset(void);
 Index: tip/kernel/time/timekeeping.c
 ===================================================================
 --- tip.orig/kernel/time/timekeeping.c
 +++ tip/kernel/time/timekeeping.c
-@@ -423,6 +423,33 @@ ktime_t ktime_get(void)
- }
- EXPORT_SYMBOL_GPL(ktime_get);
+@@ -1668,14 +1668,14 @@ ktime_t ktime_get_update_offsets_now(kti
+ 							ktime_t *offs_tai)
+ {
+ 	struct timekeeper *tk = &tk_core.timekeeper;
+-	ktime_t now;
+ 	unsigned int seq;
+-	u64 secs, nsecs;
++	ktime_t base;
++	u64 nsecs;
  
-+static ktime_t *offsets[TK_OFFS_MAX] = {
-+	[TK_OFFS_REAL]	= &tk_core.timekeeper.offs_real,
-+	[TK_OFFS_BOOT]	= &tk_core.timekeeper.offs_boot,
-+	[TK_OFFS_TAI]	= &tk_core.timekeeper.offs_tai,
-+};
-+
-+ktime_t ktime_get_with_offset(enum tk_offsets offs)
-+{
-+	struct timekeeper *tk = &tk_core.timekeeper;
-+	unsigned int seq;
-+	ktime_t base, *offset = offsets[offs];
-+	s64 nsecs;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqcount_begin(&tk_core.seq);
-+		base = ktime_add(tk->base_mono, *offset);
-+		nsecs = timekeeping_get_ns(tk);
-+
-+	} while (read_seqcount_retry(&tk_core.seq, seq));
-+
+ 	do {
+ 		seq = read_seqcount_begin(&tk_core.seq);
+ 
+-		secs = tk->xtime_sec;
++		base = tk->base_mono;
+ 		nsecs = timekeeping_get_ns(tk);
+ 
+ 		*offs_real = tk->offs_real;
+@@ -1683,9 +1683,7 @@ ktime_t ktime_get_update_offsets_now(kti
+ 		*offs_tai = tk->offs_tai;
+ 	} while (read_seqcount_retry(&tk_core.seq, seq));
+ 
+-	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
+-	now = ktime_sub(now, *offs_real);
+-	return now;
 +	return ktime_add_ns(base, nsecs);
-+
-+}
-+EXPORT_SYMBOL_GPL(ktime_get_with_offset);
-+
- /**
-  * ktime_get_ts64 - get the monotonic clock in timespec64 format
-  * @ts:		pointer to timespec variable
+ }
+ #endif
+ 
 
 
