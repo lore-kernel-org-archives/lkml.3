@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760059AbaGPAh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:37:59 -0400
-Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:48874
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754279AbaGPAh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:37:57 -0400
-Date: Wed, 16 Jul 2014 08:32:45 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-Message-ID: <20140716003244.GA30419@shlinux1.ap.freescale.net>
-References: <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
- <20140627032506.GA18039@shlinux1.ap.freescale.net>
- <20140630133313.GA11880@kwain>
- <20140701002112.GA26146@shlinux1.ap.freescale.net>
- <53B27789.3090509@gmail.com>
- <20140701083007.GB26146@shlinux1.ap.freescale.net>
- <20140701104254.GD3427@piout.net> <53B2D151.60404@cogentembedded.com>
- <1d01427f91084d67bf63721e2267e160@BL2PR03MB226.namprd03.prod.outlook.com>
- <20140715152230.GE1011@kwain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140715152230.GE1011@kwain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(199002)(76104003)(51704005)(479174003)(377454003)(189002)(54356999)(95666004)(23756003)(76482001)(50986999)(81342001)(84676001)(81542001)(64706001)(76176999)(99396002)(20776003)(85306003)(4396001)(83506001)(85852003)(47776003)(80022001)(93886003)(107046002)(83072002)(105606002)(21056001)(86362001)(79102001)(33656002)(74662001)(92566001)(106466001)(97736001)(92726001)(31966008)(77982001)(69596002)(26826002)(83322001)(68736004)(74502001)(44976005)(87936001)(6806004)(102836001)(104016003)(46102001)(110136001)(81156004)(50466002)(41533002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB564;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0274272F87
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1759923AbaGPAnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:43:21 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:37396 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189AbaGPAnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:43:18 -0400
+From: Benson Leung <bleung@chromium.org>
+To: olof@lixom.net, linux-kernel@vger.kernel.org
+Cc: bleung@chromium.org
+Subject: [PATCH] platform/chrome: chromeos_laptop - Add a limit for deferred retries
+Date: Tue, 15 Jul 2014 17:43:11 -0700
+Message-Id: <1405471391-27073-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 05:22:30PM +0200, Antoine Ténart wrote:
-> Hi guys,
-> 
-> On Wed, Jul 02, 2014 at 01:10:00AM +0000, Peter Chen wrote:
-> > > On 07/01/2014 02:42 PM, Alexandre Belloni wrote:
-> > > 
-> > > >>>>> Well, there is nothing specific about the Berlin CI. Some
-> > > >>>>> subsystems use the 'generic' keyword in these cases. Do you see a
-> > > >>>>> particular reason I should use some Berlin related compatible here?
-> > > 
-> > > >>>> Not must, one suggestion is: can you change the compatible string
-> > > >>>> to "chipidea-usb-generic"?
-> > > 
-> > > >>> I don't know about ChipIdea/ARC/DW's product portfolio but I guess
-> > > >>> the compatible should also carry '2.0' or 'usb2' in it. Or we just
-> > > >>> use some version number like 'chipidea,ci13000' or 'chipidea,ci13xxx'.
-> > > 
-> > > >> The recommended format for compatible string is:
-> > > >> "manufacturer,model", I agree with "chipidea,ci13xxx", thanks.
-> > > 
-> > > > I think we should probably avoid using wildcards in the compatible
-> > > > string.
-> > > 
-> > >     I'm sure wildcards shouldn't be allowed there. :-)
-> > 
-> > Then, what's your guys recommend, how about "chipidea,usb2-generic"?
-> 
-> So what do you think? "chipidea,ci13", "chipidea,usb2-generic" or
-> something else?
-> 
+Limit the number of times we allow deferred probing to attempt to add
+i2c devices. This will help with some device flakiness at probe time.
+For example, some touchpads and touchscreens may be in transition between
+bootloader and operational mode and may appear at neither address briefly.
 
-Do you agree to use "chipidea,usb2", And add ci13xxx at
-MODULE_DESCRIPTION?
+Adapters, however, have no limit as it depends on when the i2c adapter driver
+module is loaded. The module may even be loaded manually by the user using
+modprobe or insmod.
 
+By default, set MAX_I2C_DEVICE_DEFERALS to 5.
+
+Based on this patch from the chromeos-kernel :
+https://chromium-review.googlesource.com/168130
+
+Signed-off-by: Benson Leung <bleung@chromium.org>
+---
+ drivers/platform/chrome/chromeos_laptop.c | 45 ++++++++++++++++++++++++++++---
+ 1 file changed, 41 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index a53fe76..cc76426 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -37,6 +37,8 @@
+ #define ISL_ALS_I2C_ADDR	0x44
+ #define TAOS_ALS_I2C_ADDR	0x29
+ 
++#define MAX_I2C_DEVICE_DEFERRALS	5
++
+ static struct i2c_client *als;
+ static struct i2c_client *tp;
+ static struct i2c_client *ts;
+@@ -58,9 +60,17 @@ enum i2c_adapter_type {
+ 	I2C_ADAPTER_DESIGNWARE_1,
+ };
+ 
++enum i2c_peripheral_state {
++	UNPROBED = 0,
++	PROBED,
++	TIMEDOUT,
++};
++
+ struct i2c_peripheral {
+ 	int (*add)(enum i2c_adapter_type type);
+ 	enum i2c_adapter_type type;
++	enum i2c_peripheral_state state;
++	int tries;
+ };
+ 
+ #define MAX_I2C_PERIPHERALS 3
+@@ -166,8 +176,8 @@ static struct i2c_client *__add_probed_i2c_device(
+ 	/* add the i2c device */
+ 	client = i2c_new_probed_device(adapter, info, addrs, NULL);
+ 	if (!client)
+-		pr_err("%s failed to register device %d-%02x\n",
+-		       __func__, bus, info->addr);
++		pr_notice("%s failed to register device %d-%02x\n",
++			  __func__, bus, info->addr);
+ 	else
+ 		pr_debug("%s added i2c device %d-%02x\n",
+ 			 __func__, bus, info->addr);
+@@ -347,9 +357,36 @@ static int chromeos_laptop_probe(struct platform_device *pdev)
+ 		if (i2c_dev->add == NULL)
+ 			break;
+ 
+-		/* Add the device. Set -EPROBE_DEFER on any failure */
+-		if (i2c_dev->add(i2c_dev->type))
++		if (i2c_dev->state == TIMEDOUT || i2c_dev->state == PROBED)
++			continue;
++
++		/*
++		 * Check that the i2c adapter is present.
++		 * -EPROBE_DEFER if missing as the adapter may appear much
++		 * later.
++		 */
++		if (find_i2c_adapter_num(i2c_dev->type) == -ENODEV) {
+ 			ret = -EPROBE_DEFER;
++			continue;
++		}
++
++		/* Add the device. */
++		if (i2c_dev->add(i2c_dev->type) == -EAGAIN) {
++			/*
++			 * Set -EPROBE_DEFER a limited num of times
++			 * if device is not successfully added.
++			 */
++			if (++i2c_dev->tries < MAX_I2C_DEVICE_DEFERRALS) {
++				ret = -EPROBE_DEFER;
++			} else {
++				/* Ran out of tries. */
++				pr_notice("%s: Ran out of tries for device.\n",
++					  __func__);
++				i2c_dev->state = TIMEDOUT;
++			}
++		} else {
++			i2c_dev->state = PROBED;
++		}
+ 	}
+ 
+ 	return ret;
 -- 
+2.0.0.526.g5318336
 
-Best Regards,
-Peter Chen
