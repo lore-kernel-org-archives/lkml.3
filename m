@@ -1,98 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416AbaGPLzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:55:13 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59368 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaGPLzJ (ORCPT
+	id S1759625AbaGPL5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:57:31 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54870 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759045AbaGPL53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:55:09 -0400
-Date: Wed, 16 Jul 2014 04:55:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] rcu: define tracepoint strings only if CONFIG_TRACING
- is set
-Message-ID: <20140716115504.GK8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405184509-12601-1-git-send-email-ard.biesheuvel@linaro.org>
- <20140714130302.59644d42@gandalf.local.home>
-MIME-Version: 1.0
+	Wed, 16 Jul 2014 07:57:29 -0400
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Subject: SIGXCPU accounting inaccurate?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201407162057.HGC90620.OFVHLFMOQOtSFJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 16 Jul 2014 20:57:07 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140714130302.59644d42@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071611-0928-0000-0000-0000036F567D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 01:03:02PM -0400, Steven Rostedt wrote:
-> On Sat, 12 Jul 2014 19:01:49 +0200
-> Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> 
-> > Commit f7f7bac9cb1c ("rcu: Have the RCU tracepoints use the tracepoint_string
-> > infrastructure") unconditionally populates the __tracepoint_str input section,
-> > but this section is not assigned an output section if CONFIG_TRACING is not set.
-> > This results in the __tracepoint_str turning up in unexpected places, i.e.,
-> > after _edata.
-> > 
-> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> > Cc: rostedt@goodmis.org
-> > Cc: paulmck@linux.vnet.ibm.com
-> > ---
-> > v3:
-> > - make definition of <var>_varname conditional as well
-> > v2:
-> > - s/DEFINE_TPS/DEFINE_RCU_TPS/
-> > 
-> >  kernel/rcu/tree.c | 15 ++++++++++++---
-> >  1 file changed, 12 insertions(+), 3 deletions(-)
-> > 
-> 
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Hello.
 
-Queued for 3.18, thank you both!
+I have a question regarding SIGXCPU.
 
-							Thanx, Paul
+I was expecting that SIGXCPU is generated when current thread's user + sys
+exceeded current thread's rlim[RLIMIT_CPU].rlim_cur . But I can observe that,
+depending on workloads, SIGXCPU is issued before user + sys exceeds
+rlim[RLIMIT_CPU].rlim_cur .
 
-> -- Steve
-> 
-> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> > index f1ba77363fbb..0756a4696007 100644
-> > --- a/kernel/rcu/tree.c
-> > +++ b/kernel/rcu/tree.c
-> > @@ -79,9 +79,18 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
-> >   * the tracing userspace tools to be able to decipher the string
-> >   * address to the matching string.
-> >   */
-> > -#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-> > +#ifdef CONFIG_TRACING
-> > +# define DEFINE_RCU_TPS(sname) \
-> >  static char sname##_varname[] = #sname; \
-> > -static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
-> > +static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname;
-> > +# define RCU_STATE_NAME(sname) sname##_varname
-> > +#else
-> > +# define DEFINE_RCU_TPS(sname)
-> > +# define RCU_STATE_NAME(sname) __stringify(sname)
-> > +#endif
-> > +
-> > +#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-> > +DEFINE_RCU_TPS(sname) \
-> >  struct rcu_state sname##_state = { \
-> >  	.level = { &sname##_state.node[0] }, \
-> >  	.call = cr, \
-> > @@ -93,7 +102,7 @@ struct rcu_state sname##_state = { \
-> >  	.orphan_donetail = &sname##_state.orphan_donelist, \
-> >  	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
-> >  	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
-> > -	.name = sname##_varname, \
-> > +	.name = RCU_STATE_NAME(sname), \
-> >  	.abbr = sabbr, \
-> >  }; \
-> >  DEFINE_PER_CPU(struct rcu_data, sname##_data)
-> 
+---------- rlimit-test.c start ----------
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 
+static volatile _Bool flag = 0;
+static void sighandler(int sig) { flag = 1; }
+
+int main(int argc, char *argv[])
+{
+	const int fd = open("/dev/zero", O_RDONLY);
+	struct rlimit rlim = { 10, RLIM_INFINITY };
+	struct rusage ru = { };
+	struct timeval tv0 = { }, tv1 = { };
+	unsigned long sec = 0;
+	unsigned long microsec = 0;
+	char c;
+	/* Apply CPU usage limit. */
+	if (fd == EOF || signal(SIGXCPU, sighandler) == SIG_ERR ||
+	    setrlimit(RLIMIT_CPU, &rlim) || gettimeofday(&tv0, NULL))
+		return 1;
+	/* Consume CPU time. */
+	while (!flag)
+		c = read(fd, &c, 1);
+	/* Gheck CPU usage after exceeding CPU usage limit. */
+	if (gettimeofday(&tv1, NULL) || getrusage(RUSAGE_SELF, &ru))
+		return 1;
+	/* Print CPU usage seen from process. */
+	sec = tv1.tv_sec - tv0.tv_sec;
+	microsec = tv1.tv_usec - tv0.tv_usec;
+	while ((long) microsec < 0) { sec--; microsec += 1000000; }
+	printf("wall time: %lu.%06lu\n", sec, microsec);
+	sec = ru.ru_utime.tv_sec + ru.ru_stime.tv_sec;
+	microsec = ru.ru_utime.tv_usec + ru.ru_stime.tv_usec;
+	while (microsec >= 1000000) { sec++; microsec -= 1000000; }
+	printf("getrusage: user %lu.%06lu / sys %lu.%06lu / total %lu.%06lu\n",
+	       ru.ru_utime.tv_sec, ru.ru_utime.tv_usec, ru.ru_stime.tv_sec,
+	       ru.ru_stime.tv_usec, sec, microsec);
+	return 0;
+}
+---------- rlimit-test.c end ----------
+
+  $ cc -Wall -O2 -o rlimit-test rlimit-test.c
+
+(1) If
+
+    $ taskset -c 0 ./rlimit-test
+
+    is executed alone, the result is accurate.
+
+      wall time: 9.998606
+      getrusage: user 1.329402 / sys 8.666107 / total 9.995509
+
+      wall time: 9.999678
+      getrusage: user 1.338283 / sys 8.656362 / total 9.994645
+
+      wall time: 11.033851
+      getrusage: user 1.403173 / sys 9.628063 / total 11.031236
+
+(2) If
+
+    $ taskset -c 0 ./rlimit-test
+
+    is executed in parallel with
+
+    $ taskset -c 0 sh -c 'while :; do :; done'
+
+    , the result remains accurate.
+
+      wall time: 20.465868
+      getrusage: user 1.338968 / sys 8.897792 / total 10.236760
+
+      wall time: 19.984542
+      getrusage: user 1.336148 / sys 8.657481 / total 9.993629
+
+      wall time: 19.993528
+      getrusage: user 1.461475 / sys 8.534938 / total 9.996413
+
+(3) If
+
+    $ taskset -c 0 ./rlimit-test
+
+    is executed in parallel with
+
+    $ taskset -c 0 sh -c 'while :; do /bin/true; done'
+
+    , the result becomes inaccurate (SIGXCPU is issued before
+    user + sys exceeds rlim[RLIMIT_CPU].rlim_cur ).
+
+      wall time: 10.055558
+      getrusage: user 1.265196 / sys 8.204838 / total 9.470034
+
+      wall time: 10.010175
+      getrusage: user 1.315658 / sys 8.142706 / total 9.458364
+
+      wall time: 10.010262
+      getrusage: user 1.269611 / sys 8.183938 / total 9.453549
+
+Why SIGXCPU accounting became inaccurate?
+
+Regards.
