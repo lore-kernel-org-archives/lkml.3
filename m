@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaGPVpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:45:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42850 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaGPVp2 (ORCPT
+	id S1752818AbaGPVpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:45:47 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53407 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650AbaGPVpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:45:28 -0400
-Message-ID: <53C6F271.6070707@codeaurora.org>
-Date: Wed, 16 Jul 2014 14:45:21 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v3 1/2] cpufreq: Don't destroy/realloc policy/sysfs on
- hotplug/suspend
-References: <1405464473-3916-1-git-send-email-skannan@codeaurora.org> <1405464473-3916-2-git-send-email-skannan@codeaurora.org> <CAKohpok2hzwDLy77CZJ+7pHV-Nj4XTviJxVeXQYJRYtKXME00w@mail.gmail.com> <53C6DFAD.8030109@codeaurora.org>
-In-Reply-To: <53C6DFAD.8030109@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jul 2014 17:45:45 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, x86@kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        bsd@redhat.com, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 0/5] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+Date: Wed, 16 Jul 2014 14:45:32 -0700
+Message-Id: <cover.1405546879.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 01:25 PM, Saravana Kannan wrote:
-> On 07/16/2014 01:24 AM, Viresh Kumar wrote:
->> On 16 July 2014 04:17, Saravana Kannan <skannan@codeaurora.org> wrote:
->>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->>
->>> @@ -1110,9 +1092,10 @@ static int __cpufreq_add_dev(struct device
->>> *dev, struct subsys_interface *sif)
->>>
->>>   #ifdef CONFIG_SMP
->>>          /* check whether a different CPU already registered this
->>> -        * CPU because it is in the same boat. */
->>> +        * CPU because it is one of the related CPUs. */
->>>          policy = cpufreq_cpu_get(cpu);
->>> -       if (unlikely(policy)) {
->>> +       if (policy) {
->>> +               cpufreq_change_policy_cpus(policy, cpu, true);
->>
->> This is just a waste of time at boot as ... (see below)
->
-> Why? Please explain.
->
+This introduces and uses a very simple synchronous mechanism to get
+/dev/urandom-style bits appropriate for initial KVM PV guest RNG
+seeding.
 
-Nevermind. Figured what you meant. I just need to improve the "if" check.
+virtio-rng is not suitable for this purpose.  It's too difficult to
+enumerate for use in early boot (e.g. KASLR, which runs before we
+even have an IDT).  It also provides /dev/random-style bits, which
+means that making guest boot wait for virtio-rng is unacceptably
+slow, and doing it asynchronously means that /dev/urandom might
+still be predictable when userspace starts.
 
--Saravana
+I sent the corresponding kvm-unit-tests and qemu changes separately.
+
+There's room for bikeshedding on the same arch_get_slow_rng_u64.  I
+considered arch_get_rng_seed_u64, but that could be confused with
+arch_get_random_seed_long, which is not interchangeable.
+
+Changes from v2:
+ - Bisection fix (patch 2 had a misplaced brace).  The final states is
+   identical to that of v2.
+ - Improve the 0/5 description a little bit.
+
+Changes from v1:
+ - Split patches 2 and 3
+ - Log all arch sources in init_std_data
+ - Fix the 32-bit kaslr build
+
+Andy Lutomirski (5):
+  x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
+  random,x86: Add arch_get_slow_rng_u64
+  random: Seed pools from arch_get_slow_rng_u64 at startup
+  random: Log how many bits we managed to seed with in init_std_data
+  x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+
+ Documentation/virtual/kvm/cpuid.txt  |  3 +++
+ arch/x86/Kconfig                     |  4 ++++
+ arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++++++++++++++++
+ arch/x86/include/asm/archslowrng.h   | 30 ++++++++++++++++++++++++++++++
+ arch/x86/include/asm/processor.h     | 21 ++++++++++++++++++---
+ arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+ arch/x86/kernel/kvm.c                | 22 ++++++++++++++++++++++
+ arch/x86/kvm/cpuid.c                 |  3 ++-
+ arch/x86/kvm/x86.c                   |  4 ++++
+ drivers/char/random.c                | 20 ++++++++++++++++++--
+ include/linux/random.h               |  9 +++++++++
+ 11 files changed, 139 insertions(+), 6 deletions(-)
+ create mode 100644 arch/x86/include/asm/archslowrng.h
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.3
+
