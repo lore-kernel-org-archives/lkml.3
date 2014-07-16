@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760519AbaGPAIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:08:49 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49809 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754376AbaGPAIf (ORCPT
+	id S1760580AbaGPAJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:09:17 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39377 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760549AbaGPAJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:08:35 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH] ACPI / hotplug: Simplify acpi_set_hp_context()
-Date: Wed, 16 Jul 2014 02:26:49 +0200
-Message-ID: <3209405.HZhsMWGyTv@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAErSpo5BYyC-A3qXE2OsgkkGJg8Lvr2B+ASMJ63N-S9xm8wUow@mail.gmail.com>
-References: <5388095.MjHqc07ajT@vostro.rjw.lan> <CAErSpo5BYyC-A3qXE2OsgkkGJg8Lvr2B+ASMJ63N-S9xm8wUow@mail.gmail.com>
+	Tue, 15 Jul 2014 20:09:11 -0400
+Date: Wed, 16 Jul 2014 01:08:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Message-ID: <20140716000848.GG17528@sirena.org.uk>
+References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1405465241-28684-4-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yRA+Bmk8aPhU85Qt"
+Content-Disposition: inline
+In-Reply-To: <1405465241-28684-4-git-send-email-bjorn.andersson@sonymobile.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 3/3] regulator: qcom-rpm: Regulator driver for the
+ Qualcomm RPM
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 15, 2014 02:56:29 PM Bjorn Helgaas wrote:
-> On Mon, Jul 14, 2014 at 2:36 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Since all of the acpi_set_hp_context() callers pass at least one NULL
-> > function pointer and one caller passes NULL function pointers only
-> > to it, drop function pointer arguments from acpi_set_hp_context()
-> > and make the callers initialize the function pointers in struct
-> > acpi_hotplug_context by themselves before passing it to
-> > acpi_set_hp_context().
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Thanks! [And for the other one too.]
+--yRA+Bmk8aPhU85Qt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > ---
-> >  drivers/acpi/scan.c                |    4 +++-
-> >  drivers/pci/hotplug/acpiphp_glue.c |    7 ++++---
-> >  include/acpi/acpi_bus.h            |    8 +-------
-> >  3 files changed, 8 insertions(+), 11 deletions(-)
-> >
-> > Index: linux-pm/include/acpi/acpi_bus.h
-> > ===================================================================
-> > --- linux-pm.orig/include/acpi/acpi_bus.h
-> > +++ linux-pm/include/acpi/acpi_bus.h
-> > @@ -372,15 +372,9 @@ static inline void acpi_set_device_statu
-> >  }
-> >
-> >  static inline void acpi_set_hp_context(struct acpi_device *adev,
-> > -                                      struct acpi_hotplug_context *hp,
-> > -                                      int (*notify)(struct acpi_device *, u32),
-> > -                                      void (*uevent)(struct acpi_device *, u32),
-> > -                                      void (*fixup)(struct acpi_device *))
-> > +                                      struct acpi_hotplug_context *hp)
-> >  {
-> >         hp->self = adev;
-> > -       hp->notify = notify;
-> > -       hp->uevent = uevent;
-> > -       hp->fixup = fixup;
-> >         adev->hp = hp;
-> >  }
-> >
-> > Index: linux-pm/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/scan.c
-> > +++ linux-pm/drivers/acpi/scan.c
-> > @@ -77,7 +77,9 @@ void acpi_initialize_hp_context(struct a
-> >                                 void (*uevent)(struct acpi_device *, u32))
-> >  {
-> >         acpi_lock_hp_context();
-> > -       acpi_set_hp_context(adev, hp, notify, uevent, NULL);
-> > +       hp->notify = notify;
-> > +       hp->uevent = uevent;
-> > +       acpi_set_hp_context(adev, hp);
-> >         acpi_unlock_hp_context();
-> >  }
-> >  EXPORT_SYMBOL_GPL(acpi_initialize_hp_context);
-> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > @@ -80,8 +80,9 @@ static struct acpiphp_context *acpiphp_i
-> >                 return NULL;
-> >
-> >         context->refcount = 1;
-> > -       acpi_set_hp_context(adev, &context->hp, acpiphp_hotplug_notify, NULL,
-> > -                           acpiphp_post_dock_fixup);
-> > +       context->hp.notify = acpiphp_hotplug_notify;
-> > +       context->hp.fixup = acpiphp_post_dock_fixup;
-> > +       acpi_set_hp_context(adev, &context->hp);
-> >         return context;
-> >  }
-> >
-> > @@ -876,7 +877,7 @@ void acpiphp_enumerate_slots(struct pci_
-> >                         goto err;
-> >
-> >                 root_context->root_bridge = bridge;
-> > -               acpi_set_hp_context(adev, &root_context->hp, NULL, NULL, NULL);
-> > +               acpi_set_hp_context(adev, &root_context->hp);
-> >         } else {
-> >                 struct acpiphp_context *context;
-> >
-> >
+On Tue, Jul 15, 2014 at 04:00:41PM -0700, Bjorn Andersson wrote:
+> Driver for regulators exposed by the Resource Power Manager (RPM) found
+> in Qualcomm 8660, 8960 and 8064 based devices.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I have patch 3/3 here but no cover or other patches - what is the story
+there?
+
+--yRA+Bmk8aPhU85Qt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTxcKNAAoJELSic+t+oim9mDUQAIr09QDPbWi+nQiqZ2CWU83P
+8pcV04ygDANhw8exo3Ir+XvjPnGusFz5ifFb+7azRizzgo723xKswQ178cylPiWi
+TWAKvjI6rkL/JX5eXlcv7QxqED74SHVhc7VrPvZDKSdSI/m1hRgWH/Nvia3fpwUy
+Srgteno5V1YBvKdBFMsMl7vy5J7X6eZMw8UOmXW25WNOgqNJGkX7bRQwICV6fe/u
+2HeXxTSAtQmZSJqO2Y1kqKVpF/vBeOQAssq/8OYCdAIWFuc2aY7ESqPIRdzjUa6P
+N3TJiZWW2DMFBGDZ44b5xf+vM0rpTl0/Iz5YEHxHBi9LqqXJ/FfoWIEnRYf2PfGG
+VHD0zgXJovLozMlxwLJn0Po0OQXo+xoQFiYPaBueOq84eDCJgpneZbg/67W1i5Ak
+L2n009vhF5Gb3v3JnV5RJvWjvxmz3wl+NrNzd6FsfoO+Uj+6DoaAHxVBYVVpzmbu
+zf7Ex7itJt7yHd1KFdaqIhEiLHxprfeI6SCp/SKqdBM+9seqbx5WvJVWeC3G6BHL
+LXWlQkdGTKQMLfiX7w9Rwr3tHpGroZFjwB1d3K3IId2/pfw9bzsbyrvj8HnaVVWS
+oYTRcCM4Z8z84EGEnB+mNZzls1QzaVMwMBAs5zm3ZWT0jyzSlFHY6G3JVCAB/PPM
+tKiJqXgXMEwlH58cJprR
+=a0Hi
+-----END PGP SIGNATURE-----
+
+--yRA+Bmk8aPhU85Qt--
