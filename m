@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515AbaGPJ2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:28:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51582 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283AbaGPJ2v (ORCPT
+	id S1752025AbaGPJeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:34:36 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:33198 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbaGPJec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:28:51 -0400
-Date: Wed, 16 Jul 2014 12:28:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Igor Bezukh <igbzkh@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        forest@alittletooquiet.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vt6655: fix missing blank line after variable
- declaration
-Message-ID: <20140716092847.GA25880@mwanda>
-References: <1405496730-7256-1-git-send-email-igbzkh@gmail.com>
+	Wed, 16 Jul 2014 05:34:32 -0400
+Message-ID: <53C646DA.3020002@gmail.com>
+Date: Wed, 16 Jul 2014 15:03:14 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405496730-7256-1-git-send-email-igbzkh@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 05/12] phy: add the Berlin USB PHY driver
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com> <1405499166-6726-6-git-send-email-antoine.tenart@free-electrons.com> <53C64389.3050705@gmail.com> <20140716092541.GC28151@kwain>
+In-Reply-To: <20140716092541.GC28151@kwain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 10:45:30AM +0300, Igor Bezukh wrote:
-> From: Igor bezukh <igbzkh@gmail.com>
+On 07/16/2014 02:55 PM, Antoine Ténart wrote:
+> Hi Varka,
+>
+> On Wed, Jul 16, 2014 at 02:49:05PM +0530, Varka Bhadram wrote:
+>> On 07/16/2014 01:55 PM, Antoine Ténart wrote:
+>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+>>> +	{
+>>> +		.compatible = "marvell,berlin2-usb-phy",
+>>> +		.data = &phy_berlin_pll_dividers[0],
+>>> +	},
+>>> +	{
+>>> +		.compatible = "marvell,berlin2cd-usb-phy",
+>>> +		.data = &phy_berlin_pll_dividers[1],
+>>> +	},
+>>> +	{ },
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
+>>> +
+>> It looks good if we move this after probe().. So that we can see of_match_table directly...
+> We use the of match table in the probe, when calling of_match_device().
+>
+>>> +static int phy_berlin_usb_probe(struct platform_device *pdev)
+>>> +{
+>>> +	const struct of_device_id *match =
+>>> +		of_match_device(phy_berlin_sata_of_match, &pdev->dev);
 
-Just leave this line out.  The capitalization is wrong anyway.
+We are updating of_match_table in platform_driver struct.
 
-regards,
-dan carpenter
+Every driver follows the concept of giving the of_device_ids
+above the platform_driver declaration...
 
+> Here.
+>
+> Antoine
+>
