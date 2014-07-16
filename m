@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965098AbaGPOxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:53:54 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:38913 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934066AbaGPOxv (ORCPT
+	id S965203AbaGPOyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:54:50 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:45423 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934066AbaGPOys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:53:51 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "hch@infradead.org" <hch@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "kys@microsoft.com" <kys@microsoft.com>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Index: AQHPoQW+iuVgDGn56EGhE5PiroYLNw==
-Date: Wed, 16 Jul 2014 14:53:47 +0000
-Message-ID: <1405522426.2225.10.camel@jarvis.lan>
-References: <1404866812-26950-1-git-send-email-kys@microsoft.com>
-	 <1404866812-26950-4-git-send-email-kys@microsoft.com>
-	 <20140709084300.GD6012@infradead.org>
-	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
-	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
-	 <20140711063216.GA20660@infradead.org>
-	 <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <yq1a98d2z5x.fsf@sermon.lab.mkp.net> <20140716110111.GA7382@infradead.org>
-In-Reply-To: <20140716110111.GA7382@infradead.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <4631051B0E5CE84EBC23F9B11473E066@sw.swsoft.com>
+	Wed, 16 Jul 2014 10:54:48 -0400
+Date: Wed, 16 Jul 2014 10:52:56 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: "Bridgman, John" <John.Bridgman@amd.com>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/83] AMD HSA kernel driver
+Message-ID: <20140716145253.GA2770@gmail.com>
+References: <20140713035535.GB5301@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
+ <20140713164901.GB10624@gmail.com>
+ <53C396D3.9000600@vodafone.de>
+ <CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
+ <20140715173704.GA3421@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01050211@storexdag02.amd.com>
+ <20140715180445.GB3421@gmail.com>
+ <CAKMK7uEohJaiNCdDeV-6GNtH=0YSsw-o8V1zMYtOFEnkbOK+wA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKMK7uEohJaiNCdDeV-6GNtH=0YSsw-o8V1zMYtOFEnkbOK+wA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6GEs042028624
 
-On Wed, 2014-07-16 at 04:01 -0700, hch@infradead.org wrote:
-> On Sun, Jul 13, 2014 at 08:58:34AM -0400, Martin K. Petersen wrote:
-> > >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
-> > 
-> > KY> Windows hosts do support UNMAP and set the field in the
-> > KY> EVPD. However, since the host advertises SPC-2 compliance, Linux
-> > KY> does not even query the VPD page.
-> >  
-> > >> If we want to enable UNMAP in this case I'd prefer a blacklist entry
-> > >> than trying UNMAP despite the device not advertising it.
-> > 
-> > I agree with that. We could do something like the patch below.
-> > 
-> > However, I do think it's a good idea that you guys are looking into
-> > reporting SPC-3.
+On Wed, Jul 16, 2014 at 10:27:42AM +0200, Daniel Vetter wrote:
+> On Tue, Jul 15, 2014 at 8:04 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> >> Yes although it can be skipped on most systems. We figured that topology
+> >> needed to cover everything that would be handled by a single OS image, so
+> >> in a NUMA system it would need to cover all the CPUs. I think that is still
+> >> the right scope, do you agree ?
+> >
+> > I think it is a idea to duplicate cpu. I would rather have each device
+> > give its afinity against each cpu and for cpu just keep the existing
+> > kernel api that expose this through sysfs iirc.
 > 
-> KY mentioned that they have a prototype for that now.
+> It's all there already if we fix up the hsa dev-node model to expose
+> one dev node per underlying device instead of one for everything:
+> - cpus already expose the full numa topology in sysfs
+> - pci devices have a numa_node file in sysfs to display the link
+> - we can easily add similar stuff for platform devices on arm socs
+> without pci devices.
 > 
-> Btw, I looked over sd.c a bit more, and I think I understand why they
-> get the WRITE SAME commands now:
+> Then the only thing userspace needs to do is follow the device link in
+> the hsa instance node in sysfs and we have all the information
+> exposed. Iff we expose one hsa driver instance to userspace per
+> physical device (which is the normal linux device driver model
+> anyway).
 > 
-> read_capacity_16 calls sd_config_discard(sdkp, SD_LBP_WS16) if the LPBME
-> bit is set.  At least older SBC drafts left it wide open if a target
-> supports WRITE SAME with UNMAP or UNMAP in this case.  So I think we'd
-> still want a patch to use UNMAP instead of WRITE SAME for this case,
-> which should also fix hyperv.  Below is the quick hack version of that
-> that just checks the host no_write_same flag, as the one on the device
-> isn't set yet - I guess we need to refactor some of that logic.
-> 
-> 
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 87566b5..4480fdf 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -2035,7 +2035,10 @@ static int read_capacity_16(struct scsi_disk *sdkp, struct scsi_device *sdp,
->  		if (buffer[14] & 0x40) /* LBPRZ */
->  			sdkp->lbprz = 1;
->  
-> -		sd_config_discard(sdkp, SD_LBP_WS16);
-> +		if (sdp->host->no_write_same)
-> +			sd_config_discard(sdkp, SD_LBP_UNMAP);
-> +		else
-> +			sd_config_discard(sdkp, SD_LBP_WS16);
+> I don't see a need to add anything hsa specific here at all (well
+> maybe some description of the cache architecture on the hsa device
+> itself, the spec seems to have provisions for that).
+> -Daniel
 
-Right, I already said this was the problem: that was the reason for my
-patch.  However, there are a couple of other cases (including the /sys
-entry) which is why I patched sd_config_discard instead.
+What is HSA specific is userspace command queue in form of common ring
+buffer execution queue all sharing common packet format. So yes i see
+a reason for an HSA class that provide common ioctl through one dev file
+per device. Note that i am not a fan of userspace command queue given
+that linux ioctl overhead is small and having kernel do stuff would
+allow for really "infinite" number of userspace context while right
+now limit is DOORBELL_APERTURE_SIZE/PAGE_SIZE.
 
-James
+No, CPU should not be included, neither should the numa topology of
+device. And yes all numa topology should use existing kernel interface.
+I however understand that a second GPU specific topology might make
+sense ie if you have specialize link btw some discrete GPU.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+So if Intel wants to join the HSA foundation fine, but unless you are
+ready to implement what is needed i do not see the value of forcing
+your wish on another group that is trying to standardize something.
+
+Cheers,
+Jérôme
