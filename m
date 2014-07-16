@@ -1,139 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758482AbaGPHzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:55:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38212 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450AbaGPHzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:55:31 -0400
-Date: Wed, 16 Jul 2014 09:55:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140716075528.GB7121@dhcp22.suse.cz>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
- <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715155537.GA19454@nhori.bos.redhat.com>
- <20140715160735.GB29269@dhcp22.suse.cz>
- <20140715173439.GU29639@cmpxchg.org>
- <20140715184358.GA31550@nhori.bos.redhat.com>
- <20140715190454.GW29639@cmpxchg.org>
- <20140715204953.GA21016@nhori.bos.redhat.com>
- <20140715214843.GX29639@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715214843.GX29639@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753785AbaGPH5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:57:40 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:24233 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaGPH5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 03:57:37 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-47-53c6306e29cc
+Message-id: <53C63016.6050805@samsung.com>
+Date: Wed, 16 Jul 2014 10:56:06 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-ima-devel@lists.sourceforge.net
+Subject: Re: [Linux-ima-devel] [PATCH v1 1/3] ima: provide flag to identify new
+ empty files
+References: <cover.1405078844.git.d.kasatkin@samsung.com>
+ <ac60392e0118902ce9b308fdae09d633da1682af.1405078844.git.d.kasatkin@samsung.com>
+ <1405432827.21720.20.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <1405462329.2124.12.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-reply-to: <1405462329.2124.12.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xa7p5BseCDSZcZLHYs/cki8XLGfPY
+	LS7vmsNm8aHnEZvF+b/HWS0+rZjE7MDm8eDQZhaP3Qs+M3l83iTnsenJW6YAligum5TUnMyy
+	1CJ9uwSujEfzb7MWHJSrWPb4GXMDY79kFyMnh4SAicScaXfZIWwxiQv31rN1MXJxCAksZZTY
+	MuEKlNPIJHHpZC8zhDOLUeLjor0sIC28AloST949ZwOxWQRUJWb87gIbxSagJ7Gh+QeYLSoQ
+	IXGg7xkrRL2gxI/J98B6RQQ0JY61fmQEsZkFVjFKLGoOArGFBWIljnSehtrcziQx+es0sGZO
+	AXeJKzu2sUI0qEtMmreIGcKWl9i85i2YLQR0RPfatWwQ/yhKnJ58jnkCo/AsJLtnIWmfhaR9
+	ASPzKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQ+Piyg3HxMatDjAIcjEo8vAyzjwYLsSaW
+	FVfmHmKU4GBWEuEVYTkWLMSbklhZlVqUH19UmpNafIiRiYNTqoHROr8qf+Lhotrv8rbxj5s2
+	5Ps+TgnsEWcq1EurPHxCJeZqkAtfsu2mKxtfrZ5leSVoZcw2c167K3t4ulL6a844R/5b+MOo
+	bK1u9FzRa/kpAY3qdVsX3EmcXPhtBUf1rkchmYEetzVvtl9Ki83tPfaz9Ub8Wt6GBQt+Lj1e
+	KBVdsGDhkxgG/xNKLMUZiYZazEXFiQAKOl6ebQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-07-14 17:48:43, Johannes Weiner wrote:
-> On Tue, Jul 15, 2014 at 04:49:53PM -0400, Naoya Horiguchi wrote:
-> > I feel that these 2 messages have the same cause (just appear differently).
-> > __add_to_page_cache_locked() (and mem_cgroup_try_charge()) can be called
-> > for hugetlb, while we avoid calling mem_cgroup_migrate()/mem_cgroup_uncharge()
-> > for hugetlb. This seems to make page_cgroup of the hugepage inconsistent,
-> > and results in the bad page bug ("page dumped because: cgroup check failed").
-> > So maybe some more PageHuge check is necessary around the charging code.
-> 
-> This struck me as odd because I don't remember removing a PageHuge()
-> call in the charge path and wondered how it worked before my changes:
-> apparently it just checked PageCompound() in mem_cgroup_charge_file().
+On 16/07/14 01:12, Mimi Zohar wrote:
+> On Tue, 2014-07-15 at 10:00 -0400, Mimi Zohar wrote: 
+>> On Fri, 2014-07-11 at 14:46 +0300, Dmitry Kasatkin wrote: 
+>>> Newly created empty files do not get initial security.ima
+>>> value because iversion does not change. It can be checked from
+>>> the shell as:
+>>>
+>>>   $ (exec >foo)
+>>>   $ getfattr -h -e hex -d -m security foo
+> This is a change in behavior.  Please include the commit number that
+> introduced this change in the patch description.
 
-I have noticed the PageCompound check during review which made me look
-into history but 52d4b9ac0b98 (memcg: allocate all page_cgroup at boot)
-didn't mention why it added it so I considered it hack-at-the-time which
-is not actual anymore. Sorry I should have been more careful.
+This commit might caused this.
+dff6efc326a4d5f305797d4a6bba14f374fdd633 fs: fix iversion handling
 
-> So it's not fallout of the new uncharge batching code, but was already
-> broken during the rewrite of the charge API because then hugetlb pages
-> entered the charging code.
-> 
-> Anyway, we don't have file-specific charging code anymore, and the
-> PageCompound() check would have required changing anyway for THP
-> cache.  So I guess the solution is checking PageHuge() in charge,
-> uncharge, and migrate for now.  Oh well.
-> 
-> How about this?
+- Dmitry
 
-Looks good to me. I do not know why you have moved the charge function
-out of __page_cache_release (the function would deserve a better name
-btw. - lru_page_release would sound little bit better to me and it would
-be quite natural place for the uncharge as well) when you already check
-PageHuge in __put_compound_page. But that is just a minor thing.
+> Mimi
+>
+>>> This patch defines IMA_NEW_FILE flag which is set when IMA detects that new
+>>> file is created. It is checked upon ima_file_free hook to set initial
+>>> security.ima value.
+>> Other than rebasing on top of #next, this patch set looks good.
+>>
+>> thanks,
+>>
+>> Mimi
+>>
+>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>>> ---
+>>>  security/integrity/ima/ima_appraise.c |  7 +++++--
+>>>  security/integrity/ima/ima_main.c     | 12 +++++++-----
+>>>  security/integrity/integrity.h        |  1 +
+>>>  3 files changed, 13 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+>>> index 9dd18b5..3a4beb3 100644
+>>> --- a/security/integrity/ima/ima_appraise.c
+>>> +++ b/security/integrity/ima/ima_appraise.c
+>>> @@ -194,8 +194,11 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>>>  			goto out;
+>>>
+>>>  		cause = "missing-hash";
+>>> -		status =
+>>> -		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
+>>> +		status = INTEGRITY_NOLABEL;
+>>> +		if (inode->i_size == 0) {
+>>> +			iint->flags |= IMA_NEW_FILE;
+>>> +			status = INTEGRITY_PASS;
+>>> +		}
+>>>  		goto out;
+>>>  	}
+>>>
+>>> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+>>> index e51e0d5..5a870e7 100644
+>>> --- a/security/integrity/ima/ima_main.c
+>>> +++ b/security/integrity/ima/ima_main.c
+>>> @@ -124,11 +124,13 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
+>>>  		return;
+>>>
+>>>  	mutex_lock(&iint->mutex);
+>>> -	if (atomic_read(&inode->i_writecount) == 1 &&
+>>> -	    iint->version != inode->i_version) {
+>>> -		iint->flags &= ~IMA_DONE_MASK;
+>>> -		if (iint->flags & IMA_APPRAISE)
+>>> -			ima_update_xattr(iint, file);
+>>> +	if (atomic_read(&inode->i_writecount) == 1) {
+>>> +		if ((iint->version != inode->i_version) ||
+>>> +		    (iint->flags & IMA_NEW_FILE)) {
+>>> +			iint->flags &= ~(IMA_DONE_MASK | IMA_NEW_FILE);
+>>> +			if (iint->flags & IMA_APPRAISE)
+>>> +				ima_update_xattr(iint, file);
+>>> +		}
+>>>  	}
+>>>  	mutex_unlock(&iint->mutex);
+>>>  }
+>>> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+>>> index 92c1083..7656d47 100644
+>>> --- a/security/integrity/integrity.h
+>>> +++ b/security/integrity/integrity.h
+>>> @@ -30,6 +30,7 @@
+>>>  #define IMA_ACTION_FLAGS	0xff000000
+>>>  #define IMA_DIGSIG_REQUIRED	0x01000000
+>>>  #define IMA_PERMIT_DIRECTIO	0x02000000
+>>> +#define IMA_NEW_FILE		0x04000000
+>>>
+>>>  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+>>>  				 IMA_APPRAISE_SUBMASK)
+>>
+>>
+>> ------------------------------------------------------------------------------
+>> Want fast and easy access to all the code in your enterprise? Index and
+>> search up to 200,000 lines of code with a free copy of Black Duck
+>> Code Sight - the same software that powers the world's largest code
+>> search on Ohloh, the Black Duck Open Hub! Try it now.
+>> http://p.sf.net/sfu/bds
+>> _______________________________________________
+>> Linux-ima-devel mailing list
+>> Linux-ima-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
+>>
+>
+>
 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 9c99d6868a5e..b61194273b56 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -564,9 +564,12 @@ static int __add_to_page_cache_locked(struct page *page,
->  	VM_BUG_ON_PAGE(!PageLocked(page), page);
->  	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
->  
-> -	error = mem_cgroup_try_charge(page, current->mm, gfp_mask, &memcg);
-> -	if (error)
-> -		return error;
-> +	if (!PageHuge(page)) {
-> +		error = mem_cgroup_try_charge(page, current->mm,
-> +					      gfp_mask, &memcg);
-> +		if (error)
-> +			return error;
-> +	}
->  
->  	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
->  	if (error) {
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 7f5a42403fae..dabed2f08609 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -781,7 +781,8 @@ static int move_to_new_page(struct page *newpage, struct page *page,
->  		if (!PageAnon(newpage))
->  			newpage->mapping = NULL;
->  	} else {
-> -		mem_cgroup_migrate(page, newpage, false);
-> +		if (!PageHuge(page))
-> +			mem_cgroup_migrate(page, newpage, false);
->  		if (remap_swapcache)
->  			remove_migration_ptes(page, newpage);
->  		if (!PageAnon(page))
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 3461f2f5be20..97b6ec132398 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -62,12 +62,12 @@ static void __page_cache_release(struct page *page)
->  		del_page_from_lru_list(page, lruvec, page_off_lru(page));
->  		spin_unlock_irqrestore(&zone->lru_lock, flags);
->  	}
-> -	mem_cgroup_uncharge(page);
->  }
->  
->  static void __put_single_page(struct page *page)
->  {
->  	__page_cache_release(page);
-> +	mem_cgroup_uncharge_page(page);
->  	free_hot_cold_page(page, false);
->  }
->  
-> @@ -75,7 +75,10 @@ static void __put_compound_page(struct page *page)
->  {
->  	compound_page_dtor *dtor;
->  
-> -	__page_cache_release(page);
-> +	if (!PageHuge(page)) {
-> +		__page_cache_release(page);
-> +		mem_cgroup_uncharge_page(page);
-> +	}
->  	dtor = get_compound_page_dtor(page);
->  	(*dtor)(page);
->  }
-
--- 
-Michal Hocko
-SUSE Labs
