@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650AbaGPCo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 22:44:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754358AbaGPCoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 22:44:54 -0400
-Message-ID: <53C5E71E.7050706@redhat.com>
-Date: Wed, 16 Jul 2014 10:44:46 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vlad Yasevich <vyasevic@redhat.com>
-Subject: Re: [PATCH net-next] virtio-net: rx busy polling support
-References: <1405417265-13103-1-git-send-email-jasowang@redhat.com> <1405419703.10255.26.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1405419703.10255.26.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758950AbaGPCpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 22:45:20 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:39602 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758474AbaGPCpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 22:45:08 -0400
+From: KANG Yuxuan <stonekyx@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sachin Kamat <sachin.kamat@samsung.com>,
+        Magnus Damm <damm+renesas@opensource.se>,
+        Simon Horman <horms+renesas@verge.net.au>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: emxx_udc: Fix coding style errors
+Date: Wed, 16 Jul 2014 10:45:01 +0800
+Message-Id: <1405478701-1598-1-git-send-email-stonekyx@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 06:21 PM, Eric Dumazet wrote:
-> On Tue, 2014-07-15 at 17:41 +0800, Jason Wang wrote:
->> Add basic support for rx busy polling.
->>
->> 1 byte netperf tcp_rr on mlx4 shows 116% improvement: the transaction
->> rate was increased from 9151.94 to 19787.37.
-> This is a misleading changelog.
->
-> You forgot to describe how you allowed busy polling, as it is not
-> 'automatic'
->
-> If not, this patch adds two spinlock/unlock pairs in fast path.
+Only fixing errors reported by checkpatch.pl, based on the following
+rules:
+1. '*' should be adjacent to the data name or function name.
+2. Don't use C99-style "// ..." comments.
 
-Ok.
-> Also, it looks like you could split this in smaller patches.
->
-> virtnet_napi_disable_all() & virtnet_napi_enable_all() could be added in
-> a separate patch for example.
+Signed-off-by: KANG Yuxuan <stonekyx@gmail.com>
+---
+ drivers/staging/emxx_udc/emxx_udc.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Sure, will split this patch into smaller ones in V2.
+diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
+index 0003463..b2eaf01 100644
+--- a/drivers/staging/emxx_udc/emxx_udc.c
++++ b/drivers/staging/emxx_udc/emxx_udc.c
+@@ -562,12 +562,12 @@ static void _nbu2ss_dma_unmap_single(
+ 
+ /*-------------------------------------------------------------------------*/
+ /* Endpoint 0 OUT Transfer (PIO) */
+-static int EP0_out_PIO(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
++static int EP0_out_PIO(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
+ {
+ 	u32		i;
+ 	int		nret   = 0;
+ 	u32		iWordLength = 0;
+-	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	/*------------------------------------------------------------*/
+ 	/* Read Length */
+@@ -588,12 +588,12 @@ static int EP0_out_PIO(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
+ 
+ /*-------------------------------------------------------------------------*/
+ /* Endpoint 0 OUT Transfer (PIO, OverBytes) */
+-static int EP0_out_OverBytes(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
++static int EP0_out_OverBytes(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
+ {
+ 	u32		i;
+ 	u32		iReadSize = 0;
+ 	USB_REG_ACCESS  Temp32;
+-	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	if ((0 < length) && (length < sizeof(u32))) {
+ 		Temp32.dw = _nbu2ss_readl(&udc->p_regs->EP0_READ);
+@@ -613,7 +613,7 @@ static int EP0_in_PIO(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
+ 	u32		iMaxLength   = EP0_PACKETSIZE;
+ 	u32		iWordLength  = 0;
+ 	u32		iWriteLength = 0;
+-	USB_REG_ACCESS*	pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	/*------------------------------------------------------------*/
+ 	/* Transfer Length */
+@@ -639,7 +639,7 @@ static int EP0_in_OverBytes(struct nbu2ss_udc *udc, u8 *pBuf, u32 iRemainSize)
+ {
+ 	u32		i;
+ 	USB_REG_ACCESS Temp32;
+-	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	if ((0 < iRemainSize) && (iRemainSize < sizeof(u32))) {
+ 		for (i = 0 ; i < iRemainSize ; i++)
+@@ -3339,7 +3339,7 @@ static int __init nbu2ss_drv_contest_init(
+ 	udc->gadget.ep0 = &udc->ep[0].ep;
+ 	udc->gadget.speed = USB_SPEED_UNKNOWN;
+ 	udc->gadget.name = driver_name;
+-	//udc->gadget.is_dualspeed = 1;
++	/* udc->gadget.is_dualspeed = 1; */
+ 
+ 	device_initialize(&udc->gadget.dev);
+ 
+-- 
+2.0.1
 
-Thanks
