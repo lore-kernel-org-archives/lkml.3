@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaGPUFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:05:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12722 "EHLO mx1.redhat.com"
+	id S1752560AbaGPUGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:06:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2259 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404AbaGPUDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:03:08 -0400
+	id S1751324AbaGPUDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 16:03:07 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 05/13] perf tools: Update perf list to output descriptions
-Date: Wed, 16 Jul 2014 22:02:41 +0200
-Message-Id: <1405540969-18975-6-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 04/13] perf tools: Add support for text descriptions of events and alias add
+Date: Wed, 16 Jul 2014 22:02:40 +0200
+Message-Id: <1405540969-18975-5-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
 References: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,147 +21,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add support to perf list to print aliases with descriptions.
-Support word wrapping for descriptions.
-Fix up the sorting code to put aliases with descriptions
-last.
+Change pmu.c to allow descriptions of events and add interfaces
+to add aliases at runtime from another file. To be used by jevents in
+a followon patch
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/n/1405123165-22666-4-git-send-email-andi@firstfloor.org
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/1405123165-22666-3-git-send-email-andi@firstfloor.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/pmu.c | 84 +++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 68 insertions(+), 16 deletions(-)
+ tools/perf/util/pmu.c | 43 ++++++++++++++++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 13 deletions(-)
 
 diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index f9c704628218..baec0905eef8 100644
+index 7a811eb61f75..f9c704628218 100644
 --- a/tools/perf/util/pmu.c
 +++ b/tools/perf/util/pmu.c
-@@ -737,11 +737,51 @@ static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
- 	return buf;
- }
+@@ -14,6 +14,7 @@
  
--static int cmp_string(const void *a, const void *b)
-+struct pair {
-+	char *name;
+ struct perf_pmu_alias {
+ 	char *name;
 +	char *desc;
-+};
-+
-+static int cmp_pair(const void *a, const void *b)
-+{
-+	const struct pair *as = a;
-+	const struct pair *bs = b;
-+
-+	/* Put downloaded event list last */
-+	if (!!as->desc != !!bs->desc)
-+		return !!as->desc - !!bs->desc;
-+	return strcmp(as->name, bs->name);
-+}
-+
-+static void wordwrap(char *s, int start, int max, int corr)
-+{
-+	int column = start;
-+	int n;
-+
-+	while (*s) {
-+		int wlen = strcspn(s, " \t");
-+
-+		if (column + wlen >= max && column > start) {
-+			printf("\n%*s", start, "");
-+			column = start + corr;
-+		}
-+		n = printf("%s%.*s", column > start ? " " : "", wlen, s);
-+		if (n <= 0)
-+			break;
-+		s += wlen;
-+		column += n;
-+		while (isspace(*s))
-+			s++;
-+	}
-+}
-+
-+static int get_columns(void)
- {
--	const char * const *as = a;
--	const char * const *bs = b;
--	return strcmp(*as, *bs);
-+	/*
-+	 * Should ask the terminal with TIOCGWINSZ here, but we
-+	 * need the original fd before the pager.
-+	 */
-+	return 79;
+ 	struct list_head terms;
+ 	struct list_head list;
+ 	char unit[UNIT_MAX_LEN+1];
+@@ -171,17 +172,12 @@ error:
+ 	return -1;
  }
  
- void print_pmu_events(const char *event_glob, bool name_only)
-@@ -751,21 +791,24 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 	char buf[1024];
- 	int printed = 0;
- 	int len, j;
--	char **aliases;
-+	struct pair *aliases;
-+	int numdesc = 0;
-+	int columns = get_columns();
+-static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
++static int __perf_pmu__new_alias(struct list_head *list, char *name,
++				 char *dir, char *desc, char *val)
+ {
+ 	struct perf_pmu_alias *alias;
+-	char buf[256];
+ 	int ret;
  
- 	pmu = NULL;
- 	len = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL)
- 		list_for_each_entry(alias, &pmu->aliases, list)
- 			len++;
--	aliases = malloc(sizeof(char *) * len);
-+	aliases = malloc(sizeof(struct pair) * len);
- 	if (!aliases)
- 		return;
- 	pmu = NULL;
- 	j = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL)
- 		list_for_each_entry(alias, &pmu->aliases, list) {
--			char *name = format_alias(buf, sizeof(buf), pmu, alias);
-+			char *name = alias->desc ? alias->name :
-+				format_alias(buf, sizeof(buf), pmu, alias);
- 			bool is_cpu = !strcmp(pmu->name, "cpu");
+-	ret = fread(buf, 1, sizeof(buf), file);
+-	if (ret == 0)
+-		return -EINVAL;
+-	buf[ret] = 0;
+-
+ 	alias = malloc(sizeof(*alias));
+ 	if (!alias)
+ 		return -ENOMEM;
+@@ -190,24 +186,45 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
+ 	alias->scale = 1.0;
+ 	alias->unit[0] = '\0';
  
- 			if (event_glob != NULL &&
-@@ -773,22 +816,31 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			      (!is_cpu && strglobmatch(alias->name,
- 						       event_glob))))
- 				continue;
--			aliases[j] = name;
--			if (is_cpu && !name_only)
--				aliases[j] = format_alias_or(buf, sizeof(buf),
--							      pmu, alias);
--			aliases[j] = strdup(aliases[j]);
-+			aliases[j].name = name;
-+			if (is_cpu && !name_only && !alias->desc)
-+				aliases[j].name = format_alias_or(buf,
-+								  sizeof(buf),
-+								  pmu, alias);
-+			aliases[j].name = strdup(aliases[j].name);
-+			aliases[j].desc = alias->desc;
- 			j++;
- 		}
- 	len = j;
--	qsort(aliases, len, sizeof(char *), cmp_string);
-+	qsort(aliases, len, sizeof(struct pair), cmp_pair);
- 	for (j = 0; j < len; j++) {
- 		if (name_only) {
--			printf("%s ", aliases[j]);
-+			printf("%s ", aliases[j].name);
- 			continue;
- 		}
--		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
--		zfree(&aliases[j]);
-+		if (aliases[j].desc) {
-+			if (numdesc++ == 0 && printed)
-+				printf("\n");
-+			printf("  %-50s [", aliases[j].name);
-+			wordwrap(aliases[j].desc, 53, columns, 1);
-+			printf("]\n");
-+		} else
-+			printf("  %-50s [Kernel PMU event]\n", aliases[j].name);
-+		zfree(&aliases[j].name);
- 		printed++;
+-	ret = parse_events_terms(&alias->terms, buf);
++	ret = parse_events_terms(&alias->terms, val);
+ 	if (ret) {
++		pr_err("Cannot parse alias %s: %d\n", val, ret);
+ 		free(alias);
+ 		return ret;
  	}
- 	if (printed)
+ 
+ 	alias->name = strdup(name);
+-	/*
+-	 * load unit name and scale if available
+-	 */
+-	perf_pmu__parse_unit(alias, dir, name);
+-	perf_pmu__parse_scale(alias, dir, name);
+ 
++	if (dir) {
++		/*
++		 * load unit name and scale if available
++		 */
++		perf_pmu__parse_unit(alias, dir, name);
++		perf_pmu__parse_scale(alias, dir, name);
++	}
++
++	alias->desc = desc ? strdup(desc) : NULL;
+ 	list_add_tail(&alias->list, list);
+ 
+ 	return 0;
+ }
+ 
++static int perf_pmu__new_alias(struct list_head *list,
++			       char *dir,
++			       char *name,
++			       FILE *file)
++{
++	char buf[256];
++	int ret;
++
++	ret = fread(buf, 1, sizeof(buf), file);
++	if (ret == 0)
++		return -EINVAL;
++	buf[ret] = 0;
++
++	return __perf_pmu__new_alias(list, name, dir, NULL, buf);
++}
++
+ /*
+  * Process all the sysfs attributes located under the directory
+  * specified in 'dir' parameter.
 -- 
 1.8.3.1
 
