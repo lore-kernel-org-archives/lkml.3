@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaGPVi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:38:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:44953 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbaGPViV (ORCPT
+	id S1754563AbaGPVi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:38:28 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:45493 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402AbaGPViP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:38:21 -0400
-Date: Thu, 17 Jul 2014 00:38:16 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] proc: remove INF macro
-Message-ID: <20140716213816.GI21290@p183.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 16 Jul 2014 17:38:15 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: viro@zeniv.linux.org.uk, clm@fb.com, jbacik@fb.com
+Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffm@suse.com, fdmanana@suse.com,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [RFC v2 2/2] btrfs: use the new VFS super_block_dev
+Date: Wed, 16 Jul 2014 14:37:58 -0700
+Message-Id: <1405546678-7846-3-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you're applying this patch, all /proc/$PID/* files were converted
-to seq_file interface and this code became unused.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Use the new VFS layer struct super_block_dev instead of carrying
+the anonymous bdev's on our own. This makes the VFS layer aware of
+all of our anonymous dev's on the super block.
+
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
+ fs/btrfs/ctree.h   | 7 ++-----
+ fs/btrfs/disk-io.c | 6 ++----
+ fs/btrfs/inode.c   | 2 +-
+ 3 files changed, 5 insertions(+), 10 deletions(-)
 
- fs/proc/base.c     |   41 -----------------------------------------
- fs/proc/internal.h |    1 -
- 2 files changed, 42 deletions(-)
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index be91397..0ece396 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1846,11 +1846,8 @@ struct btrfs_root {
+ 	 * protected by inode_lock
+ 	 */
+ 	struct radix_tree_root delayed_nodes_tree;
+-	/*
+-	 * right now this just gets used so that a root has its own devid
+-	 * for stat.  It may be used for more later
+-	 */
+-	dev_t anon_dev;
++
++	struct super_block_dev sbdev;
+ 
+ 	spinlock_t root_item_lock;
+ 	atomic_t refs;
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 8bb4aa1..1a6aa8d 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1269,7 +1269,6 @@ static void __setup_root(u32 nodesize, u32 leafsize, u32 sectorsize,
+ 		root->defrag_trans_start = 0;
+ 	init_completion(&root->kobj_unregister);
+ 	root->root_key.objectid = objectid;
+-	root->anon_dev = 0;
+ 
+ 	spin_lock_init(&root->root_item_lock);
+ }
+@@ -1572,7 +1571,7 @@ int btrfs_init_fs_root(struct btrfs_root *root)
+ 	spin_lock_init(&root->cache_lock);
+ 	init_waitqueue_head(&root->cache_wait);
+ 
+-	ret = get_anon_bdev(&root->anon_dev);
++	ret = insert_anon_sbdev(root->fs_info->sb, &root->sbdev);
+ 	if (ret)
+ 		goto free_writers;
+ 	return 0;
+@@ -3529,8 +3528,7 @@ static void free_fs_root(struct btrfs_root *root)
+ 	WARN_ON(!RB_EMPTY_ROOT(&root->inode_tree));
+ 	btrfs_free_block_rsv(root, root->orphan_block_rsv);
+ 	root->orphan_block_rsv = NULL;
+-	if (root->anon_dev)
+-		free_anon_bdev(root->anon_dev);
++	remove_anon_sbdev(&root->sbdev);
+ 	if (root->subv_writers)
+ 		btrfs_free_subvolume_writers(root->subv_writers);
+ 	free_extent_buffer(root->node);
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 3668048..0e8f604 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -8277,7 +8277,7 @@ static int btrfs_getattr(struct vfsmount *mnt,
+ 	u32 blocksize = inode->i_sb->s_blocksize;
+ 
+ 	generic_fillattr(inode, stat);
+-	stat->dev = BTRFS_I(inode)->root->anon_dev;
++	stat->dev = BTRFS_I(inode)->root->sbdev.anon_dev;
+ 	stat->blksize = PAGE_CACHE_SIZE;
+ 
+ 	spin_lock(&BTRFS_I(inode)->lock);
+-- 
+2.0.1
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -130,10 +130,6 @@ struct pid_entry {
- 		{ .proc_get_link = get_link } )
- #define REG(NAME, MODE, fops)				\
- 	NOD(NAME, (S_IFREG|(MODE)), NULL, &fops, {})
--#define INF(NAME, MODE, read)				\
--	NOD(NAME, (S_IFREG|(MODE)), 			\
--		NULL, &proc_info_file_operations,	\
--		{ .proc_read = read } )
- #define ONE(NAME, MODE, show)				\
- 	NOD(NAME, (S_IFREG|(MODE)), 			\
- 		NULL, &proc_single_file_operations,	\
-@@ -605,43 +601,6 @@ static const struct inode_operations proc_def_inode_operations = {
- 	.setattr	= proc_setattr,
- };
- 
--#define PROC_BLOCK_SIZE	(3*1024)		/* 4K page size but our output routines use some slack for overruns */
--
--static ssize_t proc_info_read(struct file * file, char __user * buf,
--			  size_t count, loff_t *ppos)
--{
--	struct inode * inode = file_inode(file);
--	unsigned long page;
--	ssize_t length;
--	struct task_struct *task = get_proc_task(inode);
--
--	length = -ESRCH;
--	if (!task)
--		goto out_no_task;
--
--	if (count > PROC_BLOCK_SIZE)
--		count = PROC_BLOCK_SIZE;
--
--	length = -ENOMEM;
--	if (!(page = __get_free_page(GFP_TEMPORARY)))
--		goto out;
--
--	length = PROC_I(inode)->op.proc_read(task, (char*)page);
--
--	if (length >= 0)
--		length = simple_read_from_buffer(buf, count, ppos, (char *)page, length);
--	free_page(page);
--out:
--	put_task_struct(task);
--out_no_task:
--	return length;
--}
--
--static const struct file_operations proc_info_file_operations = {
--	.read		= proc_info_read,
--	.llseek		= generic_file_llseek,
--};
--
- static int proc_single_show(struct seq_file *m, void *v)
- {
- 	struct inode *inode = m->private;
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -52,7 +52,6 @@ struct proc_dir_entry {
- 
- union proc_op {
- 	int (*proc_get_link)(struct dentry *, struct path *);
--	int (*proc_read)(struct task_struct *task, char *page);
- 	int (*proc_show)(struct seq_file *m,
- 		struct pid_namespace *ns, struct pid *pid,
- 		struct task_struct *task);
