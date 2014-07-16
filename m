@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759250AbaGPLNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:13:45 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:46044 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758938AbaGPLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:13:42 -0400
-Message-ID: <53C65E51.3090003@cs.wisc.edu>
-Date: Wed, 16 Jul 2014 06:13:21 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+	id S1759337AbaGPLO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:14:26 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1063 "EHLO
+	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaGPLOV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:14:21 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 29807
+Message-ID: <53C65E8F.2080708@metafoo.de>
+Date: Wed, 16 Jul 2014 13:14:23 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+To: Jonathan Cameron <jic23@kernel.org>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/14] scsi: add support for a blk-mq based I/O path.
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-14-git-send-email-hch@lst.de>
-In-Reply-To: <1403715121-1201-14-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
+CC: Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: question regarding drivers/staging/iio/adc/ad7280a.c
+References: <CAB78YHwneVuVBPujeKE=rEygvtyn=VvtLtd75+pvwqxPxYcB6g@mail.gmail.com> <53C5656F.9030200@kernel.org>
+In-Reply-To: <53C5656F.9030200@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 11:52 AM, Christoph Hellwig wrote:
-> +static int scsi_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-> +{
-> +	struct request_queue *q = req->q;
-> +	struct scsi_device *sdev = q->queuedata;
-> +	struct Scsi_Host *shost = sdev->host;
-> +	struct scsi_cmnd *cmd = blk_mq_rq_to_pdu(req);
-> +	int ret;
-> +	int reason;
-> +
-> +	ret = prep_to_mq(scsi_prep_state_check(sdev, req));
-> +	if (ret)
-> +		goto out;
-> +
-> +	ret = BLK_MQ_RQ_QUEUE_BUSY;
-> +	if (!get_device(&sdev->sdev_gendev))
-> +		goto out;
-> +
-> +	if (!scsi_dev_queue_ready(q, sdev))
-> +		goto out_put_device;
-> +	if (!scsi_target_queue_ready(shost, sdev))
-> +		goto out_dec_device_busy;
-> +	if (!scsi_host_queue_ready(q, shost, sdev))
-> +		goto out_dec_target_busy;
-> +
-> +	if (!(req->cmd_flags & REQ_DONTPREP)) {
-> +		ret = prep_to_mq(scsi_mq_prep_fn(req));
-> +		if (ret)
-> +			goto out_dec_host_busy;
-> +		req->cmd_flags |= REQ_DONTPREP;
-> +	}
-> +
-> +	scsi_init_cmd_errh(cmd);
-> +	cmd->scsi_done = scsi_mq_done;
-> +
-> +	reason = scsi_dispatch_cmd(cmd);
-> +	if (reason) {
-> +		scsi_set_blocked(cmd, reason);
-> +		ret = BLK_MQ_RQ_QUEUE_BUSY;
-> +		goto out_dec_host_busy;
-> +	}
-> +
-> +	return BLK_MQ_RQ_QUEUE_OK;
-> +
-> +out_dec_host_busy:
-> +	cancel_delayed_work(&cmd->abort_work);
+On 07/15/2014 07:31 PM, Jonathan Cameron wrote:
+> On 14/07/14 21:31, Himangi Saraogi wrote:
+>> Hi,
+>>
+>> The code seems to have a memory leak. The function ad7280_attr_init
+>> calls kasprintf a number of times, which calls kmalloc (or more
+>> precisely kmalloc_track_caller), but this data does not ever seem to
+>> be freed. I propose to introduce a devm_  version of kasprintf, which
+>> will be useful for other files also. I am not very sure that will it
+>> be useful to introduce a bunch of kfrees, just to remove the memory
+>> leaks immediately, but I think it would be safer just to devm
+>> everything, so then one is sure that everything is freed as it should
+>> be, in the right order.
+>>
+> The question here is whether such a memory leak squashing would be
+> worth applying to stable.  Personally I'd go with no. In which case
+> feel free to fix it via the introduction of a devm version.
 
-Hey Christoph,
+devm is probably fine here.
 
-I see the request timer is started before calling queue_rq, but I could
-not figure out what the cancel_delayed_work here is for exactly. It
-seems if the request were to time out and the eh started while queue_rq
-was running we could end up some nasty bugs like the requested requeued
-twice.
+The long term fix should be to switch the driver to use 
+iio_chan_spec_ext_info infrastructure which will handle the allocation and 
+freeing internally in the IIO framework.
 
-Is the cancel_delayed_work call just to be safe or is supposed to be
-handling a case where the abort_work could be queued at this time up due
-to a request timing out while queue_rq is running? Is this case mq specific?
+- Lars
+
