@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934322AbaGPFlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 01:41:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55908 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934124AbaGPFlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 01:41:12 -0400
-Message-ID: <53C61057.7000704@ti.com>
-Date: Wed, 16 Jul 2014 08:40:39 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934368AbaGPFoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 01:44:06 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:65485 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934329AbaGPFoC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 01:44:02 -0400
 MIME-Version: 1.0
-To: Sam Asadi <asadi.samuel@gmail.com>, <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 46/94] ARM: dts: am335x-evm: Enable the McASP FIFO for
- audio
-References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com> <1405443709-15288-46-git-send-email-asadi.samuel@gmail.com>
-In-Reply-To: <1405443709-15288-46-git-send-email-asadi.samuel@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C4D12E.3040807@mit.edu>
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org>
+	<1405052287-4744-1-git-send-email-skannan@codeaurora.org>
+	<CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com>
+	<2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org>
+	<CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com>
+	<53C0A12A.2060204@codeaurora.org>
+	<CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>
+	<53C42AA8.8010107@codeaurora.org>
+	<CAKohpomkqbHZo9KrJMSwsEKGt6+Ac2Fg2X0+S7ZAo=OzhAc45g@mail.gmail.com>
+	<53C4BDFB.70707@codeaurora.org>
+	<53C4D12E.3040807@mit.edu>
+Date: Wed, 16 Jul 2014 11:14:01 +0530
+Message-ID: <CAKohpon8zDP3hVFMQV4CO2zOkb-AwnDws8xW=H8Hm4=gW=8FGQ@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa@mit.edu>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 08:01 PM, Sam Asadi wrote:
-> From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> 
-> The use of FIFO in McASP can reduce the risk of audio under/overrun and
-> lowers the load on the memories since the DMA will operate in bursts.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: sam-the-6 <asadi.samuel@gmail.com>
-> ---
->  arch/arm/boot/dts/am335x-evm.dts |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On 15 July 2014 12:28, Srivatsa S. Bhat <srivatsa@mit.edu> wrote:
+> Wait, allowing an offline CPU to be the policy->cpu (i.e., the CPU which is
+> considered as the master of the policy/group) is just absurd.
 
-What is the reason this patch is in this */94 series? What is this series of
-patches anyways?
-FWIW the two McASP FIFO enable patch is already in mainline and they should
-not be backported to older kernels w/o the changes in the mcasp driver in 3.16.
+Yeah, that was as Absurd as I am :)
 
-> 
-> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-> index ecb2677..e2156a5 100644
-> --- a/arch/arm/boot/dts/am335x-evm.dts
-> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> @@ -529,8 +529,8 @@
->  		serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
->  			0 0 1 2
->  		>;
-> -		tx-num-evt = <1>;
-> -		rx-num-evt = <1>;
-> +		tx-num-evt = <32>;
-> +		rx-num-evt = <32>;
->  };
->  
->  &tps {
-> 
+> The goal of this patchset should be to just de-couple the sysfs files/ownership
+> from the policy->cpu to an extent where it doesn't matter who owns those
+> files, and probably make it easier to do CPU hotplug without having to
+> destroy and recreate the files on every hotplug operation.
 
+I went to that Absurd idea because we thought we can skip playing with
+the sysfs nodes on suspend/hotplug.
 
--- 
-Péter
+And if policy->cpu keeps changing with hotplug, we *may* have to keep
+sysfs stuff moving as well. One way to avoid that is by using something
+like: policy->sysfs_cpu, but wasn't sure if that's the right path to follow.
+
+Lets see what Saravana's new patchset has for us :)
