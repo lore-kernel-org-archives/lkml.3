@@ -1,118 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064AbaGPQEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:04:24 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60980 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759999AbaGPQEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:04:21 -0400
-Date: Wed, 16 Jul 2014 12:04:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] mm: memcontrol: rewrite uncharge API fix - double
- migration
-Message-ID: <20140716160414.GA29639@cmpxchg.org>
-References: <1404759133-29218-1-git-send-email-hannes@cmpxchg.org>
- <1404759133-29218-3-git-send-email-hannes@cmpxchg.org>
- <alpine.LSU.2.11.1407141246340.17669@eggly.anvils>
- <20140715144539.GR29639@cmpxchg.org>
- <20140716083456.GC7121@dhcp22.suse.cz>
+	id S1760168AbaGPQFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:05:35 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40739 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759999AbaGPQFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:05:32 -0400
+Date: Wed, 16 Jul 2014 17:04:50 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFCv3 01/14] arm64: introduce
+ aarch64_insn_gen_comp_branch_imm()
+Message-ID: <20140716160450.GT29414@arm.com>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+ <1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716083456.GC7121@dhcp22.suse.cz>
+In-Reply-To: <1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 10:34:56AM +0200, Michal Hocko wrote:
-> [Sorry I have missed this thread]
+On Tue, Jul 15, 2014 at 07:24:59AM +0100, Zi Shen Lim wrote:
+> Introduce function to generate compare & branch (immediate)
+> instructions.
 > 
-> On Tue 15-07-14 10:45:39, Johannes Weiner wrote:
-> [...]
-> > From 274b94ad83b38fe7dc1707a8eb4015b3ab1673c5 Mon Sep 17 00:00:00 2001
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > Date: Thu, 10 Jul 2014 01:02:11 +0000
-> > Subject: [patch] mm: memcontrol: rewrite uncharge API fix - double migration
-> > 
-> > Hugh reports:
-> > 
-> > VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-> > mm/memcontrol.c:6680!
-> > page had count 1 mapcount 0 mapping anon index 0x196
-> > flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-> > mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-> > compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-> > __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-> > handle_mm_fault < __do_page_fault
-> > 
-> > mem_cgroup_migrate() assumes that a page is only migrated once and
-> > then freed immediately after.
-> > 
-> > However, putting the page back on the LRU list and dropping the
-> > isolation refcount is not done atomically.  This allows a PFN-based
-> > migrator like compaction to isolate the page, see the expected
-> > anonymous page refcount of 1, and migrate the page once more.
-> > 
-> > Furthermore, once the charges are transferred to the new page, the old
-> > page no longer has a pin on the memcg, which might get released before
-> > the page itself now.  pc->mem_cgroup is invalid at this point, but
-> > PCG_USED suggests otherwise, provoking use-after-free.
+> Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+> ---
+>  arch/arm64/include/asm/insn.h | 57 ++++++++++++++++++++++++++++
+>  arch/arm64/kernel/insn.c      | 86 ++++++++++++++++++++++++++++++++++++++++---
+>  2 files changed, 138 insertions(+), 5 deletions(-)
 > 
-> The same applies to to the new page because we are transferring only
-> statistics. The old page with PCG_USED would uncharge the res_counter
-> and so the new page is not backed by any and so memcg can go away.
-> This sounds like a more probable scenario to me because old page should
-> go away quite early after successful migration.
+> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+> index dc1f73b..a98c495 100644
+> --- a/arch/arm64/include/asm/insn.h
+> +++ b/arch/arm64/include/asm/insn.h
+> @@ -2,6 +2,8 @@
+>   * Copyright (C) 2013 Huawei Ltd.
+>   * Author: Jiang Liu <liuj97@gmail.com>
+>   *
+> + * Copyright (C) 2014 Zi Shen Lim <zlim.lnx@gmail.com>
+> + *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+>   * published by the Free Software Foundation.
+> @@ -67,9 +69,58 @@ enum aarch64_insn_imm_type {
+>  	AARCH64_INSN_IMM_MAX
+>  };
+>  
+> +enum aarch64_insn_register_type {
+> +	AARCH64_INSN_REGTYPE_RT,
+> +};
+> +
+> +enum aarch64_insn_register {
+> +	AARCH64_INSN_REG_0  = 0,
+> +	AARCH64_INSN_REG_1  = 1,
+> +	AARCH64_INSN_REG_2  = 2,
+> +	AARCH64_INSN_REG_3  = 3,
+> +	AARCH64_INSN_REG_4  = 4,
+> +	AARCH64_INSN_REG_5  = 5,
+> +	AARCH64_INSN_REG_6  = 6,
+> +	AARCH64_INSN_REG_7  = 7,
+> +	AARCH64_INSN_REG_8  = 8,
+> +	AARCH64_INSN_REG_9  = 9,
+> +	AARCH64_INSN_REG_10 = 10,
+> +	AARCH64_INSN_REG_11 = 11,
+> +	AARCH64_INSN_REG_12 = 12,
+> +	AARCH64_INSN_REG_13 = 13,
+> +	AARCH64_INSN_REG_14 = 14,
+> +	AARCH64_INSN_REG_15 = 15,
+> +	AARCH64_INSN_REG_16 = 16,
+> +	AARCH64_INSN_REG_17 = 17,
+> +	AARCH64_INSN_REG_18 = 18,
+> +	AARCH64_INSN_REG_19 = 19,
+> +	AARCH64_INSN_REG_20 = 20,
+> +	AARCH64_INSN_REG_21 = 21,
+> +	AARCH64_INSN_REG_22 = 22,
+> +	AARCH64_INSN_REG_23 = 23,
+> +	AARCH64_INSN_REG_24 = 24,
+> +	AARCH64_INSN_REG_25 = 25,
+> +	AARCH64_INSN_REG_26 = 26,
+> +	AARCH64_INSN_REG_27 = 27,
+> +	AARCH64_INSN_REG_28 = 28,
+> +	AARCH64_INSN_REG_29 = 29,
+> +	AARCH64_INSN_REG_FP = 29, /* Frame pointer */
+> +	AARCH64_INSN_REG_30 = 30,
+> +	AARCH64_INSN_REG_LR = 30, /* Link register */
+> +	AARCH64_INSN_REG_ZR = 31, /* Zero: as source register */
+> +	AARCH64_INSN_REG_SP = 31  /* Stack pointer: as load/store base reg */
 
-No, the charges are carried by PCG_MEM and PCG_MEMSW, not PCG_USED.
+Can you just #define AARCH64_INSN_REG(x) instead, then have some magic
+values like ARM64_REG_LR which are defined as the appropriate numbers?
 
-> > Properly uncharge the page after it's been migrated, including the
-> > clearing of PCG_USED, so that a subsequent charge migration attempt
-> > will be able to detect it and bail out.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Reported-by: Hugh Dickins <hughd@google.com>
-> > ---
-> >  mm/memcontrol.c | 8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 1e3b27f8dc2f..1439537fe7c9 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -6655,7 +6655,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
-> >  
-> >  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
-> >  	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
-> > -	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
-> >  
-> >  	if (PageTransHuge(oldpage)) {
-> >  		nr_pages <<= compound_order(oldpage);
-> > @@ -6663,6 +6662,13 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
-> >  		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
-> >  	}
-> >  
-> > +	pc->flags = 0;
-> > +
-> > +	local_irq_disable();
-> > +	mem_cgroup_charge_statistics(pc->mem_cgroup, oldpage, -nr_pages);
-> > +	memcg_check_events(pc->mem_cgroup, oldpage);
-> > +	local_irq_enable();
-> > +
-> >  	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
-> >  }
-> 
-> Looks good to me. I am just wondering whether we should really
-> fiddle with stats and events when actually nothing changed during
-> the transition. I would simply extract core of commit_charge into
-> __commit_charge which would be called from here.
-> 
-> The impact is minimal because events are rate limited and stats are
-> per-cpu so it is not a big deal it just looks ugly to me.
+> +};
+> +
+> +enum aarch64_insn_variant {
+> +	AARCH64_INSN_VARIANT_32BIT,
+> +	AARCH64_INSN_VARIANT_64BIT
+> +};
+> +
+>  enum aarch64_insn_branch_type {
+>  	AARCH64_INSN_BRANCH_NOLINK,
+>  	AARCH64_INSN_BRANCH_LINK,
+> +	AARCH64_INSN_BRANCH_COMP_ZERO,
+> +	AARCH64_INSN_BRANCH_COMP_NONZERO,
+>  };
+>  
+>  #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
+> @@ -80,6 +131,8 @@ static __always_inline u32 aarch64_insn_get_##abbr##_value(void) \
+>  
+>  __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
+>  __AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
+> +__AARCH64_INSN_FUNCS(cbz,	0xFE000000, 0x34000000)
+> +__AARCH64_INSN_FUNCS(cbnz,	0xFE000000, 0x35000000)
+>  __AARCH64_INSN_FUNCS(svc,	0xFFE0001F, 0xD4000001)
+>  __AARCH64_INSN_FUNCS(hvc,	0xFFE0001F, 0xD4000002)
+>  __AARCH64_INSN_FUNCS(smc,	0xFFE0001F, 0xD4000003)
+> @@ -97,6 +150,10 @@ u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+>  				  u32 insn, u64 imm);
+>  u32 aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
+>  				enum aarch64_insn_branch_type type);
+> +u32 aarch64_insn_gen_comp_branch_imm(unsigned long pc, unsigned long addr,
+> +				     enum aarch64_insn_register reg,
+> +				     enum aarch64_insn_variant variant,
+> +				     enum aarch64_insn_branch_type type);
+>  u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op);
+>  u32 aarch64_insn_gen_nop(void);
+>  
+> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+> index 92f3683..d01bb4e 100644
+> --- a/arch/arm64/kernel/insn.c
+> +++ b/arch/arm64/kernel/insn.c
+> @@ -2,6 +2,8 @@
+>   * Copyright (C) 2013 Huawei Ltd.
+>   * Author: Jiang Liu <liuj97@gmail.com>
+>   *
+> + * Copyright (C) 2014 Zi Shen Lim <zlim.lnx@gmail.com>
+> + *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+>   * published by the Free Software Foundation.
+> @@ -264,10 +266,36 @@ u32 __kprobes aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+>  	return insn;
+>  }
+>  
+> -u32 __kprobes aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
+> -					  enum aarch64_insn_branch_type type)
+> +static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
+> +					u32 insn,
+> +					enum aarch64_insn_register reg)
+> +{
+> +	int shift;
+> +
+> +	if (reg < AARCH64_INSN_REG_0 || reg > AARCH64_INSN_REG_SP) {
+> +		pr_err("%s: unknown register encoding %d\n", __func__, reg);
+> +		return 0;
+> +	}
+> +
+> +	switch (type) {
+> +	case AARCH64_INSN_REGTYPE_RT:
+> +		shift = 0;
+> +		break;
+> +	default:
+> +		pr_err("%s: unknown register type encoding %d\n", __func__,
+> +		       type);
+> +		return 0;
+> +	}
+> +
+> +	insn &= ~(GENMASK(4, 0) << shift);
+> +	insn |= reg << shift;
+> +
+> +	return insn;
+> +}
+> +
+> +static inline long branch_imm_common(unsigned long pc, unsigned long addr,
+> +				     long range)
+>  {
+> -	u32 insn;
+>  	long offset;
+>  
+>  	/*
+> @@ -276,13 +304,24 @@ u32 __kprobes aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
+>  	 */
+>  	BUG_ON((pc & 0x3) || (addr & 0x3));
+>  
+> +	offset = ((long)addr - (long)pc);
+> +	BUG_ON(offset < -range || offset >= range);
+> +
+> +	return offset;
+> +}
+> +
+> +u32 __kprobes aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
+> +					  enum aarch64_insn_branch_type type)
+> +{
+> +	u32 insn;
+> +	long offset;
+> +
+>  	/*
+>  	 * B/BL support [-128M, 128M) offset
+>  	 * ARM64 virtual address arrangement guarantees all kernel and module
+>  	 * texts are within +/-128M.
+>  	 */
+> -	offset = ((long)addr - (long)pc);
+> -	BUG_ON(offset < -SZ_128M || offset >= SZ_128M);
+> +	offset = branch_imm_common(pc, addr, SZ_128M);
+>  
+>  	if (type == AARCH64_INSN_BRANCH_LINK)
+>  		insn = aarch64_insn_get_bl_value();
+> @@ -293,6 +332,43 @@ u32 __kprobes aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
+>  					     offset >> 2);
+>  }
+>  
+> +u32 aarch64_insn_gen_comp_branch_imm(unsigned long pc, unsigned long addr,
+> +				     enum aarch64_insn_register reg,
+> +				     enum aarch64_insn_variant variant,
+> +				     enum aarch64_insn_branch_type type)
+> +{
+> +	u32 insn;
+> +	long offset;
+> +
+> +	offset = branch_imm_common(pc, addr, SZ_1M);
+> +
+> +	switch (type) {
+> +	case AARCH64_INSN_BRANCH_COMP_ZERO:
+> +		insn = aarch64_insn_get_cbz_value();
+> +		break;
+> +	case AARCH64_INSN_BRANCH_COMP_NONZERO:
+> +		insn = aarch64_insn_get_cbnz_value();
+> +		break;
+> +	default:
+> +		BUG_ON(1);
+> +	}
+> +
+> +	switch (variant) {
+> +	case AARCH64_INSN_VARIANT_32BIT:
+> +		break;
+> +	case AARCH64_INSN_VARIANT_64BIT:
+> +		insn |= BIT(31);
 
-Agreed.  This is the minimal change to get it functionally right (we
-are already at -rc5), it can always be optimized later.  I'll send a
-patch soon.
+FWIW, that bit (31) is referred to as the `SF' bit in the instruction
+encodings (for Sixty-Four). You could have a #define for that to help people
+match up the bitfield, if you like.
+
+> +		break;
+> +	default:
+> +		BUG_ON(1);
+
+Is a BUG_ON justifiable here? Is there not a nicer way to fail?
+
+Will
