@@ -1,74 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324AbaGPJvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:51:21 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:53680 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaGPJvS (ORCPT
+	id S1756066AbaGPJwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:52:41 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44730 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750935AbaGPJwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:51:18 -0400
-Message-ID: <53C64AC8.3000709@gmail.com>
-Date: Wed, 16 Jul 2014 15:20:00 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 05/12] phy: add the Berlin USB PHY driver
-References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com> <1405499166-6726-6-git-send-email-antoine.tenart@free-electrons.com> <53C64389.3050705@gmail.com> <20140716092541.GC28151@kwain> <53C646DA.3020002@gmail.com> <20140716094747.GD28151@kwain>
-In-Reply-To: <20140716094747.GD28151@kwain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 16 Jul 2014 05:52:36 -0400
+X-Sasl-enc: jNBVkvchkImMxETO9slv96ZZi08EaOsNAdB0OQOcskz9 1405504354
+Message-ID: <1405504350.2527.95.camel@perseus.fritz.box>
+Subject: Re: [PATCH 5/6] autofs4: avoid taking fs_lock during rcu-walk
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 Jul 2014 17:52:30 +0800
+In-Reply-To: <20140709234114.4525.24652.stgit@notabene.brown>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	 <20140709234114.4525.24652.stgit@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 03:17 PM, Antoine Ténart wrote:
-> On Wed, Jul 16, 2014 at 03:03:14PM +0530, Varka Bhadram wrote:
->> On 07/16/2014 02:55 PM, Antoine Ténart wrote:
->>> Hi Varka,
->>>
->>> On Wed, Jul 16, 2014 at 02:49:05PM +0530, Varka Bhadram wrote:
->>>> On 07/16/2014 01:55 PM, Antoine Ténart wrote:
->>>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
->>>>> +	{
->>>>> +		.compatible = "marvell,berlin2-usb-phy",
->>>>> +		.data = &phy_berlin_pll_dividers[0],
->>>>> +	},
->>>>> +	{
->>>>> +		.compatible = "marvell,berlin2cd-usb-phy",
->>>>> +		.data = &phy_berlin_pll_dividers[1],
->>>>> +	},
->>>>> +	{ },
->>>>> +};
->>>>> +MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
->>>>> +
->>>> It looks good if we move this after probe().. So that we can see of_match_table directly...
->>> We use the of match table in the probe, when calling of_match_device().
->>>
->>>>> +static int phy_berlin_usb_probe(struct platform_device *pdev)
->>>>> +{
->>>>> +	const struct of_device_id *match =
->>>>> +		of_match_device(phy_berlin_sata_of_match, &pdev->dev);
->> We are updating of_match_table in platform_driver struct.
-> Yes. This is not the same thing. of_match_device() allows to get a
-> pointer to the of_device_id that matched, to retrieve its data.
->
->> Every driver follows the concept of giving the of_device_ids
->> above the platform_driver declaration...
-> Lots of drivers using of_match_device() declare their of_device_id
-> structure before the probe.
->
-Yes . I also checked that. Thanks  :-)
+On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
+> ->fs_lock protects AUTOFS_INF_EXPIRING.  We need to be sure
+> that once the flag is set, no new references beneath the dentry
+> are taken.  So rcu-walk currently needs to take fs_lock before
+> checking the flag.  This hurts performance.
+> 
+> Change the expiry to a two-stage process.
+> First set AUTHFS_INF_NO_RCU which forces any path walk into
+> ref-walk mode, then drop the lock and call synchronize_rcu().
+> Once that returns we can be sure no rcu-walk is active beneath
+> the dentry and we can check reference counts again.
+> 
+> Now during an RCU-walk we can test AUTHFS_INF_EXPIRING without
+> taking the lock as along as we test AUTHFS_INF_NO_RCU too.
 
--- 
-Regards,
-Varka Bhadram.
+Couple of typos above, eeek!
+
+> If either are set, we must abort the RCU-walk
+> If neither are set, we know that refcounts will be tested again
+> after we finish the RCU-walk so we are safe to continue.
+
+I believe the idea is sound and the patch looks good.
+Nevertheless I think this is probably the tricky bit and if there is a
+problem I'm not seeing it's probably in this patch.
+
+The submount-test will probably help with that.
+
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  fs/autofs4/autofs_i.h |    4 ++++
+>  fs/autofs4/expire.c   |   46 ++++++++++++++++++++++++++++++++++++++--------
+>  2 files changed, 42 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+> index 99dbb05d6148..469724d7568c 100644
+> --- a/fs/autofs4/autofs_i.h
+> +++ b/fs/autofs4/autofs_i.h
+> @@ -79,6 +79,10 @@ struct autofs_info {
+>  };
+>  
+>  #define AUTOFS_INF_EXPIRING	(1<<0) /* dentry is in the process of expiring */
+> +#define AUTOFS_INF_NO_RCU	(1<<1) /* the dentry is being considered
+> +					* for expiry, so RCU_walk is
+> +					* not permitted
+> +					*/
+>  #define AUTOFS_INF_PENDING	(1<<2) /* dentry pending mount */
+>  
+>  struct autofs_wait_queue {
+> diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+> index fb0b5003353f..98a6fd4957f8 100644
+> --- a/fs/autofs4/expire.c
+> +++ b/fs/autofs4/expire.c
+> @@ -333,10 +333,19 @@ struct dentry *autofs4_expire_direct(struct super_block *sb,
+>  	if (ino->flags & AUTOFS_INF_PENDING)
+>  		goto out;
+>  	if (!autofs4_direct_busy(mnt, root, timeout, do_now)) {
+> -		ino->flags |= AUTOFS_INF_EXPIRING;
+> -		init_completion(&ino->expire_complete);
+> +		ino->flags |= AUTOFS_INF_NO_RCU;
+>  		spin_unlock(&sbi->fs_lock);
+> -		return root;
+> +		synchronize_rcu();
+> +		spin_lock(&sbi->fs_lock);
+> +		if (!autofs4_direct_busy(mnt, root, timeout, do_now)) {
+> +			ino->flags |= AUTOFS_INF_EXPIRING;
+> +			smp_mb()
+> +			ino->flags &= ~AUTOFS_INF_NO_RCU;
+> +			init_completion(&ino->expire_complete);
+> +			spin_unlock(&sbi->fs_lock);
+> +			return root;
+> +		}
+> +		ino->flags &= ~AUTOFS_INF_NO_RCU;
+>  	}
+>  out:
+>  	spin_unlock(&sbi->fs_lock);
+> @@ -445,12 +454,29 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
+>  	dentry = NULL;
+>  	while ((dentry = get_next_positive_subdir(dentry, root))) {
+>  		spin_lock(&sbi->fs_lock);
+> -		expired = should_expire(dentry, mnt, timeout, how);
+> -		if (expired) {
+> +		ino = autofs4_dentry_ino(dentry);
+> +		if (ino->flags & AUTOFS_INF_NO_RCU)
+> +			expired = NULL;
+> +		else
+> +			expired = should_expire(dentry, mnt, timeout, how);
+> +		if (!expired) {
+> +			spin_unlock(&sbi->fs_lock);
+> +			continue;
+> +		}
+> +		ino = autofs4_dentry_ino(expired);
+> +		ino->flags |= AUTOFS_INF_NO_RCU;
+> +		spin_unlock(&sbi->fs_lock);
+> +		synchronize_rcu();
+> +		spin_lock(&sbi->fs_lock);
+> +		if (should_expire(expired, mnt, timeout, how)) {
+>  			if (expired != dentry)
+>  				dput(dentry);
+>  			goto found;
+>  		}
+> +
+> +		ino->flags &= ~AUTOFS_INF_NO_RCU;
+> +		if (expired != dentry)
+> +			dput(expired);
+>  		spin_unlock(&sbi->fs_lock);
+>  	}
+>  	return NULL;
+> @@ -458,8 +484,9 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
+>  found:
+>  	DPRINTK("returning %p %.*s",
+>  		expired, (int)expired->d_name.len, expired->d_name.name);
+> -	ino = autofs4_dentry_ino(expired);
+>  	ino->flags |= AUTOFS_INF_EXPIRING;
+> +	smp_mb()
+> +	ino->flags &= ~AUTOFS_INF_NO_RCU;
+>  	init_completion(&ino->expire_complete);
+>  	spin_unlock(&sbi->fs_lock);
+>  	spin_lock(&sbi->lookup_lock);
+> @@ -479,11 +506,14 @@ int autofs4_expire_wait(struct dentry *dentry, int rcu_walk)
+>  	int status;
+>  
+>  	/* Block on any pending expire */
+> +	if (!(ino->flags & (AUTOFS_INF_EXPIRING | AUTOFS_INF_NO_RCU)))
+> +		return 0;
+> +
+> +	if (rcu_walk)
+> +		return -ECHILD;
+
+Be nice to add a blank line here.
+
+>  	spin_lock(&sbi->fs_lock);
+>  	if (ino->flags & AUTOFS_INF_EXPIRING) {
+>  		spin_unlock(&sbi->fs_lock);
+> -		if (rcu_walk)
+> -			return -ECHILD;
+>  
+>  		DPRINTK("waiting for expire %p name=%.*s",
+>  			 dentry, dentry->d_name.len, dentry->d_name.name);
+> 
+> 
+
 
