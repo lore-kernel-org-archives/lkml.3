@@ -1,142 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760808AbaGPIhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:37:48 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:34033 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760775AbaGPIhl (ORCPT
+	id S933048AbaGPIkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:40:14 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59671 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760716AbaGPIkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:37:41 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 16 Jul 2014 17:43:33 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        Lisa Du <cldu@marvell.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/10] fix freepage count problems due to memory isolation
-Message-ID: <20140716084333.GA20359@js1304-P5Q-DELUXE>
-References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
- <53B6C947.1070603@suse.cz>
- <20140707044932.GA29236@js1304-P5Q-DELUXE>
- <53BAAFA5.9070403@suse.cz>
- <20140714062222.GA11317@js1304-P5Q-DELUXE>
- <53C3A7A5.9060005@suse.cz>
- <20140715082828.GM11317@js1304-P5Q-DELUXE>
- <53C4E813.7020108@suse.cz>
+	Wed, 16 Jul 2014 04:40:06 -0400
+Message-ID: <53C63A11.4050401@gmail.com>
+Date: Wed, 16 Jul 2014 14:08:41 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C4E813.7020108@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Vlad Yasevich <vyasevic@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH net-next V2 3/3] virtio-net: rx busy polling support
+References: <1405491707-22706-1-git-send-email-jasowang@redhat.com> <1405491707-22706-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1405491707-22706-4-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 10:36:35AM +0200, Vlastimil Babka wrote:
-> >>A non-trivial fix that comes to mind (and I might have overlooked
-> >>something) is something like:
-> >>
-> >>- distinguish MIGRATETYPE_ISOLATING and MIGRATETYPE_ISOLATED
-> >>- CPU1 first sets MIGRATETYPE_ISOLATING before the drain
-> >>- when CPU2 sees MIGRATETYPE_ISOLATING, it just puts the page on
-> >>special unbounded pcplist and that's it
-> >>- CPU1 does the drain as usual, potentially misplacing some pages
-> >>that move_freepages_block() will then fix. But no wrong merging can
-> >>occur.
-> >>- after move_freepages_block(), CPU1 changes MIGRATETYPE_ISOLATING
-> >>to MIGRATETYPE_ISOLATED
-> >>- CPU2 can then start freeing directly on isolate buddy list. There
-> >>might be some pages still on the special pcplist of CPU2/CPUx but
-> >>that means they won't merge yet.
-> >>- CPU1 executes on all CPU's a new operation that flushes the
-> >>special pcplist on isolate buddy list and merge as needed.
-> >>
-> >
-> >Really thanks for sharing idea.
-> 
-> Ah, you didn't find a hole yet, good sign :D
-> 
-> >It looks possible but I guess that it needs more branches related to
-> >pageblock isolation. Now I have a quick thought to prevent merging,
-> >but, I'm not sure that it is better than current patchset. After more
-> >thinking, I will post rough idea here.
-> 
-> I was thinking about it more and maybe it wouldn't need a new
-> migratetype after all. But it would always need to free isolate
-> pages on the special pcplist. That means this pcplist would be used
-> not only during the call to start_isolate_page_range, but all the
-> way until undo_isolate_page_range(). I don't think it's a problem
-> and it simplifies things. The only way to move to isolate freelist
-> is through the new isolate pcplist flush operation initiated by a
-> single CPU at well defined time.
-> 
-> The undo would look like:
-> - (migratetype is still set to MIGRATETYPE_ISOLATE, CPU2 frees
-> affected pages to the special freelist)
-> - CPU1 does move_freepages_block() to put pages back from isolate
-> freelist to e.g. MOVABLE or CMA. At this point, nobody will put new
-> pages on isolate freelist.
-> - CPU1 changes migratetype of the pageblock to e.g. MOVABLE. CPU2
-> and others start freeing normally. Merging can occur only on the
-> MOVABLE freelist, as isolate freelist is empty and nobody puts pages
-> there.
-> - CPU1 flushes the isolate pcplists of all CPU's on the MOVABLE
-> freelist. Merging is again correct.
-> 
-> I think your plan of multiple parallel CMA allocations (and thus
-> multiple parallel isolations) is also possible. The isolate pcplists
-> can be shared by pages coming from multiple parallel isolations. But
-> the flush operation needs a pfn start/end parameters to only flush
-> pages belonging to the given isolation. That might mean a bit of
-> inefficient list traversing, but I don't think it's a problem.
+On 07/16/2014 11:51 AM, Jason Wang wrote:
+> Add basic support for rx busy polling.
+>
+> Test was done between a kvm guest and an external host. Two hosts were
+> connected through 40gb mlx4 cards. With both busy_poll and busy_read
+> are set to 50 in guest, 1 byte netperf tcp_rr shows 116% improvement:
+> transaction rate was increased from 9151.94 to 19787.37.
+>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Vlad Yasevich <vyasevic@redhat.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>   drivers/net/virtio_net.c | 190 ++++++++++++++++++++++++++++++++++++++++++++++-
+>   1 file changed, 187 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index e417d93..4830713 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -27,6 +27,7 @@
+>   #include <linux/slab.h>
+>   #include <linux/cpu.h>
+>   #include <linux/average.h>
+> +#include <net/busy_poll.h>
+>   
+>   static int napi_weight = NAPI_POLL_WEIGHT;
+>   module_param(napi_weight, int, 0444);
+> @@ -94,8 +95,143 @@ struct receive_queue {
+>   
+>   	/* Name of this receive queue: input.$index */
+>   	char name[40];
+> +
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +	unsigned int state;
+> +#define VIRTNET_RQ_STATE_IDLE        0
+> +#define VIRTNET_RQ_STATE_NAPI	     1    /* NAPI or refill owns this RQ */
+> +#define VIRTNET_RQ_STATE_POLL	     2    /* poll owns this RQ */
+> +#define VIRTNET_RQ_STATE_DISABLED    4    /* RQ is disabled */
+> +#define VIRTNET_RQ_OWNED (VIRTNET_RQ_STATE_NAPI | VIRTNET_RQ_STATE_POLL)
+> +#define VIRTNET_RQ_LOCKED (VIRTNET_RQ_OWNED | VIRTNET_RQ_STATE_DISABLED)
+> +#define VIRTNET_RQ_STATE_NAPI_YIELD  8    /* NAPI or refill yielded this RQ */
+> +#define VIRTNET_RQ_STATE_POLL_YIELD  16   /* poll yielded this RQ */
+> +	spinlock_t lock;
+> +#endif  /* CONFIG_NET_RX_BUSY_POLL */
+>   };
+>   
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +static inline void virtnet_rq_init_lock(struct receive_queue *rq)
+> +{
+> +
+> +	spin_lock_init(&rq->lock);
+> +	rq->state = VIRTNET_RQ_STATE_IDLE;
+> +}
+> +
+> +/* called from the device poll routine or refill routine to get ownership of a
+> + * receive queue.
+> + */
+> +static inline bool virtnet_rq_lock_napi_refill(struct receive_queue *rq)
+> +{
+> +	int rc = true;
+> +
 
-I think that special pcplist would cause a problem if we should check
-pfn range. If there are too many pages on this pcplist, move pages from
-this pcplist to isolate freelist takes too long time in irq context and
-system could be broken. This operation cannot be easily stopped because
-it is initiated by IPI on other cpu and starter of this IPI expect that
-all pages on other cpus' pcplist are moved properly when returning
-from on_each_cpu().
+bool instead of int...?
 
-And, if there are so many pages, serious lock contention would happen
-in this case.
+> +	spin_lock(&rq->lock);
+> +	if (rq->state & VIRTNET_RQ_LOCKED) {
+> +		WARN_ON(rq->state & VIRTNET_RQ_STATE_NAPI);
+> +		rq->state |= VIRTNET_RQ_STATE_NAPI_YIELD;
+> +		rc = false;
+> +	} else
+> +		/* we don't care if someone yielded */
+> +		rq->state = VIRTNET_RQ_STATE_NAPI;
+> +	spin_unlock(&rq->lock);
 
-Anyway, my idea's key point is using PageIsolated() to distinguish
-isolated page, instead of using PageBuddy(). If page is PageIsolated(),
-it isn't handled as freepage although it is in buddy allocator. During free,
-page with MIGRATETYPE_ISOLATE will be marked as PageIsolated() and
-won't be merged and counted for freepage.
+Lock for rq->state ...?
 
-When we move pages from normal buddy list to isolate buddy
-list, we check PageBuddy() and subtract number of PageBuddy() pages
-from number of freepage. And, change page from PageBuddy() to PageIsolated()
-since it is handled as isolated page at this point. In this way, freepage
-count will be correct.
+If yes:
+spin_lock(&rq->lock);
+if (rq->state & VIRTNET_RQ_LOCKED) {
+	rq->state |= VIRTNET_RQ_STATE_NAPI_YIELD;
+	spin_unlock(&rq->lock);
+	WARN_ON(rq->state & VIRTNET_RQ_STATE_NAPI);
+	rc = false;
+} else {
+	/* we don't care if someone yielded */
+	rq->state = VIRTNET_RQ_STATE_NAPI;
+	spin_unlock(&rq->lock);
+}
 
-Unisolation can be done by similar approach.
+> +	return rc;
+> +}
+> +
+> +/* returns true is someone tried to get the rq while napi or refill had it */
+> +static inline bool virtnet_rq_unlock_napi_refill(struct receive_queue *rq)
+> +{
+> +	int rc = false;
+> +
+> +	spin_lock(&rq->lock);
+> +	WARN_ON(rq->state & (VIRTNET_RQ_STATE_POLL |
+> +			     VIRTNET_RQ_STATE_NAPI_YIELD));
+> +
+> +	if (rq->state & VIRTNET_RQ_STATE_POLL_YIELD)
+> +		rc = true;
+> +	/* will reset state to idle, unless RQ is disabled */
+> +	rq->state &= VIRTNET_RQ_STATE_DISABLED;
+> +	spin_unlock(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* called from virtnet_low_latency_recv() */
+> +static inline bool virtnet_rq_lock_poll(struct receive_queue *rq)
+> +{
+> +	int rc = true;
+> +
+> +	spin_lock_bh(&rq->lock);
+> +	if ((rq->state & VIRTNET_RQ_LOCKED)) {
+> +		rq->state |= VIRTNET_RQ_STATE_POLL_YIELD;
+> +		rc = false;
+> +	} else
+> +		/* preserve yield marks */
+> +		rq->state |= VIRTNET_RQ_STATE_POLL;
+> +	spin_unlock_bh(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* returns true if someone tried to get the receive queue while it was locked */
+> +static inline bool virtnet_rq_unlock_poll(struct receive_queue *rq)
+> +{
+> +	int rc = false;
+> +
+> +	spin_lock_bh(&rq->lock);
+> +	WARN_ON(rq->state & (VIRTNET_RQ_STATE_NAPI));
+> +
+> +	if (rq->state & VIRTNET_RQ_STATE_POLL_YIELD)
+> +		rc = true;
+> +	/* will reset state to idle, unless RQ is disabled */
+> +	rq->state &= VIRTNET_RQ_STATE_DISABLED;
+> +	spin_unlock_bh(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* return false if RQ is currently owned */
+> +static inline bool virtnet_rq_disable(struct receive_queue *rq)
+> +{
+> +	int rc = true;
+> +
+> +	spin_lock_bh(&rq->lock);
+> +	if (rq->state & VIRTNET_RQ_OWNED)
+> +		rc = false;
+> +	rq->state |= VIRTNET_RQ_STATE_DISABLED;
+> +	spin_unlock_bh(&rq->lock);
+> +
+> +	return rc;
+> +}
+> +
+> +#else /* CONFIG_NET_RX_BUSY_POLL */
+> +static inline void virtnet_rq_init_lock(struct receive_queue *rq)
+> +{
+> +}
+> +
+> +static inline bool virtnet_rq_lock_napi_refill(struct receive_queue *rq)
+> +{
+> +	return true;
+> +}
+> +
+> +static inline bool virtnet_rq_unlock_napi_refill(struct receive_queue *rq)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline bool virtnet_rq_lock_poll(struct receive_queue *rq)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline bool virtnet_rq_unlock_poll(struct receive_queue *rq)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline bool virtnet_rq_disable(struct receive_queue *rq)
+> +{
+> +	return true;
+> +}
+> +
+> +#endif /* CONFIG_NET_RX_BUSY_POLL */
+> +
+>   struct virtnet_info {
+>   	struct virtio_device *vdev;
+>   	struct virtqueue *cvq;
+> @@ -521,6 +657,8 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+>   		skb_shinfo(skb)->gso_segs = 0;
+>   	}
+>   
+> +	skb_mark_napi_id(skb, &rq->napi);
+> +
+>   	netif_receive_skb(skb);
+>   	return;
+>   
+> @@ -714,7 +852,12 @@ static void refill_work(struct work_struct *work)
+>   		struct receive_queue *rq = &vi->rq[i];
+>   
+>   		napi_disable(&rq->napi);
+> +		if (!virtnet_rq_lock_napi_refill(rq)) {
+> +			virtnet_napi_enable(rq);
+> +			continue;
+> +		}
+>   		still_empty = !try_fill_recv(rq, GFP_KERNEL);
+> +		virtnet_rq_unlock_napi_refill(rq);
+>   		virtnet_napi_enable(rq);
+>   
+>   		/* In theory, this can happen: if we don't get any buffers in
+> @@ -752,8 +895,13 @@ static int virtnet_poll(struct napi_struct *napi, int budget)
+>   	unsigned int r, received = 0;
+>   
+>   again:
+> +	if (!virtnet_rq_lock_napi_refill(rq))
+> +		return budget;
+> +
+>   	received += virtnet_receive(rq, budget);
+>   
+> +	virtnet_rq_unlock_napi_refill(rq);
+> +
+>   	/* Out of packets? */
+>   	if (received < budget) {
+>   		r = virtqueue_enable_cb_prepare(rq->vq);
+> @@ -770,20 +918,50 @@ again:
+>   	return received;
+>   }
+>   
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +/* must be called with local_bh_disable()d */
+> +static int virtnet_low_latency_recv(struct napi_struct *napi)
+> +{
+> +	struct receive_queue *rq =
+> +		container_of(napi, struct receive_queue, napi);
+> +	struct virtnet_info *vi = rq->vq->vdev->priv;
+> +	int received;
+> +
+> +	if (!(vi->status & VIRTIO_NET_S_LINK_UP))
+> +		return LL_FLUSH_FAILED;
+> +
+> +	if (!virtnet_rq_lock_poll(rq))
+> +		return LL_FLUSH_BUSY;
+> +
+> +	received = virtnet_receive(rq, 4);
+> +
+> +	virtnet_rq_unlock_poll(rq);
+> +
+> +	return received;
+> +}
+> +#endif	/* CONFIG_NET_RX_BUSY_POLL */
+> +
+>   static void virtnet_napi_enable_all(struct virtnet_info *vi)
+>   {
+>   	int i;
+>   
+> -	for (i = 0; i < vi->max_queue_pairs; i++)
+> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> +		virtnet_rq_init_lock(&vi->rq[i]);
+>   		virtnet_napi_enable(&vi->rq[i]);
+> +	}
+>   }
+>   
+>   static void virtnet_napi_disable_all(struct virtnet_info *vi)
+>   {
+>   	int i;
+>   
+> -	for (i = 0; i < vi->max_queue_pairs; i++)
+> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+>   		napi_disable(&vi->rq[i].napi);
+> +		while (!virtnet_rq_disable(&vi->rq[i])) {
+> +			pr_info("RQ %d locked\n", i);
+> +			usleep_range(1000, 20000);
+> +		}
+> +	}
+>   }
+>   
+>   static int virtnet_open(struct net_device *dev)
+> @@ -1372,6 +1550,9 @@ static const struct net_device_ops virtnet_netdev = {
+>   #ifdef CONFIG_NET_POLL_CONTROLLER
+>   	.ndo_poll_controller = virtnet_netpoll,
+>   #endif
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +	.ndo_busy_poll		= virtnet_low_latency_recv,
+> +#endif
+>   };
+>   
+>   static void virtnet_config_changed_work(struct work_struct *work)
+> @@ -1577,6 +1758,7 @@ static int virtnet_alloc_queues(struct virtnet_info *vi)
+>   		vi->rq[i].pages = NULL;
+>   		netif_napi_add(vi->dev, &vi->rq[i].napi, virtnet_poll,
+>   			       napi_weight);
+> +		napi_hash_add(&vi->rq[i].napi);
+>   
+>   		sg_init_table(vi->rq[i].sg, ARRAY_SIZE(vi->rq[i].sg));
+>   		ewma_init(&vi->rq[i].mrg_avg_pkt_len, 1, RECEIVE_AVG_WEIGHT);
+> @@ -1880,8 +2062,10 @@ static int virtnet_freeze(struct virtio_device *vdev)
+>   
+>   	if (netif_running(vi->dev)) {
+>   		virtnet_napi_disable_all(vi);
+> -		for (i = 0; i < vi->max_queue_pairs; i++)
+> +		for (i = 0; i < vi->max_queue_pairs; i++) {
+> +			napi_hash_del(&vi->rq[i].napi);
+>   			netif_napi_del(&vi->rq[i].napi);
+> +		}
+>   	}
+>   
+>   	remove_vq_common(vi);
 
-I made prototype of this approach and it isn't intrusive to core
-allocator compared to my previous patchset.
 
-Make sense?
+-- 
+Regards,
+Varka Bhadram.
 
-Thanks.
