@@ -1,116 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371AbaGPTH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:07:58 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:38386 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754755AbaGPTH4 (ORCPT
+	id S1755115AbaGPTJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:09:00 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17024 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931AbaGPTI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:07:56 -0400
-From: minyard@acm.org
-X-Google-Original-From: cminyard@mvista.com
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        tglx@linutronix.d, C.Emde@osadl.org, bigeasy@linutronix.de,
-        jkacur@redhat.com, paul.gortmaker@windriver.com,
-        Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH] tracing: Always run per-cpu ring buffer resize with schedule_work_on()
-Date: Wed, 16 Jul 2014 14:07:13 -0500
-Message-Id: <1405537633-31518-1-git-send-email-cminyard@mvista.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 16 Jul 2014 15:08:58 -0400
+To: James Bottomley <jbottomley@parallels.com>
+Cc: "martin.petersen\@oracle.com" <martin.petersen@oracle.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch\@infradead.org" <hch@infradead.org>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "kys\@microsoft.com" <kys@microsoft.com>,
+        "stable\@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering\@suse.com" <ohering@suse.com>,
+        "jasowang\@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140709084300.GD6012@infradead.org>
+	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	<20140711063216.GA20660@infradead.org>
+	<328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+	<yq1a98d2z5x.fsf@sermon.lab.mkp.net>
+	<20140716110111.GA7382@infradead.org>
+	<yq14myhtijx.fsf@sermon.lab.mkp.net>
+	<20140716173827.GB20528@infradead.org>
+	<yq1fvi1rya0.fsf@sermon.lab.mkp.net>
+	<1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
+	<yq1bnsprvl1.fsf@sermon.lab.mkp.net>
+	<1405536631.3165.23.camel@dabdike.int.hansenpartnership.com>
+Date: Wed, 16 Jul 2014 15:08:13 -0400
+In-Reply-To: <1405536631.3165.23.camel@dabdike.int.hansenpartnership.com>
+	(James Bottomley's message of "Wed, 16 Jul 2014 18:50:31 +0000")
+Message-ID: <yq17g3drujm.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corey Minyard <cminyard@mvista.com>
+>>>>> "James" == James Bottomley <jbottomley@parallels.com> writes:
 
-The code for resizing the trace ring buffers has to run the per-cpu
-resize on the CPU itself.  The code was using preempt_off() and
-running the code for the current CPU directly, otherwise calling
-schedule_work_on().
+James> It's the code we identified in sd.c:read_capacity_16():
 
-At least on RT this could result in the following:
+That's there to support devices that implement thin provisioning but
+which predate the LBP VPD page. And thus have no way to tell us their
+preferred command variant.
 
-|BUG: sleeping function called from invalid context at kernel/rtmutex.c:673
-|in_atomic(): 1, irqs_disabled(): 0, pid: 607, name: bash
-|3 locks held by bash/607:
-|CPU: 0 PID: 607 Comm: bash Not tainted 3.12.15-rt25+ #124
-|(rt_spin_lock+0x28/0x68)
-|(free_hot_cold_page+0x84/0x3b8)
-|(free_buffer_page+0x14/0x20)
-|(rb_update_pages+0x280/0x338)
-|(ring_buffer_resize+0x32c/0x3dc)
-|(free_snapshot+0x18/0x38)
-|(tracing_set_tracer+0x27c/0x2ac)
+James> If the inquiry shows LBPME set, we'll do write same regardless of
+James> the no_write_same bit.  That's why for SPC-2 devices it only
+James> shows up on >> 2TB devices because they force RC16.
 
-probably via
-|cd /sys/kernel/debug/tracing/
-|echo 1 > events/enable ; sleep 2
-|echo 1024 > buffer_size_kb
+But we only do so if they have LBPME set. Generally they don't.
 
-If we just always use schedule_work_on(), there's no need for the
-preempt_off().  So do that.
+The problem for hyperv was that LBPME was set. And because it claimed
+SBC-2 we did not check the LBP VPD page to see that it prefers UNMAP.
 
-Reported-by: Stanislav Meduna <stano@meduna.org>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
----
- kernel/trace/ring_buffer.c | 24 ++++--------------------
- 1 file changed, 4 insertions(+), 20 deletions(-)
+I believe we did consider unconditionally checking for VPDs when LBPME
+was set but I seem to recall that it broke some device that had garbage
+in the READ CAPACITY(16) response. I'll see if I can locate the details.
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 7c56c3d..35825a8 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1693,22 +1693,14 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 			if (!cpu_buffer->nr_pages_to_update)
- 				continue;
- 
--			/* The update must run on the CPU that is being updated. */
--			preempt_disable();
--			if (cpu == smp_processor_id() || !cpu_online(cpu)) {
-+			/* Can't run something on an offline CPU. */
-+			if (!cpu_online(cpu)) {
- 				rb_update_pages(cpu_buffer);
- 				cpu_buffer->nr_pages_to_update = 0;
- 			} else {
--				/*
--				 * Can not disable preemption for schedule_work_on()
--				 * on PREEMPT_RT.
--				 */
--				preempt_enable();
- 				schedule_work_on(cpu,
- 						&cpu_buffer->update_pages_work);
--				preempt_disable();
- 			}
--			preempt_enable();
- 		}
- 
- 		/* wait for all the updates to complete */
-@@ -1746,22 +1738,14 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 
- 		get_online_cpus();
- 
--		preempt_disable();
--		/* The update must run on the CPU that is being updated. */
--		if (cpu_id == smp_processor_id() || !cpu_online(cpu_id))
-+		/* Can't run something on an offline CPU. */
-+		if (!cpu_online(cpu_id))
- 			rb_update_pages(cpu_buffer);
- 		else {
--			/*
--			 * Can not disable preemption for schedule_work_on()
--			 * on PREEMPT_RT.
--			 */
--			preempt_enable();
- 			schedule_work_on(cpu_id,
- 					 &cpu_buffer->update_pages_work);
- 			wait_for_completion(&cpu_buffer->update_done);
--			preempt_disable();
- 		}
--		preempt_enable();
- 
- 		cpu_buffer->nr_pages_to_update = 0;
- 		put_online_cpus();
+Otherwise I'm willing to entertain that idea.
+
 -- 
-1.8.3.1
-
+Martin K. Petersen	Oracle Linux Engineering
