@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934380AbaGPOJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:09:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:57031 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933333AbaGPOJG (ORCPT
+	id S934350AbaGPOPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:15:19 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39840 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759463AbaGPOPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:09:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
-        "mporter@linaro.org" <mporter@linaro.org>,
-        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
-        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
-        "loic.pallardy@st.com" <loic.pallardy@st.com>,
-        "s-anna@ti.com" <s-anna@ti.com>,
-        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
-        "bjorn@kryo.se" <bjorn@kryo.se>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
-        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
-Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
-Date: Wed, 16 Jul 2014 16:08:09 +0200
-Message-ID: <5214160.a78RDYzY5T@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJe_Zhdtzhv=1QfhCAu6G_nq0VqW9v6TvgHSJe9VmgJQwo0U3Q@mail.gmail.com>
-References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org> <5461658.P0nNPHkj0L@wuerfel> <CAJe_Zhdtzhv=1QfhCAu6G_nq0VqW9v6TvgHSJe9VmgJQwo0U3Q@mail.gmail.com>
+	Wed, 16 Jul 2014 10:15:16 -0400
+Date: Wed, 16 Jul 2014 10:09:06 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Raphael Silva <rapphil@gmail.com>
+Subject: Re: linux-next: build failure after merge of the wireless-next tree
+Message-ID: <20140716140905.GE13555@tuxdriver.com>
+References: <20140716132851.5b974707@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:gV8o+PxWGOTxgdxHl4S5kyhl/YkMvSvWjI03flXna0O
- ybYlFRuVdNMl8Kmwf9E6MmV3N8/09w15b/MsXmStrNhhlVbWuJ
- fal9BPeh85gtQnSlAk6oY8wC9Yk8CqAle6gnKg4TluS57bKKSE
- WonTET5K6BWmhcZk+2XHzVD/BDXYuL3wYxfRpIf2VWzCK0ugu4
- n4pxQja+04/vAwoZwSPSRvKUXVIYHCyJaYEHXzDAMw05i5DPhJ
- EJif6DI05ZsieKmxmX9ls77iZzPj3ioMK6O30lzs+vLz0qa5l9
- ngpqPS5he9nAm93p1zvAhjENV+sHvzO7l5ALaiAKcbDUg4J+6C
- gNljsygaqPKqb9RQMfsU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140716132851.5b974707@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 July 2014 18:42:22 Jassi Brar wrote:
-> On 16 July 2014 18:39, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Wednesday 16 July 2014 18:35:33 Jassi Brar wrote:
-> >> On 16 July 2014 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> > On Wednesday 16 July 2014 18:07:04 Jassi Brar wrote:
-> >> >> On 16 July 2014 15:46, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> >> > On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
-> >> >> >> > +
-> >> >> >> > +Required property:
-> >> >> >> > +- mbox: List of phandle and mailbox channel specifier.
-> >> >> >> > +
-> >> >> >> > +- mbox-names: List of identifier strings for each mailbox channel
-> >> >> >> > +               required by the client.
-> >> >> >> > +
-> >> >> >>
-> >> >> >> IMO the mailbox names are more associated with the controller channels/
-> >> >> >> mailbox rather than the clients using it. Does it make sense to move
-> >> >> >> this under controller. It also avoid each client replicating the names.
-> >> >> >
-> >> >> > I think it would be best to just make the mbox-names property optional,
-> >> >> > like we have for other subsystems.
-> >> >> >
-> >> >> A very similar subsystem - DMAEngine also has 'dma-names' as a
-> >> >> required property.
-> >> >>
-> >> >> If a client is assigned only 1 mbox in DT, we can do without
-> >> >> mbox-names. But I am not sure what to do if a client needs two or more
-> >> >> differently capable mboxes? Simply allocating in order of mbox request
-> >> >> doesn't seem very robust.
-> >> >
-> >> > Traditionally, these things (regs, interrupts, ...) are just accessed
-> >> > by index. The reason why dmaengine requires the name is that some machines
-> >> > can use multiple DMA engine devices attached to the same request line,
-> >> > so the dmaengine subsystem can pick any of them that has a matching
-> >> > name.
-> >> And also, I think, when a client needs 2 different dma channels, say
-> >> for RX and TX each. The api can't assign the first channel specified
-> >> in 'dmas' property to the first channel request that comes to it,
-> >> unless we assume client driver always requests dma channels in the
-> >> order written in its DT node.  And this is the main reason I see for
-> >> having mbox-names property.
-> >
-> > Most subsystems require passing an explicit index in this case.
-> >
-> >>   If we make mbox-names optional, do we assume client driver must
-> >> request mbox in the order specified in its DT node?
-> >
-> > Correct.
-> >
-> OK. So how about we drop mbox-names altogether and expect client
-> driver to simply provide an index of the mbox needed?
+On Wed, Jul 16, 2014 at 01:28:51PM +1000, Stephen Rothwell wrote:
+> Hi John,
+> 
+> After merging the wireless-next tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/staging/rtl8723au/core/rtw_sta_mgt.c: In function 'rtw_free_stainfo23a':
+> drivers/staging/rtl8723au/core/rtw_sta_mgt.c:254:27: error: expected expression before ';' token
+>   pstapriv->asoc_sta_count-;
+>                            ^
+> 
+> Caused by commit 3dd51964026e ("rtl8723au: Corrections in the coding
+> style") (its always the cleanup patches that cause problems :-))
+> Please unit test *all* patches.
+> 
+> I have used the wireless-next tree from next-20140715 for today.
 
-That would be fine with me, but I think a lot of people like
-the idea of identifying things by name, and are used to that
-from the other subsystems.
+I'm dropping that one -- merging it was accidental anyway.
 
-Maybe you can leave the mbox-names property defined as 'optional'
-in the generic mbox binding but remove the code in Linux? That way
-we can always put it back at a later point without changing the
-binding in an incompatible way.
-
-Individual mailbox clients can mandate specific strings.
-
-	Arnd
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
