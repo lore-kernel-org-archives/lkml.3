@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202AbaGPLWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:22:07 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:51098 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445AbaGPLWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:22:05 -0400
-From: Alex Shi <alex.shi@linaro.org>
-To: linux@arm.linux.org.uk
-Cc: pawel.moll@arm.com, nico@linaro.org, sudeep.karkadanagesha@arm.com,
-        viresh.kumar@linaro.org, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, mark.brown@linaro.org, tixy@linaro.org
-Subject: [PATCH] vexpress/spc: fix a build warning on array bounds
-Date: Wed, 16 Jul 2014 19:21:56 +0800
-Message-Id: <1405509716-19591-1-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1759164AbaGPL1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:27:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51396 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751422AbaGPL1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:27:05 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, <santosh.shilimkar@ti.com>,
+        <netdev@vger.kernel.org>
+CC: <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <mugunthanvnm@ti.com>, Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v2 0/2] net: davinci_mdio: reuse for keystone2 arch
+Date: Wed, 16 Jul 2014 15:13:01 +0300
+Message-ID: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With ARCH_VEXPRESS_SPC option, kernel build has the following 
-warning:
+The similar MDIO HW blocks is used by keystone 2 SoCs as
+in Davinci SoCs:
+- one in Gigabit Ethernet (GbE) Switch Subsystem
+  See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
+- one in 10 Gigabit Ethernet Subsystem
+  See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
 
-arch/arm/mach-vexpress/spc.c: In function ‘ve_spc_clk_init’:
-arch/arm/mach-vexpress/spc.c:431:38: warning: array subscript is below array bounds [-Warray-bounds]
-  struct ve_spc_opp *opps = info->opps[cluster];
-                                      ^
-since 'cluster' maybe '-1' in UP system. This patch does a active
-checking to fix this issue.
+Hence, reuse Davinci MDIO driver for Keystone 2 and
+enable TI networking for Keystone 2 devices.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- arch/arm/mach-vexpress/spc.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+Also, as part of this series, enable PHY's creation from DT, because
+Keystone 2 supports DT boot mode only.
 
-diff --git a/arch/arm/mach-vexpress/spc.c b/arch/arm/mach-vexpress/spc.c
-index c26ef5b..4833544 100644
---- a/arch/arm/mach-vexpress/spc.c
-+++ b/arch/arm/mach-vexpress/spc.c
-@@ -426,9 +426,15 @@ static int ve_spc_populate_opps(uint32_t cluster)
- 
- static int ve_init_opp_table(struct device *cpu_dev)
- {
--	int cluster = topology_physical_package_id(cpu_dev->id);
--	int idx, ret = 0, max_opp = info->num_opps[cluster];
--	struct ve_spc_opp *opps = info->opps[cluster];
-+	int cluster;
-+	int idx, ret = 0, max_opp;
-+	struct ve_spc_opp *opps;
-+
-+	cluster = topology_physical_package_id(cpu_dev->id);
-+	cluster = cluster < 0 ? 0 : cluster;
-+
-+	max_opp = info->num_opps[cluster];
-+	opps = info->opps[cluster];
- 
- 	for (idx = 0; idx < max_opp; idx++, opps++) {
- 		ret = dev_pm_opp_add(cpu_dev, opps->freq * 1000, opps->u_volt);
-@@ -537,6 +543,8 @@ static struct clk *ve_spc_clk_register(struct device *cpu_dev)
- 	spc->hw.init = &init;
- 	spc->cluster = topology_physical_package_id(cpu_dev->id);
- 
-+	spc->cluster = spc->cluster < 0 ? 0 : spc->cluster;
-+
- 	init.name = dev_name(cpu_dev);
- 	init.ops = &clk_spc_ops;
- 	init.flags = CLK_IS_ROOT | CLK_GET_RATE_NOCACHE;
+Changes in v2:
+- review comments applied. 
+  Keystone 2 compatibility string changed to "ti,keystone_mdio".
+
+Grygorii Strashko (2):
+  net: davinci_mdio: reuse for keystone2 arch
+  net: davinci_mdio: allow to create phys from dt
+
+ .../devicetree/bindings/net/davinci-mdio.txt       |    8 ++++----
+ drivers/net/ethernet/ti/Kconfig                    |    4 ++--
+ drivers/net/ethernet/ti/davinci_mdio.c             |   21 ++++++++++++++++++--
+ 3 files changed, 25 insertions(+), 8 deletions(-)
+
 -- 
-1.9.1
+1.7.9.5
 
