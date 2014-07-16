@@ -1,29 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030524AbaGPT0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:26:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44670 "EHLO
+	id S1751144AbaGPT1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:27:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44672 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030382AbaGPT0R (ORCPT
+	with ESMTP id S1030519AbaGPT0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:26:17 -0400
-Date: Wed, 16 Jul 2014 12:25:18 -0700
-From: tip-bot for NeilBrown <tipbot@zytor.com>
-Message-ID: <tip-c1221321b7c25b53204447cff9949a6d5a7ddddc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, sfrench@samba.org,
-        swhiteho@redhat.com, dhowells@redhat.com, neilb@suse.de,
-        tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, sfrench@samba.org,
-        swhiteho@redhat.com, dhowells@redhat.com, neilb@suse.de,
-        oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20140707051604.28027.41257.stgit@notabene.brown>
-References: <20140707051604.28027.41257.stgit@notabene.brown>
+	Wed, 16 Jul 2014 15:26:19 -0400
+Date: Wed, 16 Jul 2014 12:24:18 -0700
+From: tip-bot for Jason Low <tipbot@zytor.com>
+Message-ID: <tip-ce069fc920e5734558b3d9cbef1ab06cf01ee793@git.kernel.org>
+Cc: mingo@kernel.org, konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, jason.low2@hp.com, clm@fb.com, riel@redhat.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        david@fromorbit.com, davidlohr@hp.com, scott.norton@hp.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, waiman.long@hp.com,
+        tim.c.chen@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        jbacik@fusionio.com, aswin@hp.com
+Reply-To: mingo@kernel.org, konrad.wilk@oracle.com,
+        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
+        clm@fb.com, riel@redhat.com, akpm@linux-foundation.org,
+        rostedt@goodmis.org, david@fromorbit.com, tglx@linutronix.de,
+        scott.norton@hp.com, davidlohr@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, waiman.long@hp.com, tim.c.chen@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, jbacik@fusionio.com, aswin@hp.com
+In-Reply-To: <1405358872-3732-6-git-send-email-jason.low2@hp.com>
+References: <1405358872-3732-6-git-send-email-jason.low2@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Allow wait_on_bit_action()
-  functions to support a timeout
-Git-Commit-ID: c1221321b7c25b53204447cff9949a6d5a7ddddc
+Subject: [tip:locking/urgent] locking/rwsem:
+  Reduce the size of struct rw_semaphore
+Git-Commit-ID: ce069fc920e5734558b3d9cbef1ab06cf01ee793
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,310 +42,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1221321b7c25b53204447cff9949a6d5a7ddddc
-Gitweb:     http://git.kernel.org/tip/c1221321b7c25b53204447cff9949a6d5a7ddddc
-Author:     NeilBrown <neilb@suse.de>
-AuthorDate: Mon, 7 Jul 2014 15:16:04 +1000
+Commit-ID:  ce069fc920e5734558b3d9cbef1ab06cf01ee793
+Gitweb:     http://git.kernel.org/tip/ce069fc920e5734558b3d9cbef1ab06cf01ee793
+Author:     Jason Low <jason.low2@hp.com>
+AuthorDate: Mon, 14 Jul 2014 10:27:52 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 15:10:41 +0200
+CommitDate: Wed, 16 Jul 2014 14:57:03 +0200
 
-sched: Allow wait_on_bit_action() functions to support a timeout
+locking/rwsem: Reduce the size of struct rw_semaphore
 
-It is currently not possible for various wait_on_bit functions
-to implement a timeout.
+Recent optimistic spinning additions to rwsem provide significant performance
+benefits on many workloads on large machines. The cost of it was increasing
+the size of the rwsem structure by up to 128 bits.
 
-While the "action" function that is called to do the waiting
-could certainly use schedule_timeout(), there is no way to carry
-forward the remaining timeout after a false wake-up.
-As false-wakeups a clearly possible at least due to possible
-hash collisions in bit_waitqueue(), this is a real problem.
+However, now that the previous patches in this series bring the overhead of
+struct optimistic_spin_queue to 32 bits, this patch reorders some fields in
+struct rw_semaphore such that we can reduce the overhead of the rwsem structure
+by 64 bits (on 64 bit systems).
 
-The 'action' function is currently passed a pointer to the word
-containing the bit being waited on.  No current action functions
-use this pointer.  So changing it to something else will be a
-little noisy but will have no immediate effect.
+The extra overhead required for rwsem optimistic spinning would now be up
+to 8 additional bytes instead of up to 16 bytes. Additionally, the size of
+rwsem would now be more in line with mutexes.
 
-This patch changes the 'action' function to take a pointer to
-the "struct wait_bit_key", which contains a pointer to the word
-containing the bit so nothing is really lost.
-
-It also adds a 'private' field to "struct wait_bit_key", which
-is initialized to zero.
-
-An action function can now implement a timeout with something
-like
-
-static int timed_out_waiter(struct wait_bit_key *key)
-{
-	unsigned long waited;
-	if (key->private == 0) {
-		key->private = jiffies;
-		if (key->private == 0)
-			key->private -= 1;
-	}
-	waited = jiffies - key->private;
-	if (waited > 10 * HZ)
-		return -EAGAIN;
-	schedule_timeout(waited - 10 * HZ);
-	return 0;
-}
-
-If any other need for context in a waiter were found it would be
-easy to use ->private for some other purpose, or even extend
-"struct wait_bit_key".
-
-My particular need is to support timeouts in nfs_release_page()
-to avoid deadlocks with loopback mounted NFS.
-
-While wait_on_bit_timeout() would be a cleaner interface, it
-will not meet my need.  I need the timeout to be sensitive to
-the state of the connection with the server, which could change.
- So I need to use an 'action' interface.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Steve French <sfrench@samba.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Waiman Long <waiman.long@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140707051604.28027.41257.stgit@notabene.brown
+Cc: Chris Mason <clm@fb.com>
+Cc: Josef Bacik <jbacik@fusionio.com>
+Link: http://lkml.kernel.org/r/1405358872-3732-6-git-send-email-jason.low2@hp.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/cifs/inode.c              |  2 +-
- fs/nfs/inode.c               |  2 +-
- fs/nfs/internal.h            |  2 +-
- fs/nfs/pagelist.c            |  2 +-
- include/linux/sunrpc/sched.h |  2 +-
- include/linux/wait.h         | 18 ++++++++++--------
- kernel/sched/wait.c          | 16 ++++++++--------
- net/sunrpc/sched.c           |  4 ++--
- 8 files changed, 25 insertions(+), 23 deletions(-)
+ include/linux/rwsem.h | 25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 213c458..41de393 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1780,7 +1780,7 @@ cifs_invalidate_mapping(struct inode *inode)
-  * @word: long word containing the bit lock
-  */
- static int
--cifs_wait_bit_killable(void *word)
-+cifs_wait_bit_killable(struct wait_bit_key *key)
- {
- 	if (fatal_signal_pending(current))
- 		return -ERESTARTSYS;
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index b7b710e..abd37a3 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -75,7 +75,7 @@ nfs_fattr_to_ino_t(struct nfs_fattr *fattr)
-  * nfs_wait_bit_killable - helper for functions that are sleeping on bit locks
-  * @word: long word containing the bit lock
-  */
--int nfs_wait_bit_killable(void *word)
-+int nfs_wait_bit_killable(struct wait_bit_key *key)
- {
- 	if (fatal_signal_pending(current))
- 		return -ERESTARTSYS;
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index 82ddbf4..e0193d6 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -347,7 +347,7 @@ extern int nfs_drop_inode(struct inode *);
- extern void nfs_clear_inode(struct inode *);
- extern void nfs_evict_inode(struct inode *);
- void nfs_zap_acl_cache(struct inode *inode);
--extern int nfs_wait_bit_killable(void *word);
-+extern int nfs_wait_bit_killable(struct wait_bit_key *key);
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 25cd9aa..716807f 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -24,15 +24,15 @@ struct rw_semaphore;
+ /* All arch specific implementations share the same struct */
+ struct rw_semaphore {
+ 	long count;
+-	raw_spinlock_t wait_lock;
+ 	struct list_head wait_list;
++	raw_spinlock_t wait_lock;
+ #ifdef CONFIG_SMP
++	struct optimistic_spin_queue osq; /* spinner MCS lock */
+ 	/*
+ 	 * Write owner. Used as a speculative check to see
+ 	 * if the owner is running on the cpu.
+ 	 */
+ 	struct task_struct *owner;
+-	struct optimistic_spin_queue osq; /* spinner MCS lock */
+ #endif
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+@@ -64,21 +64,18 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ #endif
  
- /* super.c */
- extern const struct super_operations nfs_sops;
-diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-index 6104d35..745a612d 100644
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -117,7 +117,7 @@ __nfs_iocounter_wait(struct nfs_io_counter *c)
- 		set_bit(NFS_IO_INPROGRESS, &c->flags);
- 		if (atomic_read(&c->io_count) == 0)
- 			break;
--		ret = nfs_wait_bit_killable(&c->flags);
-+		ret = nfs_wait_bit_killable(&q.key);
- 	} while (atomic_read(&c->io_count) != 0);
- 	finish_wait(wq, &q.wait);
- 	return ret;
-diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
-index ad7dbe2..1a89599 100644
---- a/include/linux/sunrpc/sched.h
-+++ b/include/linux/sunrpc/sched.h
-@@ -236,7 +236,7 @@ void *		rpc_malloc(struct rpc_task *, size_t);
- void		rpc_free(void *);
- int		rpciod_up(void);
- void		rpciod_down(void);
--int		__rpc_wait_for_completion_task(struct rpc_task *task, int (*)(void *));
-+int		__rpc_wait_for_completion_task(struct rpc_task *task, wait_bit_action_f *);
- #ifdef RPC_DEBUG
- struct net;
- void		rpc_show_tasks(struct net *);
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 73960ff..6fb1ba5 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -25,6 +25,7 @@ struct wait_bit_key {
- 	void			*flags;
- 	int			bit_nr;
- #define WAIT_ATOMIC_T_BIT_NR	-1
-+	unsigned long		private;
- };
+ #if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
+-#define __RWSEM_INITIALIZER(name)			\
+-	{ RWSEM_UNLOCKED_VALUE,				\
+-	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+-	  LIST_HEAD_INIT((name).wait_list),		\
+-	  NULL, /* owner */				\
+-	  OSQ_LOCK_UNLOCKED /* osq */			\
+-	  __RWSEM_DEP_MAP_INIT(name) }
++#define __RWSEM_OPT_INIT(lockname) , .osq = OSQ_LOCK_UNLOCKED, .owner = NULL
+ #else
+-#define __RWSEM_INITIALIZER(name)			\
+-	{ RWSEM_UNLOCKED_VALUE,				\
+-	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+-	  LIST_HEAD_INIT((name).wait_list)		\
+-	  __RWSEM_DEP_MAP_INIT(name) }
++#define __RWSEM_OPT_INIT(lockname)
+ #endif
  
- struct wait_bit_queue {
-@@ -141,18 +142,19 @@ __remove_wait_queue(wait_queue_head_t *head, wait_queue_t *old)
- 	list_del(&old->task_list);
- }
++#define __RWSEM_INITIALIZER(name)				\
++	{ .count = RWSEM_UNLOCKED_VALUE,			\
++	  .wait_list = LIST_HEAD_INIT((name).wait_list),	\
++	  .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock)	\
++	  __RWSEM_OPT_INIT(name)				\
++	  __RWSEM_DEP_MAP_INIT(name) }
++
+ #define DECLARE_RWSEM(name) \
+ 	struct rw_semaphore name = __RWSEM_INITIALIZER(name)
  
-+typedef int wait_bit_action_f(struct wait_bit_key *);
- void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
- void __wake_up_locked_key(wait_queue_head_t *q, unsigned int mode, void *key);
- void __wake_up_sync_key(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
- void __wake_up_locked(wait_queue_head_t *q, unsigned int mode, int nr);
- void __wake_up_sync(wait_queue_head_t *q, unsigned int mode, int nr);
- void __wake_up_bit(wait_queue_head_t *, void *, int);
--int __wait_on_bit(wait_queue_head_t *, struct wait_bit_queue *, int (*)(void *), unsigned);
--int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, int (*)(void *), unsigned);
-+int __wait_on_bit(wait_queue_head_t *, struct wait_bit_queue *, wait_bit_action_f *, unsigned);
-+int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, wait_bit_action_f *, unsigned);
- void wake_up_bit(void *, int);
- void wake_up_atomic_t(atomic_t *);
--int out_of_line_wait_on_bit(void *, int, int (*)(void *), unsigned);
--int out_of_line_wait_on_bit_lock(void *, int, int (*)(void *), unsigned);
-+int out_of_line_wait_on_bit(void *, int, wait_bit_action_f *, unsigned);
-+int out_of_line_wait_on_bit_lock(void *, int, wait_bit_action_f *, unsigned);
- int out_of_line_wait_on_atomic_t(atomic_t *, int (*)(atomic_t *), unsigned);
- wait_queue_head_t *bit_waitqueue(void *, int);
- 
-@@ -855,8 +857,8 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
- 	} while (0)
- 
- 
--extern int bit_wait(void *);
--extern int bit_wait_io(void *);
-+extern int bit_wait(struct wait_bit_key *);
-+extern int bit_wait_io(struct wait_bit_key *);
- 
- /**
-  * wait_on_bit - wait for a bit to be cleared
-@@ -925,7 +927,7 @@ wait_on_bit_io(void *word, int bit, unsigned mode)
-  * on that signal.
-  */
- static inline int
--wait_on_bit_action(void *word, int bit, int (*action)(void *), unsigned mode)
-+wait_on_bit_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
- {
- 	if (!test_bit(bit, word))
- 		return 0;
-@@ -1000,7 +1002,7 @@ wait_on_bit_lock_io(void *word, int bit, unsigned mode)
-  * the @mode allows that signal to wake the process.
-  */
- static inline int
--wait_on_bit_lock_action(void *word, int bit, int (*action)(void *), unsigned mode)
-+wait_on_bit_lock_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
- {
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index a104879..15cab1a 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -319,14 +319,14 @@ EXPORT_SYMBOL(wake_bit_function);
-  */
- int __sched
- __wait_on_bit(wait_queue_head_t *wq, struct wait_bit_queue *q,
--			int (*action)(void *), unsigned mode)
-+	      wait_bit_action_f *action, unsigned mode)
- {
- 	int ret = 0;
- 
- 	do {
- 		prepare_to_wait(wq, &q->wait, mode);
- 		if (test_bit(q->key.bit_nr, q->key.flags))
--			ret = (*action)(q->key.flags);
-+			ret = (*action)(&q->key);
- 	} while (test_bit(q->key.bit_nr, q->key.flags) && !ret);
- 	finish_wait(wq, &q->wait);
- 	return ret;
-@@ -334,7 +334,7 @@ __wait_on_bit(wait_queue_head_t *wq, struct wait_bit_queue *q,
- EXPORT_SYMBOL(__wait_on_bit);
- 
- int __sched out_of_line_wait_on_bit(void *word, int bit,
--					int (*action)(void *), unsigned mode)
-+				    wait_bit_action_f *action, unsigned mode)
- {
- 	wait_queue_head_t *wq = bit_waitqueue(word, bit);
- 	DEFINE_WAIT_BIT(wait, word, bit);
-@@ -345,7 +345,7 @@ EXPORT_SYMBOL(out_of_line_wait_on_bit);
- 
- int __sched
- __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
--			int (*action)(void *), unsigned mode)
-+			wait_bit_action_f *action, unsigned mode)
- {
- 	do {
- 		int ret;
-@@ -353,7 +353,7 @@ __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
- 		prepare_to_wait_exclusive(wq, &q->wait, mode);
- 		if (!test_bit(q->key.bit_nr, q->key.flags))
- 			continue;
--		ret = action(q->key.flags);
-+		ret = action(&q->key);
- 		if (!ret)
- 			continue;
- 		abort_exclusive_wait(wq, &q->wait, mode, &q->key);
-@@ -365,7 +365,7 @@ __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
- EXPORT_SYMBOL(__wait_on_bit_lock);
- 
- int __sched out_of_line_wait_on_bit_lock(void *word, int bit,
--					int (*action)(void *), unsigned mode)
-+					 wait_bit_action_f *action, unsigned mode)
- {
- 	wait_queue_head_t *wq = bit_waitqueue(word, bit);
- 	DEFINE_WAIT_BIT(wait, word, bit);
-@@ -503,7 +503,7 @@ void wake_up_atomic_t(atomic_t *p)
- }
- EXPORT_SYMBOL(wake_up_atomic_t);
- 
--__sched int bit_wait(void *word)
-+__sched int bit_wait(struct wait_bit_key *word)
- {
- 	if (signal_pending_state(current->state, current))
- 		return 1;
-@@ -512,7 +512,7 @@ __sched int bit_wait(void *word)
- }
- EXPORT_SYMBOL(bit_wait);
- 
--__sched int bit_wait_io(void *word)
-+__sched int bit_wait_io(struct wait_bit_key *word)
- {
- 	if (signal_pending_state(current->state, current))
- 		return 1;
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index c0365c1..9358c79 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -250,7 +250,7 @@ void rpc_destroy_wait_queue(struct rpc_wait_queue *queue)
- }
- EXPORT_SYMBOL_GPL(rpc_destroy_wait_queue);
- 
--static int rpc_wait_bit_killable(void *word)
-+static int rpc_wait_bit_killable(struct wait_bit_key *key)
- {
- 	if (fatal_signal_pending(current))
- 		return -ERESTARTSYS;
-@@ -309,7 +309,7 @@ static int rpc_complete_task(struct rpc_task *task)
-  * to enforce taking of the wq->lock and hence avoid races with
-  * rpc_complete_task().
-  */
--int __rpc_wait_for_completion_task(struct rpc_task *task, int (*action)(void *))
-+int __rpc_wait_for_completion_task(struct rpc_task *task, wait_bit_action_f *action)
- {
- 	if (action == NULL)
- 		action = rpc_wait_bit_killable;
