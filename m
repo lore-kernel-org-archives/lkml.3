@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937AbaGPI6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:58:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27425 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759939AbaGPI6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761246AbaGPI6i (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Jul 2014 04:58:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40170 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759939AbaGPI6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:58:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
-   d="scan'208";a="457583482"
+   d="scan'208";a="562531396"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
         <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 4/7] ACPICA: Linux: Allow ACPICA inclusion for CONFIG_ACPI=n builds.
-Date: Wed, 16 Jul 2014 16:58:30 +0800
-Message-Id: <ca797ec6949a1798e1d21428a0182e815161729d.1405500886.git.lv.zheng@intel.com>
+Subject: [PATCH v3 1/7] ACPICA: Linux: Add stub support for Linux specific variables and functions.
+Date: Wed, 16 Jul 2014 16:57:52 +0800
+Message-Id: <8332b64e502e4bcd78ad7fc57db579cbfd9435c9.1405500886.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1405500886.git.lv.zheng@intel.com>
 References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1405500886.git.lv.zheng@intel.com>
@@ -24,41 +24,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves <acpi/acpi.h> out of CONFIG_ACPI condition so that all
-ACPICA prototypes can be seen by the CONFIG_ACPI=n Linux kernel builds.
-Note that we can do this because ACPICA has implemented stubs for all
-ACPICA prototypes that are currently referenced by the Linux kernel.
+There are global variables and functions not upstreamed to the ACPICA code
+base.  Such symbols still can be referenced by external users as they are
+listed in the acpixf.h.  This patch uses ACPI_GLOBAL and
+ACPI_EXTERNAL_RETURN_STATUS mechanism to add stub support for such symbols.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- include/linux/acpi.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/bus.c    |    3 ---
+ include/acpi/acpixf.h |   28 +++++++++++++++++-----------
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 358c01b..5320153 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -29,17 +29,17 @@
- #include <linux/ioport.h>	/* for struct resource */
- #include <linux/device.h>
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index c5bc8cf..8581f5b 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -477,9 +477,6 @@ static int __init acpi_bus_init_irq(void)
+ 	return 0;
+ }
  
--#ifdef	CONFIG_ACPI
+-u8 acpi_gbl_permanent_mmap;
 -
- #ifndef _LINUX
- #define _LINUX
- #endif
-+#include <acpi/acpi.h>
+-
+ void __init acpi_early_init(void)
+ {
+ 	acpi_status status;
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index 3f6e14f..854dd01 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -53,8 +53,6 @@
+ #include <acpi/actbl.h>
+ #include <acpi/acbuffer.h>
+ 
+-extern u8 acpi_gbl_permanent_mmap;
+-
+ /*****************************************************************************
+  *
+  * Macros used for ACPICA globals and configuration
+@@ -885,17 +883,25 @@ ACPI_APP_DEPENDENT_RETURN_VOID(ACPI_PRINTF_LIKE(1)
+ /*
+  * Divergences
+  */
+-acpi_status acpi_get_id(acpi_handle object, acpi_owner_id * out_type);
++ACPI_GLOBAL(u8, acpi_gbl_permanent_mmap);
 +
-+#ifdef	CONFIG_ACPI
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status
++			    acpi_get_id(acpi_handle object,
++					acpi_owner_id * out_type))
  
- #include <linux/list.h>
- #include <linux/mod_devicetable.h>
- #include <linux/dynamic_debug.h>
+-acpi_status acpi_unload_table_id(acpi_owner_id id);
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_unload_table_id(acpi_owner_id id))
  
--#include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
- #include <acpi/acpi_numa.h>
+-acpi_status
+-acpi_get_table_with_size(acpi_string signature,
+-	       u32 instance, struct acpi_table_header **out_table,
+-	       acpi_size *tbl_size);
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status
++			    acpi_get_table_with_size(acpi_string signature,
++						     u32 instance,
++						     struct acpi_table_header
++						     **out_table,
++						     acpi_size *tbl_size))
+ 
+-acpi_status
+-acpi_get_data_full(acpi_handle object, acpi_object_handler handler, void **data,
+-		   void (*callback)(void *));
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status
++			    acpi_get_data_full(acpi_handle object,
++					       acpi_object_handler handler,
++					       void **data,
++					       void (*callback)(void *)))
+ 
+ #endif				/* __ACXFACE_H__ */
 -- 
 1.7.10
 
