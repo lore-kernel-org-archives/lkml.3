@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaGPWPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 18:15:19 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:33137 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaGPWPR (ORCPT
+	id S1753831AbaGPWSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 18:18:34 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:47634 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554AbaGPWSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 18:15:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140716000848.GG17528@sirena.org.uk>
-References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1405465241-28684-4-git-send-email-bjorn.andersson@sonymobile.com>
-	<20140716000848.GG17528@sirena.org.uk>
-Date: Wed, 16 Jul 2014 15:15:16 -0700
-Message-ID: <CAJAp7OjzWw6uBVsMXEvx0Lc1v_UJ+hGa2UeaQCtdfzsm+nAMDQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] regulator: qcom-rpm: Regulator driver for the
- Qualcomm RPM
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Mark Brown <broonie@kernel.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Wed, 16 Jul 2014 18:18:31 -0400
+Date: Wed, 16 Jul 2014 15:18:23 -0700
+From: Zi Shen Lim <zlim.lnx@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Chema Gonzalez <chema@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFCv3 00/14] arm64: eBPF JIT compiler
+Message-ID: <20140716221823.GA3378@gup76>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+ <20140716104153.GL29414@arm.com>
+ <20140716162146.GV29414@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140716162146.GV29414@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 5:08 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Jul 15, 2014 at 04:00:41PM -0700, Bjorn Andersson wrote:
->> Driver for regulators exposed by the Resource Power Manager (RPM) found
->> in Qualcomm 8660, 8960 and 8064 based devices.
->
-> I have patch 3/3 here but no cover or other patches - what is the story
-> there?
+On Wed, Jul 16, 2014 at 05:21:47PM +0100, Will Deacon wrote:
+> On Wed, Jul 16, 2014 at 11:41:53AM +0100, Will Deacon wrote:
+> > On Tue, Jul 15, 2014 at 07:24:58AM +0100, Zi Shen Lim wrote:
+> > > This series implements eBPF JIT compiler for arm64.
+> > > See [14/14] for change log.
+> > > 
+> > > Patches [1-13/14] implement code generation functions.
+> > 
+> > Nice work, I'll take a look. Thanks!
+> 
+> ... and it all looks pretty damn good to me. I gave you a few in-line
 
-Hi Mark,
+Thanks :)
 
-I forgot to add you as explicit recipient of the other mails in the
-series, sorry about that. Please let me know if you would like to have
-them resent.
+> comments but, rather than repeat myself for each patch, my main two gripes
+> were:
+> 
+>   - The use of BUG_ON all over the place
 
-Regards,
-Bjorn
+I responded to your comment about BUG_ON in [1/14].
+
+> 
+>   - Explicit limit checks which could be done with masks
+
+I responded to your comment about this in [8/14]. I can go ahead and
+make changes throughout if you prefer.
+
+> 
+> If you address those, this stuff looks pretty much ready to go from my
+> perspective. Do you have a branch somewhere I can play with please?
+
+Just pushed it to:
+
+	https://github.com/zlim/linux.git arm64/bpf
+
+which is the same as this RFCv3 series, i.e. I haven't rebased it on
+latest net-next.
+
+Thanks so much for your time and attention!
+Let me know how it goes for you.
+
+I can post this series (dropping RFC) once we finalized the above.
+
+Cheers,
+z
+
