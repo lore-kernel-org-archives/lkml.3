@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934260AbaGPNtC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:49:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55871 "EHLO mx2.suse.de"
+	id S934304AbaGPNtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:49:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55868 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759641AbaGPNs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:48:56 -0400
+	id S1751695AbaGPNs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:48:57 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
 Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Michal Nazarewicz <mina86@mina86.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH V4 04/15] mm, compaction: do not recheck suitable_migration_target under lock
-Date: Wed, 16 Jul 2014 15:48:12 +0200
-Message-Id: <1405518503-27687-5-git-send-email-vbabka@suse.cz>
+Subject: [PATCH V4 03/15] mm, compaction: do not count compact_stall if all zones skipped compaction
+Date: Wed, 16 Jul 2014 15:48:11 +0200
+Message-Id: <1405518503-27687-4-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
 References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
@@ -26,63 +26,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isolate_freepages_block() rechecks if the pageblock is suitable to be a target
-for migration after it has taken the zone->lock. However, the check has been
-optimized to occur only once per pageblock, and compact_checklock_irqsave()
-might be dropping and reacquiring lock, which means somebody else might have
-changed the pageblock's migratetype meanwhile.
+The compact_stall vmstat counter counts the number of allocations stalled by
+direct compaction. It does not count when all attempted zones had deferred
+compaction, but it does count when all zones skipped compaction. The skipping
+is decided based on very early check of compaction_suitable(), based on
+watermarks and memory fragmentation. Therefore it makes sense not to count
+skipped compactions as stalls. Moreover, compact_success or compact_fail is
+also already not being counted when compaction was skipped, so this patch
+changes the compact_stall counting to match the other two.
 
-Furthermore, nothing prevents the migratetype to change right after
-isolate_freepages_block() has finished isolating. Given how imperfect this is,
-it's simpler to just rely on the check done in isolate_freepages() without
-lock, and not pretend that the recheck under lock guarantees anything. It is
-just a heuristic after all.
+Additionally, restructure __alloc_pages_direct_compact() code for better
+readability.
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Nazarewicz <mina86@mina86.com>
 Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
+Cc: David Rientjes <rientjes@google.com>
 ---
- mm/compaction.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ mm/page_alloc.c | 75 +++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 41 insertions(+), 34 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index f3ae2ec..0a871e5 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -276,7 +276,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	struct page *cursor, *valid_page = NULL;
- 	unsigned long flags;
- 	bool locked = false;
--	bool checked_pageblock = false;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 963dacd..69a14b7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2251,6 +2251,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	unsigned long *did_some_progress)
+ {
+ 	struct zone *last_compact_zone = NULL;
++	struct page *page;
  
- 	cursor = pfn_to_page(blockpfn);
+ 	if (!order)
+ 		return NULL;
+@@ -2262,49 +2263,55 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 						&last_compact_zone);
+ 	current->flags &= ~PF_MEMALLOC;
  
-@@ -307,18 +306,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		if (!locked)
- 			break;
+-	if (*did_some_progress > COMPACT_DEFERRED)
+-		count_vm_event(COMPACTSTALL);
+-	else
++	switch (*did_some_progress) {
++	case COMPACT_DEFERRED:
+ 		*deferred_compaction = true;
++		/* fall-through */
++	case COMPACT_SKIPPED:
++		return NULL;
++	default:
++		break;
++	}
  
--		/* Recheck this is a suitable migration target under lock */
--		if (!strict && !checked_pageblock) {
--			/*
--			 * We need to check suitability of pageblock only once
--			 * and this isolate_freepages_block() is called with
--			 * pageblock range, so just check once is sufficient.
--			 */
--			checked_pageblock = true;
--			if (!suitable_migration_target(page))
--				break;
+-	if (*did_some_progress > COMPACT_SKIPPED) {
+-		struct page *page;
++	/*
++	 * At least in one zone compaction wasn't deferred or skipped, so let's
++	 * count a compaction stall
++	 */
++	count_vm_event(COMPACTSTALL);
+ 
+-		/* Page migration frees to the PCP lists but we want merging */
+-		drain_pages(get_cpu());
+-		put_cpu();
++	/* Page migration frees to the PCP lists but we want merging */
++	drain_pages(get_cpu());
++	put_cpu();
+ 
+-		page = get_page_from_freelist(gfp_mask, nodemask,
+-				order, zonelist, high_zoneidx,
+-				alloc_flags & ~ALLOC_NO_WATERMARKS,
+-				preferred_zone, classzone_idx, migratetype);
++	page = get_page_from_freelist(gfp_mask, nodemask,
++			order, zonelist, high_zoneidx,
++			alloc_flags & ~ALLOC_NO_WATERMARKS,
++			preferred_zone, classzone_idx, migratetype);
+ 
+-		if (page) {
+-			struct zone *zone = page_zone(page);
++	if (page) {
++		struct zone *zone = page_zone(page);
+ 
+-			zone->compact_blockskip_flush = false;
+-			compaction_defer_reset(zone, order, true);
+-			count_vm_event(COMPACTSUCCESS);
+-			return page;
 -		}
--
- 		/* Recheck this is a buddy page under lock */
- 		if (!PageBuddy(page))
- 			goto isolate_fail;
++		zone->compact_blockskip_flush = false;
++		compaction_defer_reset(zone, order, true);
++		count_vm_event(COMPACTSUCCESS);
++		return page;
++	}
+ 
+-		/*
+-		 * last_compact_zone is where try_to_compact_pages thought
+-		 * allocation should succeed, so it did not defer compaction.
+-		 * But now we know that it didn't succeed, so we do the defer.
+-		 */
+-		if (last_compact_zone && mode != MIGRATE_ASYNC)
+-			defer_compaction(last_compact_zone, order);
++	/*
++	 * last_compact_zone is where try_to_compact_pages thought allocation
++	 * should succeed, so it did not defer compaction. But here we know
++	 * that it didn't succeed, so we do the defer.
++	 */
++	if (last_compact_zone && mode != MIGRATE_ASYNC)
++		defer_compaction(last_compact_zone, order);
+ 
+-		/*
+-		 * It's bad if compaction run occurs and fails.
+-		 * The most likely reason is that pages exist,
+-		 * but not enough to satisfy watermarks.
+-		 */
+-		count_vm_event(COMPACTFAIL);
++	/*
++	 * It's bad if compaction run occurs and fails. The most likely reason
++	 * is that pages exist, but not enough to satisfy watermarks.
++	 */
++	count_vm_event(COMPACTFAIL);
+ 
+-		cond_resched();
+-	}
++	cond_resched();
+ 
+ 	return NULL;
+ }
 -- 
 1.8.4.5
 
