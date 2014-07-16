@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030440AbaGPHBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:01:44 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:43588 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808AbaGPHBl (ORCPT
+	id S1030457AbaGPHDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:03:15 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34420 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756658AbaGPHDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:01:41 -0400
+	Wed, 16 Jul 2014 03:03:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <525DB349B3FB5444AE057A887CB2A8D8543381@nice.asicdesigners.com>
-References: <1405479036-6763-1-git-send-email-ethan.zhao@oracle.com>
-	<1405484432.14773.19.camel@joe-AO725>
-	<525DB349B3FB5444AE057A887CB2A8D8543381@nice.asicdesigners.com>
-Date: Wed, 16 Jul 2014 15:01:40 +0800
-Message-ID: <CABawtvO3K0141gC8vh-TwUNnegbGVLuqXizjJXWR2W5B89PE2A@mail.gmail.com>
-Subject: Re: [Bug report] Hit false positives bug with script/checkpatch.pl
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Anish Bhatt <anish@chelsio.com>
-Cc: Joe Perches <joe@perches.com>, Ethan Zhao <ethan.zhao@oracle.com>,
-        "apw@canonical.com" <apw@canonical.com>,
+In-Reply-To: <4999408.jEEY9BVX9F@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<1405413956-2772-23-git-send-email-lftan@altera.com>
+	<4999408.jEEY9BVX9F@wuerfel>
+Date: Wed, 16 Jul 2014 15:03:12 +0800
+X-Google-Sender-Auth: DyaZl5swaheguVR1EBIUTc30fpE
+Message-ID: <CAFiDJ58ZPQ0aMrYFv5g-ThgEt4AVFQp0yhCRb+hzJxV2i4Rjyw@mail.gmail.com>
+Subject: Re: [PATCH v2 22/29] nios2: Miscellaneous header files
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joe.jin@oracle.com" <joe.jin@oracle.com>
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 1:39 PM, Anish Bhatt <anish@chelsio.com> wrote:
-> Parantheses/do {...} while(0) would not work for direct value substituons like this obviously but fixing this false positive seems hard. An exception
+On Tue, Jul 15, 2014 at 6:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 15 July 2014 16:45:49 Ley Foon Tan wrote:
+>> diff --git a/arch/nios2/include/asm/gpio.h b/arch/nios2/include/asm/gpio.h
+>> new file mode 100644
+>> index 0000000..e726bfc
+>> --- /dev/null
+>> +++ b/arch/nios2/include/asm/gpio.h
 
-How about lower it to warning... ... if it is hard to fix.
+> This seems wrong. If any device drivers rely on this, better fix them to
+> use linux/gpio.h directly.
+Okay, will remove this file.
 
-Ethan
 
-case that is something like "macros with complex values separated by
-commas but no statements terminated by semicolons" is my best but
-seems-very-vague guess.
-> -Anish
-> ________________________________________
-> From: Joe Perches [joe@perches.com]
-> Sent: Tuesday, July 15, 2014 9:20 PM
-> To: Ethan Zhao
-> Cc: Anish Bhatt; apw@canonical.com; linux-kernel@vger.kernel.org; ethan.kernel@gmail.com; joe.jin@oracle.com
-> Subject: Re: [Bug report] Hit false positives bug with script/checkpatch.pl
+>> +#ifndef __ASM_NIOS2_PCI_H__
+>> +#define __ASM_NIOS2_PCI_H__
+>> +
+>> +/* We don't support PCI yet, but some drivers require this file anyway */
+>> +
+>> +#endif /* __ASM_NIOS2_PCI_H__ */
 >
-> On Wed, 2014-07-16 at 10:50 +0800, Ethan Zhao wrote:
->> Hi,
->>      I hit a false positives bug when run script/checkpatch.pl to my patch,
->> It reported  errors to following macro definition, but in fact the macro is
->> correct, I couldn't change that macro according to the error message output
->> by script/checkpatch.pl. because of this bug, my patch was rejected by some
->> guy's patchwork.
+> What's wrong with the generic version?
+Change to use generic pci.h.
+
 >
-> You could tell the guy checkpatch isn't always right.
+>> +#ifndef _UAPI_ASM_NIOS2_STAT_H
+>> +#define _UAPI_ASM_NIOS2_STAT_H
+>> +
+>> +#include <asm-generic/stat.h>
+>> +
+>> +#endif
 >
-> You could also change the macro to something like:
->
-> #define NETXEN_NIC_STAT(name, m)                                \
-> {                                                               \
->         .name = name,                                           \
->         .type = m,                                              \
->         .sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),  \
->         .stat_offset = offsetof(struct netxen_adapter, m)       \
-> }
->
-> and change the uses like:
->
-> static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
->         NETXEN_NIC_STAT("xmit called", stats.xmitcalled),
->         NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
->
-> etc...
->
->
+> This should just use the Kconfig logic to fall back on the generic file.
+Will use generic file.
+
+Regards
+Ley Foon
