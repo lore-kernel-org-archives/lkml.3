@@ -1,62 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaGPUcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:32:24 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:40931 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaGPUcV (ORCPT
+	id S1751607AbaGPUeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:34:46 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:37129 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaGPUeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:32:21 -0400
+	Wed, 16 Jul 2014 16:34:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1405541983-6210-1-git-send-email-jim.epost@gmail.com>
-References: <1405541983-6210-1-git-send-email-jim.epost@gmail.com>
-Date: Wed, 16 Jul 2014 22:32:19 +0200
-Message-ID: <CAFLxGvyERejiNtDfw2QiSFQT33jPK5WVhLSeCuOAAyZ0pBOJFQ@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: coreteam@netfilter.org is moderated
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        kdalec@blackhole.kfki.hu, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140716193637.GA14366@google.com>
+References: <1405505022-7593-1-git-send-email-vidyas@nvidia.com> <20140716193637.GA14366@google.com>
+From: vidya sagar <sagar.tv@gmail.com>
+Date: Thu, 17 Jul 2014 02:04:23 +0530
+Message-ID: <CAN7O0+JObXFbEjFhKOED+RSFG3cVQTfXS8qp7J1ZYHd5YE18eQ@mail.gmail.com>
+Subject: Re: [PATCH v3] PCI: enable ASPM configuration in PCIE POWERSAVE mode
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: matthew.garrett@nebula.com, rjw@rjwysocki.net, nchumbalkar@lenovo.com,
+        thierry.reding@gmail.com, swarren@nvidia.com,
+        linux-pci@vger.kernel.org, kthota@nvidia.com,
+        linux-kernel@vger.kernel.org, vidyas@nvidia.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 10:19 PM, Jim Davis <jim.epost@gmail.com> wrote:
-> The coreteam@netfilter.org mailing list is moderated for non-subscribers.
+On Thu, Jul 17, 2014 at 1:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Jul 16, 2014 at 03:33:42PM +0530, Vidya Sagar wrote:
+>> From: Vidya Sagar <sagar.tv@gmail.com>
+>>
+>> Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
+>>  under POWERSAVE mode") moved pcie_aspm_powersave_config_link() out of
+>> pci_raw_set_power_state() to pci_set_power_state() which would enable
+>> ASPM. But, with Commit db288c9c5f9d ("PCI / PM: restore the original
+>>  behavior of pci_set_power_state()"), which re-introduced the following check
+>> ./drivers/pci/pci.c: pci_set_power_state()
+>>
+>> +     /* Check if we're already there */
+>> +     if (dev->current_state == state)
+>> +        return 0;
+>>
+>> in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
+>> made leaving ASPM broken.
+>> Fix it by configuring links for ASPM in do_pci_enable_device() instead of
+>> pci_set_power_state()
+>>
+>> Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+>> Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
 >
-> Signed-off-by: Jim Davis <jim.epost@gmail.com>
-> ---
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 9ced7318776d..7c9287acdb98 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6118,7 +6118,7 @@ M:        Pablo Neira Ayuso <pablo@netfilter.org>
->  M:     Patrick McHardy <kaber@trash.net>
->  M:     Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
->  L:     netfilter-devel@vger.kernel.org
-> -L:     coreteam@netfilter.org
-> +M:     coreteam@netfilter.org (moderated for non-subscribers)
+> I applied this to pci/misc for v3.17 with the following changelog:
 
-Why M?
-
->  W:     http://www.netfilter.org/
->  W:     http://www.iptables.org/
->  Q:     http://patchwork.ozlabs.org/project/netfilter-devel/list/
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
 Thanks,
-//richard
+
+>
+> It would still make me feel better if Matthew and/or Rafael acked this.
+>
+>     PCI: Configure ASPM when enabling device
+>
+>     We can't do ASPM configuration at enumeration-time because enabling it
+>     makes some defective hardware unresponsive, even if ASPM is disabled later
+>     (see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
+>     to veto it").  Therefore, we have to do it after a driver claims the
+>     device.
+>
+>     We previously configured ASPM in pci_set_power_state(), but that's not a
+>     very good place because it's not really related to setting the PCI device
+>     power state, and doing it there means:
+>
+>       - We incorrectly skipped ASPM config when setting a device that's
+>         already in D0 to D0.
+>
+>       - We unnecessarily configured ASPM when setting a device to a low-power
+>         state (the ASPM feature only applies when the device is in D0).
+>
+>       - We unnecessarily configured ASPM when called from a .resume() method
+>         (ASPM configuration needs to be restored during resume, but I think
+>         pci_restore_pcie_state() should already do this).
+>
+>     Move ASPM configuration from pci_set_power_state() to
+>     do_pci_enable_device() so we do it when a driver enables a device.
+>
+>     [bhelgaas: changelog]
+>     Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
+>
+> It would still make me feel better if Matthew and/or Rafael chimed in to
+> make sure this is sane.
+>
+> Bjorn
+>
+>> ---
+>> v3:
+>> * Modified commit message
+>>     removed single quotes around commit messages
+>>     added Suggested-by line
+>>
+>> v2:
+>> * Calling ASPM config code is moved from pci_set_power_state() to
+>> * do_pci_enable_device()
+>>
+>>  drivers/pci/pci.c | 12 ++++++------
+>>  1 file changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 1c8592b..81d49d3 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -839,12 +839,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+>>
+>>       if (!__pci_complete_power_transition(dev, state))
+>>               error = 0;
+>> -     /*
+>> -      * When aspm_policy is "powersave" this call ensures
+>> -      * that ASPM is configured.
+>> -      */
+>> -     if (!error && dev->bus->self)
+>> -             pcie_aspm_powersave_config_link(dev->bus->self);
+>>
+>>       return error;
+>>  }
+>> @@ -1195,12 +1189,18 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
+>>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>>  {
+>>       int err;
+>> +     struct pci_dev *bridge;
+>>       u16 cmd;
+>>       u8 pin;
+>>
+>>       err = pci_set_power_state(dev, PCI_D0);
+>>       if (err < 0 && err != -EIO)
+>>               return err;
+>> +
+>> +     bridge = pci_upstream_bridge(dev);
+>> +     if (bridge)
+>> +             pcie_aspm_powersave_config_link(bridge);
+>> +
+>>       err = pcibios_enable_device(dev, bars);
+>>       if (err < 0)
+>>               return err;
+>> --
+>> 1.8.1.5
+>>
