@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072AbaGPBOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:14:23 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:65198 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757173AbaGPBOU (ORCPT
+	id S1760081AbaGPBQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 21:16:25 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:60740 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410AbaGPBQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:14:20 -0400
-X-IronPort-AV: E=Sophos;i="5.00,899,1396972800"; 
-   d="scan'208";a="33326708"
-Message-ID: <53C5D229.7090500@cn.fujitsu.com>
-Date: Wed, 16 Jul 2014 09:15:21 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] workqueue: don't grab PENDING bit on some conditions
-References: <1405416610-12394-1-git-send-email-laijs@cn.fujitsu.com> <20140715155805.GD19570@htj.dyndns.org>
-In-Reply-To: <20140715155805.GD19570@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	Tue, 15 Jul 2014 21:16:22 -0400
+From: Stone Kang <stonekyx@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sachin Kamat <sachin.kamat@samsung.com>,
+        Magnus Damm <damm+renesas@opensource.se>,
+        Simon Horman <horms+renesas@verge.net.au>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: emxx_udc: Fix coding style errors
+Date: Wed, 16 Jul 2014 09:16:15 +0800
+Message-Id: <1405473375-29825-1-git-send-email-stonekyx@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 11:58 PM, Tejun Heo wrote:
-> Hello, Lai.
-> 
-> On Tue, Jul 15, 2014 at 05:30:10PM +0800, Lai Jiangshan wrote:
->> Thread1 expects that, after flush_delayed_work() returns, the known pending
->> work is guaranteed finished. But if Thread2 is scheduled a little later than
->> Thread1, the known pending work is dequeued and re-queued, it is considered
->> as two different works in the workqueue subsystem and the guarantee expected
-> 
-> They are two separate queueing instances of the same work item.
+Only fixing errors reported by checkpatch.pl, based on the following
+rules:
+1. '*' should be adjacent to the data name or function name.
+2. Don't use C99-style "// ..." comments.
 
-I think the mod_delayed_work() is expected to modify a queueing instances
-instead of separate from the name.
+Signed-off-by: KANG Yuxuan <stonekyx@gmail.com>
+---
+ drivers/staging/emxx_udc/emxx_udc.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> 
->> by Thread1 is broken.
-> 
-> The guarantee expected by thread 1 is that the most recent queueing
-> instance of the work item is finished either through completing
-> execution or being cancelled.  No guarantee is broken.
-
-I don't think the mod_delayed_work() is considered as a cancelling operation
-to the user. You can add comments to state that it contains a cancelling operation
-and a requeue operation.
-
-> 
->> The guarantee expected by Thread1/workqueue-user is reasonable for me,
->> the workqueue subsystem should provide this guarantee. In another aspect,
-> 
-> You're adding a new component to the existing set of guarantees.  You
-> can argue for it but it's a new guarantee regardless.
-
-So, it is an RFC.
-
-> 
->> the flush_delayed_work() is still working when mod_delayed_work_on() returns,
->> it is more acceptable that the flush_delayed_work() beats the
->> mod_delayed_work_on().
->>
->> It is achieved by introducing a KEEP_FLUSHED flag for try_to_grab_pending().
->> If the work is being flushed and KEEP_FLUSHED flags is set,
->> we disallow try_to_grab_pending() to grab the pending of the work.
->>
->> And there is another condition that the user want to speed up a delayed work.
->>
->> When the user use "mod_delayed_work_on(..., 0 /* zero delay */);", his
->> attention is to accelerate the work and queue the work immediately.
->>
->> But the work does be slowed down when it is already queued on the worklist
->> due to the work is dequeued and re-queued. So we also disallow
->> try_to_grab_pending() to grab the pending of the work in this condition
->> by introducing KEEP_QUEUED flag.
-> 
-> Both are extremely marginal.  
-> Do we have any actual cases any of these matters?
-
-No such case.
-
-I only found the WB subsystem (backing-dev.c, fs-writeback.c) uses both
-mod_delayed_work() and flush_delayed_work(), but it seems that when
-flush_delayed_work() is called, mod_delayed_work() will can't be called.
-
-> I can't see what we're gaining with the extra complexity.
-
-Will you add some comments or let it as before?
-
-> 
->> @@ -1212,6 +1220,13 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
->>  	 */
->>  	pwq = get_work_pwq(work);
->>  	if (pwq && pwq->pool == pool) {
->> +		if ((keep_flags | KEEP_QUEUED) ||
->> +		    ((keep_flags | KEEP_FLUSHED) &&
-> 
-> This can't be right.
-> 
-> Thanks.
-> 
+diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
+index 0003463..b2eaf01 100644
+--- a/drivers/staging/emxx_udc/emxx_udc.c
++++ b/drivers/staging/emxx_udc/emxx_udc.c
+@@ -562,12 +562,12 @@ static void _nbu2ss_dma_unmap_single(
+ 
+ /*-------------------------------------------------------------------------*/
+ /* Endpoint 0 OUT Transfer (PIO) */
+-static int EP0_out_PIO(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
++static int EP0_out_PIO(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
+ {
+ 	u32		i;
+ 	int		nret   = 0;
+ 	u32		iWordLength = 0;
+-	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	/*------------------------------------------------------------*/
+ 	/* Read Length */
+@@ -588,12 +588,12 @@ static int EP0_out_PIO(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
+ 
+ /*-------------------------------------------------------------------------*/
+ /* Endpoint 0 OUT Transfer (PIO, OverBytes) */
+-static int EP0_out_OverBytes(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
++static int EP0_out_OverBytes(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
+ {
+ 	u32		i;
+ 	u32		iReadSize = 0;
+ 	USB_REG_ACCESS  Temp32;
+-	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	if ((0 < length) && (length < sizeof(u32))) {
+ 		Temp32.dw = _nbu2ss_readl(&udc->p_regs->EP0_READ);
+@@ -613,7 +613,7 @@ static int EP0_in_PIO(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
+ 	u32		iMaxLength   = EP0_PACKETSIZE;
+ 	u32		iWordLength  = 0;
+ 	u32		iWriteLength = 0;
+-	USB_REG_ACCESS*	pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	/*------------------------------------------------------------*/
+ 	/* Transfer Length */
+@@ -639,7 +639,7 @@ static int EP0_in_OverBytes(struct nbu2ss_udc *udc, u8 *pBuf, u32 iRemainSize)
+ {
+ 	u32		i;
+ 	USB_REG_ACCESS Temp32;
+-	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
++	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
+ 
+ 	if ((0 < iRemainSize) && (iRemainSize < sizeof(u32))) {
+ 		for (i = 0 ; i < iRemainSize ; i++)
+@@ -3339,7 +3339,7 @@ static int __init nbu2ss_drv_contest_init(
+ 	udc->gadget.ep0 = &udc->ep[0].ep;
+ 	udc->gadget.speed = USB_SPEED_UNKNOWN;
+ 	udc->gadget.name = driver_name;
+-	//udc->gadget.is_dualspeed = 1;
++	/* udc->gadget.is_dualspeed = 1; */
+ 
+ 	device_initialize(&udc->gadget.dev);
+ 
+-- 
+2.0.1
 
