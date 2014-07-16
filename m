@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761118AbaGPI5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:57:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7006 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760877AbaGPIzk (ORCPT
+	id S1761136AbaGPI6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:58:00 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8182 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531AbaGPIza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:55:40 -0400
+	Wed, 16 Jul 2014 04:55:30 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 16 Jul 2014 01:44:21 -0700
+	by hqnvupgp07.nvidia.com on Wed, 16 Jul 2014 01:44:11 -0700
 From: Mikko Perttunen <mperttunen@nvidia.com>
 To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
         <hdegoede@redhat.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
         Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v3 5/8] clk: tegra: Add SATA clocks to Tegra124 initialization table
-Date: Wed, 16 Jul 2014 11:54:20 +0300
-Message-ID: <1405500863-19696-6-git-send-email-mperttunen@nvidia.com>
+Subject: [PATCH v3 1/8] of: Add NVIDIA Tegra SATA controller binding
+Date: Wed, 16 Jul 2014 11:54:16 +0300
+Message-ID: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1405500863-19696-1-git-send-email-mperttunen@nvidia.com>
 References: <1405500863-19696-1-git-send-email-mperttunen@nvidia.com>
@@ -28,29 +28,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds two clocks, SATA and SATA_OOB, to the Tegra124 clock initialization
-table. The clocks are needed for working SATA support.
+This patch adds device tree binding documentation for the SATA
+controller found on NVIDIA Tegra SoCs.
 
 Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 ---
-Already ACKed.
+ .../devicetree/bindings/ata/tegra-sata.txt         | 30 ++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
 
- drivers/clk/tegra/clk-tegra124.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 80efe51..6770787 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -1369,6 +1369,8 @@ static struct tegra_clk_init_table init_table[] __initdata = {
- 	{TEGRA124_CLK_XUSB_HS_SRC, TEGRA124_CLK_PLL_U_60M, 60000000, 0},
- 	{TEGRA124_CLK_XUSB_FALCON_SRC, TEGRA124_CLK_PLL_RE_OUT, 224000000, 0},
- 	{TEGRA124_CLK_XUSB_HOST_SRC, TEGRA124_CLK_PLL_RE_OUT, 112000000, 0},
-+	{TEGRA124_CLK_SATA, TEGRA124_CLK_PLL_P, 104000000, 0},
-+	{TEGRA124_CLK_SATA_OOB, TEGRA124_CLK_PLL_P, 204000000, 0},
- 	/* This MUST be the last entry. */
- 	{TEGRA124_CLK_CLK_MAX, TEGRA124_CLK_CLK_MAX, 0, 0},
- };
+diff --git a/Documentation/devicetree/bindings/ata/tegra-sata.txt b/Documentation/devicetree/bindings/ata/tegra-sata.txt
+new file mode 100644
+index 0000000..946f207
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/tegra-sata.txt
+@@ -0,0 +1,30 @@
++Tegra124 SoC SATA AHCI controller
++
++Required properties :
++- compatible : "nvidia,tegra124-ahci".
++- reg : Should contain 2 entries:
++  - AHCI register set (SATA BAR5)
++  - SATA register set
++- interrupts : Defines the interrupt used by SATA
++- clocks : Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names : Must include the following entries:
++  - sata
++  - sata-oob
++  - cml1
++  - pll_e
++- resets : Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names : Must include the following entries:
++  - sata
++  - sata-oob
++  - sata-cold
++- phys : Must contain an entry for each entry in phy-names.
++  See ../phy/phy-bindings.txt for details.
++- phy-names : Must include the following entries:
++  - sata-phy : XUSB PADCTL SATA PHY
++- hvdd-supply : Defines the SATA HVDD regulator
++- vddio-supply : Defines the SATA VDDIO regulator
++- avdd-supply : Defines the SATA AVDD regulator
++- target-5v-supply : Defines the SATA 5V power regulator
++- target-12v-supply : Defines the SATA 12V power regulator
 -- 
 1.8.1.5
 
