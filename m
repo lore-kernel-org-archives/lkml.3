@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813AbaGPEO1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:14:27 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:58695 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672AbaGPEOL (ORCPT
+	id S1759592AbaGPEQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:16:52 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:50003 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaGPEQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:14:11 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: rth@twiddle.net
-Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] alpha: checkpatch errors in mkbb for if statements
-Date: Wed, 16 Jul 2014 00:14:00 -0400
-Message-Id: <1405484042-6879-2-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405484042-6879-1-git-send-email-xerofoify@gmail.com>
-References: <1405484042-6879-1-git-send-email-xerofoify@gmail.com>
+	Wed, 16 Jul 2014 00:16:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1405481937.14773.8.camel@joe-AO725>
+References: <CAPDOMVggidq18zBrnVbS=P-DRjTd8K4zYemiNs=OnmbqTXGNAg@mail.gmail.com>
+	<1405481937.14773.8.camel@joe-AO725>
+Date: Wed, 16 Jul 2014 00:16:48 -0400
+Message-ID: <CAPDOMVhSosu-WZkBo+mKs3mJ+2+W-rBq0LFUnU_Lnzn=jR7=wg@mail.gmail.com>
+Subject: Re: Checkpatch Feature Idea: Search directory for files with errors
+ and warnings with -d argument
+From: Nick Krause <xerofoify@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
+        robh@kernel.org, florian.vaussard@epfl.ch,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes all errors related to no space between if and parthesises
-to remove this errors when running checkpatch against this file.
----
- arch/alpha/boot/tools/mkbb.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+On Tue, Jul 15, 2014 at 11:38 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2014-07-15 at 22:50 -0400, Nick Krause wrote:
+>> I may have not found it myself but if it doesn't exist can we write a
+>> feature for checkpatch to be able to recursively
+>> search a directory structure with a -d argument in order to make it
+>> easier to search larger directories for files that still
+>> need cleanup for files having kernel coding style issues.
+>linux-kernel@vger.kernel.org
+> xargs already works fine.
+>
+> git ls-files <dir>/*.[ch] | xargs ./scripts/checkpatch.pl -f
+>
+> I suggest you only use anything like this
+> on staging directories.
+>
+>
 
-diff --git a/arch/alpha/boot/tools/mkbb.c b/arch/alpha/boot/tools/mkbb.c
-index 6f1b957..214b6c7 100644
---- a/arch/alpha/boot/tools/mkbb.c
-+++ b/arch/alpha/boot/tools/mkbb.c
-@@ -91,21 +91,21 @@ int main(int argc, char ** argv)
- 	int			nread;
- 
-     /* Make sure of the arg count */
--	if(argc != 3) {
-+	if (argc != 3) {
- 	fprintf(stderr, "Usage: %s device lxboot\n", argv[0]);
- 	exit(0);
- 	}
- 
-     /* First, open the device and make sure it's accessible */
- 	dev = open(argv[1], O_RDWR);
--	if(dev < 0) {
-+	if (dev < 0) {
- 	perror(argv[1]);
- 	exit(0);
- 	}
- 
-     /* Now open the lxboot and make sure it's reasonable */
- 	fd = open(argv[2], O_RDONLY);
--	if(fd < 0) {
-+	if (fd < 0) {
- 	perror(argv[2]);
- 	close(dev);
- 	exit(0);
-@@ -113,7 +113,7 @@ int main(int argc, char ** argv)
- 
-     /* Read in the lxboot */
- 	nread = read(fd, &bootloader_image, sizeof(bootblock));
--	if(nread != sizeof(bootblock)) {
-+	if (nread != sizeof(bootblock)) {
- 	perror("lxboot read");
- 	fprintf(stderr, "expected %zd, got %d\n", sizeof(bootblock), nread);
- 	exit(0);
-@@ -121,7 +121,7 @@ int main(int argc, char ** argv)
- 
-     /* Read in the bootblock from disk. */
- 	nread = read(dev, &bootblock_from_disk, sizeof(bootblock));
--	if(nread != sizeof(bootblock)) {
-+	if (nread != sizeof(bootblock)) {
- 	perror("bootblock read");
- 	fprintf(stderr, "expected %zd, got %d\n", sizeof(bootblock), nread);
- 	exit(0);
-@@ -132,14 +132,14 @@ int main(int argc, char ** argv)
- 
-     /* Calculate the bootblock checksum */
- 	bootloader_image.bootblock_checksum = 0;
--	for(i = 0; i < 63; i++) {
-+	for (i = 0; i < 63; i++) {
- 	bootloader_image.bootblock_checksum +=
- 			bootloader_image.bootblock_quadwords[i];
- 	}
- 
-     /* Write the whole thing out! */
- 	lseek(dev, 0L, SEEK_SET);
--	if(write(dev, &bootloader_image, sizeof(bootblock)) != sizeof(bootblock)) {
-+	if (write(dev, &bootloader_image, sizeof(bootblock)) != sizeof(bootblock)) {
- 	perror("bootblock write");
- 	exit(0);
- 	}
--- 
-1.9.1
-
+Thanks Joe,
+That was what I needed to known :). I was hitting some errors in arch,
+so I will run that to see if there are any others.
+Cheers Nick
