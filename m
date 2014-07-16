@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759783AbaGPI1t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:27:49 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:60087 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759628AbaGPI1n (ORCPT
+	id S1759900AbaGPI1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:27:53 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:13243 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759631AbaGPI1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:27:43 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <20140715180445.GB3421@gmail.com>
-References: <20140711211850.GU1870@gmail.com>
-	<019CCE693E457142B37B791721487FD9180A193B@storexdag01.amd.com>
-	<20140713035535.GB5301@gmail.com>
-	<D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
-	<20140713164901.GB10624@gmail.com>
-	<53C396D3.9000600@vodafone.de>
-	<CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
-	<D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
-	<20140715173704.GA3421@gmail.com>
-	<D89D60253BB73A4E8C62F9FD18A939CA01050211@storexdag02.amd.com>
-	<20140715180445.GB3421@gmail.com>
-Date: Wed, 16 Jul 2014 10:27:42 +0200
-X-Google-Sender-Auth: _sWUtbw5y1tpuxS8NT8_64ENCs4
-Message-ID: <CAKMK7uEohJaiNCdDeV-6GNtH=0YSsw-o8V1zMYtOFEnkbOK+wA@mail.gmail.com>
-Subject: Re: [PATCH 00/83] AMD HSA kernel driver
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: "Bridgman, John" <John.Bridgman@amd.com>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+	Wed, 16 Jul 2014 04:27:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 16 Jul 2014 01:16:24 -0700
+Date: Wed, 16 Jul 2014 11:27:40 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/6] clk: tegra: make tegra_clocks_apply_init_table
+ arch_initcall
+Message-ID: <20140716082740.GK23218@tbergstrom-lnx.Nvidia.com>
+References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
+ <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
+ <20140716071932.GB7978@ulmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140716071932.GB7978@ulmo>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 8:04 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
->> Yes although it can be skipped on most systems. We figured that topology
->> needed to cover everything that would be handled by a single OS image, so
->> in a NUMA system it would need to cover all the CPUs. I think that is still
->> the right scope, do you agree ?
->
-> I think it is a idea to duplicate cpu. I would rather have each device
-> give its afinity against each cpu and for cpu just keep the existing
-> kernel api that expose this through sysfs iirc.
+On Wed, Jul 16, 2014 at 09:19:33AM +0200, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Jul 15, 2014 at 06:24:32PM +0300, Peter De Schrijver wrote:
+> [...]
+> > diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+> > index d081732..65cde4e 100644
+> > --- a/drivers/clk/tegra/clk.c
+> > +++ b/drivers/clk/tegra/clk.c
+> > @@ -290,10 +290,13 @@ struct clk ** __init tegra_lookup_dt_id(int clk_id,
+> >  
+> >  tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
+> >  
+> > -void __init tegra_clocks_apply_init_table(void)
+> > +static int __init tegra_clocks_apply_init_table(void)
+> >  {
+> >  	if (!tegra_clk_apply_init_table)
+> > -		return;
+> > +		return 0;
+> 
+> Shouldn't this be an error? Or perhaps WARN()? To make sure this gets
 
-It's all there already if we fix up the hsa dev-node model to expose
-one dev node per underlying device instead of one for everything:
-- cpus already expose the full numa topology in sysfs
-- pci devices have a numa_node file in sysfs to display the link
-- we can easily add similar stuff for platform devices on arm socs
-without pci devices.
+An arch_initcall will be called for every ARM platform I think? In case
+this gets called on a non-Tegra platform, tegra_clk_apply_init_table will not
+be set and therefore a silent return 0; seems the most appropriate thing to do
+to me?
 
-Then the only thing userspace needs to do is follow the device link in
-the hsa instance node in sysfs and we have all the information
-exposed. Iff we expose one hsa driver instance to userspace per
-physical device (which is the normal linux device driver model
-anyway).
+Cheers,
 
-I don't see a need to add anything hsa specific here at all (well
-maybe some description of the cache architecture on the hsa device
-itself, the spec seems to have provisions for that).
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Peter.
