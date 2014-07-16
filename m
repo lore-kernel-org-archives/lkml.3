@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933717AbaGPEXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:23:46 -0400
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:46921 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756715AbaGPEXo (ORCPT
+	id S933901AbaGPEX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:23:58 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51394 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933783AbaGPEXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:23:44 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:2731:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3872:3873:3874:4321:5007:6691:7652:8531:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357:13618:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: balls50_5a92a020bdf2e
-X-Filterd-Recvd-Size: 2203
-Message-ID: <1405484621.14773.22.camel@joe-AO725>
-Subject: Re: Checkpatch Feature Idea: Search directory for files with errors
- and warnings with -d argument
-From: Joe Perches <joe@perches.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
-        robh@kernel.org, florian.vaussard@epfl.ch,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 21:23:41 -0700
-In-Reply-To: <CAPDOMVhSosu-WZkBo+mKs3mJ+2+W-rBq0LFUnU_Lnzn=jR7=wg@mail.gmail.com>
-References: <CAPDOMVggidq18zBrnVbS=P-DRjTd8K4zYemiNs=OnmbqTXGNAg@mail.gmail.com>
-	 <1405481937.14773.8.camel@joe-AO725>
-	 <CAPDOMVhSosu-WZkBo+mKs3mJ+2+W-rBq0LFUnU_Lnzn=jR7=wg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 16 Jul 2014 00:23:55 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53C5FE57.9010404@roeck-us.net>
+Date: Tue, 15 Jul 2014 21:23:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/22] 3.4.99-stable review
+References: <20140715231622.121816073@linuxfoundation.org>
+In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 00:16 -0400, Nick Krause wrote:
-> On Tue, Jul 15, 2014 at 11:38 PM, Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2014-07-15 at 22:50 -0400, Nick Krause wrote:
-> >> I may have not found it myself but if it doesn't exist can we write a
-> >> feature for checkpatch to be able to recursively
-> >> search a directory structure with a -d aRrgument in order to make it
-> >> easier to search larger directories for files that still
-> >> need cleanup for files having kernel coding style issues.
-> >linux-kernel@vger.kernel.org
-> > xargs already works fine.
-> >
-> > git ls-files <dir>/*.[ch] | xargs ./scripts/checkpatch.pl -f
-> >
-> > I suggest you only use anything like this
-> > on staging directories.
-> >
-> >
-> 
-> Thanks Joe,
-> That was what I needed to known :). I was hitting some errors in arch,
-> so I will run that to see if there are any others.
-> Cheers Nick
+On 07/15/2014 04:17 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.99 release.
+> There are 22 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Jul 17 23:16:04 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-I again suggest you _ONLY_ use checkpatch on staging.
+Build results:
+	total: 117 pass: 111 fail: 6
+Failed builds:
+	alpha:allmodconfig
+	arm:spear6xx_defconfig
+	score:defconfig
+	sparc64:allmodconfig
+	unicore32:defconfig
+	xtensa:allmodconfig
 
-Doing checkpatch only cleanups will not make you a
-better developer nor give you a good understanding
-of the code operation.
+Qemu tests all passed.
+
+Results are as expected.
+
+Details are available at http://server.roeck-us.net:8010/builders.
+
+A note on the above link and its accessibility: I have seen relentless attacks
+from various sources recently. All but one of those attacks originated from
+IP addresses allocated to Chinese service providers (the one exception was
+an attack from an Amazon virtual host). Attacks have become more sophisticated
+over time, to a point where I no longer trust my firewalls.
+For this reason, I now permanently block the entire IP address range of a
+service provider if an attack originates from an address range allocated
+to that provider. I understand that this may bve considered a bit drastic,
+but this is my server, the information on it is provided free of charge,
+for the benefit of everyone, and there should be no reason to attack it.
+Blame the attackers, not me.
+
+If you have reason to believe that your address has been blocked,
+I will be happy to selectively unblock it if you can show me legitimate
+interest in accessing the information.
+
+Guenter
 
