@@ -1,91 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488AbaGPDx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 23:53:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:58166 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361AbaGPDx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 23:53:27 -0400
-Date: Wed, 16 Jul 2014 13:53:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hariprasad Shenai <hariprasad@chelsio.com>,
-        Steve Wise <swise@opengridcomputing.com>
-Subject: linux-next: manual merge of the infiniband tree with the net-next
- tree
-Message-ID: <20140716135320.4011c6c8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S933631AbaGPD60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 23:58:26 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:24412 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933505AbaGPD6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 23:58:24 -0400
+Message-ID: <53C5F770.9030105@huawei.com>
+Date: Wed, 16 Jul 2014 11:54:24 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/vgw9m8+VmK4jRFpS8g.bNdB"; protocol="application/pgp-signature"
+To: =?windows-1252?Q?Luk=E1=9A_Czerner?= <lczerner@redhat.com>
+CC: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-ext4@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: testing result of loop-aio patchset on ext3
+References: <53C3A42E.40000@huawei.com> <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.22.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/vgw9m8+VmK4jRFpS8g.bNdB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2014/7/14 17:51, Lukáš Czerner wrote:
+> On Mon, 14 Jul 2014, Rui Xiang wrote:
+> 
+>> Date: Mon, 14 Jul 2014 17:34:38 +0800
+>> From: Rui Xiang <rui.xiang@huawei.com>
+>> To: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org
+>> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>>     Li Zefan <lizefan@huawei.com>
+>> Subject: testing result of loop-aio patchset on ext3
+>>
+>> Hi Dave,
+>>
+>> We export a container image file as a block device via loop device, but we
+>> found it's very easy that the container rootfs gets corrupted due to power
+>> loss.
+>>
+>> Your early version of loop-aio patchset said the patchset can make loop
+>> mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
+>> it doesn't help.
+>>
+>> Both the guest fs and host fs are ext3.
+>>
+>> The loop-aio patchset is from:
+>> git://github.com/kleikamp/linux-shaggy.git aio_loop
+>>
+>> Steps:
+>> 1. dd a 10G image, mkfs.ext3,
+>>   # dd if=/dev/zero of=./raw_image bs=1M count=10000
+>>   # echo y | mkfs.ext3 raw_image
+>>
+>> 2. losetup a loop device, mount at ./test_dir
+>>   # losetup /dev/loop1 raw_image
+>>   # mount /dev/loop1 ./test_dir
+>>
+>> 3. copy fs_mark into test_dir and run
+>>   # ./fs_mark -d ./tmp/ -s 102400000 -n 80
+>>
+>> 4. during runing fs_mark, make systerm reboot indirectly.
+>>   # echo b > /proc/sysrq-trigger
+>>
+>> After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
+>>
+>> # fsck.ext3 -n raw_image
+>> e2fsck 1.41.9 (22-Aug-2009)
+>> Warning: skipping journal recovery because doing a read-only filesystem check.
+>> raw_image contains a file system with errors, check forced.
+>> Pass 1: Checking inodes, blocks, and sizes
+>> Pass 2: Checking directory structure
+>> Pass 3: Checking directory connectivity
+>> Pass 4: Checking reference counts
+>> Pass 5: Checking group summary information
+>> Free blocks count wrong (2481348, counted=2480577).
+>> Fix? no
+>> Free inodes count wrong (640837, counted=640835).
+>> Fix? no
+>> raw_image: ********** WARNING: Filesystem still has errors **********
+>> raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
+> 
+> It's not damaged, this is expected result if you're using old
+> e2fsprogs which still treats this as an error.
+> 
+> It's not an error because we only update superblock summary at
+> unmount time so with unclean shutdown it's likely that it does not
+> match the reality, but e2fsck can and will easily fix that for you.
+> 
+> Please try e2fsprogs v1.42.3 or newer.
+> 
 
-Hi all,
+Hi Lukas,
 
-Today's linux-next merge of the infiniband tree got a conflict in
-drivers/infiniband/hw/cxgb4/device.c between commit 7730b4c7e32c
-("cxgb4/iw_cxgb4: work request logging feature") from the net-next tree
-and commit 6b54d54dea82 ("RDMA/cxgb4: Initialize the device status
-page") from the infiniband tree.
+I updated e2fsprogs to v1.42.3, and user the newer fsck.ext3 to check raw_image.
+Exactly, the result seemed normal.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Then, I continue my previous test. And after testing 35 times, "fsck -n" reported image fs
+had been damaged, too.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ # fsck.ext3 -n image1
+e2fsck 1.42.3.wc1 (28-May-2012)
+Warning: skipping journal recovery because doing a read-only filesystem check.
+image1 has been mounted 36 times without being checked, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Inode 16407, i_size is 597447, should be 602112.  Fix? no
+Inode 16407, i_blocks is 1176, should be 1184.  Fix? no
+Inode 409941, i_blocks is 200208, should be 112.  Fix? no
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Block bitmap differences:  -1506836 -1506843 -(1506859--1506860) -(1660941--1661964) -(1661966--1671167) -(1671688--1686473)
+Fix? no
+Free blocks count wrong for group #2 (31558, counted=31556).
+Fix? no
+Free blocks count wrong for group #43 (15871, counted=15867).
+Fix? no
+Free blocks count wrong (2204041, counted=2204035).
+Fix? no
+image1: ********** WARNING: Filesystem still has errors **********
+image1: 13008/655360 files (0.3% non-contiguous), 417399/2621440 blocks
 
-diff --cc drivers/infiniband/hw/cxgb4/device.c
-index df1f1b52c7ec,7db82b24302b..000000000000
---- a/drivers/infiniband/hw/cxgb4/device.c
-+++ b/drivers/infiniband/hw/cxgb4/device.c
-@@@ -843,16 -696,7 +843,17 @@@ static int c4iw_rdev_open(struct c4iw_r
-  		pr_err(MOD "error allocating status page\n");
-  		goto err4;
-  	}
- +	if (c4iw_wr_log) {
- +		rdev->wr_log =3D kzalloc((1 << c4iw_wr_log_size_order) *
- +				       sizeof(*rdev->wr_log), GFP_KERNEL);
- +		if (rdev->wr_log) {
- +			rdev->wr_log_size =3D 1 << c4iw_wr_log_size_order;
- +			atomic_set(&rdev->wr_log_idx, 0);
- +		} else {
- +			pr_err(MOD "error allocating wr_log. Logging disabled\n");
- +		}
- +	}
-+ 	rdev->status_page->db_off =3D 0;
-  	return 0;
-  err4:
-  	c4iw_rqtpool_destroy(rdev);
+I backup the image to image_bk, and then mount the image to a dir, and cat all files in the image.
+Steps:
+# dd if=image1 of=image_bk
+# mount image1 err_dir
+# find -name '*' -exec cat > /dev/null {} \;
 
---Sig_/vgw9m8+VmK4jRFpS8g.bNdB
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+There are no issues during catting, and no err in dmesg too.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+*But when I umount the image1 from err_dir, The fsck result didn't show any fs corruption info.
 
-iQIcBAEBCAAGBQJTxfc0AAoJEMDTa8Ir7ZwVFzMP/izJ3B4E7kKLRfXjJn+3HGjF
-wnWQpY+8zzHXeiT1Y/8AZSC5c1Dxy2FAPE9WrLHOX+2l43tz3py/pGG8zbyIaXqb
-uIr6SSkoAJ0zoWYma891tIrVVzABvwgYBhPbKgt/kxLFh9IlexIrSbS/+OuYmRs5
-5kOyBJa7Wn2IwjH2WqcxFiquZtvohIWtD5Yu43VBBbQnPmfn3ywDK/VZuTtAIv3r
-TPXzb4BrWOcxJxN8hMHKyKB1/qBNp5Fl2EzB6fWKKY9lfogCpYUuVzH3PINei1yW
-Wd295ZaqfrlEiCPjqIJ3BTdpfecft4lcdPJBcOPcYK24BTCdIexT91jiGBlo75lb
-sL3Qnyj3MbYf51fM2RAj0GX+beE2l6XhxgKb3RyqIvHkcGHE+EHeX9NFmBUfdr3z
-1vvXe5eCgRB5Gk4qjgUDeTkULd97niAABmESUAHRLbwpnsM2fxFCyQvnIDGGJYJo
-5p5xRnWCU55VjdR8aZQyXLNZFS7WlzRiQfO5AotqJGdQzjn5WZbfFMNmtOYgR2tY
-NJCeQaBfEga2IoQM9cWNjzVs2uY6utpGzVn6JQRMXVHyr0k5fQmMhZgW2h09lXVz
-SepUmmAQNW3FpMoR5p4QN0a1i3X60JCig0KcEv3jE186XdAdEhzKPAzE/ay4hem+
-WYgpBOi+UG7qkp9K6yZW
-=HbYj
------END PGP SIGNATURE-----
+I mount image_bk to err_dir and umount it with no operation directly. The result is same to iamge1.
 
---Sig_/vgw9m8+VmK4jRFpS8g.bNdB--
+*So, is fs in the image as a block device via loop device damaged really, or does it have some others issues? 
+Could you give me some opinions?
+
+
+Thanks.
+
+
