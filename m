@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965375AbaGPQ2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:28:14 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60991 "EHLO zene.cmpxchg.org"
+	id S934625AbaGPQ3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:29:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60997 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965341AbaGPQ2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:28:11 -0400
+	id S934546AbaGPQ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:28:59 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: rewrite charge API fix - hugetlb charging
-Date: Wed, 16 Jul 2014 12:28:00 -0400
-Message-Id: <1405528080-2975-1-git-send-email-hannes@cmpxchg.org>
+Subject: [patch] mm: memcontrol: use page lists for uncharge batching fix - hugetlb page->lru
+Date: Wed, 16 Jul 2014 12:28:53 -0400
+Message-Id: <1405528133-3054-1-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya-san reports that hugetlb pages now get charged as file cache,
-which wreaks all kinds of havoc during migration, uncharge etc.
+Naoya-san reports that page->lru of hugetlb pages gets corrupted when
+they hit the uncharge path from put_page().
 
-The file-specific charge path used to filter PageCompound(), but it
-wasn't commented and so it got lost when unifying the charge paths.
-
-We can't add PageCompound() back into a unified charge path because of
-THP, so filter huge pages directly in add_to_page_cache().
+Add a preliminary check for whether the page is even a valid memcg
+page before messing with it's ->lru list.
 
 Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/filemap.c | 20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ mm/memcontrol.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 114cd89c1cc2..c088ac01e856 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -31,6 +31,7 @@
- #include <linux/security.h>
- #include <linux/cpuset.h>
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
-+#include <linux/hugetlb.h>
- #include <linux/memcontrol.h>
- #include <linux/cleancache.h>
- #include <linux/rmap.h>
-@@ -560,19 +561,24 @@ static int __add_to_page_cache_locked(struct page *page,
- 				      pgoff_t offset, gfp_t gfp_mask,
- 				      void **shadowp)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b2f924359e79..0eb1eaa2f1ff 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6606,9 +6606,16 @@ static void uncharge_list(struct list_head *page_list)
+  */
+ void mem_cgroup_uncharge(struct page *page)
  {
-+	int huge = PageHuge(page);
- 	struct mem_cgroup *memcg;
- 	int error;
++	struct page_cgroup *pc;
++
+ 	if (mem_cgroup_disabled())
+ 		return;
  
- 	VM_BUG_ON_PAGE(!PageLocked(page), page);
- 	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
- 
--	error = mem_cgroup_try_charge(page, current->mm, gfp_mask, &memcg);
--	if (error)
--		return error;
-+	if (!huge) {
-+		error = mem_cgroup_try_charge(page, current->mm,
-+					      gfp_mask, &memcg);
-+		if (error)
-+			return error;
-+	}
- 
- 	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (error) {
--		mem_cgroup_cancel_charge(page, memcg);
-+		if (!huge)
-+			mem_cgroup_cancel_charge(page, memcg);
- 		return error;
- 	}
- 
-@@ -587,14 +593,16 @@ static int __add_to_page_cache_locked(struct page *page,
- 		goto err_insert;
- 	__inc_zone_page_state(page, NR_FILE_PAGES);
- 	spin_unlock_irq(&mapping->tree_lock);
--	mem_cgroup_commit_charge(page, memcg, false);
-+	if (!huge)
-+		mem_cgroup_commit_charge(page, memcg, false);
- 	trace_mm_filemap_add_to_page_cache(page);
- 	return 0;
- err_insert:
- 	page->mapping = NULL;
- 	/* Leave page->index set: truncation relies upon it */
- 	spin_unlock_irq(&mapping->tree_lock);
--	mem_cgroup_cancel_charge(page, memcg);
-+	if (!huge)
-+		mem_cgroup_cancel_charge(page, memcg);
- 	page_cache_release(page);
- 	return error;
++	/* Don't touch page->lru of any random page, pre-check: */
++	pc = lookup_page_cgroup(page);
++	if (!PageCgroupUsed(pc))
++		return;
++
+ 	INIT_LIST_HEAD(&page->lru);
+ 	uncharge_list(&page->lru);
  }
 -- 
 2.0.0
