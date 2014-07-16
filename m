@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759126AbaGPLAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:00:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40053 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409AbaGPLAq (ORCPT
+	id S1759209AbaGPLBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:01:17 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38911 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445AbaGPLBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:00:46 -0400
-Date: Wed, 16 Jul 2014 12:00:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Wed, 16 Jul 2014 07:01:16 -0400
+Date: Wed, 16 Jul 2014 04:01:11 -0700
+From: "hch@infradead.org" <hch@infradead.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: KY Srinivasan <kys@microsoft.com>, "hch@infradead.org" <hch@infradead.org>,
+        James Bottomley <jbottomley@parallels.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Message-ID: <20140716110012.GL17528@sirena.org.uk>
-References: <53C01558.3090607@nvidia.com>
- <CAL1qeaHETQ7kSGNjPiwi_9WNMtr9qZp0KwjZCCxY29+_N4AcuA@mail.gmail.com>
- <53C01D17.2050906@nvidia.com>
- <20140714083854.GO2081@ulmo>
- <20140714091233.GC6800@sirena.org.uk>
- <20140714092434.GA9755@ulmo>
- <20140714102203.GD6800@sirena.org.uk>
- <53C58DCB.90502@nvidia.com>
- <20140715225252.GD17528@sirena.org.uk>
- <20140716080133.GI7978@ulmo>
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Message-ID: <20140716110111.GA7382@infradead.org>
+References: <1404866812-26950-1-git-send-email-kys@microsoft.com>
+ <1404866812-26950-4-git-send-email-kys@microsoft.com>
+ <20140709084300.GD6012@infradead.org>
+ <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+ <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+ <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+ <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+ <20140711063216.GA20660@infradead.org>
+ <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+ <yq1a98d2z5x.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+PbGPm1eXpwOoWkI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716080133.GI7978@ulmo>
-X-Cookie: 98% lean.
+In-Reply-To: <yq1a98d2z5x.fsf@sermon.lab.mkp.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 01/13] clk: tegra: Add binding for the Tegra124 DFLL
- clocksource
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 13, 2014 at 08:58:34AM -0400, Martin K. Petersen wrote:
+> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
+> 
+> KY> Windows hosts do support UNMAP and set the field in the
+> KY> EVPD. However, since the host advertises SPC-2 compliance, Linux
+> KY> does not even query the VPD page.
+>  
+> >> If we want to enable UNMAP in this case I'd prefer a blacklist entry
+> >> than trying UNMAP despite the device not advertising it.
+> 
+> I agree with that. We could do something like the patch below.
+> 
+> However, I do think it's a good idea that you guys are looking into
+> reporting SPC-3.
 
---+PbGPm1eXpwOoWkI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+KY mentioned that they have a prototype for that now.
 
-On Wed, Jul 16, 2014 at 10:01:34AM +0200, Thierry Reding wrote:
-> On Tue, Jul 15, 2014 at 11:52:52PM +0100, Mark Brown wrote:
+Btw, I looked over sd.c a bit more, and I think I understand why they
+get the WRITE SAME commands now:
 
-> > This looks fine, can you submit properly please?  For the I2C address
-> > why not just have an interface to get the regmap and then provide a way
-> > to get the underlying device back from the regmap?
+read_capacity_16 calls sd_config_discard(sdkp, SD_LBP_WS16) if the LPBME
+bit is set.  At least older SBC drafts left it wide open if a target
+supports WRITE SAME with UNMAP or UNMAP in this case.  So I think we'd
+still want a patch to use UNMAP instead of WRITE SAME for this case,
+which should also fix hyperv.  Below is the quick hack version of that
+that just checks the host no_write_same flag, as the one on the device
+isn't set yet - I guess we need to refactor some of that logic.
 
-> Is it mandatory for regulators to use regmap? Also I'm not sure how this
 
-No, but this is for a limited subset of devices that the hardware knows
-how to write to directly which means that they're restricted to things
-that can be supported with regmap (or already know how to interact with
-the hardware and don't need this interface at all).  The proposed patch
-already relies on regmap - it's passing back the information the regmap
-helpers use.
-
-> will work with MFDs, since the device may not be the actual bus device,
-> but rather a child of the MFD (and what we want access to is the MFD).
-
-> Perhaps for regmaps that would work in most cases since MFDs seem to
-> aften share the regmap with their children. However, the code in
-> regulator_register() at least indicates that even then it's possible to
-> have a regmap in children that's different from the top-level MFD.
-
-Right, drivers can say exactly which regmap to use.
-
---+PbGPm1eXpwOoWkI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxls5AAoJELSic+t+oim9vC0P/1ga+B2y7WfWBEoc0bRFCC2W
-UO0bq9GC1ygvBdsDGjqMzxAUQdJjk0wgjTe3ZgY+suhiUbE+YgH/bXdh1HI40pbP
-n3oW32wBKgxuaqmrn1aitm/owiD96nzhK3aWb458EoRFQ1XpvRfmiON1By31Yorx
-wkoVWG1TK3D82GNLrqyXBprgFFABQS9DI3gg7nrFICv2v4wGzrAK/xUFZbBjyFuY
-vcZRy4fhmGx+lEd1pr2MNnynwD4acLSjQuqdWddLvrR8fu4kuKbMijZOWY251Yq+
-4oyTJ7yPhNc4uuNDSYNbX4RiKsecOEPaqixLsBYJWZrlw/KOeLbkPCWqZA+bfIJ7
-sBtwC8+lgfarYtztcIZtJe9wkXLM4TW4w+17OrrjhhK2ACF116pyTF91sPdFeKTl
-AuUGoqnyTvdW+o+aOFvVE2nCICJCLMErP4qOQjzl/6UnvNfsG0Ws8gjnChKEWkDS
-oVNHc9lUuN5/njQURrc+EJno/N4n4qTE15T5Atn5bFjpKHvQgt+REKWd0GtEVKJR
-Un0b3PAgEBRzARd1XBXROMEzc2TokimTDFXpaZXw2vdjw2eO4lSfVvV4FEQjMCHh
-3OmJ9WnTxeCd/lmsQk5JagEOqYTWZE1x1Ur7P3mali7VzDRC85mGFF6uOxYkgMKY
-A/Oihci0OXH8pNi2lC+n
-=ebZh
------END PGP SIGNATURE-----
-
---+PbGPm1eXpwOoWkI--
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 87566b5..4480fdf 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2035,7 +2035,10 @@ static int read_capacity_16(struct scsi_disk *sdkp, struct scsi_device *sdp,
+ 		if (buffer[14] & 0x40) /* LBPRZ */
+ 			sdkp->lbprz = 1;
+ 
+-		sd_config_discard(sdkp, SD_LBP_WS16);
++		if (sdp->host->no_write_same)
++			sd_config_discard(sdkp, SD_LBP_UNMAP);
++		else
++			sd_config_discard(sdkp, SD_LBP_WS16);
+ 	}
+ 
+ 	sdkp->capacity = lba + 1;
