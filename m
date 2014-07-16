@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030331AbaGPOsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:48:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40361 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030225AbaGPOsN (ORCPT
+	id S1030357AbaGPOtN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:49:13 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:40411 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965069AbaGPOtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:48:13 -0400
-Date: Wed, 16 Jul 2014 15:48:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: pramod gurav <pramod.gurav.etc@gmail.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Josh Cartwright <joshc@codeaurora.org>
-Message-ID: <20140716144803.GP17528@sirena.org.uk>
-References: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>
- <53C66AEB.7030906@mm-sol.com>
- <1405512867.75389776@apps.rackspace.com>
- <53C66F3B.9020507@mm-sol.com>
- <1405515375.452411340@apps.rackspace.com>
- <20140716135345.GA508@sirena.org.uk>
- <1405519254.31919.24.camel@iivanov-dev>
- <20140716141842.GO17528@sirena.org.uk>
- <CAMf-jSnqng1uFazZgxHKvEwaHssNwZJaJaUU7o+81uJ2oA9e5w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kunpHVz1op/+13PW"
-Content-Disposition: inline
-In-Reply-To: <CAMf-jSnqng1uFazZgxHKvEwaHssNwZJaJaUU7o+81uJ2oA9e5w@mail.gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Kconfig: Select SPMI when REGMAP_SPMI is selected
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 16 Jul 2014 10:49:09 -0400
+Date: Wed, 16 Jul 2014 09:49:06 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+cc: Randy Dunlap <rdunlap@infradead.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] doc: Add remote CPU access details to
+ this_cpu_ops.txt
+In-Reply-To: <1405481975-23034-1-git-send-email-bobby.prani@gmail.com>
+Message-ID: <alpine.DEB.2.11.1407160944280.19597@gentwo.org>
+References: <1405481975-23034-1-git-send-email-bobby.prani@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 Jul 2014, Pranith Kumar wrote:
 
---kunpHVz1op/+13PW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> +The following this_cpu() operations with implied preemption protection
+> +are defined. These operations can be used without worrying about
+> +preemption.  Note that interrupts may still occur while an operation is
 
-On Wed, Jul 16, 2014 at 08:12:04PM +0530, pramod gurav wrote:
-> On Wed, Jul 16, 2014 at 7:48 PM, Mark Brown <broonie@kernel.org> wrote:
+preemption and interrupts.
 
-> > A dependency from a selected symbol will have no effect.
+> +in progress and if the interrupt too modifies the variable, then RMW
+> +actions may not be atomic.
 
-> Thanks Mark. So essentially in this case PMIC driver should 'select SPMI'.
-> Right?
+These are guaranteed to be atomic vs interrupts too. The __this_cpu ops
+do not have that guarantee.
 
-I would expect it to depend on SPMI and select REGMAP_SPMI, assuming
-SPMI is a user-selectable Kconfig symbol.
+>  Operations on a field of a per cpu structure
+> @@ -178,10 +207,26 @@ replaced by code that disables interrupts, then does the operations
+>  that are guaranteed to be atomic and then reenable interrupts. Doing
+>  so is expensive. If there are other reasons why the scheduler cannot
+>  change the processor we are executing on then there is no reason to
+> -disable interrupts. For that purpose the __this_cpu operations are
+> -provided. For example.
+> +disable interrupts. For that purpose the following __this_cpu operations
+> +are provided.
 
---kunpHVz1op/+13PW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+These operations have no guarantee against concurrent interrupts or
+preemption. If a per cpu variable is not used in an interrupt context and
+the scheduler cannot preempt then they are safe.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> +Remote access to per-CPU data
+> +------------------------------
+> +
+> +Per cpu data structures are for the use of one cpu exclusively. If you
+> +use the variables as intended, this_cpu_ops() are guaranteed to be
+> +atomic as no other CPU has access to these data structures. But there are
 
-iQIcBAEBAgAGBQJTxpCgAAoJELSic+t+oim9Ts0QAJIaHdWD/Ow0D/dAtJ6k58cM
-jAt5YzTAaYFiowgT10IcI+R4jLndR+IElLisd6vBkTmNfbiMi7w82k9oOM0l35SS
-ucj8WaOhD1GnlSl3znOBkF7SBw2mGut/0+CWgnhhZX8z/g6b80lrwxK1em8vLdY+
-J4g1JfSY/KBx6EGV4q26PhVTLdOuoV4KRs+56J36MKOQEEhVMkGJm0OkG/6auDkZ
-K0ye9taFI+HnfoHs1ZeUK/BfwuhY8bhYdMBCg5WsKSDPiVKruVQAcgE2/472F878
-X9zjAF2VxtKczz9v5vlCAWeWDdKBRJqwandB/j1rE4Kj/cZT6WzM+ngtLoWHGch0
-PmHB2HPvb6uSh89hq3BibytN96rKec48/1WaZTOOcXciuJgGpIrqZG4snSW0yF+Y
-s2TUjwRVcF1Tve1Wn/TekY1yQabUmbxaoxkvAHkK9ZRV0s3Kih8RPTmR71EzD3Ud
-i/AOFht97SftHwM3wIdpv4INixiGv+Ke/KiIRNHULhRzPhu+XQac/qt04aPNnGtS
-wOxxEMtc3RVPynIfyPcUQGlB3Cw97hzXh3BnIb4nepL+eBugwSFbHcdg0LCJvcli
-zZ0+QOkdTvEI5l+IJMvQaDPcxRLyLwSnSHt6eiOpHysiR03HzPIa1mqOZPXtv8EZ
-/Sbjpu3YOMB8bFoTyPtd
-=CGBr
------END PGP SIGNATURE-----
+atomic is a strong term here. Maybe put in ""?
 
---kunpHVz1op/+13PW--
+> +special cases where you might need to access per cpu data structures
+> +remotely. One such case is to perform maintenance tasks of idle CPUs
+> +without having to wake them up using IPIs for power saving purposes.
+
+It is usually safe to do read access and that is frequenly done to
+summarize counters. Write access is problematic.
+
+> +To access per-cpu data structure remotely, you need to convert the
+> +per-cpu offset to a pointer using this_cpu_ptr().
+> +
+> +	DEFINE_PER_CPU(struct data, datap);
+> +	struct data *p = this_cpu_ptr(&datap);
+> +
+> +p can now be passed to another CPU to be updated remotely.
+
+That is not the way its usually done. You would use\
+
+p = per_cpu(&datap, cpu);
+
+This makes it explicit that we are getting ready to access a foreing
+percpu area.
+
+Passing of pointers calculated via this_cpu_ptr to other cpus is unusual
+and should be avoided.
+
+
+> +Such remote accesses to per CPU data are not guaranteed to be atomic
+> +anymore. You will have to use atomic_t and rely on the standard atomic
+> +operations for these remote accesses to be atomic.
+> +
+>  Christoph Lameter, April 3rd, 2013
+
+Add your name here too?
+
