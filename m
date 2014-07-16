@@ -1,148 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaGPTqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:46:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44935 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaGPTqI (ORCPT
+	id S1751819AbaGPTqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:46:24 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:54304 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720AbaGPTqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:46:08 -0400
-Date: Wed, 16 Jul 2014 12:45:43 -0700
-From: tip-bot for Vivien Didelot <tipbot@zytor.com>
-Message-ID: <tip-84e288d41871cfb7a21cb7e6dee9e3884b59b25f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vivien.didelot@savoirfairelinux.com,
-        hpa@zytor.com, mingo@kernel.org, kernel@savoirfairelinux.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, vivien.didelot@savoirfairelinux.com,
-        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com,
-        tglx@linutronix.de
-In-Reply-To: <1404860269-11837-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1404860269-11837-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/platform/ts5500: Add a 'name'
-  sysfs attribute
-Git-Commit-ID: 84e288d41871cfb7a21cb7e6dee9e3884b59b25f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 16 Jul 2014 15:46:20 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5j+r-CpJiXipCT=j09+ZfJjF9jTc3kuZFAH3ZxgUEvktTA@mail.gmail.com>
+References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
+ <20140711164931.GA18473@redhat.com> <CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
+ <CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com> <CAGXu5j+r-CpJiXipCT=j09+ZfJjF9jTc3kuZFAH3ZxgUEvktTA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Jul 2014 12:45:58 -0700
+Message-ID: <CALCETrX48nuR6wqEV4Nu47BF4Z3XFvBpYer_fzwaqJdi0fpdKw@mail.gmail.com>
+Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  84e288d41871cfb7a21cb7e6dee9e3884b59b25f
-Gitweb:     http://git.kernel.org/tip/84e288d41871cfb7a21cb7e6dee9e3884b59b25f
-Author:     Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-AuthorDate: Tue, 8 Jul 2014 18:57:48 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 21:17:41 +0200
+C
 
-x86/platform/ts5500: Add a 'name' sysfs attribute
+On Wed, Jul 16, 2014 at 10:54 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Jul 14, 2014 at 12:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
+>>> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>> On 07/10, Kees Cook wrote:
+>>>>>
+>>>>> This adds the ability for threads to request seccomp filter
+>>>>> synchronization across their thread group (at filter attach time).
+>>>>> For example, for Chrome to make sure graphic driver threads are fully
+>>>>> confined after seccomp filters have been attached.
+>>>>>
+>>>>> To support this, locking on seccomp changes via thread-group-shared
+>>>>> sighand lock is introduced, along with refactoring of no_new_privs. Races
+>>>>> with thread creation are handled via delayed duplication of the seccomp
+>>>>> task struct field and cred_guard_mutex.
+>>>>>
+>>>>> This includes a new syscall (instead of adding a new prctl option),
+>>>>> as suggested by Andy Lutomirski and Michael Kerrisk.
+>>>>
+>>>> I do not not see any problems in this version,
+>>>
+>>> Awesome! Thank you for all the reviews. :) If Andy and Michael are
+>>> happy with this too, I think this is in good shape. \o/
+>>
+>> I think I'm happy with it.  Is it in git somewhere for easy perusal?
+>> I have a cold, so my reviewing ability is a bit off, but I want to
+>> take a look at the final version, and git is a little easier than
+>> email for this.
+>
+> Hi Andy,
+>
+> Have you had a chance to look v10 over? I'd like to send a v11 with
+> Oleg's Reviewed-by added (at James Morris's request). Should I add one
+> from you as well?
 
-Add a new "name" attribute to the TS5500 sysfs group, to clarify
-which supported board model it is.
+Trivial nits (take them or leave them):
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>
-Link: http://lkml.kernel.org/r/1404860269-11837-3-git-send-email-vivien.didelot@savoirfairelinux.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- Documentation/ABI/testing/sysfs-platform-ts5500 |  7 +++++++
- arch/x86/platform/ts5500/ts5500.c               | 23 ++++++++++++++++++-----
- 2 files changed, 25 insertions(+), 5 deletions(-)
+seccomp_check_mode confused me.  Maybe seccomp_may_assign_mode would
+be a better name.
 
-diff --git a/Documentation/ABI/testing/sysfs-platform-ts5500 b/Documentation/ABI/testing/sysfs-platform-ts5500
-index c88375a..e685957 100644
---- a/Documentation/ABI/testing/sysfs-platform-ts5500
-+++ b/Documentation/ABI/testing/sysfs-platform-ts5500
-@@ -30,6 +30,13 @@ Description:
- 		the corresponding bit is set. For instance, 0x0e means jumpers
- 		2, 3 and 4 are set.
- 
-+What:		/sys/devices/platform/ts5500/name
-+Date:		July 2014
-+KernelVersion:	3.16
-+Contact:	"Savoir-faire Linux Inc." <kernel@savoirfairelinux.com>
-+Description:
-+		Model name of the TS board, e.g. "TS-5500".
-+
- What:		/sys/devices/platform/ts5500/rs485
- Date:		January 2013
- KernelVersion:	3.7
-diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-index 1bbf17b..4eb8eea 100644
---- a/arch/x86/platform/ts5500/ts5500.c
-+++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -1,7 +1,7 @@
- /*
-  * Technologic Systems TS-5500 Single Board Computer support
-  *
-- * Copyright (C) 2013 Savoir-faire Linux Inc.
-+ * Copyright (C) 2013-2014 Savoir-faire Linux Inc.
-  *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-  *
-  * This program is free software; you can redistribute it and/or modify it under
-@@ -66,6 +66,7 @@
- 
- /**
-  * struct ts5500_sbc - TS-5500 board description
-+ * @name:	Board model name.
-  * @id:		Board product ID.
-  * @sram:	Flag for SRAM option.
-  * @rs485:	Flag for RS-485 option.
-@@ -75,6 +76,7 @@
-  * @jumpers:	Bitfield for jumpers' state.
-  */
- struct ts5500_sbc {
-+	const char *name;
- 	int	id;
- 	bool	sram;
- 	bool	rs485;
-@@ -122,13 +124,14 @@ static int __init ts5500_detect_config(struct ts5500_sbc *sbc)
- 	if (!request_region(TS5500_PRODUCT_CODE_ADDR, 4, "ts5500"))
- 		return -EBUSY;
- 
--	tmp = inb(TS5500_PRODUCT_CODE_ADDR);
--	if (tmp != TS5500_PRODUCT_CODE) {
--		pr_err("This platform is not a TS-5500 (found ID 0x%x)\n", tmp);
-+	sbc->id = inb(TS5500_PRODUCT_CODE_ADDR);
-+	if (sbc->id == TS5500_PRODUCT_CODE) {
-+		sbc->name = "TS-5500";
-+	} else {
-+		pr_err("ts5500: unknown product code 0x%x\n", sbc->id);
- 		ret = -ENODEV;
- 		goto cleanup;
- 	}
--	sbc->id = tmp;
- 
- 	tmp = inb(TS5500_SRAM_RS485_ADC_ADDR);
- 	sbc->sram = tmp & TS5500_SRAM;
-@@ -147,6 +150,15 @@ cleanup:
- 	return ret;
- }
- 
-+static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-+		char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%s\n", sbc->name);
-+}
-+static DEVICE_ATTR_RO(name);
-+
- static ssize_t id_show(struct device *dev, struct device_attribute *attr,
- 		char *buf)
- {
-@@ -183,6 +195,7 @@ TS5500_ATTR_BOOL(itr);
- 
- static struct attribute *ts5500_attributes[] = {
- 	&dev_attr_id.attr,
-+	&dev_attr_name.attr,
- 	&dev_attr_jumpers.attr,
- 	&dev_attr_sram.attr,
- 	&dev_attr_rs485.attr,
+In the writer locking changelog, should "(which is unique to the
+thread group)" be "(which is shared by all threads in the thread
+group)"?
+
+This bit:
+
+    /*
+     * Explicitly enable no_new_privs here in case it got set
+     * between the task_struct being duplicated and holding the
+     * sighand lock. The seccomp state and nnp must be in sync.
+     */
+    if (task_no_new_privs(current))
+        task_set_no_new_privs(p);
+
+should arguably move the very end of task duplication -- someone will
+want it for some other purpose some day.
+
+This bit:
+
+    /* If we have a seccomp mode, enable the thread flag. */
+    if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
+        set_tsk_thread_flag(p, TIF_SECCOMP);
+
+is not quite obvious to me -- it's not obvious why it's needed.  If
+it's to eliminate a race, can you explain the race in the comment?  If
+it's just paranoia, a WARN_ON or BUG_ON might be worthwhile.
+
+SECCOMP_FILTER_FLAG_MASK seems backwards to me.  Maybe rename it to
+SECCOMP_FILTER_ALLOWED_FLAGS and invert it?
+
+is_ancestor: calling the first parameter "candidate" is just a tiny
+bit odd -- it's the child that's up for consideration.  (This is
+barely even worth the time it took me to type it.)
+
+Less trivial nits:
+
+Can you change:
+
+fp = kzalloc(fp_size, GFP_KERNEL|__GFP_NOWARN);
+
+to
+
+fp = kcalloc(fprog->len, sizeof(struct sock_filter), GFP_KERNEL|__GFP_NOWARN);
+
+somewhere in this series (w/ a changelog comment that it's not
+exploitable to avoid scaring people).
+
+In seccomp_prepare_user_filter, would it make sense to return -EINVAL
+if !user_filter?  That will make it slightly more pleasant to
+implement TSYNC-without-change if anyone ever wants it.  (This isn't
+really necessary -- it's just slightly more polite.)
+
+
+Once James picks this up, I'll rebase my series on top of it.  I think
+they'll conflict slightly.
+
+Feel free to add my Reviewed-by to the whole series except the ARM and
+MIPS patches.
+
+
+And some thoughts:
+
+Your changelog comment for the seccomp syscall suggests that you're
+thinking about extending the tracer interface.  I'd suggest a rather
+different design: add a concept of a seccomp monitor associated with a
+particular filter and an action SECCOMP_RET_MONITOR.
+SECCOMP_RET_MONITOR will tell the monitor what syscall was attempted
+and will wait for further instructions.  The monitor can then ask for
+zero or more syscalls to be issued on behalf of the waiting process
+and then resume it.  Each of those additional syscalls will be further
+filtered through all seccomp filters outside of the one that returned
+SECCOMP_RET_MONITOR.
+
+This would avoid all of the nastiness inherent in using ptrace and
+would nest much more nicely.  And it could be far faster.
+
+If you decide to do something to ARM along the lines of what I'm doing
+to x86, you may want to fix this:
+
+    /*
+     * Make sure that any changes to mode from another thread have
+     * been seen after TIF_SECCOMP was seen.
+     */
+    rmb();
+
+It should have essentially no effect on x86, though.
+
+
+--Andy
