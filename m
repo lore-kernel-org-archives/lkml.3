@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964870AbaGPObX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:31:23 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:53730 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759416AbaGPObV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:31:21 -0400
-Message-ID: <53C68CB5.4020002@mvista.com>
-Date: Wed, 16 Jul 2014 09:31:17 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH RT 0/3] Linux 3.10.47-rt50-rc1
-References: <20140714200420.805309842@goodmis.org>	<53C4714C.8000103@mvista.com> <20140714205333.6d28ed1f@gandalf.local.home>
-In-Reply-To: <20140714205333.6d28ed1f@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S964952AbaGPObh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:31:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934298AbaGPObe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 10:31:34 -0400
+From: Hannes Reinecke <hare@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>, Peter Jones <pjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [PATCH] iscsi_ibft: Print correct IPv6 netmask
+Date: Wed, 16 Jul 2014 16:31:29 +0200
+Message-Id: <1405521089-13993-1-git-send-email-hare@suse.de>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 07:53 PM, Steven Rostedt wrote:
-> On Mon, 14 Jul 2014 19:09:48 -0500
-> Corey Minyard <cminyard@mvista.com> wrote:
->
->> Can we get:
->>
->> tracing-use-migrate_disable-to-prevent-beeing-pushed.patch
-> Sure except that patch is buggy:
->
-> -               preempt_disable();
-> +               migrate_disable();
->                 /* The update must run on the CPU that is being updated. */
->                 if (cpu_id == smp_processor_id() || !cpu_online(cpu_id))
->                         rb_update_pages(cpu_buffer);
->                 else {
-> -                       /*
-> -                        * Can not disable preemption for schedule_work_on()
-> -                        * on PREEMPT_RT.
-> -                        */
-> -                       preempt_enable();
->                         schedule_work_on(cpu_id,
->                                          &cpu_buffer->update_pages_work);
->                         wait_for_completion(&cpu_buffer->update_done);
-> -                       preempt_disable();
->                 }
-> -               preempt_enable();
-> +               migrate_enable();
->
-> migrate_disable() on non-PREEMPT_RT is preempt_disable(). You can't
-> call wait_or_completion with preemption disabled.
->
-> When that gets fixed in mainline -rt, I'll add it to the stable
-> branches too.
+The iBFT table only specifies a prefix length, so we need to
+check the given IP address to figure out whether the netmask
+should be printed in IPv4 or IPv6 style.
 
-I originally did a patch that just always did the else clause (the
-schedule_work_on() and wait_for_completion()) on all CPUs.  That seemed
-to work just fine and simplifies the code a bit and gets rid of all the
-preempt/migrate calls.  You could try that approach, or I could submit
-something if you liked.
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Peter Jones <pjones@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+---
+ drivers/firmware/iscsi_ibft.c | 35 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 32 insertions(+), 3 deletions(-)
 
--corey
-
->
-> -- Steve
->
->
->
->> into 3.10, also?
->>
+diff --git a/drivers/firmware/iscsi_ibft.c b/drivers/firmware/iscsi_ibft.c
+index 071c2c9..7fddab9 100644
+--- a/drivers/firmware/iscsi_ibft.c
++++ b/drivers/firmware/iscsi_ibft.c
+@@ -212,6 +212,36 @@ static ssize_t sprintf_ipaddr(char *buf, u8 *ip)
+ 	return str - buf;
+ }
+ 
++static ssize_t sprintf_netmask(char *buf, u8 *ip, unsigned int prefix_len)
++{
++	char *str = buf;
++
++	if (ip[0] == 0 && ip[1] == 0 && ip[2] == 0 && ip[3] == 0 &&
++	    ip[4] == 0 && ip[5] == 0 && ip[6] == 0 && ip[7] == 0 &&
++	    ip[8] == 0 && ip[9] == 0 && ip[10] == 0xff && ip[11] == 0xff) {
++		__be32 val;
++		/*
++		 * IPV4
++		 */
++		val = cpu_to_be32(~((1 << (32-prefix_len))-1));
++		str += sprintf(str, "%pI4", &val);
++	} else {
++		u8 netmask[16];
++		int o = prefix_len >> 3,
++		    b = prefix_len & 0x7;
++		/*
++		 * IPv6
++		 */
++		memset(netmask, 0, 16);
++		memset(netmask, 0xff, o);
++		if (b != 0)
++			netmask[o] = 0xff & (0xff00 >> b);
++		str += sprintf(buf, "%pI6", netmask);
++	}
++	str += sprintf(str, "\n");
++	return str - buf;
++}
++
+ static ssize_t sprintf_string(char *str, int len, char *buf)
+ {
+ 	return sprintf(str, "%.*s\n", len, buf);
+@@ -288,7 +318,6 @@ static ssize_t ibft_attr_show_nic(void *data, int type, char *buf)
+ 	struct ibft_nic *nic = entry->nic;
+ 	void *ibft_loc = entry->header;
+ 	char *str = buf;
+-	__be32 val;
+ 
+ 	if (!nic)
+ 		return 0;
+@@ -304,8 +333,8 @@ static ssize_t ibft_attr_show_nic(void *data, int type, char *buf)
+ 		str += sprintf_ipaddr(str, nic->ip_addr);
+ 		break;
+ 	case ISCSI_BOOT_ETH_SUBNET_MASK:
+-		val = cpu_to_be32(~((1 << (32-nic->subnet_mask_prefix))-1));
+-		str += sprintf(str, "%pI4", &val);
++		str += sprintf_netmask(str, nic->ip_addr,
++				       nic->subnet_mask_prefix);
+ 		break;
+ 	case ISCSI_BOOT_ETH_ORIGIN:
+ 		str += sprintf(str, "%d\n", nic->origin);
+-- 
+1.7.12.4
 
