@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965565AbaGPPw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:52:59 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35364 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965166AbaGPPwz (ORCPT
+	id S965498AbaGPPzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:55:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57533 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932974AbaGPPzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:52:55 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, x86@kernel.org,
-        qemu-devel@nongnu.org
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH qemu] i386,linux-headers: Add support for kvm_get_rng_seed
-Date: Wed, 16 Jul 2014 08:52:50 -0700
-Message-Id: <3b8cd70724017ab9604f1c34644df75549e61846.1405525932.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Wed, 16 Jul 2014 11:55:02 -0400
+Message-ID: <53C6A050.2050409@linutronix.de>
+Date: Wed, 16 Jul 2014 17:54:56 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        mika.westerberg@linux.intel.com
+Subject: Re: [PATCH 4/5] tty: serial: 8250 core: add runtime pm
+References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de> <1405521903-5877-5-git-send-email-bigeasy@linutronix.de> <20140716151604.GG1365@saruman.home>
+In-Reply-To: <20140716151604.GG1365@saruman.home>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updates x86's kvm_para.h for the feature bit definition and
-target-i386/cpu.c for the feature name and default.
+On 07/16/2014 05:16 PM, Felipe Balbi wrote:
+> Hi,
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- linux-headers/asm-x86/kvm_para.h | 2 ++
- target-i386/cpu.c                | 5 +++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+Hi Felipe,
 
-diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
-index e41c5c1..a9b27ce 100644
---- a/linux-headers/asm-x86/kvm_para.h
-+++ b/linux-headers/asm-x86/kvm_para.h
-@@ -24,6 +24,7 @@
- #define KVM_FEATURE_STEAL_TIME		5
- #define KVM_FEATURE_PV_EOI		6
- #define KVM_FEATURE_PV_UNHALT		7
-+#define KVM_FEATURE_GET_RNG_SEED	8
- 
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -40,6 +41,7 @@
- #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
- #define MSR_KVM_STEAL_TIME  0x4b564d03
- #define MSR_KVM_PV_EOI_EN      0x4b564d04
-+#define MSR_KVM_GET_RNG_SEED 0x4b564d05
- 
- struct kvm_steal_time {
- 	__u64 steal;
-diff --git a/target-i386/cpu.c b/target-i386/cpu.c
-index 8fd1497..4ea7e6c 100644
---- a/target-i386/cpu.c
-+++ b/target-i386/cpu.c
-@@ -236,7 +236,7 @@ static const char *ext4_feature_name[] = {
- static const char *kvm_feature_name[] = {
-     "kvmclock", "kvm_nopiodelay", "kvm_mmu", "kvmclock",
-     "kvm_asyncpf", "kvm_steal_time", "kvm_pv_eoi", "kvm_pv_unhalt",
--    NULL, NULL, NULL, NULL,
-+    "kvm_get_rng_seed", NULL, NULL, NULL,
-     NULL, NULL, NULL, NULL,
-     NULL, NULL, NULL, NULL,
-     NULL, NULL, NULL, NULL,
-@@ -368,7 +368,8 @@ static uint32_t kvm_default_features[FEATURE_WORDS] = {
-         (1 << KVM_FEATURE_ASYNC_PF) |
-         (1 << KVM_FEATURE_STEAL_TIME) |
-         (1 << KVM_FEATURE_PV_EOI) |
--        (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT),
-+        (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-+        (1 << KVM_FEATURE_GET_RNG_SEED),
-     [FEAT_1_ECX] = CPUID_EXT_X2APIC,
- };
- 
--- 
-1.9.3
+> On Wed, Jul 16, 2014 at 04:45:02PM +0200, Sebastian Andrzej Siewior
+> wrote:
+>> @@ -1280,6 +1285,7 @@ static void serial8250_stop_tx(struct
+>> uart_port *port) struct uart_8250_port *up = container_of(port,
+>> struct uart_8250_port, port);
+>> 
+>> +	pm_runtime_get_sync(port->dev); __stop_tx(up);
+>> 
+>> /* @@ -1289,6 +1295,8 @@ static void serial8250_stop_tx(struct
+>> uart_port *port) up->acr |= UART_ACR_TXDIS; serial_icr_write(up,
+>> UART_ACR, up->acr); } +	pm_runtime_mark_last_busy(port->dev); +
+>> pm_runtime_put_autosuspend(port->dev); }
+>> 
+>> static void serial8250_start_tx(struct uart_port *port) @@
+>> -1296,8 +1304,9 @@ static void serial8250_start_tx(struct
+>> uart_port *port) struct uart_8250_port *up = container_of(port,
+>> struct uart_8250_port, port);
+>> 
+>> +	pm_runtime_get_sync(port->dev); if (up->dma &&
+>> !serial8250_tx_dma(up)) { -		return; +		goto out; } else if
+>> (!(up->ier & UART_IER_THRI)) { up->ier |= UART_IER_THRI; 
+>> serial_port_out(port, UART_IER, up->ier); @@ -1318,6 +1327,9 @@
+>> static void serial8250_start_tx(struct uart_port *port) up->acr
+>> &= ~UART_ACR_TXDIS; serial_icr_write(up, UART_ACR, up->acr); } 
+>> +out: +	pm_runtime_mark_last_busy(port->dev); +
+>> pm_runtime_put_autosuspend(port->dev);
+> 
+> I wonder if you should get_sync() on start_tx() and only 
+> put_autosuspend() at stop_tx(). I guess the outcome would be
+> largely the same, no ?
 
+I just opened minicom on ttyS0 and gave a try. start_tx() was invoked
+each time I pressed a key (sent a character). I haven't seen stop_tx()
+even after after I closed minicom. I guess stop_tx() is invoked if you
+switch half-duplex communication.
+
+> well, other than in probe and other functions which need to make
+> sure clocks are on, but it seems unnecessary to enable/disable in
+> every function.
+
+What do you have in mind? Do you plan to let the uart on while the
+minicom is attached but is doing nothing? In that case, ->startup() and
+->shutdown() should be enough.
+If you want to put the uart off while the port is open but idle then
+you should cover the callbacks as they are independent of each other.
+You could receive three ->set_termios() even without a single
+->start_tx(). And as far as I understand the whole situation, you need
+to make sure the UART is "up" while you touch a single register not
+only sending characters, right?
+
+Sebastian
