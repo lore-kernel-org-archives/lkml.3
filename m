@@ -1,121 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556AbaGPKcC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:32:02 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:54971 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611AbaGPKb6 (ORCPT
+	id S1758155AbaGPKhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:37:05 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:63276 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967AbaGPKhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:31:58 -0400
+	Wed, 16 Jul 2014 06:37:01 -0400
+Message-ID: <53C655B7.1020506@linaro.org>
+Date: Wed, 16 Jul 2014 11:36:39 +0100
 From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
 To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Greg Ungerer <gerg@uclinux.org>,
+CC: linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, Greg Ungerer <gerg@uclinux.org>,
         Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH] arm: ks8695: Migrate debug_ll macros to shared directory
-Date: Wed, 16 Jul 2014 11:31:07 +0100
-Message-Id: <1405506667-4649-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+Subject: Re: [PATCH] arm: ks8695: Migrate debug_ll macros to shared directory
+References: <1405506667-4649-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1405506667-4649-1-git-send-email-daniel.thompson@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the migration a couple of uart definitions have been copied
-from of the platform specific header files.
+On 16/07/14 11:31, Daniel Thompson wrote:
+> As part of the migration a couple of uart definitions have been copied
+> from of the platform specific header files.
+> 
+> Note that, in order to keep oldconfig working nicely we must defer the
+> removal of arch/arm/mach-ks8695/include/mach/debug-macro.S until
+> DEBUG_LL_UART_NONE has been removed.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Greg Ungerer <gerg@uclinux.org>
+> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+> ---
+> 
+> Notes:
+>     This is a contribution towards the removal of DEBUG_LL_UART_NONE, see
+>     http://thread.gmane.org/gmane.linux.kernel/1712068/focus=1746065 for
+>     details.
 
-Note that, in order to keep oldconfig working nicely we must defer the
-removal of arch/arm/mach-ks8695/include/mach/debug-macro.S until
-DEBUG_LL_UART_NONE has been removed.
+Sorry wrong link (focus is not in the most meaningful message). Better
+link is:
+http://thread.gmane.org/gmane.linux.kernel/1712068/focus=1746366
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
----
 
-Notes:
-    This is a contribution towards the removal of DEBUG_LL_UART_NONE, see
-    http://thread.gmane.org/gmane.linux.kernel/1712068/focus=1746065 for
-    details.
-
- arch/arm/Kconfig.debug          |  8 ++++++++
- arch/arm/include/debug/ks8695.S | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+)
- create mode 100644 arch/arm/include/debug/ks8695.S
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 8f90595..6f9664a 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -340,6 +340,13 @@ choice
- 		  Say Y here if you want the debug print routines to direct
- 		  their output to UART1 serial port on KEYSTONE2 devices.
- 
-+	config DEBUG_KS8695_UART
-+		bool "KS8695 Debug UART"
-+		depends on ARCH_KS8695
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on KS8695.
-+
- 	config DEBUG_MMP_UART2
- 		bool "Kernel low-level debugging message via MMP UART2"
- 		depends on ARCH_MMP
-@@ -1006,6 +1013,7 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX6Q_UART || \
- 				 DEBUG_IMX6SL_UART || \
- 				 DEBUG_IMX6SX_UART
-+	default "debug/ks8695.S" if DEBUG_KS8695_UART
- 	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
- 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
- 	default "debug/s3c24xx.S" if DEBUG_S3C24XX_UART
-diff --git a/arch/arm/include/debug/ks8695.S b/arch/arm/include/debug/ks8695.S
-new file mode 100644
-index 0000000..961da1f
---- /dev/null
-+++ b/arch/arm/include/debug/ks8695.S
-@@ -0,0 +1,40 @@
-+/*
-+ * arch/arm/include/debug/ks8695.S
-+ *
-+ * Copyright (C) 2006 Ben Dooks <ben@simtec.co.uk>
-+ * Copyright (C) 2006 Simtec Electronics
-+ *
-+ * KS8695 - Debug macros
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#define KS8695_UART_PA	0x03ffe000
-+#define KS8695_UART_VA	0xf00fe000
-+#define KS8695_URTH	(0x04)
-+#define KS8695_URLS	(0x14)
-+#define URLS_URTE	(1 << 6)
-+#define URLS_URTHRE	(1 << 5)
-+
-+	.macro	addruart, rp, rv, tmp
-+		ldr	\rp, =KS8695_UART_PA		@ physical base address
-+		ldr	\rv, =KS8695_UART_VA		@ virtual base address
-+	.endm
-+
-+	.macro	senduart, rd, rx
-+		str	\rd, [\rx, #KS8695_URTH]	@ Write to Transmit Holding Register
-+	.endm
-+
-+	.macro	busyuart, rd, rx
-+1001:		ldr	\rd, [\rx, #KS8695_URLS]	@ Read Line Status Register
-+		tst	\rd, #URLS_URTE			@ Holding & Shift registers empty?
-+		beq	1001b
-+	.endm
-+
-+	.macro	waituart, rd, rx
-+1001:		ldr	\rd, [\rx, #KS8695_URLS]	@ Read Line Status Register
-+		tst	\rd, #URLS_URTHRE		@ Holding Register empty?
-+		beq	1001b
-+	.endm
--- 
-1.9.3
-
+Daniel.
