@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaGPW2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 18:28:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40883 "EHLO
+	id S1754119AbaGPWa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 18:30:28 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40890 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaGPW2n (ORCPT
+	with ESMTP id S1751179AbaGPWaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 18:28:43 -0400
-Date: Wed, 16 Jul 2014 23:28:29 +0100
+	Wed, 16 Jul 2014 18:30:25 -0400
+Date: Wed, 16 Jul 2014 23:30:10 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Bjorn Andersson <bjorn@kryo.se>
-Cc: pramod gurav <pramod.gurav.etc@gmail.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Message-ID: <20140716222829.GO17528@sirena.org.uk>
+Message-ID: <20140716223010.GP17528@sirena.org.uk>
 References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
  <1405465241-28684-4-git-send-email-bjorn.andersson@sonymobile.com>
- <CAMf-jSn2YHF7ihRpXMfkPWYt8pNCj4o395OGha3BHD3K3mUv9g@mail.gmail.com>
- <CAJAp7Oj1R-EkJoSdLEa6SBLbzE_N1MjsystQ9Z+x4L_SjU=56w@mail.gmail.com>
+ <20140716000848.GG17528@sirena.org.uk>
+ <CAJAp7OjzWw6uBVsMXEvx0Lc1v_UJ+hGa2UeaQCtdfzsm+nAMDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D85EWoRcDXv1uhH1"
+	protocol="application/pgp-signature"; boundary="Tw5XVHq4jmAOFG53"
 Content-Disposition: inline
-In-Reply-To: <CAJAp7Oj1R-EkJoSdLEa6SBLbzE_N1MjsystQ9Z+x4L_SjU=56w@mail.gmail.com>
+In-Reply-To: <CAJAp7OjzWw6uBVsMXEvx0Lc1v_UJ+hGa2UeaQCtdfzsm+nAMDQ@mail.gmail.com>
 X-Cookie: 98% lean.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
@@ -40,44 +39,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---D85EWoRcDXv1uhH1
+--Tw5XVHq4jmAOFG53
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Jul 16, 2014 at 03:17:13PM -0700, Bjorn Andersson wrote:
-> On Wed, Jul 16, 2014 at 12:01 AM, pramod gurav
-> > On Wed, Jul 16, 2014 at 4:30 AM, Bjorn Andersson
-> > <bjorn.andersson@sonymobile.com> wrote:
+On Wed, Jul 16, 2014 at 03:15:16PM -0700, Bjorn Andersson wrote:
+> On Tue, Jul 15, 2014 at 5:08 PM, Mark Brown <broonie@kernel.org> wrote:
 
-> >> +static const struct regulator_linear_range pldo_ranges[] = {
-> >> +       REGULATOR_LINEAR_RANGE( 750000,   0,  59, 12500),
+> > I have patch 3/3 here but no cover or other patches - what is the story
+> > there?
 
-> > ERROR: space prohibited after that open parenthesis '('
+> I forgot to add you as explicit recipient of the other mails in the
+> series, sorry about that. Please let me know if you would like to have
+> them resent.
 
-> I prefer the nicely aligned columns over checkpatch correctness here.
+I mostly want to know about the dependencies - I guess the first couple
+of patches define the QCOM_RPM interface, is that stable enough to go
+ahead with the regulator driver for example?
 
-Me too.
-
---D85EWoRcDXv1uhH1
+--Tw5XVHq4jmAOFG53
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTxvyKAAoJELSic+t+oim9NngP/RoArEBjjlY82D9lo+UbT5nf
-chizzJ49scpVqzayPgiMMuOKpKKSQsFGRQe4fdi3u0sW/0PFfEHHHH9lVDmFgOxX
-OxiOdVQxDel2c5G9J2SZiZ0vT74ecJp5aPlq9MRdh1KtCRAcg+xOWQ2GzWmR8MyM
-GgPyC8IFTuoLkBMPjEMDKnnfy9OgsuPXxtZDifnSaFZXqiWgIXauwc0xrzbAtmTu
-IjhhX0DeEr1hXpfUnBifmbpjfDZqNtu96nrKFJvOoiAbhJnZQyge+ycg+JEmNZpv
-7jdN+gsh+jZI22Z3E92i9c9xbxT4n0NxTvjqmV89q+FRTyBjYAvp0+tpltinRe5F
-NetX15zM7aevhxXAzp1504tundKUqwi+3xuE1MAfDlHejIm0801AhPRLOVMctqP8
-SHTXPHcIY7cJ3dHtVJJANFEXn9oJjRRJCMwo1AZhzRihem9bPJ/ZtkoFIOMt2Bfn
-1ybj3xt78fqJruFcS4dvh95BCfAuBMpO0yYJfFPEDPAfvA6Y8wS9l027z9LeNEwa
-6hjIn5fxQIw2jvMNDlGzYHVYTtA+9LaorngeqZ4I679CZzFn3DAauo1FE4o4Lk6N
-Ta0WToAd8kEpc85kEhKCMZWdwI9FRHNCj1ElWYUy+D7zJqChYMYScI6/+nXygrQp
-Oc/vP06NsjuxaGeXXDSF
-=fREf
+iQIcBAEBAgAGBQJTxvzvAAoJELSic+t+oim9w8cP+wbLEMizjpQALZs1ONu99Wew
+gqYNe4ncbnSctYTpYXxG10GVgA0Zbmh+OBAm8uEg+vJqaQdOakLiBPWaQMq9PNB5
+N30cssHbJddNilT0ocvtm6gzcrRfDb4b0zeeBvXku1cWkIR6dqLrtmXhzsi3yi+G
+f459om1L1t3DexA6NpKB5qU4NZguaRijzoChzDbLuMk0MyrH4Dz8dJevmSyNhsqr
+6g8jusmPyoa9U03g2gUKYjkGpJdPJn5Zox0/sN3u1wS8XcwgFWq+doRMdxNPidCZ
+WcvI9doZg0ahorM38Hka0ySg6Ppvsyghcnmm9BgweCpwrCMJ5FbrsfyanfYXGt7x
+AX/v2GCJKi5P072CYFkzFMR6vqYrgXtgLlqz6bXY3zSuoSFqRKSVtI6gLSNsfDHI
+XDQcOKDEXTWIIvVnGnahz+NC8b2Ru/sFzRrcfLgq0yTt3HvJ5JM6t5Ge8f2DtY53
+xRYaBu0U3tokIsC+sj0YJOIFF2eTdd5/ihcasYmLiZ+49Wyke1662o3f+SzhbqhR
+2GAlWEkqvUyeuxCemnCoF+z13K54BMVNvcWrlmjQuSSO0pIB3saC2VNVBD7abI1n
+uiqwEOij919lpcXPSSA7eNq8HEZl70EoEisheSGlLVNUJE7ZYDf3q6FuDExNhizQ
+A4HN10+kzpPhAdY7Qr1R
+=EPSR
 -----END PGP SIGNATURE-----
 
---D85EWoRcDXv1uhH1--
+--Tw5XVHq4jmAOFG53--
