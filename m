@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760157AbaGPR1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:27:21 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:34905 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759962AbaGPR1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:27:07 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org, jack@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] printk: correct some more typos
-Date: Wed, 16 Jul 2014 12:27:00 -0500
-Message-Id: <1405531620-9983-5-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405531620-9983-1-git-send-email-elder@linaro.org>
-References: <1405531620-9983-1-git-send-email-elder@linaro.org>
+	id S1760217AbaGPR1h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 13:27:37 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:39709 "EHLO tetsuo.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759962AbaGPR1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 13:27:34 -0400
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 13:27:34 EDT
+Date: Wed, 16 Jul 2014 10:20:21 -0700
+From: Zach Brown <zab@zabbo.net>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] Btrfs: fix sparse warning
+Message-ID: <20140716172021.GA10833@lenny.home.zabbo.net>
+References: <1405451837-8235-1-git-send-email-fabf@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405451837-8235-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects a few more typographical errors in "printk.c".
+On Tue, Jul 15, 2014 at 09:17:17PM +0200, Fabian Frederick wrote:
+> Fix the following sparse warning:
+> fs/btrfs/send.c:518:51: warning: incorrect type in argument 2 (different address spaces)
+> fs/btrfs/send.c:518:51:    expected char const [noderef] <asn:1>*<noident>
+> fs/btrfs/send.c:518:51:    got char *
+> 
+> We can safely use (const char __user *) with set_fs(KERNEL_DS)
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- kernel/printk/printk.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Yeah, that cast is correct.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 3f15d95..0cbd060 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -201,7 +201,7 @@ static int console_may_schedule;
-  *
-  * The optional key/value pairs are attached as continuation lines starting
-  * with a space character and terminated by a newline. All possible
-- * non-prinatable characters are escaped in the "\xff" notation.
-+ * non-printable characters are escaped in the "\xff" notation.
-  *
-  * Users of the export format should ignore possible additional values
-  * separated by ',', and find the message after the ';' character.
-@@ -411,7 +411,7 @@ static int log_store(int facility, int level,
- 		/* truncate the message if it is too long for empty buffer */
- 		size = truncate_msg(&text_len, &trunc_msg_len,
- 				    &dict_len, &pad_len);
--		/* survive when the log buffer is too small for trunc_msg */
-+		/* survive when the log buffer is too small for truncate_msg */
- 		if (log_make_free_space(size))
- 			return 0;
- 	}
-@@ -614,7 +614,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	/*
- 	 * If we couldn't merge continuation line fragments during the print,
- 	 * export the stored flags to allow an optional external merge of the
--	 * records. Merging the records isn't always neccessarily correct, like
-+	 * records. Merging the records isn't always necessarily correct, like
- 	 * when we hit a race during printing. In most cases though, it produces
- 	 * better readable output. 'c' in the record flags mark the first
- 	 * fragment of a line, '+' the following.
-@@ -2881,7 +2881,7 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
- 		prev = msg->flags;
- 	}
- 
--	/* last message in next interation */
-+	/* last message in next iteration */
- 	next_seq = seq;
- 	next_idx = idx;
- 
-@@ -2907,7 +2907,7 @@ out:
- EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
- 
- /**
-- * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
-+ * kmsg_dump_rewind_nolock - reset the iterator (unlocked version)
-  * @dumper: registered kmsg dumper
-  *
-  * Reset the dumper's iterator so that kmsg_dump_get_line() and
-@@ -2925,7 +2925,7 @@ void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
- }
- 
- /**
-- * kmsg_dump_rewind - reset the interator
-+ * kmsg_dump_rewind - reset the iterator
-  * @dumper: registered kmsg dumper
-  *
-  * Reset the dumper's iterator so that kmsg_dump_get_line() and
--- 
-1.9.1
+Reviewed-by: Zach Brown <zab@zabbo.net>
 
+> @@ -515,7 +515,8 @@ static int write_buf(struct file *filp, const void *buf, u32 len, loff_t *off)
+
+Though this probably wants to be rewritten in terms of kernel_write().
+That'd give an opportunity to get rid of the sctx->send_off and have it
+use f_pos in the filp.
+
+- z
