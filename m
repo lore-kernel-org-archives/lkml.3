@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760625AbaGPId7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:33:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60606 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758622AbaGPI0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:26:12 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 04/12] ARM: dts: berlin: add a required reset property in the chip controller node
-Date: Wed, 16 Jul 2014 10:25:58 +0200
-Message-Id: <1405499166-6726-5-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1760659AbaGPIfC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:35:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41996 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758622AbaGPIe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:34:59 -0400
+Date: Wed, 16 Jul 2014 10:34:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] mm: memcontrol: rewrite uncharge API fix - double
+ migration
+Message-ID: <20140716083456.GC7121@dhcp22.suse.cz>
+References: <1404759133-29218-1-git-send-email-hannes@cmpxchg.org>
+ <1404759133-29218-3-git-send-email-hannes@cmpxchg.org>
+ <alpine.LSU.2.11.1407141246340.17669@eggly.anvils>
+ <20140715144539.GR29639@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715144539.GR29639@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The chip controller node now also describes the Marvell Berlin reset
-controller. Add the required 'reset-cells' property.
+[Sorry I have missed this thread]
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- arch/arm/boot/dts/berlin2.dtsi   | 1 +
- arch/arm/boot/dts/berlin2cd.dtsi | 1 +
- arch/arm/boot/dts/berlin2q.dtsi  | 1 +
- 3 files changed, 3 insertions(+)
+On Tue 15-07-14 10:45:39, Johannes Weiner wrote:
+[...]
+> From 274b94ad83b38fe7dc1707a8eb4015b3ab1673c5 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Thu, 10 Jul 2014 01:02:11 +0000
+> Subject: [patch] mm: memcontrol: rewrite uncharge API fix - double migration
+> 
+> Hugh reports:
+> 
+> VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
+> mm/memcontrol.c:6680!
+> page had count 1 mapcount 0 mapping anon index 0x196
+> flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
+> mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
+> compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
+> __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
+> handle_mm_fault < __do_page_fault
+> 
+> mem_cgroup_migrate() assumes that a page is only migrated once and
+> then freed immediately after.
+> 
+> However, putting the page back on the LRU list and dropping the
+> isolation refcount is not done atomically.  This allows a PFN-based
+> migrator like compaction to isolate the page, see the expected
+> anonymous page refcount of 1, and migrate the page once more.
+> 
+> Furthermore, once the charges are transferred to the new page, the old
+> page no longer has a pin on the memcg, which might get released before
+> the page itself now.  pc->mem_cgroup is invalid at this point, but
+> PCG_USED suggests otherwise, provoking use-after-free.
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index 2477dac4d643..97b12492675e 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -243,6 +243,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index cc1df65da504..68f7032b4686 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -231,6 +231,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2cd-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 635a16a64cb4..a6f7ec325200 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -298,6 +298,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2q-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>, <0xdd0170 0x10>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
+The same applies to to the new page because we are transferring only
+statistics. The old page with PCG_USED would uncharge the res_counter
+and so the new page is not backed by any and so memcg can go away.
+This sounds like a more probable scenario to me because old page should
+go away quite early after successful migration.
+
+> Properly uncharge the page after it's been migrated, including the
+> clearing of PCG_USED, so that a subsequent charge migration attempt
+> will be able to detect it and bail out.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reported-by: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/memcontrol.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 1e3b27f8dc2f..1439537fe7c9 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -6655,7 +6655,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  
+>  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
+>  	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
+> -	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
+>  
+>  	if (PageTransHuge(oldpage)) {
+>  		nr_pages <<= compound_order(oldpage);
+> @@ -6663,6 +6662,13 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
+>  	}
+>  
+> +	pc->flags = 0;
+> +
+> +	local_irq_disable();
+> +	mem_cgroup_charge_statistics(pc->mem_cgroup, oldpage, -nr_pages);
+> +	memcg_check_events(pc->mem_cgroup, oldpage);
+> +	local_irq_enable();
+> +
+>  	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
+>  }
+
+Looks good to me. I am just wondering whether we should really
+fiddle with stats and events when actually nothing changed during
+the transition. I would simply extract core of commit_charge into
+__commit_charge which would be called from here.
+
+The impact is minimal because events are rate limited and stats are
+per-cpu so it is not a big deal it just looks ugly to me.
 -- 
-1.9.1
-
+Michal Hocko
+SUSE Labs
