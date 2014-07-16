@@ -1,100 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934947AbaGPTEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:04:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6454 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754757AbaGPTD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:03:58 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, xjtuwjp@gmail.com,
-        lindar_liu@usish.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 18/23] pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Wed, 16 Jul 2014 20:05:22 +0200
-Message-Id: <9bfa1f22a2a59814a4d520bbcce6eba1b6979b31.1405533479.git.agordeev@redhat.com>
-In-Reply-To: <cover.1405533479.git.agordeev@redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
+	id S934970AbaGPTEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:04:42 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:55860 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaGPTEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 15:04:40 -0400
+Date: Wed, 16 Jul 2014 21:04:14 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: davem@davemloft.net, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc: Add support for seek and shorter read to
+ /dev/mdesc
+Message-ID: <20140716190414.GA6028@ravnborg.org>
+References: <1405519323-3092-1-git-send-email-khalid.aziz@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405519323-3092-1-git-send-email-khalid.aziz@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+Hi Kahlid.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: xjtuwjp@gmail.com
-Cc: lindar_liu@usish.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/pm8001/pm8001_init.c |   39 +++++++++++++++++++------------------
- 1 files changed, 20 insertions(+), 19 deletions(-)
+On Wed, Jul 16, 2014 at 08:02:03AM -0600, Khalid Aziz wrote:
+> /dev/mdesc on Linux does not support reading arbitrary number
+> of bytes and seeking while /dev/mdesc on Solaris does. This
+> causes tools that work on Solaris to break on Linux. This patch
+> adds these two capabilities to /dev/mdesc.
+> 
+> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+> ---
+>  arch/sparc/kernel/mdesc.c | 77 ++++++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 66 insertions(+), 11 deletions(-)
+> 
+> +/* mdesc_open() - Grab a reference to mdesc_handle when /dev/mdesc is
+> + *	opened. Hold this reference until /dev/mdesc is closed to ensure
+> + *	mdesc data structure is not released underneath us. Store the
+> + *	pointer to mdesc structure in private_data for read and seek to use
+> + */
+> +static int mdesc_open(struct inode *inode, struct file *file)
+>  {
+>  	struct mdesc_handle *hp = mdesc_grab();
+>  
+>  	if (!hp)
+>  		return -ENODEV;
+>  
+> +	file->private_data = hp;
+> +	return 0;
+> +}
 
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index e837ece..4057c24 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -729,34 +729,35 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
- 		sizeof(pm8001_ha->msix_entries[0]);
- 	for (i = 0; i < max_entry ; i++)
- 		pm8001_ha->msix_entries[i].entry = i;
--	rc = pci_enable_msix(pm8001_ha->pdev, pm8001_ha->msix_entries,
-+	rc = pci_enable_msix_exact(pm8001_ha->pdev, pm8001_ha->msix_entries,
- 		number_of_intr);
- 	pm8001_ha->number_of_intr = number_of_intr;
--	if (!rc) {
--		PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
--			"pci_enable_msix request ret:%d no of intr %d\n",
--					rc, pm8001_ha->number_of_intr));
-+	if (rc)
-+		return rc;
- 
-+	PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
-+		"pci_enable_msix_exact request ret:%d no of intr %d\n",
-+				rc, pm8001_ha->number_of_intr));
- 
--		for (i = 0; i < number_of_intr; i++) {
--			snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
--					DRV_NAME"%d", i);
--			pm8001_ha->irq_vector[i].irq_id = i;
--			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
-+	for (i = 0; i < number_of_intr; i++) {
-+		snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
-+				DRV_NAME"%d", i);
-+		pm8001_ha->irq_vector[i].irq_id = i;
-+		pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
- 
--			rc = request_irq(pm8001_ha->msix_entries[i].vector,
--				pm8001_interrupt_handler_msix, flag,
--				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
--			if (rc) {
--				for (j = 0; j < i; j++)
--					free_irq(
--					pm8001_ha->msix_entries[j].vector,
-+		rc = request_irq(pm8001_ha->msix_entries[i].vector,
-+			pm8001_interrupt_handler_msix, flag,
-+			intr_drvname[i], &(pm8001_ha->irq_vector[i]));
-+		if (rc) {
-+			for (j = 0; j < i; j++) {
-+				free_irq(pm8001_ha->msix_entries[j].vector,
- 					&(pm8001_ha->irq_vector[i]));
--				pci_disable_msix(pm8001_ha->pdev);
--				break;
- 			}
-+			pci_disable_msix(pm8001_ha->pdev);
-+			break;
- 		}
- 	}
-+
- 	return rc;
- }
- #endif
--- 
-1.7.7.6
+Do we know the open/close always come in pairs?
+I assume so - but there is no check fo this (at least on this level).
 
+> +
+> +static ssize_t mdesc_read(struct file *file, char __user *buf,
+> +			  size_t len, loff_t *offp)
+> +{
+> +	struct mdesc_handle *hp = file->private_data;
+> +	unsigned char *mdesc;
+> +	int err, bytes_left;
+> +
+> +	if (*offp >= hp->handle_size)
+> +		return 0;
+> +	err = len;
+> +	bytes_left = hp->handle_size - *offp;
+> +	if (len > bytes_left)
+> +		err = bytes_left;
+> +	mdesc = (unsigned char *)&hp->mdesc;
+> +	mdesc += *offp;
+> +	if (copy_to_user(buf, mdesc, err))
+>  		err = -EFAULT;
+> -	mdesc_release(hp);
+> +	else
+> +		*offp += err;
+> +
+> +	return err;
+> +}
+
+When reading your code it is confusing to read that err is set to len,
+and then maybe later set to an error value or a new len.
+
+See the following refactoring of mdesc_read() that avoids the err local
+variable resulting in more readable code.
+
+static ssize_t mdesc_read(struct file *file, char __user *buf,
+                       size_t len, loff_t *offp)
+{
+     struct mdesc_handle *hp = file->private_data;
+     unsigned char *mdesc;
+     int bytes_left;
+
+     if (*offp >= hp->handle_size)
+             return 0;
+
+     bytes_left = hp->handle_size - *offp;
+     if (len > bytes_left)
+             len = bytes_left;
+
+     mdesc = (unsigned char *)&hp->mdesc;
+     mdesc += *offp;
+     if (!copy_to_user(buf, mdesc, len)) {
+             *offp += len;
+	     return len;
+     } else {
+             return -EFAULT;
+     }
+}
+
+The above is IMO more readable.
+>  
+> +static loff_t mdesc_llseek(struct file *file, loff_t offset, int whence)
+> +{
+> +	struct mdesc_handle *hp;
+> +	int err;
+> +
+> +	switch (whence) {
+> +	case SEEK_CUR:
+> +		offset += file->f_pos;
+> +		break;
+> +	case SEEK_SET:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	err = offset;
+> +	hp = file->private_data;
+> +	if (offset > hp->handle_size)
+> +		err = -EINVAL;
+> +	else
+> +		file->f_pos = offset;
+>  	return err;
+>  }
+Same story here with err.
+
+
+	Sam
