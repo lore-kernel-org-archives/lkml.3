@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758950AbaGPCpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 22:45:20 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:39602 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758474AbaGPCpI (ORCPT
+	id S1756703AbaGPCsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 22:48:24 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:60946 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaGPCsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 22:45:08 -0400
-From: KANG Yuxuan <stonekyx@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sachin Kamat <sachin.kamat@samsung.com>,
-        Magnus Damm <damm+renesas@opensource.se>,
-        Simon Horman <horms+renesas@verge.net.au>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: emxx_udc: Fix coding style errors
-Date: Wed, 16 Jul 2014 10:45:01 +0800
-Message-Id: <1405478701-1598-1-git-send-email-stonekyx@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Tue, 15 Jul 2014 22:48:22 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, x86@kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+Date: Tue, 15 Jul 2014 19:48:06 -0700
+Message-Id: <cover.1405477965.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only fixing errors reported by checkpatch.pl, based on the following
-rules:
-1. '*' should be adjacent to the data name or function name.
-2. Don't use C99-style "// ..." comments.
+virtio-rng is both too complicated and insufficient for initial rng
+seeding.  It's far too complicated to use for KASLR or any other
+early boot random number needs.  It also provides /dev/random-style
+bits, which means that making guest boot wait for virtio-rng is
+unacceptably slow, and doing it asynchronously means that
+/dev/urandom might be predictable when userspace starts.
 
-Signed-off-by: KANG Yuxuan <stonekyx@gmail.com>
----
- drivers/staging/emxx_udc/emxx_udc.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+This introduces a very simple synchronous mechanism to get
+/dev/urandom-style bits.
 
-diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
-index 0003463..b2eaf01 100644
---- a/drivers/staging/emxx_udc/emxx_udc.c
-+++ b/drivers/staging/emxx_udc/emxx_udc.c
-@@ -562,12 +562,12 @@ static void _nbu2ss_dma_unmap_single(
- 
- /*-------------------------------------------------------------------------*/
- /* Endpoint 0 OUT Transfer (PIO) */
--static int EP0_out_PIO(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
-+static int EP0_out_PIO(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
- {
- 	u32		i;
- 	int		nret   = 0;
- 	u32		iWordLength = 0;
--	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
-+	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
- 
- 	/*------------------------------------------------------------*/
- 	/* Read Length */
-@@ -588,12 +588,12 @@ static int EP0_out_PIO(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
- 
- /*-------------------------------------------------------------------------*/
- /* Endpoint 0 OUT Transfer (PIO, OverBytes) */
--static int EP0_out_OverBytes(struct nbu2ss_udc *udc, u8* pBuf, u32 length)
-+static int EP0_out_OverBytes(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
- {
- 	u32		i;
- 	u32		iReadSize = 0;
- 	USB_REG_ACCESS  Temp32;
--	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
-+	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
- 
- 	if ((0 < length) && (length < sizeof(u32))) {
- 		Temp32.dw = _nbu2ss_readl(&udc->p_regs->EP0_READ);
-@@ -613,7 +613,7 @@ static int EP0_in_PIO(struct nbu2ss_udc *udc, u8 *pBuf, u32 length)
- 	u32		iMaxLength   = EP0_PACKETSIZE;
- 	u32		iWordLength  = 0;
- 	u32		iWriteLength = 0;
--	USB_REG_ACCESS*	pBuf32 = (USB_REG_ACCESS *)pBuf;
-+	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
- 
- 	/*------------------------------------------------------------*/
- 	/* Transfer Length */
-@@ -639,7 +639,7 @@ static int EP0_in_OverBytes(struct nbu2ss_udc *udc, u8 *pBuf, u32 iRemainSize)
- {
- 	u32		i;
- 	USB_REG_ACCESS Temp32;
--	USB_REG_ACCESS* pBuf32 = (USB_REG_ACCESS *)pBuf;
-+	USB_REG_ACCESS *pBuf32 = (USB_REG_ACCESS *)pBuf;
- 
- 	if ((0 < iRemainSize) && (iRemainSize < sizeof(u32))) {
- 		for (i = 0 ; i < iRemainSize ; i++)
-@@ -3339,7 +3339,7 @@ static int __init nbu2ss_drv_contest_init(
- 	udc->gadget.ep0 = &udc->ep[0].ep;
- 	udc->gadget.speed = USB_SPEED_UNKNOWN;
- 	udc->gadget.name = driver_name;
--	//udc->gadget.is_dualspeed = 1;
-+	/* udc->gadget.is_dualspeed = 1; */
- 
- 	device_initialize(&udc->gadget.dev);
- 
+This is a KVM change: am I supposed to write a unit test somewhere?
+
+Andy Lutomirski (4):
+  x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
+  random,x86: Add arch_get_slow_rng_u64
+  random: Seed pools from arch_get_slow_rng_u64 at startup
+  x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+
+ Documentation/virtual/kvm/cpuid.txt  |  3 +++
+ arch/x86/Kconfig                     |  4 ++++
+ arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++++++++++++++++
+ arch/x86/include/asm/archslowrng.h   | 30 ++++++++++++++++++++++++++++++
+ arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+ arch/x86/kernel/kvm.c                | 22 ++++++++++++++++++++++
+ arch/x86/kvm/cpuid.c                 |  3 ++-
+ arch/x86/kvm/x86.c                   |  4 ++++
+ drivers/char/random.c                | 14 +++++++++++++-
+ include/linux/random.h               |  9 +++++++++
+ 10 files changed, 116 insertions(+), 2 deletions(-)
+ create mode 100644 arch/x86/include/asm/archslowrng.h
+
 -- 
-2.0.1
+1.9.3
 
