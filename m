@@ -1,177 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626AbaGPIsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:48:32 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:37489 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933571AbaGPIs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:48:27 -0400
+	id S1759305AbaGPIx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:53:59 -0400
+Received: from blu004-omc4s37.hotmail.com ([65.55.111.176]:55185 "EHLO
+	BLU004-OMC4S37.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758429AbaGPIx4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:53:56 -0400
+X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 04:53:56 EDT
+X-TMN: [kNqXSUJBdK837lBDznGjtO7Psm8B48oFlDtch4RPRVc=]
+X-Originating-Email: [beanhuo@outlook.com]
+Message-ID: <BLU185-W44C89261B8307EBFCC2EC0A6F70@phx.gbl>
+From: Bean Huo <beanhuo@outlook.com>
+To: Jingoo Han <jg1.han@samsung.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
+CC: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "b32955@freescale.com" <b32955@freescale.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "christian.riesch@omicron.at" <christian.riesch@omicron.at>
+Subject: RE: [PATCH v5] mtd:nor:timeout:fix do_write_buffer() timeout error
+Date: Wed, 16 Jul 2014 08:48:49 +0000
+Importance: Normal
+In-Reply-To: <002201cfa0ca$be634b10$3b29e130$%han@samsung.com>
+References: <BLU185-W10713E955F9530C4D53490A6F70@phx.gbl>,<BLU185-W62B0858FCD7D3A71127B41A6F70@phx.gbl>,<002201cfa0ca$be634b10$3b29e130$%han@samsung.com>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1405464473-3916-3-git-send-email-skannan@codeaurora.org>
-References: <1405464473-3916-1-git-send-email-skannan@codeaurora.org>
-	<1405464473-3916-3-git-send-email-skannan@codeaurora.org>
-Date: Wed, 16 Jul 2014 14:18:26 +0530
-Message-ID: <CAKohpomuo-=fox=1rNZOgvy+COyWYexcP2J9NRFJqmTK6MLOjA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] cpufreq: Simplify and fix mutual exclusion with hotplug
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+X-OriginalArrivalTime: 16 Jul 2014 08:48:49.0561 (UTC) FILETIME=[C3348890:01CFA0D2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 July 2014 04:17, Saravana Kannan <skannan@codeaurora.org> wrote:
 
-Again, just too many things in a single patch. That's not acceptable.
-Few of these might be bug fixes, which must go in before any other updates.
-And so it must have been added as first patch.
-
-Even the other stuff you are trying to fix (by checking policy->cpus) should go
-before 1/2, otherwise 1/2 will actually break things inbetween, i.e. show values
-even when no CPUs of a cluster are online.
-
-> Since we no longer alloc and destroy/freeze policy and sysfs nodes during
-> hotplug and suspend, we don't need to lock sysfs with hotplug. We can
-> achieve the same effect by checking if policy->cpus is empty.
-
-Are you talking about the changes in store()?
-
-> Hotplug mutual exclusion was only done for sysfs writes. But reads need the
-> same protection too.  So, this patch adds that too.
-
-How? How is checking for policy->cpus enough?
-
-> Also, cpufreq driver (un)register can race with hotplug since CPU online
-> state can change between adding/removing the currently online devices and
-> registering/unregistering for hotplug notifiers. So, fix that by
-> registering for hotplug notifiers first before adding devices and
-> unregistering from hotplug notifiers first before removing devices.
-
-Couldn't get it, tell us an example race and what will go wrong due to it.
-Also this should have had a separate patch for itself.
-
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 44 ++++++++++++++++++++------------------------
->  1 file changed, 20 insertions(+), 24 deletions(-)
+>> + if (cfi->cfiq->BufWriteTimeoutTyp &&
+>> + cfi->cfiq->BufWriteTimeoutMax){
+>> + cfi->chips[i].buffer_write_time_max =
+>> + 1<<(cfi->cfiq->BufWriteTimeoutTyp +
+>> + cfi->cfiq->BufWriteTimeoutMax);
+>> + } else {
+>> + cfi->chips[i].buffer_write_time_max = 0;
+>> + }
 >
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index a0a2ec2..f72b2b7 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -748,17 +748,18 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
->  {
->         struct cpufreq_policy *policy = to_policy(kobj);
->         struct freq_attr *fattr = to_attr(attr);
-> -       ssize_t ret;
-> +       ssize_t ret = -EINVAL;
+> Please keep the coding style as below.
 >
->         if (!down_read_trylock(&cpufreq_rwsem))
-> -               return -EINVAL;
-> -
-> +               return ret;
->         down_read(&policy->rwsem);
+> if ( ) {
+> ...
+> } else {
+> ...
+> }
 >
-> -       if (fattr->show)
-> -               ret = fattr->show(policy, buf);
-> -       else
-> -               ret = -EIO;
-> +       if (!cpumask_empty(policy->cpus)) {
-> +               if (fattr->show)
-> +                       ret = fattr->show(policy, buf);
-> +               else
-> +                       ret = -EIO;
-> +       }
 
-Makes sense upto this point.
+If I keep coding style as above.this will be beyond the requirements of one line length.
+I also saw othter files use the same code style as mine.please see:cfi_cmdset_0001.c
 
->         up_read(&policy->rwsem);
->         up_read(&cpufreq_rwsem);
-> @@ -773,26 +774,19 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
->         struct freq_attr *fattr = to_attr(attr);
->         ssize_t ret = -EINVAL;
->
-> -       get_online_cpus();
-> -
-> -       if (!cpu_online(policy->cpu))
-> -               goto unlock;
-> -
+if (cfi->cfiq->WordWriteTimeoutTyp &&
+     cfi->cfiq->WordWriteTimeoutMax)
+        cfi->chips[i].word_write_time_max =
+		1<<(cfi->cfiq->WordWriteTimeoutTyp +
+		      cfi->cfiq->WordWriteTimeoutMax);
+else
+      cfi->chips[i].word_write_time_max = 50000 * 8;
 
-@Srivatsa: what do you say?
-
->         if (!down_read_trylock(&cpufreq_rwsem))
-> -               goto unlock;
-> -
-> +               return ret;
->         down_write(&policy->rwsem);
->
-> -       if (fattr->store)
-> -               ret = fattr->store(policy, buf, count);
-> -       else
-> -               ret = -EIO;
-> +       if (!cpumask_empty(policy->cpus)) {
-> +               if (fattr->store)
-> +                       ret = fattr->store(policy, buf, count);
-> +               else
-> +                       ret = -EIO;
-> +       }
->
->         up_write(&policy->rwsem);
-> -
->         up_read(&cpufreq_rwsem);
-> -unlock:
-> -       put_online_cpus();
->
->         return ret;
->  }
-> @@ -2270,6 +2264,8 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
->                 }
->         }
->
-> +       register_hotcpu_notifier(&cpufreq_cpu_notifier);
-> +
->         ret = subsys_interface_register(&cpufreq_interface);
->         if (ret)
->                 goto err_boost_unreg;
-> @@ -2293,13 +2289,13 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
->                 }
->         }
->
-> -       register_hotcpu_notifier(&cpufreq_cpu_notifier);
->         pr_debug("driver %s up and running\n", driver_data->name);
->
->         return 0;
->  err_if_unreg:
->         subsys_interface_unregister(&cpufreq_interface);
->  err_boost_unreg:
-> +       unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
->         if (cpufreq_boost_supported())
->                 cpufreq_sysfs_remove_file(&boost.attr);
->  err_null_driver:
-> @@ -2327,12 +2323,12 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
->
->         pr_debug("unregistering driver %s\n", driver->name);
->
-> +       unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
-> +
->         subsys_interface_unregister(&cpufreq_interface);
->         if (cpufreq_boost_supported())
->                 cpufreq_sysfs_remove_file(&boost.attr);
->
-> -       unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
-> -
->         down_write(&cpufreq_rwsem);
->         write_lock_irqsave(&cpufreq_driver_lock, flags);
-
-Normally the order of register/unregister should be just opposite.
-Isn't that true here? Yeah, it was broken earlier as well...
+Note: beacuse I cann't send mail by git in office,I send this patch by web mail client.So,
+there still a error stype in this patch(web mail client will remove some spaces),that is one space required before that '>='.I will send again this patch at home.
+For your coding style advice, I will take into account,but i don't know if can put one line. 		 	   		  
