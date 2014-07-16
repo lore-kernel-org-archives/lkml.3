@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaGPXbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 19:31:14 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:51842 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaGPXbM (ORCPT
+	id S1754590AbaGPXcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 19:32:36 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:46984 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720AbaGPXcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 19:31:12 -0400
+	Wed, 16 Jul 2014 19:32:33 -0400
+Date: Wed, 16 Jul 2014 16:32:28 -0700
+From: josh@joshtriplett.org
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
+Message-ID: <20140716233228.GA30408@cloud>
+References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com>
+ <1405463509-2468-2-git-send-email-bobby.prani@gmail.com>
+ <20140715225313.GB24290@cloud>
+ <53C5B1F7.3000409@gmail.com>
+ <20140716124729.GR8690@linux.vnet.ibm.com>
+ <53C67E2E.7080402@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1405553002.17757.7.camel@nuvo>
-References: <20140716013206.GA13409@google.com>
-	<5611777.bNi5p029gt@vostro.rjw.lan>
-	<1405552422.17757.5.camel@nuvo>
-	<1463038.d2xocpRFLY@vostro.rjw.lan>
-	<1405553002.17757.7.camel@nuvo>
-Date: Wed, 16 Jul 2014 16:31:11 -0700
-Message-ID: <CAE_wzQ8HERY+EX_5kjfHML-eu2cxv5ihhYt2nCn34Zws4mgS-A@mail.gmail.com>
-Subject: Re: Power-managing devices that are not of interest at some point in time
-From: Dmitry Torokhov <dtor@google.com>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Patrik Fimml <patrikf@chromium.org>, linux-pm@vger.kernel.org,
-        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C67E2E.7080402@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 4:23 PM, Bastien Nocera <hadess@hadess.net> wrote:
-> On Thu, 2014-07-17 at 01:33 +0200, Rafael J. Wysocki wrote:
->> On Thursday, July 17, 2014 01:13:42 AM Bastien Nocera wrote:
->> > On Thu, 2014-07-17 at 01:11 +0200, Rafael J. Wysocki wrote:
->> > > On Tuesday, July 15, 2014 06:32:06 PM Patrik Fimml wrote:
->> > > > (Re-sending with correct mailing list addresses.)
->> > > >
->> > > > Hi,
->> > > >
->> > > > When the lid of a laptop is closed, certain devices can no longer
->> > > > provide interesting input or will even produce bogus input, such as:
->> > > >
->> > > > - input devices: touchscreen, touchpad, keyboard
->> > > > - sensors: ambient light sensor, accelerometer, magnetometer
->> > > > - a video camera mounted on the lid
->> > > > - display backlight
->> > > >
->> > > > Various workarounds cover some of these cases, and we have some ugly
->> > > > hacks in ChromeOS to make things work. It would be nice if a userspace
->> > > > power management daemon could listen to the lid-close event, and then
->> > > > have a way to temporarily power off these devices, potentially through
->> > > > sysfs.
->> > > >
->> > > > I've been discussing this with Dmitry and Benson (cc'd), and we've been
->> > > > wondering whether we could come up with a generic solution that could
->> > > > benefit multiple device classes.
->> > > >
->> > > > There's some overlap with runtime PM here. The action to be taken in
->> > > > such a situation would probably be similar to a runtime suspend. The
->> > > > match is not perfect though, since devices with more than two power
->> > > > states might want to enter different states depending on the situation.
->> > > >
->> > > > It's somewhat difficult to get the semantics right, since handles to
->> > > > such devices might still be open. It might be easier to implement
->> > > > behavior specific to device classes. On the other hand, it would be nice
->> > > > to have a uniform way of shutting devices down, and not introduce
->> > > > another possible path for a device to enter a power-saving state.
->> > > >
->> > > > Rafael, can you give us your opinion on this?
->> > >
->> > > Let me try to understand the scenario in the first place.
->> > >
->> > > To start with, a number of devices is in use (that is, open, there are
->> > > applications listening/talking to them etc).  Now, an event happens, such
->> > > as a laptop lid close and you want some of those devices, but possibly
->> > > not all of them, to quiesce themselves and go into low-power states.
->> > >
->> > > Is that correct?
+On Wed, Jul 16, 2014 at 09:29:18AM -0400, Pranith Kumar wrote:
+> On 07/16/2014 08:47 AM, Paul E. McKenney wrote:
+> > On Tue, Jul 15, 2014 at 06:57:59PM -0400, Pranith Kumar wrote:
+> >>
+> >> On 07/15/2014 06:53 PM, josh@joshtriplett.org wrote:
+> >>> On Tue, Jul 15, 2014 at 06:31:48PM -0400, Pranith Kumar wrote:
+> >>>> This commit removes a stale comment in rcu/tree.c.
+> >>>> FYI, an updated comment exists a few lines below this.
+> >>>>
+> >>>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> >>> In general, when removing a stale comment, I'd suggest explaining why
+> >>> the comment is stale.  Was code removed without removing the
+> >>> corresponding comment, or was code changed such that the comment no
+> >>> longer applies, or...?
+> >>
+> >> I guess it was left out when code was moved around previously. And I did mention that an updated comment is there a few lines below.
+> >>
+> >> For reference this is the new comment which is below the old comment, they mean the same :)
+> >>
+> >>     /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+> > 
+> > Indeed that is the case.
+> > 
+> > Please update the commit log with this explanation and resend.
+> > 
+> > 								Thanx, Paul
+> > 
+> 
+> Please find the updated patch below.
+> 
+> --
+> Pranith
+> 
+> From: Pranith Kumar <bobby.prani@gmail.com>
+> Date: Mon, 14 Jul 2014 16:01:05 -0400
+> Subject: [PATCH 2/3] rcu: Remove stale comment in tree.c
+> 
+> This commit removes a stale comment in rcu/tree.c which was left out when some
+> code was moved around previously.
+> 
+> For reference, the following updated comment exists a few lines below this which
+> means the same.
+> 
+> /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-Pretty much, although the devices would not listen to events
-themselves but rather there will be an entity listening for various
-events and requesting certain devices to quiesce themselves in
-response for such events.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-> <snip>
->> Well, is the scenario I described correct or not?  If not, then what
->> exactly is the scenario you want to be able to handle?
->
-> I don't expect devices to have to know about the lid status, no. Patrik
-> might feel differently, but I think that all that's being asked is
-> already possible through existing user-space mechanisms, it's just
-> missing metadata to be able to implement it.
-
-We are not planning on implementing the policy in kernel, that's
-indeed task for userspace; but unless we bring in the heavy hammer of
-forcibly unbinding drivers, we do not currently have universal
-mechanism of quiescing devices.
-
-Thanks,
-Dmitry
+>  kernel/rcu/tree.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index a1abaa8..e67246e 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -2211,8 +2211,6 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+>  	/* Adjust any no-longer-needed kthreads. */
+>  	rcu_boost_kthread_setaffinity(rnp, -1);
+>  
+> -	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
+> -
+>  	/* Exclude any attempts to start a new grace period. */
+>  	mutex_lock(&rsp->onoff_mutex);
+>  	raw_spin_lock_irqsave(&rsp->orphan_lock, flags);
+> -- 
+> 1.9.1
+> 
