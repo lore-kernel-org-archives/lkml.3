@@ -1,76 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934611AbaGPQKY (ORCPT <rfc822;w@1wt.eu>);
+	id S965477AbaGPQK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:10:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37032 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934607AbaGPQKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jul 2014 12:10:24 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45611 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030363AbaGPQKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:10:15 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Tejun Heo <tj@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v8 2/2] phy: qcom: Add device tree bindings for IPQ806x SATA PHY
-Date: Wed, 16 Jul 2014 11:10:09 -0500
-Message-Id: <1405527009-17539-2-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1405527009-17539-1-git-send-email-galak@codeaurora.org>
-References: <1405527009-17539-1-git-send-email-galak@codeaurora.org>
+Message-ID: <53C6A3CB.5060005@ti.com>
+Date: Wed, 16 Jul 2014 11:09:47 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Jassi Brar <jaswinder.singh@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org>	<5461658.P0nNPHkj0L@wuerfel>	<CAJe_Zhdtzhv=1QfhCAu6G_nq0VqW9v6TvgHSJe9VmgJQwo0U3Q@mail.gmail.com>	<5214160.a78RDYzY5T@wuerfel> <CAJe_Zhf8oH-MPg6HtFDoT6_LZxJzy3ff85-GsWcENQftNiJMxw@mail.gmail.com>
+In-Reply-To: <CAJe_Zhf8oH-MPg6HtFDoT6_LZxJzy3ff85-GsWcENQftNiJMxw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding spec for Qualcomm SoC PHYs, starting with the SATA PHY on
-the IPQ806x family of SoCs.
+Hi,
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
-v8, v7:
-* no change
+On 07/16/2014 09:18 AM, Jassi Brar wrote:
+> On 16 July 2014 19:38, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Wednesday 16 July 2014 18:42:22 Jassi Brar wrote:
+>>> On 16 July 2014 18:39, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>> On Wednesday 16 July 2014 18:35:33 Jassi Brar wrote:
+>>>>> On 16 July 2014 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>> On Wednesday 16 July 2014 18:07:04 Jassi Brar wrote:
+>>>>>>> On 16 July 2014 15:46, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>>>> On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
+>>>>>>>>>> +
+>>>>>>>>>> +Required property:
+>>>>>>>>>> +- mbox: List of phandle and mailbox channel specifier.
+>>>>>>>>>> +
+>>>>>>>>>> +- mbox-names: List of identifier strings for each mailbox channel
+>>>>>>>>>> +               required by the client.
+>>>>>>>>>> +
+>>>>>>>>>
+>>>>>>>>> IMO the mailbox names are more associated with the controller channels/
+>>>>>>>>> mailbox rather than the clients using it. Does it make sense to move
+>>>>>>>>> this under controller. It also avoid each client replicating the names.
+>>>>>>>>
+>>>>>>>> I think it would be best to just make the mbox-names property optional,
+>>>>>>>> like we have for other subsystems.
+>>>>>>>>
+>>>>>>> A very similar subsystem - DMAEngine also has 'dma-names' as a
+>>>>>>> required property.
+>>>>>>>
+>>>>>>> If a client is assigned only 1 mbox in DT, we can do without
+>>>>>>> mbox-names. But I am not sure what to do if a client needs two or more
+>>>>>>> differently capable mboxes? Simply allocating in order of mbox request
+>>>>>>> doesn't seem very robust.
+>>>>>>
+>>>>>> Traditionally, these things (regs, interrupts, ...) are just accessed
+>>>>>> by index. The reason why dmaengine requires the name is that some machines
+>>>>>> can use multiple DMA engine devices attached to the same request line,
+>>>>>> so the dmaengine subsystem can pick any of them that has a matching
+>>>>>> name.
+>>>>> And also, I think, when a client needs 2 different dma channels, say
+>>>>> for RX and TX each. The api can't assign the first channel specified
+>>>>> in 'dmas' property to the first channel request that comes to it,
+>>>>> unless we assume client driver always requests dma channels in the
+>>>>> order written in its DT node.  And this is the main reason I see for
+>>>>> having mbox-names property.
+>>>>
+>>>> Most subsystems require passing an explicit index in this case.
+>>>>
+>>>>>   If we make mbox-names optional, do we assume client driver must
+>>>>> request mbox in the order specified in its DT node?
+>>>>
+>>>> Correct.
+>>>>
+>>> OK. So how about we drop mbox-names altogether and expect client
+>>> driver to simply provide an index of the mbox needed?
+>>
+>> That would be fine with me, but I think a lot of people like
+>> the idea of identifying things by name, and are used to that
+>> from the other subsystems.
+>>
+>> Maybe you can leave the mbox-names property defined as 'optional'
+>> in the generic mbox binding but remove the code in Linux? That way
+>> we can always put it back at a later point without changing the
+>> binding in an incompatible way.
 
-v6:
-* Moved binding to qcom-ipq806x-sata-phy.txt instead of qcom-phy.txt
+I like this too, especially given that the framework uses this only to
+retrieve the index. The mbox_client structure currently requires the
+chan_name to be filled in, which means both the client driver and the
+framework end up having to parse the property.
 
- .../bindings/phy/qcom-ipq806x-sata-phy.txt         | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+While we are at this, how about we change the property name from "mbox"
+to a plural-form "mboxes" to be inline with gpios, dmas etc.
 
-diff --git a/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt b/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
-new file mode 100644
-index 0000000..76bfbd0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
-@@ -0,0 +1,23 @@
-+Qualcomm IPQ806x SATA PHY Controller
-+------------------------------------
-+
-+SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
-+Each SATA PHY controller should have its own node.
-+
-+Required properties:
-+- compatible: compatible list, contains "qcom,ipq806x-sata-phy"
-+- reg: offset and length of the SATA PHY register set;
-+- #phy-cells: must be zero
-+- clocks: must be exactly one entry
-+- clock-names: must be "cfg"
-+
-+Example:
-+	sata_phy: sata-phy@1b400000 {
-+		compatible = "qcom,ipq806x-sata-phy";
-+		reg = <0x1b400000 0x200>;
-+
-+		clocks = <&gcc SATA_PHY_CFG_CLK>;
-+		clock-names = "cfg";
-+
-+		#phy-cells = <0>;
-+	};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+regards
+Suman
+
+>>
+>> Individual mailbox clients can mandate specific strings.
+>>
+> Sounds great.
+> 
+> Thanks
+> Jassi
+> 
 
