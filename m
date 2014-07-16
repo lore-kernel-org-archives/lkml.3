@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030457AbaGPHDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:03:15 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34420 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756658AbaGPHDN (ORCPT
+	id S1030478AbaGPHGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:06:53 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41549 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030460AbaGPHGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:03:13 -0400
+	Wed, 16 Jul 2014 03:06:49 -0400
+Date: Wed, 16 Jul 2014 09:06:43 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Mugunthan V N <mugunthanvnm@ti.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Re-send PATCH 1/1] arm: dra7xx: Add hwmod data for MDIO and CPSW
+Message-ID: <20140716070643.GC3378@breakpoint.cc>
+References: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com>
+ <20140709095552.GA25154@breakpoint.cc>
+ <20140709100147.GB25154@breakpoint.cc>
+ <alpine.DEB.2.02.1407152019020.21432@utopia.booyaka.com>
 MIME-Version: 1.0
-In-Reply-To: <4999408.jEEY9BVX9F@wuerfel>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<1405413956-2772-23-git-send-email-lftan@altera.com>
-	<4999408.jEEY9BVX9F@wuerfel>
-Date: Wed, 16 Jul 2014 15:03:12 +0800
-X-Google-Sender-Auth: DyaZl5swaheguVR1EBIUTc30fpE
-Message-ID: <CAFiDJ58ZPQ0aMrYFv5g-ThgEt4AVFQp0yhCRb+hzJxV2i4Rjyw@mail.gmail.com>
-Subject: Re: [PATCH v2 22/29] nios2: Miscellaneous header files
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1407152019020.21432@utopia.booyaka.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 6:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 15 July 2014 16:45:49 Ley Foon Tan wrote:
->> diff --git a/arch/nios2/include/asm/gpio.h b/arch/nios2/include/asm/gpio.h
->> new file mode 100644
->> index 0000000..e726bfc
->> --- /dev/null
->> +++ b/arch/nios2/include/asm/gpio.h
+On 2014-07-15 20:21:21 [+0000], Paul Walmsley wrote:
+> Hi Sebastian,
+Hi Paul,
 
-> This seems wrong. If any device drivers rely on this, better fix them to
-> use linux/gpio.h directly.
-Okay, will remove this file.
+> > Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> > 
+> > This is basically what Tony hasked me to do: No IRQ numbers & iomem.
+> 
+> Sorry - I'm a bit confused - Sebastian, did you test this one?  If so, is 
+> it okay to add a Tested-by from you?
 
+Tested-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 
->> +#ifndef __ASM_NIOS2_PCI_H__
->> +#define __ASM_NIOS2_PCI_H__
->> +
->> +/* We don't support PCI yet, but some drivers require this file anyway */
->> +
->> +#endif /* __ASM_NIOS2_PCI_H__ */
->
-> What's wrong with the generic version?
-Change to use generic pci.h.
+> - Paul
 
->
->> +#ifndef _UAPI_ASM_NIOS2_STAT_H
->> +#define _UAPI_ASM_NIOS2_STAT_H
->> +
->> +#include <asm-generic/stat.h>
->> +
->> +#endif
->
-> This should just use the Kconfig logic to fall back on the generic file.
-Will use generic file.
-
-Regards
-Ley Foon
+Sebastian
