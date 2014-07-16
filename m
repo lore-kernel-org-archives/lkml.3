@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759607AbaGPLTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:19:21 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:14996 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134AbaGPLTT (ORCPT
+	id S1759202AbaGPLWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:22:07 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:51098 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445AbaGPLWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:19:19 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f626d000004b39-53-53c65fae5707
-Content-transfer-encoding: 8BIT
-Message-id: <1405509550.7368.0.camel@AMDC1943>
-Subject: Re: [RESEND PATCH v2] ARM: exynos4: hotplug: Fix CPU idle clock down
- after CPU off
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Wed, 16 Jul 2014 13:19:10 +0200
-In-reply-to: <53C65890.8000500@samsung.com>
-References: <1405499003-9975-1-git-send-email-k.kozlowski@samsung.com>
- <53C65890.8000500@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xq7rr4o8FG7yfIWOxccZ6VoveBVfZ
-	LM42vWG32PT4GqvF5V1z2CxmnN/HZHH7Mq/F2iN32S3Wz3jN4sDp0dLcw+axeUm9R9+WVYwe
-	nzfJBbBEcdmkpOZklqUW6dslcGUs6P/FVPCNu2Jixyu2Bsa1nF2MnBwSAiYSGz6eYYKwxSQu
-	3FvP1sXIxSEksJRRYvOFiewgCV4BQYkfk++xdDFycDALyEscuZQNEmYWUJeYNG8RM0T9Z0aJ
-	ec1foer1JHb+Ws4MYgsLxErs6JnPCGKzCRhLbF6+hA3EFhFQkbh8ajojSDOzwCkmiT9fV4I1
-	sAioSqxed5MRZBmngLbE3uUWIKaQQLpE17oCiDuVJebtP8Y0gVFgFpLrZiFcNwvJdQsYmVcx
-	iqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihIT51x2MS49ZHWIU4GBU4uFlmH00WIg1say4MvcQ
-	owQHs5IIr4P/sWAh3pTEyqrUovz4otKc1OJDjEwcnFINjIb7VDI3f/1gV8b2cZ1z8aF7Hy4n
-	bJ/g/ymlRMviSLzHphsZl2sm8Lhc3HNDfGOm+/8zSuqijEdvFExInr2Wo9D8AbOtu2lSD8/O
-	Z3P+63gulVXfzKC3yvh3zqpJq/KfKy391d9zII0z5vJUBga/XJEJOrkPnifkljhu/82yct2m
-	j90rtvPtqldiKc5INNRiLipOBAClhrlaUQIAAA==
+	Wed, 16 Jul 2014 07:22:05 -0400
+From: Alex Shi <alex.shi@linaro.org>
+To: linux@arm.linux.org.uk
+Cc: pawel.moll@arm.com, nico@linaro.org, sudeep.karkadanagesha@arm.com,
+        viresh.kumar@linaro.org, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org, mark.brown@linaro.org, tixy@linaro.org
+Subject: [PATCH] vexpress/spc: fix a build warning on array bounds
+Date: Wed, 16 Jul 2014 19:21:56 +0800
+Message-Id: <1405509716-19591-1-git-send-email-alex.shi@linaro.org>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With ARCH_VEXPRESS_SPC option, kernel build has the following 
+warning:
 
+arch/arm/mach-vexpress/spc.c: In function ‘ve_spc_clk_init’:
+arch/arm/mach-vexpress/spc.c:431:38: warning: array subscript is below array bounds [-Warray-bounds]
+  struct ve_spc_opp *opps = info->opps[cluster];
+                                      ^
+since 'cluster' maybe '-1' in UP system. This patch does a active
+checking to fix this issue.
 
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ arch/arm/mach-vexpress/spc.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-On śro, 2014-07-16 at 12:48 +0200, Tomasz Figa wrote:
-> Hi Krzysztof,
-> 
-> Please see my comment below.
-> 
-> On 16.07.2014 10:23, Krzysztof Kozlowski wrote:
-> > On Exynos4 USE_DELAYED_RESET_ASSERTION must be set in
-> > ARM_COREx_OPTION register during CPU power down. This is the proper way
-> > of powering down CPU on Exynos4.
-> > 
-> > Additionally on Exynos4212 without this the CPU clock down feature won't
-> > work after powering down some CPU and the online CPUs will work at full
-> > frequency chosen by CPUfreq governor.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> [snip]
-> 
-> > @@ -36,6 +36,14 @@ static inline void cpu_leave_lowpower(void)
-> >  	  : "=&r" (v)
-> >  	  : "Ir" (CR_C), "Ir" (0x40)
-> >  	  : "cc");
-> > +
-> > +	if (soc_is_exynos4()) {
-> > +		unsigned int tmp;
-> > +
-> > +		tmp = __raw_readl(EXYNOS_ARM_CORE_OPTION(core_id));
-> > +		tmp &= ~(S5P_USE_DELAYED_RESET_ASSERTION);
-> > +		__raw_writel(tmp, EXYNOS_ARM_CORE_OPTION(core_id));
-> > +	}
-> 
-> This code is executed only if the CPU doesn't manage to power off before
-> already receiving a wake-up event. Otherwise the context is lost after
-> wfi(), as the core power is being cut down.
-> 
-> The normal wake-up path goes through platsmp's exynos_boot_secondary()
-> and I believe that setting of S5P_USE_DELAYED_RESET_ASSERTION should be
-> taken care there as well.
-
-You're right. Thanks for pointing this, I'll fix it.
-
-Best regards,
-Krzysztof
-> 
-> Best regards,
-> Tomasz
+diff --git a/arch/arm/mach-vexpress/spc.c b/arch/arm/mach-vexpress/spc.c
+index c26ef5b..4833544 100644
+--- a/arch/arm/mach-vexpress/spc.c
++++ b/arch/arm/mach-vexpress/spc.c
+@@ -426,9 +426,15 @@ static int ve_spc_populate_opps(uint32_t cluster)
+ 
+ static int ve_init_opp_table(struct device *cpu_dev)
+ {
+-	int cluster = topology_physical_package_id(cpu_dev->id);
+-	int idx, ret = 0, max_opp = info->num_opps[cluster];
+-	struct ve_spc_opp *opps = info->opps[cluster];
++	int cluster;
++	int idx, ret = 0, max_opp;
++	struct ve_spc_opp *opps;
++
++	cluster = topology_physical_package_id(cpu_dev->id);
++	cluster = cluster < 0 ? 0 : cluster;
++
++	max_opp = info->num_opps[cluster];
++	opps = info->opps[cluster];
+ 
+ 	for (idx = 0; idx < max_opp; idx++, opps++) {
+ 		ret = dev_pm_opp_add(cpu_dev, opps->freq * 1000, opps->u_volt);
+@@ -537,6 +543,8 @@ static struct clk *ve_spc_clk_register(struct device *cpu_dev)
+ 	spc->hw.init = &init;
+ 	spc->cluster = topology_physical_package_id(cpu_dev->id);
+ 
++	spc->cluster = spc->cluster < 0 ? 0 : spc->cluster;
++
+ 	init.name = dev_name(cpu_dev);
+ 	init.ops = &clk_spc_ops;
+ 	init.flags = CLK_IS_ROOT | CLK_GET_RATE_NOCACHE;
+-- 
+1.9.1
 
