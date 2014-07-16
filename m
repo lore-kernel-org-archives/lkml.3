@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965541AbaGPRAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:00:30 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:60846 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaGPRA1 (ORCPT
+	id S965578AbaGPRCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 13:02:15 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:45044 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934338AbaGPRCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:00:27 -0400
-Date: Wed, 16 Jul 2014 18:00:22 +0100
-From: James Hunt <james.hunt@ubuntu.com>
-To: upstart-devel@lists.ubuntu.com, linux-kernel@vger.kernel.org
-Subject: Upstart 1.13.1 released
-Message-ID: <20140716170022.GA12486@faire>
+	Wed, 16 Jul 2014 13:02:12 -0400
+Message-ID: <53C6B014.4030602@cogentembedded.com>
+Date: Wed, 16 Jul 2014 21:02:12 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: balbi@ti.com
+CC: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
+        stern@rowland.harvard.edu, yoshihiro.shimoda.uh@renesas.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] usb: rename phy to usb_phy in HCD
+References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com> <1405435156-27297-5-git-send-email-antoine.tenart@free-electrons.com> <53C54F07.4050808@cogentembedded.com> <20140716150932.GF1365@saruman.home>
+In-Reply-To: <20140716150932.GF1365@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+On 07/16/2014 07:09 PM, Felipe Balbi wrote:
 
-Summary of changes:
+>>> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
+>>> modifications are done in all drivers accessing it.
 
-* Fix for Session Init crasher triggered by restarting a job
-  that runs 'initctl unset-env' (LP: #1222705).
+>>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 
-Kind regards,
+>>     I've been thru that and such change has been turned down already.
 
-James.
---
-James Hunt
-____________________________________
-#upstart on freenode
-http://upstart.ubuntu.com/cookbook
-https://lists.ubuntu.com/mailman/listinfo/upstart-devel
+    OK, maybe not strictly "turned down" but still...
 
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> can you find a link to that thread by any chance ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+    http://marc.info/?l=linux-sh&m=139706087101917
 
-iQIcBAEBCgAGBQJTxq+mAAoJEJ1Q4UTmNXMnvZwQAIGc27AJYQO3jVlULQPuUTKZ
-wXzuN1CFVin3cqkJn0fUXSpq5Htf8MBC2THHIkr4KNWnc52Se0NsoHI+Gc9kaxsd
-fmz0gjsb7a5f546LKU0CyxWJ5MPF1jR5ahc9LeZyEYzQb4bdE+1tFH3nSDmpMRBv
-cFB2zpj+mBbm7YGap2ZhDXHrePvxAH1wwszlE/CurUlL8TPxV/RKG1u4Mq+Oyub7
-FTJYWP+QYB9TJrPEQ1KgB+Mw5ft+aG+IVzOdNmDAZ4Q1te+64zUptvzAM98y/Cz5
-pbbo45W/Tfm8eXx4hVLUDjjQXx6XJZiVCcOJ0uXeCoER6g1BGeWGqCVgcmFEulFx
-S8uXxdCydakWc+6BENycnsFks8/UjCgsupH5OzUo4a91rtI8NNNRrwYE/QSacw58
-/1x+WTVl5wdOX1i6G6K+KeGHyeiChI3oslLyflnZPhLlmvsIJrPMrF3fe6Fzf4q4
-rruP8lEHCCdQSLqJ1ttvWUDTWK3fJOkJB5DRG3Y60SmRAssngmE4/um95A9fObaW
-mcUvKPjZoiww13fSWqwykUnIA8nBQ7W66HurLnVs2morNXAYRpmgjSt2P3AhLmNz
-QLLg30kCEffwu8EjsnsosX7h26V37eNqEsNjpuWUvKLL1W3vjDgrvqts3LgvbOK6
-PnHOgsdY0bzNp7ZsW3Ie
-=+wBQ
------END PGP SIGNATURE-----
+WBR, Sergei
 
---PEIAKu/WMn1b1Hv9--
