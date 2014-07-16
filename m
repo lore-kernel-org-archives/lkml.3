@@ -1,228 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965534AbaGPP5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:57:05 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:65078 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965317AbaGPP5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:57:03 -0400
-Message-ID: <53C6A0E7.30006@gmail.com>
-Date: Wed, 16 Jul 2014 11:57:27 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934593AbaGPP62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:58:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60967 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932888AbaGPP6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 11:58:25 -0400
+Date: Wed, 16 Jul 2014 11:58:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
+Message-ID: <20140716155814.GZ29639@cmpxchg.org>
+References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, fabf@skynet.be, davidshan@tencent.com,
-        joe@perches.com, keescook@chromium.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
-References: <20140713184237.GA30855@linux.vnet.ibm.com> <20140716115046.GC28434@gmail.com> <20140716131322.GA16396@gmail.com> <20140716141707.GU8690@linux.vnet.ibm.com> <20140716152629.GA9340@linux.vnet.ibm.com>
-In-Reply-To: <20140716152629.GA9340@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 11:26 AM, Paul E. McKenney wrote:
-> On Wed, Jul 16, 2014 at 07:17:07AM -0700, Paul E. McKenney wrote:
->> On Wed, Jul 16, 2014 at 03:13:22PM +0200, Ingo Molnar wrote:
->>>
->>> * Ingo Molnar <mingo@kernel.org> wrote:
->>>
->>>>
->>>> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
->>>>
->>>>> Hello, Ingo,
->>>>>
->>>>> The changes in this series include:
->>>>>
->>>>> 1.	Update RCU documentation.  These were posted to LKML at
->>>>> 	https://lkml.org/lkml/2014/7/7/650.
->>>>>
->>>>> 2.	Miscellaneous fixes.  These were posted to LKML at
->>>>> 	https://lkml.org/lkml/2014/7/7/678.
->>>>>
->>>>> 3.	Maintainership changes.  These were posted to LKML at
->>>>> 	https://lkml.org/lkml/2014/7/7/713, with a couple of
->>>>> 	additional at https://lkml.org/lkml/2014/7/3/812 and
->>>>> 	https://lkml.org/lkml/2014/6/2/585.
->>>>>
->>>>> 4.	Torture-test updates.  These were posted to LKML at
->>>>> 	https://lkml.org/lkml/2014/7/7/816.
->>>>>
->>>>> 5.	Callback-offloading changes.  These were posted to LKML at
->>>>> 	https://lkml.org/lkml/2014/7/7/1007.
->>>>>
->>>>> All of these have been exposed to -next testing.
->>>
->>> JFYI, the attached x86 (rand!-) config crashes on early bootup:
->>>
->>> [    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
->>> [    0.000000] ------------[ cut here ]------------
->>> [    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1439 warn_pre_alternatives+0x1e/0x20()
->>> [    0.000000] You're using static_cpu_has before alternatives have run!
->>> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc5+ #236363
->>> [    0.000000] Hardware name: System manufacturer System Product Name/A8N-E, BIOS ASUS A8N-E ACPI BIOS Revision 1008 08/22/2005
->>> [    0.000000]  0000000000000000 ffffffff82787c60 ffffffff81ff4ec0 ffffffff82787ca8
->>> [    0.000000]  ffffffff82787c98 ffffffff810651ac ffffffff81011531 ffffffff82787e48
->>> [    0.000000]  0000000000000000 0000000000000000 ffffffff827cf880 ffffffff82787cf8
->>> [    0.000000] Call Trace:
->>> [    0.000000]  [<ffffffff81ff4ec0>] dump_stack+0x4d/0x66
->>> [    0.000000]  [<ffffffff810651ac>] warn_slowpath_common+0x7a/0x93
->>> [    0.000000]  [<ffffffff81011531>] ? warn_pre_alternatives+0x1e/0x20
->>> [    0.000000]  [<ffffffff81065239>] warn_slowpath_fmt+0x4c/0x4e
->>> [    0.000000]  [<ffffffff82005817>] ? irq_return+0x7/0x7
->>> [    0.000000]  [<ffffffff81011531>] warn_pre_alternatives+0x1e/0x20
->>> [    0.000000]  [<ffffffff81033d31>] __do_page_fault+0xc3/0x43f
->>> [    0.000000]  [<ffffffff81005347>] ? print_context_stack+0x6a/0xb6
->>> [    0.000000]  [<ffffffff810045f1>] ? dump_trace+0x27d/0x294
->>> [    0.000000]  [<ffffffff815b185b>] ? number.isra.1+0x127/0x22c
->>> [    0.000000]  [<ffffffff8109abe2>] ? print_time.part.5+0x58/0x5c
->>> [    0.000000]  [<ffffffff81086a9a>] ? sched_clock_cpu+0x11/0xb9
->>> [    0.000000]  [<ffffffff810340ef>] do_page_fault+0x1e/0x54
->>> [    0.000000]  [<ffffffff82005817>] ? irq_return+0x7/0x7
->>> [    0.000000]  [<ffffffff82006872>] page_fault+0x22/0x30
->>> [    0.000000]  [<ffffffff815b65fa>] ? __bitmap_or+0x15/0x28
->>> [    0.000000]  [<ffffffff82c876f0>] rcu_init_one+0x4c0/0x55d
->>> [    0.000000]  [<ffffffff82c87b00>] rcu_init+0x270/0x2da
->>> [    0.000000]  [<ffffffff82c6ec82>] start_kernel+0x24f/0x4d2
->>> [    0.000000]  [<ffffffff82c6e841>] ? set_init_arg+0x53/0x53
->>> [    0.000000]  [<ffffffff82c6e453>] x86_64_start_reservations+0x2a/0x2c
->>> [    0.000000]  [<ffffffff82c6e546>] x86_64_start_kernel+0xf1/0xf4
->>> [    0.000000] ---[ end trace 4650963e41188009 ]---
->>> [    0.000000] BUG: unable to handle kernel NULL pointer dereference at           (null)
->>> [    0.000000] IP: [<ffffffff815b65fa>] __bitmap_or+0x15/0x28
->>> [    0.000000] PGD 0 
->>> [    0.000000] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
->>> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W     3.16.0-rc5+ #236363
->>> [    0.000000] Hardware name: System manufacturer System Product Name/A8N-E, BIOS ASUS A8N-E ACPI BIOS Revision 1008 08/22/2005
->>> [    0.000000] task: ffffffff827a3480 ti: ffffffff82784000 task.ti: ffffffff82784000
->>> [    0.000000] RIP: 0010:[<ffffffff815b65fa>]  [<ffffffff815b65fa>] __bitmap_or+0x15/0x28
->>> [    0.000000] RSP: 0000:ffffffff82787ef8  EFLAGS: 00010002
->>> [    0.000000] RAX: 0000000000000000 RBX: 00000000ffffffff RCX: 0000000000000001
->>> [    0.000000] RDX: 0000000000000000 RSI: ffff880000019800 RDI: ffff880000019800
->>> [    0.000000] RBP: ffffffff82787ef8 R08: 0000000000000000 R09: 0000000000000000
->>> [    0.000000] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff827cf880
->>> [    0.000000] R13: 0000000000000002 R14: ffffffff827cf880 R15: 00000000001cd000
->>> [    0.000000] FS:  0000000000000000(0000) GS:ffff88003f800000(0000) knlGS:0000000000000000
->>> [    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>> [    0.000000] CR2: 0000000000000000 CR3: 000000000279e000 CR4: 00000000000006b0
->>> [    0.000000] Stack:
->>> [    0.000000]  ffffffff82787f50 ffffffff82c876f0 ffffffff83b7e7a0 0000000000000001
->>> [    0.000000]  0000000000000082 0000000200000000 00000000ffffffff ffffffff82d37920
->>> [    0.000000]  ffff88003ffbba40 ffffffff82d3e890 0000000000000000 ffffffff82787f80
->>> [    0.000000] Call Trace:
->>> [    0.000000]  [<ffffffff82c876f0>] rcu_init_one+0x4c0/0x55d
->>> [    0.000000]  [<ffffffff82c87b00>] rcu_init+0x270/0x2da
->>> [    0.000000]  [<ffffffff82c6ec82>] start_kernel+0x24f/0x4d2
->>> [    0.000000]  [<ffffffff82c6e841>] ? set_init_arg+0x53/0x53
->>> [    0.000000]  [<ffffffff82c6e453>] x86_64_start_reservations+0x2a/0x2c
->>> [    0.000000]  [<ffffffff82c6e546>] x86_64_start_kernel+0xf1/0xf4
->>> [    0.000000] Code: 4c 89 04 c7 4d 09 c1 48 ff c0 eb e8 31 c0 4d 85 c9 0f 95 c0 5d c3 55 48 63 c9 31 c0 48 83 c1 3f 48 89 e5 48 c1 e9 06 39 c1 7e 11 <4c> 8b 04 c2 4c 0b 04 c6 4c 89 04 c7 48 ff c0 eb eb 5d c3 55 48 
->>> [    0.000000] RIP  [<ffffffff815b65fa>] __bitmap_or+0x15/0x28
->>> [    0.000000]  RSP <ffffffff82787ef8>
->>> [    0.000000] CR2: 0000000000000000
->>> [    0.000000] ---[ end trace 4650963e4118800a ]---
->>> [    0.000000] Kernel panic - not syncing: Attempted to kill the idle task!
->>> [    0.000000] Rebooting in 1 seconds..Press any key to enter the menu
->>>
->>> Excluding the new RCU bits from tip:master makes it boot.
->>>
->>> Any idea what's wrong?
->>
->> Looks like you have a setup that has NO_HZ_FULL=y, but that somehow
->> avoids having a non-NULL tick_nohz_full_mask at rcu_init() time.  But you
->> probably knew that already.  And of course when I test locally with the
->> same RCU-related and NO_HZ_FULL-related configs, it all works just fine.
->> Perhaps there is some interaction with some other code in -tip.
->>
->> So let's see...
->>
->> Now your .config has CONFIG_NO_HZ_FULL_ALL=y and therefore also has
->> CONFIG_RCU_NOCB_CPU_ALL=y.  In that case, there is no point in doing the
->> cpumask_or() because all the bits are already set.  So the only time
->> that this cpumask_or() matters is when CONFIG_RCU_NOCB_CPU_ALL==n and
->> an explicit nohz_full= mask was specified at boot time.  So one reasonable
->> change is to replace the #ifndef guarding the cpumask_or() with:
->>
->> 	#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_RCU_NOCB_CPU_ALL)
->>
->> I am now looking to see how tick_nohz_full_mask might be NULL in this
->> situation.  Depending on what I find, I might insert a check for that.
+On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
+> Starting with 8f9ac36d2cbb (cgroup: distinguish the default and legacy
+> hierarchies when handling cftypes) memory cgroup controller doesn't
+> export any knobs because all of them are marked as legacy. The idea is
+> that only selected knobs are exported for the new cgroup API.
 > 
-> And of course if you don't actually specify a nohz_full= mask, then
-> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
-> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
-> forever.
+> This patch exports the core knobs for the memory controller. The
+> following knobs are not and won't be available in the default (aka
+> unified) hierarchy:
+> - use_hierarchy - was one of the biggest mistakes when memory controller
+>   was introduced. It allows for creating hierarchical cgroups structure
+>   which doesn't have any hierarchical accounting. This leads to really
+>   strange configurations where other co-mounted controllers behave
+>   hierarchically while memory controller doesn't.
+>   All controllers have to be hierarchical with the new cgroups API so
+>   this knob doesn't make any sense here.
+> - force_empty - has been introduced primarily to drop memory before it
+>   gets reparented on the group removal.  This alone doesn't sound
+>   fully justified because reparented pages which are not in use can be
+>   reclaimed also later when there is a memory pressure on the parent
+>   level.
+>   Another use-case would be something like per-memcg /proc/sys/vm/drop_caches
+>   which doesn't sound like a great idea either. We are trying to get
+>   away from using it on the global level so we shouldn't allow that on
+>   per-memcg level as well.
+> - soft_limit_in_bytes - has been originally introduced to help to
+>   recover from the overcommit situations where the overall hard limits
+>   on the system are higher than the available memory. A group which has
+>   the largest excess on the soft limit is reclaimed to help to reduce
+>   memory pressure during the global memory pressure.
+>   The primary problem with this tunable is that every memcg is soft
+>   unlimited by default which is reverse to what would be expected from
+>   such a knob.
+>   Another problem is that soft limit is considered only during the
+>   global memory pressure rather than on an external memory pressure in
+>   general (e.g. triggered by the limit hit on a parent up the
+>   hierarchy).
+>   There are other issues which are tight to the implementation (e.g.
+>   priority-0 reclaim used for the soft limit reclaim etc.) which are
+>   really hard to fix without breaking potential users.
+>   There will be a replacement for the soft limit in the unified
+>   hierarchy and users will be encouraged to switch their configuration
+>   to the new scheme. Until this is available users are suggested to stay
+>   with the legacy cgroup API.
 > 
+> TCP kmem sub-controller is not exported at this stage because this one has
+> seen basically no traction since it was merged and it is not entirely
+> clear why kmem controller cannot be used for the same purpose. Having 2
+> controllers for tracking kernel memory allocations sounds like too much.
+> If there are use-cases and reasons for not merging it into kmem then we
+> can reconsider and allow it for the new cgroups API later.
 
-Hi Paul,
+There is a reason why we start out empty on the default hierarchy: the
+old interface is a complete cesspool.  We're not blindly carrying over
+any of it.
 
-The other location where tick_nohz_full_mask is being allocated is in
-tick_nohz_init_all(), called from tick_nohz_init(). rcu_init() is called before
-tick_nohz_init() in init/main.c. CONFIG_NO_HZ_FULL_ALL for allocation of the
-mask does not take effect when rcu_init() runs.
+Everything that is added in .dfl_ctypes is a new interface and it
+needs to be treated as such: it needs a valid usecase to back it up,
+and it needs to be evaluated whether the exported information or
+control knob is a good way to support that usecase.
 
-So if nohz_full command line arg is not specified, tick_nohz_full_mask will
-always be NULL when rcu_init() runs. So just checking for tick_nohz_full_mask
-is NULL should be enough I guess. 
-
-
-> Does the following patch on top of 1823172ab582 (Merge branches
-> 'doc.2014.07.08a', 'fixes.2014.07.09a', 'maintainers.2014.07.08b',
-> 'nocbs.2014.07.07a' and 'torture.2014.07.07a' into HEAD) fix the
-> problem?
-> 
-> This may also be pulled from rcu/urgent in the -rcu git tree:
-> 
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
->  b/kernel/rcu/tree_plugin.h |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> rcu: Allow for NULL tick_nohz_full_mask when nohz_full= missing
-> 
-> If there isn't a nohz_full= kernel parameter specified, then
-> tick_nohz_full_mask can legitimately be NULL.  This can cause
-> problems when RCU's boot code tries to cpumask_or() this value into
-> rcu_nocb_mask.  In addition, if NO_HZ_FULL_ALL=y, there is no point
-> in doing the cpumask_or() in the first place because this will cause
-> RCU_NOCB_CPU_ALL=y, which in turn will have all bits already set in
-> rcu_nocb_mask.
-> 
-> This commit therefore avoids the cpumask_or() if NO_HZ_FULL_ALL=y
-> and checks for NULL tick_nohz_full_mask otherwise.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index f62b7f2f6abd..0f9ca12eabb9 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2479,9 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+> @@ -5226,7 +5226,11 @@ out_kfree:
+>  	return ret;
+>  }
 >  
->  	if (rcu_nocb_mask == NULL)
->  		return;
-> -#ifdef CONFIG_NO_HZ_FULL
-> -	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> -#endif /* #ifdef CONFIG_NO_HZ_FULL */
-> +#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
+> -static struct cftype mem_cgroup_files[] = {
+> +/*
+> + * memcg knobs for the legacy cgroup API. No new files should be
+> + * added here.
+> + */
+> +static struct cftype legacy_mem_cgroup_files[] = {
+>  	{
+>  		.name = "usage_in_bytes",
+>  		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
+> @@ -5334,6 +5338,100 @@ static struct cftype mem_cgroup_files[] = {
+>  	{ },	/* terminate */
+>  };
+>  
+> +/* memcg knobs for new cgroups API (default aka unified hierarchy) */
+> +static struct cftype dfl_mem_cgroup_files[] = {
+> +	{
+> +		.name = "usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
 
-did you mean #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_RCU_NOCB_CPU_ALL)
+The _in_bytes suffix is pointless, we just need to document that
+everything in memcg is in bytes, unless noted otherwise.
 
-> +	if (tick_nohz_full_mask)
-> +		cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> +#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
->  	if (ls == -1) {
->  		ls = int_sqrt(nr_cpu_ids);
->  		rcu_nocb_leader_stride = ls;
-> 
+How about "memory.current"?
 
---
-Pranith
+> +	{
+> +		.name = "max_usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_MEM, RES_MAX_USAGE),
+> +		.write = mem_cgroup_reset,
+> +		.read_u64 = mem_cgroup_read_u64,
+
+What is this actually good for?  We have lazy cache shrinking, which
+means that the high watermark of most workloads depends on the group
+max limit.
+
+> +	},
+> +	{
+> +		.name = "limit_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_MEM, RES_LIMIT),
+> +		.write = mem_cgroup_write,
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+
+We already agreed that there will be a max, a high, a min, and a low
+limit, why would you want to reintroduce the max limit as "limit"?
+
+How about "memory.max"?
+
+memory.min
+memory.low
+memory.high
+memory.max
+memory.current
+
+> +	{
+> +		.name = "failcnt",
+> +		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
+> +		.write = mem_cgroup_reset,
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+
+This indicates the number of times the function res_counter_charge()
+was called and didn't succeed.
+
+Let that sink in.
+
+This is way too dependent on the current implementation.  If you want
+a measure of how much pressure the group is under, look at vmpressure,
+or add scanned/reclaimed reclaim statistics.  NAK.
+
+> +	{
+> +		.name = "stat",
+> +		.seq_show = memcg_stat_show,
+> +	},
+
+This file is a complete mess.
+
+pgpgin/pgpgout originally refers to IO, here it means pages charged
+and uncharged.  It's questionable whether we even need counters for
+charges and uncharges.
+
+mapped_file vs. NR_FILE_MAPPED is another eyesore.
+
+We should generally try harder to be consistent with /proc/vmstat.
+And rename it to "memory.vmstat" while we are at it.
+
+Also, having local counters no longer makes sense as there won't be
+tasks in intermediate nodes anymore and we are getting rid of
+reparenting.  All counters should appear once, in their hierarchical
+form.  The exception is the root_mem_cgroup, which should probably
+have a separate file for the local counters.
+
+> +	{
+> +		.name = "cgroup.event_control",		/* XXX: for compat */
+> +		.write = memcg_write_event_control,
+> +		.flags = CFTYPE_NO_PREFIX,
+> +		.mode = S_IWUGO,
+
+Why?
+
+> +	},
+> +	{
+> +		.name = "swappiness",
+> +		.read_u64 = mem_cgroup_swappiness_read,
+> +		.write_u64 = mem_cgroup_swappiness_write,
+
+Do we actually need this?
+
+> +	},
+> +	{
+> +		.name = "move_charge_at_immigrate",
+> +		.read_u64 = mem_cgroup_move_charge_read,
+> +		.write_u64 = mem_cgroup_move_charge_write,
+
+This creates significant pain because pc->mem_cgroup becomes a moving
+target during the lifetime of the page.  When this feature was added,
+there was no justification - except that "some users feel [charges
+staying in the group] to be strange" - and it was lacking the
+necessary synchronization to make this work properly, so the cost of
+this feature was anything but obvious during the initial submission.
+
+I generally don't see why tasks should be moving between groups aside
+from the initial setup phase.  And then they shouldn't have consumed
+any amounts of memory that they couldn't afford to leave behind in the
+root/parent.
+
+So what is the usecase for this that would justify the immense cost in
+terms of both performance and code complexity?
+
+> +	},
+> +	{
+> +		.name = "oom_control",
+> +		.seq_show = mem_cgroup_oom_control_read,
+> +		.write_u64 = mem_cgroup_oom_control_write,
+> +		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
+
+This needs a usecase description as well.
+
+> +	},
+> +	{
+> +		.name = "pressure_level",
+
+"memory.pressure"?
+
+> +	},
+> +#ifdef CONFIG_NUMA
+> +	{
+> +		.name = "numa_stat",
+> +		.seq_show = memcg_numa_stat_show,
+> +	},
+
+This would also be a chance to clean up this file, which is suddenly
+specifying memory size in pages rather than bytes.
+
+> +#ifdef CONFIG_MEMCG_KMEM
+> +	{
+> +		.name = "kmem.limit_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
+> +		.write = mem_cgroup_write,
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+
+Does it really make sense to have a separate limit for kmem only?
+IIRC, the reason we introduced this was that this memory is not
+reclaimable and so we need to limit it.
+
+But the opposite effect happened: because it's not reclaimable, the
+separate kmem limit is actually unusable for any values smaller than
+the overall memory limit: because there is no reclaim mechanism for
+that limit, once you hit it, it's over, there is nothing you can do
+anymore.  The problem isn't so much unreclaimable memory, the problem
+is unreclaimable limits.
+
+If the global case produces memory pressure through kernel memory
+allocations, we reclaim page cache, anonymous pages, inodes, dentries
+etc.  I think the same should happen for kmem: kmem should just be
+accounted and limited in the overall memory limit of a group, and when
+pressure arises, we go after anything that's reclaimable.
+
+> +	{
+> +		.name = "kmem.max_usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
+> +		.write = mem_cgroup_reset,
+> +		.read_u64 = mem_cgroup_read_u64,
+
+As per above, I don't see that a high watermark is meaningful with
+lazy cache shrinking.
+
+> +	{
+> +		.name = "kmem.usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+
+We could just include slab counters, kernel stack pages etc. in the
+statistics file, like /proc/vmstat does.
+
+> +	{
+> +		.name = "kmem.failcnt",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
+> +		.write = mem_cgroup_reset,
+> +		.read_u64 = mem_cgroup_read_u64,
+
+NAK as per above.
+
+> +#ifdef CONFIG_SLABINFO
+> +	{
+> +		.name = "kmem.slabinfo",
+> +		.seq_show = mem_cgroup_slabinfo_read,
+> +	},
+> +#endif
+> +#endif
+> +	{ },	/* terminate */
+> +};
+> +
+>  #ifdef CONFIG_MEMCG_SWAP
+>  static struct cftype memsw_cgroup_files[] = {
+>  	{
+> @@ -6266,7 +6364,8 @@ struct cgroup_subsys memory_cgrp_subsys = {
+>  	.cancel_attach = mem_cgroup_cancel_attach,
+>  	.attach = mem_cgroup_move_task,
+>  	.bind = mem_cgroup_bind,
+> -	.legacy_cftypes = mem_cgroup_files,
+> +	.legacy_cftypes = legacy_mem_cgroup_files,
+> +	.dfl_cftypes = dfl_mem_cgroup_files,
