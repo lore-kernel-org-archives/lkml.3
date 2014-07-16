@@ -1,43 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759478AbaGPLQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:16:09 -0400
-Received: from verein.lst.de ([213.95.11.211]:42854 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757199AbaGPLQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:16:07 -0400
-Date: Wed, 16 Jul 2014 13:16:02 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/14] scsi: add support for a blk-mq based I/O path.
-Message-ID: <20140716111602.GA20623@lst.de>
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <1403715121-1201-14-git-send-email-hch@lst.de> <53C65E51.3090003@cs.wisc.edu>
+	id S1759509AbaGPLQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:16:56 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43101 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757199AbaGPLQz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:16:55 -0400
+Message-ID: <53C65F22.20101@arm.com>
+Date: Wed, 16 Jul 2014 12:16:50 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C65E51.3090003@cs.wisc.edu>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "s-anna@ti.com" <s-anna@ti.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org> <1405071325-14683-1-git-send-email-jaswinder.singh@linaro.org> <53C64883.2050709@arm.com> <5340858.B9CZUE8s0j@wuerfel>
+In-Reply-To: <5340858.B9CZUE8s0j@wuerfel>
+X-OriginalArrivalTime: 16 Jul 2014 11:16:49.0532 (UTC) FILETIME=[701493C0:01CFA0E7]
+X-MC-Unique: 114071612165200601
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 06:13:21AM -0500, Mike Christie wrote:
-> I see the request timer is started before calling queue_rq, but I could
-> not figure out what the cancel_delayed_work here is for exactly. It
-> seems if the request were to time out and the eh started while queue_rq
-> was running we could end up some nasty bugs like the requested requeued
-> twice.
-> 
-> Is the cancel_delayed_work call just to be safe or is supposed to be
-> handling a case where the abort_work could be queued at this time up due
-> to a request timing out while queue_rq is running? Is this case mq specific?
 
-It was cargo cult copy & paste from the old path.  I've merged a patch
-from Bart to remove it from the old code, so it should go away here as well,
-thanks for the reminder.
+
+On 16/07/14 11:16, Arnd Bergmann wrote:
+> On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
+>>> +
+>>> +Required property:
+>>> +- mbox: List of phandle and mailbox channel specifier.
+>>> +
+>>> +- mbox-names: List of identifier strings for each mailbox channel
+>>> +               required by the client.
+>>> +
+>>
+>> IMO the mailbox names are more associated with the controller channels/
+>> mailbox rather than the clients using it. Does it make sense to move
+>> this under controller. It also avoid each client replicating the names.
+>
+> I think it would be best to just make the mbox-names property optional,
+> like we have for other subsystems.
+>
+
+OK that makes sense.
+
+> Doing it in the mbox-controller makes no sense at all, because the
+> mbox controller has (or should have) no idea what the attached devices are.
+>
+
+Agreed if these mbox-names are more specific to attached devices and that
+was my initial understanding too. But I got confused when I saw something
+like below in the patch[1]
+
++       mhu: mhu0@2b1f0000 {
++               #mbox-cells = <1>;
++               compatible = "fujitsu,mhu";
++               reg = <0 0x2B1F0000 0x1000>;
++               interrupts = <0 36 4>, /* LP Non-Sec */
++                            <0 35 4>, /* HP Non-Sec */
++                            <0 37 4>; /* Secure */
++       };
++
++       mhu_client: scb@0 {
++               compatible = "fujitsu,scb";
++               mbox = <&mhu 1>;
++               mbox-names = "HP_NonSec";
++       };
+
+Here the name used is more controller specific.
+
+Regards,
+Sudeep
+
+[1] http://www.spinics.net/lists/arm-kernel/msg346991.html
+
