@@ -1,61 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaGPV5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:57:24 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:61740 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773AbaGPV5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:57:20 -0400
+	id S1752780AbaGPV7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:59:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46243 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122AbaGPV7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 17:59:40 -0400
+Message-ID: <53C6F5A9.80400@zytor.com>
+Date: Wed, 16 Jul 2014 14:59:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWuWxZANoKAR=FG55EOHtzvTHmc3euMdtf8yfibtK-QYw@mail.gmail.com>
-References: <cover.1405452484.git.luto@amacapital.net>
-	<bd4e2efb7cd97f2bf9d4f1e2065f16c9091d799a.1405452484.git.luto@amacapital.net>
-	<CAGXu5jJornzMJjyPXVZB_eYi-FRet=bXcJWJDa1vnB_oU9ZA_Q@mail.gmail.com>
-	<CALCETrWuWxZANoKAR=FG55EOHtzvTHmc3euMdtf8yfibtK-QYw@mail.gmail.com>
-Date: Wed, 16 Jul 2014 14:57:20 -0700
-X-Google-Sender-Auth: 9ijIB9RcfMZoIQgeduQ4ao4CJVU
-Message-ID: <CAGXu5jLcbWDJiLbpejJTERbV2CkCk2dVZ7jwq7Xw_jYUicBFjQ@mail.gmail.com>
-Subject: Re: [PATCH 5/7] x86: Split syscall_trace_enter into two phases
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, x86@kernel.org
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        bsd@redhat.com
+Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
+References: <cover.1405546879.git.luto@amacapital.net> <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net>
+In-Reply-To: <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 2:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Jul 16, 2014 at 1:21 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Tue, Jul 15, 2014 at 12:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>
->>> +
->>> +               ret = seccomp_phase1(&sd);
->>> +               if (ret == SECCOMP_PHASE1_SKIP) {
->>> +                       regs->orig_ax = -ENOSYS;
->>
->> Before, seccomp didn't touch orig_ax on a skip. I don't see any
->> problem with this, and it's probably more clear this way, but are you
->> sure there aren't unexpected side-effects from this?
->
-> It's necessary to cause the syscall to be skipped -- see syscall_trace_enter.
->
-> That being said, setting it to -ENOSYS is nonsense and probably
-> confused you at least as much as it confused me.  It should be
-> regs->orig_ax = -1.
+On 07/16/2014 02:45 PM, Andy Lutomirski wrote:
+> diff --git a/arch/x86/include/asm/archslowrng.h b/arch/x86/include/asm/archslowrng.h
+> new file mode 100644
+> index 0000000..c8e8d0d
+> --- /dev/null
+> +++ b/arch/x86/include/asm/archslowrng.h
+> @@ -0,0 +1,30 @@
+> +/*
+> + * This file is part of the Linux kernel.
+> + *
+> + * Copyright (c) 2014 Andy Lutomirski
+> + * Authors: Andy Lutomirski <luto@amacapital.net>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#ifndef ASM_X86_ARCHSLOWRANDOM_H
+> +#define ASM_X86_ARCHSLOWRANDOM_H
+> +
+> +#ifndef CONFIG_ARCH_SLOW_RNG
+> +# error archslowrng.h should not be included if !CONFIG_ARCH_SLOW_RNG
+> +#endif
+> +
 
-Yes, I think that would be better.
+I'm *seriously* questioning the wisdom of this.  A much saner thing
+would be to do:
 
--Kees
+#ifndef CONFIG_ARCH_SLOW_RNG
 
--- 
-Kees Cook
-Chrome OS Security
+/* Not supported */
+static inline int arch_get_slow_rng_u64(u64 *v)
+{
+	(void)v;
+	return 0;
+}
+
+#endif
+
+... which is basically what we do for the archrandom stuff.
+
+I'm also wondering if it makes sense to have a function which prefers
+arch_get_random*() over this one as a preferred interface.  Something like:
+
+int get_random_arch_u64_slow_ok(u64 *v)
+{
+	int i;
+	u64 x = 0;
+	unsigned long l;
+
+	for (i = 0; i < 64/BITS_PER_LONG; i++) {
+		if (!arch_get_random_long(&l))
+			return arch_get_slow_rng_u64(v);
+
+		x |=  l << (i*BITS_PER_LONG);
+	}
+	*v = l;
+	return 0;
+}
+
+This still doesn't address the issue e.g. on x86 where RDRAND is
+available but we haven't set up alternatives yet.  So it might be that
+what we really want is to encapsulate this fallback in arch code and do
+a more direct enumeration.
+
+> +
+> +static int kvm_get_slow_rng_u64(u64 *v)
+> +{
+> +	/*
+> +	 * Allow migration from a hypervisor with the GET_RNG_SEED
+> +	 * feature to a hypervisor without it.
+> +	 */
+> +	if (rdmsrl_safe(MSR_KVM_GET_RNG_SEED, v) == 0)
+> +		return 1;
+> +	else
+> +		return 0;
+> +}
+
+How about:
+
+return rdmsrl_safe(MSR_KVM_GET_RNG_SEED, v) == 0;
+
+The naming also feels really inconsistent...
+	
+	-hpa
+
