@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646AbaGPBtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:49:42 -0400
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:63642 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbaGPBti (ORCPT
+	id S1759591AbaGPBvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 21:51:43 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:54040 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaGPBvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:49:38 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
-Subject: [PATCH 1/1] rcu: Remove redundant checks for rcu_scheduler_fully_active
-Date: Tue, 15 Jul 2014 21:50:02 -0400
-Message-Id: <1405475402-7181-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 15 Jul 2014 21:51:41 -0400
+MIME-Version: 1.0
+Reply-To: markus@gutschke.com
+From: Markus Gutschke <markus@gutschke.com>
+Date: Tue, 15 Jul 2014 18:51:19 -0700
+X-Google-Sender-Auth: 0ysw2VwRYXb2V4q3SCKRdxnbW5s
+Message-ID: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+Subject: 3.16-rcX crashes on resume from Suspend-To-RAM
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcu_scheduler_fully_active is set to true early in the boot process.
+My Dell M4400 has been pretty well-supported by Linux a couple of
+years now, but recent 3.16-rcX cause hard crashes when resuming from
+Suspend-to-RAM.
 
-rcu_prepare_kthreads() is called in two locations. Once after setting the above
-flag and the other while hotplugging a CPU from rcu_cpu_notify(). CPU hotplug is
-enabled much later by which time the above flag is already set. Hence checking
-for this flag is redundant in this function.
+This is tricky to debug, as device drivers are not yet restored by the
+time that the crash happens. So, I can't use Page-UP to scroll the
+screen and see the full crash information. I also cannot use the
+netconsole; the ethernet device is still suspended. For similar
+reasons, crash kernels don't seem to work either.
 
-The checks in rcu_spawn_one_boost_kthread() and rcu_spawn_all_nocb_kthreads()
-are similarly redundant.
+After about a day of false starts and a lengthy bi-secting session, I
+finally narrowed things down to this change list:
 
-This commit removes the redundant checks for this flag from the above
-locations.
+eec15edbb0e14485998635ea7c62e30911b465f0 is the first bad commit
+commit eec15edbb0e14485998635ea7c62e30911b465f0
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Fri May 30 04:23:01 2014 +0200
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- kernel/rcu/tree_plugin.h | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+    ACPI / PNP: use device ID list for PNPACPI device enumeration
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 17ccb62..a2113f6 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -1341,7 +1341,7 @@ static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 	if (&rcu_preempt_state != rsp)
- 		return 0;
- 
--	if (!rcu_scheduler_fully_active || rnp->qsmaskinit == 0)
-+	if (rnp->qsmaskinit == 0)
- 		return 0;
- 
- 	rsp->boost = 1;
-@@ -1489,8 +1489,7 @@ static void rcu_prepare_kthreads(int cpu)
- 	struct rcu_node *rnp = rdp->mynode;
- 
- 	/* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
--	if (rcu_scheduler_fully_active)
--		(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
-+	(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
- }
- 
- #else /* #ifdef CONFIG_RCU_BOOST */
-@@ -2509,9 +2508,8 @@ static void rcu_spawn_all_nocb_kthreads(int cpu)
- {
- 	struct rcu_state *rsp;
- 
--	if (rcu_scheduler_fully_active)
--		for_each_rcu_flavor(rsp)
--			rcu_spawn_one_nocb_kthread(rsp, cpu);
-+	for_each_rcu_flavor(rsp)
-+		rcu_spawn_one_nocb_kthread(rsp, cpu);
- }
- 
- /*
--- 
-1.9.1
+    ACPI can be used to enumerate PNP devices, but the code does not
+    handle this in the right way currently.  Namely, if an ACPI device
+    object
+     1. Has a _CRS method,
+     2. Has an identification of
+        "three capital characters followed by four hex digits",
+     3. Is not in the excluded IDs list,
+    it will be enumerated to PNP bus (that is, a PNP device object will
+    be create for it).  This means that, actually, the PNP bus type is
+    used as the default bus type for enumerating _HID devices in ACPI.
 
+    However, more and more _HID devices need to be enumerated to the
+    platform bus instead (that is, platform device objects need to be
+    created for them).  As a result, the device ID list in acpi_platform.c
+    is used to enforce creating platform device objects rather than PNP
+    device objects for matching devices.  That list has been continuously
+    growing recently, unfortunately, and it is pretty much guaranteed to
+    grow even more in the future.
+
+    To address that problem it is better to enumerate _HID devices
+    as platform devices by default.  To this end, change the way of
+    enumerating PNP devices by adding a PNP ACPI scan handler that
+    will use a device ID list to create PNP devices for the ACPI
+    device objects whose device IDs are present in that list.
+
+    The initial device ID list in the PNP ACPI scan handler contains
+    all of the pnp_device_id strings from all the existing PNP drivers,
+    so this change should be transparent to the PNP core and all of the
+    PNP drivers.  Still, in the future it should be possible to reduce
+    its size by converting PNP drivers that need not be PNP for any
+    technical reasons into platform drivers.
+
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    [rjw: Rewrote the changelog, modified the PNP ACPI scan handler code]
+    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+:040000 040000 b7c07232aa46ae7b6faf9a907fb7274a02e4680fc2e05b31a61dccd087c554adecc89a43a1ed81f7
+M drivers
+:040000 040000 4eda970292fffbeebe167f9210502527df4e8ab421e9e6fd84c780a34bf3d48b5e7618b551da3b1a
+M include
+
+I took a photo of the crash. It feels silly to do, but I couldn't
+think of a better solution. You can find it at
+https://drive.google.com/file/d/0B8SxqKDe4hyheTlTLXY2YThkMXM
+
+As I mentioned earlier, a bunch of information has already scrolled
+off the screen, but hopefully what is visible is somewhat helpful.
+
+I will have only limited internet access the next couple of weeks. But
+I wanted to make sure I at least got the result of the bisection out
+to LKML. I will make every best effort to collect additional data, if
+asked to do so; but some of it might be delayed for a little bit,
+until I can get access to reasonably powerful hardware or reasonably
+fast internet.
+
+
+Markus
+
+P.S.: Please keep me cc'd on all responses, as I am not subscribed to
+the firehose that is LKML.
