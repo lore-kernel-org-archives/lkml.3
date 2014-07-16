@@ -1,164 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485AbaGPII0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:08:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21539 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111AbaGPIIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:08:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
-   d="scan'208";a="544062659"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 02/41] perf tools: Fix map groups of threads with unknown pids
-Date: Wed, 16 Jul 2014 11:07:13 +0300
-Message-Id: <1405498033-23817-1-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20140715193331.GD6312@kernel.org>
-References: <20140715193331.GD6312@kernel.org>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1757500AbaGPIPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:15:44 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:58920 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaGPIPk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:15:40 -0400
+Date: Wed, 16 Jul 2014 10:15:37 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Vidya Sagar <sagar.tv@gmail.com>
+Cc: bhelgaas@google.com, rjw@rjwysocki.net, nchumbalkar@lenovo.com,
+        swarren@nvidia.com, kthota@nvidia.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vidyas@nvidia.com
+Subject: Re: [PATCH v2] PCI: enable ASPM configuration in PCIE POWERSAVE mode
+Message-ID: <20140716081533.GJ7978@ulmo>
+References: <1405317877-15060-1-git-send-email-vidyas@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOmey7/79ja+7F5w"
+Content-Disposition: inline
+In-Reply-To: <1405317877-15060-1-git-send-email-vidyas@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Events like sched_switch do not provide a pid (tgid)
-which can result in threads with an unknown pid.  If
-the pid is later discovered, join the map groups.
-Note the thread's map groups should be empty because
-they are populated by MMAP events which do provide the
-pid and tid.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/machine.c | 57 ++++++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/map.c     | 14 ++++++++++++
- tools/perf/util/map.h     |  1 +
- 3 files changed, 66 insertions(+), 6 deletions(-)
+--BOmey7/79ja+7F5w
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index b75af25..93c8b6f 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -272,6 +272,52 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
- }
- 
-+static void machine__update_thread_pid(struct machine *machine,
-+				       struct thread *th, pid_t pid)
-+{
-+	struct thread *leader;
-+
-+	if (pid == th->pid_ || pid == -1 || th->pid_ != -1)
-+		return;
-+
-+	th->pid_ = pid;
-+
-+	if (th->pid_ == th->tid)
-+		return;
-+
-+	leader = machine__findnew_thread(machine, th->pid_, th->pid_);
-+	if (!leader)
-+		goto out_err;
-+
-+	if (!leader->mg)
-+		leader->mg = map_groups__new();
-+
-+	if (!leader->mg)
-+		goto out_err;
-+
-+	if (th->mg == leader->mg)
-+		return;
-+
-+	if (th->mg) {
-+		/*
-+		 * Maps are created from MMAP events which provide the pid and
-+		 * tid.  Consequently there never should be any maps on a thread
-+		 * with an unknown pid.  Just print an error if there are.
-+		 */
-+		if (!map_groups__empty(th->mg))
-+			pr_err("Discarding thread maps for %d:%d\n",
-+			       th->pid_, th->tid);
-+		map_groups__delete(th->mg);
-+	}
-+
-+	th->mg = map_groups__get(leader->mg);
-+
-+	return;
-+
-+out_err:
-+	pr_err("Failed to join map groups for %d:%d\n", th->pid_, th->tid);
-+}
-+
- static struct thread *__machine__findnew_thread(struct machine *machine,
- 						pid_t pid, pid_t tid,
- 						bool create)
-@@ -285,10 +331,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid) {
--		if (pid != -1 && pid != machine->last_match->pid_)
--			machine->last_match->pid_ = pid;
--		return machine->last_match;
-+	th = machine->last_match;
-+	if (th && th->tid == tid) {
-+		machine__update_thread_pid(machine, th, pid);
-+		return th;
- 	}
- 
- 	while (*p != NULL) {
-@@ -297,8 +343,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
- 
- 		if (th->tid == tid) {
- 			machine->last_match = th;
--			if (pid != -1 && pid != th->pid_)
--				th->pid_ = pid;
-+			machine__update_thread_pid(machine, th, pid);
- 			return th;
- 		}
- 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 25c571f..7af1480 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -454,6 +454,20 @@ void map_groups__exit(struct map_groups *mg)
- 	}
- }
- 
-+bool map_groups__empty(struct map_groups *mg)
-+{
-+	int i;
-+
-+	for (i = 0; i < MAP__NR_TYPES; ++i) {
-+		if (maps__first(&mg->maps[i]))
-+			return false;
-+		if (!list_empty(&mg->removed_maps[i]))
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
- struct map_groups *map_groups__new(void)
- {
- 	struct map_groups *mg = malloc(sizeof(*mg));
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 7758c72..5806a90 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -66,6 +66,7 @@ struct map_groups {
- 
- struct map_groups *map_groups__new(void);
- void map_groups__delete(struct map_groups *mg);
-+bool map_groups__empty(struct map_groups *mg);
- 
- static inline struct map_groups *map_groups__get(struct map_groups *mg)
- {
--- 
-1.8.3.2
+On Mon, Jul 14, 2014 at 11:34:37AM +0530, Vidya Sagar wrote:
+> From: Vidya Sagar <sagar.tv@gmail.com>
 
+The commit message looks somewhat cluttered:
+
+> 'commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
+>  under POWERSAVE mode")'
+
+Usually you'd cite a commit without the extra single quotes. More like
+this:
+
+Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
+under POWERSAVE mode") moved...
+
+> moved pcie_aspm_powersave_config_link() out of
+> pci_raw_set_power_state() to pci_set_power_state() which would enable
+> ASPM. But, with 'commit db288c9c5f9d ("PCI / PM: restore the original
+>  behavior of pci_set_power_state()")',
+
+Same here.
+
+>                                        which re-introduced the following =
+check
+> ./drivers/pci/pci.c: pci_set_power_state()
+> +   /* Check if we're already there */
+> +   if (dev->current_state =3D=3D state)
+> +       return 0;
+
+To make this stand out better, it could be preceded and followed by a
+single blank line (and perhaps indented using tabs).
+
+> in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is ne=
+ver
+> made leaving ASPM broken.
+> Fix it by not returning from when the above condition is true, rather, ju=
+mp to
+> ASPM configuration code and exit from there eventually.
+>=20
+> Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
+
+This patch uses code suggested by Bjorn and it's customary to credit the
+original author using something like:
+
+	Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+
+or
+
+	Originally-by: Bjorn Helgaas <bhelgaas@google.com>
+
+Thierry
+
+--BOmey7/79ja+7F5w
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTxjSlAAoJEN0jrNd/PrOhueUP+QFQ6cA6SkjxyYNnG/qmPZwA
+xH+p5mN+pjsHNAEZVir7k3jBI0CVMTrOCSSOsFuoHGUHHwyBz/CoJdQBDFDc/i3y
+RFzMi7P9fG8oongL8IEMWsmPaNBn8pufhwZ4+aSKRmCCzJFb/wMlobhB+coECMSP
+unZ7QBORb+zGrKDqoDVditueuFtVCVuJGnN1UglZgn7B8jUAKEXU6QPwhHzH/o0c
+24Gc1LD6/WH1VzJhbFvdiuJuSJ/s1fyS+xYKfAXhFybJd9VzpJsEBgtHFsltPPHa
+esbqyshpTZ3GiSDL5bbE2Ki4t0uC98BRTgHSdOVaOK9sPvQtr4fOxwm79tUL75j4
+Yx76aBRH0yPr9i/uLq/jAmKcbmQu/NsM0q5kAREzkS2YWxChdSy+BuugxavZicKD
+eXnh6BLyjbGlkTHNVEhmut6XdN9nsHq60Dh2oFEQolN8GhMsl98w33exyxYkYnkF
+665sR7Zcz6YuOdrwwpXKCVV4b8QNh5BpNn+eODiVeqnuTS/q+YVk+/m3xRWjSGYE
+d1XAdkoXya0DbWESRui9iHlhaooGtj3GX8f8R0+if1Z9V/lluGO8JUYfK2EPSLv9
+fserTjzmDC13E3KGgO++cMF/D7PanVk7KXJCBoxfRNmw+3noUFf2BCWg2TF4LDs9
+s9AMwQ0cXpDBmyMzdkjx
+=eh10
+-----END PGP SIGNATURE-----
+
+--BOmey7/79ja+7F5w--
