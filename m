@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312AbaGPDmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 23:42:17 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:53839 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933191AbaGPDmP (ORCPT
+	id S1759723AbaGPDu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 23:50:27 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:60661 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891AbaGPDuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 23:42:15 -0400
-X-Sasl-enc: fpT07VH6iDxLWnVCllcwXeZym1Nth+v1ZqaJdV0V8e7k 1405482134
-Message-ID: <1405482132.2527.26.camel@perseus.fritz.box>
-Subject: Re: [PATCH 6/6] autofs4: don't take spinlock when not needed in
- autofs4_lookup_expiring
-From: Ian Kent <raven@themaw.net>
-To: NeilBrown <neilb@suse.de>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Jul 2014 11:42:12 +0800
-In-Reply-To: <20140709234114.4525.70534.stgit@notabene.brown>
-References: <20140709233541.4525.25151.stgit@notabene.brown>
-	 <20140709234114.4525.70534.stgit@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jul 2014 23:50:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140711133709.584242982@linutronix.de>
+References: <20140711133623.530368377@linutronix.de>
+	<20140711133709.584242982@linutronix.de>
+Date: Tue, 15 Jul 2014 20:50:24 -0700
+Message-ID: <CALAqxLWE9CdXOpK=UgY19mw835woccfvGg_CqX92D-K67hr3SA@mail.gmail.com>
+Subject: Re: [patch 51/55] clocksource: Make delta calculation a function
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
-> If the expiring_list is empty, we can avoid a costly spinlock
-> in the rcu-walk path through authfs4_d_manage.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+On Fri, Jul 11, 2014 at 6:45 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> @@ -335,16 +335,15 @@ static void timekeeping_update(struct ti
+>   */
+>  static void timekeeping_forward_now(struct timekeeper *tk)
+>  {
+> -       cycle_t cycle_now, cycle_delta;
+> +       cycle_t cycle_now, delta;
+>         struct clocksource *clock;
+>         s64 nsec;
+>
+>         clock = tk->clock;
+>         cycle_now = clock->read(clock);
+> -       cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+> -       tk->cycle_last = clock->cycle_last = cycle_now;
+> +       delta = clocksource_delta(cycle_now, clock->cycle_last, clock->mask);
 
-I know it should be straight forward to say this is OK but I always
-think twice and again about areas that are subject to race pressure,
-such as the expire to mount pressure of this code.
+Errr.. Was dropping the update to tk->cycle_last and clock->cycle_last
+intended? That seems broken.
 
-After thinking about it for a while now I don't have any reason to think
-this would be a problem. Perhaps later pressure testing will reveal
-something I missed.
-
-It occurs to me that autofs4_lookup_active() might benefit from a
-similar addition. Multiple calls to ->lookup() made while the dentry is
-still unhashed should have enforced ordering due to the directory
-i_mutex so there shouldn't be a problem adding this. But perhaps you
-haven't seen delays in that function.
-
-Acked-by: Ian Kent <raven@themaw.net>
-
-> ---
->  fs/autofs4/root.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-> index 1ad119407e2f..774c2dab331b 100644
-> --- a/fs/autofs4/root.c
-> +++ b/fs/autofs4/root.c
-> @@ -219,6 +219,8 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry,
->  	const unsigned char *str = name->name;
->  	struct list_head *p, *head;
->  
-> +	if (list_empty(&sbi->expiring_list))
-> +		return NULL;
->  	spin_lock(&sbi->lookup_lock);
->  	head = &sbi->expiring_list;
->  	list_for_each(p, head) {
-> 
-> 
-
-
+thanks
+-john
