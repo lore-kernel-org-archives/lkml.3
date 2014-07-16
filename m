@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932932AbaGPMTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:19:48 -0400
-Received: from smtp-out-134.synserver.de ([212.40.185.134]:1086 "EHLO
-	smtp-out-130.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932287AbaGPMTq (ORCPT
+	id S933019AbaGPMVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:21:00 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:64094 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932142AbaGPMU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:19:46 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 2956
-Message-ID: <53C66DE3.5080502@metafoo.de>
-Date: Wed, 16 Jul 2014 14:19:47 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	Wed, 16 Jul 2014 08:20:58 -0400
+Date: Wed, 16 Jul 2014 14:20:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 2/5] perf: Destroy event's children on task exit
+Message-ID: <20140716122047.GA9496@gmail.com>
+References: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
+ <1405079782-8139-3-git-send-email-jolsa@kernel.org>
+ <20140711132309.GH20603@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: pramod.gurav.etc@gmail.com, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-CC: Josh Cartwright <joshc@codeaurora.org>, Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] regmap: Kconfig: Select SPMI when REGMAP_SPMI is selected
-References: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>
-In-Reply-To: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140711132309.GH20603@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 01:39 PM, pramod.gurav.etc@gmail.com wrote:
-> From: Pramod Gurav <pramod.gurav.etc@gmail.com>
->
-> REGMAP_SPMI module calls some functions from SPMI hence build breaks
-> when SPMI is not enabled while compiling REGMAP_SPMI with below linker
-> errors:
->
-> drivers/built-in.o: In function `regmap_spmi_ext_read':
-> :(.text+0x1143ec): undefined reference to `spmi_ext_register_read'
-> :(.text+0x11443c): undefined reference to `spmi_ext_register_readl'
-> drivers/built-in.o: In function `regmap_spmi_ext_gather_write':
-> :(.text+0x1144c4): undefined reference to `spmi_ext_register_write'
-> :(.text+0x114520): undefined reference to `spmi_ext_register_writel'
-> drivers/built-in.o: In function `regmap_spmi_base_read':
-> :(.text+0x1145b8): undefined reference to `spmi_register_read'
-> drivers/built-in.o: In function `regmap_spmi_base_gather_write':
-> :(.text+0x114630): undefined reference to `spmi_register_write'
-> :(.text+0x11465c): undefined reference to `spmi_register_zero_write'
->
-> Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
-> CC: Josh Cartwright <joshc@codeaurora.org>
-> CC: Mark Brown <broonie@linaro.org>
-> ---
-> This was found when I enabled support for Qualcomm QPNP PMICs and was
-> compiling it. It selects REGMAP_SPMI and hence the crash.
 
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Any driver that does select REGMAP_SPMI needs to depends on SPMI. So the 
-correct fix for this issue is to make sure that the driver can only be 
-enabled if SPMI is enabled.
+> On Fri, Jul 11, 2014 at 01:56:19PM +0200, Jiri Olsa wrote:
+> > From: Jiri Olsa <jolsa@redhat.com>
+> > 
+> > When task exits we close:
+> >   1) all events that are installed in task
+> >   2) all events owned by task (via file descriptor)
+> > 
+> > But we don't close children events of 2) events. Those children
+> > events stay until the child task exits and are useless with the
+> > parent being gone, because we have no way to get to values any
+> > more.
+> > 
+> > Plus if the event stays installed in task even with the owner task
+> > gone, it runs the perf callback any time the task forks, for no
+> > real reason.
+> > 
+> > Closing all children events events when the owner task of the
+> > parent event is closed.
+> 
+> So I _think_ the reason we didn't do this is because this is potentially
+> very expensive and keeping them around isn't too much bother, they'll
+> die eventually.
+> 
+> But I can't really remember. Ingo any recollections / opinions?
 
-- Lars
+As far as I can remember it's just a historic path dependent 
+implementation detail, not really a conscious choice: initially we 
+didn't remove events (because we couldn't), and then it remained so 
+because it broke nothing.
+
+Thanks,
+
+	Ingo
