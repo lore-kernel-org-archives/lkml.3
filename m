@@ -1,225 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965612AbaGPRPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:15:18 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:43769 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757343AbaGPRPO (ORCPT
+	id S965578AbaGPRRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 13:17:07 -0400
+Received: from smtp21.services.sfr.fr ([93.17.128.1]:42654 "EHLO
+	smtp21.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965209AbaGPRRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:15:14 -0400
+	Wed, 16 Jul 2014 13:17:04 -0400
+Authentication-Results: sfrmc.priv.atos.fr; dkim=none (no signature);
+	dkim-adsp=none (no policy) header.from=mpeg.blue@free.fr
+X-SFR-UUID: 20140716171700593.90F8170001A4@msfrf2108.sfr.fr
+Message-ID: <53C6B38A.3000100@free.fr>
+Date: Wed, 16 Jul 2014 19:16:58 +0200
+From: Mason <mpeg.blue@free.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101
+	Firefox/29.0 SeaMonkey/2.26.1
 MIME-Version: 1.0
-In-Reply-To: <53C5600C.1080004@linaro.org>
-References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
-	<1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
-	<CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com>
-	<53C4F745.3070701@linaro.org>
-	<CAB5oZtBSZJVqyO8GKdKqh0+3=GDkCyuqrAOQhMRxN0JFBnmZ6w@mail.gmail.com>
-	<53C54042.2030507@linaro.org>
-	<CAB5oZtDy=TDz12_6ua_M3g=bQ+zB6cJTH3bUT9oA8snLDRBMTw@mail.gmail.com>
-	<53C5600C.1080004@linaro.org>
-Date: Wed, 16 Jul 2014 19:15:12 +0200
-Message-ID: <CAB5oZtAt0ZWJB1FOmzaFphM2Y566U73=U+HniPLTm9c1suVqNg@mail.gmail.com>
-Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
-From: Harro Haan <hrhaan@gmail.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
-        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: John Stoffel <john@stoffel.org>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: After unlinking a large file on ext4, the process stalls for a
+ long time
+References: <53C687B1.30809@free.fr>
+	<21446.38705.190786.631403@quad.stoffel.home>
+In-Reply-To: <21446.38705.190786.631403@quad.stoffel.home>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 July 2014 19:08, Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> On 15/07/14 16:59, Harro Haan wrote:
->> On 15 July 2014 16:52, Daniel Thompson <daniel.thompson@linaro.org> wrote:
->>> On 15/07/14 14:04, Harro Haan wrote:
->>>>> Makes sense.
->>>>>
->>>>> Avoiding this problem on GICv2 is easy (thanks to the aliased intack
->>>>> register) but on iMX.6 we have only a GICv1.
->>>>>
->>>>>
->>>>>> I can reduce the number of occurrences (not prevent it) by adding the
->>>>>> following hack to irq-gic.c
->>>>>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
->>>>>> gic_handle_irq(struct pt_regs *regs
->>>>>>   u32 irqstat, irqnr;
->>>>>>   struct gic_chip_data *gic = &gic_data[0];
->>>>>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
->>>>>>
->>>>>>   do {
->>>>>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
->>>>>> & (1 << 30))
->>>>>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
->>>>>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->>>>>>   irqnr = irqstat & ~0x1c00;
->>>>>
->>>>> I've made a more complete attempt to fix this. Could you test the
->>>>> following? (and be prepared to fuzz the line numbers)
->>>>
->>>> Thanks Daniel, I have tested it, see the comments below.
->>>>
->>>>>
->>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>>> index 73ae896..309bf2c 100644
->>>>> --- a/drivers/irqchip/irq-gic.c
->>>>> +++ b/drivers/irqchip/irq-gic.c
->>>>> @@ -303,6 +303,28 @@ static int gic_set_wake(struct irq_data *d,
->>>>> unsigned int on)
->>>>>  #define gic_set_wake   NULL
->>>>>  #endif
->>>>>
->>>>> +/* Check for group 0 interrupt spuriously acked as a normal IRQ. This
->>>>> + * workaround will only work for level triggered interrupts (and in
->>>>> + * its current form is actively harmful on systems that don't support
->>>>> + * FIQ).
->>>>> + */
->>>>> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32
->>>>> irqstat)
->>>>> +{
->>>>> +       u32 irqnr = irqstat & GICC_IAR_INT_ID_MASK;
->>>>> +
->>>>> +       if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
->>>>> +               return irqnr;
->>>>> +
->>>>> +       if (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_IGROUP +
->>>>> +                         (irqnr / 32 * 4)) &
->>>>> +           BIT(irqnr % 32))
->>>>> +               return irqnr;
->>>>> +
->>>>> +       /* this interrupt was spurious (needs to be handled as FIQ) */
->>>>> +       writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
->>>>
->>>> This will NOT work, because of the note I mentioned above:
->>>> "The FIQ exception will not occur anymore after gic_handle_irq
->>>> read/acknowledges the FIQ by reading the GIC_CPU_INTACK register"
->>>> So with this code you will say End Of Interrupt at the GIC level,
->>>> without actually handling the interrupt, so you are missing an
->>>> interrupt.
->>>> I did the following test to confirm the missing interrupt:
->>>> I have changed the periodic timer interrupt by an one-shot timer
->>>> interrupt. The one-shot timer interrupt is programmed by the FIQ
->>>> handler for the next FIQ interrupt. As expected: When the problem
->>>> occurs, no more FIQ interrupts are generated.
->>>
->>> Can you confirm whether your timer interrupts are configured level or
->>> edge triggered? Or whether EOIing the GIC causes them to be cleared by
->>> some other means.
->>
->> From page 48 of DDI0407I_cortex_a9_mpcore_r4p1_trm.pdf:
->> Watchdog timers, PPI(3)
->> Each Cortex-A9 processor has its own watchdog timers that can generate
->> interrupts, using ID30.
->>
->> From page 56:
->> PPI[0], [2],and[3]:b11
->> interrupt is rising-edge sensitive.
->
-> Thanks. This is clear.
->
->
->>> If we can't get level triggering to work then we have to:
->>>
->>> 1. Write code to jump correctly into FIQ mode.
->>>
->>> 2. Modify the gic's ack_fiq() callback to automatically avoid reading
->>>    intack when the workaround is deployed.
->>>
->>> The above is why I wanted to see if we can make do with level triggering
->>> (and automatic re-triggering for interrupts such as SGIs that are
->>> cleared by EOI).
->>
->> But the re-triggering introduces extra latencies and a lot of use
->> cases of FIQ's try to avoid that.
->
-> I'm not really clear why retriggering should be significantly more
-> expensive than the dance required to fake up entry the FIQ handler.
->
-> On the other hand retriggering allows us to avoid hacks in the FIQ
-> handler to stop it acknowledging the interrupt. Given hacks like that
-> won't be needed on A7/A15 this seems like a good outcome.
->
-> Anyhow I've put together a new version of my earlier patch that I think
-> will retrigger all interrupts except SGIs (I'll look at SGIs and
-> compatibility with non-Freescale parts only if this improved approach
-> works).
->
-> Reported-by: Harro Haan <hrhaan@gmail.com>
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> ---
->  drivers/irqchip/irq-gic.c | 31 ++++++++++++++++++++++++++++++-
->  1 file changed, 30 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 73ae896..88f92e6 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -303,6 +303,33 @@ static int gic_set_wake(struct irq_data *d,
-> unsigned int on)
->  #define gic_set_wake   NULL
->  #endif
->
-> +/* This is a software emulation of the Aliased Interrupt Acknowledge
-> Register
-> + * (GIC_AIAR) found in GICv2+.
-> + */
-> +static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32
-> irqstat)
-> +{
-> +       u32 irqnr = irqstat & GICC_IAR_INT_ID_MASK;
-> +       void __iomem *dist_base = gic_data_dist_base(gic);
-> +       u32 offset, mask;
-> +
-> +       if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
-> +               return irqnr;
-> +
-> +       offset = irqnr / 32 * 4;
-> +       mask = 1 << (irqnr % 32);
-> +       if (readl_relaxed(dist_base + GIC_DIST_IGROUP + offset) & mask)
-> +               return irqnr;
-> +
-> +       /* this interrupt must be taken as a FIQ so put it back into the
-> +        * pending state and end our own servicing of it.
-> +        */
-> +       writel_relaxed(mask, dist_base + GIC_DIST_PENDING_SET + offset);
-> +       readl_relaxed(dist_base + GIC_DIST_PENDING_SET + offset);
-> +       writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
-> +
-> +       return 1023;
-> +}
-> +
->  static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
->  {
->         u32 irqstat, irqnr;
-> @@ -310,8 +337,10 @@ static void __exception_irq_entry
-> gic_handle_irq(struct pt_regs *regs)
->         void __iomem *cpu_base = gic_data_cpu_base(gic);
->
->         do {
-> +               local_fiq_disable();
->                 irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
-> -               irqnr = irqstat & GICC_IAR_INT_ID_MASK;
-> +               irqnr = gic_handle_spurious_group_0(gic, irqstat);
-> +               local_fiq_enable();
->
->                 if (likely(irqnr > 15 && irqnr < 1021)) {
->                         irqnr = irq_find_mapping(gic->domain, irqnr);
-> --
-> 1.9.3
->
->
->
+(I hope you'll forgive me for reformatting the quote characters
+to my taste.)
 
-I just tested the above code. This approach also works as expected for
-edge sensitive interrupts.
+On 16/07/2014 17:16, John Stoffel wrote:
+
+> Mason wrote:
+>
+>> I'm using Linux (3.1.10 at the moment) on a embedded system
+>> similar in spec to a desktop PC from 15 years ago (256 MB RAM,
+>> 800-MHz CPU, USB).
+> 
+> Sounds like a Raspberry Pi...  And have you investigated using
+> something like XFS as your filesystem instead?
+
+The system is a set-top box (DVB-S2 receiver). The system CPU is
+MIPS 74K, not ARM (not that it matters, in this case).
+
+No, I have not investigated other file systems (yet).
+
+>> I need to be able to create large files (50-1000 GB) "as fast
+>> as possible".  These files are created on an external hard disk
+>> drive, connected over Hi-Speed USB (typical throughput 30 MB/s).
+> 
+> Really... so you just need to create allocations of space as quickly
+> as possible,
+
+I may not have been clear. The creation needs to be fast (in UX terms,
+so less than 5-10 seconds), but it only occurs a few times during the
+lifetime of the system.
+
+> which will then be filled in later with actual data?
+
+Yes. In fact, I use the loopback device to format the file as an
+ext4 partition. 
+
+> basically someone will say "give me 600G of space reservation" and
+> then will eventually fill it up, otherwise you say "Nope, can't do
+> it!"
+
+Right, take a 1000 GB disk,
+Reserve(R1 = 300 GB) <- SUCCESS
+Reserve(R2 = 300 GB) <- SUCCESS
+Reserve(R3 = 300 GB) <- SUCCESS
+Reserve(R4 = 300 GB) <- FAIL
+Delete (R1)          <- SUCCESS
+Reserve(R4 = 300 GB) <- SUCCESS
+
+>> So I create an ext4 partition with
+>> $ mkfs.ext4 -m 0 -i 1024000 -O ^has_journal,^huge_file /dev/sda1
+>> (Using e2fsprogs-1.42.10 if it matters)
+>> 
+>> And mount with "typical" mount options
+>> $ mount -t ext4 /dev/sda1 /mnt/hdd -o noexec,noatime
+>> /dev/sda1 on /mnt/hdd type ext4 (rw,noexec,noatime,barrier=1)
+>> 
+>> I wrote a small test program to create a large file, then immediately
+>> unlink it.
+>> 
+>> My problem is that, while file creation is "fast enough" (4 seconds
+>> for a 300 GB file) and unlink is "immediate", the process hangs
+>> while it waits (I suppose) for the OS to actually complete the
+>> operation (almost two minutes for a 300 GB file).
+
+[snip performance numbers]
+
+>> QUESTIONS:
+>> 
+>> 1) Did I provide enough information for someone to reproduce?
+> 
+> Sure, but you didn't give enough information to explain what you're
+> trying to accomplish here.  And what the use case is.  Also, since you
+> know you cannot fill 500Gb in any sort of reasonable time over USB2,
+> why are you concerned that the delete takes so long?
+
+I don't understand your question. If the user asks to create a 300 GB
+file, then immediately realizes than he won't need it, and asks for it
+to be deleted, I don't see why the process should hang for 2 minutes.
+
+The use case is
+- allocate a large file
+- stick a file system on it
+- store stuff (typically video files) inside this "private" FS
+- when the user decides he doesn't need it anymore, unmount and unlink
+(I also have a resize operation in there, but I wanted to get the
+basics before taking the hard stuff head on.)
+
+So, in the limit, we don't store anything at all: just create and
+immediately delete. This was my test.
+
+> I think that maybe using the filesystem for the reservations is the
+> wrong approach.  You should use a simple daemon which listens for
+> requests, and then checks the filesystem space and decides if it can
+> honor them or not.
+
+I considered using ACTUAL partitions, but there were too many downsides.
+NB: there may be several "containers" active at the same time.
+
+>> 2) Is this expected behavior?
+> 
+> Sure, unlinking a 1Gb file that's been written too means (on EXT4)
+> that you need to update all the filesystem structures.
+
+Well creating such a file means updating all the filesystem structures,
+yet that operation is 30x faster. Also note that I have not written
+ANYTHING to the file; my test did:
+
+  open();
+  posix_fallocate();
+  unlink();
+
+> Now it should
+> be quicker honestly, but maybe you're not mounting it with a journal?
+
+Indeed no, I expected the journal to slow things down.
+$ mkfs.ext4 -m 0 -i 1024000 -O ^has_journal,^huge_file /dev/sda1
+https://lwn.net/Articles/313514/
+
+Also, the user might format a Flash-based device, and I've read that
+journals and Flash-based storage are not a good mix.
+
+> And have you tried tuning the filesystem to use larger allocations and
+> blocks?  You're not going to make a lot of files on there obviously,
+> but just a few large ones.
+
+Are you suggesting bigalloc?
+https://ext4.wiki.kernel.org/index.php/Bigalloc
+1. It is not supported by my kernel AFAIU.
+2. It is still experimental AFAICT.
+3. Resizing bigalloc file systems is not well tested.
+
+>> 3) Are there knobs I can tweak (at FS creation, or at mount
+>> time) to improve the performance of file unlinking?  (Maybe
+>> there is a safety/performance trade-off?
+> 
+> Sure, there are all kinds of things you can do.  For example, how
+> many of these files are you expecting to store?
+
+I do not support more than 8 containers. (But the drive is used to
+store other (mostly large) files.)
+
+This is why I specified "-i 1024000" to mkfs.ext4, to limit the number
+of inodes created. Is this incorrect?
+
+What other improvements would you suggest?
+(I'd like to get the unlink operation to complete in < 10 seconds.)
+
+> Will you have to be able to handle writing of more than one file
+> at a time?  Or are they purely sequential?
+
+All containers may be active concurrently, and since they are proper
+file systems, they are written to as the FS drivers sees fit (i.e. not
+sequentially). However, the max write throughput is limited to 3 MB/s
+(which USB2 should easily manage to handle).
+
+> If you are creating a small embedded system to manage a bunch of USB2
+> hard drives and write data to them with a space reservation process,
+> then you need to make sure you can actually handle the data throughput
+> requirements.  And I'm not sure you can.
+
+AFAIK, the plan is to support only one drive, and not to write faster
+than 3 MB/s. I think it should handle it.
+
+Thanks for your insightful questions :-)
+
+Regards.
