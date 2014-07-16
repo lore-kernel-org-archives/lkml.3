@@ -1,126 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965343AbaGPHcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:32:11 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:34169 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934102AbaGPHcI (ORCPT
+	id S934252AbaGPHeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:34:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47240 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933573AbaGPHeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:32:08 -0400
-Date: Wed, 16 Jul 2014 09:32:01 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/6] clk: tegra: add nvidia,tegra132-ccplex-clk binding
-Message-ID: <20140716073200.GE7978@ulmo>
-References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
- <1405437890-6468-5-git-send-email-pdeschrijver@nvidia.com>
+	Wed, 16 Jul 2014 03:34:20 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53C62AAF.7060509@jp.fujitsu.com>
+Date: Wed, 16 Jul 2014 16:33:03 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WBsA/oQW3eTA3LlM"
-Content-Disposition: inline
-In-Reply-To: <1405437890-6468-5-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>
+CC: <x86@kernel.org>, <toshi.kani@hp.com>, <imammedo@redhat.com>,
+        <bp@alien8.de>, <huawei.libin@huawei.com>,
+        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
+        <peterz@infradead.org>
+Subject: [PATCH v2] x86,cpu-hotplug: assign same CPU number to readded CPU
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+llc_shared_map is not cleared even if CPU is offline or hot removed.
+So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
+the mask has wrong value. The mask is used by CSF schduler to create
+sched_domain. So it breaks CFS scheduler.
 
---WBsA/oQW3eTA3LlM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here is a example on my system.
+My system has 4 sockets and each socket has 15 cores and HT is enabled.
+In this case, each core of sockes is numbered as follows:
 
-On Tue, Jul 15, 2014 at 06:24:34PM +0300, Peter De Schrijver wrote:
-> Tegra132 has a few new clocks for the CPU complex (ccplex).
->=20
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  .../bindings/clock/nvidia,tegra132-ccplex-clk.txt  |   27 ++++++++++++++=
-++++++
->  include/dt-bindings/clock/tegra132-ccplex.h        |   12 +++++++++
->  2 files changed, 39 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra1=
-32-ccplex-clk.txt
->  create mode 100644 include/dt-bindings/clock/tegra132-ccplex.h
->=20
-> diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra132-ccpl=
-ex-clk.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra132-ccplex=
--clk.txt
-> new file mode 100644
-> index 0000000..1441e36
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra132-ccplex-clk.=
-txt
-> @@ -0,0 +1,27 @@
-> +NVIDIA Tegra132 ccplex clocks
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-44, 90-104
+Socket#3 | 45-59, 105-119
 
-Perhaps: "NVIDIA Tegra132 CPU complex (ccplex) clocks". Otherwise this
-file doesn't expand the ccplex abbreviation at all and it may not be
-obvious to everyone.
+Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+It means that last level cache of Socket#2 is shared with
+CPU#30-44 and 90-104.
 
-> +This binding uses the common clock binding:
-> +Documentation/devicetree/bindings/clock/clock-bindings.txt
+When hot-removing socket#2 and #3, each core of sockets is numbered
+as follows:
 
-clock-bindings.txt is in the same directory as this file, so a slightly
-better wording would be:
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
 
-	This binding uses the common clock binding as described in the
-	clock-bindings.txt file in this directory.
+But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+having 0x3fff80000001fffc0000000.
 
-Note that these absolute paths may not remain the same when the device
-tree bindings are moved out of the kernel tree.
+After that, when hot-adding socket#2 and #3, each core of sockets is
+numbered as follows:
 
-> +The Tegra132 ccplex clock module on Tegra132 is the HW module responsible
-> +for the ccplex related clocks.
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-59
+Socket#3 | 90-119
 
-The end repeats the beginning of this sentence, so its information
-content is rather low. Maybe the last part of this sentence could be:
-"... responsible for the CPU and related clocks".
+Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+It means that last level cache of Socket#2 is shared with CPU#30-59
+and 90-104. So the mask has wrong value.
 
-> diff --git a/include/dt-bindings/clock/tegra132-ccplex.h b/include/dt-bin=
-dings/clock/tegra132-ccplex.h
-[...]
-> +#define TEGRA132_CCPLEX_CCLK_G 1
-> +#define TEGRA132_PLL_X 2
-> +#define TEGRA132_CCPLEX_CLK_MAX 3
+At first, I cleared hot-removed CPU number's bit from llc_shared_map
+when hot removing CPU. But Borislav suggested that the problem will
+disappear if readded CPU is assigned same CPU number. And llc_shared_map
+must not be changed.
 
-Maybe these should use TEGRA132_CLK_ as prefix for consistency with the
-CAR binding?
+So the patch assigns same CPU number to readded CPU by linking CPU
+number to APIC ID. And by the patch, the problem disappers.
 
-Thierry
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Suggested-by: Borislav Petkov <bp@alien8.de1>
+---
+v2: change cpuid to cpunum
+---
+  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
+  1 file changed, 32 insertions(+), 1 deletion(-)
 
---WBsA/oQW3eTA3LlM
-Content-Type: application/pgp-signature
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index ad28db7..5dc3e50 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -220,6 +220,23 @@ static void apic_pm_activate(void);
+  static unsigned long apic_phys;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+  /*
++ * Bind ACPI ID to Logical CPU number
++ * Logical CPU number to APIC ID does not change by this array
++ * even if CPU is hotplugged. So don't clear the array even if
++ * CPU is hot-removed
++ */
++static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
++	[0 ... MAX_LOCAL_APIC-1] = -1,
++};
++
++/*
++ * Represent Logical CPU number bound to APIC ID
++ * Don't clear a bit even if CPU is hot-removed
++ */
++static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
++static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
++
++/*
+   * Get the LAPIC version
+   */
+  static inline int lapic_get_version(void)
+@@ -2122,6 +2139,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+  	apic_write(APIC_LVT1, value);
+  }
 
-iQIcBAEBAgAGBQJTxipwAAoJEN0jrNd/PrOhXRsP+wUmTSZ+S/1VYWQ50sZCQtSh
-SM3OSy96drsNEJehN6kRezqC4QaLqv31xDVUgocqac8mJwkUNtb8ZNGmB0g9ORYe
-ce0oDBGrIKwPo+E8NvFUenYNR4Me6IuAa705SpaElON6EhRyz4IHHLGgEj/z08J/
-GjA+3ZQFpJ+i7WRICuAMr/f6b0AomLU6+Amvokxt0RITqHSCo98kTlzz2vbrduEk
-kqn25w3wOZ7FywGw9J+Nj7ODF7LdOUksKj16hy9g5LGv82LjEj/jdtos5NoW3SE8
-PEMe03tW4PouZcV3D+cfrlimarBr0zuhzGnp3JoU+yN0ZN+HgI8g4fsCuJmwe374
-/3sLZbCsWrqwvBGaMZrE508SYxkrbJHtko1IrKSWLFMs5gvUF8hef3I9cjvuZl3r
-yOQoUoCpYpyNpI2aoj1kU2M/9doorPAJGDgxGbjkR3Rb8WeuihXfqCuMY6XD1YC6
-6yLXPWoM5wa6WLd/RB8M6AOuf1P4coUuN0lm9nZGRNfms9mYn9jVzn9F7SlPb0ZD
-/uHGXXiUrZEX0gNl+JqmuijBnNIRl/+0YNpJ65M9VEy6GWM1GxsvTXQQ0UubF/Sf
-qbwBMntO//bexAI6hrVjiocF5SO6P2CLaaDafpdOHjRe+i4hYcVU4Hr6GKTMdveU
-EQFYkxP0Ovyte9QGogYh
-=GaJ/
------END PGP SIGNATURE-----
++static int get_cpunum(int apicid)
++{
++	int cpu;
++
++	cpu = apicid_to_cpunum[apicid];
++	if (cpu < 0)
++		cpu = cpumask_next_zero(-1, cpu_used_mask);
++
++	return cpu;
++}
++
+  int generic_processor_info(int apicid, int version)
+  {
+  	int cpu, max = nr_cpu_ids;
+@@ -2199,7 +2227,9 @@ int generic_processor_info(int apicid, int version)
+  		 */
+  		cpu = 0;
+  	} else
+-		cpu = cpumask_next_zero(-1, cpu_present_mask);
++		cpu = get_cpunum(apicid);
++
++	apicid_to_cpunum[apicid] = cpu;
 
---WBsA/oQW3eTA3LlM--
+  	/*
+  	 * Validate version
+@@ -2228,6 +2258,7 @@ int generic_processor_info(int apicid, int version)
+  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+  		apic->x86_32_early_logical_apicid(cpu);
+  #endif
++	cpumask_set_cpu(cpu, cpu_used_mask);
+  	set_cpu_possible(cpu, true);
+  	set_cpu_present(cpu, true);
+
+
