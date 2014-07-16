@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaGPUGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:06:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324AbaGPUDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:03:07 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 04/13] perf tools: Add support for text descriptions of events and alias add
-Date: Wed, 16 Jul 2014 22:02:40 +0200
-Message-Id: <1405540969-18975-5-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
-References: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
+	id S1752576AbaGPUGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:06:54 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:50102 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaGPUGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 16:06:51 -0400
+MIME-Version: 1.0
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 16 Jul 2014 21:06:18 +0100
+Message-ID: <CA+V-a8unPvRPfoDNBsyyCAPCva7HokysuqG5QhcMuMrTbsCWaw@mail.gmail.com>
+Subject: [GIT PULL FOR v3.17] Davinci Media
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi Mauro,
 
-Change pmu.c to allow descriptions of events and add interfaces
-to add aliases at runtime from another file. To be used by jevents in
-a followon patch
+Please pull the following patches for davinci media which include
+trivial cleanups.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/n/1405123165-22666-3-git-send-email-andi@firstfloor.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/pmu.c | 43 ++++++++++++++++++++++++++++++-------------
- 1 file changed, 30 insertions(+), 13 deletions(-)
+Thanks,
+--Prabhakar Lad
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 7a811eb61f75..f9c704628218 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -14,6 +14,7 @@
- 
- struct perf_pmu_alias {
- 	char *name;
-+	char *desc;
- 	struct list_head terms;
- 	struct list_head list;
- 	char unit[UNIT_MAX_LEN+1];
-@@ -171,17 +172,12 @@ error:
- 	return -1;
- }
- 
--static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
-+static int __perf_pmu__new_alias(struct list_head *list, char *name,
-+				 char *dir, char *desc, char *val)
- {
- 	struct perf_pmu_alias *alias;
--	char buf[256];
- 	int ret;
- 
--	ret = fread(buf, 1, sizeof(buf), file);
--	if (ret == 0)
--		return -EINVAL;
--	buf[ret] = 0;
--
- 	alias = malloc(sizeof(*alias));
- 	if (!alias)
- 		return -ENOMEM;
-@@ -190,24 +186,45 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	alias->scale = 1.0;
- 	alias->unit[0] = '\0';
- 
--	ret = parse_events_terms(&alias->terms, buf);
-+	ret = parse_events_terms(&alias->terms, val);
- 	if (ret) {
-+		pr_err("Cannot parse alias %s: %d\n", val, ret);
- 		free(alias);
- 		return ret;
- 	}
- 
- 	alias->name = strdup(name);
--	/*
--	 * load unit name and scale if available
--	 */
--	perf_pmu__parse_unit(alias, dir, name);
--	perf_pmu__parse_scale(alias, dir, name);
- 
-+	if (dir) {
-+		/*
-+		 * load unit name and scale if available
-+		 */
-+		perf_pmu__parse_unit(alias, dir, name);
-+		perf_pmu__parse_scale(alias, dir, name);
-+	}
-+
-+	alias->desc = desc ? strdup(desc) : NULL;
- 	list_add_tail(&alias->list, list);
- 
- 	return 0;
- }
- 
-+static int perf_pmu__new_alias(struct list_head *list,
-+			       char *dir,
-+			       char *name,
-+			       FILE *file)
-+{
-+	char buf[256];
-+	int ret;
-+
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+	buf[ret] = 0;
-+
-+	return __perf_pmu__new_alias(list, name, dir, NULL, buf);
-+}
-+
- /*
-  * Process all the sysfs attributes located under the directory
-  * specified in 'dir' parameter.
--- 
-1.8.3.1
+The following changes since commit 3c0d394ea7022bb9666d9df97a5776c4bcc3045c:
 
+  [media] dib8000: improve the message that reports per-layer locks
+(2014-07-07 09:59:01 -0300)
+
+are available in the git repository at:
+
+  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git davinci_media
+
+for you to fetch changes up to c219eb5c0fa71e11793cdc1456da8fe04f76b5ff:
+
+  staging: media: davinci_vpfe: fix checkpatch warning (2014-07-16
+20:48:18 +0100)
+
+----------------------------------------------------------------
+Andrey Utkin (1):
+      davinci-vpfe: Fix retcode check
+
+Dan Carpenter (1):
+      davinci: vpfe: dm365: remove duplicate RSZ_LPF_INT_MASK
+
+Lad, Prabhakar (2):
+      media: davinci_vpfe: dm365_resizer: fix sparse warning
+      staging: media: davinci_vpfe: fix checkpatch warning
+
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c    | 2 ++
+ drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c | 2 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h | 1 -
+ drivers/staging/media/davinci_vpfe/dm365_resizer.c  | 4 ++--
+ 4 files changed, 5 insertions(+), 4 deletions(-)
