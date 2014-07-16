@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965117AbaGPORu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:17:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56759 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965074AbaGPORq (ORCPT
+	id S934438AbaGPOTC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:19:02 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:48833 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759250AbaGPOS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:17:46 -0400
-Date: Wed, 16 Jul 2014 10:17:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Patrik Fimml <patrikf@chromium.org>
-cc: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dmitry Torokhov <dtor@google.com>, Benson Leung <bleung@google.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Power-managing devices that are not of interest at some point
- in time
-In-Reply-To: <20140716013206.GA13409@google.com>
-Message-ID: <Pine.LNX.4.44L0.1407161006260.1028-100000@iolanthe.rowland.org>
+	Wed, 16 Jul 2014 10:18:58 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5214160.a78RDYzY5T@wuerfel>
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org>
+	<5461658.P0nNPHkj0L@wuerfel>
+	<CAJe_Zhdtzhv=1QfhCAu6G_nq0VqW9v6TvgHSJe9VmgJQwo0U3Q@mail.gmail.com>
+	<5214160.a78RDYzY5T@wuerfel>
+Date: Wed, 16 Jul 2014 19:48:57 +0530
+Message-ID: <CAJe_Zhf8oH-MPg6HtFDoT6_LZxJzy3ff85-GsWcENQftNiJMxw@mail.gmail.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "s-anna@ti.com" <s-anna@ti.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Patrik Fimml wrote:
+On 16 July 2014 19:38, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 16 July 2014 18:42:22 Jassi Brar wrote:
+>> On 16 July 2014 18:39, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Wednesday 16 July 2014 18:35:33 Jassi Brar wrote:
+>> >> On 16 July 2014 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> > On Wednesday 16 July 2014 18:07:04 Jassi Brar wrote:
+>> >> >> On 16 July 2014 15:46, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> >> > On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
+>> >> >> >> > +
+>> >> >> >> > +Required property:
+>> >> >> >> > +- mbox: List of phandle and mailbox channel specifier.
+>> >> >> >> > +
+>> >> >> >> > +- mbox-names: List of identifier strings for each mailbox channel
+>> >> >> >> > +               required by the client.
+>> >> >> >> > +
+>> >> >> >>
+>> >> >> >> IMO the mailbox names are more associated with the controller channels/
+>> >> >> >> mailbox rather than the clients using it. Does it make sense to move
+>> >> >> >> this under controller. It also avoid each client replicating the names.
+>> >> >> >
+>> >> >> > I think it would be best to just make the mbox-names property optional,
+>> >> >> > like we have for other subsystems.
+>> >> >> >
+>> >> >> A very similar subsystem - DMAEngine also has 'dma-names' as a
+>> >> >> required property.
+>> >> >>
+>> >> >> If a client is assigned only 1 mbox in DT, we can do without
+>> >> >> mbox-names. But I am not sure what to do if a client needs two or more
+>> >> >> differently capable mboxes? Simply allocating in order of mbox request
+>> >> >> doesn't seem very robust.
+>> >> >
+>> >> > Traditionally, these things (regs, interrupts, ...) are just accessed
+>> >> > by index. The reason why dmaengine requires the name is that some machines
+>> >> > can use multiple DMA engine devices attached to the same request line,
+>> >> > so the dmaengine subsystem can pick any of them that has a matching
+>> >> > name.
+>> >> And also, I think, when a client needs 2 different dma channels, say
+>> >> for RX and TX each. The api can't assign the first channel specified
+>> >> in 'dmas' property to the first channel request that comes to it,
+>> >> unless we assume client driver always requests dma channels in the
+>> >> order written in its DT node.  And this is the main reason I see for
+>> >> having mbox-names property.
+>> >
+>> > Most subsystems require passing an explicit index in this case.
+>> >
+>> >>   If we make mbox-names optional, do we assume client driver must
+>> >> request mbox in the order specified in its DT node?
+>> >
+>> > Correct.
+>> >
+>> OK. So how about we drop mbox-names altogether and expect client
+>> driver to simply provide an index of the mbox needed?
+>
+> That would be fine with me, but I think a lot of people like
+> the idea of identifying things by name, and are used to that
+> from the other subsystems.
+>
+> Maybe you can leave the mbox-names property defined as 'optional'
+> in the generic mbox binding but remove the code in Linux? That way
+> we can always put it back at a later point without changing the
+> binding in an incompatible way.
+>
+> Individual mailbox clients can mandate specific strings.
+>
+Sounds great.
 
-> (Re-sending with correct mailing list addresses.)
-> 
-> Hi,
-> 
-> When the lid of a laptop is closed, certain devices can no longer
-> provide interesting input or will even produce bogus input, such as:
-> 
-> - input devices: touchscreen, touchpad, keyboard
-
-Just to be clear: The laptop's internal keyboard can't be used, but
-external keyboards can.  The same goes for touchscreens and touchpads.
-
-> - sensors: ambient light sensor, accelerometer, magnetometer
-
-Why can't the accelerometer or magnetometer be used when the lid is 
-closed?
-
-> - a video camera mounted on the lid
-> - display backlight
-
-I can think of one possible use for a video camera mounted inside the
-lid.  It's the modern analog of the age-old question: Does the
-refrigerator light go out when the door is closed?  Using the video
-camera, users will be able to check whether the display backlight goes
-out when the lid is closed.  :-)
-
-> Various workarounds cover some of these cases, and we have some ugly
-> hacks in ChromeOS to make things work. It would be nice if a userspace
-> power management daemon could listen to the lid-close event, and then
-> have a way to temporarily power off these devices, potentially through
-> sysfs.
-
-Isn't it common for laptops to go into system suspend when the lid is 
-closed?
-
-> I've been discussing this with Dmitry and Benson (cc'd), and we've been
-> wondering whether we could come up with a generic solution that could
-> benefit multiple device classes.
-> 
-> There's some overlap with runtime PM here. The action to be taken in
-> such a situation would probably be similar to a runtime suspend. The
-> match is not perfect though, since devices with more than two power
-> states might want to enter different states depending on the situation.
-> 
-> It's somewhat difficult to get the semantics right, since handles to
-> such devices might still be open. It might be easier to implement
-> behavior specific to device classes. On the other hand, it would be nice
-> to have a uniform way of shutting devices down, and not introduce
-> another possible path for a device to enter a power-saving state.
-
-What's the difference between shutting a device down and entering a 
-power-saving state?  That is, why shouldn't the first be considered an 
-example of the second?
-
-The general design of Linux's runtime PM is that the PM core tells
-drivers when their devices are no longer being used, and it's up to the
-driver to select an appropriate low-power state.  That philosophy
-doesn't fit well with the problem you want to solve, because you want
-to turn off devices even when they _are_ still in use.
-
-A separate sysfs interface might work out better.
-
-Alan Stern
-
+Thanks
+Jassi
