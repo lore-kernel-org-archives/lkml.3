@@ -1,247 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934AbaGPKEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:04:38 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:63272 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753171AbaGPKEe (ORCPT
+	id S932099AbaGPKEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:04:41 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43786 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756613AbaGPKEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:04:34 -0400
-Message-ID: <1405505072.4408.17.camel@x220>
-Subject: Re: [PATCH 11/19] ARM: S5PV210: Remove support for board files
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Date: Wed, 16 Jul 2014 12:04:32 +0200
-In-Reply-To: <1404496099-26708-12-git-send-email-t.figa@samsung.com>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-	 <1404496099-26708-12-git-send-email-t.figa@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Jul 2014 10:04:32.0559 (UTC) FILETIME=[570B03F0:01CFA0DD]
-X-RcptDomain: vger.kernel.org
+	Wed, 16 Jul 2014 06:04:37 -0400
+From: Vidya Sagar <sagar.tv@gmail.com>
+X-Google-Original-From: Vidya Sagar <vidyas@nvidia.com>
+To: bhelgaas@google.com, matthew.garrett@nebula.com, rjw@rjwysocki.net,
+        nchumbalkar@lenovo.com, thierry.reding@gmail.com, swarren@nvidia.com,
+        linux-pci@vger.kernel.org
+Cc: kthota@nvidia.com, linux-kernel@vger.kernel.org, vidyas@nvidia.com,
+        Vidya Sagar <sagar.tv@gmail.com>
+Subject: [PATCH v3] PCI: enable ASPM configuration in PCIE POWERSAVE mode
+Date: Wed, 16 Jul 2014 15:33:42 +0530
+Message-Id: <1405505022-7593-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
-> Since all in-tree boards have been moved to device tree, we can now drop
-> legacy code and make mach-s5pv210 DT-only. This patch does it.
-> 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
+From: Vidya Sagar <sagar.tv@gmail.com>
 
-This patch showed up in next-20140716 too.
+Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
+ under POWERSAVE mode") moved pcie_aspm_powersave_config_link() out of
+pci_raw_set_power_state() to pci_set_power_state() which would enable
+ASPM. But, with Commit db288c9c5f9d ("PCI / PM: restore the original
+ behavior of pci_set_power_state()"), which re-introduced the following check
+./drivers/pci/pci.c: pci_set_power_state()
 
->[...]
-> diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
-> index ed492cf..d6d0f92 100644
-> --- a/arch/arm/mach-s5pv210/Kconfig
-> +++ b/arch/arm/mach-s5pv210/Kconfig
-> @@ -19,181 +19,8 @@ config CPU_S5PV210
->  	help
->  	  Enable S5PV210 CPU support
->  
-> -config S5PV210_SETUP_I2C1
-> -	bool
-> -	help
-> -	  Common setup code for i2c bus 1.
-> -
-> -config S5PV210_SETUP_I2C2
-> -	bool
-> -	help
-> -	  Common setup code for i2c bus 2.
-> -
-> -config S5PV210_SETUP_IDE
-> -	bool
-> -	help
-> -	  Common setup code for S5PV210 IDE GPIO configurations
-> -
-> -config S5PV210_SETUP_FB_24BPP
-> -	bool
-> -	help
-> -          Common setup code for S5PV210 with an 24bpp RGB display helper.
-> -
-> -config S5PV210_SETUP_KEYPAD
-> -	bool
-> -	help
-> -	  Common setup code for keypad.
-> -
-> -config S5PV210_SETUP_SDHCI
-> -        bool
-> -        select S5PV210_SETUP_SDHCI_GPIO
-> -        help
-> -          Internal helper functions for S5PV210 based SDHCI systems
-> -
-> -config S5PV210_SETUP_SDHCI_GPIO
-> -	bool
-> -	help
-> -	  Common setup code for SDHCI gpio.
-> -
-> -config S5PV210_SETUP_FIMC
-> -	bool
-> -	help
-> -	  Common setup code for the camera interfaces.
-> -
-> -config S5PV210_SETUP_SPI
-> -	bool
-> -	help
-> -	  Common setup code for SPI GPIO configurations.
-> -
-> -config S5PV210_SETUP_USB_PHY
-> -	bool
-> -	help
-> -	  Common setup code for USB PHY controller
-> -
-> -menu "S5PC110 Machines"
-> -
-> -config MACH_AQUILA
-> -	bool "Aquila"
-> -	select CPU_S5PV210
-> -	select S3C_DEV_FB
-> -	select S3C_DEV_HSMMC
-> -	select S3C_DEV_HSMMC1
-> -	select S3C_DEV_HSMMC2
-> -	select S5PV210_SETUP_FB_24BPP
-> -	select S5PV210_SETUP_SDHCI
-> -	select S5PV210_SETUP_USB_PHY
-> -	select S5P_DEV_FIMC0
-> -	select S5P_DEV_FIMC1
-> -	select S5P_DEV_FIMC2
-> -	select S5P_DEV_ONENAND
-> -	help
-> -	  Machine support for the Samsung Aquila target based on S5PC110 SoC
-> -
++	/* Check if we're already there */
++	if (dev->current_state == state)
++	   return 0;
 
-This symbol is still referenced in sound/soc/samsung/Kconfig.
+in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
+made leaving ASPM broken.
+Fix it by configuring links for ASPM in do_pci_enable_device() instead of
+pci_set_power_state()
 
-> -config MACH_GONI
-> -	bool "GONI"
-> -	select CPU_S5PV210
-> -	select S3C_DEV_FB
-> -	select S3C_DEV_HSMMC
-> -	select S3C_DEV_HSMMC1
-> -	select S3C_DEV_HSMMC2
-> -	select S3C_DEV_I2C1
-> -	select S3C_DEV_I2C2
-> -	select S3C_DEV_USB_HSOTG
-> -	select S5PV210_SETUP_FB_24BPP
-> -	select S5PV210_SETUP_FIMC
-> -	select S5PV210_SETUP_I2C1
-> -	select S5PV210_SETUP_I2C2
-> -	select S5PV210_SETUP_KEYPAD
-> -	select S5PV210_SETUP_SDHCI
-> -	select S5PV210_SETUP_USB_PHY
-> -	select S5P_DEV_FIMC0
-> -	select S5P_DEV_FIMC1
-> -	select S5P_DEV_FIMC2
-> -	select S5P_DEV_MFC
-> -	select S5P_DEV_ONENAND
-> -	select S5P_DEV_TV
-> -	select S5P_GPIO_INT
-> -	select SAMSUNG_DEV_KEYPAD
-> -	help
-> -	  Machine support for Samsung GONI board
-> -	  S5PC110(MCP) is one of package option of S5PV210
+Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
+---
+v3:
+* Modified commit message
+    removed single quotes around commit messages
+    added Suggested-by line
 
-Ditto.
+v2:
+* Calling ASPM config code is moved from pci_set_power_state() to
+* do_pci_enable_device()
 
-> -config MACH_SMDKC110
-> -	bool "SMDKC110"
-> -	select CPU_S5PV210
-> -	select S3C_DEV_I2C1
-> -	select S3C_DEV_I2C2
-> -	select S3C_DEV_RTC
-> -	select S3C_DEV_WDT
-> -	select S5PV210_SETUP_I2C1
-> -	select S5PV210_SETUP_I2C2
-> -	select S5PV210_SETUP_IDE
-> -	select S5P_DEV_FIMC0
-> -	select S5P_DEV_FIMC1
-> -	select S5P_DEV_FIMC2
-> -	select S5P_DEV_MFC
-> -	select SAMSUNG_DEV_IDE
-> -	help
-> -	  Machine support for Samsung SMDKC110
-> -	  S5PC110(MCP) is one of package option of S5PV210
+ drivers/pci/pci.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Ditto.
-
-> -endmenu
-> -
->  menu "S5PV210 Machines"
->  
-> -config MACH_SMDKV210
-> -	bool "SMDKV210"
-> -	select CPU_S5PV210
-> -	select S3C_DEV_FB
-> -	select S3C_DEV_HSMMC
-> -	select S3C_DEV_HSMMC1
-> -	select S3C_DEV_HSMMC2
-> -	select S3C_DEV_HSMMC3
-> -	select S3C_DEV_I2C1
-> -	select S3C_DEV_I2C2
-> -	select S3C_DEV_RTC
-> -	select S3C_DEV_USB_HSOTG
-> -	select S3C_DEV_WDT
-> -	select S5PV210_SETUP_FB_24BPP
-> -	select S5PV210_SETUP_I2C1
-> -	select S5PV210_SETUP_I2C2
-> -	select S5PV210_SETUP_IDE
-> -	select S5PV210_SETUP_KEYPAD
-> -	select S5PV210_SETUP_SDHCI
-> -	select S5PV210_SETUP_USB_PHY
-> -	select S5P_DEV_FIMC0
-> -	select S5P_DEV_FIMC1
-> -	select S5P_DEV_FIMC2
-> -	select S5P_DEV_JPEG
-> -	select S5P_DEV_MFC
-> -	select SAMSUNG_DEV_ADC
-> -	select SAMSUNG_DEV_BACKLIGHT
-> -	select SAMSUNG_DEV_IDE
-> -	select SAMSUNG_DEV_KEYPAD
-> -	select SAMSUNG_DEV_PWM
-> -	select SAMSUNG_DEV_TS
-> -	help
-> -	  Machine support for Samsung SMDKV210
-> -
-
-Ditto.
-
-> -config MACH_TORBRECK
-> -	bool "Torbreck"
-> -	select ARCH_SPARSEMEM_ENABLE
-> -	select CPU_S5PV210
-> -	select S3C_DEV_HSMMC
-> -	select S3C_DEV_HSMMC1
-> -	select S3C_DEV_HSMMC2
-> -	select S3C_DEV_HSMMC3
-> -	select S3C_DEV_I2C1
-> -	select S3C_DEV_I2C2
-> -	select S3C_DEV_RTC
-> -	select S3C_DEV_WDT
-> -	select S5PV210_SETUP_I2C1
-> -	select S5PV210_SETUP_I2C2
-> -	select S5PV210_SETUP_SDHCI
-> -	select SAMSUNG_DEV_IDE
-> -	help
-> -	  Machine support for aESOP Torbreck
-> -
->  config MACH_S5PV210_DT
->  	bool "Samsung S5PV210/S5PC110 machine using Device Tree"
->  	select CLKSRC_OF
-
-I assume one or more patches to remove the references to these symbols
-in sound/soc/samsung/Kconfig are pending. Is that correct?
-
-
-Paul Bolle
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 1c8592b..81d49d3 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -839,12 +839,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+ 
+ 	if (!__pci_complete_power_transition(dev, state))
+ 		error = 0;
+-	/*
+-	 * When aspm_policy is "powersave" this call ensures
+-	 * that ASPM is configured.
+-	 */
+-	if (!error && dev->bus->self)
+-		pcie_aspm_powersave_config_link(dev->bus->self);
+ 
+ 	return error;
+ }
+@@ -1195,12 +1189,18 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
+ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ {
+ 	int err;
++	struct pci_dev *bridge;
+ 	u16 cmd;
+ 	u8 pin;
+ 
+ 	err = pci_set_power_state(dev, PCI_D0);
+ 	if (err < 0 && err != -EIO)
+ 		return err;
++
++	bridge = pci_upstream_bridge(dev);
++	if (bridge)
++		pcie_aspm_powersave_config_link(bridge);
++
+ 	err = pcibios_enable_device(dev, bars);
+ 	if (err < 0)
+ 		return err;
+-- 
+1.8.1.5
 
