@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965759AbaGPSFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:05:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6471 "EHLO mx1.redhat.com"
+	id S965901AbaGPSHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:07:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10872 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965714AbaGPSFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:05:14 -0400
+	id S965754AbaGPSFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:05:19 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org,
+        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 11/23] lpfc: Remove superfluous call to pci_disable_msix()
-Date: Wed, 16 Jul 2014 20:05:15 +0200
-Message-Id: <2caecd863ac0ed807c33184651305bf25ed35436.1405533479.git.agordeev@redhat.com>
+Subject: [PATCH v2 RESEND 14/23] megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Wed, 16 Jul 2014 20:05:18 +0200
+Message-Id: <57071ec862e6e0cf6b1c9f7fa5c1d3b9fa97d087.1405533479.git.agordeev@redhat.com>
 In-Reply-To: <cover.1405533479.git.agordeev@redhat.com>
 References: <cover.1405533479.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to call pci_disable_msix() in case
-the previous call to pci_enable_msix() failed
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: James Smart <james.smart@emulex.com>
+Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
-Acked-by: James Smart <james.smart@emulex.com>
 ---
- drivers/scsi/lpfc/lpfc_init.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 06f9a5b..a5769a9 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -8242,7 +8242,7 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
- 	if (rc) {
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0420 PCI enable MSI-X failed (%d)\n", rc);
--		goto msi_fail_out;
-+		goto vec_fail_out;
- 	}
- 	for (i = 0; i < LPFC_MSIX_VECTORS; i++)
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
-@@ -8320,6 +8320,8 @@ irq_fail_out:
- msi_fail_out:
- 	/* Unconfigure MSI-X capability structure */
- 	pci_disable_msix(phba->pcidev);
-+
-+vec_fail_out:
- 	return rc;
- }
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index ba06102..7a4e75e 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4105,17 +4105,11 @@ static int megasas_init_fw(struct megasas_instance *instance)
+ 					     (unsigned int)num_online_cpus());
+ 		for (i = 0; i < instance->msix_vectors; i++)
+ 			instance->msixentry[i].entry = i;
+-		i = pci_enable_msix(instance->pdev, instance->msixentry,
+-				    instance->msix_vectors);
+-		if (i >= 0) {
+-			if (i) {
+-				if (!pci_enable_msix(instance->pdev,
+-						     instance->msixentry, i))
+-					instance->msix_vectors = i;
+-				else
+-					instance->msix_vectors = 0;
+-			}
+-		} else
++		i = pci_enable_msix_range(instance->pdev, instance->msixentry,
++					  1, instance->msix_vectors);
++		if (i)
++			instance->msix_vectors = i;
++		else
+ 			instance->msix_vectors = 0;
  
-@@ -8812,7 +8814,7 @@ enable_msix_vectors:
- 	} else if (rc) {
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0484 PCI enable MSI-X failed (%d)\n", rc);
--		goto msi_fail_out;
-+		goto vec_fail_out;
- 	}
+ 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
+@@ -5135,8 +5129,8 @@ megasas_resume(struct pci_dev *pdev)
  
- 	/* Log MSI-X vector assignment */
-@@ -8875,9 +8877,10 @@ cfg_fail_out:
- 			 &phba->sli4_hba.fcp_eq_hdl[index]);
- 	}
+ 	/* Now re-enable MSI-X */
+ 	if (instance->msix_vectors &&
+-	    pci_enable_msix(instance->pdev, instance->msixentry,
+-			    instance->msix_vectors))
++	    pci_enable_msix_exact(instance->pdev, instance->msixentry,
++				  instance->msix_vectors))
+ 		goto fail_reenable_msix;
  
--msi_fail_out:
- 	/* Unconfigure MSI-X capability structure */
- 	pci_disable_msix(phba->pcidev);
-+
-+vec_fail_out:
- 	return rc;
- }
- 
+ 	switch (instance->pdev->device) {
 -- 
 1.7.7.6
 
