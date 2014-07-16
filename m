@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030651AbaGPH0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:26:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62722 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933372AbaGPH0P (ORCPT
+	id S965343AbaGPHcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:32:11 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:34169 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934102AbaGPHcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:26:15 -0400
-Date: Wed, 16 Jul 2014 09:20:52 +0200
+	Wed, 16 Jul 2014 03:32:08 -0400
+Date: Wed, 16 Jul 2014 09:32:01 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -23,74 +23,104 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>, devicetree@vger.kernel.org,
         linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] clk: tegra: don't abort clk init on error
-Message-ID: <20140716072051.GC7978@ulmo>
+Subject: Re: [PATCH 4/6] clk: tegra: add nvidia,tegra132-ccplex-clk binding
+Message-ID: <20140716073200.GE7978@ulmo>
 References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
- <1405437890-6468-2-git-send-email-pdeschrijver@nvidia.com>
+ <1405437890-6468-5-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
+	protocol="application/pgp-signature"; boundary="WBsA/oQW3eTA3LlM"
 Content-Disposition: inline
-In-Reply-To: <1405437890-6468-2-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1405437890-6468-5-git-send-email-pdeschrijver@nvidia.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Izn7cH1Com+I3R9J
+--WBsA/oQW3eTA3LlM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 15, 2014 at 06:24:31PM +0300, Peter De Schrijver wrote:
-> Just continue initializing clocks if there's an error on one of them. This
-> is useful if there's a mistake in the inittable, because the system could
-> hang if clk_disable_unused() disables some of the critical clocks in this
-> table.
+On Tue, Jul 15, 2014 at 06:24:34PM +0300, Peter De Schrijver wrote:
+> Tegra132 has a few new clocks for the CPU complex (ccplex).
 >=20
 > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 > ---
->  drivers/clk/tegra/clk.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  .../bindings/clock/nvidia,tegra132-ccplex-clk.txt  |   27 ++++++++++++++=
+++++++
+>  include/dt-bindings/clock/tegra132-ccplex.h        |   12 +++++++++
+>  2 files changed, 39 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra1=
+32-ccplex-clk.txt
+>  create mode 100644 include/dt-bindings/clock/tegra132-ccplex.h
 >=20
-> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-> index c0a7d77..d081732 100644
-> --- a/drivers/clk/tegra/clk.c
-> +++ b/drivers/clk/tegra/clk.c
-> @@ -207,7 +207,7 @@ void __init tegra_init_from_table(struct tegra_clk_in=
-it_table *tbl,
->  	for (; tbl->clk_id < clk_max; tbl++) {
->  		clk =3D clks[tbl->clk_id];
->  		if (IS_ERR_OR_NULL(clk))
-> -			return;
-> +			continue;
+> diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra132-ccpl=
+ex-clk.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra132-ccplex=
+-clk.txt
+> new file mode 100644
+> index 0000000..1441e36
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra132-ccplex-clk.=
+txt
+> @@ -0,0 +1,27 @@
+> +NVIDIA Tegra132 ccplex clocks
 
-Perhaps rather than silently ignoring, should this at least print out an
-error? I'd even go as far as make it a full-blown WARN to make sure
-people notice and this gets fixed early.
+Perhaps: "NVIDIA Tegra132 CPU complex (ccplex) clocks". Otherwise this
+file doesn't expand the ccplex abbreviation at all and it may not be
+obvious to everyone.
+
+> +This binding uses the common clock binding:
+> +Documentation/devicetree/bindings/clock/clock-bindings.txt
+
+clock-bindings.txt is in the same directory as this file, so a slightly
+better wording would be:
+
+	This binding uses the common clock binding as described in the
+	clock-bindings.txt file in this directory.
+
+Note that these absolute paths may not remain the same when the device
+tree bindings are moved out of the kernel tree.
+
+> +The Tegra132 ccplex clock module on Tegra132 is the HW module responsible
+> +for the ccplex related clocks.
+
+The end repeats the beginning of this sentence, so its information
+content is rather low. Maybe the last part of this sentence could be:
+"... responsible for the CPU and related clocks".
+
+> diff --git a/include/dt-bindings/clock/tegra132-ccplex.h b/include/dt-bin=
+dings/clock/tegra132-ccplex.h
+[...]
+> +#define TEGRA132_CCPLEX_CCLK_G 1
+> +#define TEGRA132_PLL_X 2
+> +#define TEGRA132_CCPLEX_CLK_MAX 3
+
+Maybe these should use TEGRA132_CLK_ as prefix for consistency with the
+CAR binding?
 
 Thierry
 
---Izn7cH1Com+I3R9J
+--WBsA/oQW3eTA3LlM
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTxifTAAoJEN0jrNd/PrOhAoMQAJo8x1CgTmnx6VlXJFwII8MR
-5iE6e+OmuZjN9T08d7UX01NkMYN/45TDZPRgbFdxvIN+e5XXT56jhKuSC4Wi/5pn
-G9GSMzpR6ugYlNaiYHexElBZFUF4wP7RXRA9VGhtjhxlP9xqEkZDKkp+rLiBZr6V
-HGZAirb5i+1Hm3gF25a2BCXZ3t6Blgann4UhiPwNIPoz3rbIifWnUYHQyQ7Ice0k
-f9gq+GqjieXpMx83VLrRy7G5PQJ7VC2PDG0EL2hQCzmvFSaZl0RgkqWYQj2IOapE
-50IpQOMU68oG+yH4+Ev3tEzwG+sAZINVSLzIAB383YH4SFDVpC/r02Ng/whltqiO
-028tlON2fgKg3NCMhtovUxjBAZfh1xRZQSl+5cvOWeMbaIkVEXM+PCrKiwd47Rxg
-DBLsop48NF6Bklna27F/pHs09aF433Lu4qLc1pCM3IpE0Gnps785Kf+6tZTuwyBz
-AwRC1ezNuUTZ8KqT5/aBjKIYLJIMAPWo5ZVKWAc2/z3uK2rzgNnQE311uSSMu1fv
-+xY5etDbW/8HEwiBuhGnRrOWQ58dOOB1fAPG60oIKFAByb7MnSVSPbMhdjsjNpGS
-9vSldKX6OxudK2QCHquTQWiJ8O6W5QuwRohdKGAXWsg3vvApDU5r09eAs5GaIH/C
-TrlfSM+ANTO6P5Gwe+BL
-=l2PI
+iQIcBAEBAgAGBQJTxipwAAoJEN0jrNd/PrOhXRsP+wUmTSZ+S/1VYWQ50sZCQtSh
+SM3OSy96drsNEJehN6kRezqC4QaLqv31xDVUgocqac8mJwkUNtb8ZNGmB0g9ORYe
+ce0oDBGrIKwPo+E8NvFUenYNR4Me6IuAa705SpaElON6EhRyz4IHHLGgEj/z08J/
+GjA+3ZQFpJ+i7WRICuAMr/f6b0AomLU6+Amvokxt0RITqHSCo98kTlzz2vbrduEk
+kqn25w3wOZ7FywGw9J+Nj7ODF7LdOUksKj16hy9g5LGv82LjEj/jdtos5NoW3SE8
+PEMe03tW4PouZcV3D+cfrlimarBr0zuhzGnp3JoU+yN0ZN+HgI8g4fsCuJmwe374
+/3sLZbCsWrqwvBGaMZrE508SYxkrbJHtko1IrKSWLFMs5gvUF8hef3I9cjvuZl3r
+yOQoUoCpYpyNpI2aoj1kU2M/9doorPAJGDgxGbjkR3Rb8WeuihXfqCuMY6XD1YC6
+6yLXPWoM5wa6WLd/RB8M6AOuf1P4coUuN0lm9nZGRNfms9mYn9jVzn9F7SlPb0ZD
+/uHGXXiUrZEX0gNl+JqmuijBnNIRl/+0YNpJ65M9VEy6GWM1GxsvTXQQ0UubF/Sf
+qbwBMntO//bexAI6hrVjiocF5SO6P2CLaaDafpdOHjRe+i4hYcVU4Hr6GKTMdveU
+EQFYkxP0Ovyte9QGogYh
+=GaJ/
 -----END PGP SIGNATURE-----
 
---Izn7cH1Com+I3R9J--
+--WBsA/oQW3eTA3LlM--
