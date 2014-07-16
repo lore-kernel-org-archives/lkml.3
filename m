@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484AbaGPF76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 01:59:58 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:53154
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1030261AbaGPGAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 02:00:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36739 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934442AbaGPF74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 01:59:56 -0400
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Cc: kys@microsoft.com, haiyangz@microsoft.com
-Subject: [PATCH] Drivers: hv: hv_fcopy: fix a race condition for SMP guest
-Date: Wed, 16 Jul 2014 00:00:45 -0700
-Message-Id: <1405494045-11548-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S934442AbaGPGAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 02:00:14 -0400
+Date: Wed, 16 Jul 2014 16:00:05 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ian Kent <raven@themaw.net>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] autofs4: support RCU-walk
+Message-ID: <20140716160005.6c43668d@notabene.brown>
+In-Reply-To: <1405481098.2527.9.camel@perseus.fritz.box>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	<1405481098.2527.9.camel@perseus.fritz.box>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/CNjf.8X8joeXB44spg2oeiO"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should schedule the 5s "timer work" before starting the data transfer,
-otherwise, the data transfer code may finish so fast on another
-virtual cpu that when the code(fcopy_write()) trying to cancel the 5s
-"timer work" can occasionally fail because the "timer work" may haven't
-been scheduled yet and as a result the fcopy process will be aborted
-wrongly by fcopy_work_func() in 5s.
+--Sig_/CNjf.8X8joeXB44spg2oeiO
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thank Liz Zhang <lizzha@microsoft.com> for the initial investigation
-on the bug.
+On Wed, 16 Jul 2014 11:24:58 +0800 Ian Kent <raven@themaw.net> wrote:
 
-This addresses https://bugzilla.redhat.com/show_bug.cgi?id=1118123
+> On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
+> > autofs4 currently doesn't support RCU-walk - it immediately
+> > aborts any attempt at RCU-walk to force REF-walk for path name
+> > lookup.
+>=20
+> As discussed I don't have time to properly test these just now but I'll
+> do my best to review the patches and return to test them later.
 
-Tested-by: Liz Zhang <lizzha@microsoft.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
----
- drivers/hv/hv_fcopy.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-index eaaa3d8..23b2ce2 100644
---- a/drivers/hv/hv_fcopy.c
-+++ b/drivers/hv/hv_fcopy.c
-@@ -246,8 +246,8 @@ void hv_fcopy_onchannelcallback(void *context)
- 		/*
- 		 * Send the information to the user-level daemon.
- 		 */
--		fcopy_send_data();
- 		schedule_delayed_work(&fcopy_work, 5*HZ);
-+		fcopy_send_data();
- 		return;
- 	}
- 	icmsghdr->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
--- 
-1.9.1
+>=20
+> My impression is that you will be submitting these patches rather than
+> expecting me to pick them up and submit them. If that's not what your
+> expecting please let me know.
 
+I had assumed that you would take them as you are listed as the maintainer.
+However if you would like me to send them on I can certainly do that.
+You seem to send via Andrew Morton so I'll do that when they seem to be rea=
+dy
+if you like.
+
+>=20
+> I appreciate you including me in this work, all to often things get
+> merged that I'm miss and while I may not have identified any problem
+> with them at the time at least I would be aware of what I might need to
+> look at when problems arise.
+> =20
+
+Maybe I'm old fashioned, but I have this idea that all patches *must* at
+least be Cc:ed to the maintainer and if they are as intrusive as these, they
+*must* be approved.  Maybe others behave different?
+
+Thanks,
+NeilBrown
+
+
+--Sig_/CNjf.8X8joeXB44spg2oeiO
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU8YU5Tnsnt1WYoG5AQK31BAAomCdO1FMBN6B8AEMIwrrUjm6sAs2UH+w
+IMNLjG5B9I6AXcUNX9BxY5VT+6hv+IwkTBAgBmECW2vuLv5pLjWZdUptGSkSDUss
++tPwdBoIxrMY0slNV+jarFNl/yDfB2mKz5B42IF/gIeA9F6J1/inFoBkec4eJOfZ
+9VuW1J/9g4gKZQeBkGf6E1ZpBYanR/Sk+Q67GbXVtiRIYDCAUkLLFDrF5/VYoYmE
+DR8PO34oTZMzmkR+SDpoL83bIUUYFLuxMfwSed4Myh40Civ1zJuFK+99gjxbdvom
+bCU1vjkLeSg2c8bjMVfvDfHGZ5NFommD4cnlgA4Hk7ZFMpqMggEWaJtST2636XP0
+yci6wYmn0cvy+jjAQ/UUTnYEyHP4L5OOkNx0/vczmzLKtJnq6lmtmSY48pM2D5V3
+HGFtRSzB26RiLKsbNqztnE3v48r7X3HzE3N/VbeLLWZPLxPJpFu1lo26s60BOdW1
+UcS0HpA1zAKpTSUdBq0faofbqL+BgrTITRHE+rcAJzBa1AVZOJzRXYNJSSZUGfD7
+ma+N0TmWgr1CsVedWZnst8L/JdG0WnstTJAqMmuwFVw1p9DD2K2+cB1HCYfquzb5
+BYQ90VlZAFPYVoOr7q3yqEyXVGYc1bNd4dzDXFiy4cE4Mk62B8KcEZ+F1F4v1bBR
+1n4qwEdmDUs=
+=TOWw
+-----END PGP SIGNATURE-----
+
+--Sig_/CNjf.8X8joeXB44spg2oeiO--
