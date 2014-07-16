@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934823AbaGPSP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:15:59 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:56187 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329AbaGPSP4 (ORCPT
+	id S934858AbaGPSQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:16:31 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:58956 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755531AbaGPSQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:15:56 -0400
-Message-ID: <53C6C156.5010207@gmail.com>
-Date: Wed, 16 Jul 2014 14:15:50 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 14:16:27 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        fabf@skynet.be, davidshan@tencent.com, joe@perches.com,
-        keescook@chromium.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
-References: <20140713184237.GA30855@linux.vnet.ibm.com> <20140716115046.GC28434@gmail.com> <20140716131322.GA16396@gmail.com> <20140716141707.GU8690@linux.vnet.ibm.com> <20140716152629.GA9340@linux.vnet.ibm.com> <53C6A0E7.30006@gmail.com> <20140716172410.GV8690@linux.vnet.ibm.com>
-In-Reply-To: <20140716172410.GV8690@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <jpgwqbdxjum.fsf@nelium.bos.redhat.com>
+References: <cover.1405532533.git.luto@amacapital.net> <jpgwqbdxjum.fsf@nelium.bos.redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Jul 2014 11:16:05 -0700
+Message-ID: <CALCETrVCLR3BR56TsM8_1O53qm-ingAEtEh+Vg+D5y5NWas=cA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+To: Bandan Das <bsd@redhat.com>
+Cc: kvm list <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 07/16/2014 01:24 PM, Paul E. McKenney wrote:
->>> And of course if you don't actually specify a nohz_full= mask, then
->>> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
->>> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
->>> forever.
->>>
->> Hi Paul,
->>
->> The other location where tick_nohz_full_mask is being allocated is in
->> tick_nohz_init_all(), called from tick_nohz_init(). rcu_init() is called before
->> tick_nohz_init() in init/main.c. CONFIG_NO_HZ_FULL_ALL for allocation of the
->> mask does not take effect when rcu_init() runs.
->>
->> So if nohz_full command line arg is not specified, tick_nohz_full_mask will
->> always be NULL when rcu_init() runs. So just checking for tick_nohz_full_mask
->> is NULL should be enough I guess.
-> Yep, that is indeed one of the conditions called out in the commit log
-> below.
+On Wed, Jul 16, 2014 at 11:02 AM, Bandan Das <bsd@redhat.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 >
->                             Thanx, Paul
+>> virtio-rng is both too complicated and insufficient for initial rng
+>> seeding.  It's far too complicated to use for KASLR or any other
+>> early boot random number needs.  It also provides /dev/random-style
+>> bits, which means that making guest boot wait for virtio-rng is
+>> unacceptably slow, and doing it asynchronously means that
+>> /dev/urandom might be predictable when userspace starts.
+>>
+>> This introduces a very simple synchronous mechanism to get
+>> /dev/urandom-style bits.
+>
+> Whoa! the cover letter seems more like virtio-rng bashing rather than
+> introduction to the patchset (and/or it's advantages over existing methods)
+> :) That's ok though I guess, these won't be in the commit log.
 >
 
-Sorry, I was not clear.
+Yeah, sorry -- I figured that the biggest objection would be "just use
+virtio-rng".
 
-nohz_full= boot time parameter overrides the CONFIG_NO_HZ_FULL_ALL build time parameter.
-The check for !CONFIG_NO_HZ_FULL_ALL will disable masking out the cpus on which NOHZ is
-not enabled using the nohz_full boot time parameter, and hence you will enable callback
-offloading on all CPUs as was previously being done.
+I'll send a v3 later today -- there's a trivial bisectability bug in
+this version.
 
-So, if I have CONFIG_NO_HZ_FULL_ALL enabled at build time but pass nohz_cpu=1 at boot
-time, all the CPUs will have callback offloading enabled.
+--Andy
 
-I think the following looks like what is needed in our case:
+>> I sent the corresponding kvm-unit-tests and qemu changes separately.
+>>
+>> There's room for bikeshedding on the same arch_get_slow_rng_u64.  I
+>> considered arch_get_rng_seed_u64, but that could be confused with
+>> arch_get_random_seed_long, which is not interchangeable.
+>>
+>> Changes from v1:
+>>  - Split patches 2 and 3
+>>  - Log all arch sources in init_std_data
+>>  - Fix the 32-bit kaslr build
+>>
+>> Andy Lutomirski (5):
+>>   x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
+>>   random,x86: Add arch_get_slow_rng_u64
+>>   random: Seed pools from arch_get_slow_rng_u64 at startup
+>>   random: Log how many bits we managed to seed with in init_std_data
+>>   x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+>>
+>>  Documentation/virtual/kvm/cpuid.txt  |  3 +++
+>>  arch/x86/Kconfig                     |  4 ++++
+>>  arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++++++++++++++++
+>>  arch/x86/include/asm/archslowrng.h   | 30 ++++++++++++++++++++++++++++++
+>>  arch/x86/include/asm/processor.h     | 21 ++++++++++++++++++---
+>>  arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+>>  arch/x86/kernel/kvm.c                | 22 ++++++++++++++++++++++
+>>  arch/x86/kvm/cpuid.c                 |  3 ++-
+>>  arch/x86/kvm/x86.c                   |  4 ++++
+>>  drivers/char/random.c                | 20 ++++++++++++++++++--
+>>  include/linux/random.h               |  9 +++++++++
+>>  11 files changed, 139 insertions(+), 6 deletions(-)
+>>  create mode 100644 arch/x86/include/asm/archslowrng.h
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 00dc411..1123ed4 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2479,10 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
- 
-        if (rcu_nocb_mask == NULL)
-                return;
--#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-+
-        if (tick_nohz_full_running)
-                cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
--#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
-+
-        if (ls == -1) {
-                ls = int_sqrt(nr_cpu_ids);
-                rcu_nocb_leader_stride = ls;
 
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
