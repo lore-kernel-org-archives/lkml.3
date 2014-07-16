@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934454AbaGPAFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:05:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44995 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932982AbaGOXNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 11/66] workqueue: zero cpumask of wq_numa_possible_cpumask on init
-Date: Tue, 15 Jul 2014 16:17:05 -0700
-Message-Id: <20140715231702.585842404@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231702.156040999@linuxfoundation.org>
-References: <20140715231702.156040999@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S934481AbaGPAGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:06:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32818 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932982AbaGPAGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:06:05 -0400
+Message-ID: <53C5C1C9.6070100@zytor.com>
+Date: Tue, 15 Jul 2014 17:05:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>, Andy Lutomirski <luto@amacapital.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [RFC PATCH 3/11] x86, mm, pat: Change reserve_memtype() to handle
+ WT type
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>	 <1405452884-25688-4-git-send-email-toshi.kani@hp.com>	 <CALCETrUPpP1Lo1gB_eTm6V3pJ3Fam-1gPZGKfksOXXGgtNGsEQ@mail.gmail.com>	 <1405465801.28702.34.camel@misato.fc.hp.com>	 <CALCETrUx+HkzBmTZo-BtOcOz7rs=oNcavJ9Go536Fcn2ugdobg@mail.gmail.com> <1405468387.28702.53.camel@misato.fc.hp.com>
+In-Reply-To: <1405468387.28702.53.camel@misato.fc.hp.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 07/15/2014 04:53 PM, Toshi Kani wrote:
+> 
+> Right.
+> 
+> I think using struct page table for the RAM ranges is a good way for
+> saving memory, but I wonder how often the RAM ranges are mapped other
+> than WB...  If not often, reserve_memtype() could simply call
+> rbt_memtype_check_insert() for all ranges, including RAM.
+> 
+> In this patch, I left using reserve_ram_pages_type() since I do not see
+> much reason to use WT for RAM, either.
+> 
 
-------------------
+They get flipped to WC or WT or even UC for some I/O devices, but
+ultimately the number of ranges is pretty small.
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
-
-When hot-adding and onlining CPU, kernel panic occurs, showing following
-call trace.
-
-  BUG: unable to handle kernel paging request at 0000000000001d08
-  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
-  PGD 0
-  Oops: 0000 [#1] SMP
-  ...
-  Call Trace:
-   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
-   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
-   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
-   [<ffffffff811926f1>] new_slab+0x91/0x300
-   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
-   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
-   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
-   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
-   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
-   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
-   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
-   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
-   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
-   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
-   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
-   [<ffffffff81086652>] kthreadd+0x2c2/0x300
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-
-In my investigation, I found the root cause is wq_numa_possible_cpumask.
-All entries of wq_numa_possible_cpumask is allocated by
-alloc_cpumask_var_node(). And these entries are used without initializing.
-So these entries have wrong value.
-
-When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
-wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
-calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
-as follow:
-
-3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
-3593         if (wq_numa_enabled) {
-3594                 for_each_node(node) {
-3595                         if (cpumask_subset(pool->attrs->cpumask,
-3596                                            wq_numa_possible_cpumask[node])) {
-3597                                 pool->node = node;
-3598                                 break;
-3599                         }
-3600                 }
-3601         }
-
-But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
-node is selected. As a result, kernel panic occurs.
-
-By this patch, all entries of wq_numa_possible_cpumask are allocated by
-zalloc_cpumask_var_node to initialize them. And the panic disappeared.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/workqueue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -5027,7 +5027,7 @@ static void __init wq_numa_init(void)
- 	BUG_ON(!tbl);
- 
- 	for_each_node(node)
--		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-+		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
- 				node_online(node) ? node : NUMA_NO_NODE));
- 
- 	for_each_possible_cpu(cpu) {
+	-hpa
 
 
