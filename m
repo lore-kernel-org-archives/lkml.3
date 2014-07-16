@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785AbaGPVeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:34:18 -0400
-Received: from infernal.debian.net ([176.28.9.132]:35094 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136AbaGPVeM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:34:12 -0400
-Date: Wed, 16 Jul 2014 23:34:08 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [REGRESSION] Boot hang with 939f04bec printk: enable interrupts
- before calling console_trylock_for_printk()
-Message-ID: <20140716213408.GA8749@amos.fritz.box>
-References: <20140628225050.GA3484@amos.fritz.box>
- <20140714083527.GA30550@quack.suse.cz>
+	id S1753922AbaGPVeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:34:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38616 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753122AbaGPVeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 17:34:16 -0400
+Date: Wed, 16 Jul 2014 23:34:12 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: viro@zeniv.linux.org.uk, clm@fb.com, jbacik@fb.com,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffm@suse.com, fdmanana@suse.com
+Subject: Re: [RFC 0/2] vfs / btrfs: add support for ustat()
+Message-ID: <20140716213412.GP10393@wotan.suse.de>
+References: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140714083527.GA30550@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:35:27AM +0200, Jan Kara wrote:
-> On Sun 29-06-14 00:50:50, Andreas Bombe wrote:
-> > None of the post 3.15 kernel boot for me. They all hang at the GRUB
-> > screen telling me it loaded and started the kernel, but the kernel
-> > itself stops before it prints anything (or even replaces the GRUB
-> > background graphics).
-> > 
-> > I bisected it down to 939f04bec1a4ef6ba4370b0f34b01decc844b1b1 "printk:
-> > enable interrupts before calling console_trylock_for_printk()".
-> > Reverting that patch on the latest kernel (git 24b414d5a7) allows me to
-> > boot normally. I fixed the conflict in the revert by leaving in the "if
-> > (in_sched) return printed_len;".
-> > 
-> > I have the "early printk via the EFI framebuffer" option enabled,
-> > disabling it made no difference however.
->   Thanks for report. I've been on vacation so I'm replying with a delay. I
-> believe this is one of the issues where this patch just uncovers underlying
-> problem - I belive lockdep tries to report some locking issue in console
-> driver code (this patch increased lockdep coverage of console driver code)
-> however we are holding some locks in printk code which make lockdep
-> deadlock. Can you try running with the attached patch?
+On Tue, Jul 15, 2014 at 04:07:03PM -0700, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> ustat() does not work for btrfs, the reason is the VFS layer
+> cannot get to the super block from the anonymous bdevs. The
+> way these are used within btrfs though are to actually use a
+> series of them per superblock. This modifies the way the
+> VFS exposes these bdevs by pegging them onto the super
+> block on a linked list. This should also allow us to grow
+> the subdevices on the super block with any other information
+> that might be better suited underneath so that the VFS
+> layer is aware. If this approach is reasonable then perhaps
+> we should next remove the exported symbol for get_anon_bdev()
+> as btrfs was the only user.
+> 
 
-EUNABLE
+Based on some private review I got this can be simplified leaving
+the embedded the struct on the fs data structure and just using
+it to expose it on the VFS. Will send a v2.
 
-You forgot to attach a patch.
+  Luis
