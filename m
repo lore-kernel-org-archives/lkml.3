@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965253AbaGPEuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:50:15 -0400
-Received: from smtprelay0081.hostedemail.com ([216.40.44.81]:40842 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759523AbaGPEuN (ORCPT
+	id S965292AbaGPEy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:54:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47670 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965256AbaGPEy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:50:13 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3874:4321:5007:7652:7875:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13019:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: foot40_1ec2f6ad1d359
-X-Filterd-Recvd-Size: 1600
-Message-ID: <1405486209.14773.32.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] scripts/get_maintainer: increase threshold for
- --follow to reduce time
-From: Joe Perches <joe@perches.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: open list <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 21:50:09 -0700
-In-Reply-To: <CAJhHMCDNj2H7VC+5tMeWqPGbMQpDD-ycZ2HGXoeMPwCn7hTuKg@mail.gmail.com>
-References: <1405193128-6848-1-git-send-email-bobby.prani@gmail.com>
-	 <CAJhHMCC1bY5ras7-W17Qh7yZq5-_eD0C-CJfa09ZpjWNoTOZ=w@mail.gmail.com>
-	 <1405483722.14773.12.camel@joe-AO725>
-	 <CAJhHMCDNj2H7VC+5tMeWqPGbMQpDD-ycZ2HGXoeMPwCn7hTuKg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jul 2014 00:54:56 -0400
+Date: Tue, 15 Jul 2014 21:54:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: forest@alittletooquiet.net, tvboxspy@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH V5 6/6] staging: vt6556: Replace printk by dev_warn
+Message-ID: <20140716045433.GA32044@kroah.com>
+References: <1405457209-6584-1-git-send-email-peter.senna@gmail.com>
+ <1405457209-6584-2-git-send-email-peter.senna@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405457209-6584-2-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 00:35 -0400, Pranith Kumar wrote:
-> The problem is with the default which is at 50% now. That means that a
-> commit needs to have changed a file by more than 50% -and- moved it in
-> the same commit. This is highly discouraged and unlikely to happen in
-> our case.
+On Tue, Jul 15, 2014 at 10:46:49PM +0200, Peter Senna Tschudin wrote:
+> This patch fixes a checkpatch warning by replacing printk
+> by dev_warn. Tested by compilation only.
 > 
-> Even if we have this a cmd-line configuration, setting the default to
-> 90% really makes sense, no?
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> ---
+> Changes from V4:
+>  - use dev_warn instead of pr_warn
+> 
+>  drivers/staging/vt6656/main_usb.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+> index 7567646..6708e98 100644
+> --- a/drivers/staging/vt6656/main_usb.c
+> +++ b/drivers/staging/vt6656/main_usb.c
+> @@ -527,7 +527,8 @@ static void usb_device_reset(struct vnt_private *pDevice)
+>  
+>  	status = usb_reset_device(pDevice->usb);
+>  	if (status)
+> -            printk("usb_device_reset fail status=%d\n",status);
+> +		dev_warn(&pDevice->usb->dev,
+> +			 "usb_device_reset fail status=%d\n", status);
+>  }
+>  
+>  static void device_free_int_bufs(struct vnt_private *priv)
 
-Dunno.  If it makes sense, maybe it makes global sense
-and should be the git default.  If not, maybe other users
-have different needs and need some other cmdline option.
+This doesn't apply to my latest tree, can you please refresh it and
+resend?
 
+thanks,
 
-
+greg k-h
