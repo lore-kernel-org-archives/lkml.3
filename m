@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151AbaGPMoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:44:32 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:19890 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112AbaGPMoa (ORCPT
+	id S933259AbaGPMp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:45:27 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54238 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaGPMpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:44:30 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-05-53c673ab262f
-Message-id: <53C67386.5070401@samsung.com>
-Date: Wed, 16 Jul 2014 14:43:50 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH 04/19] serial: samsung: Remove support for legacy clock code
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
- <1404496099-26708-5-git-send-email-t.figa@samsung.com>
- <1405502840.4408.2.camel@x220>
-In-reply-to: <1405502840.4408.2.camel@x220>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t/xy7qri48FG8z4K2Xxd9IxdoupD5+w
-	Wfx/9JrVonfBVTaLTY+vsVpc3jWHzWLG+X1MFmuP3GW3OHX9M5vFoltnmC1W7frD6MDt8fvX
-	JEaPnbPusntsWtXJ5rF5Sb3HlRNNrB59W1Yxemy/No/ZY+P2J0wenzfJBXBGcdmkpOZklqUW
-	6dslcGWsOHqbsWAKd8Xv9la2BsYFnF2MnBwSAiYSu9ums0LYYhIX7q1nA7GFBJYySlzfltzF
-	yAVkf2aUmHBxHViCV0BL4t3qj8wgNouAqkRT4zawZjYBNYnPDY/AaviBatY0XWfpYuTgEBWI
-	kHh8QQiiVVDix+R7LCC2iICyROvme+wg85kF/jFJNC3bDTZHWCBA4u2L2cwQi+cwSiyd+ZUd
-	JMEpoC0x9d8FsAXMAuoSk+YtYoaw5SU2r3nLPIFRcBaSJbOQlM1CUraAkXkVo2hqaXJBcVJ6
-	rpFecWJucWleul5yfu4mRkg0fd3BuPSY1SFGAQ5GJR5ehtlHg4VYE8uKK3MPMUpwMCuJ8Dr4
-	HwsW4k1JrKxKLcqPLyrNSS0+xMjEwSnVwNjl0Xpd4Vl+ouuZowEbxRXvrhOckKqwSpQvXrm+
-	SUNkT/W7zoUWPV0btqlLVJ/OKjYM7Hx0tkLb76mDWdztK/s2rva+nxRxZaNC9/Od5RHeDxgc
-	cncy/H9nwnQueMaTSwE7eoPeT/usoiCT2ap/3V5i1lxhK+4cNbeOgwyev7V8769aEbflpRJL
-	cUaioRZzUXEiAOmarReEAgAA
+	Wed, 16 Jul 2014 08:45:24 -0400
+Date: Wed, 16 Jul 2014 05:45:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] rcu: Use rcu_num_nodes instead of NUM_RCU_NODES
+Message-ID: <20140716124515.GQ8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com>
+ <1405463509-2468-3-git-send-email-bobby.prani@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405463509-2468-3-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071612-0928-0000-0000-0000036FA218
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.07.2014 11:27, Paul Bolle wrote:
-> On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
->> All Samsung platforms are now using the Common Clock Framework and the
->> legacy clock code is being removed, so remove related dead code from
->> samsung-serial driver as well.
->>
->> Reported-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org> (maintainer:SERIAL DRIVERS)
->> Cc: Jiri Slaby <jslaby@suse.cz> (supporter:TTY LAYER)
->> Cc: linux-serial@vger.kernel.org (open list:SERIAL DRIVERS)
->> ---
->>  drivers/tty/serial/samsung.c | 4 ----
->>  1 file changed, 4 deletions(-)
+On Tue, Jul 15, 2014 at 06:31:49PM -0400, Pranith Kumar wrote:
+> NUM_RCU_NODES is set at build time and is usually a huge number. We calculate the
+> actual number of rcu nodes necessary at boot time based on nr_cpu_ids in
+> rcu_init_geometry() and store it in rcu_num_nodes. We should use this variable
+> instead of NUM_RCU_NODES.
 > 
-> This just entered linux-next (see next-20140716).
+> This commit changes all such uses of NUM_RCU_NODES to rcu_num_nodes.
 > 
->> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
->> index 36c7747..cae8ebd 100644
->> --- a/drivers/tty/serial/samsung.c
->> +++ b/drivers/tty/serial/samsung.c
->> @@ -47,10 +47,6 @@
->>  
->>  #include <asm/irq.h>
->>  
->> -#ifdef CONFIG_SAMSUNG_CLOCK
->> -#include <plat/clock.h>
->> -#endif
->> -
->>  #include "samsung.h"
->>  
->>  #if	defined(CONFIG_SERIAL_SAMSUNG_DEBUG) &&	\
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> ---
+>  kernel/rcu/tree_plugin.h | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
-> There are three further references to CONFIG_SAMSUNG_CLOCK in this file.
-> Those should be removed too, shouldn't they?
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index cedb020..17ccb62 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -46,6 +46,8 @@ static bool __read_mostly rcu_nocb_poll;    /* Offload kthread are to poll. */
+>  static char __initdata nocb_buf[NR_CPUS * 5];
+>  #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+> 
+> +extern int rcu_num_nodes;
 
-That's right. Apparently I missed them. I guess that's not critical,
-though, and could be done in separate patch, right?
+This should not be necessary given the existing declaration in
+kernel/rcu/tree.c way before the #include of kernel/rcu/tree_plugin.h.
 
-Best regards,
-Tomasz
+Or did you get a build failure without this?  (And if you did get a build
+failure, I would be really curious how that happened!)
+
+So please send an updated patch or tell me how your build managed to fail.
+
+> +
+>  /*
+>   * Check the RCU kernel configuration parameters and print informative
+>   * messages about anything out of the ordinary.  If you like #ifdef, you
+> @@ -885,7 +887,7 @@ void synchronize_rcu_expedited(void)
+>  	/* Snapshot current state of ->blkd_tasks lists. */
+>  	rcu_for_each_leaf_node(rsp, rnp)
+>  		sync_rcu_preempt_exp_init(rsp, rnp);
+> -	if (NUM_RCU_NODES > 1)
+> +	if (rcu_num_nodes > 1)
+>  		sync_rcu_preempt_exp_init(rsp, rcu_get_root(rsp));
+> 
+>  	put_online_cpus();
+> @@ -1475,7 +1477,7 @@ static void __init rcu_spawn_boost_kthreads(void)
+>  	BUG_ON(smpboot_register_percpu_thread(&rcu_cpu_thread_spec));
+>  	rnp = rcu_get_root(rcu_state_p);
+>  	(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+> -	if (NUM_RCU_NODES > 1) {
+> +	if (rcu_num_nodes > 1) {
+>  		rcu_for_each_leaf_node(rcu_state_p, rnp)
+>  			(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+>  	}
+
+For whatever it is worth, the reason that this works is that it is a
+perforamnce optimzation and NUM_RCU_NODES is always greater than or
+equal to num_rcu_nodes.  Still, your change is a good one.
+
+							Thanx, Paul
+
