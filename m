@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055AbaGPECn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:02:43 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:34574 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699AbaGPECl (ORCPT
+	id S1751490AbaGPEGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:06:55 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:43431 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaGPEGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:02:41 -0400
-Message-ID: <53C5F95E.6010300@linaro.org>
-Date: Tue, 15 Jul 2014 21:02:38 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 00:06:53 -0400
 MIME-Version: 1.0
-To: Miroslav Lichvar <mlichvar@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering (v2)
-References: <1400288204-414-1-git-send-email-john.stultz@linaro.org> <20140519101439.GE4060@localhost> <CALAqxLUyCGJeYDwzXKN0zCBdmYuapo1iYJX4nvR7Sru+ySkesQ@mail.gmail.com> <20140708110816.GB23173@localhost>
-In-Reply-To: <20140708110816.GB23173@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
+References: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
+From: Steve French <smfrench@gmail.com>
+Date: Tue, 15 Jul 2014 23:06:32 -0500
+Message-ID: <CAH2r5mtW+f0OeT-3ZJHMwU16_X0zip1Bf6bPZpsQRhzPS1aXDQ@mail.gmail.com>
+Subject: Re: Additional performance data on Pavel's smb3 multi credit patch series
+To: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2014 04:08 AM, Miroslav Lichvar wrote:
-> On Mon, May 19, 2014 at 10:57:29AM -0700, John Stultz wrote:
->> Another area we have to be careful with is there are still
->> architectures (powerpc and ia64) which haven't switched from the old
->> vsyscall rounding logic (CONFIG_GENERIC_TIME_VSYSCALL_OLD). In these
->> cases we add up to 1ns of error each tick/update as we round up the
->> sub-nanoseconds to ensure we don't see inconsistencies.  If the
->> adjustment logic can't handle this, I don't want to regress those
->> arches.
-> I spent some time trying to figure out a workaround for the nanosecond
-> rounding, but I didn't find anything that wouldn't complicate the mult
-> adjustment logic and bring back the problems which the direct division
-> approach is supposed to solve.
+Continuing testing of Pavel's newest SMB3 multicredit patch series,
+which significantly improves large file read/write speeds to Samba and
+Windows from Linux. For this workload LInux to Linux - SMB3 seems
+faster than alternatives for read (copying from the server) but about
+the same as NFS for write (copy to server).  Some additional data:
+
+client Ubuntu with 3.16-rc4 and Pavel's patch series, server Fedora 20
+(3.14.9 kernel, and Samba server version 4.1.9)
+
+ dd if=/mnt/testfile of=/dev/null bs=50M count=30
+
+testfile is 1.5GB existing file, unmount/mount inbetween each large
+file copy to avoid any caching effect on client (although server will
+have cached it)
+
+SMB3 averaged 199MB/sec reads (copy from server)
+CIFS averaged 170MB/sec reads (copy from server)
+NFSv3 averaged 116MB/sec (copy from server)
+NFSv4 and v4.1 averaged 110MB/sec (copy from server)
+
+Write speeds (doing dd if=/dev/zero of=/mnt/testfile bs=60M count=25)
+were more widely varied but averaged similar speeds for copy to server
+for both NFSv3/v4/v4.1 and SMB3 (about 175MB/s)
+
+On Sun, Jul 13, 2014 at 2:23 PM, Steve French <smfrench@gmail.com> wrote:
+> Performance of Pavel's multicredit i/o SMB3 patches continues to look
+> good.  Additional informal performance results below comparing cifs
+> mounts with smb3 mounts (vers=3.0) with and without Pavel's patch set.
+> I plan to do additional testing with large rsize/wsize (default with
+> Pavel's code is 1MB).
 >
-> It seems it may be a while before the old vsyscalls are fixed. How
-> about including only the first two patches from this set for now?
+> 3.16-rc4 (Ubuntu) on client.  Server is Windows 8.1.  Both VMs on same
+> host (host disk is fairly fast SSD).
+>
+> Copy to server performance increased about 20% percent
+> dd if=/dev/zero of=/mnt/targetfile bs=80M count=25
+> got similar results with or without conv=fdatasync
+>
+> 1st run copying to empty directory, 2nd run copying over targetfile,
+> (pattern repeated multiple times) averaging results
+>
+> New code (with Pavel's patches)
+> ---------------------------------------------
+> CIFS 167MB/s
+> SMB3 200MB/s
+>
+> Existing code (without his patches)
+> ------------------------------------------------
+> SMB3 166MB/s
+> CIFS 164.5MB/s
+>
+> For large file reading SMB3 performance with Pavel's patches increased
+> 76% over existing SMB3 code
+> dd of=/dev/null if=/mnt/targetfile bs=80M count=25
+> (mounting and unmounting between attempts to avoid caching effects on
+> the client)
+>
+> New code (with Pavel's patches)
+> ---------------------------------------------
+> CIFS 114MB/s
+> SMB3 216MB/s
+>
+> Existing code (without his patches)
+> ------------------------------------------------
+> SMB3 123MB/s
+> CIFS 110MB/s
+>
+> --
+> Thanks,
+>
+> Steve
 
-Hey! Sorry for the slow response here, I was on the road the last two weeks.
 
-So thanks for the ping here. If you're happy with the first two as an
-initial step, I'd be willing to try to push those in. The only trouble
-is there's a whole lot of timekeeping churn headed for 3.17 that Thomas
-has cooked up. While there isn't likely to be direct conflicts in the
-changes, I get nervous about mixing too many changes in subtle code at once.
 
-But maybe I'm being overly cautious?
+-- 
+Thanks,
 
-Thomas: Would you be ok if I push you some patches to improve ntp/ptp
-freq steering w/ NOHZ for this merge window as well? So far the patches
-have only shown nice improvements and no regressions, but its clearly
-subtle code, and there's a lot going on in this merge window.
-
-thanks
--john
-
+Steve
