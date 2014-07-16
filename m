@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965903AbaGPTRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:17:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44164 "EHLO
+	id S965926AbaGPTSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:18:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44174 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127AbaGPTRt (ORCPT
+	with ESMTP id S965906AbaGPTR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:17:49 -0400
-Date: Wed, 16 Jul 2014 12:17:30 -0700
-From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
-Message-ID: <tip-a2ea67d7b5618c868c1fe15a50af71b858d36887@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, stfomichev@yandex-team.ru, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        stfomichev@yandex-team.ru, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru>
-References: <1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru>
+	Wed, 16 Jul 2014 15:17:56 -0400
+Date: Wed, 16 Jul 2014 12:17:16 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-0j2wuuegnhv3gljbil8ld6kx@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Add pagefault statistics
-Git-Commit-ID: a2ea67d7b5618c868c1fe15a50af71b858d36887
+Subject: [tip:perf/core] perf tools:
+  Suggest using -f to override perf.data file ownership message
+Git-Commit-ID: 071266bf5b6a4f41250d2b26b000f1d2f9620afe
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,92 +36,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a2ea67d7b5618c868c1fe15a50af71b858d36887
-Gitweb:     http://git.kernel.org/tip/a2ea67d7b5618c868c1fe15a50af71b858d36887
-Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
-AuthorDate: Tue, 8 Jul 2014 22:05:16 +0400
+Commit-ID:  071266bf5b6a4f41250d2b26b000f1d2f9620afe
+Gitweb:     http://git.kernel.org/tip/071266bf5b6a4f41250d2b26b000f1d2f9620afe
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 8 Jul 2014 12:40:11 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 8 Jul 2014 15:34:40 -0300
+CommitDate: Tue, 8 Jul 2014 12:40:11 -0300
 
-perf trace: Add pagefault statistics
+perf tools: Suggest using -f to override perf.data file ownership message
 
-'perf trace' can show summary of events using -S option. This commit
-also reports number of major/minor pagefault events in this summary.
+  # id
+  uid=0(root) gid=0(root) groups=0(root)
+  # ls -la perf.data
+  -rw-------. 1 acme acme 20720 Jul  8 11:35 perf.data
 
-$ perf trace -s --pf all -- sleep 1
+Previously:
 
- Summary of events:
+  # perf report
+  file perf.data not owned by current user or root
 
- sleep (18604), 275 events, 99.6%, 197 minfaults, 0.000 msec
+Now:
 
-   syscall            calls      min       avg       max      stddev
-                               (msec)    (msec)    (msec)        (%)
-   --------------- -------- --------- --------- ---------     ------
-   read                   2     0.000     0.001     0.002    100.00%
-   open                   3     0.004     0.005     0.007     21.13%
-   close                  3     0.001     0.001     0.001      1.37%
-   fstat                  3     0.001     0.002     0.002     10.66%
-   mmap                   8     0.002     0.004     0.006     10.69%
-   mprotect               4     0.003     0.005     0.008     24.68%
-   munmap                 1     0.005     0.005     0.005      0.00%
-   brk                    3     0.001     0.002     0.003     28.08%
-   access                 3     0.002     0.003     0.005     24.48%
-   nanosleep              1  1000.747  1000.747  1000.747      0.00%
-   execve                 8     0.000     0.033     0.246     91.00%
-   arch_prctl             1     0.001     0.001     0.001      0.00%
+  # perf report
+  File perf.data not owned by current user or root (use -f to override)
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1404842716-19190-1-git-send-email-stfomichev@yandex-team.ru
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-0j2wuuegnhv3gljbil8ld6kx@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ tools/perf/util/data.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index dc7a694..b94dffc 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1133,6 +1133,7 @@ struct thread_trace {
- 	u64		  exit_time;
- 	bool		  entry_pending;
- 	unsigned long	  nr_events;
-+	unsigned long	  pfmaj, pfmin;
- 	char		  *entry_str;
- 	double		  runtime_ms;
- 	struct {
-@@ -1804,8 +1805,20 @@ static int trace__pgfault(struct trace *trace,
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct addr_location al;
- 	char map_type = 'd';
-+	struct thread_trace *ttrace;
+diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
+index 55de44e..ee370a7f 100644
+--- a/tools/perf/util/data.c
++++ b/tools/perf/util/data.c
+@@ -65,7 +65,7 @@ static int open_file_read(struct perf_data_file *file)
+ 		goto out_close;
  
- 	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
-+	ttrace = thread__trace(thread, trace->output);
-+	if (ttrace == NULL)
-+		return -1;
-+
-+	if (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)
-+		ttrace->pfmaj++;
-+	else
-+		ttrace->pfmin++;
-+
-+	if (trace->summary_only)
-+		return 0;
- 
- 	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
- 			      sample->ip, &al);
-@@ -2346,6 +2359,10 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
- 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
- 	printed += fprintf(fp, "%.1f%%", ratio);
-+	if (ttrace->pfmaj)
-+		printed += fprintf(fp, ", %lu majfaults", ttrace->pfmaj);
-+	if (ttrace->pfmin)
-+		printed += fprintf(fp, ", %lu minfaults", ttrace->pfmin);
- 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
- 	printed += thread__dump_stats(ttrace, trace, fp);
- 
+ 	if (!file->force && st.st_uid && (st.st_uid != geteuid())) {
+-		pr_err("file %s not owned by current user or root\n",
++		pr_err("File %s not owned by current user or root (use -f to override)\n",
+ 		       file->path);
+ 		goto out_close;
+ 	}
