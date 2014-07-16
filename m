@@ -1,152 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730AbaGPBZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:25:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58675 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaGPBZX (ORCPT
+	id S1759565AbaGPB1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 21:27:50 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:19842 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753410AbaGPB1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:25:23 -0400
-Message-ID: <53C5D480.3030409@codeaurora.org>
-Date: Tue, 15 Jul 2014 18:25:20 -0700
-From: Olav Haugan <ohaugan@codeaurora.org>
-Organization: Qualcomm Innovation Center, Inc.
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 15 Jul 2014 21:27:48 -0400
+X-IronPort-AV: E=Sophos;i="5.00,899,1396972800"; 
+   d="scan'208";a="33327430"
+Message-ID: <53C5D557.8040702@cn.fujitsu.com>
+Date: Wed, 16 Jul 2014 09:28:55 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Rob Clark <robdclark@gmail.com>, Will Deacon <will.deacon@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joerg Roedel <joro@8bytes.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>	<20140712093917.GD18601@arm.com>	<CAF6AEGutHp+3f3iPA+jjaRkqq=5T_vytZ_ESoSqsQ4RHZ8F8yQ@mail.gmail.com>	<201407121422.02078.arnd@arndb.de>	<CAF6AEGs7=3UByP2DLm-uwU03wr7M14x2t-0hLX-VPJ6_eZbU3g@mail.gmail.com>	<20140713094341.GB23235@arm.com> <CAF6AEGt5cQhDCZgYX4=M1EKE=n2J=9G6mO02JMx-+Fcq_0ukfw@mail.gmail.com>
-In-Reply-To: <CAF6AEGt5cQhDCZgYX4=M1EKE=n2J=9G6mO02JMx-+Fcq_0ukfw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/1 V2] workqueue: unfold start_worker() into create_worker()
+References: <1405008074-11031-1-git-send-email-laijs@cn.fujitsu.com> <1405310716-12270-1-git-send-email-laijs@cn.fujitsu.com> <1405310716-12270-2-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1405310716-12270-2-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/13/2014 4:43 AM, Rob Clark wrote:
-> On Sun, Jul 13, 2014 at 5:43 AM, Will Deacon <will.deacon@arm.com> wrote:
->> On Sat, Jul 12, 2014 at 01:57:31PM +0100, Rob Clark wrote:
->>> On Sat, Jul 12, 2014 at 8:22 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>> On Saturday 12 July 2014, Rob Clark wrote:
->>>>>>> Was there actually a good reason for having the device link to the
->>>>>>> iommu rather than the other way around?  How much would people hate it
->>>>>>> if I just ignore the generic bindings and use something that works for
->>>>>>> me instead.  I mean, it isn't exactly like there is going to be .dts
->>>>>>> re-use across different SoC's..  and at least with current IOMMU API
->>>>>>> some sort of of_get_named_iommu() API doesn't really make sense.
->>>>>>
->>>>>> The thing is, if you end up ignoring the generic binding then we have two
->>>>>> IOMMUs using the same (ARM SMMU) binding and it begs the question as to
->>>>>> which is the more generic! I know we're keen to get this merged, but merging
->>>>>> something that people won't use and calling it generic doesn't seem ideal
->>>>>> either. We do, however, desperately need a generic binding.
->>>>>
->>>>> yeah, ignoring the generic binding is not my first choice.  I'd rather
->>>>> have something that works well for everyone.  But I wasn't really sure
->>>>> if the current proposal was arbitrary, or if there are some
->>>>> conflicting requirements between different platforms.
->>>>
->>>> The common case that needs to be simple is attaching one (master) device
->>>> to an IOMMU using the shared global context for the purposes of implementing
->>>> the dma-mapping API.
->>>
->>> well, I don't disagree that IOMMU API has some problems.  It is too
->>> tied to the bus type, which doesn't really seem to make sense for
->>> platform devices.  (Unless we start having multiple platform busses?)
->>>
->>> But at least given the current IOMMU API I'm not really sure how it
->>> makes a difference which way the link goes.  But if there has already
->>> been some discussion about how you want to handle the tie in with
->>> dma-mapping, if you could point me at that then maybe your point will
->>> make more sense to me.
->>
->> If you look at the proposed binding in isolation, I think it *is* cleaner
->> than the ARM SMMU binding (I've acked it...) and I believe it's more
->> consistent with the way we describe linkages elsewhere.
->>
->> However, the issue you're raising is that it's more difficult to make use of
->> in a Linux IOMMU driver. The reward you'll get for using it will come
->> eventually when the DMA ops are automatically swizzled for devices using the
->> generic binding.
->>
->> My plan for the ARM SMMU driver is:
->>
->>   (1) Change ->probe() to walk the device-tree looking for all masters with
->>       phandles back to the SMMU instance being probed
->>
->>   (2) For each master, extract the Stream IDs and add them to the internal
->>       SMMU driver data structures (an rbtree per SMMU instance). For
->>       hotpluggable buses, we'll need a way for the bus controller to
->>       reserve a range of IDs -- this will likely be a later extension to
->>       the binding.
->>
->>   (3) When we get an ->add() call, warn if it's a device we haven't seen
->>       and reject the addition.
->>
->> That way, ->attach() should be the same as it is now, I think.
->>
->> Have you tried implementing something like that? We agreed that (1) isn't
->> pretty, but I don't have a good alternative and it's only done at
->> probe-time.
+On 07/14/2014 12:05 PM, Lai Jiangshan wrote:
+> Simply unfold the code of start_worker() into create_worker() and
+> remove the original start_worker() and create_and_start_worker().
 > 
-> I haven't tried implementing that yet, but I'm sure it would work.  I
-> was just hoping to avoid having to do that ;-)
+> The only trade-off is the introduced overhead that the pool->lock
+> is released and re-grabbed after the newly worker is started.
+> The overhead is acceptable since the manager is slow path.
 
-Is the reason you want to do it this way because you want to guarantee
-that all masters (and stream IDs) have been identified before the first
-attach call? I am just wondering why you cannot continue doing the
-master/streamID discovery during add_device() callback?
+Hi, TJ
 
->>
->> BTW: Is the msm-v0 IOMMU compatible with the ARM SMMU driver, or is it a
->> completely different design requiring a different driver?
-> 
-> My understanding is that it is different from msm v1 IOMMU, although I
-> think it shares the same pagetable format with v1.  Not sure if that
-> is the same as arm-smmu?   If so it might be nice to try to extract
-> out some shared helper fxns for map/unmap as well.
-> 
-> I expect Olav knows better the similarities/differences.
-> 
-
-The msm-v0 IOMMU is not compatible with ARM SMMUv1 specification.
-However, it is a close cousin. The hardware was designed before the ARM
-SMMUv1 specification was available I believe. But it shares many of the
-same concepts as the ARM SMMUv1.
-
-msm-v0 IOMMU supports V7S page table format only. The ARM SMMU driver
-does not support V7S at this time. However, I believe we need to support
-this.
-
-Will, this reminds me. We definitely have a need to use different page
-tables in the ARM SMMU driver vs. the ARM CPU. We have an SoC with ARMv8
-cores (and thus ARMv8 page tables) but the SMMUs (SMMUv1) on this SoC
-only have support for V7S/V7L page table format. So we cannot use the
-same page table format as the CPU.
+Will you accept this trade-off and the patch?
+If so, I will rebase this patch without any dependence on other patch.
 
 Thanks,
+Lai
 
-Olav
+> 
+> And because this new locking behavior, the newly created worker
+> may grab the lock earlier than the manager and go to process
+> work items. In this case, the need_to_create_worker() may be
+> true as expected and the manager goes to restart without complaint.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |   69 ++++++++++------------------------------------------
+>  1 files changed, 13 insertions(+), 56 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 2b3c12c..5b68527 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1553,7 +1553,7 @@ static void worker_enter_idle(struct worker *worker)
+>  			 (worker->hentry.next || worker->hentry.pprev)))
+>  		return;
+>  
+> -	/* can't use worker_set_flags(), also called from start_worker() */
+> +	/* can't use worker_set_flags(), also called from create_worker() */
+>  	worker->flags |= WORKER_IDLE;
+>  	pool->nr_idle++;
+>  	worker->last_active = jiffies;
+> @@ -1674,8 +1674,7 @@ static void worker_detach_from_pool(struct worker *worker,
+>   * create_worker - create a new workqueue worker
+>   * @pool: pool the new worker will belong to
+>   *
+> - * Create a new worker which is attached to @pool.  The new worker must be
+> - * started by start_worker().
+> + * Create and start a new worker which is attached to @pool.
+>   *
+>   * CONTEXT:
+>   * Might sleep.  Does GFP_KERNEL allocations.
+> @@ -1720,6 +1719,13 @@ static struct worker *create_worker(struct worker_pool *pool)
+>  	/* successful, attach the worker to the pool */
+>  	worker_attach_to_pool(worker, pool);
+>  
+> +	/* start the newly created worker */
+> +	spin_lock_irq(&pool->lock);
+> +	worker->pool->nr_workers++;
+> +	worker_enter_idle(worker);
+> +	wake_up_process(worker->task);
+> +	spin_unlock_irq(&pool->lock);
+> +
+>  	return worker;
+>  
+>  fail:
+> @@ -1730,44 +1736,6 @@ fail:
+>  }
+>  
+>  /**
+> - * start_worker - start a newly created worker
+> - * @worker: worker to start
+> - *
+> - * Make the pool aware of @worker and start it.
+> - *
+> - * CONTEXT:
+> - * spin_lock_irq(pool->lock).
+> - */
+> -static void start_worker(struct worker *worker)
+> -{
+> -	worker->pool->nr_workers++;
+> -	worker_enter_idle(worker);
+> -	wake_up_process(worker->task);
+> -}
+> -
+> -/**
+> - * create_and_start_worker - create and start a worker for a pool
+> - * @pool: the target pool
+> - *
+> - * Grab the managership of @pool and create and start a new worker for it.
+> - *
+> - * Return: 0 on success. A negative error code otherwise.
+> - */
+> -static int create_and_start_worker(struct worker_pool *pool)
+> -{
+> -	struct worker *worker;
+> -
+> -	worker = create_worker(pool);
+> -	if (worker) {
+> -		spin_lock_irq(&pool->lock);
+> -		start_worker(worker);
+> -		spin_unlock_irq(&pool->lock);
+> -	}
+> -
+> -	return worker ? 0 : -ENOMEM;
+> -}
+> -
+> -/**
+>   * destroy_worker - destroy a workqueue worker
+>   * @worker: worker to be destroyed
+>   *
+> @@ -1905,18 +1873,7 @@ restart:
+>  	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
+>  
+>  	while (true) {
+> -		struct worker *worker;
+> -
+> -		worker = create_worker(pool);
+> -		if (worker) {
+> -			spin_lock_irq(&pool->lock);
+> -			start_worker(worker);
+> -			if (WARN_ON_ONCE(need_to_create_worker(pool)))
+> -				goto restart;
+> -			return true;
+> -		}
+> -
+> -		if (!need_to_create_worker(pool))
+> +		if (create_worker(pool) || !need_to_create_worker(pool))
+>  			break;
+>  
+>  		schedule_timeout_interruptible(CREATE_COOLDOWN);
+> @@ -3543,7 +3500,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+>  		goto fail;
+>  
+>  	/* create and start the initial worker */
+> -	if (create_and_start_worker(pool) < 0)
+> +	if (!create_worker(pool))
+>  		goto fail;
+>  
+>  	/* install */
+> @@ -4617,7 +4574,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+>  		for_each_cpu_worker_pool(pool, cpu) {
+>  			if (pool->nr_workers)
+>  				continue;
+> -			if (create_and_start_worker(pool) < 0)
+> +			if (!create_worker(pool))
+>  				return NOTIFY_BAD;
+>  		}
+>  		break;
+> @@ -4917,7 +4874,7 @@ static int __init init_workqueues(void)
+>  
+>  		for_each_cpu_worker_pool(pool, cpu) {
+>  			pool->flags &= ~POOL_DISASSOCIATED;
+> -			BUG_ON(create_and_start_worker(pool) < 0);
+> +			BUG_ON(!create_worker(pool));
+>  		}
+>  	}
+>  
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
