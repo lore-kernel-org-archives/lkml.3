@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934931AbaGPSmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:42:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:60589 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934741AbaGPSmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:42:01 -0400
-Date: Wed, 16 Jul 2014 20:41:55 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Andrew Lunn <andrew@lunn.ch>,
+	id S965615AbaGPSmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:42:12 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:57166 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934741AbaGPSmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:42:07 -0400
+Message-ID: <1405536124.4357.17.camel@x41>
+Subject: Re: [PATCH] fs/direct-io.c: Fix compilation warning for
+ uninitialized variables
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
+        Boaz Harrosh <openosd@gmail.com>, pramod.gurav.etc@gmail.com,
+        viro@zeniv.linux.org.uk, Jason Cooper <jason@lakedaemon.net>,
+        Markus Mayer <markus.mayer@linaro.org>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power/reset: Fix GPL v2 license string typo
-Message-ID: <20140716184154.GB6438@earth.universe>
-References: <20140715232450.24076.25543.stgit@bhelgaas-glaptop.roam.corp.google.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="MW5yreqqjyrRcusr"
-Content-Disposition: inline
-In-Reply-To: <20140715232450.24076.25543.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Wed, 16 Jul 2014 20:42:04 +0200
+In-Reply-To: <20140716175803.GA3631@infradead.org>
+References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>
+	 <20140713115022.GA6054@infradead.org> <53C6B199.2070606@gmail.com>
+	 <20140716175803.GA3631@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jul 2014 18:42:04.0789 (UTC) FILETIME=[A39D4A50:01CFA125]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Added Borislav and Sam to cc.]
 
---MW5yreqqjyrRcusr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Christoph Hellwig schreef op wo 16-07-2014 om 10:58 [-0700]:
+> On Wed, Jul 16, 2014 at 08:08:41PM +0300, Boaz Harrosh wrote:
+> > This is the wrong fix. GCC is wrong here. As shown by Paul Bolle if
+> > you move the from / to set from dio_get_page() to here the warning goes away.
+> > 
+> > The minimal fix must use uninitialized_var() in this case. See patch below
+> > 
+> > But I think the proper fix Is the one Paul Bolle <pebolle@tiscali.nl> sent (above)
+> 
+> I don't think the initialization is wrong.  The fix of moving the code
+> defintively looks nicer,
 
-On Tue, Jul 15, 2014 at 05:24:50PM -0600, Bjorn Helgaas wrote:
-> Per license_is_gpl_compatible(), the MODULE_LICENSE() string for GPL v2 is
-> "GPL v2", not "GPLv2".  Use "GPL v2" so this module doesn't taint the
-> kernel.
->=20
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Whether that was Jason's idea or mine doesn't matter much - though I do
+think Boaz quoted part of my fix, but it was just a _draft_.
 
-I put this into my dev branch on kernel.org, which I use to queue
-patches until I get access to the battery.git repository:
+Anyhow, after all that I got involved in a short thread;
+https://lkml.org/lkml/2014/7/8/168 is my contribution. My point is,
+basically, that the false positives of -Wmaybe-uninitialized are a "code
+smell". They tend to disappear if one reorganizes the code a bit.
+Borislav disagrees quite strongly. I didn't really bother with keeping
+that thread alive because I feared we'd mainly see more colorful
+language.
 
-https://git.kernel.org/cgit/linux/kernel/git/sre/linux-power-supply.git/com=
-mit/?h=3Ddev&id=3D162c1a01825553e055ef3867f7598ca8dddb6c6e
+>  while I think uninitialized_var is horrible wart
 
--- Sebastian
+Agree totally.
 
---MW5yreqqjyrRcusr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>  that won't get anywhere near my code.
+>
+> Either way we should merge one of those fixes ASAP..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+I'd like my builds to be warning free too. And it would be nice to know
+whether there's consensus on how to deal with the false positives of
+-Wmaybe-uninitialized that make it into mainline.
 
-iQIcBAEBCgAGBQJTxsdyAAoJENju1/PIO/qaUrkP/jUKt+JG1nVX+QF8LdO1o1C0
-eW+XoaBmVTzf7u3qnk/mjErjYoShr/xsG58p/j617rKGDGOlo1M7I0ZOumbCkaFv
-cnCLZWFyABuyzASvct0djpenm1kMdanP7cp6fC2vgC1oYuZZsMkFf5NPrf3szlp9
-SdiTi2EAvchI3pjmsgV7VPkzy9vgcMkUtDD7Xa+eBQpH5DFL/d2U8NxlQZVk/OBh
-qAbkBS2r6P8p65Vwo1gvdFnkhNRYiI9hjvoI3az1fW/KyKivwzrg8wdGxZ+qVmXJ
-O0lIvQCMXFJj7/Z7rd/GM+/eesOs52wsYUOfzQiHwQq11AvBsdTo/LjrYp/deuKl
-Eo5/tQbJ8TO8fLpvZDrt+nhT9yRmpQhQPFkCHKFJ2HifxR500R5/Qc/mdxOFl/nQ
-CpaSgrgTjEtEZ2wrZmSTSfcVUJr/5GoDPl+mfcxN/WYr7zLdsTCM5KgqHx8y/prM
-81fT1Mf6xWJlGAAj+7+bq0TpbAqoNUF3Zz9bS5A65tRudHVaU6/LwkXdAHFHQz0j
-6bZ8QyUz9ciJ3ARTH6HBOrMURq+EpUBxcEDpWO7ha1+HkXq5uHSSgKADv+Nc78iR
-AK0yEggyJPYC30xDOVgyKnqPvogcApvDJnD06/MNYZdBKY8s/q0xe7uJF1rX7N7O
-FxWHJyYHJNN+t6TtmoVW
-=58Jw
------END PGP SIGNATURE-----
 
---MW5yreqqjyrRcusr--
+Paul Bolle
+
