@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760190AbaGPHvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:51:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:58177 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758364AbaGPHv2 convert rfc822-to-8bit (ORCPT
+	id S1760255AbaGPHvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:51:45 -0400
+Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:59265 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758364AbaGPHvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:51:28 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-e7-53c62efd4637
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Bean Huo'" <beanhuo@outlook.com>, dwmw2@infradead.org,
-        computersforpeace@gmail.com
-Cc: paul.gortmaker@windriver.com, artem.bityutskiy@linux.intel.com,
-        b32955@freescale.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, christian.riesch@omicron.at,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <BLU185-W10713E955F9530C4D53490A6F70@phx.gbl>
- <BLU185-W62B0858FCD7D3A71127B41A6F70@phx.gbl>
-In-reply-to: <BLU185-W62B0858FCD7D3A71127B41A6F70@phx.gbl>
-Subject: Re: [PATCH v5] mtd:nor:timeout:fix do_write_buffer() timeout error
-Date: Wed, 16 Jul 2014 16:51:25 +0900
-Message-id: <002201cfa0ca$be634b10$3b29e130$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=iso-8859-1
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+gxklBediFhGgZQa+NyP75BM18+gABBysQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+Zge5fvWPBBk9Xm1u8efyM2eLCLBmL
-	Bw8WMFtcb97IbnHkwlpmi4krJzNbXF54idXi8q45bBa7m5axW1zbe5zZgcvj3+F+Jo+ds+6y
-	e2xeoeUx72Sgx+Yl9R6rJyxj89j8+gWzR9+WVYwenzfJeazfspUpgCuKyyYlNSezLLVI3y6B
-	K2Pn3fmMBVtlKl7v3sjYwNgi3sXIySEhYCKxf8JyZghbTOLCvfVsXYxcHEICyxgl/l3axQxT
-	NLF/PitEYjqjxNs3Z6Cc34wSX9+tYQOpYhNQk/jy5TA7iC0iECFx/MxCJpAiZoE7jBILtqxn
-	BUkICWRKPFv+EqiIg4NTwEpiy6sEkLCwgLdEd88bFhCbRUBV4tzWVrCZvAK2EuembmKFsAUl
-	fky+B1bDLKAj0fv9GzOErS3x5N0FVpCREgLqEo/+6oKYIgJGEtcmlkJUiEjse/GOEeQaCYGl
-	HBKb2rYzQ6wSkPg2+RALRKusxKYDUP9KShxccYNlAqPELCSLZyFZPAvJ4llIVixgZFnFKJpa
-	kFxQnJReZKhXnJhbXJqXrpecn7uJEZIEencw3j5gfYgxGWj9RGYp0eR8YBLJK4k3NDYzsjA1
-	MTU2Mrc0I01YSZw36WFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZGxS6tn2v+PSwIblTs
-	K583O2exj9sizjV9jtbNXw0jAl7e2L3kVHHvec6HBQfT//Gcu6G5uz3s8avvptH3N3d484ff
-	5pwrIhK0warM73ykZvPBcstIr8zLDBNCdsxQMM9Nump2gX//r8tbjVe8ybgvVF2VM+158Prw
-	wo1PuoWmXojyYhZd43JciaU4I9FQi7moOBEAMnsJuxgDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd2/eseCDZ4vMbJ48/gZs8WFWTIW
-	Dx4sYLa43ryR3eLIhbXMFhNXTma2uLzwEqvF5V1z2Cx2Ny1jt7i29zizA5fHv8P9TB47Z91l
-	99i8Qstj3slAj81L6j1WT1jG5rH59Qtmj74tqxg9Pm+S81i/ZStTAFdUA6NNRmpiSmqRQmpe
-	cn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtCtSgpliTmlQKGAxOJiJX07
-	TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaMnXfnMxZslal4vXsjYwNji3gXIyeHhICJxMT++awQ
-	tpjEhXvr2boYuTiEBKYzSrx9c4YVwvnNKPH13Ro2kCo2ATWJL18Os4PYIgIREsfPLGQCKWIW
-	uMMosWDLerBRQgKZEs+WvwQq4uDgFLCS2PIqASQsLOAt0d3zhgXEZhFQlTi3tRVsJq+ArcS5
-	qZtYIWxBiR+T74HVMAvoSPR+/8YMYWtLPHl3gRVkpISAusSjv7ogpoiAkcS1iaUQFSIS+168
-	Y5zAKDQLyaBZSAbNQjJoFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCU8wzqR2M
-	KxssDjEKcDAq8fBuCDkaLMSaWFZcmXuIUYKDWUmEV4TlWLAQb0piZVVqUX58UWlOavEhRlOg
-	PycyS4km5wPTX15JvKGxiZmRpZGZhZGJubmSOO+BVutAIYH0xJLU7NTUgtQimD4mDk6pBsZI
-	sVZXl5ZVbz6bzb8WN+tWyPKNXuf3ZSW5/1RQmvHMezaLFI9lReWJZ88E5TY/eL3U5Fp358lZ
-	d6oWbFwxd067kqDvZieH2P/sZn13JXs/sJ3rFvS/YTd9hv3WJvXj9rGMm7LXB9dEBBhvme3H
-	w/j8buFO5keuRzbcfZGcX21w08hxxrS1smFKLMUZiYZazEXFiQBsVkksRwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 16 Jul 2014 03:51:41 -0400
+X-AuditID: 12074423-f79bf6d000007580-d7-53c62f0ca67b
+Message-ID: <53C62E93.8010307@mit.edu>
+Date: Wed, 16 Jul 2014 13:19:39 +0530
+From: "Srivatsa S. Bhat" <srivatsa@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org>	<1405052287-4744-1-git-send-email-skannan@codeaurora.org>	<CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com>	<2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org>	<CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com>	<53C0A12A.2060204@codeaurora.org>	<CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>	<53C42AA8.8010107@codeaurora.org>	<CAKohpomkqbHZo9KrJMSwsEKGt6+Ac2Fg2X0+S7ZAo=OzhAc45g@mail.gmail.com>	<53C4BDFB.70707@codeaurora.org>	<53C4D12E.3040807@mit.edu> <CAKohpon8zDP3hVFMQV4CO2zOkb-AwnDws8xW=H8Hm4=gW=8FGQ@mail.gmail.com>
+In-Reply-To: <CAKohpon8zDP3hVFMQV4CO2zOkb-AwnDws8xW=H8Hm4=gW=8FGQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsUixCmqrcujfyzY4NwraYtNj6+xWkzcf5bd
+	4vKuOWwWn3uPMFqcOX2J1eLHmW4WiwMXJ7JZnF3ezGax8auHA6fH5b5eJo8Fm0o97lzbw+ax
+	eUm9x5ar7SwenzfJBbBFcdmkpOZklqUW6dslcGW8vP2YpWAaV8WTOa+YGhj/sncxcnBICJhI
+	rD7L28XICWSKSVy4t56ti5GLQ0hgNpPEk5YfzBDORkaJB39mMEE425kkDh69xAbSwiugJjHr
+	2iZGEJtFQFXiZd8ysKlsAtoSyzZKgoRFBeIkGo9/Z4QoF5Q4OfMJC0iJiICWxMubqSAjmQUe
+	MEsc+zuVCaRGWCBMYuaGdVC7prNKnPwzF2wXp0CgxOT5ILs4gDrUJdbPEwIJMwvIS2x/O4d5
+	AqPgLCQrZiFUzUJStYCReRWjbEpulW5uYmZOcWqybnFyYl5eapGumV5uZoleakrpJkZQjLC7
+	KO9g/HNQ6RCjAAejEg/vhpCjwUKsiWXFlbmHGCU5mJREeVOkjwUL8SXlp1RmJBZnxBeV5qQW
+	H2KU4GBWEuEVYQHK8aYkVlalFuXDpKQ5WJTEed9aWwULCaQnlqRmp6YWpBbBZGU4OJQkeB/q
+	AjUKFqWmp1akZeaUIKSZODhBhvMADV8CUsNbXJCYW5yZDpE/xagoJc5rCZIQAElklObB9cJS
+	2CtGcaBXhHnZ9YCqeIDpD677FdBgJqDB5TWHQQaXJCKkpBoYO60uh6+btuC9bHj+C2b1+u85
+	X5+335ytlv5WnmmCXORl5cUfI65WFTCfy930vqNp1bxfEmx9KcpnjmxtvLz++P6flZKbdk1u
+	2OVbG/uE9QRj1grzdE1vk32ZaxUt558T2re4ZuHBtXqexyzcnv+7F1P0yls+9NzEl4J5jI5O
+	2hu767k5HezTlFiKMxINtZiLihMBSMBDszwDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 16, 2014 4:19 PM, Bean Huo wrote:
+On 07/16/2014 11:14 AM, Viresh Kumar wrote:
+> On 15 July 2014 12:28, Srivatsa S. Bhat <srivatsa@mit.edu> wrote:
+>> Wait, allowing an offline CPU to be the policy->cpu (i.e., the CPU which is
+>> considered as the master of the policy/group) is just absurd.
 > 
-> For some Norflashes,the size of the buffer program has been
-> increased from 256 bytes to 512 bytes,2ms maximum timeout can
-> not adapt to all the different vendor's norflash.There maximum
-> timeout information in the CFI area,so the best way is to choose
-> the result calculated according to timeout field of struct cfi_ident
-> that probed from norflash's CFI aera.This is also a standard defined
-> by CFI.If haven't probed this information,or smaller than 2000us,then
-> specify a defualt value 2000us.
+> Yeah, that was as Absurd as I am :)
 > 
-> Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
+
+I have had my own share of silly ideas over the years; so don't worry, we are
+all in the same boat ;-)
+
+>> The goal of this patchset should be to just de-couple the sysfs files/ownership
+>> from the policy->cpu to an extent where it doesn't matter who owns those
+>> files, and probably make it easier to do CPU hotplug without having to
+>> destroy and recreate the files on every hotplug operation.
 > 
-> Signed-off-by: bean huo <beanhuo@outlook.com>
-> ---
-> changes
-> 	v1->v2:Deleted unused parameters in this patch
-> 		(word_write_time_max and erase_time_max).Using usecs_to_jiffies
-> 		instead of msecs_to_jiffies for convert timeout value into jiffies.
-> 	v2->v3:Removed unnecessary messages form comments and deleted trailing whitespace.
-> 	V3->v4:If haven't probed timeout information,or smaller than 2000us,specify default
-> 	       2000us.
-> 	v4->v5:add one whitespace
->  drivers/mtd/chips/cfi_cmdset_0002.c |   28 ++++++++++++++++++++++++++--
->  1 file changed, 26 insertions(+), 2 deletions(-)
+> I went to that Absurd idea because we thought we can skip playing with
+> the sysfs nodes on suspend/hotplug.
 > 
-> diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-> index e21fde9..c248a8c 100644
-> --- a/drivers/mtd/chips/cfi_cmdset_0002.c
-> +++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-> @@ -628,6 +628,24 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
->  		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
->  		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
->  		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
-> +		/*
-> +		 * First calculate the timeout max according to timeout
-> +		 * field of struct cfi_ident that probed from chip's CFI
-> +		 * aera.If haven't probed this information,or smaller than
-> +		 * 2000us,we will specify defualt value 2000us,and the time
-> +		 * unit is us.
-> +		 */
-> +		if (cfi->cfiq->BufWriteTimeoutTyp &&
-> +			cfi->cfiq->BufWriteTimeoutMax){
-> +			cfi->chips[i].buffer_write_time_max =
-> +				1<<(cfi->cfiq->BufWriteTimeoutTyp +
-> +					cfi->cfiq->BufWriteTimeoutMax);
-> +			} else {
-> +				cfi->chips[i].buffer_write_time_max = 0;
-> +				}
+> And if policy->cpu keeps changing with hotplug, we *may* have to keep
+> sysfs stuff moving as well. One way to avoid that is by using something
+> like: policy->sysfs_cpu, but wasn't sure if that's the right path to follow.
+>
 
-Please keep the coding style as below.
+Hmm, I understand.. Even I don't have any suggestions as of now, since I
+haven't spent enough time thinking of alternatives yet.
 
-		if ( ) {
-			...
-		} else {
-			...
-		}
+> Lets see what Saravana's new patchset has for us :)
+> 
 
-Best regards,
-Jingoo Han
+Yep :-)
 
-> +		cfi->chips[i].buffer_write_time_max =
-> +			((cfi->chips[i].buffer_write_time_max>= 2000)
-> +			 ? cfi->chips[i].buffer_write_time_max : 2000);
->  		cfi->chips[i].ref_point_counter = 0;
->  		init_waitqueue_head(&(cfi->chips[i].wq));
->  	}
-> @@ -1462,8 +1480,14 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
->  {
->  	struct cfi_private *cfi = map->fldrv_priv;
->  	unsigned long timeo = jiffies + HZ;
-> -	/* see comments in do_write_oneword() regarding uWriteTimeo. */
-> -	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
-> +	/*
-> +	 * Use the result that calculated according to timeout field
-> +	 * of struct cfi_ident that probed from norflash's CFI aera.
-> +	 * See more comments in cfi_cmdset_0002().uWriteTimeout is
-> +	 * used for timeout step,it must be concerted into jiffies.
-> +	 */
-> +	unsigned long uWriteTimeout =
-> +				usecs_to_jiffies(chip->buffer_write_time_max);
->  	int ret = -EIO;
->  	unsigned long cmd_adr;
->  	int z, words;
-> --
-> 1.7.9.5 		 	   		  =
-
+Regards,
+Srivatsa S. Bhat
