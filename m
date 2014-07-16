@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760313AbaGPAo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:44:59 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:46744 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756785AbaGPAoz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:44:55 -0400
-X-Sasl-enc: ADfFyXkA6zwQOBFilRy+NteZKSQd+onM3UmBsQJ3ObYk 1405471494
-Date: Tue, 15 Jul 2014 17:49:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Andrew Lutomirski <amluto@gmail.com>
-Cc: Kamal Mostafa <kamal@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: DO NOT APPLY: x86-64, espfix: Don't leak bits 31:16 of %esp
- returning to 16-bit stack
-Message-ID: <20140716004927.GB7279@kroah.com>
-References: <CAObL_7EUh0F32yU+dWw802GhMp2zqaZsjc_iK-sKPnyBeJFMyA@mail.gmail.com>
- <20140715235212.GC32651@kroah.com>
- <CAObL_7EzYQFWm0VsWbp6u67NWWTc=mN=4pQQOt7GYjwL0dzmrw@mail.gmail.com>
+	id S1759433AbaGPAuC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:50:02 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:56508
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754124AbaGPAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:50:00 -0400
+Date: Wed, 16 Jul 2014 08:44:32 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: punnaiah choudary kalluri <punnaia@xilinx.com>,
+        <sebastian.hesselbarth@gmail.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
+Message-ID: <20140716004431.GB30419@shlinux1.ap.freescale.net>
+References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
+ <CAGnW=BbA3gLdSv8AKkD_ysnYAaN0KoCdVW+wxWPB9zzGCh9+jQ@mail.gmail.com>
+ <20140715152437.GF1011@kwain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <CAObL_7EzYQFWm0VsWbp6u67NWWTc=mN=4pQQOt7GYjwL0dzmrw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140715152437.GF1011@kwain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(189002)(199002)(51704005)(87936001)(74502001)(86362001)(50466002)(74662001)(102836001)(93886003)(76482001)(97736001)(92726001)(81542001)(83072002)(81342001)(107046002)(85852003)(23756003)(33656002)(26826002)(77982001)(6806004)(85306003)(4396001)(106466001)(81156004)(54356999)(110136001)(99396002)(64706001)(84676001)(20776003)(47776003)(76176999)(80022001)(50986999)(79102001)(31966008)(95666004)(104016003)(92566001)(105606002)(46102001)(83506001)(21056001)(69596002)(44976005)(68736004)(83322001)(41533002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB575;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0274272F87
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 04:56:36PM -0700, Andrew Lutomirski wrote:
-> On Tue, Jul 15, 2014 at 4:52 PM, Greg KH <greg@kroah.com> wrote:
-> > On Tue, Jul 15, 2014 at 04:21:46PM -0700, Andrew Lutomirski wrote:
-> >> On Tue, Jul 15, 2014 at 2:28 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> >> > 3.13.11.5 -stable review patch.  If anyone has any objections, please let me know.
-> >> >
-> >> > ------------------
-> >> >
-> >> > From: "H. Peter Anvin" <hpa@linux.intel.com>
-> >> >
-> >> > commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
-> >>
-> >> Do not apply to any -stable release yet.  This causes nasty regressions on Xen.
-> >
-> > I thought you all found the Xen-regression-fix patch a few hours ago,
-> > right?
+On Tue, Jul 15, 2014 at 05:24:37PM +0200, Antoine Ténart wrote:
+> Hi,
 > 
-> That patch is insufficient: Xen guests still fail to initialize
-> espfix64 correctly on SMP.  It's currently unclear that espfix64 can
-> work at all on Xen -- it's may be rather fundamentally incompatible
-> with the Xen hypercall IRET mechanism.  So it might need to be
-> disabled entirely on Xen (and maybe Xen will fix the info leak in the
-> hypervisor).
+> On Thu, Jul 03, 2014 at 08:17:34AM +0530, punnaiah choudary kalluri wrote:
+> > Since its a generic driver, support for configuring the dma_mask using
+> > dma_coerce_mask_and_coherent would be good.
+> > 
+> 
+> Should I add a DMA mask dt property? Or just not add this and wait for
+> someone needing it in his case?
+> 
 
-Ok, I'll pospone these all until the next round of stable releases next
-week, Linus's tree should be fixed by then.
+As a dt property, since most of platforms will use it. For PIO mode, the
+property can be NULL.
 
-thanks,
+-- 
 
-greg k-h
+Best Regards,
+Peter Chen
