@@ -1,170 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760709AbaGPRrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:47:36 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50319 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760201AbaGPRqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:46:15 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, x86@kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 2/5] random,x86: Add arch_get_slow_rng_u64
-Date: Wed, 16 Jul 2014 10:45:57 -0700
-Message-Id: <5778e65d5ca52bebbaa023e177d863e44f098e96.1405532533.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1405532533.git.luto@amacapital.net>
-References: <cover.1405532533.git.luto@amacapital.net>
-In-Reply-To: <cover.1405532533.git.luto@amacapital.net>
-References: <cover.1405532533.git.luto@amacapital.net>
+	id S1760752AbaGPRsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 13:48:03 -0400
+Received: from sauhun.de ([89.238.76.85]:58322 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759960AbaGPRqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 13:46:09 -0400
+Date: Wed, 16 Jul 2014 19:46:05 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        adi-buildroot-devel@lists.sourceforge.net,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 00/16] i2c: drop class based instantiaion for selected
+ drivers
+Message-ID: <20140716174604.GI2759@katana>
+References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QDIl5R72YNOeCxaP"
+Content-Disposition: inline
+In-Reply-To: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_get_slow_rng_u64 tries to get 64 bits of RNG seed data.  Unlike
-arch_get_random_{bytes,seed}, etc., it makes no claims about entropy
-content.  It's also likely to be much slower and should not be used
-frequently.  That being said, it should be fast enough to call
-several times during boot without any noticeable slowdown.
 
-This initial implementation backs it with MSR_KVM_GET_RNG_SEED if
-available.  The intent is for other hypervisor guest implementations
-to implement this interface.
+--QDIl5R72YNOeCxaP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/Kconfig                   |  4 ++++
- arch/x86/include/asm/archslowrng.h | 30 ++++++++++++++++++++++++++++++
- arch/x86/kernel/kvm.c              | 22 ++++++++++++++++++++++
- include/linux/random.h             |  9 +++++++++
- 4 files changed, 65 insertions(+)
- create mode 100644 arch/x86/include/asm/archslowrng.h
+On Thu, Jul 10, 2014 at 01:46:20PM +0200, Wolfram Sang wrote:
+> Some drivers were flagged to remove class based instantiation soon to imp=
+rove
+> boot-up time. Originally, I was planning for a longer deprecation time so=
+ users
+> could switch over to some other kind of instantiation. However, the deman=
+d for
+> the speed up is high enough and class based instantiation is used rarely,=
+ so
+> the removal takes place now. To make up for the deprecation time, another
+> warning is added to the i2c core pointing out that the behaviour has now
+> changed:
+>=20
+> +	/* Warn that the adapter lost class based instantiation */
+> +	if (adapter->class =3D=3D I2C_CLASS_DEPRECATED) {
+> +		dev_dbg(&adapter->dev,
+> +			"This adapter dropped support for I2C classes and "
+> +			"won't auto-detect %s devices anymore. If you need it, check "
+> +			"'Documentation/i2c/instantiating-devices' for alternatives.\n",
+> +			driver->driver.name);
+> +		return 0;
+> +	}
+>=20
+> A branch can be found here (with two other cleanups -> driver removals):
+> git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/deprecate=
+_stuff
+>=20
+> I hope this meets all the needs. Please comment, ack, test...
+>=20
+> Thanks,
+>=20
+>    Wolfram
+>=20
+>=20
+> Wolfram Sang (16):
+>   i2c: add debug info when class instantiation was dropped
+>   i2c: i2c-at91: Drop class based scanning to improve bootup time
+>   i2c: i2c-bcm2835: Drop class based scanning to improve bootup time
+>   i2c: i2c-bfin-twi: Drop class based scanning to improve bootup time
+>   i2c: i2c-davinci: Drop class based scanning to improve bootup time
+>   i2c: i2c-designware-platdrv: Drop class based scanning to improve
+>     bootup time
+>   i2c: i2c-mv64xxx: Drop class based scanning to improve bootup time
+>   i2c: i2c-nomadik: Drop class based scanning to improve bootup time
+>   i2c: i2c-ocores: Drop class based scanning to improve bootup time
+>   i2c: i2c-omap: Drop class based scanning to improve bootup time
+>   i2c: i2c-rcar: Drop class based scanning to improve bootup time
+>   i2c: i2c-s3c2410: Drop class based scanning to improve bootup time
+>   i2c: i2c-sirf: Drop class based scanning to improve bootup time
+>   i2c: i2c-stu300: Drop class based scanning to improve bootup time
+>   i2c: i2c-tegra: Drop class based scanning to improve bootup time
+>   i2c: i2c-xiic: Drop class based scanning to improve bootup time
+>=20
+>  drivers/i2c/busses/i2c-at91.c               |  2 +-
+>  drivers/i2c/busses/i2c-bcm2835.c            |  2 +-
+>  drivers/i2c/busses/i2c-bfin-twi.c           |  2 +-
+>  drivers/i2c/busses/i2c-davinci.c            |  2 +-
+>  drivers/i2c/busses/i2c-designware-platdrv.c |  2 +-
+>  drivers/i2c/busses/i2c-mv64xxx.c            |  2 +-
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a8f749e..4dfb539 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -593,6 +593,7 @@ config KVM_GUEST
- 	bool "KVM Guest support (including kvmclock)"
- 	depends on PARAVIRT
- 	select PARAVIRT_CLOCK
-+	select ARCH_SLOW_RNG
- 	default y
- 	---help---
- 	  This option enables various optimizations for running under the KVM
-@@ -627,6 +628,9 @@ config PARAVIRT_TIME_ACCOUNTING
- config PARAVIRT_CLOCK
- 	bool
- 
-+config ARCH_SLOW_RNG
-+       bool
-+
- endif #HYPERVISOR_GUEST
- 
- config NO_BOOTMEM
-diff --git a/arch/x86/include/asm/archslowrng.h b/arch/x86/include/asm/archslowrng.h
-new file mode 100644
-index 0000000..c8e8d0d
---- /dev/null
-+++ b/arch/x86/include/asm/archslowrng.h
-@@ -0,0 +1,30 @@
-+/*
-+ * This file is part of the Linux kernel.
-+ *
-+ * Copyright (c) 2014 Andy Lutomirski
-+ * Authors: Andy Lutomirski <luto@amacapital.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#ifndef ASM_X86_ARCHSLOWRANDOM_H
-+#define ASM_X86_ARCHSLOWRANDOM_H
-+
-+#ifndef CONFIG_ARCH_SLOW_RNG
-+# error archslowrng.h should not be included if !CONFIG_ARCH_SLOW_RNG
-+#endif
-+
-+/*
-+ * Performance is irrelevant here, so there's no point in using the
-+ * paravirt ops mechanism.  Instead just use a function pointer.
-+ */
-+extern int (*arch_get_slow_rng_u64)(u64 *v);
-+
-+#endif /* ASM_X86_ARCHSLOWRANDOM_H */
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 3dd8e2c..8d64d28 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -416,6 +416,25 @@ void kvm_disable_steal_time(void)
- 	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
- }
- 
-+static int nop_get_slow_rng_u64(u64 *v)
-+{
-+	return 0;
-+}
-+
-+static int kvm_get_slow_rng_u64(u64 *v)
-+{
-+	/*
-+	 * Allow migration from a hypervisor with the GET_RNG_SEED
-+	 * feature to a hypervisor without it.
-+	 */
-+	if (rdmsrl_safe(MSR_KVM_GET_RNG_SEED, v) == 0)
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+int (*arch_get_slow_rng_u64)(u64 *v) = nop_get_slow_rng_u64;
-+
- #ifdef CONFIG_SMP
- static void __init kvm_smp_prepare_boot_cpu(void)
- {
-@@ -493,6 +512,9 @@ void __init kvm_guest_init(void)
- 	if (kvmclock_vsyscall)
- 		kvm_setup_vsyscall_timeinfo();
- 
-+	if (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED))
-+		arch_get_slow_rng_u64 = kvm_get_slow_rng_u64;
-+
- #ifdef CONFIG_SMP
- 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
- 	register_cpu_notifier(&kvm_cpu_notifier);
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 57fbbff..ceafbcf 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -106,6 +106,15 @@ static inline int arch_has_random_seed(void)
- }
- #endif
- 
-+#ifdef CONFIG_ARCH_SLOW_RNG
-+# include <asm/archslowrng.h>
-+#else
-+static inline int arch_get_slow_rng_u64(u64 *v)
-+{
-+	return 0;
-+}
-+#endif
-+
- /* Pseudo random number generator from numerical recipes. */
- static inline u32 next_pseudo_random32(u32 seed)
- {
--- 
-1.9.3
+Applied to for-next, thanks!
 
+
+--QDIl5R72YNOeCxaP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTxrpcAAoJEBQN5MwUoCm2WtEP/i6iS+LXxbARgxhigYAWFkUr
+klsJEY41o723X7V6MWVXK5ud2s+1GWY3Z74PTHS8Y2bY79V1mDdq4Sa+FegKM3Q8
+9aOD5VXJBWWyiEufSsqUsJGxxWSz81eLX5n3b4olGWclu8BYKZ73jAt9PNF7SAP4
+G1i8DFZadoBxUbVW/hXk86IULb7Lmq3GOMmNIHJ1PFykI/dq7rogSo5yLccked9r
+Ho3kvEWIHeumRYdDsnlUqUayysl+yTvaJRhuXN+NrfDyH5ZB2/MY/4ZK+poV/cUM
+HrkhvF7Yok4udMtvpcGWaga/GKo5sLZZdz33uZutV09Iek7ce/guPsOuX4/yP+0t
+gjwPpMblPPGhC95aM7rDEELYZ434nszEpHLlE7amPONcCxbjrSYu8Qkg76ZjC/N+
+qaxq0l0QL6292ZBZOa366SxtlY3e8sg/YCJ4SE2Iw2/1aM60W2Gb5M3sqGkzaDZf
+TQTQiKuQbM8OTxiBXT6xKOM5h1n/hX780mJvuCXLdzWC5CbsUob0GHkDOBoDpY9r
+Jf2VXoJ7NYj0bUPEaXOWrn0k+BhBc8rXKaIET6m6Oi3AqhQPFO3OlCamlywOCozi
+90OHHciXrVxLlvWTPbx3H/tM+swlHGlGt+oKvvDxhAUnE/zMnbfM/sDC11+7Vlko
+q8c/leBJlfax/IyaZ3wv
+=2yuG
+-----END PGP SIGNATURE-----
+
+--QDIl5R72YNOeCxaP--
