@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730AbaGPI7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:59:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33029 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933679AbaGPI72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:59:28 -0400
-Date: Wed, 16 Jul 2014 10:59:24 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
-        balbi@ti.com, p.zabel@pengutronix.de,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com
-Subject: Re: [PATCH v3 08/12] Documentation: bindings: add doc for the USB2
- ChipIdea USB driver
-Message-ID: <20140716085924.GA28151@kwain>
-References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
- <1405499166-6726-9-git-send-email-antoine.tenart@free-electrons.com>
- <23972141.94aiK9jz66@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <23972141.94aiK9jz66@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761265AbaGPJAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:00:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40170 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761189AbaGPI6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:58:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
+   d="scan'208";a="562531432"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v3 2/7] ACPICA: Linux: Add stub implementation of ACPICA 64-bit mathematics.
+Date: Wed, 16 Jul 2014 16:58:00 +0800
+Message-Id: <01bab2394df93a3064f09d961f4011b62895eef2.1405500886.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1405500886.git.lv.zheng@intel.com>
+References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1405500886.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+This patch adds default 64-bit mathematics in aclinux.h using do_div(). As
+do_div() can be used for all Linux architectures, this can also be used as
+stub macros for ACPICA 64-bit mathematics.
 
-On Wed, Jul 16, 2014 at 10:39:36AM +0200, Arnd Bergmann wrote:
-> On Wednesday 16 July 2014 10:26:02 Antoine Ténart wrote:
-> > +
-> > +Required properties:
-> > +- compatible: should be "chipidea,usb2"
-> > +- reg: base address and length of the registers
-> > +- interrupts: interrupt for the USB controller
-> > +
-> > +Optional properties:
-> > +- clocks: reference to the USB clock
-> > +- usb-phy: reference to the USB PHY
-> 
-> I think the phy reference should use the standard phy binding, using
-> "phys" property to refer to a node that has a "#phy-cells" property.
-> 
-> It seems the code gets this right, but just the documentation is wrong.
+But this is not a performance friendly way, as ACPICA's architecture
+specific division OSL only requires a dividing 64-bit number with a 32-bit
+number implementation, while Linux __div64_32() is not available for all
+build environments. So currently, if an architecture really wants to
+support ACPICA, it must implement its own division OSL.
 
-I moved this PHY driver from usb/phy/ to phy/ and forgot to update this
-property. I'll fix it.
+This is required by the ACPICA header stub support. ACPICA header stubs are
+useful to protect CONFIG_ACPI=n Linux kernel builds where ACPICA headers
+are included. Lv Zheng.
 
-> 
-> > +- vbus-supply: reference to the VBUS regulator
-> > +- dma-mask: DMA bit mask
-> 
-> No. Do not use "dma-mask" as a property, that is a pure Linux specific
-> concept. The DT way to express this is to use the 'dma-ranges' property
-> in the device's parent to describe any bus-related restrictions, and
-> for the driver to ask for a mask that matches what the hardware is
-> capable of (which may be smaller or larger than what the bus supports).
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ include/acpi/platform/aclinuxex.h |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-Ok. I'll answer in the CI driver's thread.
-
-Thanks!
-
-Antoine
-
+diff --git a/include/acpi/platform/aclinuxex.h b/include/acpi/platform/aclinuxex.h
+index 191e741..568d4b8 100644
+--- a/include/acpi/platform/aclinuxex.h
++++ b/include/acpi/platform/aclinuxex.h
+@@ -46,6 +46,28 @@
+ 
+ #ifdef __KERNEL__
+ 
++#ifndef ACPI_USE_NATIVE_DIVIDE
++
++#ifndef ACPI_DIV_64_BY_32
++#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
++	do { \
++		u64 (__n) = ((u64) n_hi) << 32 | (n_lo); \
++		(r32) = do_div ((__n), (d32)); \
++		(q32) = (u32) (__n); \
++	} while (0)
++#endif
++
++#ifndef ACPI_SHIFT_RIGHT_64
++#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
++	do { \
++		(n_lo) >>= 1; \
++		(n_lo) |= (((n_hi) & 1) << 31); \
++		(n_hi) >>= 1; \
++	} while (0)
++#endif
++
++#endif
++
+ /*
+  * Overrides for in-kernel ACPICA
+  */
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.10
+
