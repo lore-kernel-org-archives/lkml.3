@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933782AbaGPMyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:54:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48742 "EHLO arroyo.ext.ti.com"
+	id S933808AbaGPMyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:54:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48748 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933721AbaGPMyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:54:22 -0400
+	id S933747AbaGPMyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:54:24 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>, <balbi@ti.com>, <b-liu@ti.com>
 CC: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH v7 3/4] usb: musb: core: Convert the musb_platform_reset to have a return value.
-Date: Wed, 16 Jul 2014 18:22:11 +0530
-Message-ID: <1405515132-17618-4-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v7 4/4] usb: musb: dsps: Add the sw_babble_control() and Enable for newer silicon
+Date: Wed, 16 Jul 2014 18:22:12 +0530
+Message-ID: <1405515132-17618-5-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405515132-17618-1-git-send-email-george.cherian@ti.com>
 References: <1405515132-17618-1-git-send-email-george.cherian@ti.com>
@@ -22,100 +22,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently musb_platform_reset() is only used by dsps.
-In case of BABBLE interrupt for other platforms the  musb_platform_reset()
-is a NOP. In such situations no need to re-initialize the endpoints.
-Also in the latest silicon revision of AM335x, we do have a babble recovery
-mechanism without resetting the IP block. In preperation to add that support
-its better to have a rest_done return for  musb_platform_reset().
+Add sw_babble_control() logic to differentiate between transient
+babble and real babble condition. Also add the SW babble control
+register definitions.
+
+Babble control register logic is implemented in the latest
+revision of AM335x.
+
+Find whether we are running on newer silicon. The babble control
+register reads 0x4 by default in newer silicon as opposed to 0
+in old versions of AM335x. Based on this enable the sw babble
+control logic.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 Tested-by: Bin Liu <b-liu@ti.com>
 ---
- drivers/usb/musb/musb_core.c | 10 ++++++----
- drivers/usb/musb/musb_core.h | 10 ++++++----
- drivers/usb/musb/musb_dsps.c |  3 ++-
- 3 files changed, 14 insertions(+), 9 deletions(-)
+ drivers/usb/musb/musb_dsps.c | 89 +++++++++++++++++++++++++++++++++++++++++---
+ drivers/usb/musb/musb_regs.h |  7 ++++
+ 2 files changed, 90 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index c0ce09f..b841ee0 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1753,9 +1753,11 @@ static void musb_irq_work(struct work_struct *data)
- static void musb_recover_work(struct work_struct *data)
- {
- 	struct musb *musb = container_of(data, struct musb, recover_work.work);
--	int status;
-+	int status, ret;
- 
--	musb_platform_reset(musb);
-+	ret  = musb_platform_reset(musb);
-+	if (ret)
-+		return;
- 
- 	usb_phy_vbus_off(musb->xceiv);
- 	usleep_range(100, 200);
-@@ -1764,8 +1766,8 @@ static void musb_recover_work(struct work_struct *data)
- 	usleep_range(100, 200);
- 
- 	/*
--	 * When a babble condition occurs, the musb controller removes the
--	 * session bit and the endpoint config is lost.
-+	 * When a babble condition occurs, the musb controller
-+	 * removes the session bit and the endpoint config is lost.
- 	 */
- 	if (musb->dyn_fifo)
- 		status = ep_config_from_table(musb);
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 9241025..414e57a 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -192,7 +192,7 @@ struct musb_platform_ops {
- 
- 	int	(*set_mode)(struct musb *musb, u8 mode);
- 	void	(*try_idle)(struct musb *musb, unsigned long timeout);
--	void	(*reset)(struct musb *musb);
-+	int	(*reset)(struct musb *musb);
- 
- 	int	(*vbus_status)(struct musb *musb);
- 	void	(*set_vbus)(struct musb *musb, int on);
-@@ -555,10 +555,12 @@ static inline void musb_platform_try_idle(struct musb *musb,
- 		musb->ops->try_idle(musb, timeout);
- }
- 
--static inline void musb_platform_reset(struct musb *musb)
-+static inline int  musb_platform_reset(struct musb *musb)
- {
--	if (musb->ops->reset)
--		musb->ops->reset(musb);
-+	if (!musb->ops->reset)
-+		return -EINVAL;
-+
-+	return musb->ops->reset(musb);
- }
- 
- static inline int musb_platform_get_vbus_status(struct musb *musb)
 diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index b29f59f..53a4351 100644
+index 53a4351..f119a62 100644
 --- a/drivers/usb/musb/musb_dsps.c
 +++ b/drivers/usb/musb/musb_dsps.c
-@@ -544,7 +544,7 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
+@@ -144,6 +144,7 @@ struct dsps_glue {
+ 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
+ 	struct timer_list timer;	/* otg_workaround timer */
+ 	unsigned long last_timer;    /* last timer data for each instance */
++	bool sw_babble_enabled;
+ 
+ 	struct dsps_context context;
+ 	struct debugfs_regset32 regset;
+@@ -477,6 +478,19 @@ static int dsps_musb_init(struct musb *musb)
+ 	val &= ~(1 << wrp->otg_disable);
+ 	dsps_writel(musb->ctrl_base, wrp->phy_utmi, val);
+ 
++	/*
++	 *  Check whether the dsps version has babble control enabled.
++	 * In latest silicon revision the babble control logic is enabled.
++	 * If MUSB_BABBLE_CTL returns 0x4 then we have the babble control
++	 * logic enabled.
++	 */
++	val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
++	if (val == MUSB_BABBLE_RCV_DISABLE) {
++		glue->sw_babble_enabled = true;
++		val |= MUSB_BABBLE_SW_SESSION_CTRL;
++		dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
++	}
++
+ 	ret = dsps_musb_dbg_init(musb, glue);
+ 	if (ret)
+ 		return ret;
+@@ -544,19 +558,82 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
  	return 0;
  }
  
--static void dsps_musb_reset(struct musb *musb)
-+static int dsps_musb_reset(struct musb *musb)
++static bool  sw_babble_control(struct musb *musb)
++{
++	u8 babble_ctl;
++	bool session_restart =  false;
++
++	babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
++	dev_dbg(musb->controller, "babble: MUSB_BABBLE_CTL value %x\n",
++		babble_ctl);
++	/*
++	 * check line monitor flag to check whether babble is
++	 * due to noise
++	 */
++	dev_dbg(musb->controller, "STUCK_J is %s\n",
++		babble_ctl & MUSB_BABBLE_STUCK_J ? "set" : "reset");
++
++	if (babble_ctl & MUSB_BABBLE_STUCK_J) {
++		int timeout = 10;
++
++		/*
++		 * babble is due to noise, then set transmit idle (d7 bit)
++		 * to resume normal operation
++		 */
++		babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
++		babble_ctl |= MUSB_BABBLE_FORCE_TXIDLE;
++		dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, babble_ctl);
++
++		/* wait till line monitor flag cleared */
++		dev_dbg(musb->controller, "Set TXIDLE, wait J to clear\n");
++		do {
++			babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
++			udelay(1);
++		} while ((babble_ctl & MUSB_BABBLE_STUCK_J) && timeout--);
++
++		/* check whether stuck_at_j bit cleared */
++		if (babble_ctl & MUSB_BABBLE_STUCK_J) {
++			/*
++			 * real babble condition has occurred
++			 * restart the controller to start the
++			 * session again
++			 */
++			dev_dbg(musb->controller, "J not cleared, misc (%x)\n",
++				babble_ctl);
++			session_restart = true;
++		}
++	} else {
++		session_restart = true;
++	}
++
++	return session_restart;
++}
++
+ static int dsps_musb_reset(struct musb *musb)
  {
  	struct device *dev = musb->controller;
  	struct dsps_glue *glue = dev_get_drvdata(dev->parent);
-@@ -556,6 +556,7 @@ static void dsps_musb_reset(struct musb *musb)
- 	usleep_range(100, 200);
- 	usb_phy_init(musb->xceiv);
+ 	const struct dsps_musb_wrapper *wrp = glue->wrp;
++	int session_restart = 0;
  
-+	return 0;
+-	dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
+-	usleep_range(100, 200);
+-	usb_phy_shutdown(musb->xceiv);
+-	usleep_range(100, 200);
+-	usb_phy_init(musb->xceiv);
++	if (glue->sw_babble_enabled)
++		session_restart = sw_babble_control(musb);
++	/*
++	 * In case of new silicon version babble condition can be recovered
++	 * without resetting the MUSB. But for older silicon versions, MUSB
++	 * reset is needed
++	 */
++	if (session_restart || !glue->sw_babble_enabled) {
++		dev_info(musb->controller, "Restarting MUSB to recover from Babble\n");
++		dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
++		usleep_range(100, 200);
++		usb_phy_shutdown(musb->xceiv);
++		usleep_range(100, 200);
++		usb_phy_init(musb->xceiv);
++		session_restart = 1;
++	}
+ 
+-	return 0;
++	return !session_restart;
  }
  
  static struct musb_platform_ops dsps_ops = {
+diff --git a/drivers/usb/musb/musb_regs.h b/drivers/usb/musb/musb_regs.h
+index 03f2655..b9bcda5 100644
+--- a/drivers/usb/musb/musb_regs.h
++++ b/drivers/usb/musb/musb_regs.h
+@@ -72,6 +72,12 @@
+ #define MUSB_DEVCTL_HR		0x02
+ #define MUSB_DEVCTL_SESSION	0x01
+ 
++/* BABBLE_CTL */
++#define MUSB_BABBLE_FORCE_TXIDLE	0x80
++#define MUSB_BABBLE_SW_SESSION_CTRL	0x40
++#define MUSB_BABBLE_STUCK_J		0x20
++#define MUSB_BABBLE_RCV_DISABLE		0x04
++
+ /* MUSB ULPI VBUSCONTROL */
+ #define MUSB_ULPI_USE_EXTVBUS	0x01
+ #define MUSB_ULPI_USE_EXTVBUSIND 0x02
+@@ -246,6 +252,7 @@
+  */
+ 
+ #define MUSB_DEVCTL		0x60	/* 8 bit */
++#define MUSB_BABBLE_CTL		0x61	/* 8 bit */
+ 
+ /* These are always controlled through the INDEX register */
+ #define MUSB_TXFIFOSZ		0x62	/* 8-bit (see masks) */
 -- 
 1.8.3.1
 
