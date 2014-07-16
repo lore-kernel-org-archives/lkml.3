@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964983AbaGPEdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:33:20 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:52365 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964821AbaGPEdR (ORCPT
+	id S965036AbaGPEgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:36:18 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:41582 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaGPEgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:33:17 -0400
-Message-ID: <53C6007A.9050707@synopsys.com>
-Date: Wed, 16 Jul 2014 10:02:58 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 00:36:14 -0400
 MIME-Version: 1.0
-To: "stable@vger.kernel.org" <stable@vger.kernel.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
-Subject: ARC backport for stable 3.{10,12,14,15}
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.93]
+In-Reply-To: <1405483722.14773.12.camel@joe-AO725>
+References: <1405193128-6848-1-git-send-email-bobby.prani@gmail.com>
+ <CAJhHMCC1bY5ras7-W17Qh7yZq5-_eD0C-CJfa09ZpjWNoTOZ=w@mail.gmail.com> <1405483722.14773.12.camel@joe-AO725>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 16 Jul 2014 00:35:43 -0400
+Message-ID: <CAJhHMCDNj2H7VC+5tMeWqPGbMQpDD-ycZ2HGXoeMPwCn7hTuKg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] scripts/get_maintainer: increase threshold for
+ --follow to reduce time
+To: Joe Perches <joe@perches.com>
+Cc: open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 16, 2014 at 12:08 AM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2014-07-15 at 22:23 -0400, Pranith Kumar wrote:
+>> ping?
+>>
+>> On Sat, Jul 12, 2014 at 3:25 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+>> > get_maintainer tries to follow files with a matching threshold of default 50%.
+>> > This is not really necessary as we do not change a file and move it in the same
+>> > commit usually. Increasing the threshold to 90% should be sufficient.
+<snip>
+> While I understand the goal, I wonder if this should
+> be in a .gitconfig, not in get_maintainers at all.
+>
+> (git doesn't seem to have a config entry for score though)
+>
+> If not, the % should probably be cmd-line configurable.
+>
+>
 
-Can you please add the mainline commit a4b6cb735b25aa84a462a1985e3e43bebaf5beb4
-"ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)" to stable kernels
+The problem is with the default which is at 50% now. That means that a
+commit needs to have changed a file by more than 50% -and- moved it in
+the same commit. This is highly discouraged and unlikely to happen in
+our case.
 
-This is causing buildroot gdb failures with pre 3.16 kernels.
+Even if we have this a cmd-line configuration, setting the default to
+90% really makes sense, no?
 
-Thx,
--Vineet
+-- 
+Pranith
