@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935029AbaGPTQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:16:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44056 "EHLO
+	id S1760854AbaGPTQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:16:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44074 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760808AbaGPTP4 (ORCPT
+	with ESMTP id S1760821AbaGPTQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:15:56 -0400
-Date: Wed, 16 Jul 2014 12:15:27 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-c83023676dc34f1b4422b842e1e2dc5c21bfc4dc@git.kernel.org>
+	Wed, 16 Jul 2014 15:16:19 -0400
+Date: Wed, 16 Jul 2014 12:15:55 -0700
+From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
+Message-ID: <tip-da50ad69723111e0292f1943dad77b41bb9a25b0@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        borntraeger@de.ibm.com, jolsa@redhat.com, cornelia.huck@de.ibm.com,
+        yarygin@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1403886418-5556-4-git-send-email-jolsa@kernel.org>
-References: <1403886418-5556-4-git-send-email-jolsa@kernel.org>
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com, jolsa@redhat.com,
+        yarygin@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1404395992-17095-2-git-send-email-yarygin@linux.vnet.ibm.com>
+References: <1404395992-17095-2-git-send-email-yarygin@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists browser:
-  Add ui.show-headers config file option
-Git-Commit-ID: c83023676dc34f1b4422b842e1e2dc5c21bfc4dc
+Subject: [tip:perf/core] perf kvm: Introduce HAVE_KVM_STAT_SUPPORT flag
+Git-Commit-ID: da50ad69723111e0292f1943dad77b41bb9a25b0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,109 +35,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c83023676dc34f1b4422b842e1e2dc5c21bfc4dc
-Gitweb:     http://git.kernel.org/tip/c83023676dc34f1b4422b842e1e2dc5c21bfc4dc
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 27 Jun 2014 18:26:58 +0200
+Commit-ID:  da50ad69723111e0292f1943dad77b41bb9a25b0
+Gitweb:     http://git.kernel.org/tip/da50ad69723111e0292f1943dad77b41bb9a25b0
+Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+AuthorDate: Thu, 3 Jul 2014 17:59:49 +0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 7 Jul 2014 15:23:31 -0300
+CommitDate: Mon, 7 Jul 2014 16:55:23 -0300
 
-perf hists browser: Add ui.show-headers config file option
+perf kvm: Introduce HAVE_KVM_STAT_SUPPORT flag
 
-Adding ui.show-headers config file option to define if the histogram
-entries headers will start visible or not.
+kvm stat support is currently conditional on i386/x86_64. Let's abstract
+this into a HAVE_KVM_STAT_SUPPORT flag, so that other architectures can
+support kvm stat as well.
 
-Currently columns headers are displayed by default, following
-lines in ~/.perfconfig file will disable that:
-
-  [ui]
-        show-headers = false
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1403886418-5556-4-git-send-email-jolsa@kernel.org
-[ renamed symbol_conf.show_headers to .show_hist_headers ]
+Link: http://lkml.kernel.org/r/1404395992-17095-2-git-send-email-yarygin@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c |  2 +-
- tools/perf/util/config.c       | 13 +++++++++++++
- tools/perf/util/symbol.c       |  1 +
- tools/perf/util/symbol.h       |  3 ++-
- 4 files changed, 17 insertions(+), 2 deletions(-)
+ tools/perf/arch/x86/Makefile | 1 +
+ tools/perf/builtin-kvm.c     | 6 +++---
+ tools/perf/config/Makefile   | 4 ++++
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 5fa2e18..a94b11f 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1284,7 +1284,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
- 		browser->b.refresh_dimensions = hist_browser__refresh_dimensions;
- 		browser->b.seek = ui_browser__hists_seek;
- 		browser->b.use_navkeypressed = true;
--		browser->show_headers = true;
-+		browser->show_headers = symbol_conf.show_hist_headers;
- 	}
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 1641542..d393901 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -15,3 +15,4 @@ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
+ LIB_H += arch/$(ARCH)/util/tsc.h
++HAVE_KVM_STAT_SUPPORT := 1
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 0f1e5a2..214ec0e 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -29,7 +29,7 @@
+ #include <pthread.h>
+ #include <math.h>
  
- 	return browser;
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index 24519e1..1e5e2e5 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -350,6 +350,16 @@ static int perf_default_core_config(const char *var __maybe_unused,
- 	return 0;
+-#if defined(__i386__) || defined(__x86_64__)
++#ifdef HAVE_KVM_STAT_SUPPORT
+ #include <asm/svm.h>
+ #include <asm/vmx.h>
+ #include <asm/kvm.h>
+@@ -1609,7 +1609,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ perf_stat:
+ 	return cmd_stat(argc, argv, NULL);
  }
+-#endif
++#endif /* HAVE_KVM_STAT_SUPPORT */
  
-+static int perf_ui_config(const char *var, const char *value)
-+{
-+	/* Add other config variables here. */
-+	if (!strcmp(var, "ui.show-headers")) {
-+		symbol_conf.show_hist_headers = perf_config_bool(var, value);
-+		return 0;
-+	}
-+	return 0;
-+}
-+
- int perf_default_config(const char *var, const char *value,
- 			void *dummy __maybe_unused)
+ static int __cmd_record(const char *file_name, int argc, const char **argv)
  {
-@@ -359,6 +369,9 @@ int perf_default_config(const char *var, const char *value,
- 	if (!prefixcmp(var, "hist."))
- 		return perf_hist_config(var, value);
+@@ -1726,7 +1726,7 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return cmd_top(argc, argv, NULL);
+ 	else if (!strncmp(argv[0], "buildid-list", 12))
+ 		return __cmd_buildid_list(file_name, argc, argv);
+-#if defined(__i386__) || defined(__x86_64__)
++#ifdef HAVE_KVM_STAT_SUPPORT
+ 	else if (!strncmp(argv[0], "stat", 4))
+ 		return kvm_cmd_stat(file_name, argc, argv);
+ #endif
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 346bdb6..b7f42d5 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -594,6 +594,10 @@ ifndef NO_LIBNUMA
+   endif
+ endif
  
-+	if (!prefixcmp(var, "ui."))
-+		return perf_ui_config(var, value);
++ifdef HAVE_KVM_STAT_SUPPORT
++    CFLAGS += -DHAVE_KVM_STAT_SUPPORT
++endif
 +
- 	/* Add other config variables here. */
- 	return 0;
- }
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 7b9096f..2e6a2e2 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -34,6 +34,7 @@ struct symbol_conf symbol_conf = {
- 	.annotate_src		= true,
- 	.demangle		= true,
- 	.cumulate_callchain	= true,
-+	.show_hist_headers	= true,
- 	.symfs			= "",
- };
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 615c752..a81877b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -118,7 +118,8 @@ struct symbol_conf {
- 			annotate_src,
- 			event_group,
- 			demangle,
--			filter_relative;
-+			filter_relative,
-+			show_hist_headers;
- 	const char	*vmlinux_name,
- 			*kallsyms_name,
- 			*source_prefix,
+ # Among the variables below, these:
+ #   perfexecdir
+ #   template_dir
