@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965848AbaGPSFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:05:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31856 "EHLO mx1.redhat.com"
+	id S965865AbaGPSGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:06:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965803AbaGPSFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:05:32 -0400
+	id S965798AbaGPSFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:05:31 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, qla2xxx-upstream@qlogic.com,
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com,
         linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 21/23] qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Wed, 16 Jul 2014 20:05:25 +0200
-Message-Id: <cf38d1596543fd61c099bc0b834c2ea7a11f8b28.1405533479.git.agordeev@redhat.com>
+Subject: [PATCH v2 RESEND 22/23] qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
+Date: Wed, 16 Jul 2014 20:05:26 +0200
+Message-Id: <0496ccbc0f203afaeeb7758c146b93c2f387684c.1405533479.git.agordeev@redhat.com>
 In-Reply-To: <cover.1405533479.git.agordeev@redhat.com>
 References: <cover.1405533479.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,62 +27,29 @@ new pci_enable_msi_range()  or pci_enable_msi_exact()
 and pci_enable_msix_range() or pci_enable_msix_exact()
 interfaces.
 
-Log message code 0x00c6 preserved, although it is reported
-after successful call to pci_enable_msix_range(), not before
-possibly unsuccessful call to pci_enable_msix(). Consumers
-of the error code should not notice the difference.
-
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: qla2xxx-upstream@qlogic.com
+Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Cc: iscsi-driver@qlogic.com
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
+Acked-By: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
 ---
- drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
- 1 files changed, 11 insertions(+), 16 deletions(-)
+ drivers/scsi/qla4xxx/ql4_nx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index a56825c..52d420f 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -2923,27 +2923,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
- 	for (i = 0; i < ha->msix_count; i++)
- 		entries[i].entry = i;
+diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
+index 9dbdb4b..7c33658 100644
+--- a/drivers/scsi/qla4xxx/ql4_nx.c
++++ b/drivers/scsi/qla4xxx/ql4_nx.c
+@@ -4221,7 +4221,7 @@ qla4_8xxx_enable_msix(struct scsi_qla_host *ha)
+ 	for (i = 0; i < QLA_MSIX_ENTRIES; i++)
+ 		entries[i].entry = qla4_8xxx_msix_entries[i].entry;
  
--	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--	if (ret) {
--		if (ret < MIN_MSIX_COUNT)
--			goto msix_failed;
--
-+	ret = pci_enable_msix_range(ha->pdev,
-+				    entries, MIN_MSIX_COUNT, ha->msix_count);
-+	if (ret < 0) {
-+		ql_log(ql_log_fatal, vha, 0x00c7,
-+		    "MSI-X: Failed to enable support, "
-+		    "giving   up -- %d/%d.\n",
-+		    ha->msix_count, ret);
-+		goto msix_out;
-+	} else if (ret < ha->msix_count) {
- 		ql_log(ql_log_warn, vha, 0x00c6,
- 		    "MSI-X: Failed to enable support "
- 		    "-- %d/%d\n Retry with %d vectors.\n",
- 		    ha->msix_count, ret, ret);
--		ha->msix_count = ret;
--		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--		if (ret) {
--msix_failed:
--			ql_log(ql_log_fatal, vha, 0x00c7,
--			    "MSI-X: Failed to enable support, "
--			    "giving   up -- %d/%d.\n",
--			    ha->msix_count, ret);
--			goto msix_out;
--		}
--		ha->max_rsp_queues = ha->msix_count - 1;
- 	}
-+	ha->msix_count = ret;
-+	ha->max_rsp_queues = ha->msix_count - 1;
- 	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
- 				ha->msix_count, GFP_KERNEL);
- 	if (!ha->msix_entries) {
+-	ret = pci_enable_msix(ha->pdev, entries, ARRAY_SIZE(entries));
++	ret = pci_enable_msix_exact(ha->pdev, entries, ARRAY_SIZE(entries));
+ 	if (ret) {
+ 		ql4_printk(KERN_WARNING, ha,
+ 		    "MSI-X: Failed to enable support -- %d/%d\n",
 -- 
 1.7.7.6
 
