@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934030AbaGPN26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:28:58 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:55818 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932622AbaGPN2x (ORCPT
+	id S934034AbaGPN37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:29:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40545 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932622AbaGPN35 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:28:53 -0400
-Message-ID: <53C67E2E.7080402@gmail.com>
-Date: Wed, 16 Jul 2014 09:29:18 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
+	Wed, 16 Jul 2014 09:29:57 -0400
+Message-ID: <53C67E54.2010104@arm.com>
+Date: Wed, 16 Jul 2014 14:29:56 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: josh@joshtriplett.org, Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
-References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com> <1405463509-2468-2-git-send-email-bobby.prani@gmail.com> <20140715225313.GB24290@cloud> <53C5B1F7.3000409@gmail.com> <20140716124729.GR8690@linux.vnet.ibm.com>
-In-Reply-To: <20140716124729.GR8690@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "s-anna@ti.com" <s-anna@ti.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org> <5340858.B9CZUE8s0j@wuerfel> <53C65F22.20101@arm.com> <5773443.uubaG3Evxs@wuerfel>
+In-Reply-To: <5773443.uubaG3Evxs@wuerfel>
+X-OriginalArrivalTime: 16 Jul 2014 13:29:54.0473 (UTC) FILETIME=[0779E190:01CFA0FA]
+X-MC-Unique: 114071614295504701
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 08:47 AM, Paul E. McKenney wrote:
-> On Tue, Jul 15, 2014 at 06:57:59PM -0400, Pranith Kumar wrote:
+
+
+On 16/07/14 12:32, Arnd Bergmann wrote:
+> On Wednesday 16 July 2014 12:16:50 Sudeep Holla wrote:
 >>
->> On 07/15/2014 06:53 PM, josh@joshtriplett.org wrote:
->>> On Tue, Jul 15, 2014 at 06:31:48PM -0400, Pranith Kumar wrote:
->>>> This commit removes a stale comment in rcu/tree.c.
->>>> FYI, an updated comment exists a few lines below this.
->>>>
->>>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->>> In general, when removing a stale comment, I'd suggest explaining why
->>> the comment is stale.  Was code removed without removing the
->>> corresponding comment, or was code changed such that the comment no
->>> longer applies, or...?
+>> Agreed if these mbox-names are more specific to attached devices and that
+>> was my initial understanding too. But I got confused when I saw something
+>> like below in the patch[1]
 >>
->> I guess it was left out when code was moved around previously. And I did mention that an updated comment is there a few lines below.
+>> +       mhu: mhu0@2b1f0000 {
+>> +               #mbox-cells = <1>;
+>> +               compatible = "fujitsu,mhu";
+>> +               reg = <0 0x2B1F0000 0x1000>;
+>> +               interrupts = <0 36 4>, /* LP Non-Sec */
+>> +                            <0 35 4>, /* HP Non-Sec */
+>> +                            <0 37 4>; /* Secure */
+>> +       };
+>> +
+>> +       mhu_client: scb@0 {
+>> +               compatible = "fujitsu,scb";
+>> +               mbox = <&mhu 1>;
+>> +               mbox-names = "HP_NonSec";
+>> +       };
 >>
->> For reference this is the new comment which is below the old comment, they mean the same :)
->>
->>     /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
-> 
-> Indeed that is the case.
-> 
-> Please update the commit log with this explanation and resend.
-> 
-> 								Thanx, Paul
-> 
+>> Here the name used is more controller specific.
+>
+> The name is definitely specific to the client, not the master. The
 
-Please find the updated patch below.
+IIUC this controller has 3 channels: Secure, High and Low Priority Non 
+Secure.
+I assumed the name is derived from that rather than what the client is
+using it for, hence the confusion. That might be fine but I am more 
+interested
+what will be the name if another client uses the same channel in the above
+example.
 
---
-Pranith
+Regards,
+Sudeep
 
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Mon, 14 Jul 2014 16:01:05 -0400
-Subject: [PATCH 2/3] rcu: Remove stale comment in tree.c
-
-This commit removes a stale comment in rcu/tree.c which was left out when some
-code was moved around previously.
-
-For reference, the following updated comment exists a few lines below this which
-means the same.
-
-/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
-
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- kernel/rcu/tree.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index a1abaa8..e67246e 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -2211,8 +2211,6 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
- 	/* Adjust any no-longer-needed kthreads. */
- 	rcu_boost_kthread_setaffinity(rnp, -1);
- 
--	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
--
- 	/* Exclude any attempts to start a new grace period. */
- 	mutex_lock(&rsp->onoff_mutex);
- 	raw_spin_lock_irqsave(&rsp->orphan_lock, flags);
--- 
-1.9.1
+> string "HP_NonSec" should be required in the binding for the "fujitsu,scb"
+> device here, and the scb driver should pass that hardcoded string
+> to the mailbox API to ask for a channel.
+>
+> 	Arnd
+>
+>
 
