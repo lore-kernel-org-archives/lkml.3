@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965356AbaGPPT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:19:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965284AbaGPPTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:19:22 -0400
-Date: Wed, 16 Jul 2014 11:19:15 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: JBeulich@suse.com, mmarek@suse.cz
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: genksyms: separating public headers from private header files
-Message-ID: <20140716151915.GS7959@redhat.com>
+	id S965399AbaGPPWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:22:33 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:31278 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933863AbaGPPWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 11:22:30 -0400
+Date: Wed, 16 Jul 2014 11:22:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH RT 0/3] Linux 3.10.47-rt50-rc1
+Message-ID: <20140716112227.7b8bc4bf@gandalf.local.home>
+In-Reply-To: <53C68CB5.4020002@mvista.com>
+References: <20140714200420.805309842@goodmis.org>
+	<53C4714C.8000103@mvista.com>
+	<20140714205333.6d28ed1f@gandalf.local.home>
+	<53C68CB5.4020002@mvista.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan, Michal,
+On Wed, 16 Jul 2014 09:31:17 -0500
+Corey Minyard <cminyard@mvista.com> wrote:
 
-I am not sure who maintains genksyms officially, so I am sending this
-question to the two of you as folks who seemed to have contributed to the
-tool. :-)
+ 
+> I originally did a patch that just always did the else clause (the
+> schedule_work_on() and wait_for_completion()) on all CPUs.  That seemed
+> to work just fine and simplifies the code a bit and gets rid of all the
+> preempt/migrate calls.  You could try that approach, or I could submit
+> something if you liked.
 
-I noticed with genksyms that a symbol is opaquely defined in a
-public header file (on purpose) and then fully defined in a private
-header.  This is normal practice.  Further, symbol checksumming is done on
-EXPORT_SYMBOLs in a private c file that includes the private header
-files.
+Yeah, perhaps that's the way to go. But it needs to go to mainline
+before it goes to -rt.
 
-As a result, even though a struct symbol is intentionally opaquely defined
-in a public header file consumed by a third party module, the symbol
-checksumming still includes the full definition (because the private c
-file with the actual export symbol has the full definition).  This has
-made it difficult to modify the private header file struct because it
-breaks the symbol checksumming.
+Can you resend it against my for-next branch.
 
-For example, let's consider
+Thanks,
 
-block/blk-core.c:EXPORT_SYMBOL(blk_put_queue);
-
-blk_put_queue will eventually depend on struct blkcq_gq.
-
-Now publicly blkcg_gq is defined opaquely in 
-
-include/linux/blkdev.h
-
-and privately in
-
-block/block-cgroup.h
-
-Now when we checksum blk_put_queue both include/linux/blkdev.h and
-block/block-cgroup.h are included in block/blk-core.c, so blkcg_gq is
-fully defined for checksumming.
-
-Later if we modify blkcq_gq in block/block-cgroup.h the checksum changes,
-even though it can debated that block-cgroup.h is a private header file
-and it should not impact kabi for third party modules.
-
-Have either of you run into this?  Or is the argument that private files
-should not impact the checksum not as strong as I might think?  Or is it a
-technical problem of how to separate the public includes from the private
-includes in the preprocessed file?
-
-Thanks!
-
-Cheers,
-Don
-
+-- Steve
