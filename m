@@ -1,187 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428AbaGPViQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:38:16 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:55713 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579AbaGPViL (ORCPT
+	id S1754534AbaGPVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:38:26 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:44953 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456AbaGPViV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:38:11 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: viro@zeniv.linux.org.uk, clm@fb.com, jbacik@fb.com
-Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffm@suse.com, fdmanana@suse.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [RFC v2 1/2] fs/super.c: add new super block sub devices super_block_dev
-Date: Wed, 16 Jul 2014 14:37:57 -0700
-Message-Id: <1405546678-7846-2-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
+	Wed, 16 Jul 2014 17:38:21 -0400
+Date: Thu, 17 Jul 2014 00:38:16 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 10/10] proc: remove INF macro
+Message-ID: <20140716213816.GI21290@p183.telecom.by>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+If you're applying this patch, all /proc/$PID/* files were converted
+to seq_file interface and this code became unused.
 
-Modern filesystems are using the get_anon_bdev() for internal
-notions of volumes, snapshots for a single super block but never
-exposing them directly to the VFS layer. While this works its
-leaves the VFS layer growing dumb over what filesystems are doing.
-This creates a new super block subdevice which we can use to start
-stuffing in information about the underlying bdev's and its
-associated super block to start off with. This at least now lets
-us implement proper support for ustat() once filesystems are
-modified to use this data structure and respective helpers.
-
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- fs/super.c         | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/fs.h | 10 ++++++++
- 2 files changed, 76 insertions(+), 2 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index d20d5b1..d871892 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -133,6 +133,68 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 	return total_objects;
- }
- 
-+static bool super_dev_match(struct super_block *sb, dev_t dev)
-+{
-+	struct super_block_dev *sbdev;
-+
-+	if (sb->s_dev == dev)
-+		return true;
-+
-+	if (list_empty(&sb->s_sbdevs))
-+		return false;
-+
-+	list_for_each_entry(sbdev, &sb->s_sbdevs, entry)
-+		if (sbdev->anon_dev ==  dev)
-+			return true;
-+
-+	return false;
-+}
-+
-+int insert_anon_sbdev(struct super_block *sb, struct super_block_dev *sbdev)
-+{
-+	int ret;
-+
-+	ret = get_anon_bdev(&sbdev->anon_dev);
-+	if (ret)
-+		return ret;
-+
-+	sbdev->sb = sb;
-+
-+	spin_lock(&sb_lock);
-+	list_add_tail(&sbdev->entry, &sb->s_sbdevs);
-+	spin_unlock(&sb_lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(insert_anon_sbdev);
-+
-+void remove_anon_sbdev(struct super_block_dev *sbdev)
-+{
-+	struct super_block *sb;
-+	struct super_block_dev *sbdev_i, *tmp;
-+
-+	if (!sbdev)
-+		return;
-+
-+	sb = sbdev->sb;
-+
-+	spin_lock(&sb_lock);
-+
-+	WARN_ON(list_empty(&sb->s_sbdevs));
-+
-+	list_for_each_entry_safe(sbdev_i, tmp, &sb->s_sbdevs, entry) {
-+		if (sbdev == sbdev_i) {
-+			list_del_init(&sbdev_i->entry);
-+			break;
-+		}
-+	}
-+
-+	spin_unlock(&sb_lock);
-+
-+	free_anon_bdev(sbdev->anon_dev);
-+}
-+EXPORT_SYMBOL_GPL(remove_anon_sbdev);
-+
- /**
-  *	destroy_super	-	frees a superblock
-  *	@s: superblock to free
-@@ -148,6 +210,7 @@ static void destroy_super(struct super_block *s)
- 		percpu_counter_destroy(&s->s_writers.counter[i]);
- 	security_sb_free(s);
- 	WARN_ON(!list_empty(&s->s_mounts));
-+	WARN_ON(!list_empty(&s->s_sbdevs));
- 	kfree(s->s_subtype);
- 	kfree(s->s_options);
- 	kfree_rcu(s, rcu);
-@@ -188,6 +251,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_HLIST_NODE(&s->s_instances);
- 	INIT_HLIST_BL_HEAD(&s->s_anon);
- 	INIT_LIST_HEAD(&s->s_inodes);
-+	INIT_LIST_HEAD(&s->s_sbdevs);
- 
- 	if (list_lru_init(&s->s_dentry_lru))
- 		goto fail;
-@@ -652,7 +716,7 @@ restart:
- 	spin_unlock(&sb_lock);
- 	return NULL;
- }
-- 
-+
- struct super_block *user_get_super(dev_t dev)
- {
- 	struct super_block *sb;
-@@ -662,7 +726,7 @@ rescan:
- 	list_for_each_entry(sb, &super_blocks, s_list) {
- 		if (hlist_unhashed(&sb->s_instances))
- 			continue;
--		if (sb->s_dev ==  dev) {
-+		if (super_dev_match(sb, dev)) {
- 			sb->s_count++;
- 			spin_unlock(&sb_lock);
- 			down_read(&sb->s_umount);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e11d60c..f97b559 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1172,6 +1172,13 @@ struct sb_writers {
- #endif
+ fs/proc/base.c     |   41 -----------------------------------------
+ fs/proc/internal.h |    1 -
+ 2 files changed, 42 deletions(-)
+
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -130,10 +130,6 @@ struct pid_entry {
+ 		{ .proc_get_link = get_link } )
+ #define REG(NAME, MODE, fops)				\
+ 	NOD(NAME, (S_IFREG|(MODE)), NULL, &fops, {})
+-#define INF(NAME, MODE, read)				\
+-	NOD(NAME, (S_IFREG|(MODE)), 			\
+-		NULL, &proc_info_file_operations,	\
+-		{ .proc_read = read } )
+ #define ONE(NAME, MODE, show)				\
+ 	NOD(NAME, (S_IFREG|(MODE)), 			\
+ 		NULL, &proc_single_file_operations,	\
+@@ -605,43 +601,6 @@ static const struct inode_operations proc_def_inode_operations = {
+ 	.setattr	= proc_setattr,
  };
  
-+/* we can expand this to help the VFS layer with modern filesystems */
-+struct super_block_dev {
-+	struct super_block	*sb;
-+	struct list_head	entry;		/* For struct sb->s_sbdevs */
-+	dev_t			anon_dev;
-+};
-+
- struct super_block {
- 	struct list_head	s_list;		/* Keep this first */
- 	dev_t			s_dev;		/* search index; _not_ kdev_t */
-@@ -1196,6 +1203,7 @@ struct super_block {
+-#define PROC_BLOCK_SIZE	(3*1024)		/* 4K page size but our output routines use some slack for overruns */
+-
+-static ssize_t proc_info_read(struct file * file, char __user * buf,
+-			  size_t count, loff_t *ppos)
+-{
+-	struct inode * inode = file_inode(file);
+-	unsigned long page;
+-	ssize_t length;
+-	struct task_struct *task = get_proc_task(inode);
+-
+-	length = -ESRCH;
+-	if (!task)
+-		goto out_no_task;
+-
+-	if (count > PROC_BLOCK_SIZE)
+-		count = PROC_BLOCK_SIZE;
+-
+-	length = -ENOMEM;
+-	if (!(page = __get_free_page(GFP_TEMPORARY)))
+-		goto out;
+-
+-	length = PROC_I(inode)->op.proc_read(task, (char*)page);
+-
+-	if (length >= 0)
+-		length = simple_read_from_buffer(buf, count, ppos, (char *)page, length);
+-	free_page(page);
+-out:
+-	put_task_struct(task);
+-out_no_task:
+-	return length;
+-}
+-
+-static const struct file_operations proc_info_file_operations = {
+-	.read		= proc_info_read,
+-	.llseek		= generic_file_llseek,
+-};
+-
+ static int proc_single_show(struct seq_file *m, void *v)
+ {
+ 	struct inode *inode = m->private;
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -52,7 +52,6 @@ struct proc_dir_entry {
  
- 	struct list_head	s_inodes;	/* all inodes */
- 	struct hlist_bl_head	s_anon;		/* anonymous dentries for (nfs) exporting */
-+	struct list_head	s_sbdevs;	/* internal fs dev_t */
- 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
- 	struct block_device	*s_bdev;
- 	struct backing_dev_info *s_bdi;
-@@ -1796,6 +1804,8 @@ void deactivate_locked_super(struct super_block *sb);
- int set_anon_super(struct super_block *s, void *data);
- int get_anon_bdev(dev_t *);
- void free_anon_bdev(dev_t);
-+int insert_anon_sbdev(struct super_block *sb, struct super_block_dev *sbdev);
-+void remove_anon_sbdev(struct super_block_dev *sbdev);
- struct super_block *sget(struct file_system_type *type,
- 			int (*test)(struct super_block *,void *),
- 			int (*set)(struct super_block *,void *),
--- 
-2.0.1
-
+ union proc_op {
+ 	int (*proc_get_link)(struct dentry *, struct path *);
+-	int (*proc_read)(struct task_struct *task, char *page);
+ 	int (*proc_show)(struct seq_file *m,
+ 		struct pid_namespace *ns, struct pid *pid,
+ 		struct task_struct *task);
