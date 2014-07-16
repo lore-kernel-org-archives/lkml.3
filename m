@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933920AbaGPMz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:55:26 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:62270 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933597AbaGPMzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:55:20 -0400
-Message-ID: <53C6761A.9090002@linaro.org>
-Date: Wed, 16 Jul 2014 13:54:50 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933959AbaGPM4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:56:18 -0400
+Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:43296 "EHLO
+	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933679AbaGPM4Q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:56:16 -0400
+Date: Wed, 16 Jul 2014 18:26:15 +0530 (IST)
+Subject: =?utf-8?Q?Re=3A_=5BPATCH=5D_regmap=3A_Kconfig=3A_Select_SPMI_when_REGMAP?=
+ =?utf-8?Q?=5FSPMI_is_selected?=
+From: "Pramod Gurav" <pramod.gurav@smartplayin.com>
+To: "Stanimir Varbanov" <svarbanov@mm-sol.com>
+Cc: pramod.gurav.etc@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "Josh Cartwright" <joshc@codeaurora.org>,
+        "Mark Brown" <broonie@linaro.org>
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>, linux-arm-kernel@lists.infradead.org
-CC: Harro Haan <hrhaan@gmail.com>, linaro-kernel@lists.linaro.org,
-        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, kernel-team@android.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Martin <Dave.Martin@arm.com>, Detlev Zundel <dzu@denx.de>
-Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
-References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org> <CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com> <53C4F745.3070701@linaro.org> <201407152045.06517.marex@denx.de>
-In-Reply-To: <201407152045.06517.marex@denx.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Importance: Normal
+X-Priority: 3 (Normal)
+X-Type: plain
+In-Reply-To: <53C66F3B.9020507@mm-sol.com>
+References: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>  
+ <53C66AEB.7030906@mm-sol.com> <1405512867.75389776@apps.rackspace.com> 
+ <53C66F3B.9020507@mm-sol.com>
+Message-ID: <1405515375.452411340@apps.rackspace.com>
+X-Mailer: webmail7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/14 19:45, Marek Vasut wrote:
->>> I can reduce the number of occurrences (not prevent it) by adding the
->>> following hack to irq-gic.c
->>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
->>> gic_handle_irq(struct pt_regs *regs
->>>
->>>   u32 irqstat, irqnr;
->>>   struct gic_chip_data *gic = &gic_data[0];
->>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
->>>   
->>>   do {
->>>
->>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
->>> & (1 << 30))
->>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
->>>
->>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->>>   irqnr = irqstat & ~0x1c00;
->>
->> I've made a more complete attempt to fix this. Could you test the
->> following? (and be prepared to fuzz the line numbers)
+Hi,
+
+On Wednesday, 16 July, 2014 5:55pm, "Stanimir Varbanov" <svarbanov@mm-sol.com> said:
+
+> <snip>
 > 
-> There's also another workaround, look at [1], but it's really a perverse hack 
-> thus far (blush). What I did there is I got hinted that an L1 page table can 
-> have this NS bit set. If this bit is set for a mapping, all accesses to memory 
-> area via that mapping will be non-secure. And then, in turn, by doing a non-
-> secure read of the INTACK register, it will not ever happen that the FIQ number 
-> will pop up in the INTACK. I only do a non-secure read of the INTACK register,
-> all other registers of the GICv1 are read via regular secure-mode accesses.
+>>>>
+>>>>  config REGMAP_SPMI
+>>>> +	select SPMI
+>>>
+>>> NO, IMO the CONFIG_SPMI should be enabled by qcom_defconfig and
+>>> multi_v7_defconfig. See CONFIG_I2C and REGMAP_I2C for example.
+>>>
+>>
+>> I am using multi_v7_defconfig but its not enabling it. I ran qcom_defconfig which
+>> does.
+> 
+> yes, it seems reasonable to add it in multi_v7_defconfig also.
+> 
 
-I'll be looking into this approach.
+Thanks.
+I misunderstood the Kconfig documentation which says, "Reverse dependencies can only be used with boolean or tristate symbols". In the note following this statement doc says, "In general use select only for non-visible symbols".
 
-It is technically a better approach than mine since it prevents the IRQ
-handler from ever reading a group 0 interrupt from INTACK.
+The CONFIG_SPMI option is visible in menuconfig hence either it should be set by default in multi_v7_defconfig(like in qcom_defconfig) or driver owner should mention a 'depneds on CONFIG_SPMI' as suggested by Lars-Peter Clausen. 
+I prefer the former (defconfig).
 
-Unfortunately the tentacles of this workaround reach pretty deep in the
-memory management code (rather than being concentrated in the GIC
-driver) but the improved runtime behaviour might be worth it.
+Shall I send a new patch adding it in multi_v7_defconfig?
+
+> 
+> --
+> regards,
+> Stan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+
