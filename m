@@ -1,242 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934642AbaGPQet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:34:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706AbaGPQeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:34:46 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
-	<1405431640-649-4-git-send-email-vkuznets@redhat.com>
-	<20140715152309.GQ3403@laptop.dumpdata.com>
-	<87wqbdk5kp.fsf@vitty.brq.redhat.com>
-	<20140716134501.GI19585@laptop.dumpdata.com>
-Date: Wed, 16 Jul 2014 18:34:34 +0200
-In-Reply-To: <20140716134501.GI19585@laptop.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Wed, 16 Jul 2014 09:45:01 -0400")
-Message-ID: <87lhrtjm91.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S965428AbaGPQjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:39:14 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40539 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933730AbaGPQjK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:39:10 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>,
+        ralf@linux-mips.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        gregkh@linuxfoundation.org, m.szyprowski@samsung.com
+Cc: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 4/4] mips: dma: Add cma support
+In-Reply-To: <1405525892-60383-5-git-send-email-Zubair.Kakakhel@imgtec.com>
+Organization: http://mina86.com/
+References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1405525892-60383-5-git-send-email-Zubair.Kakakhel@imgtec.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140716:will.deacon@arm.com::e13jxZb8Q7J2Jg1D:0000000000000000000000000000000000000000000Jet
+X-Hashcash: 1:20:140716:gregkh@linuxfoundation.org::F54o/oH2DKxpr6Qg:000000000000000000000000000000000000ylm
+X-Hashcash: 1:20:140716:x86@kernel.org::WEGSAkmCFHjryemJ:00016T4
+X-Hashcash: 1:20:140716:mingo@redhat.com::oCi6raNLKi6B5Jnk:01UzV
+X-Hashcash: 1:20:140716:linux-mips@linux-mips.org::vwa8NscyQrYk98Au:0000000000000000000000000000000000001WpT
+X-Hashcash: 1:20:140716:linux-arch@vger.kernel.org::7b+2qn4aLkVMgX8f:000000000000000000000000000000000001fez
+X-Hashcash: 1:20:140716:linux-arm-kernel@lists.infradead.org::dxgAadrUjyGT6Qdf:00000000000000000000000001akY
+X-Hashcash: 1:20:140716:arnd@arndb.de::sJTCjGek4wafp28t:00001uI5
+X-Hashcash: 1:20:140716:zubair.kakakhel@imgtec.com::mmD2O/ZVn75dH9Lz:000000000000000000000000000000000002A/5
+X-Hashcash: 1:20:140716:linux-kernel@vger.kernel.org::81zN1YRqUv9fezYo:00000000000000000000000000000000026YH
+X-Hashcash: 1:20:140716:ralf@linux-mips.org::d/4oUEWrQ/XY1X1G:0000000000000000000000000000000000000000002UIc
+X-Hashcash: 1:20:140716:catalin.marinas@arm.com::EOsCJbmp+SeGK0rS:000000000000000000000000000000000000003CEy
+X-Hashcash: 1:20:140716:tglx@linutronix.de::6Vtta9BSomCZf8Sk:00000000000000000000000000000000000000000003qPE
+X-Hashcash: 1:20:140716:hpa@zytor.com::Q7EM/AHMKsdZmSV6:00005h1y
+X-Hashcash: 1:20:140716:m.szyprowski@samsung.com::W/rZCyvdr7j8Zdfg:0000000000000000000000000000000000000Bg7z
+Date: Wed, 16 Jul 2014 18:39:05 +0200
+Message-ID: <xa1t7g3db6mu.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-
-> On Wed, Jul 16, 2014 at 11:37:10AM +0200, Vitaly Kuznetsov wrote:
->> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
->> 
->> > On Tue, Jul 15, 2014 at 03:40:39PM +0200, Vitaly Kuznetsov wrote:
->> >> When kexec is being run PIRQs from Qemu-emulated devices are still
->> >> mapped to old event channels and new kernel has no information about
->> >> that. Trying to map them twice results in the following in Xen's dmesg:
->> >> 
->> >>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
->> >>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
->> >>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
->> >>  ...
->> >> 
->> >>  and the following in new kernel's dmesg:
->> >> 
->> >>  [   92.286796] xen:events: Failed to obtain physical IRQ 4
->> >> 
->> >> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
->> >> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
->> >> when kexec was requested and on every kernel startup. We need to do this
->> >> twice to deal with the following issues:
->> >> - startup-time unmapping is required to make kdump work;
->> >> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
->> >> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
->> >>   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
->> >>   is being performed).
->> >
->> > How does this work when you boot the guest under Xen 4.4 where the FIFO events
->> > are used? Does it still work correctly?
->> 
->> Thanks for pointing that out! I've checked and it doesn't. However
->> patches make no difference - guest kernel gets stuck on boot with and
->> without them. Will try to investigate...
+On Wed, Jul 16 2014, Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com> wrote:
+> Adds cma support to the mips architecture.
 >
-> I think for FIFO events we can't do much right now - it would need some
-> new hypercalls to de-allocate or such.
+> cma uses memblock. However, mips uses bootmem.
+
+Does cma_early_percent_memory work correctly then?
+
+> bootmem is informed about any regions reserved by memblock
+
+Alternatively maybe it would make sense to create a new definition of
+dma_contiguous_reserve_area that uses bootmem and choose it based on
+some CONFIG_CMA_USE_BOOTMEM which would be selected by MIPS.
+
+> dma api is modified to use cma reserved memory regions when available
 >
-
-Yeah, you're probably right. I tried wrapping evtchn_fifo_destroy() into
-'EVTCHNOP_fifo_destroy' hypercall but it seems some other actions are
-required as well..
-
-> But I was thinking that your code logic could just return out when
-> it detects that it is running with FIFO events (with a TODO comment)
-> - and also spit out some information to this effect?
-
-Sure, having TODO here is a good idea.
-
+> Tested using cma_test. cma_test is a simple driver that assigns blocks
+> of memory from cma reserved sections.
 >
-> Say: "Use xen.fifo=0 in your launching kernel"
+> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
 
-s,xen.fifo,xen.fifo_events,
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
+> ---
+>  arch/mips/Kconfig            |  1 +
+>  arch/mips/include/asm/Kbuild |  1 +
+>  arch/mips/kernel/setup.c     |  9 +++++++++
+>  arch/mips/mm/dma-default.c   | 37 +++++++++++++++++++++++++------------
+>  4 files changed, 36 insertions(+), 12 deletions(-)
 >
-> (don't know the right name for the kernel in which you do 'kexec -e' in ?
-> Is that launching? Original? Bootstrap kernel?)
-
-Yes, if under Xen-4.4 I boot original kernel with "xen.fifo_events=0"
-I'm able to do kexec with "xen.fifo_events=0" and even without it (but
-only once :-). Once kernel is booted with FIFO-based event channels
-enabled no kexec is possible, new kernel gets stuck (I guess vcpuop
-timer doesn't work..). My patch series brings no difference here..
-
-Thanks,
-
->
->> 
->> >
->> > Thanks.
->> >> 
->> >> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
->> >> ---
->> >>  arch/x86/xen/smp.c               |  1 +
->> >>  drivers/xen/events/events_base.c | 76 ++++++++++++++++++++++++++++++++++++++++
->> >>  include/xen/events.h             |  3 ++
->> >>  3 files changed, 80 insertions(+)
->> >> 
->> >> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
->> >> index 35dcf39..e2b4deb 100644
->> >> --- a/arch/x86/xen/smp.c
->> >> +++ b/arch/x86/xen/smp.c
->> >> @@ -768,6 +768,7 @@ void xen_kexec_shutdown(void)
->> >>  #ifdef CONFIG_KEXEC
->> >>  	if (!kexec_in_progress)
->> >>  		return;
->> >> +	xen_unmap_all_pirqs();
->> >>  #endif
->> >>  }
->> >>  
->> >> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
->> >> index c919d3d..7701c7f 100644
->> >> --- a/drivers/xen/events/events_base.c
->> >> +++ b/drivers/xen/events/events_base.c
->> >> @@ -1643,6 +1643,80 @@ void xen_callback_vector(void) {}
->> >>  static bool fifo_events = true;
->> >>  module_param(fifo_events, bool, 0);
->> >>  
->> >> +void xen_unmap_all_pirqs(void)
->> >> +{
->> >> +	int pirq, rc, gsi, irq, evtchn;
->> >> +	struct physdev_unmap_pirq unmap_irq;
->> >> +	struct irq_info *info;
->> >> +	struct evtchn_close close;
->> >> +
->> >> +	mutex_lock(&irq_mapping_update_lock);
->> >> +
->> >> +	list_for_each_entry(info, &xen_irq_list_head, list) {
->> >> +		if (info->type != IRQT_PIRQ)
->> >> +			continue;
->> >> +
->> >> +		pirq = info->u.pirq.pirq;
->> >> +		gsi = info->u.pirq.gsi;
->> >> +		evtchn = info->evtchn;
->> >> +		irq = info->irq;
->> >> +
->> >> +		pr_debug("unmapping pirq gsi=%d pirq=%d irq=%d evtchn=%d\n",
->> >> +			gsi, pirq, irq, evtchn);
->> >> +
->> >> +		if (evtchn > 0) {
->> >> +			close.port = evtchn;
->> >> +			if (HYPERVISOR_event_channel_op(EVTCHNOP_close,
->> >> +							&close) != 0)
->> >> +				pr_warn("close evtchn %d failed\n", evtchn);
->> >> +		}
->> >> +
->> >> +		unmap_irq.pirq = pirq;
->> >> +		unmap_irq.domid = DOMID_SELF;
->> >> +
->> >> +		rc = HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq, &unmap_irq);
->> >> +		if (rc)
->> >> +			pr_warn("unmap pirq failed gsi=%d pirq=%d irq=%d rc=%d\n",
->> >> +				gsi, pirq, irq, rc);
->> >> +	}
->> >> +
->> >> +	mutex_unlock(&irq_mapping_update_lock);
->> >> +}
->> >> +EXPORT_SYMBOL_GPL(xen_unmap_all_pirqs);
->> >
->> > Why the EXPORT? Is this used by modules?
->> >> +
->> >> +static void xen_startup_unmap_pirqs(void)
->> >> +{
->> >> +	struct evtchn_status status;
->> >> +	int port, rc = -ENOENT;
->> >> +	struct physdev_unmap_pirq unmap_irq;
->> >> +	struct evtchn_close close;
->> >> +
->> >> +	memset(&status, 0, sizeof(status));
->> >> +	for (port = 0; port < xen_evtchn_max_channels(); port++) {
->> >> +		status.dom = DOMID_SELF;
->> >> +		status.port = port;
->> >> +		rc = HYPERVISOR_event_channel_op(EVTCHNOP_status, &status);
->> >> +		if (rc < 0)
->> >> +			continue;
->> >> +		if (status.status == EVTCHNSTAT_pirq) {
->> >> +			close.port = port;
->> >> +			if (HYPERVISOR_event_channel_op(EVTCHNOP_close,
->> >> +							&close) != 0)
->> >> +				pr_warn("xen: failed to close evtchn %d\n",
->> >> +					port);
->> >> +			unmap_irq.pirq = status.u.pirq;
->> >> +			unmap_irq.domid = DOMID_SELF;
->> >> +			pr_warn("xen: unmapping previously mapped pirq %d\n",
->> >> +				unmap_irq.pirq);
->> >> +			if (HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq,
->> >> +						  &unmap_irq) != 0)
->> >> +				pr_warn("xen: failed to unmap pirq %d\n",
->> >> +					unmap_irq.pirq);
->> >> +		}
->> >> +	}
->> >> +}
->> >> +
->> >> +
->> >>  void __init xen_init_IRQ(void)
->> >>  {
->> >>  	int ret = -EINVAL;
->> >> @@ -1671,6 +1745,8 @@ void __init xen_init_IRQ(void)
->> >>  		xen_callback_vector();
->> >>  
->> >>  	if (xen_hvm_domain()) {
->> >> +		xen_startup_unmap_pirqs();
->> >> +
->> >>  		native_init_IRQ();
->> >>  		/* pci_xen_hvm_init must be called after native_init_IRQ so that
->> >>  		 * __acpi_register_gsi can point at the right function */
->> >> diff --git a/include/xen/events.h b/include/xen/events.h
->> >> index 8bee7a7..3f9f428 100644
->> >> --- a/include/xen/events.h
->> >> +++ b/include/xen/events.h
->> >> @@ -122,6 +122,9 @@ int xen_irq_from_gsi(unsigned gsi);
->> >>  /* Determine whether to ignore this IRQ if it is passed to a guest. */
->> >>  int xen_test_irq_shared(int irq);
->> >>  
->> >> +/* Unmap all PIRQs and close event channels */
->> >> +void xen_unmap_all_pirqs(void);
->> >> +
->> >>  /* initialize Xen IRQ subsystem */
->> >>  void xen_init_IRQ(void);
->> >>  #endif	/* _XEN_EVENTS_H */
->> >> -- 
->> >> 1.9.3
->> >> 
->> 
->> -- 
->>   Vitaly
 
 -- 
-  Vitaly
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
