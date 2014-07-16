@@ -1,56 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965152AbaGPPgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:36:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48140 "EHLO mga09.intel.com"
+	id S965371AbaGPPim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:38:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33071 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933938AbaGPPf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:35:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,673,1400050800"; 
-   d="scan'208";a="574130911"
-Message-ID: <53C69BCF.8030307@iki.fi>
-Date: Wed, 16 Jul 2014 18:35:43 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:29.0) Gecko/20100101 SeaMonkey/2.26.1
+	id S934546AbaGPPii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 11:38:38 -0400
+Message-ID: <53C69C7B.1010709@suse.cz>
+Date: Wed, 16 Jul 2014 17:38:35 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-CC: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH/RFC v4 02/21] leds: implement sysfs interface locking
- mechanism
-References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com> <1405087464-13762-3-git-send-email-j.anaszewski@samsung.com>
-In-Reply-To: <1405087464-13762-3-git-send-email-j.anaszewski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: [patch v2] mm, tmp: only collapse hugepages to nodes with affinity
+ for zone_reclaim_mode
+References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
-
-Thank you for the update!
-
-Jacek Anaszewski wrote:
-...
-> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-> index 71b40d3..4d7cb31 100644
-> --- a/drivers/leds/led-core.c
-> +++ b/drivers/leds/led-core.c
-> @@ -126,3 +126,21 @@ void led_set_brightness(struct led_classdev *led_cdev,
->   	__led_set_brightness(led_cdev, brightness);
->   }
->   EXPORT_SYMBOL(led_set_brightness);
-> +
-> +/* Caller must ensure led_cdev->led_lock held */
-> +void led_sysfs_lock(struct led_classdev *led_cdev)
+On 07/16/2014 02:13 AM, David Rientjes wrote:
+> Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target 
+> node") improved the previous khugepaged logic which allocated a 
+> transparent hugepages from the node of the first page being collapsed.
+> 
+> However, it is still possible to collapse pages to remote memory which may 
+> suffer from additional access latency.  With the current policy, it is 
+> possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed remotely 
+> if the majority are allocated from that node.
+> 
+> When zone_reclaim_mode is enabled, it means the VM should make every attempt
+> to allocate locally to prevent NUMA performance degradation.  In this case,
+> we do not want to collapse hugepages to remote nodes that would suffer from
+> increased access latency.  Thus, when zone_reclaim_mode is enabled, only
+> allow collapsing to nodes with RECLAIM_DISTANCE or less.
+> 
+> There is no functional change for systems that disable zone_reclaim_mode.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  v2: only change behavior for zone_reclaim_mode per Dave Hansen
+> 
+>  mm/huge_memory.c | 31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -2234,6 +2234,26 @@ static void khugepaged_alloc_sleep(void)
+>  static int khugepaged_node_load[MAX_NUMNODES];
+>  
+>  #ifdef CONFIG_NUMA
+> +static bool khugepaged_scan_abort(int nid)
 > +{
-> +	WARN_ON(!mutex_is_locked(&led_cdev->led_lock));
+> +	int i;
+> +
+> +	/*
+> +	 * If zone_reclaim_mode is disabled, then no extra effort is made to
+> +	 * allocate memory locally.
+> +	 */
+> +	if (!zone_reclaim_mode)
+> +		return false;
+> +
 
-How about lockdep_assert_held() instead?
+I wonder if you could do this here?
 
--- 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi     XMPP: sailus@retiisi.org.uk
+if (khugepaged_node_load[nid])
+	return false;
+
+If the condition is true, it means you already checked the 'nid' node against
+all other nodes present in the pmd in a previous khugepaged_scan_pmd iteration.
+And if it passed then, it would also pass now. If meanwhile a new node was found
+and recorded, it was also checked against everything present at that point,
+including 'nid'. So it should be safe?
+
+The worst case (perfect interleaving page per page, so that "node != last_node"
+is true in each iteration) complexity then reduces from O(HPAGE_PMD_NR *
+MAX_NUMNODES) to O(HPAGE_PMD_NR + MAX_NUMNODES) iterations.
+
+> +	for (i = 0; i < MAX_NUMNODES; i++) {
+> +		if (!khugepaged_node_load[i])
+> +			continue;
+> +		if (node_distance(nid, i) > RECLAIM_DISTANCE)
+> +			return true;
+> +	}
+> +	return false;
+> +}
+> +
+>  static int khugepaged_find_target_node(void)
+>  {
+>  	static int last_khugepaged_target_node = NUMA_NO_NODE;
+> @@ -2309,6 +2329,11 @@ static struct page
+>  	return *hpage;
+>  }
+>  #else
+> +static bool khugepaged_scan_abort(int nid)
+> +{
+> +	return false;
+> +}
+> +
+>  static int khugepaged_find_target_node(void)
+>  {
+>  	return 0;
+> @@ -2515,6 +2540,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+>  	unsigned long _address;
+>  	spinlock_t *ptl;
+>  	int node = NUMA_NO_NODE;
+> +	int last_node = node;
+>  
+>  	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+>  
+> @@ -2545,6 +2571,11 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+>  		 * hit record.
+>  		 */
+>  		node = page_to_nid(page);
+> +		if (node != last_node) {
+> +			if (khugepaged_scan_abort(node))
+> +				goto out_unmap;
+> +			last_node = node;
+> +		}
+>  		khugepaged_node_load[node]++;
+>  		VM_BUG_ON_PAGE(PageCompound(page), page);
+>  		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
