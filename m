@@ -1,85 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965428AbaGPQjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:39:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40539 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933730AbaGPQjK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:39:10 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>,
-        ralf@linux-mips.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        gregkh@linuxfoundation.org, m.szyprowski@samsung.com
-Cc: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 4/4] mips: dma: Add cma support
-In-Reply-To: <1405525892-60383-5-git-send-email-Zubair.Kakakhel@imgtec.com>
-Organization: http://mina86.com/
-References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1405525892-60383-5-git-send-email-Zubair.Kakakhel@imgtec.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140716:will.deacon@arm.com::e13jxZb8Q7J2Jg1D:0000000000000000000000000000000000000000000Jet
-X-Hashcash: 1:20:140716:gregkh@linuxfoundation.org::F54o/oH2DKxpr6Qg:000000000000000000000000000000000000ylm
-X-Hashcash: 1:20:140716:x86@kernel.org::WEGSAkmCFHjryemJ:00016T4
-X-Hashcash: 1:20:140716:mingo@redhat.com::oCi6raNLKi6B5Jnk:01UzV
-X-Hashcash: 1:20:140716:linux-mips@linux-mips.org::vwa8NscyQrYk98Au:0000000000000000000000000000000000001WpT
-X-Hashcash: 1:20:140716:linux-arch@vger.kernel.org::7b+2qn4aLkVMgX8f:000000000000000000000000000000000001fez
-X-Hashcash: 1:20:140716:linux-arm-kernel@lists.infradead.org::dxgAadrUjyGT6Qdf:00000000000000000000000001akY
-X-Hashcash: 1:20:140716:arnd@arndb.de::sJTCjGek4wafp28t:00001uI5
-X-Hashcash: 1:20:140716:zubair.kakakhel@imgtec.com::mmD2O/ZVn75dH9Lz:000000000000000000000000000000000002A/5
-X-Hashcash: 1:20:140716:linux-kernel@vger.kernel.org::81zN1YRqUv9fezYo:00000000000000000000000000000000026YH
-X-Hashcash: 1:20:140716:ralf@linux-mips.org::d/4oUEWrQ/XY1X1G:0000000000000000000000000000000000000000002UIc
-X-Hashcash: 1:20:140716:catalin.marinas@arm.com::EOsCJbmp+SeGK0rS:000000000000000000000000000000000000003CEy
-X-Hashcash: 1:20:140716:tglx@linutronix.de::6Vtta9BSomCZf8Sk:00000000000000000000000000000000000000000003qPE
-X-Hashcash: 1:20:140716:hpa@zytor.com::Q7EM/AHMKsdZmSV6:00005h1y
-X-Hashcash: 1:20:140716:m.szyprowski@samsung.com::W/rZCyvdr7j8Zdfg:0000000000000000000000000000000000000Bg7z
-Date: Wed, 16 Jul 2014 18:39:05 +0200
-Message-ID: <xa1t7g3db6mu.fsf@mina86.com>
+	id S965561AbaGPQjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:39:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58086 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965448AbaGPQjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:39:35 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH v5 3/5] PCI: designware: enhance dw_pcie_host_init() to support v3.65 DW hardware
+Date: Wed, 16 Jul 2014 12:38:04 -0400
+Message-ID: <1405528686-16539-4-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405528686-16539-1-git-send-email-m-karicheri2@ti.com>
+References: <1405528686-16539-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16 2014, Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com> wrote:
-> Adds cma support to the mips architecture.
->
-> cma uses memblock. However, mips uses bootmem.
+keystone PCI controller is based on v3.65 designware hardware. This
+version differs from newer versions of the hardware in few functional
+areas discussed below that makes it necessary to change dw_pcie_host_init()
+to support v3.65 based PCI controller.
 
-Does cma_early_percent_memory work correctly then?
+ 1. No support for ATU port. So any ATU specific resource handling code
+    is to be bypassed for v3.65 h/w.
+ 2. MSI controller uses Application space to implement MSI and 32 MSI
+    interrupts are multiplexed over 8 IRQs to the host. Hence the code
+    to process MSI IRQ needs to be different. This patch allows platform
+    driver to provide its own irq_domain_ops ptr to irq_domain_add_linear()
+    through an API callback from the designware core driver.
+ 3. MSI interrupt generation requires EP to write to the RC's application
+    register. So enhance the driver to allow setup of inbound access to
+    MSI irq register as a post scan bus API callback.
 
-> bootmem is informed about any regions reserved by memblock
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
-Alternatively maybe it would make sense to create a new definition of
-dma_contiguous_reserve_area that uses bootmem and choose it based on
-some CONFIG_CMA_USE_BOOTMEM which would be selected by MIPS.
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>
+CC: Mohit Kumar <mohit.kumar@st.com>
+CC: Jingoo Han <jg1.han@samsung.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Pratyush Anand <pratyush.anand@st.com>
+CC: Richard Zhu <r65037@freescale.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Marek Vasut <marex@denx.de>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Pawel Moll <pawel.moll@arm.com>
+CC: Mark Rutland <mark.rutland@arm.com>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+CC: Kumar Gala <galak@codeaurora.org>
+CC: Randy Dunlap <rdunlap@infradead.org>
+CC: Grant Likely <grant.likely@linaro.org>
+---
+ drivers/pci/host/pcie-designware.c |   56 ++++++++++++++++++++++--------------
+ drivers/pci/host/pcie-designware.h |    2 ++
+ 2 files changed, 37 insertions(+), 21 deletions(-)
 
-> dma api is modified to use cma reserved memory regions when available
->
-> Tested using cma_test. cma_test is a simple driver that assigns blocks
-> of memory from cma reserved sections.
->
-> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-> ---
->  arch/mips/Kconfig            |  1 +
->  arch/mips/include/asm/Kbuild |  1 +
->  arch/mips/kernel/setup.c     |  9 +++++++++
->  arch/mips/mm/dma-default.c   | 37 +++++++++++++++++++++++++------------
->  4 files changed, 36 insertions(+), 12 deletions(-)
->
-
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index 905941c..e164fde 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -418,10 +418,10 @@ static const struct irq_domain_ops msi_domain_ops = {
+ int __init dw_pcie_host_init(struct pcie_port *pp)
+ {
+ 	struct device_node *np = pp->dev->of_node;
+-	struct of_pci_range range;
+ 	struct of_pci_range_parser parser;
++	struct of_pci_range range;
++	int i, ret;
+ 	u32 val;
+-	int i;
+ 
+ 	if (of_pci_range_parser_init(&parser, np)) {
+ 		dev_err(pp->dev, "missing ranges property\n");
+@@ -467,21 +467,26 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 		}
+ 	}
+ 
+-	pp->cfg0_base = pp->cfg.start;
+-	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+ 	pp->mem_base = pp->mem.start;
+ 
+-	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+-					pp->config.cfg0_size);
+ 	if (!pp->va_cfg0_base) {
+-		dev_err(pp->dev, "error with ioremap in function\n");
+-		return -ENOMEM;
++		pp->cfg0_base = pp->cfg.start;
++		pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
++						pp->config.cfg0_size);
++		if (!pp->va_cfg0_base) {
++			dev_err(pp->dev, "error with ioremap in function\n");
++			return -ENOMEM;
++		}
+ 	}
+-	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
+-					pp->config.cfg1_size);
++
+ 	if (!pp->va_cfg1_base) {
+-		dev_err(pp->dev, "error with ioremap\n");
+-		return -ENOMEM;
++		pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
++		pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
++						pp->config.cfg1_size);
++		if (!pp->va_cfg1_base) {
++			dev_err(pp->dev, "error with ioremap\n");
++			return -ENOMEM;
++		}
+ 	}
+ 
+ 	if (of_property_read_u32(np, "num-lanes", &pp->lanes)) {
+@@ -490,16 +495,22 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 	}
+ 
+ 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+-		pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+-					MAX_MSI_IRQS, &msi_domain_ops,
+-					&dw_pcie_msi_chip);
+-		if (!pp->irq_domain) {
+-			dev_err(pp->dev, "irq domain init failed\n");
+-			return -ENXIO;
+-		}
++		if (!pp->ops->msi_host_init) {
++			pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
++						MAX_MSI_IRQS, &msi_domain_ops,
++						&dw_pcie_msi_chip);
++			if (!pp->irq_domain) {
++				dev_err(pp->dev, "irq domain init failed\n");
++				return -ENXIO;
++			}
+ 
+-		for (i = 0; i < MAX_MSI_IRQS; i++)
+-			irq_create_mapping(pp->irq_domain, i);
++			for (i = 0; i < MAX_MSI_IRQS; i++)
++				irq_create_mapping(pp->irq_domain, i);
++		} else {
++			ret = pp->ops->msi_host_init(pp, &dw_pcie_msi_chip);
++			if (ret < 0)
++				return ret;
++		}
+ 	}
+ 
+ 	if (pp->ops->host_init)
+@@ -759,6 +770,9 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+ 		BUG();
+ 	}
+ 
++	if (bus && pp->ops->scan_bus)
++		pp->ops->scan_bus(pp);
++
+ 	return bus;
+ }
+ 
+diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+index 387f69e..080c649 100644
+--- a/drivers/pci/host/pcie-designware.h
++++ b/drivers/pci/host/pcie-designware.h
+@@ -70,6 +70,8 @@ struct pcie_host_ops {
+ 	void (*msi_set_irq)(struct pcie_port *pp, int irq);
+ 	void (*msi_clear_irq)(struct pcie_port *pp, int irq);
+ 	u32 (*get_msi_data)(struct pcie_port *pp);
++	void (*scan_bus)(struct pcie_port *pp);
++	int (*msi_host_init)(struct pcie_port *pp, struct msi_chip *chip);
+ };
+ 
+ int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+1.7.9.5
+
