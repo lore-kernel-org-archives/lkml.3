@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687AbaGPMsh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:48:37 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56608 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757574AbaGPMsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:48:32 -0400
-Message-ID: <1405514905.1466.34.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: IMA: kernel reading files opened with O_DIRECT
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Lukas Czerner <lczerner@redhat>
-Date: Wed, 16 Jul 2014 08:48:25 -0400
-In-Reply-To: <20140715130308.GA4109@amd.pavel.ucw.cz>
-References: <53B3D3AA.3000408@samsung.com>
-	 <x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
-	 <20140702184050.GA24583@infradead.org>
-	 <20140711201054.GB18033@amd.pavel.ucw.cz>
-	 <CACE9dm8TW1+7bq6hJiOmoAw+w+ZD8Ma=Sf6a5ZM2HZ5X1Lcifw@mail.gmail.com>
-	 <20140715130308.GA4109@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S933233AbaGPMwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:52:50 -0400
+Received: from admin.comprocs.com ([12.186.155.30]:63077 "HELO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932146AbaGPMws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:52:48 -0400
+X-Greylist: delayed 802 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 08:52:47 EDT
+X-BYPSHEADER: 959415
+X-SMScore: -200
+Message-ID: <53C67285.4010008@compro.net>
+Date: Wed, 16 Jul 2014 08:39:33 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Daeseok Youn <daeseok.youn@gmail.com>
+CC: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8 RESEND] staging: dgap: introduce dgap_cleanup_nodes()
+References: <20140715091425.GA19095@devel.8.8.4.4> <790027403.325559.1405438239093.JavaMail.root@mx2.compro.net>
+In-Reply-To: <790027403.325559.1405438239093.JavaMail.root@mx2.compro.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071612-6688-0000-0000-000003543B7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 15:03 +0200, Pavel Machek wrote: 
-> On Sat 2014-07-12 01:22:04, Dmitry Kasatkin wrote:
-> > On 11 July 2014 23:10, Pavel Machek <pavel@ucw.cz> wrote:
-> > > On Wed 2014-07-02 11:40:50, Christoph Hellwig wrote:
-> > >> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
-> > >> > It's acceptable.
-> > >>
-> > >> It's not because it will then also affect other reads going on at the
-> > >> same time.
-> > >>
-> > >> The whole concept of ima is just broken, and if you want to do these
-> > >> sort of verification they need to happen inside the filesystem and not
-> > >> above it.
+On 07/15/2014 11:30 AM, Greg KH wrote:
+> On Tue, Jul 15, 2014 at 06:14:25PM +0900, Daeseok Youn wrote:
+>> When a configration file is parsed with dgap_parsefile(),
+>> makes nodes for saving configrations for board.
+>
+> configuration files should not be parsed in the kernel at all.  That
+> logic should be removed as it should not be needed.
+>
+> Mark, can you verify that this is not needed with your hardware anymore?
+>
 
-Agreed, maintaining the file's integrity hash should be done at the
-filesystem layer.  IMA would then be relegated to using the integrity
-information to maintain the measurement list and enforce local file
-integrity.
+As far as I can see it is still needed. If no config file, no devices 
+are created and configured. I had planned to remove that code such that 
+all the different cards supported are still supported. Even though I 
+only have 2 different types of cards. I Just haven't got to it yet. I 
+realize "configuration files should not be parsed in the kernel" and I'm 
+certainly not going to argue that. But the way it is, it allows user 
+land to define board order and even device node names (additional links 
+to the actual device). No matter where boards are installed and found by 
+the kernel, you have persistent naming.  I guess all that can be done 
+with udev (well, sort of anyway).
 
-> > > ...and doing it at filesystem layer would also permit verification of
-> > > per-block (64KB? 1MB?) hashes.
-> > 
-> > Please design one single and the best universal filesystem which
-> > does it.
-> 
-> Given the overhead whole-file hashing has, you don't need single best
-> operating system. All you need it either ext4 or btrfs.. depending on
-> when you want it in production.
+There are also options in the config file that should be passed in as 
+module parameters
+and I planned to do that part before messing with the config file code.
 
-Mike Halcrow will be leading a discussion on EXT4 Encryption at LSS
-http://kernsec.org/wiki/index.php/Linux_Security_Summit_2014/Abstracts/Halcrow.
-One of the discussion topics will be the storage of file metadata
-integrity.  (Lukas Czerner's work.)  Hope you'll be able to attend.
+We also have this "DIGI_EXPANDERS_SUPPORTED" thingy. I have none of 
+these cards. These cards interrogate the expander to find out how many 
+ports there are. Then configure accordingly. Should we just remove all 
+that code and NOT support expanders since we don't currently have the 
+hardware to test?
 
-Mimi
+I will update from your current git tree and test this week. I've been 
+swamped lately and unable to do much. I thought I'd be available to do 
+some more work but things come up as you know.
+
+Regards
+Mark
 
