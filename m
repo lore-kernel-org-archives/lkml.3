@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934929AbaGPSfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:35:50 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54044 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934606AbaGPSfr (ORCPT
+	id S934927AbaGPSji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:39:38 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34052 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934834AbaGPSjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:35:47 -0400
-Date: Wed, 16 Jul 2014 11:35:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        fabf@skynet.be, davidshan@tencent.com, joe@perches.com,
-        keescook@chromium.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
-Message-ID: <20140716183539.GC8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140713184237.GA30855@linux.vnet.ibm.com>
- <20140716115046.GC28434@gmail.com>
- <20140716131322.GA16396@gmail.com>
- <20140716141707.GU8690@linux.vnet.ibm.com>
- <20140716152629.GA9340@linux.vnet.ibm.com>
- <53C6A0E7.30006@gmail.com>
- <20140716172410.GV8690@linux.vnet.ibm.com>
- <53C6C156.5010207@gmail.com>
- <53C6C377.7020900@gmail.com>
+	Wed, 16 Jul 2014 14:39:37 -0400
+X-Sasl-enc: jZI+ADXTcLqSE+alAIhTj4NkeWlSyUyimIRjD2BfGSnc 1405535975
+Date: Wed, 16 Jul 2014 11:44:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Alexander Kolesnikov <akolesni@codeaurora.org>
+Subject: Re: char interface to sdio, chdio.c
+Message-ID: <20140716184409.GB10633@kroah.com>
+References: <20140716032655.GB30412@kroah.com>
+ <53C6C2C5.1050804@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C6C377.7020900@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071618-9332-0000-0000-000001674976
+In-Reply-To: <53C6C2C5.1050804@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 02:24:55PM -0400, Pranith Kumar wrote:
-> On 07/16/2014 02:15 PM, Pranith Kumar wrote:
+On Wed, Jul 16, 2014 at 11:21:57AM -0700, Stephen Boyd wrote:
+> On 07/15/14 20:26, Greg KH wrote:
+> > Hi Stephen.
 > >
-> > On 07/16/2014 01:24 PM, Paul E. McKenney wrote:
-> >>>> And of course if you don't actually specify a nohz_full= mask, then
-> >>>> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
-> >>>> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
-> >>>> forever.
-> >>>>
-> >>> Hi Paul,
-> >>>
-> >>> The other location where tick_nohz_full_mask is being allocated is in
-> >>> tick_nohz_init_all(), called from tick_nohz_init(). rcu_init() is called before
-> >>> tick_nohz_init() in init/main.c. CONFIG_NO_HZ_FULL_ALL for allocation of the
-> >>> mask does not take effect when rcu_init() runs.
-> >>>
-> >>> So if nohz_full command line arg is not specified, tick_nohz_full_mask will
-> >>> always be NULL when rcu_init() runs. So just checking for tick_nohz_full_mask
-> >>> is NULL should be enough I guess.
-> >> Yep, that is indeed one of the conditions called out in the commit log
-> >> below.
-> >>
-> >>                             Thanx, Paul
-> >>
-> >
-> > Sorry, I was not clear.
-> >
-> > nohz_full= boot time parameter overrides the CONFIG_NO_HZ_FULL_ALL build time parameter.
-> > The check for !CONFIG_NO_HZ_FULL_ALL will disable masking out the cpus on which NOHZ is
-> > not enabled using the nohz_full boot time parameter, and hence you will enable callback
-> > offloading on all CPUs as was previously being done.
-> >
-> > So, if I have CONFIG_NO_HZ_FULL_ALL enabled at build time but pass nohz_cpu=1 at boot
-> > time, all the CPUs will have callback offloading enabled.
-> >
-> > I think the following looks like what is needed in our case:
-> >
+> > I had some people ask me about a sdio userspace interface, and ran
+> > across the chdio.c file as found in the MSM android kernel trees:
 > 
-> The previous patch will fail if CONFIG_NO_HZ_FULL is not defined, this should work.
-> 
-> Thoughts?
+> You mean csdio.c right?
 
-If CONFIG_NO_HZ_FULL_ALL=y, then CONFIG_RCU_NOCB_CPU_ALL=y, in which case
-the cpumask_or() is not required because all the bits will already be
-set in rcu_nocb_mask.  So no need to change the #if condition.  And
-if we were to change it, we would hopefully change it to #ifdef in
-this particular case.  ;-)
+Ick, yes, sorry about that.
 
-							Thanx, Paul
+> >
+> > https://android.googlesource.com/kernel/msm/+/57b74303d6f033ab04be039379f6661337fb9279
+> 
+> As you can see in the commit text there, the commit I authored is
+> actually a squash of three patches from some previous android kernel
+> that we did (looks like it was android-msm-2.6.35) and it's been almost
+> 4 years since those patches were written. The three original commits
+> weren't authored by me so I really don't know the intimate details of
+> this driver.
 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 00dc411..83f3f58 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2479,10 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
-> 
->         if (rcu_nocb_mask == NULL)
->                 return;
-> -#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-> +#if defined(CONFIG_NO_HZ_FULL)
->         if (tick_nohz_full_running)
->                 cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> -#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
-> +#endif /* #if defined(CONFIG_NO_HZ_FULL) */
->         if (ls == -1) {
->                 ls = int_sqrt(nr_cpu_ids);
->                 rcu_nocb_leader_stride = ls;
-> 
-> --
-> Pranith
-> 
-> 
-> 
-> 
-> 
+Yes, I know you didn't write this version, but you did the "mushing
+together", which was nice of you, and presumably you did it for a good
+reason :)
 
+> > Any reason why this hasn't been submitted upstream?  Or has it, and was
+> > it rejected?
+> 
+> I don't believe we ever submitted this upstream.
+
+Why not?
+
+> > Also, what userspace code uses this?  Is there some android-specific
+> > code somewhere that does a weird mix of sysfs and char control of the
+> > hardware?  And what type of SDIO devices are controlled with this?
+> 
+> If I recall correctly this driver is for communicating with an external
+> modem (in this case it was the Gobi 9k). We used the sdio interface to
+> do some IPC stuff with the modem over sdio, mainly because back then the
+> SoC didn't have an LTE capable modem, but the Gobi modem was LTE
+> capable. Slap the two chips together and you have an LTE phone while you
+> wait for us to deliver the first SoC with an integrated LTE modem (msm8960).
+> 
+> The userspace component is the same proprietary software that's used to
+> make phone calls on android phones. I'd have to go dig around to find
+> that code and confirm if it's using sysfs and char control. I'd rather
+> not spend the time digging so let's assume it's doing that unless you
+> have a more specific question in mind?
+
+My specific question is why 2 different interfaces?
+
+Some people are looking at a way to do SDIO from userspace, if needed,
+and I was pointed at this driver, and wanted to figure out why it never
+was merged.  If it's useful, and people are using it in phones today,
+that's a good reason to merge it in, right?
+
+So, any objection for me taking it as-is, as long as my audit of the
+code passes?
+
+thanks,
+
+greg k-h
