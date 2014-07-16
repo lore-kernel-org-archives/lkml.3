@@ -1,117 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933877AbaGPMyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:54:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55365 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933806AbaGPMyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:54:45 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-usb@vger.kernel.org>, <balbi@ti.com>, <b-liu@ti.com>
-CC: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH v7 2/4] usb: musb: core: Convert babble recover work to delayed work
-Date: Wed, 16 Jul 2014 18:22:10 +0530
-Message-ID: <1405515132-17618-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405515132-17618-1-git-send-email-george.cherian@ti.com>
-References: <1405515132-17618-1-git-send-email-george.cherian@ti.com>
+	id S933920AbaGPMz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:55:26 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:62270 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933597AbaGPMzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:55:20 -0400
+Message-ID: <53C6761A.9090002@linaro.org>
+Date: Wed, 16 Jul 2014 13:54:50 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Marek Vasut <marex@denx.de>, linux-arm-kernel@lists.infradead.org
+CC: Harro Haan <hrhaan@gmail.com>, linaro-kernel@lists.linaro.org,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Fabio Estevam <festevam@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, kernel-team@android.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Martin <Dave.Martin@arm.com>, Detlev Zundel <dzu@denx.de>
+Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
+References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org> <CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com> <53C4F745.3070701@linaro.org> <201407152045.06517.marex@denx.de>
+In-Reply-To: <201407152045.06517.marex@denx.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During babble condition both first disconnect of devices are
-initiated. Make sure MUSB controller is reset and re-initialized
-after all disconnects.
+On 15/07/14 19:45, Marek Vasut wrote:
+>>> I can reduce the number of occurrences (not prevent it) by adding the
+>>> following hack to irq-gic.c
+>>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
+>>> gic_handle_irq(struct pt_regs *regs
+>>>
+>>>   u32 irqstat, irqnr;
+>>>   struct gic_chip_data *gic = &gic_data[0];
+>>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
+>>>   
+>>>   do {
+>>>
+>>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
+>>> & (1 << 30))
+>>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
+>>>
+>>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+>>>   irqnr = irqstat & ~0x1c00;
+>>
+>> I've made a more complete attempt to fix this. Could you test the
+>> following? (and be prepared to fuzz the line numbers)
+> 
+> There's also another workaround, look at [1], but it's really a perverse hack 
+> thus far (blush). What I did there is I got hinted that an L1 page table can 
+> have this NS bit set. If this bit is set for a mapping, all accesses to memory 
+> area via that mapping will be non-secure. And then, in turn, by doing a non-
+> secure read of the INTACK register, it will not ever happen that the FIQ number 
+> will pop up in the INTACK. I only do a non-secure read of the INTACK register,
+> all other registers of the GICv1 are read via regular secure-mode accesses.
 
-To acheive this schedule a delayed work for babble recovery.
+I'll be looking into this approach.
 
-While at that convert udelay to usleep_range.
-Refer Documentation/timers/timers-howto.txt
+It is technically a better approach than mine since it prevents the IRQ
+handler from ever reading a group 0 interrupt from INTACK.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Tested-by: Bin Liu <b-liu@ti.com>
----
- drivers/usb/musb/musb_core.c | 15 ++++++++-------
- drivers/usb/musb/musb_core.h |  2 +-
- 2 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 0ad9551..c0ce09f 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -850,7 +850,8 @@ b_host:
- 
- 	/* handle babble condition */
- 	if (int_usb & MUSB_INTR_BABBLE && is_host_active(musb))
--		schedule_work(&musb->recover_work);
-+		schedule_delayed_work(&musb->recover_work,
-+				      msecs_to_jiffies(100));
- 
- #if 0
- /* REVISIT ... this would be for multiplexing periodic endpoints, or
-@@ -1751,16 +1752,16 @@ static void musb_irq_work(struct work_struct *data)
- /* Recover from babble interrupt conditions */
- static void musb_recover_work(struct work_struct *data)
- {
--	struct musb *musb = container_of(data, struct musb, recover_work);
-+	struct musb *musb = container_of(data, struct musb, recover_work.work);
- 	int status;
- 
- 	musb_platform_reset(musb);
- 
- 	usb_phy_vbus_off(musb->xceiv);
--	udelay(100);
-+	usleep_range(100, 200);
- 
- 	usb_phy_vbus_on(musb->xceiv);
--	udelay(100);
-+	usleep_range(100, 200);
- 
- 	/*
- 	 * When a babble condition occurs, the musb controller removes the
-@@ -1943,7 +1944,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 
- 	/* Init IRQ workqueue before request_irq */
- 	INIT_WORK(&musb->irq_work, musb_irq_work);
--	INIT_WORK(&musb->recover_work, musb_recover_work);
-+	INIT_DELAYED_WORK(&musb->recover_work, musb_recover_work);
- 	INIT_DELAYED_WORK(&musb->deassert_reset_work, musb_deassert_reset);
- 	INIT_DELAYED_WORK(&musb->finish_resume_work, musb_host_finish_resume);
- 
-@@ -2039,7 +2040,7 @@ fail4:
- 
- fail3:
- 	cancel_work_sync(&musb->irq_work);
--	cancel_work_sync(&musb->recover_work);
-+	cancel_delayed_work_sync(&musb->recover_work);
- 	cancel_delayed_work_sync(&musb->finish_resume_work);
- 	cancel_delayed_work_sync(&musb->deassert_reset_work);
- 	if (musb->dma_controller)
-@@ -2105,7 +2106,7 @@ static int musb_remove(struct platform_device *pdev)
- 		dma_controller_destroy(musb->dma_controller);
- 
- 	cancel_work_sync(&musb->irq_work);
--	cancel_work_sync(&musb->recover_work);
-+	cancel_delayed_work_sync(&musb->recover_work);
- 	cancel_delayed_work_sync(&musb->finish_resume_work);
- 	cancel_delayed_work_sync(&musb->deassert_reset_work);
- 	musb_free(musb);
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index d155a15..9241025 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -297,7 +297,7 @@ struct musb {
- 
- 	irqreturn_t		(*isr)(int, void *);
- 	struct work_struct	irq_work;
--	struct work_struct	recover_work;
-+	struct delayed_work	recover_work;
- 	struct delayed_work	deassert_reset_work;
- 	struct delayed_work	finish_resume_work;
- 	u16			hwvers;
--- 
-1.8.3.1
-
+Unfortunately the tentacles of this workaround reach pretty deep in the
+memory management code (rather than being concentrated in the GIC
+driver) but the improved runtime behaviour might be worth it.
