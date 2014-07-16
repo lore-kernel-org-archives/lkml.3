@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760231AbaGPI3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:29:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:55797 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759188AbaGPI0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:26:49 -0400
-Date: Wed, 16 Jul 2014 18:26:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-ID: <20140716182641.5c27a6be@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1760341AbaGPI3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:29:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60637 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756087AbaGPI0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:26:17 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 10/12] ARM: dts: Berlin: enable USB on the BG2Q DMP
+Date: Wed, 16 Jul 2014 10:26:04 +0200
+Message-Id: <1405499166-6726-11-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/X.xWKbuojvcQs2Oy1sP19u0"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/X.xWKbuojvcQs2Oy1sP19u0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Enable the 2 available USB PHY and USB nodes on the Marvell Berlin BG2Q
+DMP.
 
-Hi Andrew,
-
-After merging the akpm tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-mm/memcontrol.c:5269:12: error: 'CFTYPE_INSANE' undeclared here (not in a f=
-unction)
-   .flags =3D CFTYPE_INSANE,
-            ^
-
-Caused by commit 8fa6a8baeffc ("memcg: deprecate memory.force_empty
-knob") interacting with commits a8ddc8215e1a ("cgroup: distinguish the
-default and legacy hierarchies when handling cftypes") and 05ebb6e60f04
-("cgroup: make CFTYPE_ONLY_ON_DFL and CFTYPE_NO_ internal to cgroup
-core") from the cgroup tree.
-
-I applied the following fix up patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 16 Jul 2014 18:20:59 +1000
-Subject: [PATCH] memcg-deprecate-memoryforce_empty-knob-fix2
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- mm/memcontrol.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 53 ++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8fa6602a32cd..e1c9699b157b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5266,7 +5266,6 @@ static struct cftype mem_cgroup_files[] =3D {
- 	},
- 	{
- 		.name =3D "force_empty",
--		.flags =3D CFTYPE_INSANE,
- 		.write =3D mem_cgroup_force_empty_write,
- 	},
- 	{
---=20
-2.0.1
+diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+index 995150f93795..0d515046f5f5 100644
+--- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
++++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+@@ -7,6 +7,8 @@
+  */
+ 
+ /dts-v1/;
++
++#include <dt-bindings/gpio/gpio.h>
+ #include "berlin2q.dtsi"
+ 
+ / {
+@@ -21,6 +23,39 @@
+ 	choosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
+ 	};
++
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		reg_usb0_vbus: regulator@0 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb0_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&portb 8 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++
++		reg_usb1_vbus: regulator@1 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&portb 10 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++
++		reg_usb2_vbus: regulator@2 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb2_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&portb 12 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++	};
+ };
+ 
+ &sdhci1 {
+@@ -37,3 +72,21 @@
+ &uart0 {
+ 	status = "okay";
+ };
++
++&usb_phy0 {
++	status = "okay";
++};
++
++&usb_phy2 {
++	status = "okay";
++};
++
++&usb0 {
++	vbus-supply = <&reg_usb0_vbus>;
++	status = "okay";
++};
++
++&usb2 {
++	vbus-supply = <&reg_usb2_vbus>;
++	status = "okay";
++};
+-- 
+1.9.1
 
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/X.xWKbuojvcQs2Oy1sP19u0
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTxjdGAAoJEMDTa8Ir7ZwVJpUP/2KobO/E/Cnn5Vn4P+a2bC8P
-EdBUhOKCiAhvefzbrYyw/FL8Dfx42SEj2QMhnigoJzlpSHsOqGS/kTV/755qkgEX
-lC4/BpUjrDJnWjZXCGrzJQTVAnQX6HW52v8m5UqTjZL/5D842EBF9f9vfnfJ80Qv
-MzQ+4lDOANQl2xLxQnHyEbpOQerfjLVvAlRPuKWT5wca/aFVxCAgGv61zTR8iKxH
-88HQKuvljMDpFH0mAqDEIhdams/gyAolvBHXJ5eWJsit+WK4NtecW518ONgBx2SZ
-EM02mYFNwuX/tOPekWhKw7u7wJV87NwAY2tNWQW4jRJnJzAWyCfSWqWcHZOx67y5
-f7+4LEfOuRCV+Ck9c2CRs2xp4EQrbJVFm7DlTM9/Zi/865lmS2hq0ceZ6OGYthxq
-AaSrcMTFDD0eeSCr8VQH3l76wtaPcZuhaJhL+3M9F/EBlhulRK4+8BipPdZ8QvqJ
-fbStMUlDXinWyiYJMvCQdcxqDlwRtPADwW3ieqCFKM8xlFBGefNJEqeIMshH7znr
-a2AQL/YCz9z4wtVzyhS1I66PFSnQviqRYLKGIcjxh/7undg8adz4lhDP9FuoGxbt
-6nJrLRczQTqWombpjs3JF5LAEz/9he3FstY3pVNrQKE6DoxgJWmFg6/aZfpjEi2O
-DEdBcypQUkkxG2YZLrsn
-=Y0U2
------END PGP SIGNATURE-----
-
---Sig_/X.xWKbuojvcQs2Oy1sP19u0--
