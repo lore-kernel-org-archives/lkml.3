@@ -1,37 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628AbaGPBNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:13:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59498 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751882AbaGPBNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:13:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,668,1400050800"; 
-   d="scan'208";a="457460750"
-Message-ID: <53C5D19A.8020608@intel.com>
-Date: Wed, 16 Jul 2014 09:12:58 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1760072AbaGPBOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 21:14:23 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:65198 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757173AbaGPBOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 21:14:20 -0400
+X-IronPort-AV: E=Sophos;i="5.00,899,1396972800"; 
+   d="scan'208";a="33326708"
+Message-ID: <53C5D229.7090500@cn.fujitsu.com>
+Date: Wed, 16 Jul 2014 09:15:21 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH v2 0/7] perf, x86: large PEBS interrupt threshold
-References: <1405414739-31455-1-git-send-email-zheng.z.yan@intel.com> <20140715100216.GY9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140715100216.GY9918@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] workqueue: don't grab PENDING bit on some conditions
+References: <1405416610-12394-1-git-send-email-laijs@cn.fujitsu.com> <20140715155805.GD19570@htj.dyndns.org>
+In-Reply-To: <20140715155805.GD19570@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 06:02 PM, Peter Zijlstra wrote:
+On 07/15/2014 11:58 PM, Tejun Heo wrote:
+> Hello, Lai.
 > 
+> On Tue, Jul 15, 2014 at 05:30:10PM +0800, Lai Jiangshan wrote:
+>> Thread1 expects that, after flush_delayed_work() returns, the known pending
+>> work is guaranteed finished. But if Thread2 is scheduled a little later than
+>> Thread1, the known pending work is dequeued and re-queued, it is considered
+>> as two different works in the workqueue subsystem and the guarantee expected
 > 
-> The first two patches are the same patches as from the LBR callstack
-> series, right?
-> 
-Yes
+> They are two separate queueing instances of the same work item.
 
-Yan, Zheng
+I think the mod_delayed_work() is expected to modify a queueing instances
+instead of separate from the name.
+
+> 
+>> by Thread1 is broken.
+> 
+> The guarantee expected by thread 1 is that the most recent queueing
+> instance of the work item is finished either through completing
+> execution or being cancelled.  No guarantee is broken.
+
+I don't think the mod_delayed_work() is considered as a cancelling operation
+to the user. You can add comments to state that it contains a cancelling operation
+and a requeue operation.
+
+> 
+>> The guarantee expected by Thread1/workqueue-user is reasonable for me,
+>> the workqueue subsystem should provide this guarantee. In another aspect,
+> 
+> You're adding a new component to the existing set of guarantees.  You
+> can argue for it but it's a new guarantee regardless.
+
+So, it is an RFC.
+
+> 
+>> the flush_delayed_work() is still working when mod_delayed_work_on() returns,
+>> it is more acceptable that the flush_delayed_work() beats the
+>> mod_delayed_work_on().
+>>
+>> It is achieved by introducing a KEEP_FLUSHED flag for try_to_grab_pending().
+>> If the work is being flushed and KEEP_FLUSHED flags is set,
+>> we disallow try_to_grab_pending() to grab the pending of the work.
+>>
+>> And there is another condition that the user want to speed up a delayed work.
+>>
+>> When the user use "mod_delayed_work_on(..., 0 /* zero delay */);", his
+>> attention is to accelerate the work and queue the work immediately.
+>>
+>> But the work does be slowed down when it is already queued on the worklist
+>> due to the work is dequeued and re-queued. So we also disallow
+>> try_to_grab_pending() to grab the pending of the work in this condition
+>> by introducing KEEP_QUEUED flag.
+> 
+> Both are extremely marginal.  
+> Do we have any actual cases any of these matters?
+
+No such case.
+
+I only found the WB subsystem (backing-dev.c, fs-writeback.c) uses both
+mod_delayed_work() and flush_delayed_work(), but it seems that when
+flush_delayed_work() is called, mod_delayed_work() will can't be called.
+
+> I can't see what we're gaining with the extra complexity.
+
+Will you add some comments or let it as before?
+
+> 
+>> @@ -1212,6 +1220,13 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
+>>  	 */
+>>  	pwq = get_work_pwq(work);
+>>  	if (pwq && pwq->pool == pool) {
+>> +		if ((keep_flags | KEEP_QUEUED) ||
+>> +		    ((keep_flags | KEEP_FLUSHED) &&
+> 
+> This can't be right.
+> 
+> Thanks.
+> 
+
