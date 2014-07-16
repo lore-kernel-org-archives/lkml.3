@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935169AbaGPTXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:23:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44520 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934984AbaGPTXo (ORCPT
+	id S935193AbaGPTX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:23:57 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:63155 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934984AbaGPTXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:23:44 -0400
-Date: Wed, 16 Jul 2014 12:22:51 -0700
-From: "tip-bot for xiaofeng.yan" <tipbot@zytor.com>
-Message-ID: <tip-1b09d29bc00964d9032d80516f958044ac6b3805@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, xiaofeng.yan@huawei.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, xiaofeng.yan@huawei.com
-In-Reply-To: <1404712744-16986-1-git-send-email-xiaofeng.yan@huawei.com>
-References: <1404712744-16986-1-git-send-email-xiaofeng.yan@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt: Fix replenish_dl_entity()
-  comments to match the current upstream code
-Git-Commit-ID: 1b09d29bc00964d9032d80516f958044ac6b3805
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 16 Jul 2014 15:23:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405512783-20307-3-git-send-email-grygorii.strashko@ti.com>
+References: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com> <1405512783-20307-3-git-send-email-grygorii.strashko@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 16 Jul 2014 20:23:17 +0100
+Message-ID: <CA+V-a8sNcWFdzRws5NkBwwiAb6KymZZHqFLh4Hsqsip3vaRj2g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] net: davinci_mdio: allow to create phys from dt
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        netdev <netdev@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b09d29bc00964d9032d80516f958044ac6b3805
-Gitweb:     http://git.kernel.org/tip/1b09d29bc00964d9032d80516f958044ac6b3805
-Author:     xiaofeng.yan <xiaofeng.yan@huawei.com>
-AuthorDate: Mon, 7 Jul 2014 05:59:04 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:38:20 +0200
+On Wed, Jul 16, 2014 at 1:13 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+> This patch allows to create PHYs from DT in case
+> if they are explicitly defined. The of_mdiobus_register() is
+> used for such purposes.
+>
+> For backward compatibility, call  of_mdiobus_register() only in case
+> if at least one PHY's child is defined in DT, otherwise rollback to
+> mdiobus_register().
+>
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
-sched/rt: Fix replenish_dl_entity() comments to match the current upstream code
+Reviewed-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Signed-off-by: xiaofeng.yan <xiaofeng.yan@huawei.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1404712744-16986-1-git-send-email-xiaofeng.yan@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/deadline.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks,
+--Prabhakar Lad
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index df0b77a..255ce13 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -306,7 +306,7 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se,
-  * the overrunning entity can't interfere with other entity in the system and
-  * can't make them miss their deadlines. Reasons why this kind of overruns
-  * could happen are, typically, a entity voluntarily trying to overcome its
-- * runtime, or it just underestimated it during sched_setscheduler_ex().
-+ * runtime, or it just underestimated it during sched_setattr().
-  */
- static void replenish_dl_entity(struct sched_dl_entity *dl_se,
- 				struct sched_dl_entity *pi_se)
+> ---
+> Hi Santosh,
+>
+> I haven't changed style for long-comments, because Networking subsystem
+> requires first line of comment not to be empty:
+> WARNING:NETWORKING_BLOCK_COMMENT_STYLE: networking block comments don't use an empty /* line, use /* Comment...
+>
+>  drivers/net/ethernet/ti/davinci_mdio.c |   21 +++++++++++++++++++--
+>  1 file changed, 19 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+> index 735dc53..2791f6f 100644
+> --- a/drivers/net/ethernet/ti/davinci_mdio.c
+> +++ b/drivers/net/ethernet/ti/davinci_mdio.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/davinci_emac.h>
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+> +#include <linux/of_mdio.h>
+>  #include <linux/pinctrl/consumer.h>
+>
+>  /*
+> @@ -95,6 +96,10 @@ struct davinci_mdio_data {
+>         struct mii_bus  *bus;
+>         bool            suspended;
+>         unsigned long   access_time; /* jiffies */
+> +       /* Indicates that driver shouldn't modify phy_mask in case
+> +        * if MDIO bus is registered from DT.
+> +        */
+> +       bool            skip_scan;
+>  };
+>
+>  static void __davinci_mdio_reset(struct davinci_mdio_data *data)
+> @@ -144,6 +149,9 @@ static int davinci_mdio_reset(struct mii_bus *bus)
+>         dev_info(data->dev, "davinci mdio revision %d.%d\n",
+>                  (ver >> 8) & 0xff, ver & 0xff);
+>
+> +       if (data->skip_scan)
+> +               return 0;
+> +
+>         /* get phy mask from the alive register */
+>         phy_mask = __raw_readl(&data->regs->alive);
+>         if (phy_mask) {
+> @@ -369,8 +377,17 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+>                 goto bail_out;
+>         }
+>
+> -       /* register the mii bus */
+> -       ret = mdiobus_register(data->bus);
+> +       /* register the mii bus
+> +        * Create PHYs from DT only in case if PHY child nodes are explicitly
+> +        * defined to support backward compatibility with DTs which assume that
+> +        * Davinci MDIO will always scan the bus for PHYs detection.
+> +        */
+> +       if (dev->of_node && of_get_child_count(dev->of_node)) {
+> +               data->skip_scan = true;
+> +               ret = of_mdiobus_register(data->bus, dev->of_node);
+> +       } else {
+> +               ret = mdiobus_register(data->bus);
+> +       }
+>         if (ret)
+>                 goto bail_out;
+>
+> --
+> 1.7.9.5
+>
