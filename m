@@ -1,106 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155AbaGPKJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:09:15 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:17412 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757551AbaGPKJL (ORCPT
+	id S1758266AbaGPKJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:09:21 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51674 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139AbaGPKJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:09:11 -0400
-X-IronPort-AV: E=Sophos;i="5.00,902,1396972800"; 
-   d="scan'208";a="33350986"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/2] workqueue: remove the argument @wakeup from worker_set_flags()
-Date: Wed, 16 Jul 2014 18:09:59 +0800
-Message-ID: <1405505409-12058-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1405505409-12058-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1405505409-12058-1-git-send-email-laijs@cn.fujitsu.com>
+	Wed, 16 Jul 2014 06:09:15 -0400
+Date: Wed, 16 Jul 2014 03:07:37 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v3 4/7] selftests: add memfd_create() + sealing tests
+In-Reply-To: <1402655819-14325-5-git-send-email-dh.herrmann@gmail.com>
+Message-ID: <alpine.LSU.2.11.1407160307160.1775@eggly.anvils>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com> <1402655819-14325-5-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-worker_set_flags() doesn't necessarily wake next worker and the @wakeup
-can be removed, the caller can use the following conbination instead
-when needed:
+On Fri, 13 Jun 2014, David Herrmann wrote:
 
-	worker_set_flags();
-	if (need_more_worker(pool))
- 		wake_up_worker(pool);
-	
+> Some basic tests to verify sealing on memfds works as expected and
+> guarantees the advertised semantics.
+> 
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   25 ++++++-------------------
- 1 files changed, 6 insertions(+), 19 deletions(-)
+Thanks for whatever the fix was, I didn't hit any problem running
+this version repeatedly, on 64-bit and on 32-bit.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6d11b9a..1a14f18 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -867,35 +867,22 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task, int cpu)
-  * worker_set_flags - set worker flags and adjust nr_running accordingly
-  * @worker: self
-  * @flags: flags to set
-- * @wakeup: wakeup an idle worker if necessary
-  *
-- * Set @flags in @worker->flags and adjust nr_running accordingly.  If
-- * nr_running becomes zero and @wakeup is %true, an idle worker is
-- * woken up.
-+ * Set @flags in @worker->flags and adjust nr_running accordingly.
-  *
-  * CONTEXT:
-  * spin_lock_irq(pool->lock)
-  */
--static inline void worker_set_flags(struct worker *worker, unsigned int flags,
--				    bool wakeup)
-+static inline void worker_set_flags(struct worker *worker, unsigned int flags)
- {
- 	struct worker_pool *pool = worker->pool;
- 
- 	WARN_ON_ONCE(worker->task != current);
- 
--	/*
--	 * If transitioning into NOT_RUNNING, adjust nr_running and
--	 * wake up an idle worker as necessary if requested by
--	 * @wakeup.
--	 */
-+	/* If transitioning into NOT_RUNNING, adjust nr_running. */
- 	if ((flags & WORKER_NOT_RUNNING) &&
- 	    !(worker->flags & WORKER_NOT_RUNNING)) {
--		if (wakeup) {
--			if (atomic_dec_and_test(&pool->nr_running) &&
--			    !list_empty(&pool->worklist))
--				wake_up_worker(pool);
--		} else
--			atomic_dec(&pool->nr_running);
-+		atomic_dec(&pool->nr_running);
- 	}
- 
- 	worker->flags |= flags;
-@@ -2045,7 +2032,7 @@ __acquires(&pool->lock)
- 	 * management.  They're the scheduler's responsibility.
- 	 */
- 	if (unlikely(cpu_intensive))
--		worker_set_flags(worker, WORKER_CPU_INTENSIVE, true);
-+		worker_set_flags(worker, WORKER_CPU_INTENSIVE);
- 
- 	/* Wake up another worker if necessary. */
- 	if (need_more_worker(pool))
-@@ -2204,7 +2191,7 @@ recheck:
- 		}
- 	} while (keep_working(pool));
- 
--	worker_set_flags(worker, WORKER_PREP, false);
-+	worker_set_flags(worker, WORKER_PREP);
- sleep:
- 	/*
- 	 * pool->lock is held and there's no work to process and no need to
--- 
-1.7.4.4
-
+Hugh
