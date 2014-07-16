@@ -1,242 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaGPT3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:29:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44435 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965661AbaGPTWq (ORCPT
+	id S1751990AbaGPTbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:31:42 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:48091 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbaGPTbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:22:46 -0400
-Date: Wed, 16 Jul 2014 12:21:29 -0700
-From: tip-bot for Zhouyi Zhou <tipbot@zytor.com>
-Message-ID: <tip-503d3291a937b726757c1f7c45fa02389d2f4324@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        yizhouzhou@ict.ac.cn, tglx@linutronix.de, zhouzhouyi@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        yizhouzhou@ict.ac.cn, tglx@linutronix.de, zhouzhouyi@gmail.com
-In-Reply-To: <1402459743-20513-1-git-send-email-zhouzhouyi@gmail.com>
-References: <1402459743-20513-1-git-send-email-zhouzhouyi@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/amd:
-  Try to fix some mem allocation failure handling
-Git-Commit-ID: 503d3291a937b726757c1f7c45fa02389d2f4324
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 16 Jul 2014 15:31:38 -0400
+From: Preston Fick <pffick@gmail.com>
+To: jhovold@gmail.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: preston.fick@silabs.com
+Subject: [PATCH 1/1] Removing unncessary `usb_reset_device` on startup
+Date: Wed, 16 Jul 2014 14:31:30 -0500
+Message-Id: <1405539090-5682-1-git-send-email-pffick@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  503d3291a937b726757c1f7c45fa02389d2f4324
-Gitweb:     http://git.kernel.org/tip/503d3291a937b726757c1f7c45fa02389d2f4324
-Author:     Zhouyi Zhou <zhouzhouyi@gmail.com>
-AuthorDate: Wed, 11 Jun 2014 12:09:03 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:31:06 +0200
+From: Preston Fick <preston.fick@silabs.com>
 
-perf/x86/amd: Try to fix some mem allocation failure handling
+This `usb_reset_device` command has been around since the driver was
+originally reverse engineered. It doesn't cause much issue on single
+interface CP210x devices, but on the CP2105 and CP2108 with 2 and 4
+interfaces respectively it will cause instability on enumeration and
+delays enumeration noticably. There should be no reason to reset a device
+at startup, per the CP210x AN571 spec.
 
-According to Peter's advice, put the failure handling to a goto chain.
-Compiled in x86_64, could you check if there is anything that I missed.
-
-Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1402459743-20513-1-git-send-email-zhouzhouyi@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Preston Fick <preston.fick@silabs.com>
 ---
- arch/x86/kernel/cpu/perf_event_amd_uncore.c | 111 +++++++++++++++++++++-------
- 1 file changed, 84 insertions(+), 27 deletions(-)
+ drivers/usb/serial/cp210x.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-index 3bbdf4c..30790d7 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-@@ -294,31 +294,41 @@ static struct amd_uncore *amd_uncore_alloc(unsigned int cpu)
- 			cpu_to_node(cpu));
- }
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 762e4a5..6891269 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -855,9 +855,6 @@ static int cp210x_startup(struct usb_serial *serial)
+ 	struct usb_host_interface *cur_altsetting;
+ 	struct cp210x_serial_private *spriv;
  
--static void amd_uncore_cpu_up_prepare(unsigned int cpu)
-+static int amd_uncore_cpu_up_prepare(unsigned int cpu)
- {
--	struct amd_uncore *uncore;
-+	struct amd_uncore *uncore_nb = NULL, *uncore_l2;
- 
- 	if (amd_uncore_nb) {
--		uncore = amd_uncore_alloc(cpu);
--		uncore->cpu = cpu;
--		uncore->num_counters = NUM_COUNTERS_NB;
--		uncore->rdpmc_base = RDPMC_BASE_NB;
--		uncore->msr_base = MSR_F15H_NB_PERF_CTL;
--		uncore->active_mask = &amd_nb_active_mask;
--		uncore->pmu = &amd_nb_pmu;
--		*per_cpu_ptr(amd_uncore_nb, cpu) = uncore;
-+		uncore_nb = amd_uncore_alloc(cpu);
-+		if (!uncore_nb)
-+			goto fail;
-+		uncore_nb->cpu = cpu;
-+		uncore_nb->num_counters = NUM_COUNTERS_NB;
-+		uncore_nb->rdpmc_base = RDPMC_BASE_NB;
-+		uncore_nb->msr_base = MSR_F15H_NB_PERF_CTL;
-+		uncore_nb->active_mask = &amd_nb_active_mask;
-+		uncore_nb->pmu = &amd_nb_pmu;
-+		*per_cpu_ptr(amd_uncore_nb, cpu) = uncore_nb;
- 	}
- 
- 	if (amd_uncore_l2) {
--		uncore = amd_uncore_alloc(cpu);
--		uncore->cpu = cpu;
--		uncore->num_counters = NUM_COUNTERS_L2;
--		uncore->rdpmc_base = RDPMC_BASE_L2;
--		uncore->msr_base = MSR_F16H_L2I_PERF_CTL;
--		uncore->active_mask = &amd_l2_active_mask;
--		uncore->pmu = &amd_l2_pmu;
--		*per_cpu_ptr(amd_uncore_l2, cpu) = uncore;
-+		uncore_l2 = amd_uncore_alloc(cpu);
-+		if (!uncore_l2)
-+			goto fail;
-+		uncore_l2->cpu = cpu;
-+		uncore_l2->num_counters = NUM_COUNTERS_L2;
-+		uncore_l2->rdpmc_base = RDPMC_BASE_L2;
-+		uncore_l2->msr_base = MSR_F16H_L2I_PERF_CTL;
-+		uncore_l2->active_mask = &amd_l2_active_mask;
-+		uncore_l2->pmu = &amd_l2_pmu;
-+		*per_cpu_ptr(amd_uncore_l2, cpu) = uncore_l2;
- 	}
-+
-+	return 0;
-+
-+fail:
-+	kfree(uncore_nb);
-+	return -ENOMEM;
- }
- 
- static struct amd_uncore *
-@@ -441,7 +451,7 @@ static void uncore_dead(unsigned int cpu, struct amd_uncore * __percpu *uncores)
- 
- 	if (!--uncore->refcnt)
- 		kfree(uncore);
--	*per_cpu_ptr(amd_uncore_nb, cpu) = NULL;
-+	*per_cpu_ptr(uncores, cpu) = NULL;
- }
- 
- static void amd_uncore_cpu_dead(unsigned int cpu)
-@@ -461,7 +471,8 @@ amd_uncore_cpu_notifier(struct notifier_block *self, unsigned long action,
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
--		amd_uncore_cpu_up_prepare(cpu);
-+		if (amd_uncore_cpu_up_prepare(cpu))
-+			return notifier_from_errno(-ENOMEM);
- 		break;
- 
- 	case CPU_STARTING:
-@@ -501,20 +512,33 @@ static void __init init_cpu_already_online(void *dummy)
- 	amd_uncore_cpu_online(cpu);
- }
- 
-+static void cleanup_cpu_online(void *dummy)
-+{
-+	unsigned int cpu = smp_processor_id();
-+
-+	amd_uncore_cpu_dead(cpu);
-+}
-+
- static int __init amd_uncore_init(void)
- {
--	unsigned int cpu;
-+	unsigned int cpu, cpu2;
- 	int ret = -ENODEV;
- 
- 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
--		return -ENODEV;
-+		goto fail_nodev;
- 
- 	if (!cpu_has_topoext)
--		return -ENODEV;
-+		goto fail_nodev;
- 
- 	if (cpu_has_perfctr_nb) {
- 		amd_uncore_nb = alloc_percpu(struct amd_uncore *);
--		perf_pmu_register(&amd_nb_pmu, amd_nb_pmu.name, -1);
-+		if (!amd_uncore_nb) {
-+			ret = -ENOMEM;
-+			goto fail_nb;
-+		}
-+		ret = perf_pmu_register(&amd_nb_pmu, amd_nb_pmu.name, -1);
-+		if (ret)
-+			goto fail_nb;
- 
- 		printk(KERN_INFO "perf: AMD NB counters detected\n");
- 		ret = 0;
-@@ -522,20 +546,28 @@ static int __init amd_uncore_init(void)
- 
- 	if (cpu_has_perfctr_l2) {
- 		amd_uncore_l2 = alloc_percpu(struct amd_uncore *);
--		perf_pmu_register(&amd_l2_pmu, amd_l2_pmu.name, -1);
-+		if (!amd_uncore_l2) {
-+			ret = -ENOMEM;
-+			goto fail_l2;
-+		}
-+		ret = perf_pmu_register(&amd_l2_pmu, amd_l2_pmu.name, -1);
-+		if (ret)
-+			goto fail_l2;
- 
- 		printk(KERN_INFO "perf: AMD L2I counters detected\n");
- 		ret = 0;
- 	}
- 
- 	if (ret)
--		return -ENODEV;
-+		goto fail_nodev;
- 
- 	cpu_notifier_register_begin();
- 
- 	/* init cpus already online before registering for hotplug notifier */
- 	for_each_online_cpu(cpu) {
--		amd_uncore_cpu_up_prepare(cpu);
-+		ret = amd_uncore_cpu_up_prepare(cpu);
-+		if (ret)
-+			goto fail_online;
- 		smp_call_function_single(cpu, init_cpu_already_online, NULL, 1);
- 	}
- 
-@@ -543,5 +575,30 @@ static int __init amd_uncore_init(void)
- 	cpu_notifier_register_done();
- 
- 	return 0;
-+
-+
-+fail_online:
-+	for_each_online_cpu(cpu2) {
-+		if (cpu2 == cpu)
-+			break;
-+		smp_call_function_single(cpu, cleanup_cpu_online, NULL, 1);
-+	}
-+	cpu_notifier_register_done();
-+
-+	/* amd_uncore_nb/l2 should have been freed by cleanup_cpu_online */
-+	amd_uncore_nb = amd_uncore_l2 = NULL;
-+	if (cpu_has_perfctr_l2)
-+		perf_pmu_unregister(&amd_l2_pmu);
-+fail_l2:
-+	if (cpu_has_perfctr_nb)
-+		perf_pmu_unregister(&amd_nb_pmu);
-+	if (amd_uncore_l2)
-+		free_percpu(amd_uncore_l2);
-+fail_nb:
-+	if (amd_uncore_nb)
-+		free_percpu(amd_uncore_nb);
-+
-+fail_nodev:
-+	return ret;
- }
- device_initcall(amd_uncore_init);
+-	/* cp210x buffers behave strangely unless device is reset */
+-	usb_reset_device(serial->dev);
+-
+ 	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
+ 	if (!spriv)
+ 		return -ENOMEM;
+-- 
+1.9.1
+
