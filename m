@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965668AbaGPRWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:22:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36864 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438AbaGPRWs (ORCPT
+	id S934747AbaGPRYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 13:24:19 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:40555 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965263AbaGPRYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:22:48 -0400
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org,
-        Sathya Prakash <Sathya.Prakash@avagotech.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH 08/10][SCSI]mpt2sas: Get IOC_FACTS information using handshake protocol only after HBA card gets into READY or Operational state
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625103532.GA12953@avagotech.com>
-	<yq1wqbetsf2.fsf@sermon.lab.mkp.net>
-	<CAK=zhgoWvnXFdGqVevWJmLpDebb0fq9euYjxJE+EEGYqLoPrhw@mail.gmail.com>
-	<20140716070651.GA17886@infradead.org>
-Date: Wed, 16 Jul 2014 13:22:11 -0400
-In-Reply-To: <20140716070651.GA17886@infradead.org> (Christoph Hellwig's
-	message of "Wed, 16 Jul 2014 00:06:51 -0700")
-Message-ID: <yq1sim1rzgc.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+	Wed, 16 Jul 2014 13:24:15 -0400
+Date: Wed, 16 Jul 2014 13:24:13 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: <balbi@ti.com>
+Cc: <will.deacon@arm.com>, <mingo@redhat.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: Function Profiler broken on today's linux-next
+Message-ID: <20140716132413.1ede8e1d@gandalf.local.home>
+In-Reply-To: <20140716164141.GA3016@saruman.home>
+References: <20140716162328.GJ1365@saruman.home>
+	<20140716122921.71b118a9@gandalf.local.home>
+	<20140716164141.GA3016@saruman.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
+On Wed, 16 Jul 2014 11:41:42 -0500
+Felipe Balbi <balbi@ti.com> wrote:
 
-Sreekanth,
 
-I just sent out a patch for the direct I/O type cast issue. Please add
-your SoB to that and use it to replace patch 6 when you send out the
-final series.
+> .config attached. It's actually an ARM platform, I can help out with
+> testing anything you need.
 
-Christoph> Btw, it would be good to resend the series with the various
-Christoph> updates from Martin once he's done with the review.  That
-Christoph> makes it a lot easier for me to pick it up.
+In that case, can you see if it works under my repo?
 
-I'm at T10 this week so I don't have a ton of time. But I'll try to get
-the remaining couple of patches reviewed today or tomorrow. And then you
-should send out the entire series again with my Reviewed-by: added to
-the remaining patches to make life easier for Christoph.
+git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+branch: ftrace/core
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Thanks,
+
+-- Steve
+
