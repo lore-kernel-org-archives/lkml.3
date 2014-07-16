@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611AbaGPJXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:23:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29885 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091AbaGPJXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:23:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
-   d="asc'?scan'208";a="457592212"
-Message-ID: <1405502626.18280.1.camel@jtkirshe-mobl>
-Subject: Re: [PATCH v1] e1000e: honor pause autoneg flag
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: David Decotigny <decot@googlers.com>
-Cc: Bruce Allan <bruce.w.allan@intel.com>, Linux NICS <linux.nics@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+	id S1754596AbaGPJZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:25:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33253 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752547AbaGPJZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 05:25:45 -0400
+Date: Wed, 16 Jul 2014 11:25:41 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
+        balbi@ti.com, p.zabel@pengutronix.de,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 16 Jul 2014 02:23:46 -0700
-In-Reply-To: <98ea4a6a8e42ffa454d5d42749262e8df02c0167.1405462125.git.decot@googlers.com>
-References: <cover.1405462125.git.decot@googlers.com>
-	 <98ea4a6a8e42ffa454d5d42749262e8df02c0167.1405462125.git.decot@googlers.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-D/+geDXLYimwsoKCuTYu"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+Subject: Re: [PATCH v3 05/12] phy: add the Berlin USB PHY driver
+Message-ID: <20140716092541.GC28151@kwain>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405499166-6726-6-git-send-email-antoine.tenart@free-electrons.com>
+ <53C64389.3050705@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C64389.3050705@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Varka,
 
---=-D/+geDXLYimwsoKCuTYu
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 16, 2014 at 02:49:05PM +0530, Varka Bhadram wrote:
+> On 07/16/2014 01:55 PM, Antoine Ténart wrote:
+> >+static const struct of_device_id phy_berlin_sata_of_match[] = {
+> >+	{
+> >+		.compatible = "marvell,berlin2-usb-phy",
+> >+		.data = &phy_berlin_pll_dividers[0],
+> >+	},
+> >+	{
+> >+		.compatible = "marvell,berlin2cd-usb-phy",
+> >+		.data = &phy_berlin_pll_dividers[1],
+> >+	},
+> >+	{ },
+> >+};
+> >+MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
+> >+
+> 
+> It looks good if we move this after probe().. So that we can see of_match_table directly...
 
-On Tue, 2014-07-15 at 15:09 -0700, David Decotigny wrote:
-> Before:
->   ifup eth0
->   ethtool -A eth0 autoneg off rx on
->   ethtool -a eth0  # rx on, as expected
->   ifconfig eth0 up
->   sleep 5
->   ethtool -a eth0  # rx off, not expected
->=20
-> After:
->   rx on with iface up, as expected
->=20
-> Signed-off-by: David Decotigny <decot@googlers.com>
-> ---
->  drivers/net/ethernet/intel/e1000e/mac.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+We use the of match table in the probe, when calling of_match_device().
 
-Thanks David, I will add your patch to my queue.
+> >+static int phy_berlin_usb_probe(struct platform_device *pdev)
+> >+{
+> >+	const struct of_device_id *match =
+> >+		of_match_device(phy_berlin_sata_of_match, &pdev->dev);
 
->=20
-> diff --git a/drivers/net/ethernet/intel/e1000e/mac.c b/drivers/net/ethern=
-et/intel/e1000e/mac.c
-> index 8c386f3a..ef014ae 100644
-> --- a/drivers/net/ethernet/intel/e1000e/mac.c
-> +++ b/drivers/net/ethernet/intel/e1000e/mac.c
-> @@ -1048,7 +1048,8 @@ s32 e1000e_config_fc_after_link_up(struct e1000_hw =
-*hw)
->  	 * has completed, and if so, how the PHY and link partner has
->  	 * flow control configured.
->  	 */
-> -	if ((hw->phy.media_type =3D=3D e1000_media_type_copper) && mac->autoneg=
-) {
-> +	if ((hw->phy.media_type =3D=3D e1000_media_type_copper) && mac->autoneg=
- &&
-> +	    hw->adapter->fc_autoneg) {
->  		/* Read the MII Status Register and check to see if AutoNeg
->  		 * has completed.  We read this twice because this reg has
->  		 * some "sticky" (latched) bits.
-> @@ -1191,7 +1192,7 @@ s32 e1000e_config_fc_after_link_up(struct e1000_hw =
-*hw)
->  	 * flow control configured.
->  	 */
->  	if ((hw->phy.media_type =3D=3D e1000_media_type_internal_serdes) &&
-> -	    mac->autoneg) {
-> +	    mac->autoneg && hw->adapter->fc_autoneg) {
->  		/* Read the PCS_LSTS and check to see if AutoNeg
->  		 * has completed.
->  		 */
+Here.
 
+Antoine
 
+> >+	struct phy_berlin_usb_priv *priv;
+> >+	struct resource *res;
+> >+	struct phy_provider *phy_provider;
+> >+
+> >+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+> >+	if (!priv)
+> >+		return -ENOMEM;
+> >+
+> >+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >+	priv->base = devm_ioremap_resource(&pdev->dev, res);
+> >+	if (IS_ERR(priv->base))
+> >+		return PTR_ERR(priv->base);
+> >+
+> >+	priv->rst_ctrl = devm_reset_control_get(&pdev->dev, NULL);
+> >+	if (IS_ERR(priv->rst_ctrl))
+> >+		return PTR_ERR(priv->rst_ctrl);
+> >+
+> >+	priv->pll_divider = *((u32 *)match->data);
+> >+
+> >+	priv->phy = devm_phy_create(&pdev->dev, &phy_berlin_usb_ops, NULL);
+> >+	if (IS_ERR(priv->phy)) {
+> >+		dev_err(&pdev->dev, "failed to create PHY\n");
+> >+		return PTR_ERR(priv->phy);
+> >+	}
+> >+
+> >+	platform_set_drvdata(pdev, priv);
+> >+
+> >+	phy_provider =
+> >+		devm_of_phy_provider_register(&pdev->dev, of_phy_simple_xlate);
+> >+	if (IS_ERR(phy_provider))
+> >+		return PTR_ERR(phy_provider);
+> >+
+> >+	return 0;
+> >+}
 
---=-D/+geDXLYimwsoKCuTYu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJTxkSiAAoJEOVv75VaS+3OFN8QAIRSYd9DNV7+4r4tniYSQMmx
-UYtlrP0LaNSH1JECV6dunTyNmEViJDIt1fl4UGyOVcXuPvKpNOse4zeFgfisEaRr
-F58VAiaKEQ1HZJWGOrtlhQWWKAv7jXDP1yaOeK+17qxM+u2G9ZmGQuFgnVUcIfCF
-qnTsvRmfDIPHBrsv5TYYyMdnOFaaSshFyYiSaZZN09heZNbl1cbPA1o3GHCNuHds
-yln9PuVXpxQttxr0Z140gqJpmLiDUY0sPHuC4BuPl7/wB8ldiVwme+27wUk+gigH
-0GgsYCnSN42XinYVUwCzwpaUzthjpro5VaGSO5slzl0OsHiFVzBgYuVaLDtbD0Aw
-5R0/XRHs7Qel/FXbuVgXedIRJH65cEmyXw38ulQeV8Kh7E9cjsuW1cNUy4SJE0fS
-Oogzl/95xSbCssh9A7bw/JLx+ard2LEtsSkY6S+XqUgF1pnigJADHo8XoPcbCt+t
-vm4WbzikFk+f/7CUcFElpUVu8fydji7BISajbI+bTl4fubJuqlDfdhxCRb+D242z
-ILOr4kaBNYM12gAbzKLPPGzyRtZaYfxfwR/8TVxnHUJzfzMVHTN+Pv0eN0QFwTyb
-G+vfvuyBrszAIZphjS8rCGZazgRRbg9ADsagsFf3/Mv/c3lfH+dO7ebhOGhDGC1Y
-6xR9EzCvo+WZtGOQB5id
-=Ykx+
------END PGP SIGNATURE-----
-
---=-D/+geDXLYimwsoKCuTYu--
-
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
