@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaGPVfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:35:16 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62423 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751359AbaGPVfL (ORCPT
+	id S1754124AbaGPVf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:35:28 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:41733 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaGPVfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:35:11 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: Re: linux-next: manual merge of the pm tree with the ia64 tree
-Date: Wed, 16 Jul 2014 23:53:26 +0200
-Message-ID: <1945215.v4beMAkkaN@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802641B27@SHSMSX101.ccr.corp.intel.com>
-References: <20140715135620.2e68ee57@canb.auug.org.au> <2083565.B2UV9LfG6j@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802641B27@SHSMSX101.ccr.corp.intel.com>
+	Wed, 16 Jul 2014 17:35:23 -0400
+Date: Thu, 17 Jul 2014 00:35:15 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 07/10] proc: convert /proc/$PID/oom_score to seq_file
+ interface
+Message-ID: <20140716213515.GF21290@p183.telecom.by>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 16, 2014 03:06:13 AM Zheng, Lv wrote:
-> Hi,
-> 
-> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > Sent: Tuesday, July 15, 2014 8:15 PM
-> > 
-> > On Tuesday, July 15, 2014 01:56:20 PM Stephen Rothwell wrote:
-> > >
-> > > --Sig_/Cs291xJCrI1kc_+PiCdNT0M
-> > > Content-Type: text/plain; charset=US-ASCII
-> > > Content-Transfer-Encoding: quoted-printable
-> > >
-> > > Hi Rafael,
-> > >
-> > > Today's linux-next merge of the pm tree got a conflict in
-> > > drivers/acpi/acpi_extlog.c between commits 2dfb7d51a61d ("trace, RAS:
-> > > Add eMCA trace event interface") and d6cae935ec5b ("trace, eMCA: Add a
-> > > knob to adjust where to save event log") from the ia64 tree and commit
-> > > 0a00fd5e20fd ("ACPICA: Restore error table definitions to reduce code
-> > > differences between Linux and ACPICA upstream") from the pm tree.
-> > >
-> > > I fixed it up (hopefully - see below) and can carry the fix as
-> > > necessary (no action is required).
-> > 
-> > Thanks for fixing this up!
-> > 
-> > Lv, can you please check if acpi_extlog.c is fine in linux-next?
-> 
-> I checked.
-> 
-> There is no problem in rafael/linux-pm.git/linux-next branch.
-> The 2 commits:
->   trace, RAS: Add eMCA trace event interface
->   trace, eMCA: Add a knob to adjust where to save event log
-> are not in torvalds/linux.git/master branch, I found them in aegl/linux.git/next branch.
-> 
-> So if torvalds/linux.git/master merges rafael/linux-pm.git/linux-next before merging aegl/linux.git/next, we will need the following fix.
-> And the following collision fix is correct.
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Thanks for checking!
+ fs/proc/base.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Rafael
-
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -412,7 +412,8 @@ static const struct file_operations proc_cpuset_operations = {
+ };
+ #endif
+ 
+-static int proc_oom_score(struct task_struct *task, char *buffer)
++static int proc_oom_score(struct seq_file *m, struct pid_namespace *ns,
++			  struct pid *pid, struct task_struct *task)
+ {
+ 	unsigned long totalpages = totalram_pages + total_swap_pages;
+ 	unsigned long points = 0;
+@@ -422,7 +423,7 @@ static int proc_oom_score(struct task_struct *task, char *buffer)
+ 		points = oom_badness(task, NULL, NULL, totalpages) *
+ 						1000 / totalpages;
+ 	read_unlock(&tasklist_lock);
+-	return sprintf(buffer, "%lu\n", points);
++	return seq_printf(m, "%lu\n", points);
+ }
+ 
+ struct limit_names {
+@@ -2617,7 +2618,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ #ifdef CONFIG_CGROUPS
+ 	REG("cgroup",  S_IRUGO, proc_cgroup_operations),
+ #endif
+-	INF("oom_score",  S_IRUGO, proc_oom_score),
++	ONE("oom_score",  S_IRUGO, proc_oom_score),
+ 	REG("oom_adj",    S_IRUGO|S_IWUSR, proc_oom_adj_operations),
+ 	REG("oom_score_adj", S_IRUGO|S_IWUSR, proc_oom_score_adj_operations),
+ #ifdef CONFIG_AUDITSYSCALL
+@@ -2955,7 +2956,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ #ifdef CONFIG_CGROUPS
+ 	REG("cgroup",  S_IRUGO, proc_cgroup_operations),
+ #endif
+-	INF("oom_score", S_IRUGO, proc_oom_score),
++	ONE("oom_score", S_IRUGO, proc_oom_score),
+ 	REG("oom_adj",   S_IRUGO|S_IWUSR, proc_oom_adj_operations),
+ 	REG("oom_score_adj", S_IRUGO|S_IWUSR, proc_oom_score_adj_operations),
+ #ifdef CONFIG_AUDITSYSCALL
