@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030478AbaGPHGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:06:53 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41549 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030460AbaGPHGt (ORCPT
+	id S1030496AbaGPHHB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:07:01 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58325 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030460AbaGPHG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:06:49 -0400
-Date: Wed, 16 Jul 2014 09:06:43 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Mugunthan V N <mugunthanvnm@ti.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Re-send PATCH 1/1] arm: dra7xx: Add hwmod data for MDIO and CPSW
-Message-ID: <20140716070643.GC3378@breakpoint.cc>
-References: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com>
- <20140709095552.GA25154@breakpoint.cc>
- <20140709100147.GB25154@breakpoint.cc>
- <alpine.DEB.2.02.1407152019020.21432@utopia.booyaka.com>
+	Wed, 16 Jul 2014 03:06:56 -0400
+Date: Wed, 16 Jul 2014 00:06:51 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RESEND][PATCH 08/10][SCSI]mpt2sas: Get IOC_FACTS information
+ using handshake protocol only after HBA card gets into READY or Operational
+ state
+Message-ID: <20140716070651.GA17886@infradead.org>
+References: <20140625103532.GA12953@avagotech.com>
+ <yq1wqbetsf2.fsf@sermon.lab.mkp.net>
+ <CAK=zhgoWvnXFdGqVevWJmLpDebb0fq9euYjxJE+EEGYqLoPrhw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407152019020.21432@utopia.booyaka.com>
+In-Reply-To: <CAK=zhgoWvnXFdGqVevWJmLpDebb0fq9euYjxJE+EEGYqLoPrhw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-15 20:21:21 [+0000], Paul Walmsley wrote:
-> Hi Sebastian,
-Hi Paul,
+On Wed, Jul 16, 2014 at 12:00:22PM +0530, Sreekanth Reddy wrote:
+> Next time onwards I will follow as per your suggestions while posting the
+> patches to upstream.
 
-> > Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-> > 
-> > This is basically what Tony hasked me to do: No IRQ numbers & iomem.
-> 
-> Sorry - I'm a bit confused - Sebastian, did you test this one?  If so, is 
-> it okay to add a Tested-by from you?
+Btw, it would be good to resend the series with the various updates from
+Martin once he's done with the review.  That makes it a lot easier for
+me to pick it up.
 
-Tested-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+If you want to make my life even easier send the series using
+git-send-patch so that it's properly threaded.
 
-> - Paul
-
-Sebastian
