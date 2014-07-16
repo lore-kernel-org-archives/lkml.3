@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759900AbaGPI1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:27:53 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:13243 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759631AbaGPI1o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:27:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 16 Jul 2014 01:16:24 -0700
-Date: Wed, 16 Jul 2014 11:27:40 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/6] clk: tegra: make tegra_clocks_apply_init_table
- arch_initcall
-Message-ID: <20140716082740.GK23218@tbergstrom-lnx.Nvidia.com>
-References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
- <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
- <20140716071932.GB7978@ulmo>
+	id S1760098AbaGPI2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:28:21 -0400
+Received: from ozlabs.org ([103.22.144.67]:47660 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759984AbaGPI2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:28:19 -0400
+Date: Wed, 16 Jul 2014 18:28:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jenny Tc <jenny.tc@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Sebastian Reichel <sre@kernel.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Belisko Marek <marek.belisko@gmail.com>
+Subject: Re: Power Supply Subsystem Maintainer
+Message-ID: <20140716182811.45920bcd@canb.auug.org.au>
+In-Reply-To: <20140716080046.GA17155@amd.pavel.ucw.cz>
+References: <20140630111640.GA13774@jenny-desktop>
+	<CAAfyv376J=oayov74bWdDmd+kDCwLJWAw5SMYRZGwbNP6rmEbA@mail.gmail.com>
+	<20140702031119.GA385@jenny-desktop>
+	<20140707112000.028524371bb7e234fcf79205@linux-foundation.org>
+	<CALT56yPehFRfZu-PpPR9UeJV9b9f6azVa3QouAzwY726x-v=+g@mail.gmail.com>
+	<20140716080046.GA17155@amd.pavel.ucw.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140716071932.GB7978@ulmo>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ooen9GLbvE0xJ7LxmZ.vmpi"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 09:19:33AM +0200, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Jul 15, 2014 at 06:24:32PM +0300, Peter De Schrijver wrote:
-> [...]
-> > diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-> > index d081732..65cde4e 100644
-> > --- a/drivers/clk/tegra/clk.c
-> > +++ b/drivers/clk/tegra/clk.c
-> > @@ -290,10 +290,13 @@ struct clk ** __init tegra_lookup_dt_id(int clk_id,
-> >  
-> >  tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
-> >  
-> > -void __init tegra_clocks_apply_init_table(void)
-> > +static int __init tegra_clocks_apply_init_table(void)
-> >  {
-> >  	if (!tegra_clk_apply_init_table)
-> > -		return;
-> > +		return 0;
-> 
-> Shouldn't this be an error? Or perhaps WARN()? To make sure this gets
+--Sig_/ooen9GLbvE0xJ7LxmZ.vmpi
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-An arch_initcall will be called for every ARM platform I think? In case
-this gets called on a non-Tegra platform, tegra_clk_apply_init_table will not
-be set and therefore a silent return 0; seems the most appropriate thing to do
-to me?
+Hi Pavel,
 
+On Wed, 16 Jul 2014 10:00:47 +0200 Pavel Machek <pavel@ucw.cz> wrote:
+>
+> I believe that is good idea. Does Sebastian want to submit patch to
+> the MAINTAINERS file?
+
+And please remember to let the linux-next maintainer know about changes
+to trees/maintainers ... ;-)
+
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Peter.
+--Sig_/ooen9GLbvE0xJ7LxmZ.vmpi
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTxjegAAoJEMDTa8Ir7ZwV8p8P/3PdpKr/siyDJT3cARD8ADjb
+A7AbQ3yYfhjZwMK65Pr+bA/FLBC2Pi1z4o2sCI/lza26oHXUrt4xjWo0w+ohyyQu
+ImDKMrsxP4w4ykAfouNs3sN665Dk1tzz+ukILqY+TSlb+wPmNbuU6KDmZNBLb0J/
+YUNey5YCXkrPVvVPY5acuWLr0NaZXl7Ak3FUX8mCNmQp4uczAa+W6HEEW+JDOgNX
+8Op0zhH2ImJ1wIJ+h9qWYTRt3M8h/jM6b5AuKqESGXWHZAkgUxwa5tuiIEfqQhCq
+JTfai7R9lLtFPTPGcSdsqc944iJ95HuH4vkHCGvqUWFet9DIc7yWwlGQd+q5b0nH
+hPltg7+fZFHYVYLeKcIebpMCfC1C6qWJ0vO1VLccWIQnl1GOCvbkyh+wsJBJxz4w
+PHv91Y5n1Rg2yWFTyQgEqj6dZ1OVRnyrqZfhDGByk/yw/Mp2K1N2DGhpET2FGROH
+HFYgvD2etm0ohnqb0hBwrHl1g5zeZR808L/n1QRkIhOoxgAgn7c2PGEUIiQzeiuJ
+3HLNhs2zkIHjf2gDQEqQhuG4F3Qz8aqGo4/LEfo7id/FG9INyZBzh/f88rBSE2mP
+X1lzMJ1FuwwECvMmk8X3a6toPuTQKKz7h9xrEslkjElWZtvV5EGmFhfDFqnuHcRn
+vPQxCndxwPVKO6PY4Qs0
+=/H8M
+-----END PGP SIGNATURE-----
+
+--Sig_/ooen9GLbvE0xJ7LxmZ.vmpi--
