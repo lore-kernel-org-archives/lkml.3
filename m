@@ -1,105 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798AbaGPNJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:09:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47124 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934131AbaGPNJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:09:28 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [RESEND PATCH v3 1/4] usb: dwc3: dwc3-omap: Remove x_major calculation from revision register
-Date: Wed, 16 Jul 2014 18:37:05 +0530
-Message-ID: <1405516028-26500-2-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405516028-26500-1-git-send-email-george.cherian@ti.com>
-References: <1405516028-26500-1-git-send-email-george.cherian@ti.com>
+	id S964835AbaGPNJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:09:38 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:34146 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964800AbaGPNJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:09:34 -0400
+Date: Wed, 16 Jul 2014 15:09:35 +0200
+From: Josef Gajdusek <atx@atalax.net>
+To: linux-iio@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
+        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
+        dan.carpenter@oracle.com, lars@metafoo.de
+Subject: [PATCH v4 (staging-next) 5/5] staging:iio:hmc5843: Add support for
+ spi hmc5983
+Message-ID: <20140716130935.GF3315@dashie>
+References: <20140716130635.GA3315@dashie>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140716130635.GA3315@dashie>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the x_major calculation logic from the wrapper revision register
-to differentiate between OMAP5 and AM437x. This was done to find the
-register offsets of wrapper register. Now that We do it using dt
-compatible, remove the whole logic.
+This patch adds support for the hmc5983 spi interface.
+This chip is almost identical to the hmc5883. The difference being added
+temperature compensation, additional available sample rate (220Hz) and an SPI
+interface.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Josef Gajdusek <atx@atx.name>
 ---
- drivers/usb/dwc3/dwc3-omap.c | 36 ++++--------------------------------
- 1 file changed, 4 insertions(+), 32 deletions(-)
+ drivers/staging/iio/magnetometer/Kconfig       | 15 ++++++
+ drivers/staging/iio/magnetometer/Makefile      |  1 +
+ drivers/staging/iio/magnetometer/hmc5843_spi.c | 73 ++++++++++++++++++++++++++
+ 3 files changed, 89 insertions(+)
+ create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 4af4c35..999bdc8 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -77,10 +77,6 @@
- #define USBOTGSS_DEV_EBC_EN			0x0110
- #define USBOTGSS_DEBUG_OFFSET			0x0600
+diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
+index c086f33..dec814a 100644
+--- a/drivers/staging/iio/magnetometer/Kconfig
++++ b/drivers/staging/iio/magnetometer/Kconfig
+@@ -22,4 +22,19 @@ config SENSORS_HMC5843_I2C
+ 	  - hmc5843_core (core functions)
+ 	  - hmc5843_i2c (support for HMC5843, HMC5883, HMC5883L and HMC5983)
  
--/* REVISION REGISTER */
--#define USBOTGSS_REVISION_XMAJOR(reg)		((reg >> 8) & 0x7)
--#define USBOTGSS_REVISION_XMAJOR1		1
--#define USBOTGSS_REVISION_XMAJOR2		2
- /* SYSCONFIG REGISTER */
- #define USBOTGSS_SYSCONFIG_DMADISABLE		(1 << 16)
++config SENSORS_HMC5843_SPI
++	tristate "Honeywell HMC5983 3-Axis Magnetometer (SPI)"
++	depends on SPI_MASTER
++	select SENSORS_HMC5843
++	select REGMAP_SPI
++	help
++	  Say Y here to add support for the Honeywell HMC5983 3-Axis Magnetometer
++	  (digital compass).
++
++	  This driver can also be compiled as a set of modules.
++	  If so, these modules will be created:
++	  - hmc5843_core (core functions)
++	  - hmc5843_spi (support for HMC5983)
++
++
+ endmenu
+diff --git a/drivers/staging/iio/magnetometer/Makefile b/drivers/staging/iio/magnetometer/Makefile
+index 65baf1c..33761a1 100644
+--- a/drivers/staging/iio/magnetometer/Makefile
++++ b/drivers/staging/iio/magnetometer/Makefile
+@@ -4,3 +4,4 @@
  
-@@ -129,7 +125,6 @@ struct dwc3_omap {
- 	u32			irq_eoi_offset;
- 	u32			debug_offset;
- 	u32			irq0_offset;
--	u32			revision;
- 
- 	u32			dma_status:1;
- 
-@@ -397,7 +392,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	int			irq;
- 
- 	int			utmi_mode = 0;
--	int			x_major;
- 
- 	u32			reg;
- 
-@@ -448,32 +442,10 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 		goto err0;
- 	}
- 
--	reg = dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
--	omap->revision = reg;
--	x_major = USBOTGSS_REVISION_XMAJOR(reg);
--
--	/* Differentiate between OMAP5 and AM437x */
--	switch (x_major) {
--	case USBOTGSS_REVISION_XMAJOR1:
--	case USBOTGSS_REVISION_XMAJOR2:
--		omap->irq_eoi_offset = 0;
--		omap->irq0_offset = 0;
--		omap->irqmisc_offset = 0;
--		omap->utmi_otg_offset = 0;
--		omap->debug_offset = 0;
--		break;
--	default:
--		/* Default to the latest revision */
--		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
--		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
--		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
--		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
--		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
--		break;
--	}
--
--	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
--	 * changes in wrapper registers, Using dt compatible for aegis
-+	/* Differentiate between OMAP5 and AM437x.
-+	 * For OMAP5(ES2.0) and AM437x wrapper revision is same, even
-+	 * though there are changes in wrapper register offsets.
-+	 * Using dt compatible to differentiate  AM437x.
- 	 */
- 
- 	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
+ obj-$(CONFIG_SENSORS_HMC5843)		+= hmc5843_core.o
+ obj-$(CONFIG_SENSORS_HMC5843_I2C)	+= hmc5843_i2c.o
++obj-$(CONFIG_SENSORS_HMC5843_SPI)	+= hmc5843_spi.o
+diff --git a/drivers/staging/iio/magnetometer/hmc5843_spi.c b/drivers/staging/iio/magnetometer/hmc5843_spi.c
+new file mode 100644
+index 0000000..62964a4
+--- /dev/null
++++ b/drivers/staging/iio/magnetometer/hmc5843_spi.c
+@@ -0,0 +1,73 @@
++/*
++ * SPI driver for hmc5983
++ *
++ * Copyright (C) Josef Gajdusek <atx@atx.name>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * */
++
++#include <linux/module.h>
++#include <linux/spi/spi.h>
++#include <linux/iio/iio.h>
++
++#include "hmc5843.h"
++
++static struct regmap_config hmc5843_spi_regmap_config = {
++		.reg_bits = 8,
++		.val_bits = 8,
++
++		.rd_table = &hmc5843_readable_table,
++		.wr_table = &hmc5843_writable_table,
++		.volatile_table = &hmc5843_volatile_table,
++
++		/* Autoincrement address pointer */
++		.read_flag_mask = 0xc0,
++
++		.cache_type = REGCACHE_RBTREE,
++};
++
++static int hmc5843_spi_probe(struct spi_device *spi)
++{
++	int ret;
++
++	spi->mode = SPI_MODE_3;
++	spi->max_speed_hz = 8000000;
++	spi->bits_per_word = 8;
++	ret = spi_setup(spi);
++	if (ret)
++		return ret;
++
++	return hmc5843_common_probe(&spi->dev,
++			devm_regmap_init_spi(spi, &hmc5843_spi_regmap_config),
++			HMC5983_ID);
++}
++
++static int hmc5843_spi_remove(struct spi_device *spi)
++{
++	return hmc5843_common_remove(&spi->dev);
++}
++
++static const struct spi_device_id hmc5843_id[] = {
++	{ "hmc5983", HMC5983_ID },
++	{ }
++};
++
++static struct spi_driver hmc5843_driver = {
++		.driver = {
++				.name = "hmc5843",
++				.pm = HMC5843_PM_OPS,
++				.owner = THIS_MODULE,
++		},
++		.id_table = hmc5843_id,
++		.probe = hmc5843_spi_probe,
++		.remove = hmc5843_spi_remove,
++};
++
++module_spi_driver(hmc5843_driver);
++
++MODULE_AUTHOR("Josef Gajdusek <atx@atx.name>");
++MODULE_DESCRIPTION("HMC5983 SPI driver");
++MODULE_LICENSE("GPL");
 -- 
-1.8.3.1
+1.8.5.5
 
