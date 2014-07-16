@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991AbaGPE2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:28:19 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58002 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933959AbaGPE2R (ORCPT
+	id S964815AbaGPE2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:28:55 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:37922 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933959AbaGPE2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:28:17 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53C5FF60.5060605@roeck-us.net>
-Date: Tue, 15 Jul 2014 21:28:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 00:28:52 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/84] 3.15.6-stable review
-References: <20140715231713.193785557@linuxfoundation.org>
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1405484621.14773.22.camel@joe-AO725>
+References: <CAPDOMVggidq18zBrnVbS=P-DRjTd8K4zYemiNs=OnmbqTXGNAg@mail.gmail.com>
+	<1405481937.14773.8.camel@joe-AO725>
+	<CAPDOMVhSosu-WZkBo+mKs3mJ+2+W-rBq0LFUnU_Lnzn=jR7=wg@mail.gmail.com>
+	<1405484621.14773.22.camel@joe-AO725>
+Date: Wed, 16 Jul 2014 00:28:51 -0400
+Message-ID: <CAPDOMVi87FAukETbMbjtRqejgFN+mWfqZvP+Uw2eT===Oaz0ww@mail.gmail.com>
+Subject: Re: Checkpatch Feature Idea: Search directory for files with errors
+ and warnings with -d argument
+From: Nick Krause <xerofoify@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
+        robh@kernel.org, florian.vaussard@epfl.ch,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 04:16 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.15.6 release.
-> There are 84 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Wed, Jul 16, 2014 at 12:23 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2014-07-16 at 00:16 -0400, Nick Krause wrote:
+>> On Tue, Jul 15, 2014 at 11:38 PM, Joe Perches <joe@perches.com> wrote:
+>> > On Tue, 2014-07-15 at 22:50 -0400, Nick Krause wrote:
+>> >> I may have not found it myself but if it doesn't exist can we write a
+>> >> feature for checkpatch to be able to recursively
+>> >> search a directory structure with a -d aRrgument in order to make it
+>> >> easier to search larger directories for files that still
+>> >> need cleanup for files having kernel coding style issues.
+>> >linux-kernel@vger.kernel.org
+>> > xargs already works fine.
+>> >
+>> > git ls-files <dir>/*.[ch] | xargs ./scripts/checkpatch.pl -f
+>> >
+>> > I suggest you only use anything like this
+>> > on staging directories.
+>> >
+>> >
+>>
+>> Thanks Joe,
+>> That was what I needed to known :). I was hitting some errors in arch,
+>> so I will run that to see if there are any others.
+>> Cheers Nick
 >
-> Responses should be made by Thu Jul 17 23:17:00 UTC 2014.
-> Anything received after that time might be too late.
+> I again suggest you _ONLY_ use checkpatch on staging.
+>
+> Doing checkpatch only cleanups will not make you a
+> better developer nor give you a good understanding
+> of the code operation.
 >
 
-Build results:
-	total: 139 pass: 139 fail: 0
-
-Qemu tests all passed.
-
-Another set of perfect results.
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+I am cleaning up the kernel as it needs a lot of cleanup.  In addition
+I am doing build related issues.
+Some developers removed me from FIX MES after several stupid patches I
+sent. If there is a area
+that needs help , please let me know :).
