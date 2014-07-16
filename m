@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337AbaGPLO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:14:26 -0400
-Received: from smtp-out-125.synserver.de ([212.40.185.125]:1063 "EHLO
-	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaGPLOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:14:21 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29807
-Message-ID: <53C65E8F.2080708@metafoo.de>
-Date: Wed, 16 Jul 2014 13:14:23 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1759409AbaGPLOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:14:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52619 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759362AbaGPLOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:14:34 -0400
+Message-ID: <53C65E92.2000606@suse.cz>
+Date: Wed, 16 Jul 2014 13:14:26 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-CC: Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: question regarding drivers/staging/iio/adc/ad7280a.c
-References: <CAB78YHwneVuVBPujeKE=rEygvtyn=VvtLtd75+pvwqxPxYcB6g@mail.gmail.com> <53C5656F.9030200@kernel.org>
-In-Reply-To: <53C5656F.9030200@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        Lisa Du <cldu@marvell.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] fix freepage count problems due to memory isolation
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com> <53B6C947.1070603@suse.cz> <20140707044932.GA29236@js1304-P5Q-DELUXE> <53BAAFA5.9070403@suse.cz> <20140714062222.GA11317@js1304-P5Q-DELUXE> <53C3A7A5.9060005@suse.cz> <20140715082828.GM11317@js1304-P5Q-DELUXE> <53C4E813.7020108@suse.cz> <20140716084333.GA20359@js1304-P5Q-DELUXE>
+In-Reply-To: <20140716084333.GA20359@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 07:31 PM, Jonathan Cameron wrote:
-> On 14/07/14 21:31, Himangi Saraogi wrote:
->> Hi,
->>
->> The code seems to have a memory leak. The function ad7280_attr_init
->> calls kasprintf a number of times, which calls kmalloc (or more
->> precisely kmalloc_track_caller), but this data does not ever seem to
->> be freed. I propose to introduce a devm_  version of kasprintf, which
->> will be useful for other files also. I am not very sure that will it
->> be useful to introduce a bunch of kfrees, just to remove the memory
->> leaks immediately, but I think it would be safer just to devm
->> everything, so then one is sure that everything is freed as it should
->> be, in the right order.
->>
-> The question here is whether such a memory leak squashing would be
-> worth applying to stable.  Personally I'd go with no. In which case
-> feel free to fix it via the introduction of a devm version.
+On 07/16/2014 10:43 AM, Joonsoo Kim wrote:
+>> I think your plan of multiple parallel CMA allocations (and thus
+>> multiple parallel isolations) is also possible. The isolate pcplists
+>> can be shared by pages coming from multiple parallel isolations. But
+>> the flush operation needs a pfn start/end parameters to only flush
+>> pages belonging to the given isolation. That might mean a bit of
+>> inefficient list traversing, but I don't think it's a problem.
+> 
+> I think that special pcplist would cause a problem if we should check
+> pfn range. If there are too many pages on this pcplist, move pages from
+> this pcplist to isolate freelist takes too long time in irq context and
+> system could be broken. This operation cannot be easily stopped because
+> it is initiated by IPI on other cpu and starter of this IPI expect that
+> all pages on other cpus' pcplist are moved properly when returning
+> from on_each_cpu().
+> 
+> And, if there are so many pages, serious lock contention would happen
+> in this case.
 
-devm is probably fine here.
+Hm I see. So what if it wasn't a special pcplist, but a special "free list"
+where the pages would be just linked together as on pcplist, regardless of
+order, and would not merge until the CPU that drives the memory isolation
+process decides it is safe to flush them away. That would remove the need for
+IPI's and provide the same guarantees I think.
 
-The long term fix should be to switch the driver to use 
-iio_chan_spec_ext_info infrastructure which will handle the allocation and 
-freeing internally in the IIO framework.
+> Anyway, my idea's key point is using PageIsolated() to distinguish
+> isolated page, instead of using PageBuddy(). If page is PageIsolated(),
 
-- Lars
+Is PageIsolated a completely new page flag? Those are a limited resource so I
+would expect some resistance to such approach. Or a new special page->_mapcount
+value? That could maybe work.
+
+> it isn't handled as freepage although it is in buddy allocator. During free,
+> page with MIGRATETYPE_ISOLATE will be marked as PageIsolated() and
+> won't be merged and counted for freepage.
+
+OK. Preventing wrong merging is the key point and this should work.
+
+> When we move pages from normal buddy list to isolate buddy
+> list, we check PageBuddy() and subtract number of PageBuddy() pages
+
+Do we really need to check PageBuddy()? Could a page get marked as PageIsolate()
+but still go to normal list instead of isolate list?
+
+> from number of freepage. And, change page from PageBuddy() to PageIsolated()
+> since it is handled as isolated page at this point. In this way, freepage
+> count will be correct.
+> 
+> Unisolation can be done by similar approach.
+> 
+> I made prototype of this approach and it isn't intrusive to core
+> allocator compared to my previous patchset.
+> 
+> Make sense?
+
+I think so :)
+
+> Thanks.
+> 
 
