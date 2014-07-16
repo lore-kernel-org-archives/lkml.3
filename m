@@ -1,27 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965751AbaGPTWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:22:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44431 "EHLO
+	id S935001AbaGPTXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:23:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44464 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065AbaGPTWo (ORCPT
+	with ESMTP id S965774AbaGPTW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:22:44 -0400
-Date: Wed, 16 Jul 2014 12:21:57 -0700
-From: tip-bot for David Rientjes <tipbot@zytor.com>
-Message-ID: <tip-4485154138f6ffa5b252cb490aba3e8eb30124e4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        tglx@linutronix.de, rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
+	Wed, 16 Jul 2014 15:22:57 -0400
+Date: Wed, 16 Jul 2014 12:20:34 -0700
+From: tip-bot for Jason Low <tipbot@zytor.com>
+Message-ID: <tip-046a619d8e9746fa4c0e29e8c6b78e16efc008a8@git.kernel.org>
+Cc: mingo@kernel.org, konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, jason.low2@hp.com, clm@fb.com, riel@redhat.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, david@fromorbit.com,
+        davidlohr@hp.com, scott.norton@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, waiman.long@hp.com, tim.c.chen@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, jbacik@fusionio.com, aswin@hp.com
+Reply-To: mingo@kernel.org, konrad.wilk@oracle.com,
+        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
+        clm@fb.com, riel@redhat.com, akpm@linux-foundation.org,
+        rostedt@goodmis.org, heiko.carstens@de.ibm.com, david@fromorbit.com,
+        tglx@linutronix.de, scott.norton@hp.com, davidlohr@hp.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, waiman.long@hp.com,
+        tim.c.chen@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        jbacik@fusionio.com, aswin@hp.com
+In-Reply-To: <1405358872-3732-2-git-send-email-jason.low2@hp.com>
+References: <1405358872-3732-2-git-send-email-jason.low2@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/intel:
-  Avoid spamming kernel log for BTS buffer failure
-Git-Commit-ID: 4485154138f6ffa5b252cb490aba3e8eb30124e4
+Subject: [tip:locking/urgent] locking/spinlocks/mcs:
+  Rename optimistic_spin_queue() to optimistic_spin_node()
+Git-Commit-ID: 046a619d8e9746fa4c0e29e8c6b78e16efc008a8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,49 +43,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4485154138f6ffa5b252cb490aba3e8eb30124e4
-Gitweb:     http://git.kernel.org/tip/4485154138f6ffa5b252cb490aba3e8eb30124e4
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Mon, 30 Jun 2014 16:04:08 -0700
+Commit-ID:  046a619d8e9746fa4c0e29e8c6b78e16efc008a8
+Gitweb:     http://git.kernel.org/tip/046a619d8e9746fa4c0e29e8c6b78e16efc008a8
+Author:     Jason Low <jason.low2@hp.com>
+AuthorDate: Mon, 14 Jul 2014 10:27:48 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:31:30 +0200
+CommitDate: Wed, 16 Jul 2014 13:28:03 +0200
 
-perf/x86/intel: Avoid spamming kernel log for BTS buffer failure
+locking/spinlocks/mcs: Rename optimistic_spin_queue() to optimistic_spin_node()
 
-It's unnecessary to excessively spam the kernel log anytime the BTS buffer
-cannot be allocated, so make this allocation __GFP_NOWARN.
+Currently, the per-cpu nodes structure for the cancellable MCS spinlock is
+named "optimistic_spin_queue". However, in a follow up patch in the series
+we will be introducing a new structure that serves as the new "handle" for
+the lock. It would make more sense if that structure is named
+"optimistic_spin_queue". Additionally, since the current use of the
+"optimistic_spin_queue" structure are  "nodes", it might be better if we
+rename them to "node" anyway.
 
-The user probably will want to at least find some artifact that the
-allocation has failed in the past, probably due to fragmentation because
-of its large size, when it's not allocated at bootstrap.  Thus, add a
-WARN_ONCE() so something is left behind for them to understand why perf
-commnads that require PEBS is not working properly.
+This preparatory patch renames all current "optimistic_spin_queue"
+to "optimistic_spin_node".
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Waiman Long <waiman.long@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com
+Cc: Chris Mason <clm@fb.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Josef Bacik <jbacik@fusionio.com>
+Link: http://lkml.kernel.org/r/1405358872-3732-2-git-send-email-jason.low2@hp.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/linux/mutex.h         |  4 ++--
+ include/linux/rwsem.h         |  4 ++--
+ kernel/locking/mcs_spinlock.c | 24 ++++++++++++------------
+ kernel/locking/mcs_spinlock.h |  8 ++++----
+ 4 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 980970c..696ade3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -311,9 +311,11 @@ static int alloc_bts_buffer(int cpu)
- 	if (!x86_pmu.bts)
- 		return 0;
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index 11692de..885f3f5 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -46,7 +46,7 @@
+  * - detects multi-task circular deadlocks and prints out all affected
+  *   locks and tasks (and only those tasks)
+  */
+-struct optimistic_spin_queue;
++struct optimistic_spin_node;
+ struct mutex {
+ 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
+ 	atomic_t		count;
+@@ -56,7 +56,7 @@ struct mutex {
+ 	struct task_struct	*owner;
+ #endif
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	struct optimistic_spin_queue	*osq;	/* Spinner MCS lock */
++	struct optimistic_spin_node	*osq;	/* Spinner MCS lock */
+ #endif
+ #ifdef CONFIG_DEBUG_MUTEXES
+ 	const char 		*name;
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 8d79708..ba3f108 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -16,7 +16,7 @@
  
--	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL, node);
--	if (unlikely(!buffer))
-+	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_NOWARN, node);
-+	if (unlikely(!buffer)) {
-+		WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
- 		return -ENOMEM;
-+	}
+ #include <linux/atomic.h>
  
- 	max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
- 	thresh = max / 16;
+-struct optimistic_spin_queue;
++struct optimistic_spin_node;
+ struct rw_semaphore;
+ 
+ #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
+@@ -33,7 +33,7 @@ struct rw_semaphore {
+ 	 * if the owner is running on the cpu.
+ 	 */
+ 	struct task_struct *owner;
+-	struct optimistic_spin_queue *osq; /* spinner MCS lock */
++	struct optimistic_spin_node *osq; /* spinner MCS lock */
+ #endif
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
+index 838dc9e..e9866f7 100644
+--- a/kernel/locking/mcs_spinlock.c
++++ b/kernel/locking/mcs_spinlock.c
+@@ -14,18 +14,18 @@
+  * called from interrupt context and we have preemption disabled while
+  * spinning.
+  */
+-static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_queue, osq_node);
++static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_node, osq_node);
+ 
+ /*
+  * Get a stable @node->next pointer, either for unlock() or unqueue() purposes.
+  * Can return NULL in case we were the last queued and we updated @lock instead.
+  */
+-static inline struct optimistic_spin_queue *
+-osq_wait_next(struct optimistic_spin_queue **lock,
+-	      struct optimistic_spin_queue *node,
+-	      struct optimistic_spin_queue *prev)
++static inline struct optimistic_spin_node *
++osq_wait_next(struct optimistic_spin_node **lock,
++	      struct optimistic_spin_node *node,
++	      struct optimistic_spin_node *prev)
+ {
+-	struct optimistic_spin_queue *next = NULL;
++	struct optimistic_spin_node *next = NULL;
+ 
+ 	for (;;) {
+ 		if (*lock == node && cmpxchg(lock, node, prev) == node) {
+@@ -59,10 +59,10 @@ osq_wait_next(struct optimistic_spin_queue **lock,
+ 	return next;
+ }
+ 
+-bool osq_lock(struct optimistic_spin_queue **lock)
++bool osq_lock(struct optimistic_spin_node **lock)
+ {
+-	struct optimistic_spin_queue *node = this_cpu_ptr(&osq_node);
+-	struct optimistic_spin_queue *prev, *next;
++	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
++	struct optimistic_spin_node *prev, *next;
+ 
+ 	node->locked = 0;
+ 	node->next = NULL;
+@@ -149,10 +149,10 @@ unqueue:
+ 	return false;
+ }
+ 
+-void osq_unlock(struct optimistic_spin_queue **lock)
++void osq_unlock(struct optimistic_spin_node **lock)
+ {
+-	struct optimistic_spin_queue *node = this_cpu_ptr(&osq_node);
+-	struct optimistic_spin_queue *next;
++	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
++	struct optimistic_spin_node *next;
+ 
+ 	/*
+ 	 * Fast path for the uncontended case.
+diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
+index a2dbac4..c99dc00 100644
+--- a/kernel/locking/mcs_spinlock.h
++++ b/kernel/locking/mcs_spinlock.h
+@@ -118,12 +118,12 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+  * mutex_lock()/rwsem_down_{read,write}() etc.
+  */
+ 
+-struct optimistic_spin_queue {
+-	struct optimistic_spin_queue *next, *prev;
++struct optimistic_spin_node {
++	struct optimistic_spin_node *next, *prev;
+ 	int locked; /* 1 if lock acquired */
+ };
+ 
+-extern bool osq_lock(struct optimistic_spin_queue **lock);
+-extern void osq_unlock(struct optimistic_spin_queue **lock);
++extern bool osq_lock(struct optimistic_spin_node **lock);
++extern void osq_unlock(struct optimistic_spin_node **lock);
+ 
+ #endif /* __LINUX_MCS_SPINLOCK_H */
