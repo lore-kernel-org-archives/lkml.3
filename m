@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935230AbaGPTYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:24:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44543 "EHLO
+	id S935257AbaGPTYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:24:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44581 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935174AbaGPTYD (ORCPT
+	with ESMTP id S932138AbaGPTYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:24:03 -0400
-Date: Wed, 16 Jul 2014 12:23:49 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-0cdd192cf40fb6dbf03ec3af1c670068de3fd26c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de
-In-Reply-To: <c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net>
-References: <c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net>
+	Wed, 16 Jul 2014 15:24:35 -0400
+Date: Wed, 16 Jul 2014 12:23:18 -0700
+From: tip-bot for Jason Baron <tipbot@zytor.com>
+Message-ID: <tip-5cd08fbfdb6baa9fe98f530b76898fc5725a6289@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andi@firstfloor.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, jbaron@akamai.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, jbaron@akamai.com, tglx@linutronix.de
+In-Reply-To: <9d7780c83db26683955cd01e6bc654ee2586e67f.1404315388.git.jbaron@akamai.com>
+References: <9d7780c83db26683955cd01e6bc654ee2586e67f.1404315388.git.jbaron@akamai.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] kprobes/x86: Don'
- t try to resolve kprobe faults from userspace
-Git-Commit-ID: 0cdd192cf40fb6dbf03ec3af1c670068de3fd26c
+Subject: [tip:sched/core] sched: Fix static_key race with sched_feat()
+Git-Commit-ID: 5cd08fbfdb6baa9fe98f530b76898fc5725a6289
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,46 +33,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0cdd192cf40fb6dbf03ec3af1c670068de3fd26c
-Gitweb:     http://git.kernel.org/tip/0cdd192cf40fb6dbf03ec3af1c670068de3fd26c
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Fri, 11 Jul 2014 10:27:01 -0700
+Commit-ID:  5cd08fbfdb6baa9fe98f530b76898fc5725a6289
+Gitweb:     http://git.kernel.org/tip/5cd08fbfdb6baa9fe98f530b76898fc5725a6289
+Author:     Jason Baron <jbaron@akamai.com>
+AuthorDate: Wed, 2 Jul 2014 15:52:44 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 14:16:32 +0200
+CommitDate: Wed, 16 Jul 2014 13:38:21 +0200
 
-kprobes/x86: Don't try to resolve kprobe faults from userspace
+sched: Fix static_key race with sched_feat()
 
-This commit:
+As pointed out by Andi Kleen, the usage of static keys can be racy in
+sched_feat_disable() vs. sched_feat_enable(). Currently, we first check the
+value of keys->enabled, and subsequently update the branch direction. This,
+can be racy and can potentially leave the keys in an inconsistent state.
 
-    commit 6f6343f53d133bae516caf3d254bce37d8774625
-    Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-    Date:   Thu Apr 17 17:17:33 2014 +0900
+Take the i_mutex around these calls to resolve the race.
 
-        kprobes/x86: Call exception handlers directly from do_int3/do_debug
-
-appears to have inadvertently dropped a check that the int3 came
-from kernel mode.  Trying to dereference addr when addr is
-user-controlled is completely bogus.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net
+Reported-by: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: rostedt@goodmis.org
+Link: http://lkml.kernel.org/r/9d7780c83db26683955cd01e6bc654ee2586e67f.1404315388.git.jbaron@akamai.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/kprobes/core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/core.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 7596df6..67e6d19 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -574,6 +574,9 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 	struct kprobe *p;
- 	struct kprobe_ctlblk *kcb;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2f96081..8705125 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -245,6 +245,7 @@ sched_feat_write(struct file *filp, const char __user *ubuf,
+ 	char buf[64];
+ 	char *cmp;
+ 	int i;
++	struct inode *inode;
  
-+	if (user_mode_vm(regs))
-+		return 0;
-+
- 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
- 	/*
- 	 * We don't want to be preempted for the entire
+ 	if (cnt > 63)
+ 		cnt = 63;
+@@ -255,7 +256,11 @@ sched_feat_write(struct file *filp, const char __user *ubuf,
+ 	buf[cnt] = 0;
+ 	cmp = strstrip(buf);
+ 
++	/* Ensure the static_key remains in a consistent state */
++	inode = file_inode(filp);
++	mutex_lock(&inode->i_mutex);
+ 	i = sched_feat_set(cmp);
++	mutex_unlock(&inode->i_mutex);
+ 	if (i == __SCHED_FEAT_NR)
+ 		return -EINVAL;
+ 
