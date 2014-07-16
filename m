@@ -1,377 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbaGPUEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6128 "EHLO mx1.redhat.com"
+	id S1752500AbaGPUFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:05:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48957 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752391AbaGPUE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:04:27 -0400
+	id S1751864AbaGPUDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 16:03:13 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Yann Droneaud <ydroneaud@opteya.com>, Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 01/13] perf tools: Enable close-on-exec flag on perf file descriptor
-Date: Wed, 16 Jul 2014 22:02:37 +0200
-Message-Id: <1405540969-18975-2-git-send-email-jolsa@kernel.org>
+        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 08/13] perf tools: Automatically look for event file name for cpu
+Date: Wed, 16 Jul 2014 22:02:44 +0200
+Message-Id: <1405540969-18975-9-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
 References: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-In commit a21b0b354d4a ('perf: Introduce a flag to enable
-close-on-exec in perf_event_open()'), flag PERF_FLAG_FD_CLOEXEC
-was added to perf_event_open(2) syscall to allows userspace
-to atomically enable close-on-exec behavor when creating
-the file descriptor.
+When no JSON event file is specified automatically look
+for a suitable file in ~/.cache/pmu-events. A "perf download" can
+automatically add files there for the current CPUs.
 
-This patch makes perf tools use the new flag if supported
-by the kernel, so that the event file descriptors got
-automatically closed if perf tool exec a sub-command.
+This does not include the actual event files with perf,
+but they can be automatically downloaded instead
+(implemented in the next patch)
 
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/1404160127-7475-1-git-send-email-ydroneaud@opteya.com
+This has the advantage that the events can be always uptodate,
+because they are freshly downloaded. In oprofile we always
+had problems with out of date or incomplete events files.
+
+The event file format is per architecture, but can be
+extended for other architectures.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/1405123165-22666-7-git-send-email-andi@firstfloor.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf              |  1 +
- tools/perf/bench/mem-memcpy.c         |  4 ++-
- tools/perf/bench/mem-memset.c         |  4 ++-
- tools/perf/builtin-sched.c            |  4 ++-
- tools/perf/tests/bp_signal.c          |  4 ++-
- tools/perf/tests/bp_signal_overflow.c |  4 ++-
- tools/perf/tests/rdpmc.c              |  4 ++-
- tools/perf/util/cloexec.c             | 57 +++++++++++++++++++++++++++++++++++
- tools/perf/util/cloexec.h             |  6 ++++
- tools/perf/util/evsel.c               | 12 ++++++--
- tools/perf/util/record.c              |  9 ++++--
- 11 files changed, 97 insertions(+), 12 deletions(-)
- create mode 100644 tools/perf/util/cloexec.c
- create mode 100644 tools/perf/util/cloexec.h
+ tools/perf/arch/x86/util/header.c | 19 ++++++++++++++++---
+ tools/perf/util/jevents.c         | 40 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/jevents.h         |  1 +
+ tools/perf/util/pmu.c             |  2 +-
+ 4 files changed, 58 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 9670a16fa577..66cde74ee851 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -373,6 +373,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
- LIB_OBJS += $(OUTPUT)util/record.o
- LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
-+LIB_OBJS += $(OUTPUT)util/cloexec.o
+diff --git a/tools/perf/arch/x86/util/header.c b/tools/perf/arch/x86/util/header.c
+index 146d12a1cec0..76e0ece09b49 100644
+--- a/tools/perf/arch/x86/util/header.c
++++ b/tools/perf/arch/x86/util/header.c
+@@ -5,6 +5,7 @@
+ #include <string.h>
  
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index e622c3e96efc..2465141b554b 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -10,6 +10,7 @@
- #include "../util/util.h"
- #include "../util/parse-options.h"
- #include "../util/header.h"
-+#include "../util/cloexec.h"
- #include "bench.h"
- #include "mem-memcpy-arch.h"
+ #include "../../util/header.h"
++#include "../../util/jevents.h"
  
-@@ -83,7 +84,8 @@ static struct perf_event_attr cycle_attr = {
+ static inline void
+ cpuid(unsigned int op, unsigned int *a, unsigned int *b, unsigned int *c,
+@@ -19,8 +20,8 @@ cpuid(unsigned int op, unsigned int *a, unsigned int *b, unsigned int *c,
+ 			: "a" (op));
+ }
  
- static void init_cycle(void)
+-int
+-get_cpuid(char *buffer, size_t sz)
++static int
++__get_cpuid(char *buffer, size_t sz, const char *fmt)
  {
--	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1, 0);
-+	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1,
-+				       perf_event_open_cloexec_flag());
+ 	unsigned int a, b, c, d, lvl;
+ 	int family = -1, model = -1, step = -1;
+@@ -48,7 +49,7 @@ get_cpuid(char *buffer, size_t sz)
+ 		if (family >= 0x6)
+ 			model += ((a >> 16) & 0xf) << 4;
+ 	}
+-	nb = scnprintf(buffer, sz, "%s,%u,%u,%u$", vendor, family, model, step);
++	nb = scnprintf(buffer, sz, fmt, vendor, family, model, step);
  
- 	if (cycle_fd < 0 && errno == ENOSYS)
- 		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index 2a65468619f0..75fc3e65fb2a 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -10,6 +10,7 @@
- #include "../util/util.h"
- #include "../util/parse-options.h"
- #include "../util/header.h"
-+#include "../util/cloexec.h"
- #include "bench.h"
- #include "mem-memset-arch.h"
- 
-@@ -83,7 +84,8 @@ static struct perf_event_attr cycle_attr = {
- 
- static void init_cycle(void)
- {
--	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1, 0);
-+	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1,
-+				       perf_event_open_cloexec_flag());
- 
- 	if (cycle_fd < 0 && errno == ENOSYS)
- 		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index c38d06c04775..9c686b342013 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -10,6 +10,7 @@
- #include "util/header.h"
- #include "util/session.h"
- #include "util/tool.h"
-+#include "util/cloexec.h"
- 
- #include "util/parse-options.h"
- #include "util/trace-event.h"
-@@ -434,7 +435,8 @@ static int self_open_counters(void)
- 	attr.type = PERF_TYPE_SOFTWARE;
- 	attr.config = PERF_COUNT_SW_TASK_CLOCK;
- 
--	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
-+	fd = sys_perf_event_open(&attr, 0, -1, -1,
-+				 perf_event_open_cloexec_flag());
- 
- 	if (fd < 0)
- 		pr_err("Error: sys_perf_event_open() syscall returned "
-diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
-index aba095489193..a02b035fd5aa 100644
---- a/tools/perf/tests/bp_signal.c
-+++ b/tools/perf/tests/bp_signal.c
-@@ -25,6 +25,7 @@
- #include "tests.h"
- #include "debug.h"
- #include "perf.h"
-+#include "cloexec.h"
- 
- static int fd1;
- static int fd2;
-@@ -78,7 +79,8 @@ static int bp_event(void *fn, int setup_signal)
- 	pe.exclude_kernel = 1;
- 	pe.exclude_hv = 1;
- 
--	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
-+	fd = sys_perf_event_open(&pe, 0, -1, -1,
-+				 perf_event_open_cloexec_flag());
- 	if (fd < 0) {
- 		pr_debug("failed opening event %llx\n", pe.config);
- 		return TEST_FAIL;
-diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
-index 44ac82179708..e76537724491 100644
---- a/tools/perf/tests/bp_signal_overflow.c
-+++ b/tools/perf/tests/bp_signal_overflow.c
-@@ -24,6 +24,7 @@
- #include "tests.h"
- #include "debug.h"
- #include "perf.h"
-+#include "cloexec.h"
- 
- static int overflows;
- 
-@@ -91,7 +92,8 @@ int test__bp_signal_overflow(void)
- 	pe.exclude_kernel = 1;
- 	pe.exclude_hv = 1;
- 
--	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
-+	fd = sys_perf_event_open(&pe, 0, -1, -1,
-+				 perf_event_open_cloexec_flag());
- 	if (fd < 0) {
- 		pr_debug("failed opening event %llx\n", pe.config);
- 		return TEST_FAIL;
-diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
-index e59143fd9e71..c04d1f268576 100644
---- a/tools/perf/tests/rdpmc.c
-+++ b/tools/perf/tests/rdpmc.c
-@@ -6,6 +6,7 @@
- #include "perf.h"
- #include "debug.h"
- #include "tests.h"
-+#include "cloexec.h"
- 
- #if defined(__x86_64__) || defined(__i386__)
- 
-@@ -104,7 +105,8 @@ static int __test__rdpmc(void)
- 	sa.sa_sigaction = segfault_handler;
- 	sigaction(SIGSEGV, &sa, NULL);
- 
--	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
-+	fd = sys_perf_event_open(&attr, 0, -1, -1,
-+				 perf_event_open_cloexec_flag());
- 	if (fd < 0) {
- 		pr_err("Error: sys_perf_event_open() syscall returned "
- 		       "with %d (%s)\n", fd, strerror(errno));
-diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-new file mode 100644
-index 000000000000..c5d05ec17220
---- /dev/null
-+++ b/tools/perf/util/cloexec.c
-@@ -0,0 +1,57 @@
-+#include "util.h"
-+#include "../perf.h"
-+#include "cloexec.h"
-+#include "asm/bug.h"
+ 	/* look for end marker to ensure the entire data fit */
+ 	if (strchr(buffer, '$')) {
+@@ -57,3 +58,15 @@ get_cpuid(char *buffer, size_t sz)
+ 	}
+ 	return -1;
+ }
 +
-+static unsigned long flag = PERF_FLAG_FD_CLOEXEC;
-+
-+static int perf_flag_probe(void)
++int get_cpuid(char *buffer, size_t sz)
 +{
-+	/* use 'safest' configuration as used in perf_evsel__fallback() */
-+	struct perf_event_attr attr = {
-+		.type = PERF_COUNT_SW_CPU_CLOCK,
-+		.config = PERF_COUNT_SW_CPU_CLOCK,
-+	};
-+	int fd;
-+	int err;
-+
-+	/* check cloexec flag */
-+	fd = sys_perf_event_open(&attr, 0, -1, -1,
-+				 PERF_FLAG_FD_CLOEXEC);
-+	err = errno;
-+
-+	if (fd >= 0) {
-+		close(fd);
-+		return 1;
-+	}
-+
-+	WARN_ONCE(err != EINVAL,
-+		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
-+		  err, strerror(err));
-+
-+	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
-+	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
-+	err = errno;
-+
-+	if (WARN_ONCE(fd < 0,
-+		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
-+		      err, strerror(err)))
-+		return -1;
-+
-+	close(fd);
-+
-+	return 0;
++	return __get_cpuid(buffer, sz, "%s,%u,%u,%u$");
 +}
 +
-+unsigned long perf_event_open_cloexec_flag(void)
++char *get_cpu_str(void)
 +{
-+	static bool probed;
++	char *buf = malloc(128);
++	__get_cpuid(buf, 128, "%s-%d-%X-core");
++	return buf;
++}
+diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
+index a23f57f112da..418502ac0560 100644
+--- a/tools/perf/util/jevents.c
++++ b/tools/perf/util/jevents.c
+@@ -38,6 +38,44 @@
+ #include "json.h"
+ #include "jevents.h"
+ 
++__attribute__((weak)) char *get_cpu_str(void)
++{
++	return NULL;
++}
 +
-+	if (!probed) {
-+		if (perf_flag_probe() <= 0)
-+			flag = 0;
-+		probed = true;
++static const char *json_default_name(void)
++{
++	char *cache;
++	char *idstr = get_cpu_str();
++	char *res = NULL;
++	char *home = NULL;
++	char *emap;
++
++	emap = getenv("EVENTMAP");
++	if (emap) {
++		if (access(emap, R_OK) == 0)
++			return emap;
++		if (asprintf(&idstr, "%s-core", emap) < 0)
++			return NULL;
 +	}
 +
-+	return flag;
++	cache = getenv("XDG_CACHE_HOME");
++	if (!cache) {
++		home = getenv("HOME");
++		if (!home || asprintf(&cache, "%s/.cache", home) < 0)
++			goto out;
++	}
++	if (cache && idstr)
++		res = mkpath("%s/pmu-events/%s.json",
++			     cache,
++			     idstr);
++	if (home)
++		free(cache);
++out:
++	free(idstr);
++	return res;
 +}
-diff --git a/tools/perf/util/cloexec.h b/tools/perf/util/cloexec.h
-new file mode 100644
-index 000000000000..94a5a7d829d5
---- /dev/null
-+++ b/tools/perf/util/cloexec.h
-@@ -0,0 +1,6 @@
-+#ifndef __PERF_CLOEXEC_H
-+#define __PERF_CLOEXEC_H
 +
-+unsigned long perf_event_open_cloexec_flag(void);
-+
-+#endif /* __PERF_CLOEXEC_H */
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 8606175fe1e8..8623840a6e4a 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -29,6 +29,7 @@ static struct {
- 	bool sample_id_all;
- 	bool exclude_guest;
- 	bool mmap2;
-+	bool cloexec;
- } perf_missing_features;
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-@@ -989,7 +990,7 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 			      struct thread_map *threads)
+ static void addfield(char *map, char **dst, const char *sep,
+ 		     const char *a, jsmntok_t *bt)
  {
- 	int cpu, thread;
--	unsigned long flags = 0;
-+	unsigned long flags = PERF_FLAG_FD_CLOEXEC;
- 	int pid = -1, err;
- 	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+@@ -170,6 +208,8 @@ int json_events(const char *fn,
+ 	int i, j, len;
+ 	char *map;
  
-@@ -998,11 +999,13 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 		return -ENOMEM;
++	if (!fn)
++		fn = json_default_name();
+ 	tokens = parse_json(fn, &map, &size, &len);
+ 	if (!tokens)
+ 		return -EIO;
+diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
+index fbc45497078e..86a94ddc9f7d 100644
+--- a/tools/perf/util/jevents.h
++++ b/tools/perf/util/jevents.h
+@@ -4,5 +4,6 @@
+ int json_events(const char *fn,
+ 		int (*func)(void *data, char *name, char *event, char *desc),
+ 		void *data);
++char *get_cpu_str(void);
  
- 	if (evsel->cgrp) {
--		flags = PERF_FLAG_PID_CGROUP;
-+		flags |= PERF_FLAG_PID_CGROUP;
- 		pid = evsel->cgrp->fd;
- 	}
+ #endif
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9f154afc95fe..fa2131947ad3 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -433,7 +433,7 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	if (pmu_aliases(name, &aliases))
+ 		return NULL;
  
- fallback_missing_features:
-+	if (perf_missing_features.cloexec)
-+		flags &= ~(unsigned long)PERF_FLAG_FD_CLOEXEC;
- 	if (perf_missing_features.mmap2)
- 		evsel->attr.mmap2 = 0;
- 	if (perf_missing_features.exclude_guest)
-@@ -1071,7 +1074,10 @@ try_fallback:
- 	if (err != -EINVAL || cpu > 0 || thread > 0)
- 		goto out_close;
+-	if (!strcmp(name, "cpu") && json_file)
++	if (!strcmp(name, "cpu"))
+ 		json_events(json_file, add_alias, &aliases);
  
--	if (!perf_missing_features.mmap2 && evsel->attr.mmap2) {
-+	if (!perf_missing_features.cloexec && (flags & PERF_FLAG_FD_CLOEXEC)) {
-+		perf_missing_features.cloexec = true;
-+		goto fallback_missing_features;
-+	} else if (!perf_missing_features.mmap2 && evsel->attr.mmap2) {
- 		perf_missing_features.mmap2 = true;
- 		goto fallback_missing_features;
- 	} else if (!perf_missing_features.exclude_guest &&
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 049e0a09ccd3..9a8d622809f6 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -4,6 +4,7 @@
- #include "parse-events.h"
- #include <api/fs/fs.h>
- #include "util.h"
-+#include "cloexec.h"
- 
- typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
- 
-@@ -11,6 +12,7 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
- {
- 	struct perf_evlist *evlist;
- 	struct perf_evsel *evsel;
-+	unsigned long flags = perf_event_open_cloexec_flag();
- 	int err = -EAGAIN, fd;
- 
- 	evlist = perf_evlist__new();
-@@ -22,14 +24,14 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
- 
- 	evsel = perf_evlist__first(evlist);
- 
--	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
-+	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
- 	if (fd < 0)
- 		goto out_delete;
- 	close(fd);
- 
- 	fn(evsel);
- 
--	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
-+	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
- 	if (fd < 0) {
- 		if (errno == EINVAL)
- 			err = -EINVAL;
-@@ -203,7 +205,8 @@ bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
- 		cpu = evlist->cpus->map[0];
- 	}
- 
--	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
-+	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1,
-+				 perf_event_open_cloexec_flag());
- 	if (fd >= 0) {
- 		close(fd);
- 		ret = true;
+ 	if (pmu_type(name, &type))
 -- 
 1.8.3.1
 
