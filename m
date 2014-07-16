@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760470AbaGPTBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:01:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51669 "EHLO mx1.redhat.com"
+	id S1760609AbaGPTBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:01:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754831AbaGPTBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:01:15 -0400
+	id S1760510AbaGPTBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 15:01:20 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 0/3] vfio-pci: Reset improvements
+Subject: [PATCH 1/3] vfio-pci: Release devices with BusMaster disabled
 To: alex.williamson@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org
-Date: Wed, 16 Jul 2014 13:01:10 -0600
-Message-ID: <20140716184645.4153.86129.stgit@gimli.home>
+Date: Wed, 16 Jul 2014 13:01:19 -0600
+Message-ID: <20140716190118.4153.62519.stgit@gimli.home>
+In-Reply-To: <20140716184645.4153.86129.stgit@gimli.home>
+References: <20140716184645.4153.86129.stgit@gimli.home>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,40 +23,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is intended to improve the state of devices returned back
-to the host from vfio-pci or re-used by another user.  First we make
-sure that busmaster is disabled in the saved state, so the device
-cannot continue to do DMA, then we add some serialization, move our
-reference counting under it to fix an unlikely bug should we fail to
-initialize a device, and add the ability to do bus/slot reset on
-device release.  To do this, we require all devices affected by the
-bus/slot reset to be bound to vfio-pci, therefore users sequestering
-devices with pci-stub will need to bind them to vfio-pci to see this
-change.
+Our current open/release path looks like this:
 
-The effect of these changes are perhaps most noticeable with GPU
-assignment to a VM, where killing QEMU results in a static image on
-the framebuffer since no reset of the device was done.  Returning
-the GPU to a host device at this point was suspect.  Other devices,
-like USB controllers, also don't necessarily appreciate being abruptly
-disconnected from their IOMMU domain and would generate IOMMU faults
-in the event the user process is killed.  Both of these cases should
-be resolved here, assuming all the devices on the bus are bound to
-vfio-pci and at least one of the devices in use does not support
-a function-local reset.
+vfio_pci_open
+  vfio_pci_enable
+    pci_enable_device
+    pci_save_state
+    pci_store_saved_state
 
-Please test and comment.  Thanks,
+vfio_pci_release
+  vfio_pci_disable
+    pci_disable_device
+    pci_restore_state
 
-Alex
+pci_enable_device() doesn't modify PCI_COMMAND_MASTER, so if a device
+comes to us with it enabled, it persists through the open and gets
+stored as part of the device saved state.  We then restore that saved
+state when released, which can allow the device to attempt to continue
+to do DMA.  When the group is disconnected from the domain, this will
+get caught by the IOMMU, but if there are other devices in the group,
+the device may continue running and interfere with the user.  Even in
+the former case, IOMMUs don't necessarily behave well and a stream of
+blocked DMA can result in unpleasant behavior on the host.
 
+Explicitly disable Bus Master as we're enabling the device and
+slightly re-work release to make sure that pci_disable_device() is
+the last thing that touches the device.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
-Alex Williamson (3):
-      vfio-pci: Attempt bus/slot reset on release
-      vfio-pci: Use mutex around open, release, and remove
-      vfio-pci: Release devices with BusMaster disabled
+ drivers/vfio/pci/vfio_pci.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+index 010e0f8..36d8332 100644
+--- a/drivers/vfio/pci/vfio_pci.c
++++ b/drivers/vfio/pci/vfio_pci.c
+@@ -44,6 +44,9 @@ static int vfio_pci_enable(struct vfio_pci_device *vdev)
+ 	u16 cmd;
+ 	u8 msix_pos;
+ 
++	/* Don't allow our initial saved state to include busmaster */
++	pci_clear_master(pdev);
++
+ 	ret = pci_enable_device(pdev);
+ 	if (ret)
+ 		return ret;
+@@ -99,7 +102,8 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
+ 	struct pci_dev *pdev = vdev->pdev;
+ 	int bar;
+ 
+-	pci_disable_device(pdev);
++	/* Stop the device from further DMA */
++	pci_clear_master(pdev);
+ 
+ 	vfio_pci_set_irqs_ioctl(vdev, VFIO_IRQ_SET_DATA_NONE |
+ 				VFIO_IRQ_SET_ACTION_TRIGGER,
+@@ -128,7 +132,7 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
+ 			__func__, dev_name(&pdev->dev));
+ 
+ 		if (!vdev->reset_works)
+-			return;
++			goto out;
+ 
+ 		pci_save_state(pdev);
+ 	}
+@@ -151,6 +155,8 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
+ 	}
+ 
+ 	pci_restore_state(pdev);
++out:
++	pci_disable_device(pdev);
+ }
+ 
+ static void vfio_pci_release(void *device_data)
 
- drivers/vfio/pci/vfio_pci.c         |  157 ++++++++++++++++++++++++++++++++---
- drivers/vfio/pci/vfio_pci_private.h |    3 -
- 2 files changed, 147 insertions(+), 13 deletions(-)
