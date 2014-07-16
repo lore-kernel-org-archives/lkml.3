@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaGPXDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 19:03:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55343 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaGPXDq (ORCPT
+	id S1754720AbaGPXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 19:03:56 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:51704 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaGPXDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 19:03:46 -0400
-Date: Wed, 16 Jul 2014 16:03:45 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Allen Yu <alleny@nvidia.com>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Add "rpm_not_supported" flag
-Message-ID: <20140716230345.GA3220@kroah.com>
-References: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
- <1908592.0t6juNfLFj@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1908592.0t6juNfLFj@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 16 Jul 2014 19:03:52 -0400
+From: Josep Puigdemont <josep.puigdemont@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Josep Puigdemont <josep.puigdemont@gmail.com>
+Subject: [PATCH] lustre: plain interger was used as NULL pointer
+Date: Thu, 17 Jul 2014 01:03:39 +0200
+Message-Id: <1405551819-2699-1-git-send-email-josep.puigdemont@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 12:40:23AM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, July 02, 2014 10:27:06 AM Alan Stern wrote:
-> > Here's a brief summary of the story behind this patch...
-> > 
-> > At one point, I suggested to Dan that instead of doing something
-> > special for these devices, we could simply have the runtime_suspend()
-> > routine always return -EBUSY.  He didn't like that idea because then
-> > the user would see the device was never powering down but would have no
-> > idea why.  The rpm_not_supported flag provides this information to the
-> > user by causing the power/runtime_status attribute to say "not
-> > supported".  (Although to be entirely fair, we could just put a message
-> > in the kernel log during probe if the hardware doesn't support runtime
-> > suspend.)
-> > 
-> > Instead, Dan introduced a messy PM QoS mechanism in commit
-> > e3d105055525.  I didn't like that approach, but Greg merged it before I
-> > objected.
-> 
-> That really looks a bit like a hack to me to be honest.
-> 
-> Greg, what's your plan toward this?
+This patch fixes the following warnings found when running sparse:
+.../lproc_echo.c:43:11: warning: Using plain integer as NULL pointer
+.../lproc_echo.c:49:11: warning: Using plain integer as NULL pointer
 
-If I need to revert something that you all find was wrong, I'll be glad
-to do so, sorry for merging something too early.
+Signed-off-by: Josep Puigdemont <josep.puigdemont@gmail.com>
+---
+ drivers/staging/lustre/lustre/obdecho/lproc_echo.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-thanks,
+diff --git a/drivers/staging/lustre/lustre/obdecho/lproc_echo.c b/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
+index 487c4f3..1d3bf6c 100644
+--- a/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
++++ b/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
+@@ -40,13 +40,13 @@
+ LPROC_SEQ_FOPS_RO_TYPE(echo, uuid);
+ static struct lprocfs_vars lprocfs_echo_obd_vars[] = {
+ 	{ "uuid",	 &echo_uuid_fops,	NULL, 0 },
+-	{ 0 }
++	{ NULL }
+ };
+ 
+ LPROC_SEQ_FOPS_RO_TYPE(echo, numrefs);
+ static struct lprocfs_vars lprocfs_echo_module_vars[] = {
+ 	{ "num_refs",     &echo_numrefs_fops,     NULL, 0 },
+-	{ 0 }
++	{ NULL }
+ };
+ 
+ void lprocfs_echo_init_vars(struct lprocfs_static_vars *lvars)
+-- 
+1.9.3
 
-greg k-h
