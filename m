@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965235AbaGPPTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:19:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57442 "EHLO mx1.redhat.com"
+	id S965356AbaGPPT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:19:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26695 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934419AbaGPPTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:19:01 -0400
-Date: Wed, 16 Jul 2014 17:18:58 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] ensure guest's kvmclock never goes backwards when TSC
- jumps backward
-Message-ID: <20140716171858.6c8cd597@igors-macbook-pro.local>
-In-Reply-To: <53C69269.3080204@redhat.com>
-References: <1405504368-5581-1-git-send-email-imammedo@redhat.com>
-	<53C6517D.9090600@redhat.com>
-	<20140716114100.GA7394@amt.cnet>
-	<20140716155523.174a6b0e@igors-macbook-pro.local>
-	<53C68931.7000308@redhat.com>
-	<20140716165153.02d403c1@igors-macbook-pro.local>
-	<53C69269.3080204@redhat.com>
+	id S965284AbaGPPTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 11:19:22 -0400
+Date: Wed, 16 Jul 2014 11:19:15 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: JBeulich@suse.com, mmarek@suse.cz
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: genksyms: separating public headers from private header files
+Message-ID: <20140716151915.GS7959@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jul 2014 16:55:37 +0200
-Paolo Bonzini <pbonzini@redhat.com> wrote:
+Hi Jan, Michal,
 
-> Il 16/07/2014 16:51, Igor Mammedov ha scritto:
-> >>>> I'm not sure that a per-CPU value is enough; your patch can make
-> >>>> the problem much less frequent of course, but I'm not sure
-> >>>> neither detection nor correction are 100% reliable.  Your
-> >>>> addition is basically a faster but less reliable version of the
-> >>>> last_value logic.
-> >>>
-> >>> How is it less reliable than last_value logic?
-> >>
-> >> Suppose CPU 1 is behind by 3 nanoseconds
-> >>
-> >>     CPU 0                      CPU 1
-> >>     time = 100                              (at time 100)
-> >>                                time = 99    (at time 102)
-> >>     time = 104                              (at time 104)
-> >>                                time = 105   (at time 108)
-> >>
-> >> Your patch will not detect this.
-> > Is it possible for each cpu to have it's own time?
-> 
-> Yes, that's one of the reasons for TSC not to be stable (it could
-> also happen simply because the value of TSC_ADJUST MSR is bogus).
-I was wondering not about TSC but kvmclock -> sched_clock.
-If they are percpu and can differ for each CPU than above diagram if
-fine as far as time on each CPU is monotonic and there is not need to
-detect that time on each CPU is different.
+I am not sure who maintains genksyms officially, so I am sending this
+question to the two of you as folks who seemed to have contributed to the
+tool. :-)
 
+I noticed with genksyms that a symbol is opaquely defined in a
+public header file (on purpose) and then fully defined in a private
+header.  This is normal practice.  Further, symbol checksumming is done on
+EXPORT_SYMBOLs in a private c file that includes the private header
+files.
 
-> 
-> Paolo
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+As a result, even though a struct symbol is intentionally opaquely defined
+in a public header file consumed by a third party module, the symbol
+checksumming still includes the full definition (because the private c
+file with the actual export symbol has the full definition).  This has
+made it difficult to modify the private header file struct because it
+breaks the symbol checksumming.
+
+For example, let's consider
+
+block/blk-core.c:EXPORT_SYMBOL(blk_put_queue);
+
+blk_put_queue will eventually depend on struct blkcq_gq.
+
+Now publicly blkcg_gq is defined opaquely in 
+
+include/linux/blkdev.h
+
+and privately in
+
+block/block-cgroup.h
+
+Now when we checksum blk_put_queue both include/linux/blkdev.h and
+block/block-cgroup.h are included in block/blk-core.c, so blkcg_gq is
+fully defined for checksumming.
+
+Later if we modify blkcq_gq in block/block-cgroup.h the checksum changes,
+even though it can debated that block-cgroup.h is a private header file
+and it should not impact kabi for third party modules.
+
+Have either of you run into this?  Or is the argument that private files
+should not impact the checksum not as strong as I might think?  Or is it a
+technical problem of how to separate the public includes from the private
+includes in the preprocessed file?
+
+Thanks!
+
+Cheers,
+Don
 
