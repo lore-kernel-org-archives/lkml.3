@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760255AbaGPHvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:51:45 -0400
-Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:59265 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758364AbaGPHvl (ORCPT
+	id S1760289AbaGPHv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:51:59 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:18521 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760201AbaGPHvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:51:41 -0400
-X-AuditID: 12074423-f79bf6d000007580-d7-53c62f0ca67b
-Message-ID: <53C62E93.8010307@mit.edu>
-Date: Wed, 16 Jul 2014 13:19:39 +0530
-From: "Srivatsa S. Bhat" <srivatsa@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 16 Jul 2014 03:51:45 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Marcin Wojtas <mw@semihalf.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Xiang Wang <wangx@marvell.com>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Chao Xie <cxie4@marvell.com>,
+        Xiang Wang <wangxfdu@gmail.com>
+Subject: [PATCH] mmc: sdhci-pxav3: fix error handling of sdhci_add_host
+Date: Wed, 16 Jul 2014 15:50:09 +0800
+Message-ID: <1405497009-20338-1-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org>	<1405052287-4744-1-git-send-email-skannan@codeaurora.org>	<CAKohponB9feyh50p+dL5hyU1ffHAzHU59G-sYCrCm1AbHQe9hw@mail.gmail.com>	<2f549e6e4871ccf2a94dd4c8872c7a0b.squirrel@www.codeaurora.org>	<CAKohpokhmj1OkCRj=X+Q7eYiun8fsqD2dpEt66VKYnqo3dENVA@mail.gmail.com>	<53C0A12A.2060204@codeaurora.org>	<CAKohpon9en_VnSx+CVydPsWBHtArvmazn0hrodrRJt9jgOa0-g@mail.gmail.com>	<53C42AA8.8010107@codeaurora.org>	<CAKohpomkqbHZo9KrJMSwsEKGt6+Ac2Fg2X0+S7ZAo=OzhAc45g@mail.gmail.com>	<53C4BDFB.70707@codeaurora.org>	<53C4D12E.3040807@mit.edu> <CAKohpon8zDP3hVFMQV4CO2zOkb-AwnDws8xW=H8Hm4=gW=8FGQ@mail.gmail.com>
-In-Reply-To: <CAKohpon8zDP3hVFMQV4CO2zOkb-AwnDws8xW=H8Hm4=gW=8FGQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsUixCmqrcujfyzY4NwraYtNj6+xWkzcf5bd
-	4vKuOWwWn3uPMFqcOX2J1eLHmW4WiwMXJ7JZnF3ezGax8auHA6fH5b5eJo8Fm0o97lzbw+ax
-	eUm9x5ar7SwenzfJBbBFcdmkpOZklqUW6dslcGW8vP2YpWAaV8WTOa+YGhj/sncxcnBICJhI
-	rD7L28XICWSKSVy4t56ti5GLQ0hgNpPEk5YfzBDORkaJB39mMEE425kkDh69xAbSwiugJjHr
-	2iZGEJtFQFXiZd8ysKlsAtoSyzZKgoRFBeIkGo9/Z4QoF5Q4OfMJC0iJiICWxMubqSAjmQUe
-	MEsc+zuVCaRGWCBMYuaGdVC7prNKnPwzF2wXp0CgxOT5ILs4gDrUJdbPEwIJMwvIS2x/O4d5
-	AqPgLCQrZiFUzUJStYCReRWjbEpulW5uYmZOcWqybnFyYl5eapGumV5uZoleakrpJkZQjLC7
-	KO9g/HNQ6RCjAAejEg/vhpCjwUKsiWXFlbmHGCU5mJREeVOkjwUL8SXlp1RmJBZnxBeV5qQW
-	H2KU4GBWEuEVYQHK8aYkVlalFuXDpKQ5WJTEed9aWwULCaQnlqRmp6YWpBbBZGU4OJQkeB/q
-	AjUKFqWmp1akZeaUIKSZODhBhvMADV8CUsNbXJCYW5yZDpE/xagoJc5rCZIQAElklObB9cJS
-	2CtGcaBXhHnZ9YCqeIDpD677FdBgJqDB5TWHQQaXJCKkpBoYO60uh6+btuC9bHj+C2b1+u85
-	X5+335ytlv5WnmmCXORl5cUfI65WFTCfy930vqNp1bxfEmx9KcpnjmxtvLz++P6flZKbdk1u
-	2OVbG/uE9QRj1grzdE1vk32ZaxUt558T2re4ZuHBtXqexyzcnv+7F1P0yls+9NzEl4J5jI5O
-	2hu767k5HezTlFiKMxINtZiLihMBSMBDszwDAAA=
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-16_03:2014-07-15,2014-07-16,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1407160099
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 11:14 AM, Viresh Kumar wrote:
-> On 15 July 2014 12:28, Srivatsa S. Bhat <srivatsa@mit.edu> wrote:
->> Wait, allowing an offline CPU to be the policy->cpu (i.e., the CPU which is
->> considered as the master of the policy/group) is just absurd.
-> 
-> Yeah, that was as Absurd as I am :)
-> 
+From: Xiang Wang <wangx@marvell.com>
 
-I have had my own share of silly ideas over the years; so don't worry, we are
-all in the same boat ;-)
+Commit 0dcaa2499b7d111bd70da5b0976c34210c850fb3 improved error
+handling of sdhci_add_host. However, "err_of_parse" and "err_cd_req"
+should be placed after "pm_runtime_disable(&pdev->dev)".
 
->> The goal of this patchset should be to just de-couple the sysfs files/ownership
->> from the policy->cpu to an extent where it doesn't matter who owns those
->> files, and probably make it easier to do CPU hotplug without having to
->> destroy and recreate the files on every hotplug operation.
-> 
-> I went to that Absurd idea because we thought we can skip playing with
-> the sysfs nodes on suspend/hotplug.
-> 
-> And if policy->cpu keeps changing with hotplug, we *may* have to keep
-> sysfs stuff moving as well. One way to avoid that is by using something
-> like: policy->sysfs_cpu, but wasn't sure if that's the right path to follow.
->
+Signed-off-by: Xiang Wang <wangx@marvell.com>
+---
+ drivers/mmc/host/sdhci-pxav3.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Hmm, I understand.. Even I don't have any suggestions as of now, since I
-haven't spent enough time thinking of alternatives yet.
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index 2fd73b3..0644655 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -380,11 +380,11 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-err_of_parse:
+-err_cd_req:
+ err_add_host:
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
++err_of_parse:
++err_cd_req:
+ 	clk_disable_unprepare(clk);
+ 	clk_put(clk);
+ err_clk_get:
+-- 
+1.7.5.4
 
-> Lets see what Saravana's new patchset has for us :)
-> 
-
-Yep :-)
-
-Regards,
-Srivatsa S. Bhat
