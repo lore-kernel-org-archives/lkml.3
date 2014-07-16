@@ -1,36 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934927AbaGPTXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:23:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44462 "EHLO
+	id S1751661AbaGPT2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:28:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44446 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965765AbaGPTW5 (ORCPT
+	with ESMTP id S965771AbaGPTW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jul 2014 15:22:57 -0400
-Date: Wed, 16 Jul 2014 12:20:50 -0700
-From: tip-bot for Jason Low <tipbot@zytor.com>
-Message-ID: <tip-90631822c5d307b5410500806e8ac3e63928aa3e@git.kernel.org>
-Cc: mingo@kernel.org, konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, jason.low2@hp.com, clm@fb.com, riel@redhat.com,
-        rostedt@goodmis.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de, david@fromorbit.com,
-        davidlohr@hp.com, scott.norton@hp.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, waiman.long@hp.com, tim.c.chen@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, jbacik@fusionio.com, aswin@hp.com
-Reply-To: mingo@kernel.org, konrad.wilk@oracle.com,
-        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
-        clm@fb.com, riel@redhat.com, akpm@linux-foundation.org,
-        rostedt@goodmis.org, heiko.carstens@de.ibm.com, david@fromorbit.com,
-        tglx@linutronix.de, scott.norton@hp.com, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, waiman.long@hp.com,
-        tim.c.chen@linux.intel.com, paulmck@linux.vnet.ibm.com,
-        jbacik@fusionio.com, aswin@hp.com
-In-Reply-To: <1405358872-3732-3-git-send-email-jason.low2@hp.com>
-References: <1405358872-3732-3-git-send-email-jason.low2@hp.com>
+Date: Wed, 16 Jul 2014 12:21:45 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-fbe26abe118ee1262b4ab0d12fefd42647eaea35@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, acme@kernel.org, namhyung@kernel.org,
+        luto@amacapital.net, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        namhyung@kernel.org, luto@amacapital.net, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
+References: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] locking/spinlocks/mcs:
-  Convert osq lock to atomic_t to reduce overhead
-Git-Commit-ID: 90631822c5d307b5410500806e8ac3e63928aa3e
+Subject: [tip:perf/core] perf: Add vm_ops->
+ name call for mmap event name retrieval
+Git-Commit-ID: fbe26abe118ee1262b4ab0d12fefd42647eaea35
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -43,284 +38,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  90631822c5d307b5410500806e8ac3e63928aa3e
-Gitweb:     http://git.kernel.org/tip/90631822c5d307b5410500806e8ac3e63928aa3e
-Author:     Jason Low <jason.low2@hp.com>
-AuthorDate: Mon, 14 Jul 2014 10:27:49 -0700
+Commit-ID:  fbe26abe118ee1262b4ab0d12fefd42647eaea35
+Gitweb:     http://git.kernel.org/tip/fbe26abe118ee1262b4ab0d12fefd42647eaea35
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Mon, 14 Jul 2014 17:57:19 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:28:04 +0200
+CommitDate: Wed, 16 Jul 2014 13:31:22 +0200
 
-locking/spinlocks/mcs: Convert osq lock to atomic_t to reduce overhead
+perf: Add vm_ops->name call for mmap event name retrieval
 
-The cancellable MCS spinlock is currently used to queue threads that are
-doing optimistic spinning. It uses per-cpu nodes, where a thread obtaining
-the lock would access and queue the local node corresponding to the CPU that
-it's running on. Currently, the cancellable MCS lock is implemented by using
-pointers to these nodes.
+The following patch added another way to get mmap name: 78d683e838a6
+("mm, fs: Add vm_ops->name as an alternative to arch_vma_name")
 
-In this patch, instead of operating on pointers to the per-cpu nodes, we
-store the CPU numbers in which the per-cpu nodes correspond to in atomic_t.
-A similar concept is used with the qspinlock.
+The vdso vma mapping already switch to this and we no longer get vdso
+name via arch_vma_name function. Adding this way to the perf mmap
+event name retrieval code.
 
-By operating on the CPU # of the nodes using atomic_t instead of pointers
-to those nodes, this can reduce the overhead of the cancellable MCS spinlock
-by 32 bits (on 64 bit systems).
+Caught this via perf test:
 
-Signed-off-by: Jason Low <jason.low2@hp.com>
+  $ sudo ./perf test -v 7
+   7: Validate PERF_RECORD_* events & perf_sample fields     :
+  --- start ---
+
+SNIP
+
+  PERF_RECORD_MMAP for [vdso] missing!
+  test child finished with 255
+  ---- end ----
+  Validate PERF_RECORD_* events & perf_sample fields: FAILED!
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Waiman Long <waiman.long@hp.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Mason <clm@fb.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Josef Bacik <jbacik@fusionio.com>
-Link: http://lkml.kernel.org/r/1405358872-3732-3-git-send-email-jason.low2@hp.com
+Link: http://lkml.kernel.org/r/1405353439-14211-1-git-send-email-jolsa@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mutex.h         |  4 ++--
- include/linux/osq_lock.h      | 19 ++++++++++++++++++
- include/linux/rwsem.h         |  7 +++----
- kernel/locking/mcs_spinlock.c | 46 ++++++++++++++++++++++++++++++++++++-------
- kernel/locking/mcs_spinlock.h |  5 +++--
- kernel/locking/mutex.c        |  2 +-
- kernel/locking/rwsem-xadd.c   |  2 +-
- 7 files changed, 68 insertions(+), 17 deletions(-)
+ kernel/events/core.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-index 885f3f5..42aa9b9 100644
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -17,6 +17,7 @@
- #include <linux/lockdep.h>
- #include <linux/atomic.h>
- #include <asm/processor.h>
-+#include <linux/osq_lock.h>
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 67e3b9c..4799676 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5266,6 +5266,12 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
  
- /*
-  * Simple, straightforward mutexes with strict semantics:
-@@ -46,7 +47,6 @@
-  * - detects multi-task circular deadlocks and prints out all affected
-  *   locks and tasks (and only those tasks)
-  */
--struct optimistic_spin_node;
- struct mutex {
- 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
- 	atomic_t		count;
-@@ -56,7 +56,7 @@ struct mutex {
- 	struct task_struct	*owner;
- #endif
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--	struct optimistic_spin_node	*osq;	/* Spinner MCS lock */
-+	struct optimistic_spin_queue osq; /* Spinner MCS lock */
- #endif
- #ifdef CONFIG_DEBUG_MUTEXES
- 	const char 		*name;
-diff --git a/include/linux/osq_lock.h b/include/linux/osq_lock.h
-new file mode 100644
-index 0000000..b001682
---- /dev/null
-+++ b/include/linux/osq_lock.h
-@@ -0,0 +1,19 @@
-+#ifndef __LINUX_OSQ_LOCK_H
-+#define __LINUX_OSQ_LOCK_H
+ 		goto got_name;
+ 	} else {
++		if (vma->vm_ops && vma->vm_ops->name) {
++			name = (char *) vma->vm_ops->name(vma);
++			if (name)
++				goto cpy_name;
++		}
 +
-+/*
-+ * An MCS like lock especially tailored for optimistic spinning for sleeping
-+ * lock implementations (mutex, rwsem, etc).
-+ */
-+
-+#define OSQ_UNLOCKED_VAL (0)
-+
-+struct optimistic_spin_queue {
-+	/*
-+	 * Stores an encoded value of the CPU # of the tail node in the queue.
-+	 * If the queue is empty, then it's set to OSQ_UNLOCKED_VAL.
-+	 */
-+	atomic_t tail;
-+};
-+
-+#endif
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index ba3f108..9fdcdd0 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -13,10 +13,9 @@
- #include <linux/kernel.h>
- #include <linux/list.h>
- #include <linux/spinlock.h>
--
- #include <linux/atomic.h>
-+#include <linux/osq_lock.h>
- 
--struct optimistic_spin_node;
- struct rw_semaphore;
- 
- #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
-@@ -33,7 +32,7 @@ struct rw_semaphore {
- 	 * if the owner is running on the cpu.
- 	 */
- 	struct task_struct *owner;
--	struct optimistic_spin_node *osq; /* spinner MCS lock */
-+	struct optimistic_spin_queue osq; /* spinner MCS lock */
- #endif
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
-@@ -70,7 +69,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
- 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
- 	  LIST_HEAD_INIT((name).wait_list),		\
- 	  NULL, /* owner */				\
--	  NULL /* mcs lock */                           \
-+	  { ATOMIC_INIT(OSQ_UNLOCKED_VAL) } /* osq */   \
- 	  __RWSEM_DEP_MAP_INIT(name) }
- #else
- #define __RWSEM_INITIALIZER(name)			\
-diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-index e9866f7..32fc16c 100644
---- a/kernel/locking/mcs_spinlock.c
-+++ b/kernel/locking/mcs_spinlock.c
-@@ -17,18 +17,44 @@
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_node, osq_node);
- 
- /*
-+ * We use the value 0 to represent "no CPU", thus the encoded value
-+ * will be the CPU number incremented by 1.
-+ */
-+static inline int encode_cpu(int cpu_nr)
-+{
-+	return cpu_nr + 1;
-+}
-+
-+static inline struct optimistic_spin_node *decode_cpu(int encoded_cpu_val)
-+{
-+	int cpu_nr = encoded_cpu_val - 1;
-+
-+	return per_cpu_ptr(&osq_node, cpu_nr);
-+}
-+
-+/*
-  * Get a stable @node->next pointer, either for unlock() or unqueue() purposes.
-  * Can return NULL in case we were the last queued and we updated @lock instead.
-  */
- static inline struct optimistic_spin_node *
--osq_wait_next(struct optimistic_spin_node **lock,
-+osq_wait_next(struct optimistic_spin_queue *lock,
- 	      struct optimistic_spin_node *node,
- 	      struct optimistic_spin_node *prev)
- {
- 	struct optimistic_spin_node *next = NULL;
-+	int curr = encode_cpu(smp_processor_id());
-+	int old;
-+
-+	/*
-+	 * If there is a prev node in queue, then the 'old' value will be
-+	 * the prev node's CPU #, else it's set to OSQ_UNLOCKED_VAL since if
-+	 * we're currently last in queue, then the queue will then become empty.
-+	 */
-+	old = prev ? prev->cpu : OSQ_UNLOCKED_VAL;
- 
- 	for (;;) {
--		if (*lock == node && cmpxchg(lock, node, prev) == node) {
-+		if (atomic_read(&lock->tail) == curr &&
-+		    atomic_cmpxchg(&lock->tail, curr, old) == curr) {
- 			/*
- 			 * We were the last queued, we moved @lock back. @prev
- 			 * will now observe @lock and will complete its
-@@ -59,18 +85,23 @@ osq_wait_next(struct optimistic_spin_node **lock,
- 	return next;
- }
- 
--bool osq_lock(struct optimistic_spin_node **lock)
-+bool osq_lock(struct optimistic_spin_queue *lock)
- {
- 	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
- 	struct optimistic_spin_node *prev, *next;
-+	int curr = encode_cpu(smp_processor_id());
-+	int old;
- 
- 	node->locked = 0;
- 	node->next = NULL;
-+	node->cpu = curr;
- 
--	node->prev = prev = xchg(lock, node);
--	if (likely(prev == NULL))
-+	old = atomic_xchg(&lock->tail, curr);
-+	if (old == OSQ_UNLOCKED_VAL)
- 		return true;
- 
-+	prev = decode_cpu(old);
-+	node->prev = prev;
- 	ACCESS_ONCE(prev->next) = node;
- 
- 	/*
-@@ -149,15 +180,16 @@ unqueue:
- 	return false;
- }
- 
--void osq_unlock(struct optimistic_spin_node **lock)
-+void osq_unlock(struct optimistic_spin_queue *lock)
- {
- 	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
- 	struct optimistic_spin_node *next;
-+	int curr = encode_cpu(smp_processor_id());
- 
- 	/*
- 	 * Fast path for the uncontended case.
- 	 */
--	if (likely(cmpxchg(lock, node, NULL) == node))
-+	if (likely(atomic_cmpxchg(&lock->tail, curr, OSQ_UNLOCKED_VAL) == curr))
- 		return;
- 
- 	/*
-diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
-index c99dc00..74356dc 100644
---- a/kernel/locking/mcs_spinlock.h
-+++ b/kernel/locking/mcs_spinlock.h
-@@ -121,9 +121,10 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- struct optimistic_spin_node {
- 	struct optimistic_spin_node *next, *prev;
- 	int locked; /* 1 if lock acquired */
-+	int cpu; /* encoded CPU # value */
- };
- 
--extern bool osq_lock(struct optimistic_spin_node **lock);
--extern void osq_unlock(struct optimistic_spin_node **lock);
-+extern bool osq_lock(struct optimistic_spin_queue *lock);
-+extern void osq_unlock(struct optimistic_spin_queue *lock);
- 
- #endif /* __LINUX_MCS_SPINLOCK_H */
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index bc73d33..d9b3139 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -60,7 +60,7 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
- 	INIT_LIST_HEAD(&lock->wait_list);
- 	mutex_clear_owner(lock);
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--	lock->osq = NULL;
-+	atomic_set(&lock->osq.tail, OSQ_UNLOCKED_VAL);
- #endif
- 
- 	debug_mutex_init(lock, name, key);
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index c40c7d2..b77a623 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -84,7 +84,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	INIT_LIST_HEAD(&sem->wait_list);
- #ifdef CONFIG_SMP
- 	sem->owner = NULL;
--	sem->osq = NULL;
-+	atomic_set(&sem->osq.tail, OSQ_UNLOCKED_VAL);
- #endif
- }
- 
+ 		name = (char *)arch_vma_name(vma);
+ 		if (name)
+ 			goto cpy_name;
