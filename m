@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaGPVVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:21:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59637 "EHLO
+	id S1752460AbaGPVED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:04:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59600 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaGPVEH (ORCPT
+	with ESMTP id S1752076AbaGPVD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:04:07 -0400
-Message-Id: <20140716205053.190013055@linutronix.de>
+	Wed, 16 Jul 2014 17:03:57 -0400
+Message-Id: <20140716205052.597729567@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Wed, 16 Jul 2014 21:04:05 -0000
+Date: Wed, 16 Jul 2014 21:03:55 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch V2 12/64] timekeeper: Move tk_xtime to core code
+Subject: [patch V2 05/64] ktime: Sanitize ktime_to_us/ms conversion
 References: <20140716205018.175419210@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=timekeeper-move-tk-xtime-to-core.patch
+Content-Disposition: inline; filename=ktime-sanitize-conversion.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,144 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No users outside of the core.
+With the plain nanoseconds based ktime_t we can simply use
+ktime_divns() instead of going through loops and hoops of
+timespec/timeval conversion.
 
+Reported-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/timekeeper_internal.h |   18 ---------
- kernel/time/timekeeping.c           |   70 ++++++++++++++++++++++--------------
- 2 files changed, 43 insertions(+), 45 deletions(-)
+ include/linux/hrtimer.h |    6 ------
+ include/linux/ktime.h   |   12 ++++++++----
+ kernel/time/hrtimer.c   |    1 +
+ 3 files changed, 9 insertions(+), 10 deletions(-)
 
-Index: tip/include/linux/timekeeper_internal.h
+Index: tip/include/linux/hrtimer.h
 ===================================================================
---- tip.orig/include/linux/timekeeper_internal.h
-+++ tip/include/linux/timekeeper_internal.h
-@@ -71,16 +71,6 @@ struct timekeeper {
+--- tip.orig/include/linux/hrtimer.h
++++ tip/include/linux/hrtimer.h
+@@ -457,12 +457,6 @@ extern void hrtimer_run_pending(void);
+ /* Bootup initialization: */
+ extern void __init hrtimers_init(void);
  
- };
- 
--static inline struct timespec64 tk_xtime(struct timekeeper *tk)
--{
--	struct timespec64 ts;
--
--	ts.tv_sec = tk->xtime_sec;
--	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
--	return ts;
--}
--
--
- #ifdef CONFIG_GENERIC_TIME_VSYSCALL
- 
- extern void update_vsyscall(struct timekeeper *tk);
-@@ -92,14 +82,6 @@ extern void update_vsyscall_old(struct t
- 				struct clocksource *c, u32 mult);
- extern void update_vsyscall_tz(void);
- 
--static inline void update_vsyscall(struct timekeeper *tk)
--{
--	struct timespec xt;
--
--	xt = tk_xtime(tk);
--	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
--}
--
- #else
- 
- static inline void update_vsyscall(struct timekeeper *tk)
-Index: tip/kernel/time/timekeeping.c
-===================================================================
---- tip.orig/kernel/time/timekeeping.c
-+++ tip/kernel/time/timekeeping.c
-@@ -51,6 +51,15 @@ static inline void tk_normalize_xtime(st
- 	}
- }
- 
-+static inline struct timespec64 tk_xtime(struct timekeeper *tk)
-+{
-+	struct timespec64 ts;
-+
-+	ts.tv_sec = tk->xtime_sec;
-+	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
-+	return ts;
-+}
-+
- static void tk_set_xtime(struct timekeeper *tk, const struct timespec64 *ts)
- {
- 	tk->xtime_sec = ts->tv_sec;
-@@ -199,6 +208,40 @@ static inline s64 timekeeping_get_ns_raw
- 	return nsec + arch_gettimeoffset();
- }
- 
-+#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
-+
-+static inline void update_vsyscall(struct timekeeper *tk)
-+{
-+	struct timespec xt;
-+
-+	xt = tk_xtime(tk);
-+	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
-+}
-+
-+static inline void old_vsyscall_fixup(struct timekeeper *tk)
-+{
-+	s64 remainder;
-+
-+	/*
-+	* Store only full nanoseconds into xtime_nsec after rounding
-+	* it up and add the remainder to the error difference.
-+	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
-+	* by truncating the remainder in vsyscalls. However, it causes
-+	* additional work to be done in timekeeping_adjust(). Once
-+	* the vsyscall implementations are converted to use xtime_nsec
-+	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
-+	* users are removed, this can be killed.
-+	*/
-+	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
-+	tk->xtime_nsec -= remainder;
-+	tk->xtime_nsec += 1ULL << tk->shift;
-+	tk->ntp_error += remainder << tk->ntp_error_shift;
-+	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
-+}
-+#else
-+#define old_vsyscall_fixup(tk)
-+#endif
-+
- static RAW_NOTIFIER_HEAD(pvclock_gtod_chain);
- 
- static void update_pvclock_gtod(struct timekeeper *tk, bool was_set)
-@@ -1330,33 +1373,6 @@ static cycle_t logarithmic_accumulation(
- 	return offset;
- }
- 
--#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
--static inline void old_vsyscall_fixup(struct timekeeper *tk)
--{
--	s64 remainder;
--
--	/*
--	* Store only full nanoseconds into xtime_nsec after rounding
--	* it up and add the remainder to the error difference.
--	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
--	* by truncating the remainder in vsyscalls. However, it causes
--	* additional work to be done in timekeeping_adjust(). Once
--	* the vsyscall implementations are converted to use xtime_nsec
--	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
--	* users are removed, this can be killed.
--	*/
--	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
--	tk->xtime_nsec -= remainder;
--	tk->xtime_nsec += 1ULL << tk->shift;
--	tk->ntp_error += remainder << tk->ntp_error_shift;
--	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
--}
--#else
--#define old_vsyscall_fixup(tk)
+-#if BITS_PER_LONG < 64
+-extern u64 ktime_divns(const ktime_t kt, s64 div);
+-#else /* BITS_PER_LONG < 64 */
+-# define ktime_divns(kt, div)		(u64)((kt).tv64 / (div))
 -#endif
 -
--
--
- /**
-  * update_wall_time - Uses the current clocksource to increment the wall time
-  *
+ /* Show pending timers: */
+ extern void sysrq_timer_list_show(void);
+ 
+Index: tip/include/linux/ktime.h
+===================================================================
+--- tip.orig/include/linux/ktime.h
++++ tip/include/linux/ktime.h
+@@ -157,16 +157,20 @@ static inline bool ktime_before(const kt
+ 	return ktime_compare(cmp1, cmp2) < 0;
+ }
+ 
++#if BITS_PER_LONG < 64
++extern u64 ktime_divns(const ktime_t kt, s64 div);
++#else /* BITS_PER_LONG < 64 */
++# define ktime_divns(kt, div)		(u64)((kt).tv64 / (div))
++#endif
++
+ static inline s64 ktime_to_us(const ktime_t kt)
+ {
+-	struct timeval tv = ktime_to_timeval(kt);
+-	return (s64) tv.tv_sec * USEC_PER_SEC + tv.tv_usec;
++	return ktime_divns(kt, NSEC_PER_USEC);
+ }
+ 
+ static inline s64 ktime_to_ms(const ktime_t kt)
+ {
+-	struct timeval tv = ktime_to_timeval(kt);
+-	return (s64) tv.tv_sec * MSEC_PER_SEC + tv.tv_usec / USEC_PER_MSEC;
++	return ktime_divns(kt, NSEC_PER_MSEC);
+ }
+ 
+ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
+Index: tip/kernel/time/hrtimer.c
+===================================================================
+--- tip.orig/kernel/time/hrtimer.c
++++ tip/kernel/time/hrtimer.c
+@@ -280,6 +280,7 @@ u64 ktime_divns(const ktime_t kt, s64 di
+ 
+ 	return dclc;
+ }
++EXPORT_SYMBOL_GPL(ktime_divns);
+ #endif /* BITS_PER_LONG >= 64 */
+ 
+ /*
 
 
