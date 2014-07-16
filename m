@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaGPV2C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:28:02 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49490 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752804AbaGPV17 (ORCPT
+	id S1753622AbaGPV2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:28:19 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:44689 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320AbaGPV2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:27:59 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH v3 7/7] ACPI: Cleanup useless ACPI inclusion.
-Date: Wed, 16 Jul 2014 23:46:14 +0200
-Message-ID: <4307509.CpjlMkz69H@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140716120750.GM17528@sirena.org.uk>
-References: <cover.1387336613.git.lv.zheng@intel.com> <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com> <20140716120750.GM17528@sirena.org.uk>
+	Wed, 16 Jul 2014 17:28:00 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAGXu5jKMwiAxeCVZVPS72XWCd2KhiR-uc4VFKT0mvD9s-cTO_Q@mail.gmail.com>
+References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
+ <20140711164931.GA18473@redhat.com> <CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
+ <CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
+ <CAGXu5j+r-CpJiXipCT=j09+ZfJjF9jTc3kuZFAH3ZxgUEvktTA@mail.gmail.com>
+ <CALCETrX48nuR6wqEV4Nu47BF4Z3XFvBpYer_fzwaqJdi0fpdKw@mail.gmail.com> <CAGXu5jKMwiAxeCVZVPS72XWCd2KhiR-uc4VFKT0mvD9s-cTO_Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Jul 2014 14:27:38 -0700
+Message-ID: <CALCETrUXRszBEhB7aOu6nXtCj09zofY_b_5BUNbJk-EFefA6fw@mail.gmail.com>
+Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 16, 2014 01:07:50 PM Mark Brown wrote:
-> 
-> --5me2qT3T17SWzdxI
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
-> 
-> On Wed, Jul 16, 2014 at 04:59:02PM +0800, Lv Zheng wrote:
-> > The sst-haswell-dsp.c is an ACPI independent file, this patch removes
-> > ACPI header files for it.
-> 
-> Applied, thanks.  Please use subject lines matching the style for the
-> subsystem and send at least the cover letter for the series to everyone
-> so that they know what's going on with dependencies and so on.
+On Wed, Jul 16, 2014 at 2:23 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Jul 16, 2014 at 12:45 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> In seccomp_prepare_user_filter, would it make sense to return -EINVAL
+>> if !user_filter?  That will make it slightly more pleasant to
+>> implement TSYNC-without-change if anyone ever wants it.  (This isn't
+>> really necessary -- it's just slightly more polite.)
+>
+> I can't do this since EFAULT is already used to detect seccomp
+> capabilities from userspace.
 
-Lv thought that this would go through the ACPI tree I suppose.
+Aha.  In that case, can you (separately) send a prctl.2 manpage patch
+documenting that?  Also, I'm pretty sure you can get away with doing
+this for seccomp(2) -- EINVAL and ENOSYS are easily distinguishable,
+but the current behavior is IMO also fine if documented.
 
-Rafael
-
+--Andy
