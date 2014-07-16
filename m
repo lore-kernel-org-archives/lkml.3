@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934920AbaGPSVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:21:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934902AbaGPSVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:21:33 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 15/23] mpt2sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Wed, 16 Jul 2014 20:05:19 +0200
-Message-Id: <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
-In-Reply-To: <cover.1405533479.git.agordeev@redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
+	id S934936AbaGPSWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:22:01 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55107 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934769AbaGPSV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:21:58 -0400
+Message-ID: <53C6C2C5.1050804@codeaurora.org>
+Date: Wed, 16 Jul 2014 11:21:57 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Alexander Kolesnikov <akolesni@codeaurora.org>
+Subject: Re: char interface to sdio, chdio.c
+References: <20140716032655.GB30412@kroah.com>
+In-Reply-To: <20140716032655.GB30412@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On 07/15/14 20:26, Greg KH wrote:
+> Hi Stephen.
+>
+> I had some people ask me about a sdio userspace interface, and ran
+> across the chdio.c file as found in the MSM android kernel trees:
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
-Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Cc: support@lsi.com
-Cc: DL-MPTFusionLinux@lsi.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+You mean csdio.c right?
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 8b88118..6aca369 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1432,10 +1432,10 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
- 	for (i = 0, a = entries; i < ioc->reply_queue_count; i++, a++)
- 		a->entry = i;
- 
--	r = pci_enable_msix(ioc->pdev, entries, ioc->reply_queue_count);
-+	r = pci_enable_msix_exact(ioc->pdev, entries, ioc->reply_queue_count);
- 	if (r) {
--		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "pci_enable_msix "
--		    "failed (r=%d) !!!\n", ioc->name, r));
-+		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT
-+		    "pci_enable_msix_exact failed (r=%d) !!!\n", ioc->name, r));
- 		kfree(entries);
- 		goto try_ioapic;
- 	}
+>
+> https://android.googlesource.com/kernel/msm/+/57b74303d6f033ab04be039379f6661337fb9279
+
+As you can see in the commit text there, the commit I authored is
+actually a squash of three patches from some previous android kernel
+that we did (looks like it was android-msm-2.6.35) and it's been almost
+4 years since those patches were written. The three original commits
+weren't authored by me so I really don't know the intimate details of
+this driver.
+
+>
+> Any reason why this hasn't been submitted upstream?  Or has it, and was
+> it rejected?
+
+I don't believe we ever submitted this upstream.
+
+>
+> Also, what userspace code uses this?  Is there some android-specific
+> code somewhere that does a weird mix of sysfs and char control of the
+> hardware?  And what type of SDIO devices are controlled with this?
+
+If I recall correctly this driver is for communicating with an external
+modem (in this case it was the Gobi 9k). We used the sdio interface to
+do some IPC stuff with the modem over sdio, mainly because back then the
+SoC didn't have an LTE capable modem, but the Gobi modem was LTE
+capable. Slap the two chips together and you have an LTE phone while you
+wait for us to deliver the first SoC with an integrated LTE modem (msm8960).
+
+The userspace component is the same proprietary software that's used to
+make phone calls on android phones. I'd have to go dig around to find
+that code and confirm if it's using sysfs and char control. I'd rather
+not spend the time digging so let's assume it's doing that unless you
+have a more specific question in mind?
+
 -- 
-1.7.7.6
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
