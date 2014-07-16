@@ -1,86 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaGPVq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:46:26 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:26420 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046AbaGPVqW (ORCPT
+	id S1753404AbaGPVqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:46:53 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:60002 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaGPVqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:46:22 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 16 Jul 2014 14:54:42 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: rmi: check that report ids exist in the report_id_hash before accessing their size
-Date: Wed, 16 Jul 2014 14:38:37 -0700
-Message-ID: <1405546717-6582-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+	Wed, 16 Jul 2014 17:46:04 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, x86@kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        bsd@redhat.com, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 5/5] x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+Date: Wed, 16 Jul 2014 14:45:37 -0700
+Message-Id: <b41b5f92b43e95fa0bda77b4bc84e7472aaad2c9.1405546879.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1405546879.git.luto@amacapital.net>
+References: <cover.1405546879.git.luto@amacapital.net>
+In-Reply-To: <cover.1405546879.git.luto@amacapital.net>
+References: <cover.1405546879.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible that the hid-rmi driver could get loaded onto a device which does not have the
-expected report ids. This should not happen because it would indicate that the hid-rmi driver is
-not compatible with that device. However, if it does happen it should return an error from probe
-instead of dereferencing a null pointer.
+It's considerably better than any of the alternatives on KVM.
 
-related bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=80091
+Rather than reinventing all of the cpu feature query code, this fixes
+native_cpuid to work in PIC objects.
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+I haven't combined it with boot/cpuflags.c's cpuid implementation:
+including asm/processor.h from boot/cpuflags.c results in a flood of
+unrelated errors, and fixing it might be messy.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- drivers/hid/hid-rmi.c | 26 ++++++++++++++++++++------
- 1 file changed, 20 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/aslr.c  | 27 +++++++++++++++++++++++++++
+ arch/x86/include/asm/processor.h | 21 ++++++++++++++++++---
+ 2 files changed, 45 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 3221a95..7f0927a 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -848,6 +848,8 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	struct rmi_data *data = NULL;
- 	int ret;
- 	size_t alloc_size;
-+	struct hid_report *input_report;
-+	struct hid_report *output_report;
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index fc6091a..8583f0e 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -5,6 +5,8 @@
+ #include <asm/archrandom.h>
+ #include <asm/e820.h>
  
- 	data = devm_kzalloc(&hdev->dev, sizeof(struct rmi_data), GFP_KERNEL);
- 	if (!data)
-@@ -866,12 +868,24 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		return ret;
++#include <uapi/asm/kvm_para.h>
++
+ #include <generated/compile.h>
+ #include <linux/module.h>
+ #include <linux/uts.h>
+@@ -15,6 +17,22 @@
+ static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
+ 		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
+ 
++static bool kvm_para_has_feature(unsigned int feature)
++{
++	u32 kvm_base;
++	u32 features;
++
++	if (!has_cpuflag(X86_FEATURE_HYPERVISOR))
++		return false;
++
++	kvm_base = hypervisor_cpuid_base("KVMKVMKVM\0\0\0", KVM_CPUID_FEATURES);
++	if (!kvm_base)
++		return false;
++
++	features = cpuid_eax(kvm_base | KVM_CPUID_FEATURES);
++	return features & (1UL << feature);
++}
++
+ #define I8254_PORT_CONTROL	0x43
+ #define I8254_PORT_COUNTER0	0x40
+ #define I8254_CMD_READBACK	0xC0
+@@ -81,6 +99,15 @@ static unsigned long get_random_long(void)
+ 		}
  	}
  
--	data->input_report_size = (hdev->report_enum[HID_INPUT_REPORT]
--		.report_id_hash[RMI_ATTN_REPORT_ID]->size >> 3)
--		+ 1 /* report id */;
--	data->output_report_size = (hdev->report_enum[HID_OUTPUT_REPORT]
--		.report_id_hash[RMI_WRITE_REPORT_ID]->size >> 3)
--		+ 1 /* report id */;
-+	input_report = hdev->report_enum[HID_INPUT_REPORT]
-+			.report_id_hash[RMI_ATTN_REPORT_ID];
-+	if (!input_report) {
-+		ret = -ENODEV;
-+		return ret;
++	if (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED)) {
++		u64 seed;
++
++		debug_putstr(" MSR_KVM_GET_RNG_SEED");
++		rdmsrl(MSR_KVM_GET_RNG_SEED, seed);
++		random ^= (unsigned long)seed;
++		use_i8254 = false;
 +	}
 +
-+	data->input_report_size = (input_report->size >> 3) + 1 /* report id */;
-+
-+	output_report = hdev->report_enum[HID_OUTPUT_REPORT]
-+			.report_id_hash[RMI_WRITE_REPORT_ID];
-+	if (!output_report) {
-+		ret = -ENODEV;
-+		return ret;
-+	}
-+
-+	data->output_report_size = (output_report->size >> 3)
-+					+ 1 /* report id */;
- 
- 	alloc_size = data->output_report_size + data->input_report_size;
- 
+ 	if (has_cpuflag(X86_FEATURE_TSC)) {
+ 		debug_putstr(" RDTSC");
+ 		rdtscll(raw);
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a4ea023..6096f3c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -189,10 +189,25 @@ static inline int have_cpuid_p(void)
+ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+ 				unsigned int *ecx, unsigned int *edx)
+ {
+-	/* ecx is often an input as well as an output. */
+-	asm volatile("cpuid"
++	/*
++	 * This function can be used from the boot code, so it needs
++	 * to avoid using EBX in constraints in PIC mode.
++	 *
++	 * ecx is often an input as well as an output.
++	 */
++	asm volatile(".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
++		     "movl  %%ebx,%1                            \n\t"
++		     ".endif ; .endif                           \n\t"
++		     "cpuid					\n\t"
++		     ".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
++		     "xchgl %%ebx,%1                            \n\t"
++		     ".endif ; .endif"
+ 	    : "=a" (*eax),
+-	      "=b" (*ebx),
++#if defined(__i386__) && defined(__PIC__)
++	      "=r" (*ebx),	/* gcc won't let us use ebx */
++#else
++	      "=b" (*ebx),	/* ebx is okay */
++#endif
+ 	      "=c" (*ecx),
+ 	      "=d" (*edx)
+ 	    : "0" (*eax), "2" (*ecx)
 -- 
-1.9.1
+1.9.3
 
