@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002AbaGPJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:53:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422AbaGPJxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:53:04 -0400
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, x86@kernel.org,
-        mtosatti@redhat.com
-Subject: [PATCH] ensure guest's kvmclock never goes backwards when TSC jumps backward
-Date: Wed, 16 Jul 2014 09:52:48 +0000
-Message-Id: <1405504368-5581-1-git-send-email-imammedo@redhat.com>
+	id S1757422AbaGPJxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:53:22 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57188 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283AbaGPJxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 05:53:16 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Xiang Wang <wangxfdu@gmail.com>, Xiang Wang <wangx@marvell.com>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Marcin Wojtas <mw@semihalf.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chao Xie <cxie4@marvell.com>
+Subject: Re: [PATCH] mmc: sdhci-pxav3: fix error handling of sdhci_add_host
+Date: Wed, 16 Jul 2014 11:53:21 +0200
+Message-ID: <5513748.05vsM1lCJN@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405497009-20338-1-git-send-email-wangxfdu@gmail.com>
+References: <1405497009-20338-1-git-send-email-wangxfdu@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are buggy hosts in the wild that advertise invariant
-TSC and as result host uses TSC as clocksource, but TSC on
-such host sometimes sporadically jumps backwards.
+Hi Xiang,
 
-This causes kvmclock to go backwards if host advertises
-PVCLOCK_TSC_STABLE_BIT, which turns off aggregated clock
-accumulator and returns:
-  pvclock_vcpu_time_info.system_timestamp + offset
-where 'offset' is calculated using TSC.
-Since TSC is not virtualized in KVM, it makes guest see
-TSC jumped backwards and leads to kvmclock going backwards
-as well.
+Thank you for the patch.
 
-This is defensive patch that keeps per CPU last clock value
-and ensures that clock will never go backwards even with
-using PVCLOCK_TSC_STABLE_BIT enabled path.
+On Wednesday 16 July 2014 15:50:09 Xiang Wang wrote:
+> From: Xiang Wang <wangx@marvell.com>
+> 
+> Commit 0dcaa2499b7d111bd70da5b0976c34210c850fb3 improved error
+> handling of sdhci_add_host. However, "err_of_parse" and "err_cd_req"
+> should be placed after "pm_runtime_disable(&pdev->dev)".
+> 
+> Signed-off-by: Xiang Wang <wangx@marvell.com>
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
-RHBZ: 1115795
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
----
- arch/x86/kernel/pvclock.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+While we're touching the probe error path, how about converting the driver to 
+the devm_* helpers ? I'll send a patch shortly.
 
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 2f355d2..dd9df0e 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -71,11 +71,14 @@ u8 pvclock_read_flags(struct pvclock_vcpu_time_info *src)
- 	return flags & valid_flags;
- }
- 
-+static DEFINE_PER_CPU(cycle_t, last_clock);
-+
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- {
- 	unsigned version;
- 	cycle_t ret;
--	u64 last;
-+	u64 last, *this_cpu_last;
-+	s64 clock_delta;
- 	u8 flags;
- 
- 	do {
-@@ -87,6 +90,16 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- 		pvclock_touch_watchdogs();
- 	}
- 
-+	this_cpu_last = &get_cpu_var(last_clock);
-+	clock_delta = ret - *this_cpu_last;
-+	if (likely(clock_delta > 0)) {
-+		*this_cpu_last = ret;
-+	} else {
-+		ret = *this_cpu_last;
-+		WARN_ONCE(1, "clock went backwards");
-+	}
-+	put_cpu_var(last_clock);
-+
- 	if ((valid_flags & PVCLOCK_TSC_STABLE_BIT) &&
- 		(flags & PVCLOCK_TSC_STABLE_BIT))
- 		return ret;
+> ---
+>  drivers/mmc/host/sdhci-pxav3.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+> index 2fd73b3..0644655 100644
+> --- a/drivers/mmc/host/sdhci-pxav3.c
+> +++ b/drivers/mmc/host/sdhci-pxav3.c
+> @@ -380,11 +380,11 @@ static int sdhci_pxav3_probe(struct platform_device
+> *pdev)
+> 
+>  	return 0;
+> 
+> -err_of_parse:
+> -err_cd_req:
+>  err_add_host:
+>  	pm_runtime_put_sync(&pdev->dev);
+>  	pm_runtime_disable(&pdev->dev);
+> +err_of_parse:
+> +err_cd_req:
+>  	clk_disable_unprepare(clk);
+>  	clk_put(clk);
+>  err_clk_get:
+
 -- 
-1.8.3.1
+Regards,
+
+Laurent Pinchart
 
