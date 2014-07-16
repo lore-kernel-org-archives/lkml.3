@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934909AbaGPSc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:32:26 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:53186 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934637AbaGPScW (ORCPT
+	id S934945AbaGPSdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:33:06 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44736 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934637AbaGPSdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:32:22 -0400
-Date: Wed, 16 Jul 2014 14:32:19 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] tracing: change apply_subsystem_event_filter()
- paths to check file->system == dir
-Message-ID: <20140716143219.4fa2b72e@gandalf.local.home>
-In-Reply-To: <20140715184829.GA20516@redhat.com>
-References: <20140715184753.GA20470@redhat.com>
-	<20140715184829.GA20516@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 16 Jul 2014 14:33:03 -0400
+Date: Wed, 16 Jul 2014 11:32:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        fabf@skynet.be, davidshan@tencent.com, joe@perches.com,
+        keescook@chromium.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
+Message-ID: <20140716183255.GB8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140713184237.GA30855@linux.vnet.ibm.com>
+ <20140716115046.GC28434@gmail.com>
+ <20140716131322.GA16396@gmail.com>
+ <20140716141707.GU8690@linux.vnet.ibm.com>
+ <20140716152629.GA9340@linux.vnet.ibm.com>
+ <53C6A0E7.30006@gmail.com>
+ <20140716172410.GV8690@linux.vnet.ibm.com>
+ <53C6C156.5010207@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C6C156.5010207@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071618-0928-0000-0000-0000036A7CDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014 20:48:29 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> filter_free_subsystem_preds(), filter_free_subsystem_filters() and
-> replace_system_preds() can simply check file->system->subsystem and
-> avoid strcmp(call->class->system).
+On Wed, Jul 16, 2014 at 02:15:50PM -0400, Pranith Kumar wrote:
 > 
-> Better yet, we can pass "struct ftrace_subsystem_dir *dir" instead of
-> event_subsystem and just check file->system == dir.
+> On 07/16/2014 01:24 PM, Paul E. McKenney wrote:
+> >>> And of course if you don't actually specify a nohz_full= mask, then
+> >>> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
+> >>> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
+> >>> forever.
+> >>>
+> >> Hi Paul,
+> >>
+> >> The other location where tick_nohz_full_mask is being allocated is in
+> >> tick_nohz_init_all(), called from tick_nohz_init(). rcu_init() is called before
+> >> tick_nohz_init() in init/main.c. CONFIG_NO_HZ_FULL_ALL for allocation of the
+> >> mask does not take effect when rcu_init() runs.
+> >>
+> >> So if nohz_full command line arg is not specified, tick_nohz_full_mask will
+> >> always be NULL when rcu_init() runs. So just checking for tick_nohz_full_mask
+> >> is NULL should be enough I guess.
+> > Yep, that is indeed one of the conditions called out in the commit log
+> > below.
+> >
+> >                             Thanx, Paul
+> >
 > 
-> Thanks to Namhyung Kim who pointed out that replace_system_preds() can
-> be changed too.
-
-What? No thanks to me for suggesting the file->system == dir idea?
-
-/me pouts like a baby
-
--- Steve
-
+> Sorry, I was not clear.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
+> nohz_full= boot time parameter overrides the CONFIG_NO_HZ_FULL_ALL build time parameter.
+> The check for !CONFIG_NO_HZ_FULL_ALL will disable masking out the cpus on which NOHZ is
+> not enabled using the nohz_full boot time parameter, and hence you will enable callback
+> offloading on all CPUs as was previously being done.
+> 
+> So, if I have CONFIG_NO_HZ_FULL_ALL enabled at build time but pass nohz_cpu=1 at boot
+> time, all the CPUs will have callback offloading enabled.
+> 
+> I think the following looks like what is needed in our case:
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 00dc411..1123ed4 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2479,10 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+> 
+>         if (rcu_nocb_mask == NULL)
+>                 return;
+> -#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
+> +
+>         if (tick_nohz_full_running)
+>                 cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
+> -#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
+> +
+>         if (ls == -1) {
+>                 ls = int_sqrt(nr_cpu_ids);
+>                 rcu_nocb_leader_stride = ls;
+
+Agreed, and I queued something very similar to this.  Testing is in progress.
+If it works, I will send it out.  If you want to see it earlier, it is
+at branch rcu/urgent on the -rcu tree.
+
+								Thanx, Paul
+
