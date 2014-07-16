@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934139AbaGPNs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:48:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55866 "EHLO mx2.suse.de"
+	id S964842AbaGPNuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:50:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55953 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759245AbaGPNs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:48:56 -0400
+	id S933994AbaGPNs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:48:59 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
 Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Michal Nazarewicz <mina86@mina86.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH V4 01/15] mm, THP: don't hold mmap_sem in khugepaged when allocating THP
-Date: Wed, 16 Jul 2014 15:48:09 +0200
-Message-Id: <1405518503-27687-2-git-send-email-vbabka@suse.cz>
+Subject: [PATCH V4 11/15] mm, compaction: skip buddy pages by their order in the migrate scanner
+Date: Wed, 16 Jul 2014 15:48:19 +0200
+Message-Id: <1405518503-27687-12-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
 References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
@@ -26,23 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When allocating huge page for collapsing, khugepaged currently holds mmap_sem
-for reading on the mm where collapsing occurs. Afterwards the read lock is
-dropped before write lock is taken on the same mmap_sem.
+The migration scanner skips PageBuddy pages, but does not consider their order
+as checking page_order() is generally unsafe without holding the zone->lock,
+and acquiring the lock just for the check wouldn't be a good tradeoff.
 
-Holding mmap_sem during whole huge page allocation is therefore useless, the
-vma needs to be rechecked after taking the write lock anyway. Furthemore, huge
-page allocation might involve a rather long sync compaction, and thus block
-any mmap_sem writers and i.e. affect workloads that perform frequent m(un)map
-or mprotect oterations.
+Still, this could avoid some iterations over the rest of the buddy page, and
+if we are careful, the race window between PageBuddy() check and page_order()
+is small, and the worst thing that can happen is that we skip too much and miss
+some isolation candidates. This is not that bad, as compaction can already fail
+for many other reasons like parallel allocations, and those have much larger
+race window.
 
-This patch simply releases the read lock before allocating a huge page. It
-also deletes an outdated comment that assumed vma must be stable, as it was
-using alloc_hugepage_vma(). This is no longer true since commit 9f1b868a13
-("mm: thp: khugepaged: add policy for finding target node").
+This patch therefore makes the migration scanner obtain the buddy page order
+and use it to skip the whole buddy page, if the order appears to be in the
+valid range.
+
+It's important that the page_order() is read only once, so that the value used
+in the checks and in the pfn calculation is the same. But in theory the
+compiler can replace the local variable by multiple inlines of page_order().
+Therefore, the patch introduces page_order_unsafe() that uses ACCESS_ONCE to
+prevent this.
+
+Testing with stress-highalloc from mmtests shows a 15% reduction in number of
+pages scanned by migration scanner. The reduction is >60% with __GFP_NO_KSWAPD
+allocations, along with success rates better by few percent.
+This change is also a prerequisite for a later patch which is detecting when
+a cc->order block of pages contains non-buddy pages that cannot be isolated,
+and the scanner should thus skip to the next block immediately.
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Nazarewicz <mina86@mina86.com>
@@ -51,44 +65,107 @@ Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: David Rientjes <rientjes@google.com>
 ---
- mm/huge_memory.c | 20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ mm/compaction.c | 36 +++++++++++++++++++++++++++++++-----
+ mm/internal.h   | 16 +++++++++++++++-
+ 2 files changed, 46 insertions(+), 6 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 02559ef..107da28 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2295,23 +2295,17 @@ static struct page
- 		       int node)
+diff --git a/mm/compaction.c b/mm/compaction.c
+index d256c14..3cfc3a9 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -313,8 +313,15 @@ static inline bool compact_should_abort(struct compact_control *cc)
+ static bool suitable_migration_target(struct page *page)
  {
- 	VM_BUG_ON_PAGE(*hpage, *hpage);
+ 	/* If the page is a large free page, then disallow migration */
+-	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+-		return false;
++	if (PageBuddy(page)) {
++		/*
++		 * We are checking page_order without zone->lock taken. But
++		 * the only small danger is that we skip a potentially suitable
++		 * pageblock, so it's not worth to check order for valid range.
++		 */
++		if (page_order_unsafe(page) >= pageblock_order)
++			return false;
++	}
+ 
+ 	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+ 	if (migrate_async_suitable(get_pageblock_migratetype(page)))
+@@ -605,11 +612,23 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+ 			valid_page = page;
+ 
+ 		/*
+-		 * Skip if free. page_order cannot be used without zone->lock
+-		 * as nothing prevents parallel allocations or buddy merging.
++		 * Skip if free. We read page order here without zone lock
++		 * which is generally unsafe, but the race window is small and
++		 * the worst thing that can happen is that we skip some
++		 * potential isolation targets.
+ 		 */
+-		if (PageBuddy(page))
++		if (PageBuddy(page)) {
++			unsigned long freepage_order = page_order_unsafe(page);
 +
- 	/*
--	 * Allocate the page while the vma is still valid and under
--	 * the mmap_sem read mode so there is no memory allocation
--	 * later when we take the mmap_sem in write mode. This is more
--	 * friendly behavior (OTOH it may actually hide bugs) to
--	 * filesystems in userland with daemons allocating memory in
--	 * the userland I/O paths.  Allocating memory with the
--	 * mmap_sem in read mode is good idea also to allow greater
--	 * scalability.
-+	 * Before allocating the hugepage, release the mmap_sem read lock.
-+	 * The allocation can take potentially a long time if it involves
-+	 * sync compaction, and we do not need to hold the mmap_sem during
-+	 * that. We will recheck the vma after taking it again in write mode.
- 	 */
-+	up_read(&mm->mmap_sem);
++			/*
++			 * Without lock, we cannot be sure that what we got is
++			 * a valid page order. Consider only values in the
++			 * valid order range to prevent low_pfn overflow.
++			 */
++			if (freepage_order > 0 && freepage_order < MAX_ORDER)
++				low_pfn += (1UL << freepage_order) - 1;
+ 			continue;
++		}
+ 
+ 		/*
+ 		 * Check may be lockless but that's ok as we recheck later.
+@@ -695,6 +714,13 @@ isolate_success:
+ 		}
+ 	}
+ 
++	/*
++	 * The PageBuddy() check could have potentially brought us outside
++	 * the range to be scanned.
++	 */
++	if (unlikely(low_pfn > end_pfn))
++		low_pfn = end_pfn;
 +
- 	*hpage = alloc_pages_exact_node(node, alloc_hugepage_gfpmask(
- 		khugepaged_defrag(), __GFP_OTHER_NODE), HPAGE_PMD_ORDER);
--	/*
--	 * After allocating the hugepage, release the mmap_sem read lock in
--	 * preparation for taking it in write mode.
--	 */
--	up_read(&mm->mmap_sem);
- 	if (unlikely(!*hpage)) {
- 		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 		*hpage = ERR_PTR(-ENOMEM);
+ 	acct_isolated(zone, locked, cc);
+ 
+ 	if (locked)
+diff --git a/mm/internal.h b/mm/internal.h
+index 4c1d604..86ae964 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -164,7 +164,8 @@ isolate_migratepages_range(struct compact_control *cc,
+  * general, page_zone(page)->lock must be held by the caller to prevent the
+  * page from being allocated in parallel and returning garbage as the order.
+  * If a caller does not hold page_zone(page)->lock, it must guarantee that the
+- * page cannot be allocated or merged in parallel.
++ * page cannot be allocated or merged in parallel. Alternatively, it must
++ * handle invalid values gracefully, and use page_order_unsafe() below.
+  */
+ static inline unsigned long page_order(struct page *page)
+ {
+@@ -172,6 +173,19 @@ static inline unsigned long page_order(struct page *page)
+ 	return page_private(page);
+ }
+ 
++/*
++ * Like page_order(), but for callers who cannot afford to hold the zone lock.
++ * PageBuddy() should be checked first by the caller to minimize race window,
++ * and invalid values must be handled gracefully.
++ *
++ * ACCESS_ONCE is used so that if the caller assigns the result into a local
++ * variable and e.g. tests it for valid range before using, the compiler cannot
++ * decide to remove the variable and inline the page_private(page) multiple
++ * times, potentially observing different values in the tests and the actual
++ * use of the result.
++ */
++#define page_order_unsafe(page)		ACCESS_ONCE(page_private(page))
++
+ static inline bool is_cow_mapping(vm_flags_t flags)
+ {
+ 	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
 -- 
 1.8.4.5
 
