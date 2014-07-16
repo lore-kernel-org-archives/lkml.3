@@ -1,257 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaGPUVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:21:40 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:49716 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324AbaGPUVg (ORCPT
+	id S1752421AbaGPUWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:22:36 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:57113 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979AbaGPUWd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:21:36 -0400
+	Wed, 16 Jul 2014 16:22:33 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Robert Baldyga <r.baldyga@samsung.com>, "balbi@ti.com" <balbi@ti.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
+Subject: RE: [PATCH v2 10/12] usb: dwc2/gadget: assign TX FIFO dynamically
+Thread-Topic: [PATCH v2 10/12] usb: dwc2/gadget: assign TX FIFO dynamically
+Thread-Index: AQHPoN/3HE4pc7dY9USttJ38XohhgpujFNUggAANaQA=
+Date: Wed, 16 Jul 2014 20:22:04 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844BEA95@US01WEMBX2.internal.synopsys.com>
+References: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
+ <1405506150-16185-11-git-send-email-r.baldyga@samsung.com>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844BEA77@US01WEMBX2.internal.synopsys.com>
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844BEA77@US01WEMBX2.internal.synopsys.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <bd4e2efb7cd97f2bf9d4f1e2065f16c9091d799a.1405452484.git.luto@amacapital.net>
-References: <cover.1405452484.git.luto@amacapital.net>
-	<bd4e2efb7cd97f2bf9d4f1e2065f16c9091d799a.1405452484.git.luto@amacapital.net>
-Date: Wed, 16 Jul 2014 13:21:35 -0700
-X-Google-Sender-Auth: Xgk8fILROlRtkQOSg2SIrwPN9Lo
-Message-ID: <CAGXu5jJornzMJjyPXVZB_eYi-FRet=bXcJWJDa1vnB_oU9ZA_Q@mail.gmail.com>
-Subject: Re: [PATCH 5/7] x86: Split syscall_trace_enter into two phases
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 12:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> This splits syscall_trace_enter into syscall_trace_enter_phase1 and
-> syscall_trace_enter_phase2.  Only phase 2 has full pt_regs, and only
-> phase 2 is permitted to modify any of pt_regs except for orig_ax.
->
-> The intent is that phase 1 can be called from the syscall fast path.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/include/asm/ptrace.h |   5 ++
->  arch/x86/kernel/ptrace.c      | 139 ++++++++++++++++++++++++++++++++++++------
->  2 files changed, 125 insertions(+), 19 deletions(-)
->
-> diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-> index 14fd6fd..dcbfb49 100644
-> --- a/arch/x86/include/asm/ptrace.h
-> +++ b/arch/x86/include/asm/ptrace.h
-> @@ -75,6 +75,11 @@ convert_ip_to_linear(struct task_struct *child, struct pt_regs *regs);
->  extern void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
->                          int error_code, int si_code);
->
-> +
-> +extern unsigned long syscall_trace_enter_phase1(struct pt_regs *, u32 arch);
-> +extern long syscall_trace_enter_phase2(struct pt_regs *, u32 arch,
-> +                                      unsigned long phase1_result);
-> +
->  extern long syscall_trace_enter(struct pt_regs *);
->  extern void syscall_trace_leave(struct pt_regs *);
->
-> diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-> index 39296d2..8e05418 100644
-> --- a/arch/x86/kernel/ptrace.c
-> +++ b/arch/x86/kernel/ptrace.c
-> @@ -1441,13 +1441,111 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
->         force_sig_info(SIGTRAP, &info, tsk);
->  }
->
-> +static void do_audit_syscall_entry(struct pt_regs *regs, u32 arch)
-> +{
-> +       if (arch == AUDIT_ARCH_X86_64) {
-> +               audit_syscall_entry(arch, regs->orig_ax, regs->di,
-> +                                   regs->si, regs->dx, regs->r10);
-> +       } else {
-> +               audit_syscall_entry(arch, regs->orig_ax, regs->bx,
-> +                                   regs->cx, regs->dx, regs->si);
-> +       }
-> +}
-> +
->  /*
-> - * We must return the syscall number to actually look up in the table.
-> - * This can be -1L to skip running any syscall at all.
-> + * We can return 0 to resume the syscall or anything else to go to phase
-> + * 2.  If we resume the syscall, we need to put something appropriate in
-> + * regs->orig_ax.
-> + *
-> + * NB: We don't have full pt_regs here, but regs->orig_ax and regs->ax
-> + * are fully functional.
-> + *
-> + * For phase 2's benefit, our return value is:
-> + * 0: resume the syscall
-> + * 1: go to phase 2; no seccomp phase 2 needed
-> + * 2: go to phase 2; pass return value to seccomp
->   */
-> -long syscall_trace_enter(struct pt_regs *regs)
-> +unsigned long syscall_trace_enter_phase1(struct pt_regs *regs, u32 arch)
-> +{
-> +       unsigned long ret = 0;
-> +       u32 work;
-> +
-> +       BUG_ON(regs != task_pt_regs(current));
-> +
-> +       work = ACCESS_ONCE(current_thread_info()->flags) &
-> +               _TIF_WORK_SYSCALL_ENTRY;
-> +
-> +#ifdef CONFIG_SECCOMP
-> +       /*
-> +        * Do seccomp first -- it should minimize exposure of other
-> +        * code, and keeping seccomp fast is probably more valuable
-> +        * than the rest of this.
-> +        */
-> +       if (work & _TIF_SECCOMP) {
-> +               struct seccomp_data sd;
-> +
-> +               sd.arch = arch;
-> +               sd.nr = regs->orig_ax;
-> +               sd.instruction_pointer = regs->ip;
-> +               if (arch == AUDIT_ARCH_X86_64) {
-> +                       sd.args[0] = regs->di;
-> +                       sd.args[1] = regs->si;
-> +                       sd.args[2] = regs->dx;
-> +                       sd.args[3] = regs->r10;
-> +                       sd.args[4] = regs->r8;
-> +                       sd.args[5] = regs->r9;
-> +               } else {
-> +                       sd.args[0] = regs->bx;
-> +                       sd.args[1] = regs->cx;
-> +                       sd.args[2] = regs->dx;
-> +                       sd.args[3] = regs->si;
-> +                       sd.args[4] = regs->di;
-> +                       sd.args[5] = regs->bp;
-> +               }
-> +
-> +               BUILD_BUG_ON(SECCOMP_PHASE1_OK != 0);
-> +               BUILD_BUG_ON(SECCOMP_PHASE1_SKIP != 1);
-> +
-> +               ret = seccomp_phase1(&sd);
-> +               if (ret == SECCOMP_PHASE1_SKIP) {
-> +                       regs->orig_ax = -ENOSYS;
+> With a TX FIFO size of 3072, an entire microframe worth of Isoc data
+> (when MaxBurst=2) can fit in the FIFO. I guess that is why you chose
 
-Before, seccomp didn't touch orig_ax on a skip. I don't see any
-problem with this, and it's probably more clear this way, but are you
-sure there aren't unexpected side-effects from this?
-
--Kees
-
-> +                       ret = 0;
-> +               } else if (ret != SECCOMP_PHASE1_OK) {
-> +                       return ret;  /* Go directly to phase 2 */
-> +               }
-> +
-> +               work &= ~_TIF_SECCOMP;
-> +       }
-> +#endif
-> +
-> +       /* Do our best to finish without phase 2. */
-> +       if (work == 0)
-> +               return ret;  /* seccomp only (ret == 0 here) */
-> +
-> +#ifdef CONFIG_AUDITSYSCALL
-> +       if (work == _TIF_SYSCALL_AUDIT) {
-> +               /*
-> +                * If there is no more work to be done except auditing,
-> +                * then audit in phase 1.  Phase 2 always audits, so, if
-> +                * we audit here, then we can't go on to phase 2.
-> +                */
-> +               do_audit_syscall_entry(regs, arch);
-> +               return 0;
-> +       }
-> +#endif
-> +
-> +       return 1;  /* Something is enabled that we can't handle in phase 1 */
-> +}
-> +
-> +/* Returns the syscall nr to run (which should match regs->orig_ax). */
-> +long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
-> +                               unsigned long phase1_result)
->  {
->         long ret = 0;
-> +       u32 work = ACCESS_ONCE(current_thread_info()->flags) &
-> +               _TIF_WORK_SYSCALL_ENTRY;
-> +
-> +       BUG_ON(regs != task_pt_regs(current));
->
->         user_exit();
->
-> @@ -1458,17 +1556,20 @@ long syscall_trace_enter(struct pt_regs *regs)
->          * do_debug() and we need to set it again to restore the user
->          * state.  If we entered on the slow path, TF was already set.
->          */
-> -       if (test_thread_flag(TIF_SINGLESTEP))
-> +       if (work & _TIF_SINGLESTEP)
->                 regs->flags |= X86_EFLAGS_TF;
->
-> -       /* do the secure computing check first */
-> -       if (secure_computing()) {
-> +       /*
-> +        * Call seccomp_phase2 before running the other hooks so that
-> +        * they can see any changes made by a seccomp tracer.
-> +        */
-> +       if (phase1_result > 1 && seccomp_phase2(phase1_result)) {
->                 /* seccomp failures shouldn't expose any additional code. */
->                 ret = -1L;
->                 goto out;
->         }
->
-> -       if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
-> +       if (unlikely(work & _TIF_SYSCALL_EMU))
->                 ret = -1L;
->
->         if ((ret || test_thread_flag(TIF_SYSCALL_TRACE)) &&
-> @@ -1478,23 +1579,23 @@ long syscall_trace_enter(struct pt_regs *regs)
->         if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
->                 trace_sys_enter(regs, regs->orig_ax);
->
-> -       if (is_ia32_task())
-> -               audit_syscall_entry(AUDIT_ARCH_I386,
-> -                                   regs->orig_ax,
-> -                                   regs->bx, regs->cx,
-> -                                   regs->dx, regs->si);
-> -#ifdef CONFIG_X86_64
-> -       else
-> -               audit_syscall_entry(AUDIT_ARCH_X86_64,
-> -                                   regs->orig_ax,
-> -                                   regs->di, regs->si,
-> -                                   regs->dx, regs->r10);
-> -#endif
-> +       do_audit_syscall_entry(regs, arch);
->
->  out:
->         return ret ?: regs->orig_ax;
->  }
->
-> +long syscall_trace_enter(struct pt_regs *regs)
-> +{
-> +       u32 arch = is_ia32_task() ? AUDIT_ARCH_I386 : AUDIT_ARCH_X86_64;
-> +       unsigned long phase1_result = syscall_trace_enter_phase1(regs, arch);
-> +
-> +       if (phase1_result == 0)
-> +               return regs->orig_ax;
-> +       else
-> +               return syscall_trace_enter_phase2(regs, arch, phase1_result);
-> +}
-> +
->  void syscall_trace_leave(struct pt_regs *regs)
->  {
->         bool step;
-> --
-> 1.9.3
->
-
-
+s/MaxBurst/Mult/ i.e. bits 12..11 of wMaxPacketSize.
 
 -- 
-Kees Cook
-Chrome OS Security
+Paul
+
+> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Paul Zimmerman
+> Sent: Wednesday, July 16, 2014 12:58 PM
+> 
+> > From: Robert Baldyga [mailto:r.baldyga@samsung.com]
+> > Sent: Wednesday, July 16, 2014 3:22 AM
+> >
+> > Because we have not enough memory to have each TX FIFO of size at least 3072
+> > bytes (the maximum single packet size), we create four FIFOs of lenght 1024,
+> > and four of length 3072 bytes, and assing them to endpoints dynamically
+> > according to maxpacket size value of given endpoint.
+> 
+> I don't think this commit message entirely explains what you are doing
+> here.
+> 
+> 3072 is actually 3 times the max packet size for an Isoc endpoint. So you
+> want to have four TX FIFOs of that size, presumably to be assigned to
+> Isoc endpoints. Where before this change, all TX FIFOs were of size 768,
+> which is not even 1 max packet size for an Isoc endpoint. So I guess you
+> were seeing some problem with that?
+> 
+> With a TX FIFO size of 3072, an entire microframe worth of Isoc data
+> (when MaxBurst=2) can fit in the FIFO. I guess that is why you chose
+> 3072?
+> 
+> Also, after this change, you are only initializing 8 TX FIFOs, where
+> before you were initializing all 15. So now there can only be a maximum
+> of 8 IN endpoints active at the same time. That's OK I guess, but I
+> think you should mention that in the commit message.
+> 
+> --
+> Paul
+> 
+> > It needed to do some small modifications in few places in code, because there
+> > was assumption that TX FIFO numbers assigned to endpoints are the same as
+> > the endpoint numbers, which is not true since we have dynamic FIFO assigning.
+> >
+> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> > ---
+> >  drivers/usb/dwc2/core.h   |  2 ++
+> >  drivers/usb/dwc2/gadget.c | 84 +++++++++++++++++++++++++++++------------------
+> >  2 files changed, 54 insertions(+), 32 deletions(-)
+> >
+> > diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
+> > index 067390e..3b4bd4c 100644
+> > --- a/drivers/usb/dwc2/core.h
+> > +++ b/drivers/usb/dwc2/core.h
+> > @@ -139,6 +139,7 @@ struct s3c_hsotg_ep {
+> >  	unsigned int            last_load;
+> >  	unsigned int            fifo_load;
+> >  	unsigned short          fifo_size;
+> > +	unsigned short		fifo_index;
+> >
+> >  	unsigned char           dir_in;
+> >  	unsigned char           index;
+> > @@ -197,6 +198,7 @@ struct s3c_hsotg {
+> >  	int			fifo_mem;
+> >  	unsigned int            dedicated_fifos:1;
+> >  	unsigned char           num_of_eps;
+> > +	u32			fifo_map;
+> >
+> >  	struct dentry           *debug_root;
+> >  	struct dentry           *debug_file;
+> > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+> > index 3435711..1b5e9ff 100644
+> > --- a/drivers/usb/dwc2/gadget.c
+> > +++ b/drivers/usb/dwc2/gadget.c
+> > @@ -184,14 +184,29 @@ static void s3c_hsotg_init_fifo(struct s3c_hsotg *hsotg)
+> >
+> >  	/* start at the end of the GNPTXFSIZ, rounded up */
+> >  	addr = 2048 + 1024;
+> > -	size = 768;
+> >
+> >  	/*
+> > -	 * currently we allocate TX FIFOs for all possible endpoints,
+> > -	 * and assume that they are all the same size.
+> > +	 * Because we have not enough memory to have each TX FIFO of size at
+> > +	 * least 3072 bytes (the maximum single packet size), we create four
+> > +	 * FIFOs of lenght 1024, and four of length 3072 bytes, and assing
+> > +	 * them to endpoints dynamically according to maxpacket size value of
+> > +	 * given endpoint.
+> >  	 */
+> >
+> > -	for (ep = 1; ep <= 15; ep++) {
+> > +	/* 256*4=1024 bytes FIFO length */
+> > +	size = 256;
+> > +	for (ep = 1; ep <= 4; ep++) {
+> > +		val = addr;
+> > +		val |= size << FIFOSIZE_DEPTH_SHIFT;
+> > +		WARN_ONCE(addr + size > hsotg->fifo_mem,
+> > +			  "insufficient fifo memory");
+> > +		addr += size;
+> > +
+> > +		writel(val, hsotg->regs + DPTXFSIZN(ep));
+> > +	}
+> > +	/* 768*4=3072 bytes FIFO length */
+> > +	size = 768;
+> > +	for (ep = 5; ep <= 8; ep++) {
+> >  		val = addr;
+> >  		val |= size << FIFOSIZE_DEPTH_SHIFT;
+> >  		WARN_ONCE(addr + size > hsotg->fifo_mem,
+> > @@ -450,7 +465,7 @@ static int s3c_hsotg_write_fifo(struct s3c_hsotg *hsotg,
+> >  	to_write = DIV_ROUND_UP(to_write, 4);
+> >  	data = hs_req->req.buf + buf_pos;
+> >
+> > -	iowrite32_rep(hsotg->regs + EPFIFO(hs_ep->index), data, to_write);
+> > +	iowrite32_rep(hsotg->regs + EPFIFO(hs_ep->fifo_index), data, to_write);
+> >
+> >  	return (to_write >= can_write) ? -ENOSPC : 0;
+> >  }
+> > @@ -1281,7 +1296,7 @@ static void s3c_hsotg_rx_data(struct s3c_hsotg *hsotg, int ep_idx, int size)
+> >  {
+> >  	struct s3c_hsotg_ep *hs_ep = &hsotg->eps[ep_idx];
+> >  	struct s3c_hsotg_req *hs_req = hs_ep->req;
+> > -	void __iomem *fifo = hsotg->regs + EPFIFO(ep_idx);
+> > +	void __iomem *fifo = hsotg->regs + EPFIFO(hs_ep->fifo_index);
+> >  	int to_read;
+> >  	int max_req;
+> >  	int read_ptr;
+> > @@ -1835,7 +1850,7 @@ static void s3c_hsotg_epint(struct s3c_hsotg *hsotg, unsigned int idx,
+> >  		if (dir_in) {
+> >  			int epctl = readl(hsotg->regs + epctl_reg);
+> >
+> > -			s3c_hsotg_txfifo_flush(hsotg, idx);
+> > +			s3c_hsotg_txfifo_flush(hsotg, hs_ep->fifo_index);
+> >
+> >  			if ((epctl & DXEPCTL_STALL) &&
+> >  				(epctl & DXEPCTL_EPTYPE_BULK)) {
+> > @@ -1984,6 +1999,7 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
+> >  			      int result, bool force)
+> >  {
+> >  	struct s3c_hsotg_req *req, *treq;
+> > +	unsigned size;
+> >
+> >  	list_for_each_entry_safe(req, treq, &ep->queue, queue) {
+> >  		/*
+> > @@ -1997,9 +2013,11 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
+> >  		s3c_hsotg_complete_request(hsotg, ep, req,
+> >  					   result);
+> >  	}
+> > -	if(hsotg->dedicated_fifos)
+> > -		if ((readl(hsotg->regs + DTXFSTS(ep->index)) & 0xffff) * 4 < 3072)
+> > -			s3c_hsotg_txfifo_flush(hsotg, ep->index);
+> > +	if (hsotg->dedicated_fifos) {
+> > +		size = (readl(hsotg->regs + DTXFSTS(ep->index)) & 0xffff) * 4;
+> > +		if (size < ep->fifo_size)
+> > +			s3c_hsotg_txfifo_flush(hsotg, ep->fifo_index);
+> > +	}
+> >  }
+> >
+> >  /**
+> > @@ -2440,6 +2458,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+> >  	u32 epctrl;
+> >  	u32 mps;
+> >  	int dir_in;
+> > +	int i, val, size;
+> >  	int ret = 0;
+> >
+> >  	dev_dbg(hsotg->dev,
+> > @@ -2512,17 +2531,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+> >  		break;
+> >
+> >  	case USB_ENDPOINT_XFER_INT:
+> > -		if (dir_in) {
+> > -			/*
+> > -			 * Allocate our TxFNum by simply using the index
+> > -			 * of the endpoint for the moment. We could do
+> > -			 * something better if the host indicates how
+> > -			 * many FIFOs we are expecting to use.
+> > -			 */
+> > -
+> > +		if (dir_in)
+> >  			hs_ep->periodic = 1;
+> > -			epctrl |= DXEPCTL_TXFNUM(index);
+> > -		}
+> >
+> >  		epctrl |= DXEPCTL_EPTYPE_INTERRUPT;
+> >  		break;
+> > @@ -2536,8 +2546,25 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+> >  	 * if the hardware has dedicated fifos, we must give each IN EP
+> >  	 * a unique tx-fifo even if it is non-periodic.
+> >  	 */
+> > -	if (dir_in && hsotg->dedicated_fifos)
+> > -		epctrl |= DXEPCTL_TXFNUM(index);
+> > +	if (dir_in && hsotg->dedicated_fifos) {
+> > +		size = hs_ep->ep.maxpacket*hs_ep->mc;
+> > +		for (i = 1; i <= 8; ++i) {
+> > +			if (hsotg->fifo_map & (1<<i))
+> > +				continue;
+> > +			val = readl(hsotg->regs + DPTXFSIZN(i));
+> > +			val = (val >> FIFOSIZE_DEPTH_SHIFT)*4;
+> > +			if (val < size)
+> > +				continue;
+> > +			hsotg->fifo_map |= 1<<i;
+> > +
+> > +			epctrl |= DXEPCTL_TXFNUM(i);
+> > +			hs_ep->fifo_index = i;
+> > +			hs_ep->fifo_size = val;
+> > +			break;
+> > +		}
+> > +		if (i == 8)
+> > +			return -ENOMEM;
+> > +	}
+> >
+> >  	/* for non control endpoints, set PID to D0 */
+> >  	if (index)
+> > @@ -2584,6 +2611,9 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
+> >  	/* terminate all requests with shutdown */
+> >  	kill_all_requests(hsotg, hs_ep, -ESHUTDOWN, false);
+> >
+> > +	hsotg->fifo_map &= ~(1<<hs_ep->fifo_index);
+> > +	hs_ep->fifo_index = 0;
+> > +	hs_ep->fifo_size = 0;
+> >
+> >  	ctrl = readl(hsotg->regs + epctrl_reg);
+> >  	ctrl &= ~DXEPCTL_EPENA;
+> > @@ -2975,7 +3005,6 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
+> >  				       struct s3c_hsotg_ep *hs_ep,
+> >  				       int epnum)
+> >  {
+> > -	u32 ptxfifo;
+> >  	char *dir;
+> >
+> >  	if (epnum == 0)
+> > @@ -3004,15 +3033,6 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
+> >  	hs_ep->ep.ops = &s3c_hsotg_ep_ops;
+> >
+> >  	/*
+> > -	 * Read the FIFO size for the Periodic TX FIFO, even if we're
+> > -	 * an OUT endpoint, we may as well do this if in future the
+> > -	 * code is changed to make each endpoint's direction changeable.
+> > -	 */
+> > -
+> > -	ptxfifo = readl(hsotg->regs + DPTXFSIZN(epnum));
+> > -	hs_ep->fifo_size = FIFOSIZE_DEPTH_GET(ptxfifo) * 4;
+> > -
+> > -	/*
+> >  	 * if we're using dma, we need to set the next-endpoint pointer
+> >  	 * to be something valid.
+> >  	 */
+> > --
+> > 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
