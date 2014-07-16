@@ -1,71 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934583AbaGPPpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:45:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45581 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934391AbaGPPpA (ORCPT
+	id S965377AbaGPPq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:46:28 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:10106 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933938AbaGPPq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:45:00 -0400
-To: "hch\@infradead.org" <hch@infradead.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw\@canonical.com" <apw@canonical.com>,
-        "stable\@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering\@suse.com" <ohering@suse.com>,
-        "jasowang\@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1404866812-26950-1-git-send-email-kys@microsoft.com>
-	<1404866812-26950-4-git-send-email-kys@microsoft.com>
-	<20140709084300.GD6012@infradead.org>
-	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
-	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
-	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
-	<20140711063216.GA20660@infradead.org>
-	<328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
-	<yq1a98d2z5x.fsf@sermon.lab.mkp.net>
-	<20140716110111.GA7382@infradead.org>
-Date: Wed, 16 Jul 2014 11:44:18 -0400
-In-Reply-To: <20140716110111.GA7382@infradead.org> (hch@infradead.org's
-	message of "Wed, 16 Jul 2014 04:01:11 -0700")
-Message-ID: <yq14myhtijx.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+	Wed, 16 Jul 2014 11:46:26 -0400
+Date: Wed, 16 Jul 2014 16:46:14 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>
+Subject: Re: [PATCH 2/2 v3] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140716154614.GP26542@e103034-lin>
+References: <1405475447-7783-1-git-send-email-yuyang.du@intel.com>
+ <1405475447-7783-3-git-send-email-yuyang.du@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405475447-7783-3-git-send-email-yuyang.du@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "hch" == hch@infradead org <hch@infradead.org> writes:
+On Wed, Jul 16, 2014 at 02:50:47AM +0100, Yuyang Du wrote:
 
-hch> read_capacity_16 calls sd_config_discard(sdkp, SD_LBP_WS16) if the
-hch> LPBME bit is set.  At least older SBC drafts left it wide open if a
-hch> target supports WRITE SAME with UNMAP or UNMAP in this case.
+[...]
 
-Correct.
+> +/*
+> + * Update load_avg of the cfs_rq along with its own se. They should get
+> + * synchronized: group se's load_avg is used for task_h_load calc, and
+> + * group cfs_rq's load_avg is used for task_h_load (and update_cfs_share
+> + * calc).
+> + */
+> +static inline int update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
+>  {
+> -       long old_contrib = se->avg.load_avg_contrib;
+> +       int decayed;
+> 
+> -       if (entity_is_task(se)) {
+> -               __update_task_entity_contrib(se);
+> -       } else {
+> -               __update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
+> -               __update_group_entity_contrib(se);
+> +       if (atomic_long_read(&cfs_rq->removed_load_avg)) {
+> +               long r = atomic_long_xchg(&cfs_rq->removed_load_avg, 0);
+> +               cfs_rq->avg.load_avg = subtract_until_zero(cfs_rq->avg.load_avg, r);
+> +               r *= LOAD_AVG_MAX;
+> +               cfs_rq->avg.load_sum = subtract_until_zero(cfs_rq->avg.load_sum, r);
+>         }
+> 
+> -       return se->avg.load_avg_contrib - old_contrib;
+> -}
+> +       decayed = __update_load_avg(now, &cfs_rq->avg, cfs_rq->load.weight);
+> +#ifndef CONFIG_64BIT
+> +       if (cfs_rq->avg.last_update_time != cfs_rq->load_last_update_time_copy)
+> +               sa_q->last_update_time_copy = sa_q->last_update_time;
 
-hch> So I think we'd still want a patch to use UNMAP instead of WRITE
-hch> SAME for this case, which should also fix hyperv. 
+This doesn't build on 32 bit. You need:
 
-There are lots of devices out there that support WRITE SAME(10) or (16)
-without the UNMAP bit. And there are devices that support WRITE SAME w/
-UNMAP functionality but not "regular" WRITE SAME.
+-               sa_q->last_update_time_copy = sa_q->last_update_time;
++               cfs_rq->load_last_update_time_copy = cfs_rq->avg.last_update_time;
 
-no_write_same is there to prevent the REQ_WRITE_SAME use case (for which
-we have really weak heuristics). Your patch overloads no_write_same so
-it also governs a REQ_DISCARD use case.
+to make it build. But I'm not convinced that this synchronization is
+right.
 
-My proposed black list patch fixes the hyperv discard issue. So I don't
-see why we'd need to overload no_write_same which was meant for an
-entirely different purpose.
+First let me say that I'm not an expert on synchronization. It seems to
+me that there is nothing preventing reordering of the writes in
+__update_load_avg() which sets cfs_rq->avg.last_update_time and the
+update of cfs_rq->avg.load_last_update_time_copy.
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+> +#endif
+> 
+> -static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
+> -                                                long load_contrib)
+> -{
+> -       if (likely(load_contrib < cfs_rq->blocked_load_avg))
+> -               cfs_rq->blocked_load_avg -= load_contrib;
+> -       else
+> -               cfs_rq->blocked_load_avg = 0;
+> +       return decayed;
+>  }
+
+[...]
+
+> @@ -4551,18 +4381,34 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+>  {
+>         struct sched_entity *se = &p->se;
+>         struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +       u64 last_update_time;
+> 
+>         /*
+> -        * Load tracking: accumulate removed load so that it can be processed
+> -        * when we next update owning cfs_rq under rq->lock.  Tasks contribute
+> -        * to blocked load iff they have a positive decay-count.  It can never
+> -        * be negative here since on-rq tasks have decay-count == 0.
+> +        * Task on old CPU catches up with its old cfs_rq, and subtract itself from
+> +        * the cfs_rq (task must be off the queue now).
+>          */
+> -       if (se->avg.decay_count) {
+> -               se->avg.decay_count = -__synchronize_entity_decay(se);
+> -               atomic_long_add(se->avg.load_avg_contrib,
+> -                                               &cfs_rq->removed_load);
+> -       }
+> +#ifndef CONFIG_64BIT
+> +       u64 last_update_time_copy;
+> +
+> +       do {
+> +               last_update_time_copy = cfs_rq->load_last_update_time_copy;
+> +               smp_rmb();
+> +               last_update_time = cfs_rq->avg.last_update_time;
+> +       } while (last_update_time != last_update_time_copy);
+
+Here is the matching read side of the synchronization code. Since
+reodering might happen on the write side (I believe), I'm not convinced
+that this works.
+
+Morten
+
+> +#else
+> +       last_update_time = cfs_rq->avg.last_update_time;
+> +#endif
+> +       __update_load_avg(last_update_time, &se->avg, 0);
+> +       atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
+> +
+> +       /*
+> +        * We are supposed to update the task to "current" time, then its up to date
+> +        * and ready to go to new CPU/cfs_rq. But we have difficulty in getting
+> +        * what current time is, so simply throw away the out-of-date time. This
+> +        * will result in the wakee task is less decayed, but giving the wakee more
+> +        * load sounds not bad.
+> +        */
+> +       se->avg.last_update_time = 0;
+> 
+>         /* We have migrated, no longer consider this task hot */
+>         se->exec_start = 0;
+> @@ -5399,36 +5245,6 @@ next:
+>  }
