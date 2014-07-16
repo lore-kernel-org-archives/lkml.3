@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935241AbaGPTYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:24:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44584 "EHLO
+	id S935275AbaGPTZS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:25:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44555 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932258AbaGPTYi (ORCPT
+	with ESMTP id S935204AbaGPTYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:24:38 -0400
-Date: Wed, 16 Jul 2014 12:24:04 -0700
+	Wed, 16 Jul 2014 15:24:06 -0400
+Date: Wed, 16 Jul 2014 12:23:33 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-13b9a962a2594ee880c5d50d7f70964da1d4fe5a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
+Message-ID: <tip-u6odkgkw8wz3m7orgsjfo5pi@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
         tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] locking/rwsem: Rename 'activity' to 'count'
-Git-Commit-ID: 13b9a962a2594ee880c5d50d7f70964da1d4fe5a
+Subject: [tip:sched/core] sched/numa: Revert "Use effective_load()
+  to balance NUMA loads"
+Git-Commit-ID: e720fff6341fe4b95e5a93c939bd3c77fa55ced4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,168 +32,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13b9a962a2594ee880c5d50d7f70964da1d4fe5a
-Gitweb:     http://git.kernel.org/tip/13b9a962a2594ee880c5d50d7f70964da1d4fe5a
+Commit-ID:  e720fff6341fe4b95e5a93c939bd3c77fa55ced4
+Gitweb:     http://git.kernel.org/tip/e720fff6341fe4b95e5a93c939bd3c77fa55ced4
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 16 Jul 2014 14:54:55 +0200
+AuthorDate: Fri, 11 Jul 2014 16:01:53 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 14:56:55 +0200
+CommitDate: Wed, 16 Jul 2014 13:38:23 +0200
 
-locking/rwsem: Rename 'activity' to 'count'
+sched/numa: Revert "Use effective_load() to balance NUMA loads"
 
-There are two definitions of struct rw_semaphore, one in linux/rwsem.h
-and one in linux/rwsem-spinlock.h.
+Due to divergent trees, Rik find that this patch is no longer
+required.
 
-For some reason they have different names for the initial field. This
-makes it impossible to use C99 named initialization for
-__RWSEM_INITIALIZER() -- or we have to duplicate that entire thing
-along with the structure definitions.
-
-The simpler patch is renaming the rwsem-spinlock variant to match the
-regular rwsem.
-
-This allows us to switch to C99 named initialization.
-
+Requested-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-bmrZolsbGmautmzrerog27io@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-u6odkgkw8wz3m7orgsjfo5pi@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/rwsem-spinlock.h  |  8 ++++----
- kernel/locking/rwsem-spinlock.c | 28 ++++++++++++++--------------
- 2 files changed, 18 insertions(+), 18 deletions(-)
+ kernel/sched/fair.c | 20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
-index d5b13bc..561e861 100644
---- a/include/linux/rwsem-spinlock.h
-+++ b/include/linux/rwsem-spinlock.h
-@@ -15,13 +15,13 @@
- #ifdef __KERNEL__
- /*
-  * the rw-semaphore definition
-- * - if activity is 0 then there are no active readers or writers
-- * - if activity is +ve then that is the number of active readers
-- * - if activity is -1 then there is one active writer
-+ * - if count is 0 then there are no active readers or writers
-+ * - if count is +ve then that is the number of active readers
-+ * - if count is -1 then there is one active writer
-  * - if wait_list is not empty, then there are processes waiting for the semaphore
-  */
- struct rw_semaphore {
--	__s32			activity;
-+	__s32			count;
- 	raw_spinlock_t		wait_lock;
- 	struct list_head	wait_list;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-diff --git a/kernel/locking/rwsem-spinlock.c b/kernel/locking/rwsem-spinlock.c
-index 9be8a91..2c93571 100644
---- a/kernel/locking/rwsem-spinlock.c
-+++ b/kernel/locking/rwsem-spinlock.c
-@@ -26,7 +26,7 @@ int rwsem_is_locked(struct rw_semaphore *sem)
- 	unsigned long flags;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f5f0cc9..45943b2 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1151,7 +1151,6 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	struct rq *src_rq = cpu_rq(env->src_cpu);
+ 	struct rq *dst_rq = cpu_rq(env->dst_cpu);
+ 	struct task_struct *cur;
+-	struct task_group *tg;
+ 	long src_load, dst_load;
+ 	long load;
+ 	long imp = env->p->numa_group ? groupimp : taskimp;
+@@ -1223,14 +1222,9 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	 * In the overloaded case, try and keep the load balanced.
+ 	 */
+ balance:
+-	src_load = env->src_stats.load;
+-	dst_load = env->dst_stats.load;
+-
+-	/* Calculate the effect of moving env->p from src to dst. */
+-	load = env->p->se.load.weight;
+-	tg = task_group(env->p);
+-	src_load += effective_load(tg, env->src_cpu, -load, -load);
+-	dst_load += effective_load(tg, env->dst_cpu, load, load);
++	load = task_h_load(env->p);
++	dst_load = env->dst_stats.load + load;
++	src_load = env->src_stats.load - load;
  
- 	if (raw_spin_trylock_irqsave(&sem->wait_lock, flags)) {
--		ret = (sem->activity != 0);
-+		ret = (sem->count != 0);
- 		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 	}
- 	return ret;
-@@ -46,7 +46,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	debug_check_no_locks_freed((void *)sem, sizeof(*sem));
- 	lockdep_init_map(&sem->dep_map, name, key, 0);
- #endif
--	sem->activity = 0;
-+	sem->count = 0;
- 	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
- }
-@@ -95,7 +95,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
- 		waiter = list_entry(next, struct rwsem_waiter, list);
- 	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
+ 	if (moveimp > imp && moveimp > env->best_imp) {
+ 		/*
+@@ -1250,11 +1244,9 @@ balance:
+ 		goto unlock;
  
--	sem->activity += woken;
-+	sem->count += woken;
- 
-  out:
- 	return sem;
-@@ -126,9 +126,9 @@ void __sched __down_read(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
-+	if (sem->count >= 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
--		sem->activity++;
-+		sem->count++;
- 		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 		goto out;
- 	}
-@@ -170,9 +170,9 @@ int __down_read_trylock(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
-+	if (sem->count >= 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
--		sem->activity++;
-+		sem->count++;
- 		ret = 1;
+ 	if (cur) {
+-		/* Cur moves in the opposite direction. */
+-		load = cur->se.load.weight;
+-		tg = task_group(cur);
+-		src_load += effective_load(tg, env->src_cpu, load, load);
+-		dst_load += effective_load(tg, env->dst_cpu, -load, -load);
++		load = task_h_load(cur);
++		dst_load -= load;
++		src_load += load;
  	}
  
-@@ -206,7 +206,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
- 		 * itself into sleep and waiting for system woke it or someone
- 		 * else in the head of the wait list up.
- 		 */
--		if (sem->activity == 0)
-+		if (sem->count == 0)
- 			break;
- 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-@@ -214,7 +214,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
- 		raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 	}
- 	/* got the lock */
--	sem->activity = -1;
-+	sem->count = -1;
- 	list_del(&waiter.list);
- 
- 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-@@ -235,9 +235,9 @@ int __down_write_trylock(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity == 0) {
-+	if (sem->count == 0) {
- 		/* got the lock */
--		sem->activity = -1;
-+		sem->count = -1;
- 		ret = 1;
- 	}
- 
-@@ -255,7 +255,7 @@ void __up_read(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (--sem->activity == 0 && !list_empty(&sem->wait_list))
-+	if (--sem->count == 0 && !list_empty(&sem->wait_list))
- 		sem = __rwsem_wake_one_writer(sem);
- 
- 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-@@ -270,7 +270,7 @@ void __up_write(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	sem->activity = 0;
-+	sem->count = 0;
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, 1);
- 
-@@ -287,7 +287,7 @@ void __downgrade_write(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	sem->activity = 1;
-+	sem->count = 1;
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, 0);
- 
+ 	if (load_too_imbalanced(src_load, dst_load, env))
