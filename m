@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603AbaGPI1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:27:19 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54194 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759487AbaGPI1O (ORCPT
+	id S1759783AbaGPI1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:27:49 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:60087 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759628AbaGPI1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:27:14 -0400
-Message-ID: <1405499224.5872.38.camel@marge.simpson.net>
-Subject: Re: [PATCH 2/2 v2] sched: Rewrite per entity runnable load average
- tracking
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: bsegall@google.com
-Cc: Yuyang Du <yuyang.du@intel.com>, mingo@redhat.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, pjt@google.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Date: Wed, 16 Jul 2014 10:27:04 +0200
-In-Reply-To: <xm26pph6wmzy.fsf@sword-of-the-dawn.mtv.corp.google.com>
-References: <1405293352-9305-1-git-send-email-yuyang.du@intel.com>
-	 <1405293352-9305-3-git-send-email-yuyang.du@intel.com>
-	 <xm26vbqzwx9a.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	 <20140715015105.GA2532@intel.com>
-	 <xm26pph6wmzy.fsf@sword-of-the-dawn.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 16 Jul 2014 04:27:43 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140715180445.GB3421@gmail.com>
+References: <20140711211850.GU1870@gmail.com>
+	<019CCE693E457142B37B791721487FD9180A193B@storexdag01.amd.com>
+	<20140713035535.GB5301@gmail.com>
+	<D89D60253BB73A4E8C62F9FD18A939CA0103C0EB@storexdag02.amd.com>
+	<20140713164901.GB10624@gmail.com>
+	<53C396D3.9000600@vodafone.de>
+	<CAPM=9txM=0Rd8sP56X1v2sXhAYiRJDoz-j8+N0wXpam-+kYJ8Q@mail.gmail.com>
+	<D89D60253BB73A4E8C62F9FD18A939CA01050131@storexdag02.amd.com>
+	<20140715173704.GA3421@gmail.com>
+	<D89D60253BB73A4E8C62F9FD18A939CA01050211@storexdag02.amd.com>
+	<20140715180445.GB3421@gmail.com>
+Date: Wed, 16 Jul 2014 10:27:42 +0200
+X-Google-Sender-Auth: _sWUtbw5y1tpuxS8NT8_64ENCs4
+Message-ID: <CAKMK7uEohJaiNCdDeV-6GNtH=0YSsw-o8V1zMYtOFEnkbOK+wA@mail.gmail.com>
+Subject: Re: [PATCH 00/83] AMD HSA kernel driver
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: "Bridgman, John" <John.Bridgman@amd.com>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 10:27 -0700, bsegall@google.com wrote:
+On Tue, Jul 15, 2014 at 8:04 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>> Yes although it can be skipped on most systems. We figured that topology
+>> needed to cover everything that would be handled by a single OS image, so
+>> in a NUMA system it would need to cover all the CPUs. I think that is still
+>> the right scope, do you agree ?
+>
+> I think it is a idea to duplicate cpu. I would rather have each device
+> give its afinity against each cpu and for cpu just keep the existing
+> kernel api that expose this through sysfs iirc.
 
-> It would still be good to see pipe_test numbers at various cgroup depths.
+It's all there already if we fix up the hsa dev-node model to expose
+one dev node per underlying device instead of one for everything:
+- cpus already expose the full numa topology in sysfs
+- pci devices have a numa_node file in sysfs to display the link
+- we can easily add similar stuff for platform devices on arm socs
+without pci devices.
 
-My t^Hcrusty ole box seems to be saying.. 
+Then the only thing userspace needs to do is follow the device link in
+the hsa instance node in sysfs and we have all the information
+exposed. Iff we expose one hsa driver instance to userspace per
+physical device (which is the normal linux device driver model
+anyway).
 
-cgexec -g cpu:a pipe-test 1
-3.16.0-default         5.016373 usecs/loop -- avg 5.021115 398.3 KHz
-3.16.0-default+tim     5.003933 usecs/loop -- avg 4.986591 401.1 KHz
-
-cgexec -g cpu:a/b pipe-test 1
-3.16.0-default         5.543566 usecs/loop -- avg 5.565475 359.4 KHz
-3.16.0-default+tim     5.663404 usecs/loop -- avg 5.647020 354.2 KHz
-
-cgexec -g cpu:a/b/c pipe-test 1
-3.16.0-default         6.092256 usecs/loop -- avg 6.094186 328.2 KHz
-3.16.0-default+tim     6.311192 usecs/loop -- avg 6.299077 317.5 KHz
-
-..that 0 KHz will become easier to achieve.
-
+I don't see a need to add anything hsa specific here at all (well
+maybe some description of the cache architecture on the hsa device
+itself, the spec seems to have provisions for that).
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
