@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844AbaGPWqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 18:46:19 -0400
-Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:46617 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754317AbaGPWqN (ORCPT
+	id S1753928AbaGPWxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 18:53:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61598 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752261AbaGPWxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 18:46:13 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3867:3868:3871:3873:3874:4250:4321:5007:6119:7652:7903:10010:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: light70_703d0086d964d
-X-Filterd-Recvd-Size: 1628
-Message-ID: <1405550769.6381.17.camel@joe-AO725>
-Subject: Re: [PATCH] staging: gdm72xx: conditionally compile debug code
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Michalis Pappas <mpappas@fastmail.fm>, devel@driverdev.osuosl.org,
+	Wed, 16 Jul 2014 18:53:16 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Patrik Fimml <patrikf@chromium.org>
+Cc: linux-pm@vger.kernel.org, Dmitry Torokhov <dtor@google.com>,
+        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 16 Jul 2014 15:46:09 -0700
-In-Reply-To: <20140716221034.GB716@kroah.com>
-References: <1404219616-1788-1-git-send-email-mpappas@fastmail.fm>
-	 <1404219616-1788-2-git-send-email-mpappas@fastmail.fm>
-	 <20140709185142.GA13271@kroah.com> <53C6E332.2070301@fastmail.fm>
-	 <20140716205024.GA11078@kroah.com> <53C6F69A.5070108@fastmail.fm>
-	 <20140716221034.GB716@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: Power-managing devices that are not of interest at some point in time
+Date: Thu, 17 Jul 2014 01:11:31 +0200
+Message-ID: <5611777.bNi5p029gt@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140716013206.GA13409@google.com>
+References: <20140716013206.GA13409@google.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 15:10 -0700, Greg KH wrote:
-> On Wed, Jul 16, 2014 at 11:03:06PM +0100, Michalis Pappas wrote:
-[]
-> > Ok, I agree on the ifdef stuff. My question was regarding your
-> > suggestion above to replace print_hex_debug() with dev_dbg()
+On Tuesday, July 15, 2014 06:32:06 PM Patrik Fimml wrote:
+> (Re-sending with correct mailing list addresses.)
 > 
-> You want the device name/id/label to show up as well, that is why you
-> should use the dev_dbg() version, print_hex_dump() does not take a
-> struct device *, so the user has no idea what device this data was
-> coming from.
+> Hi,
+> 
+> When the lid of a laptop is closed, certain devices can no longer
+> provide interesting input or will even produce bogus input, such as:
+> 
+> - input devices: touchscreen, touchpad, keyboard
+> - sensors: ambient light sensor, accelerometer, magnetometer
+> - a video camera mounted on the lid
+> - display backlight
+> 
+> Various workarounds cover some of these cases, and we have some ugly
+> hacks in ChromeOS to make things work. It would be nice if a userspace
+> power management daemon could listen to the lid-close event, and then
+> have a way to temporarily power off these devices, potentially through
+> sysfs.
+> 
+> I've been discussing this with Dmitry and Benson (cc'd), and we've been
+> wondering whether we could come up with a generic solution that could
+> benefit multiple device classes.
+> 
+> There's some overlap with runtime PM here. The action to be taken in
+> such a situation would probably be similar to a runtime suspend. The
+> match is not perfect though, since devices with more than two power
+> states might want to enter different states depending on the situation.
+> 
+> It's somewhat difficult to get the semantics right, since handles to
+> such devices might still be open. It might be easier to implement
+> behavior specific to device classes. On the other hand, it would be nice
+> to have a uniform way of shutting devices down, and not introduce
+> another possible path for a device to enter a power-saving state.
+> 
+> Rafael, can you give us your opinion on this?
 
-But Michalis could alway add something like:
-	dev_hex_dump()
-and
-	dev_dbg_hex_dump()
+Let me try to understand the scenario in the first place.
 
+To start with, a number of devices is in use (that is, open, there are
+applications listening/talking to them etc).  Now, an event happens, such
+as a laptop lid close and you want some of those devices, but possibly
+not all of them, to quiesce themselves and go into low-power states.
+
+Is that correct?
+
+Rafael
 
