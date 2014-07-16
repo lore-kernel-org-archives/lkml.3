@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169AbaGPNKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:10:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49409 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932702AbaGPNJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:09:19 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [RESEND PATCH v3 4/4] usb: dwc3: dwc3-omap: Add dwc3_omap_extcon_register function
-Date: Wed, 16 Jul 2014 18:37:08 +0530
-Message-ID: <1405516028-26500-5-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405516028-26500-1-git-send-email-george.cherian@ti.com>
-References: <1405516028-26500-1-git-send-email-george.cherian@ti.com>
+	id S933757AbaGPNM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:12:26 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:46789 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702AbaGPNMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:12:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <5461658.P0nNPHkj0L@wuerfel>
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org>
+	<6436896.YqIi9fg7XW@wuerfel>
+	<CAJe_ZhfwhMBVhsOm4K69crX38rgrwYenQfySox7nGNVqQHreNQ@mail.gmail.com>
+	<5461658.P0nNPHkj0L@wuerfel>
+Date: Wed, 16 Jul 2014 18:42:22 +0530
+Message-ID: <CAJe_Zhdtzhv=1QfhCAu6G_nq0VqW9v6TvgHSJe9VmgJQwo0U3Q@mail.gmail.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "s-anna@ti.com" <s-anna@ti.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the extcon related code to its own function.
-Improve code readability, decrease the dwc3_probe() size.
+On 16 July 2014 18:39, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 16 July 2014 18:35:33 Jassi Brar wrote:
+>> On 16 July 2014 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Wednesday 16 July 2014 18:07:04 Jassi Brar wrote:
+>> >> On 16 July 2014 15:46, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> > On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
+>> >> >> > +
+>> >> >> > +Required property:
+>> >> >> > +- mbox: List of phandle and mailbox channel specifier.
+>> >> >> > +
+>> >> >> > +- mbox-names: List of identifier strings for each mailbox channel
+>> >> >> > +               required by the client.
+>> >> >> > +
+>> >> >>
+>> >> >> IMO the mailbox names are more associated with the controller channels/
+>> >> >> mailbox rather than the clients using it. Does it make sense to move
+>> >> >> this under controller. It also avoid each client replicating the names.
+>> >> >
+>> >> > I think it would be best to just make the mbox-names property optional,
+>> >> > like we have for other subsystems.
+>> >> >
+>> >> A very similar subsystem - DMAEngine also has 'dma-names' as a
+>> >> required property.
+>> >>
+>> >> If a client is assigned only 1 mbox in DT, we can do without
+>> >> mbox-names. But I am not sure what to do if a client needs two or more
+>> >> differently capable mboxes? Simply allocating in order of mbox request
+>> >> doesn't seem very robust.
+>> >
+>> > Traditionally, these things (regs, interrupts, ...) are just accessed
+>> > by index. The reason why dmaengine requires the name is that some machines
+>> > can use multiple DMA engine devices attached to the same request line,
+>> > so the dmaengine subsystem can pick any of them that has a matching
+>> > name.
+>> And also, I think, when a client needs 2 different dma channels, say
+>> for RX and TX each. The api can't assign the first channel specified
+>> in 'dmas' property to the first channel request that comes to it,
+>> unless we assume client driver always requests dma channels in the
+>> order written in its DT node.  And this is the main reason I see for
+>> having mbox-names property.
+>
+> Most subsystems require passing an explicit index in this case.
+>
+>>   If we make mbox-names optional, do we assume client driver must
+>> request mbox in the order specified in its DT node?
+>
+> Correct.
+>
+OK. So how about we drop mbox-names altogether and expect client
+driver to simply provide an index of the mbox needed?
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/dwc3/dwc3-omap.c | 65 ++++++++++++++++++++++++++------------------
- 1 file changed, 39 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 56ec6eb..7594535 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -421,6 +421,42 @@ static void dwc3_omap_set_utmi_mode(struct dwc3_omap *omap)
- 	dwc3_omap_write_utmi_status(omap, reg);
- }
- 
-+static int dwc3_omap_extcon_register(struct dwc3_omap *omap)
-+{
-+	u32			ret;
-+	struct device_node	*node = omap->dev->of_node;
-+	struct extcon_dev	*edev;
-+
-+	if (of_property_read_bool(node, "extcon")) {
-+		edev = extcon_get_edev_by_phandle(omap->dev, 0);
-+		if (IS_ERR(edev)) {
-+			dev_vdbg(omap->dev, "couldn't get extcon device\n");
-+			return -EPROBE_DEFER;
-+		}
-+
-+		omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
-+		ret = extcon_register_interest(&omap->extcon_vbus_dev,
-+					       edev->name, "USB",
-+					       &omap->vbus_nb);
-+		if (ret < 0)
-+			dev_vdbg(omap->dev, "failed to register notifier for USB\n");
-+
-+		omap->id_nb.notifier_call = dwc3_omap_id_notifier;
-+		ret = extcon_register_interest(&omap->extcon_id_dev,
-+					       edev->name, "USB-HOST",
-+					       &omap->id_nb);
-+		if (ret < 0)
-+			dev_vdbg(omap->dev, "failed to register notifier for USB-HOST\n");
-+
-+		if (extcon_get_cable_state(edev, "USB") == true)
-+			dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
-+		if (extcon_get_cable_state(edev, "USB-HOST") == true)
-+			dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
-+	}
-+
-+	return 0;
-+}
-+
- static int dwc3_omap_probe(struct platform_device *pdev)
- {
- 	struct device_node	*node = pdev->dev.of_node;
-@@ -428,7 +464,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	struct dwc3_omap	*omap;
- 	struct resource		*res;
- 	struct device		*dev = &pdev->dev;
--	struct extcon_dev	*edev;
- 	struct regulator	*vbus_reg = NULL;
- 
- 	int			ret;
-@@ -500,31 +535,9 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 
- 	dwc3_omap_enable_irqs(omap);
- 
--	if (of_property_read_bool(node, "extcon")) {
--		edev = extcon_get_edev_by_phandle(dev, 0);
--		if (IS_ERR(edev)) {
--			dev_vdbg(dev, "couldn't get extcon device\n");
--			ret = -EPROBE_DEFER;
--			goto err2;
--		}
--
--		omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
--		ret = extcon_register_interest(&omap->extcon_vbus_dev,
--			edev->name, "USB", &omap->vbus_nb);
--		if (ret < 0)
--			dev_vdbg(dev, "failed to register notifier for USB\n");
--		omap->id_nb.notifier_call = dwc3_omap_id_notifier;
--		ret = extcon_register_interest(&omap->extcon_id_dev, edev->name,
--					 "USB-HOST", &omap->id_nb);
--		if (ret < 0)
--			dev_vdbg(dev,
--				"failed to register notifier for USB-HOST\n");
--
--		if (extcon_get_cable_state(edev, "USB") == true)
--			dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
--		if (extcon_get_cable_state(edev, "USB-HOST") == true)
--			dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
--	}
-+	ret = dwc3_omap_extcon_register(omap);
-+	if (ret < 0)
-+		goto err2;
- 
- 	ret = of_platform_populate(node, NULL, NULL, dev);
- 	if (ret) {
--- 
-1.8.3.1
-
+Thanks
+Jassi
