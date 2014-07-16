@@ -1,141 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaGPUeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:34:46 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:37129 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaGPUeo (ORCPT
+	id S1751999AbaGPUf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:35:28 -0400
+Received: from borg.tf-network.de ([62.75.218.204]:40427 "EHLO
+	borg.tf-network.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbaGPUf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:34:44 -0400
+	Wed, 16 Jul 2014 16:35:26 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 16:35:25 EDT
+Message-ID: <53C6E07A.7070303@whissi.de>
+Date: Wed, 16 Jul 2014 22:28:42 +0200
+From: "Thomas D." <whissi@whissi.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140716193637.GA14366@google.com>
-References: <1405505022-7593-1-git-send-email-vidyas@nvidia.com> <20140716193637.GA14366@google.com>
-From: vidya sagar <sagar.tv@gmail.com>
-Date: Thu, 17 Jul 2014 02:04:23 +0530
-Message-ID: <CAN7O0+JObXFbEjFhKOED+RSFG3cVQTfXS8qp7J1ZYHd5YE18eQ@mail.gmail.com>
-Subject: Re: [PATCH v3] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: matthew.garrett@nebula.com, rjw@rjwysocki.net, nchumbalkar@lenovo.com,
-        thierry.reding@gmail.com, swarren@nvidia.com,
-        linux-pci@vger.kernel.org, kthota@nvidia.com,
-        linux-kernel@vger.kernel.org, vidyas@nvidia.com
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Subject: Backport request for 3.14 stable to use rdmsrl_safe() first when
+ initializing RAPL PMU to allow KVM guests to boot on Intel hosts
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 1:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Jul 16, 2014 at 03:33:42PM +0530, Vidya Sagar wrote:
->> From: Vidya Sagar <sagar.tv@gmail.com>
->>
->> Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
->>  under POWERSAVE mode") moved pcie_aspm_powersave_config_link() out of
->> pci_raw_set_power_state() to pci_set_power_state() which would enable
->> ASPM. But, with Commit db288c9c5f9d ("PCI / PM: restore the original
->>  behavior of pci_set_power_state()"), which re-introduced the following check
->> ./drivers/pci/pci.c: pci_set_power_state()
->>
->> +     /* Check if we're already there */
->> +     if (dev->current_state == state)
->> +        return 0;
->>
->> in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
->> made leaving ASPM broken.
->> Fix it by configuring links for ASPM in do_pci_enable_device() instead of
->> pci_set_power_state()
->>
->> Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
->> Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
->
-> I applied this to pci/misc for v3.17 with the following changelog:
+Hi,
 
-Thanks,
+I upgraded my KVM guest from linux-3.10.48 to linux-3.14.12 and
+rebooting into the new kernel failed with
 
->
-> It would still make me feel better if Matthew and/or Rafael acked this.
->
->     PCI: Configure ASPM when enabling device
->
->     We can't do ASPM configuration at enumeration-time because enabling it
->     makes some defective hardware unresponsive, even if ASPM is disabled later
->     (see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
->     to veto it").  Therefore, we have to do it after a driver claims the
->     device.
->
->     We previously configured ASPM in pci_set_power_state(), but that's not a
->     very good place because it's not really related to setting the PCI device
->     power state, and doing it there means:
->
->       - We incorrectly skipped ASPM config when setting a device that's
->         already in D0 to D0.
->
->       - We unnecessarily configured ASPM when setting a device to a low-power
->         state (the ASPM feature only applies when the device is in D0).
->
->       - We unnecessarily configured ASPM when called from a .resume() method
->         (ASPM configuration needs to be restored during resume, but I think
->         pci_restore_pcie_state() should already do this).
->
->     Move ASPM configuration from pci_set_power_state() to
->     do_pci_enable_device() so we do it when a driver enables a device.
->
->     [bhelgaas: changelog]
->     Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
->
-> It would still make me feel better if Matthew and/or Rafael chimed in to
-> make sure this is sane.
->
-> Bjorn
->
->> ---
->> v3:
->> * Modified commit message
->>     removed single quotes around commit messages
->>     added Suggested-by line
->>
->> v2:
->> * Calling ASPM config code is moved from pci_set_power_state() to
->> * do_pci_enable_device()
->>
->>  drivers/pci/pci.c | 12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> index 1c8592b..81d49d3 100644
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -839,12 +839,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->>
->>       if (!__pci_complete_power_transition(dev, state))
->>               error = 0;
->> -     /*
->> -      * When aspm_policy is "powersave" this call ensures
->> -      * that ASPM is configured.
->> -      */
->> -     if (!error && dev->bus->self)
->> -             pcie_aspm_powersave_config_link(dev->bus->self);
->>
->>       return error;
->>  }
->> @@ -1195,12 +1189,18 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
->>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
->>  {
->>       int err;
->> +     struct pci_dev *bridge;
->>       u16 cmd;
->>       u8 pin;
->>
->>       err = pci_set_power_state(dev, PCI_D0);
->>       if (err < 0 && err != -EIO)
->>               return err;
->> +
->> +     bridge = pci_upstream_bridge(dev);
->> +     if (bridge)
->> +             pcie_aspm_powersave_config_link(bridge);
->> +
->>       err = pcibios_enable_device(dev, bars);
->>       if (err < 0)
->>               return err;
->> --
->> 1.8.1.5
->>
+  [     0.930047] Call Trace:
+  [     0.930047]  [<ffffffff81af1d36>] rapl_pmu_init+0xae/0x1b4
+  [     0.930047]  [<ffffffff81af1c88>] ? uncore_cpu_setup+0x13/0x13
+  [     0.930047]  [<ffffffff81000332>] do_one_initcall+0x112/0x160
+  [     0.930047]  [<ffffffff810df618>] ? parse_args+0x1e8/0x320
+  [     0.930047]  [<ffffffff81aea02c>] kernel_init_freeable+0x173/0x1fe
+  [     0.930047]  [<ffffffff81ae9842>] ? do_early_param+0x88/0x88
+  [     0.930047]  [<ffffffff815c4d20>] ? rest_init+0x80/0x80
+  [     0.930047]  [<ffffffff815c4d2e>] kernel_init+0xe/0xf0
+  [     0.930047]  [<ffffffff815da56c>] ret_from_fork+0x7c/0xb0
+  [     0.930047]  [<ffffffff815c4d20>] ? rest_init+0x80/0x80
+  [     0.930047] Code: 8b 14 10 e8 b0 47 1b 00 48 85 c0 49 89 c6 0f 84
+8f 00 00 00 31 c0 b9 06 06 00 00 66 41 89 06 49 8d 46 10 49 89 46 10 49
+89 46 18 <0f> 32 48 c1 e8 08 66 b9 1f 00 49 c7 46 20 c0 c7 a1 81 83 e0 1f
+  [     0.930047] RIP  [<ffffffff8101f4b3>] rapl_cpu_prepare+0x83/0x110
+  [     0.930047]  RSP <ffff88007c777dc0>
+  [     0.953901] ---[ end trace 1a5a32cf5298005d ]---
+  [     0.954374] Kernel panic - not syncing: Fatal exception
+  [     0.954947] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation
+range: 0xffffffff80000000-0xffffffff9fffffff)
+
+I started a kernel bisect and the bad commit causing the problem was
+
+commit 4788e5b4b2338f85fa42a712a182d8afd65d7c58
+Author: Stephane Eranian <eranian@google.com>
+Date:   Tue Nov 12 17:58:50 2013 +0100
+
+    perf/x86: Add Intel RAPL PMU support
+
+    [...]
+
+
+In v3.15 this bug is already fixed with commit
+
+
+commit 24223657806a0ebd0ae5c9caaf7b021091889cf2
+Author: Venkatesh Srinivas <venkateshs@google.com>
+Date:   Thu Mar 13 12:36:26 2014 -0700
+
+    perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
+
+    CPUs which should support the RAPL counters according to
+    Family/Model/Stepping may still issue #GP when attempting to access
+    the RAPL MSRs. This may happen when Linux is running under KVM and
+    we are passing-through host F/M/S data, for example. Use rdmsrl_safe
+    to first access the RAPL_POWER_UNIT MSR; if this fails, do not
+    attempt to use this PMU.
+
+
+
+Could you please help me getting this fix into 3.14 stable kernel?
+
+I am not sure if applying 24223657 against 3.14 stable is enough. That's
+why I am posting this to linux-kernel@vger following the "Reporting bugs
+for the Linux kernel" guide (linux-kernel@vger is the mailing list for
+the perf subsystem according to the the MAINTAINERS file) instead of
+posting this to the stable@vger list.
+Please correct me if I am doing something wrong. This is my first time
+doing something like that.
+
+Thanks!
+
+Bugzilla: https://bugs.gentoo.org/show_bug.cgi?id=516908
+
+
+-Thomas
