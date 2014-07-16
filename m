@@ -1,197 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664AbaGPVre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:47:34 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:37646 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443AbaGPVrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:47:22 -0400
-Date: Wed, 16 Jul 2014 16:47:18 -0500
-From: Greg Donald <gdonald@gmail.com>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: find_busiest_group divide error
-Message-ID: <20140716214718.GA11183@gmail.com>
-References: <20140714165659.GA9289@gmail.com>
- <20140716152736.GD19379@twins.programming.kicks-ass.net>
- <20140716175259.GA5956@gmail.com>
- <53C6EF16.30506@arm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
-Content-Disposition: inline
-In-Reply-To: <53C6EF16.30506@arm.com>
-X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=0x42C14D83&op=vindex
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752975AbaGPVvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:51:41 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:53499 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374AbaGPVvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 17:51:37 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        Oleg Nesterov <oleg@redhat.com>, James Morris <jmorris@namei.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v11 0/11] seccomp: add thread sync ability
+Date: Wed, 16 Jul 2014 14:50:31 -0700
+Message-Id: <1405547442-26641-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds the ability for threads to request seccomp filter
+synchronization across their thread group (at filter attach time).
+For example, for Chrome to make sure graphic driver threads are fully
+confined after seccomp filters have been attached.
 
---jRHKVT23PllUwdXP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+To support this, locking on seccomp changes via thread-group-shared
+sighand lock is introduced, along with refactoring of no_new_privs. Races
+with thread creation are handled via delayed duplication of the seccomp
+task struct field and cred_guard_mutex.
 
-On Wed, Jul 16, 2014 at 11:31:02PM +0200, Dietmar Eggemann wrote:
-> My patch caffcdd8d27ba78730d5540396ce72ad022aff2c got rid of
-> cpumask_clear(sched_group_cpus(sg)); and sg->sgp->power =3D 0; so
-> reverting it (and replacing sg->sgp->power =3D 0 with
-> sg->sgc->capacity =3D 0) should cure it too. (although the missing
-> cpumask_clear() is the culprit on your machine here).
->=20
-> Could I ask you to share the content of your /proc/cpuinfo file? I
-> suspect it might be the same topology as the one Bruno just sent out
-> (the one of a dual single core CPU with hyper-threading ?)
->=20
-> https://lkml.org/lkml/2014/7/16/603
+This includes a new syscall (instead of adding a new prctl option),
+as suggested by Andy Lutomirski and Michael Kerrisk.
 
-Sounds like what I have:
+Thanks!
 
-processor	: 0
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Xeon(TM) CPU 2.00GHz
-stepping	: 7
-microcode	: 0x25
-cpu MHz		: 1993.502
-cache size	: 512 KB
-physical id	: 0
-siblings	: 2
-core id		: 0
-cpu cores	: 1
-apicid		: 0
-initial apicid	: 0
-fdiv_bug	: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
-mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs
-bts cid
-bogomips	: 3987.00
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
+-Kees
 
-processor	: 1
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Xeon(TM) CPU 2.00GHz
-stepping	: 7
-microcode	: 0x25
-cpu MHz		: 1993.502
-cache size	: 512 KB
-physical id	: 3
-siblings	: 2
-core id		: 0
-cpu cores	: 1
-apicid		: 6
-initial apicid	: 6
-fdiv_bug	: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
-mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs
-bts cid
-bogomips	: 3987.39
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
+v11:
+ - updated writer locking commit log for clarity (luto)
+ - clarified writer lock thread flag setting comment (luto)
+ - inverted SECCOMP_FILTER_FLAG_MASK (luto)
+ - renamed is_acestor parameter (luto)
+ - added BUG_ON to catch currently impossible integer overflow (luto)
+v10:
+ - dropped pending-kill checks (oleg)
+ - tweaked memory barriers (oleg)
+v9:
+ - rearranged/split patches to make things more reviewable
+ - added use of cred_guard_mutex to solve exec race (oleg, luto)
+ - added barriers for TIF_SECCOMP vs seccomp.mode race (oleg, luto)
+ - fixed missed copying of nnp state after v8 refactor (oleg)
+v8:
+ - drop use of tasklist_lock, appears redundant against sighand (oleg)
+ - reduced use of smp_load_acquire to logical minimum (oleg)
+ - change nnp to a task struct held atomic flags field (oleg, luto)
+ - drop needless irqflags changes in fork.c for holding sighand lock (oleg)
+ - cleaned up use of thread for-each loop (oleg)
+ - rearranged patch order to keep syscall changes adjacent
+ - added example code to manpage (mtk)
+v7:
+ - rebase on Linus's tree (merged with network bpf changes)
+ - wrote manpage text documenting API (follows this series)
+v6:
+ - switch from seccomp-specific lock to thread-group lock to gain atomicity
+ - implement seccomp syscall across all architectures with seccomp filter
+ - clean up sparse warnings around locking
+v5:
+ - move includes around (drysdale)
+ - drop set_nnp return value (luto)
+ - use smp_load_acquire/store_release (luto)
+ - merge nnp changes to seccomp always, fewer ifdef (luto)
+v4:
+ - cleaned up locking further, as noticed by David Drysdale
+v3:
+ - added SECCOMP_EXT_ACT_FILTER for new filter install options
+v2:
+ - reworked to avoid clone races
 
-processor	: 2
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Xeon(TM) CPU 2.00GHz
-stepping	: 7
-microcode	: 0x25
-cpu MHz		: 1993.502
-cache size	: 512 KB
-physical id	: 0
-siblings	: 2
-core id		: 0
-cpu cores	: 1
-apicid		: 1
-initial apicid	: 1
-fdiv_bug	: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
-mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs
-bts cid
-bogomips	: 3987.34
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
-
-processor	: 3
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Xeon(TM) CPU 2.00GHz
-stepping	: 7
-microcode	: 0x25
-cpu MHz		: 1993.502
-cache size	: 512 KB
-physical id	: 3
-siblings	: 2
-core id		: 0
-cpu cores	: 1
-apicid		: 7
-initial apicid	: 7
-fdiv_bug	: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
-mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs
-bts cid
-bogomips	: 3987.42
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
-
-
---=20
-Greg Donald
-
---jRHKVT23PllUwdXP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJTxvLmAAoJEHjl9MlCwU2DK58IAPGZckoXXp6Rf32aQOvxdmtU
-IDA53AuBaSl9wp20KssVj6TTgrJ761FBO9p/jMwfJz0aNt/NBQmDLc3rst1RjTL1
-6hsfcbcVwcvx2L7u35LD40tU+47inGK76cOvWdvf7YRU3RdJ6bpBr97F7eQRMAfF
-DiuQM3yqyqh7ySPZ1Pmxbc017g7NAyxjP90OOKiL5Br458uOUSE55/EMp/4zHs2s
-uy5J11K+4Ks2EnSIWxM94yG0e39iLN18N0gW5cGzGyOpAKecdvKJfqXjnObahjqt
-U6ocB9DNuHrmPfiVTtUesmeqAj7SoEvSOIZwU7Qi1vkgB9qELeAqdcA23j+Zcbc=
-=BKIk
------END PGP SIGNATURE-----
-
---jRHKVT23PllUwdXP--
