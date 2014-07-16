@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934625AbaGPQ3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:29:03 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60997 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934546AbaGPQ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:28:59 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: use page lists for uncharge batching fix - hugetlb page->lru
-Date: Wed, 16 Jul 2014 12:28:53 -0400
-Message-Id: <1405528133-3054-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.0
+	id S1030248AbaGPQ31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:29:27 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:34943 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934527AbaGPQ3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:29:24 -0400
+Date: Wed, 16 Jul 2014 12:29:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: <balbi@ti.com>
+Cc: <will.deacon@arm.com>, <mingo@redhat.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: Function Profiler broken on today's linux-next
+Message-ID: <20140716122921.71b118a9@gandalf.local.home>
+In-Reply-To: <20140716162328.GJ1365@saruman.home>
+References: <20140716162328.GJ1365@saruman.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya-san reports that page->lru of hugetlb pages gets corrupted when
-they hit the uncharge path from put_page().
+On Wed, 16 Jul 2014 11:23:28 -0500
+Felipe Balbi <balbi@ti.com> wrote:
 
-Add a preliminary check for whether the page is even a valid memcg
-page before messing with it's ->lru list.
+> Hi folks,
+> 
+> I was trying to use Kernel Function Profiler to figure out why my
+> driver's IRQ handler is taking so much CPU time but to my surprise,
+> whenever I try to trace anything, I get a "Unable to handle kernel
+> paging request at virtual address XXXX" error.
+> 
+> Is anybody else seen that or did I screw up my Kernel config ?
 
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+No, it's probably my fault. The ftrace infrastructure is going through
+an overhaul and some dramatic changes are happening. Although it has
+passed all my tests, I can't cover everyone's configs and use cases.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b2f924359e79..0eb1eaa2f1ff 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6606,9 +6606,16 @@ static void uncharge_list(struct list_head *page_list)
-  */
- void mem_cgroup_uncharge(struct page *page)
- {
-+	struct page_cgroup *pc;
-+
- 	if (mem_cgroup_disabled())
- 		return;
- 
-+	/* Don't touch page->lru of any random page, pre-check: */
-+	pc = lookup_page_cgroup(page);
-+	if (!PageCgroupUsed(pc))
-+		return;
-+
- 	INIT_LIST_HEAD(&page->lru);
- 	uncharge_list(&page->lru);
- }
--- 
-2.0.0
+Please send me your config and the steps you did to enable function
+profiling. This is x86 correct? Other archs are already known to be
+broken and I'm working on fixing them now.
+
+-- Steve
+
+
+
+> 
+> cheers
+> 
+> ps: I have tried tracing a few different drivers and they all trigger
+> the same problem.
+> 
 
