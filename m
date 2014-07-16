@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703AbaGPCsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 22:48:24 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60946 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaGPCsW (ORCPT
+	id S1759145AbaGPCsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 22:48:32 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:50314 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756963AbaGPCs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 22:48:22 -0400
+	Tue, 15 Jul 2014 22:48:26 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -15,45 +15,110 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
-Date: Tue, 15 Jul 2014 19:48:06 -0700
-Message-Id: <cover.1405477965.git.luto@amacapital.net>
+Subject: [PATCH 1/4] x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
+Date: Tue, 15 Jul 2014 19:48:07 -0700
+Message-Id: <3e019617640d1b07d0ab1c9a91455957c201d4cd.1405477965.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1405477965.git.luto@amacapital.net>
+References: <cover.1405477965.git.luto@amacapital.net>
+In-Reply-To: <cover.1405477965.git.luto@amacapital.net>
+References: <cover.1405477965.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio-rng is both too complicated and insufficient for initial rng
-seeding.  It's far too complicated to use for KASLR or any other
-early boot random number needs.  It also provides /dev/random-style
-bits, which means that making guest boot wait for virtio-rng is
-unacceptably slow, and doing it asynchronously means that
-/dev/urandom might be predictable when userspace starts.
+This adds a simple interface to allow a guest to request 64 bits of
+host nonblocking entropy.  This is independent of virtio-rng for a
+couple of reasons:
 
-This introduces a very simple synchronous mechanism to get
-/dev/urandom-style bits.
+ - It's intended to be usable during early boot, when a trivial
+   synchronous interface is needed.
 
-This is a KVM change: am I supposed to write a unit test somewhere?
+ - virtio-rng gives blocking entropy, and making guest boot wait for
+   the host's /dev/random will cause problems.
 
-Andy Lutomirski (4):
-  x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
-  random,x86: Add arch_get_slow_rng_u64
-  random: Seed pools from arch_get_slow_rng_u64 at startup
-  x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+MSR_KVM_GET_RNG_SEED is intended to provide 64 bits of best-effort
+cryptographically secure data for use as a seed.  It provides no
+guarantee that the result contains any actual entropy.
 
- Documentation/virtual/kvm/cpuid.txt  |  3 +++
- arch/x86/Kconfig                     |  4 ++++
- arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++++++++++++++++
- arch/x86/include/asm/archslowrng.h   | 30 ++++++++++++++++++++++++++++++
- arch/x86/include/uapi/asm/kvm_para.h |  2 ++
- arch/x86/kernel/kvm.c                | 22 ++++++++++++++++++++++
- arch/x86/kvm/cpuid.c                 |  3 ++-
- arch/x86/kvm/x86.c                   |  4 ++++
- drivers/char/random.c                | 14 +++++++++++++-
- include/linux/random.h               |  9 +++++++++
- 10 files changed, 116 insertions(+), 2 deletions(-)
- create mode 100644 arch/x86/include/asm/archslowrng.h
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ Documentation/virtual/kvm/cpuid.txt  | 3 +++
+ arch/x86/include/uapi/asm/kvm_para.h | 2 ++
+ arch/x86/kvm/cpuid.c                 | 3 ++-
+ arch/x86/kvm/x86.c                   | 4 ++++
+ 4 files changed, 11 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+index 3c65feb..0ab043b 100644
+--- a/Documentation/virtual/kvm/cpuid.txt
++++ b/Documentation/virtual/kvm/cpuid.txt
+@@ -54,6 +54,9 @@ KVM_FEATURE_PV_UNHALT              ||     7 || guest checks this feature bit
+                                    ||       || before enabling paravirtualized
+                                    ||       || spinlock support.
+ ------------------------------------------------------------------------------
++KVM_FEATURE_GET_RNG_SEED           ||     8 || host provides rng seed data via
++                                   ||       || MSR_KVM_GET_RNG_SEED.
++------------------------------------------------------------------------------
+ KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will warn if no guest-side
+                                    ||       || per-cpu warps are expected in
+                                    ||       || kvmclock.
+diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+index 94dc8ca..e2eaf93 100644
+--- a/arch/x86/include/uapi/asm/kvm_para.h
++++ b/arch/x86/include/uapi/asm/kvm_para.h
+@@ -24,6 +24,7 @@
+ #define KVM_FEATURE_STEAL_TIME		5
+ #define KVM_FEATURE_PV_EOI		6
+ #define KVM_FEATURE_PV_UNHALT		7
++#define KVM_FEATURE_GET_RNG_SEED	8
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+@@ -40,6 +41,7 @@
+ #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+ #define MSR_KVM_STEAL_TIME  0x4b564d03
+ #define MSR_KVM_PV_EOI_EN      0x4b564d04
++#define MSR_KVM_GET_RNG_SEED 0x4b564d05
+ 
+ struct kvm_steal_time {
+ 	__u64 steal;
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 38a0afe..40d6763 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -479,7 +479,8 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 			     (1 << KVM_FEATURE_ASYNC_PF) |
+ 			     (1 << KVM_FEATURE_PV_EOI) |
+ 			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
+-			     (1 << KVM_FEATURE_PV_UNHALT);
++			     (1 << KVM_FEATURE_PV_UNHALT) |
++			     (1 << KVM_FEATURE_GET_RNG_SEED);
+ 
+ 		if (sched_info_on())
+ 			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f644933..4e81853 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -48,6 +48,7 @@
+ #include <linux/pci.h>
+ #include <linux/timekeeper_internal.h>
+ #include <linux/pvclock_gtod.h>
++#include <linux/random.h>
+ #include <trace/events/kvm.h>
+ 
+ #define CREATE_TRACE_POINTS
+@@ -2480,6 +2481,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 	case MSR_KVM_PV_EOI_EN:
+ 		data = vcpu->arch.pv_eoi.msr_val;
+ 		break;
++	case MSR_KVM_GET_RNG_SEED:
++		get_random_bytes(&data, sizeof(data));
++		break;
+ 	case MSR_IA32_P5_MC_ADDR:
+ 	case MSR_IA32_P5_MC_TYPE:
+ 	case MSR_IA32_MCG_CAP:
 -- 
 1.9.3
 
