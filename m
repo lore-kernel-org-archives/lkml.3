@@ -1,207 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759864AbaGPMID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:08:03 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56888 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaGPMIB (ORCPT
+	id S1759973AbaGPMIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:08:16 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40178 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759916AbaGPMIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:08:01 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-ed-53c66b1e8c84
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3] ARM: exynos4: hotplug: Fix CPU idle clock down after CPU off
-Date: Wed, 16 Jul 2014 14:07:47 +0200
-Message-id: <1405512467-27269-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xy7py2ceCDabcN7TYOGM9q8XrF4YW
-	vQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei7VH7rJbrJ/xmsWBy6OluYfNY/OSeo++
-	LasYPT5vkgtgieKySUnNySxLLdK3S+DKeHN9K1vBSt2KpROWsDQwblDtYuTkkBAwkdgy/ww7
-	hC0mceHeerYuRi4OIYGljBKH1p9nh3D6mCSev98IVsUmYCyxefkSsCoRgR2MEsvvXQZLMAs8
-	Z5R4+j0cxBYWCJB4/2wDG4jNIqAqcfzVB1YQm1fAXWLPn7lsEOvkJE4em8w6gZF7ASPDKkbR
-	1NLkguKk9FxDveLE3OLSvHS95PzcTYyQsPmyg3HxMatDjAIcjEo8vAyzjwYLsSaWFVfmHmKU
-	4GBWEuF18D8WLMSbklhZlVqUH19UmpNafIiRiYNTqoFR7cCRxBv+xb51ZzdMTRLvfXMpa5PL
-	zbld3wolRd7cPuTsz+a0OXXCW3XjLg6bFWbKqU/v3o+ct2i9VGRVadp5t5Uu/jfcExZyMLYa
-	m38+wh+Zeicl5am3Z9+HjR+qrqk+Y2fbyqgyNbmRTbjmnPX3tULPfOS9uX265zilKoXE9Mq/
-	Xx3qIaPEUpyRaKjFXFScCAD/xcOP+QEAAA==
+	Wed, 16 Jul 2014 08:08:13 -0400
+Date: Wed, 16 Jul 2014 13:07:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org
+Message-ID: <20140716120750.GM17528@sirena.org.uk>
+References: <cover.1387336613.git.lv.zheng@intel.com>
+ <cover.1405500886.git.lv.zheng@intel.com>
+ <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5me2qT3T17SWzdxI"
+Content-Disposition: inline
+In-Reply-To: <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 7/7] ACPI: Cleanup useless ACPI inclusion.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Exynos4 USE_DELAYED_RESET_ASSERTION must be set in
-ARM_COREx_OPTION register during CPU power down. This is the proper way
-of powering down CPU on Exynos4.
 
-Additionally on Exynos4212 without this the CPU clock down feature won't
-work after powering down some CPU and the online CPUs will work at full
-frequency chosen by CPUfreq governor.
+--5me2qT3T17SWzdxI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+On Wed, Jul 16, 2014 at 04:59:02PM +0800, Lv Zheng wrote:
+> The sst-haswell-dsp.c is an ACPI independent file, this patch removes
+> ACPI header files for it.
 
----
-Changes since v2:
-1. Add missing disable of the "use delayed reset assertion" feature
-   when starting secondary CPU (suggested by Tomasz Figa).
+Applied, thanks.  Please use subject lines matching the style for the
+subsystem and send at least the cover letter for the series to everyone
+so that they know what's going on with dependencies and so on.
 
-Changes since v1:
-1. Use delayed reset assertion on all Exynos4 family and all cores, not
-   only on core 1 of Exynos4212.
-2. Rebase on Tomasz Figa's patch:
-   ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
-   http://www.spinics.net/lists/linux-samsung-soc/msg31604.html
-   Tomasz's patch is currently applied to Kukjin's v3.16-samsung-fixes-4
----
- arch/arm/mach-exynos/common.h   |  4 ++++
- arch/arm/mach-exynos/hotplug.c  | 21 +++++++++++++++++++--
- arch/arm/mach-exynos/platsmp.c  | 24 ++++++++++++++++++++++++
- arch/arm/mach-exynos/regs-pmu.h |  3 +++
- 4 files changed, 50 insertions(+), 2 deletions(-)
+--5me2qT3T17SWzdxI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 1ee91763fa7c..2e08fa793aff 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -137,6 +137,10 @@ extern void __init exynos_pm_init(void);
- static inline void exynos_pm_init(void) {}
- #endif
- 
-+#ifdef CONFIG_SMP
-+extern void exynos_clear_delayed_reset_assertion(u32 core_id);
-+#endif
-+
- extern void exynos_cpu_resume(void);
- 
- extern struct smp_operations exynos_smp_ops;
-diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-index 920a4baa53cd..c58aa0f161bf 100644
---- a/arch/arm/mach-exynos/hotplug.c
-+++ b/arch/arm/mach-exynos/hotplug.c
-@@ -22,7 +22,7 @@
- #include "common.h"
- #include "regs-pmu.h"
- 
--static inline void cpu_leave_lowpower(void)
-+static inline void cpu_leave_lowpower(u32 core_id)
- {
- 	unsigned int v;
- 
-@@ -36,6 +36,8 @@ static inline void cpu_leave_lowpower(void)
- 	  : "=&r" (v)
- 	  : "Ir" (CR_C), "Ir" (0x40)
- 	  : "cc");
-+
-+	exynos_clear_delayed_reset_assertion(core_id);
- }
- 
- static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
-@@ -47,6 +49,19 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
- 
- 		/* Turn the CPU off on next WFI instruction. */
- 		exynos_cpu_power_down(core_id);
-+		if (soc_is_exynos4()) {
-+			unsigned int tmp;
-+
-+			/*
-+			 * Exynos 4 SoCs require setting
-+			 * USE_DELAYED_RESET_ASSERTION so the CPU idle
-+			 * clock down feature could properly detect
-+			 * global idle state when CPUx is off.
-+			 */
-+			tmp = __raw_readl(EXYNOS_ARM_CORE_OPTION(core_id));
-+			tmp |= S5P_USE_DELAYED_RESET_ASSERTION;
-+			__raw_writel(tmp, EXYNOS_ARM_CORE_OPTION(core_id));
-+		}
- 
- 		wfi();
- 
-@@ -76,6 +91,8 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
- void __ref exynos_cpu_die(unsigned int cpu)
- {
- 	int spurious = 0;
-+	u32 mpidr = cpu_logical_map(cpu);
-+	u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
- 
- 	v7_exit_coherency_flush(louis);
- 
-@@ -85,7 +102,7 @@ void __ref exynos_cpu_die(unsigned int cpu)
- 	 * bring this CPU back into the world of cache
- 	 * coherency, and then restore interrupts
- 	 */
--	cpu_leave_lowpower();
-+	cpu_leave_lowpower(core_id);
- 
- 	if (spurious)
- 		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 50b9aad5e27b..9ce0567fbe87 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -32,6 +32,27 @@
- 
- extern void exynos4_secondary_startup(void);
- 
-+/*
-+ * Clear the USE_DELAYED_RESET_ASSERTION option, set on Exynos4 SoCs
-+ * during hot-unplugging CPUx.
-+ *
-+ * It won't harm if this is called during first boot of secondary CPU.
-+ *
-+ * Exynos4 SoCs require setting USE_DELAYED_RESET_ASSERTION so the CPU idle
-+ * clock down feature could properly detect global idle state when
-+ * CPUx is off.
-+ */
-+void exynos_clear_delayed_reset_assertion(u32 core_id)
-+{
-+	if (soc_is_exynos4()) {
-+		unsigned int tmp;
-+
-+		tmp = __raw_readl(EXYNOS_ARM_CORE_OPTION(core_id));
-+		tmp &= ~(S5P_USE_DELAYED_RESET_ASSERTION);
-+		__raw_writel(tmp, EXYNOS_ARM_CORE_OPTION(core_id));
-+	}
-+}
-+
- static inline void __iomem *cpu_boot_reg_base(void)
- {
- 	if (soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_1_1)
-@@ -170,6 +191,9 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
- 		udelay(10);
- 	}
- 
-+	/* No harm if this is called during first boot of secondary CPU */
-+	exynos_clear_delayed_reset_assertion(core_id);
-+
- 	/*
- 	 * now the secondary core is starting up let it run its
- 	 * calibrations, then wait for it to finish
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 1d13b08708f0..59bd92112842 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -25,6 +25,7 @@
- 
- #define S5P_USE_STANDBY_WFI0			(1 << 16)
- #define S5P_USE_STANDBY_WFE0			(1 << 24)
-+#define S5P_USE_DELAYED_RESET_ASSERTION		BIT(12)
- 
- #define EXYNOS_SWRESET				S5P_PMUREG(0x0400)
- #define EXYNOS5440_SWRESET			S5P_PMUREG(0x00C4)
-@@ -111,6 +112,8 @@
- 			(EXYNOS_ARM_CORE0_CONFIGURATION + (0x80 * (_nr)))
- #define EXYNOS_ARM_CORE_STATUS(_nr)		\
- 			(EXYNOS_ARM_CORE_CONFIGURATION(_nr) + 0x4)
-+#define EXYNOS_ARM_CORE_OPTION(_nr)		\
-+			(EXYNOS_ARM_CORE_CONFIGURATION(_nr) + 0x8)
- 
- #define EXYNOS_ARM_COMMON_CONFIGURATION		S5P_PMUREG(0x2500)
- #define EXYNOS_COMMON_CONFIGURATION(_nr)	\
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJTxmsTAAoJELSic+t+oim9wDgQAIGj1IsQmCiC9wzzx0I14JOl
+d70+ZlvbDYeXiL0fVaF7QdArfjt99hRdvn0KUSd/QcykHl0nSwYAT6MrAmkla44K
+3QXJmODQpC4TIXUDIlIVH1hMd/3uZvn2pzz6+QtqcrJk4BeMzYKGnbz90nUayx6p
+cAb1XEBTQJwVR8zdrSE2oXzYr9JbSMt+YTmgLlyz9te/FYQ8GwaFcj3bpF+1Ykbv
+plLSnY8pkG8YjgpLeuA//0XsCPLGYOn8oM77uRDkmJSYcE9EOWSAJBNuZicsIhOu
+kvkWONtvfIDBzT/2tcZJ37jpuRC/f9SLeMj/tk8ZgqaR7WxPMNuTRK/4eSPYqocr
+eP/xZOeul04gJa8tEg/gECwdPU61NCvgrr1g1/l19D76ItNlyOF1Tz/2hXrDadMh
+8ypSdoW/NBrWoq+rF3sZYpemD11AHO+wJ5T6H7WZyTDf+jA51uZGBK+Tijq98edL
+r6kZpyNNg8enhQNaN8qN6zG4x1kBcP9Ohfo8+L1e21D7PpEpWIcIAATFxvWETR+t
+4L0occpODtwYqY4XRs2YhXV2lJ3ljx42iLqRSsuELZuAVGCwrQArirMrIy6gRM0i
+S1icS3VbPXBvJHmqPTAI0cV0oHeF1M0gPSd4g1+h1hG9irbRRb4+rJxnFBaE3HFm
+yT1t5g6go3gfewKLMUpy
+=A3iP
+-----END PGP SIGNATURE-----
+
+--5me2qT3T17SWzdxI--
