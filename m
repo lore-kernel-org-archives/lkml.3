@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934828AbaGPR6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:58:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48169 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934593AbaGPR6I (ORCPT
+	id S934831AbaGPSCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:02:18 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:43316 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934606AbaGPSCQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:58:08 -0400
-Date: Wed, 16 Jul 2014 10:58:03 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Boaz Harrosh <openosd@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, pramod.gurav.etc@gmail.com,
-        viro@zeniv.linux.org.uk, Jason Cooper <jason@lakedaemon.net>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Paul Bolle <pebolle@tiscali.nl>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/direct-io.c: Fix compilation warning for
- uninitialized variables
-Message-ID: <20140716175803.GA3631@infradead.org>
-References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>
- <20140713115022.GA6054@infradead.org>
- <53C6B199.2070606@gmail.com>
+	Wed, 16 Jul 2014 14:02:16 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "martin.petersen@oracle.com" <martin.petersen@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "kys@microsoft.com" <kys@microsoft.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPoR4G2vh72TcerE+9u7O+On3hT5ujc0EA
+Date: Wed, 16 Jul 2014 18:02:14 +0000
+Message-ID: <1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
+References: <20140709084300.GD6012@infradead.org>
+	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	 <20140711063216.GA20660@infradead.org>
+	 <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <yq1a98d2z5x.fsf@sermon.lab.mkp.net> <20140716110111.GA7382@infradead.org>
+	 <yq14myhtijx.fsf@sermon.lab.mkp.net> <20140716173827.GB20528@infradead.org>
+	 <yq1fvi1rya0.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1fvi1rya0.fsf@sermon.lab.mkp.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.103.107]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <CF87AB6BF3B33C439C18C9A9D3B76DDB@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C6B199.2070606@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:08:41PM +0300, Boaz Harrosh wrote:
-> This is the wrong fix. GCC is wrong here. As shown by Paul Bolle if
-> you move the from / to set from dio_get_page() to here the warning goes away.
+On Wed, 2014-07-16 at 13:47 -0400, Martin K. Petersen wrote:
+> >>>>> "Christoph" == hch@infradead org <hch@infradead.org> writes:
 > 
-> The minimal fix must use uninitialized_var() in this case. See patch below
+> Christoph> Oh, we actually have devices that support WRITE SAME with
+> Christoph> unmap, but not without?  That's defintively a little strange.
 > 
-> But I think the proper fix Is the one Paul Bolle <pebolle@tiscali.nl> sent (above)
+> Yep :(
+> 
+> There were several SSDs that did not want to support wearing out flash
+> by writing gobs of zeroes and only support the UNMAP case.
+> 
+> Christoph> Yes, and it did this intentionally.  I really wouldn't expect
+> Christoph> devices to support WRITE SAME with UNMAP but blow up on a
+> Christoph> WRITE SAME without it (and not just simple fail it in an
+> Christoph> orderly way).
+> 
+> *sigh*
+> 
+> Christoph> It definitively seems odd to default to trying WRITE SAME for
+> Christoph> unmap for a device that explicitly tells us that it doesn't
+> Christoph> support WRITE SAME.
+> 
+> Maybe it's just a naming thing. I was really trying to convey
+> no_req_write_same support, not no_write_same_10_or_16.
+> 
+> Christoph> Note that I'm not against your patch - I suspect forcing us
+> Christoph> to read EVPD pages even for devices that claim to be SPC-2
+> Christoph> will come in useful in various scenarios.
+> 
+> I don't have a problem with a BLIST_PREFER_UNMAP flag or something like
+> that. But BLIST_TRY_VPD_PAGES seems more generally useful and it does
+> fix the problem at hand. That's why I went that route.
 
-I don't think the initialization is wrong.  The fix of moving the code
-defintively looks nicer, while I think uninitialized_var is horrible
-wart that won't get anywhere near my code.
+Hang on ... unless we apply Christoph or my fix, we'll get the same
+issue with every raid driver (that's about 10 I think) that set
+no_write_same when they hit a >2TB RAID volume, so I think we need both
+fixes.
 
-Either way we should merge one of those fixes ASAP..
+James
 
