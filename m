@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916AbaGPA4F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:56:05 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:38290 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295AbaGPA4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:56:03 -0400
+	id S933562AbaGPA5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:57:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:49356 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932935AbaGPA5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:57:03 -0400
+Date: Wed, 16 Jul 2014 10:56:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [PATCH 3.15 14/84] serial: imx: Fix build breakage
+Message-ID: <20140716105656.539105f1@canb.auug.org.au>
+In-Reply-To: <20140716004202.GB6908@kroah.com>
+References: <20140715231713.193785557@linuxfoundation.org>
+	<20140715231713.621762682@linuxfoundation.org>
+	<20140716102414.337e58ce@canb.auug.org.au>
+	<20140716004202.GB6908@kroah.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <53C5BF46.3070604@zytor.com>
-References: <CADpTngUm7d88RJS9OV=64t6QrJU4r3M_Z8eV1QYWPeeB5SX5-w@mail.gmail.com>
-	<CABPqkBTu9vk_wsmYVrO6OOxgbwsLDG-A8f7dzutKwYXmoGsqnw@mail.gmail.com>
-	<20140710200527.GA15190@google.com>
-	<3524198.dm6HbYTJqK@calvin>
-	<CAErSpo4xH2hpPMhm-4F+jNGKeMPjA2Tr8bQEkbWQGXpbwX6W4g@mail.gmail.com>
-	<CAErSpo5u_KAfZL0EDVGCZ5nfvmiyv+V3+5Lw6aYoXvTouv_MeQ@mail.gmail.com>
-	<CAE9FiQVN1WLigYt7YGHsd1f+BreApubYbjC9j9tzrCe-p5f=HA@mail.gmail.com>
-	<53C5BF46.3070604@zytor.com>
-Date: Tue, 15 Jul 2014 17:56:02 -0700
-X-Google-Sender-Auth: 2zFiHl64h8gIk-UuZOGuca0sFao
-Message-ID: <CAE9FiQW3eWkds12GSg2TStREEeAmAYmZ=ZRieOTZBOB3Z56iQA@mail.gmail.com>
-Subject: Re: WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x290/0x2fa()
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Fabio Coatti <fabio.coatti@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/4jrN1Qt+K2_/Yk+NcnT.ZNa"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 4:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/15/2014 04:40 PM, Yinghai Lu wrote:
+--Sig_/4jrN1Qt+K2_/Yk+NcnT.ZNa
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> We could quirk it, but we would have to make bloody darn sure that we
-> don't break any systems because of unusual configuration and so on.
+Hi Greg,
+
+On Tue, 15 Jul 2014 17:42:02 -0700 Greg Kroah-Hartman <gregkh@linuxfoundati=
+on.org> wrote:
 >
-> I agree that we need to treat fixed resources as equivalent to reserved.
->  This is also a BIOS bug (it should reserve the whole region), but that
-> happens far too frequently.  I don't know if we have any way to do that
-> without massive surgery to the current code, though.
+> On Wed, Jul 16, 2014 at 10:24:14AM +1000, Stephen Rothwell wrote:
+> >=20
+> > On Tue, 15 Jul 2014 16:17:11 -0700 Greg Kroah-Hartman <gregkh@linuxfoun=
+dation.org> wrote:
+> > >
+> > > 3.15-stable review patch.  If anyone has any objections, please let m=
+e know.
+> > >=20
+> > > ------------------
+> > >=20
+> > > From: Peter Hurley <peter@hurleysoftware.com>
+> > >=20
+> > > commit 8bec751bd63847b4044aab8b215db52aa6abde61 upstream.
+> > >=20
+> > > Fix breakage introduced by
+> > > commit c557d392fbf5badd693ea1946a4317c87a26a716,
+> > > 'serial: Test for no tx data on tx restart'.
+> >=20
+> > That commit only entered Linus' tree at v3.16-rc5, so this fix
+> > shouldn't need to go into 3.15-stable (unless the original patch was
+> > backported as well - in which case maybe the backport commit id should
+> > be mentioned as well).
+>=20
+> c557d392fbf5badd693ea1946a4317c87a26a716, is marked for stable (and is
+> earlier in the series) so leaving this as-is, should be fine, as that
+> commit id will show up in the stable kernels as well in the changelog
+> entry.
 
-Should be similar to early_gart_iommu_check(), even less code.
+Ah, ok.  So you don't merge "fixes for fixes" to save bisection
+problems, then?  (Just asking)
 
-Yinghai
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/4jrN1Qt+K2_/Yk+NcnT.ZNa
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTxc3dAAoJEMDTa8Ir7ZwVXR0P/i/zoqUo9Q07Pkyi3/Cdt1aH
+T0HpTWBOMLPtUPYDcpDd5Yqg8Jvjs73dZmA0aL4N3yE8DUfmGC8yB827MU/BWlv5
+9eqkOBGqepPw/ljYs+oQRAjoSFC2MY09/oaTSjjZX5xvHKLN9mBM/2vQUtCjUDi4
+JX5JGzE25pvaLuJZVpgvcxh6LoUu0kjVm3CORb/J2cPkNqmYF/NB1rAUwDCHULSE
+asksooMsce6Luvf4vZXBeY2WVdJkMCpGoAiDfdlH/xV74lxdsej8eCQTgJlz/L1J
+q1rdhJgmLmSwNOr44lkfCmZNYez7VSjnMKpTc0JuQy1Q9LRx6o8rjSuf2Be0Cfk3
+21OeFAJnDe8T9JW9akrTT8y+I+9BNsxnTbH7UZk307LUsHDyAi+oO1tFr7QcCmE8
+aj2zpOnBIL8eTTS5KhNu8adYl04kLDuYxXnmsoZ0JXl+Kbh+bJwiw8oaAmh2gkMS
+wL9b8N8iMM8z0RkN/ylsFuglxv0ZA6RbAfTLJCkWcNZu1W+HfxLY91/UqSy06mfw
+sgatfhAQmHXq4dYS874uj2OoPzA8Iv8HSZmobyjm3+qKmX9FAVvtvkVBOPU+jAZE
+VtBwkryF/gH4Z/Rn6IVBBouc265vYLW3sFefRbGreeyOzaWqQmh9Q79KF4858/Rw
+NSY+9Ws4Qw9J8XGo6UhN
+=btCR
+-----END PGP SIGNATURE-----
+
+--Sig_/4jrN1Qt+K2_/Yk+NcnT.ZNa--
