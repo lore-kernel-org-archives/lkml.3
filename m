@@ -1,76 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422AbaGPJxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:53:22 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:57188 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283AbaGPJxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:53:16 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Xiang Wang <wangxfdu@gmail.com>, Xiang Wang <wangx@marvell.com>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Marcin Wojtas <mw@semihalf.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chao Xie <cxie4@marvell.com>
-Subject: Re: [PATCH] mmc: sdhci-pxav3: fix error handling of sdhci_add_host
-Date: Wed, 16 Jul 2014 11:53:21 +0200
-Message-ID: <5513748.05vsM1lCJN@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405497009-20338-1-git-send-email-wangxfdu@gmail.com>
-References: <1405497009-20338-1-git-send-email-wangxfdu@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1757996AbaGPJxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:53:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9137 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757535AbaGPJxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 05:53:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,671,1400050800"; 
+   d="scan'208";a="562552320"
+From: Yuyang Du <yuyang.du@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
+Cc: pjt@google.com, bsegall@google.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, fengguang.wu@intel.com, umgwanakikbuti@gmail.com,
+        Yuyang Du <yuyang.du@intel.com>
+Subject: [PATCH 1/2 v3] sched: Remove update_rq_runnable_avg
+Date: Wed, 16 Jul 2014 09:50:46 +0800
+Message-Id: <1405475447-7783-2-git-send-email-yuyang.du@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405475447-7783-1-git-send-email-yuyang.du@intel.com>
+References: <1405475447-7783-1-git-send-email-yuyang.du@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Xiang,
+The current rq->avg is not made use of anywhere, and the code is in fair
+scheduler's critical path, so remove it.
 
-Thank you for the patch.
+Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+---
+ kernel/sched/debug.c |    8 --------
+ kernel/sched/fair.c  |   24 ++++--------------------
+ kernel/sched/sched.h |    2 --
+ 3 files changed, 4 insertions(+), 30 deletions(-)
 
-On Wednesday 16 July 2014 15:50:09 Xiang Wang wrote:
-> From: Xiang Wang <wangx@marvell.com>
-> 
-> Commit 0dcaa2499b7d111bd70da5b0976c34210c850fb3 improved error
-> handling of sdhci_add_host. However, "err_of_parse" and "err_cd_req"
-> should be placed after "pm_runtime_disable(&pdev->dev)".
-> 
-> Signed-off-by: Xiang Wang <wangx@marvell.com>
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-While we're touching the probe error path, how about converting the driver to 
-the devm_* helpers ? I'll send a patch shortly.
-
-> ---
->  drivers/mmc/host/sdhci-pxav3.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index 2fd73b3..0644655 100644
-> --- a/drivers/mmc/host/sdhci-pxav3.c
-> +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -380,11 +380,11 @@ static int sdhci_pxav3_probe(struct platform_device
-> *pdev)
-> 
->  	return 0;
-> 
-> -err_of_parse:
-> -err_cd_req:
->  err_add_host:
->  	pm_runtime_put_sync(&pdev->dev);
->  	pm_runtime_disable(&pdev->dev);
-> +err_of_parse:
-> +err_cd_req:
->  	clk_disable_unprepare(clk);
->  	clk_put(clk);
->  err_clk_get:
-
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 695f977..4b864c7 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -68,14 +68,6 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+ #define PN(F) \
+ 	SEQ_printf(m, "  .%-30s: %lld.%06ld\n", #F, SPLIT_NS((long long)F))
+ 
+-	if (!se) {
+-		struct sched_avg *avg = &cpu_rq(cpu)->avg;
+-		P(avg->runnable_avg_sum);
+-		P(avg->runnable_avg_period);
+-		return;
+-	}
+-
+-
+ 	PN(se->exec_start);
+ 	PN(se->vruntime);
+ 	PN(se->sum_exec_runtime);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..1a2d04f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2430,18 +2430,12 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 	}
+ }
+ 
+-static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+-{
+-	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
+-	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+-}
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+ 						 int force_update) {}
+ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+-static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ static inline void __update_task_entity_contrib(struct sched_entity *se)
+@@ -2614,7 +2608,6 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+  */
+ void idle_enter_fair(struct rq *this_rq)
+ {
+-	update_rq_runnable_avg(this_rq, 1);
+ }
+ 
+ /*
+@@ -2624,7 +2617,6 @@ void idle_enter_fair(struct rq *this_rq)
+  */
+ void idle_exit_fair(struct rq *this_rq)
+ {
+-	update_rq_runnable_avg(this_rq, 0);
+ }
+ 
+ static int idle_balance(struct rq *this_rq);
+@@ -2633,7 +2625,6 @@ static int idle_balance(struct rq *this_rq);
+ 
+ static inline void update_entity_load_avg(struct sched_entity *se,
+ 					  int update_cfs_rq) {}
+-static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
+ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 					   struct sched_entity *se,
+ 					   int wakeup) {}
+@@ -3936,10 +3927,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 		update_entity_load_avg(se, 1);
+ 	}
+ 
+-	if (!se) {
+-		update_rq_runnable_avg(rq, rq->nr_running);
++	if (!se)
+ 		add_nr_running(rq, 1);
+-	}
++
+ 	hrtick_update(rq);
+ }
+ 
+@@ -3997,10 +3987,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 		update_entity_load_avg(se, 1);
+ 	}
+ 
+-	if (!se) {
++	if (!se)
+ 		sub_nr_running(rq, 1);
+-		update_rq_runnable_avg(rq, 1);
+-	}
++
+ 	hrtick_update(rq);
+ }
+ 
+@@ -5437,9 +5426,6 @@ static void __update_blocked_averages_cpu(struct task_group *tg, int cpu)
+ 		 */
+ 		if (!se->avg.runnable_avg_sum && !cfs_rq->nr_running)
+ 			list_del_leaf_cfs_rq(cfs_rq);
+-	} else {
+-		struct rq *rq = rq_of(cfs_rq);
+-		update_rq_runnable_avg(rq, rq->nr_running);
+ 	}
+ }
+ 
+@@ -7352,8 +7338,6 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
+ 
+ 	if (numabalancing_enabled)
+ 		task_tick_numa(rq, curr);
+-
+-	update_rq_runnable_avg(rq, 1);
+ }
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 31cc02e..a147571 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -542,8 +542,6 @@ struct rq {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/* list of leaf cfs_rq on this cpu: */
+ 	struct list_head leaf_cfs_rq_list;
+-
+-	struct sched_avg avg;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ 	/*
 -- 
-Regards,
-
-Laurent Pinchart
+1.7.9.5
 
