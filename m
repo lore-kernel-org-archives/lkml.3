@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935076AbaGPTUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:20:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44275 "EHLO
+	id S935085AbaGPTUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:20:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44296 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969AbaGPTUJ (ORCPT
+	with ESMTP id S934925AbaGPTUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:20:09 -0400
-Date: Wed, 16 Jul 2014 12:18:56 -0700
-From: tip-bot for Paul Bolle <tipbot@zytor.com>
-Message-ID: <tip-d3f44fbabe55132832e152606365adb640296378@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, pebolle@tiscali.nl, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, jkosina@suse.cz,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, pebolle@tiscali.nl,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        jkosina@suse.cz
-In-Reply-To: <1404138749.2978.6.camel@x41>
-References: <1404138749.2978.6.camel@x41>
+	Wed, 16 Jul 2014 15:20:30 -0400
+Date: Wed, 16 Jul 2014 12:19:25 -0700
+From: tip-bot for Vince Weaver <tipbot@zytor.com>
+Message-ID: <tip-1996388e9f4e3444db8273bc08d25164d2967c21@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        vincent.weaver@maine.edu, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        vincent.weaver@maine.edu, tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.11.1407141528200.17214@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1407141528200.17214@vincent-weaver-1.umelst.maine.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Remove unused variable "polling"
-Git-Commit-ID: d3f44fbabe55132832e152606365adb640296378
+Subject: [tip:perf/urgent] perf/x86/intel:
+  Use proper dTLB-load-misses event on IvyBridge
+Git-Commit-ID: 1996388e9f4e3444db8273bc08d25164d2967c21
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,36 +34,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d3f44fbabe55132832e152606365adb640296378
-Gitweb:     http://git.kernel.org/tip/d3f44fbabe55132832e152606365adb640296378
-Author:     Paul Bolle <pebolle@tiscali.nl>
-AuthorDate: Mon, 30 Jun 2014 16:32:29 +0200
+Commit-ID:  1996388e9f4e3444db8273bc08d25164d2967c21
+Gitweb:     http://git.kernel.org/tip/1996388e9f4e3444db8273bc08d25164d2967c21
+Author:     Vince Weaver <vincent.weaver@maine.edu>
+AuthorDate: Mon, 14 Jul 2014 15:33:25 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 12:58:47 +0200
+CommitDate: Wed, 16 Jul 2014 13:18:40 +0200
 
-x86: Remove unused variable "polling"
+perf/x86/intel: Use proper dTLB-load-misses event on IvyBridge
 
-Compile tested. "polling" is unused since commit f80c5b39b80a
-("sched/idle, x86: Switch from TS_POLLING to TIF_POLLING_NRFLAG").
+This was discussed back in February:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+	https://lkml.org/lkml/2014/2/18/956
+
+But I never saw a patch come out of it.
+
+On IvyBridge we share the SandyBridge cache event tables, but the
+dTLB-load-miss event is not compatible.  Patch it up after
+the fact to the proper DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK
+
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Link: http://lkml.kernel.org/r/1404138749.2978.6.camel@x41
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1407141528200.17214@vincent-weaver-1.umelst.maine.edu
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/apm_32.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index f3a1f04..5848744 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -841,7 +841,6 @@ static int apm_do_idle(void)
- 	u32 eax;
- 	u8 ret = 0;
- 	int idled = 0;
--	int polling;
- 	int err = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 07846d7..c206815 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2474,6 +2474,9 @@ __init int intel_pmu_init(void)
+ 	case 62: /* IvyBridge EP */
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
++		/* dTLB-load-misses on IVB is different than SNB */
++		hw_cache_event_ids[C(DTLB)][C(OP_READ)][C(RESULT_MISS)] = 0x8108; /* DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK */
++
+ 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
+ 		       sizeof(hw_cache_extra_regs));
  
- 	if (!need_resched()) {
