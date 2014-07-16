@@ -1,198 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaGPVXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:23:35 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:43747 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbaGPVX0 (ORCPT
+	id S1754496AbaGPVYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:24:37 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:58592 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157AbaGPVYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:23:26 -0400
+	Wed, 16 Jul 2014 17:24:34 -0400
+Date: Thu, 17 Jul 2014 00:24:29 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 01/10] proc: convert /proc/$PID/auxv to seq_file interface
+Message-ID: <20140716212429.GB21242@p183.telecom.by>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrX48nuR6wqEV4Nu47BF4Z3XFvBpYer_fzwaqJdi0fpdKw@mail.gmail.com>
-References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
-	<20140711164931.GA18473@redhat.com>
-	<CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
-	<CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
-	<CAGXu5j+r-CpJiXipCT=j09+ZfJjF9jTc3kuZFAH3ZxgUEvktTA@mail.gmail.com>
-	<CALCETrX48nuR6wqEV4Nu47BF4Z3XFvBpYer_fzwaqJdi0fpdKw@mail.gmail.com>
-Date: Wed, 16 Jul 2014 14:23:25 -0700
-X-Google-Sender-Auth: fxyenKAZeuSuPto27dGBP0BQ1hQ
-Message-ID: <CAGXu5jKMwiAxeCVZVPS72XWCd2KhiR-uc4VFKT0mvD9s-cTO_Q@mail.gmail.com>
-Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 12:45 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Jul 16, 2014 at 10:54 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Mon, Jul 14, 2014 at 12:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, Jul 11, 2014 at 10:55 AM, Kees Cook <keescook@chromium.org> wrote:
->>>> On Fri, Jul 11, 2014 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>> On 07/10, Kees Cook wrote:
->>>>>>
->>>>>> This adds the ability for threads to request seccomp filter
->>>>>> synchronization across their thread group (at filter attach time).
->>>>>> For example, for Chrome to make sure graphic driver threads are fully
->>>>>> confined after seccomp filters have been attached.
->>>>>>
->>>>>> To support this, locking on seccomp changes via thread-group-shared
->>>>>> sighand lock is introduced, along with refactoring of no_new_privs. Races
->>>>>> with thread creation are handled via delayed duplication of the seccomp
->>>>>> task struct field and cred_guard_mutex.
->>>>>>
->>>>>> This includes a new syscall (instead of adding a new prctl option),
->>>>>> as suggested by Andy Lutomirski and Michael Kerrisk.
->>>>>
->>>>> I do not not see any problems in this version,
->>>>
->>>> Awesome! Thank you for all the reviews. :) If Andy and Michael are
->>>> happy with this too, I think this is in good shape. \o/
->>>
->>> I think I'm happy with it.  Is it in git somewhere for easy perusal?
->>> I have a cold, so my reviewing ability is a bit off, but I want to
->>> take a look at the final version, and git is a little easier than
->>> email for this.
->>
->> Hi Andy,
->>
->> Have you had a chance to look v10 over? I'd like to send a v11 with
->> Oleg's Reviewed-by added (at James Morris's request). Should I add one
->> from you as well?
->
-> Trivial nits (take them or leave them):
->
-> seccomp_check_mode confused me.  Maybe seccomp_may_assign_mode would
-> be a better name.
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Good idea; I was unhappy with this name too. Done for v11.
+ fs/proc/base.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-> In the writer locking changelog, should "(which is unique to the
-> thread group)" be "(which is shared by all threads in the thread
-> group)"?
-
-Done.
-
-> This bit:
->
->     /*
->      * Explicitly enable no_new_privs here in case it got set
->      * between the task_struct being duplicated and holding the
->      * sighand lock. The seccomp state and nnp must be in sync.
->      */
->     if (task_no_new_privs(current))
->         task_set_no_new_privs(p);
->
-> should arguably move the very end of task duplication -- someone will
-> want it for some other purpose some day.
-
-That certainly seems plausible, but for the moment, I want to keep nnp
-near seccomp, since that's where we have a race.
-
-> This bit:
->
->     /* If we have a seccomp mode, enable the thread flag. */
->     if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
->         set_tsk_thread_flag(p, TIF_SECCOMP);
->
-> is not quite obvious to me -- it's not obvious why it's needed.  If
-> it's to eliminate a race, can you explain the race in the comment?  If
-> it's just paranoia, a WARN_ON or BUG_ON might be worthwhile.
-
-I've expanded the comment; it's the same issue as nnp: seccomp could
-have changed, so if we gained a mode, we need to set the flag too.
-
-> SECCOMP_FILTER_FLAG_MASK seems backwards to me.  Maybe rename it to
-> SECCOMP_FILTER_ALLOWED_FLAGS and invert it?
-
-Excellent point. Other kernel users of the _MASK name aren't inverted. Fixed.
-
-> is_ancestor: calling the first parameter "candidate" is just a tiny
-> bit odd -- it's the child that's up for consideration.  (This is
-> barely even worth the time it took me to type it.)
-
-Switch argument and comment to "parent".
-
-> Less trivial nits:
->
-> Can you change:
->
-> fp = kzalloc(fp_size, GFP_KERNEL|__GFP_NOWARN);
->
-> to
->
-> fp = kcalloc(fprog->len, sizeof(struct sock_filter), GFP_KERNEL|__GFP_NOWARN);
->
-> somewhere in this series (w/ a changelog comment that it's not
-> exploitable to avoid scaring people).
-
-Done, though I used a BUG_ON since the compiler will optimize it out
-(since it's an impossible state to be in).
-
-> In seccomp_prepare_user_filter, would it make sense to return -EINVAL
-> if !user_filter?  That will make it slightly more pleasant to
-> implement TSYNC-without-change if anyone ever wants it.  (This isn't
-> really necessary -- it's just slightly more polite.)
-
-I can't do this since EFAULT is already used to detect seccomp
-capabilities from userspace.
-
-> Once James picks this up, I'll rebase my series on top of it.  I think
-> they'll conflict slightly.
-
-It's not bad. I tripped over sd -> sd_local and the related sd vs &sd
-in the SK_RUN_FILTER call, but otherwise it was pretty trivial.
-
-> Feel free to add my Reviewed-by to the whole series except the ARM and
-> MIPS patches.
-
-Thanks!
-
-> And some thoughts:
->
-> Your changelog comment for the seccomp syscall suggests that you're
-> thinking about extending the tracer interface.  I'd suggest a rather
-> different design: add a concept of a seccomp monitor associated with a
-> particular filter and an action SECCOMP_RET_MONITOR.
-> SECCOMP_RET_MONITOR will tell the monitor what syscall was attempted
-> and will wait for further instructions.  The monitor can then ask for
-> zero or more syscalls to be issued on behalf of the waiting process
-> and then resume it.  Each of those additional syscalls will be further
-> filtered through all seccomp filters outside of the one that returned
-> SECCOMP_RET_MONITOR.
->
-> This would avoid all of the nastiness inherent in using ptrace and
-> would nest much more nicely.  And it could be far faster.
->
-> If you decide to do something to ARM along the lines of what I'm doing
-> to x86, you may want to fix this:
->
->     /*
->      * Make sure that any changes to mode from another thread have
->      * been seen after TIF_SECCOMP was seen.
->      */
->     rmb();
->
-> It should have essentially no effect on x86, though.
-
-Noted, thanks!
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -205,22 +205,20 @@ static int proc_pid_cmdline(struct task_struct *task, char *buffer)
+ 	return get_cmdline(task, buffer, PAGE_SIZE);
+ }
+ 
+-static int proc_pid_auxv(struct task_struct *task, char *buffer)
++static int proc_pid_auxv(struct seq_file *m, struct pid_namespace *ns,
++			 struct pid *pid, struct task_struct *task)
+ {
+ 	struct mm_struct *mm = mm_access(task, PTRACE_MODE_READ);
+-	int res = PTR_ERR(mm);
+ 	if (mm && !IS_ERR(mm)) {
+ 		unsigned int nwords = 0;
+ 		do {
+ 			nwords += 2;
+ 		} while (mm->saved_auxv[nwords - 2] != 0); /* AT_NULL */
+-		res = nwords * sizeof(mm->saved_auxv[0]);
+-		if (res > PAGE_SIZE)
+-			res = PAGE_SIZE;
+-		memcpy(buffer, mm->saved_auxv, res);
++		seq_write(m, mm->saved_auxv, nwords * sizeof(mm->saved_auxv[0]));
+ 		mmput(mm);
+-	}
+-	return res;
++		return 0;
++	} else
++		return PTR_ERR(mm);
+ }
+ 
+ 
+@@ -2557,7 +2555,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	DIR("net",        S_IRUGO|S_IXUGO, proc_net_inode_operations, proc_net_operations),
+ #endif
+ 	REG("environ",    S_IRUSR, proc_environ_operations),
+-	INF("auxv",       S_IRUSR, proc_pid_auxv),
++	ONE("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+ 	INF("limits",	  S_IRUGO, proc_pid_limits),
+@@ -2896,7 +2894,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+ 	DIR("ns",	 S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+ 	REG("environ",   S_IRUSR, proc_environ_operations),
+-	INF("auxv",      S_IRUSR, proc_pid_auxv),
++	ONE("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+ 	INF("limits",	 S_IRUGO, proc_pid_limits),
