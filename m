@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759940AbaGPMAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:00:15 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56317 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758523AbaGPMAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:00:12 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-5a-53c669490f61
-Message-id: <53C66924.3010303@samsung.com>
-Date: Wed, 16 Jul 2014 13:59:32 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2] ARM: EXYNOS: Fix build with PM_SLEEP=n
-References: <1405323953-25954-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1405323953-25954-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xa7qemceCDY5/VbXYOGM9q8XrF4YW
-	vQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei7VH7rJbnLr+mc3iyqVTbA7cHi3NPWwe
-	m5fUe1w50cTq0bdlFaPH501yAaxRXDYpqTmZZalF+nYJXBnX5s5nK7jAWbHu6CumBsYeji5G
-	Tg4JAROJ5webWCFsMYkL99azgdhCAksZJX5tCYKwPzNKNK6zBrF5BbQkdrXtZAaxWQRUJT4s
-	3AdmswmoSXxueATWyw9Us6bpOksXIweHqECExOMLQhCtghI/Jt8DCnNxiAi8ZJTYe3gCmMMs
-	8IBRYtrVx0wgVcICdhKzGxrZIRa7S/xbcoEFxOYU8JBYOWkXWJxZQEdif+s0NghbXmLzmrfM
-	ExgFZyFZMgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMTHlx2Mi49ZHWIU
-	4GBU4uFlmH00WIg1say4MvcQowQHs5IIr4P/sWAh3pTEyqrUovz4otKc1OJDjEwcnFINjEYL
-	F87r756l//eVflfnxMINfM7TIgq/5qV5LF/38vTqA6b+Hsws7759/C391XH/I9Gu77tU5NON
-	NlicYmnZZuXaonI/5UhI5uzZzJFe1mlskT8qu8wT9+56xDEpcEU/45vTsmqlQgz55gr/uf2S
-	TjrdXb/cOPtJXZ3vwkdKD0pfC/PNdMj+oMRSnJFoqMVcVJwIAJRP18VtAgAA
+	id S1759759AbaGPMB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:01:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53486 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758523AbaGPMBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:01:52 -0400
+Date: Wed, 16 Jul 2014 14:01:47 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
+Message-ID: <20140716120146.GI7121@dhcp22.suse.cz>
+References: <cover.1404383187.git.vdavydov@parallels.com>
+ <20140704121621.GE12466@dhcp22.suse.cz>
+ <20140704153853.GA369@esperanza>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140704153853.GA369@esperanza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+On Fri 04-07-14 19:38:53, Vladimir Davydov wrote:
+> Hi Michal,
+> 
+> On Fri, Jul 04, 2014 at 02:16:21PM +0200, Michal Hocko wrote:
+[...]
+> > Once I get from internal things (which will happen soon hopefully) I
+> > will post a series with a new sets of memcg limits. One of them is
+> > high_limit which can be used as a trigger for memcg reclaim. Unlike
+> > hard_limit there won't be any OOM if the reclaim fails at this stage. So
+> > if the high_limit is configured properly the admin will have enough time
+> > to make additional steps before OOM happens.
+> 
+> High/low limits that start reclaim on internal/external pressure are
+> definitely a very nice feature (may be even more useful that strict
+> limits). However, they won't help us against overcommit inside a
+> container. AFAIC,
+> 
+>  - low limit will allow the container to consume as much as he wants
+>    until it triggers global memory pressure, then it will be shrunk back
+>    to its limit aggressively;
 
-On 14.07.2014 09:45, Krzysztof Kozlowski wrote:
-> Fix building of exynos defconfig with disabled PM_SLEEP:
-> CONFIG_PM_SLEEP=n
-> CONFIG_PM_SLEEP_SMP=n
-> CONFIG_SUSPEND=n
-> by moving functions for power up/down of CPU and cluster to platsmp.c
-> 
-> The build error messages:
-> arch/arm/mach-exynos/built-in.o: In function `exynos_boot_secondary':
-> arch/arm/mach-exynos/platsmp.c:111: undefined reference to `exynos_cpu_power_state'
-> arch/arm/mach-exynos/platsmp.c:112: undefined reference to `exynos_cpu_power_up'
-> arch/arm/mach-exynos/platsmp.c:116: undefined reference to `exynos_cpu_power_state'
-> make: *** [vmlinux] Error 1
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> ---
-> Changes since v1:
-> 1. Use different solution - just move the power up/down functions to a
->    common place instead of adding stubs in common.h. Suggested by Tomasz
->    Figa.
-> ---
->  arch/arm/mach-exynos/platsmp.c | 66 ++++++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-exynos/pm.c      | 66 ------------------------------------------
->  2 files changed, 66 insertions(+), 66 deletions(-)
-> 
+No, this is not like soft_limit. Any external pressure (e.g. coming from
+some of the parents) will exclude memcgs which are below its low_limit.
+If there is no way to proceed because all groups in the currently
+reclaimed hierarchy are below its low limit then it will ignore the low
+limit. So this is an optimistic working set protection.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>  - high limit means allow to breach the limit, but trigger reclaim
+>    asynchronously (a kind of kswapd) or synchronously when it happens.
 
---
-Best regards,
-Tomasz
+No, we will start with the direct reclaim as we do for the hard limit.
+The only change wrt. hard limit is that we do not trigger OOM if the
+reclaim fails.
+
+> Right?
+> 
+> Considering the example I've given above, both of these won't help if
+> the system has other active CTs: the container will be forcefully kept
+> around its high/low limit and, since it's definitely not enough for it,
+> it will be finally killed crossing out the computations it's spent so
+> much time on. High limit won't be good for the container even if there's
+> no other load on the node - it will be constantly swapping out anon
+> memory and evicting file caches. The application won't die quickly then,
+> but it will get a heavy slowdown, which is no better than killing I
+> guess.
+
+It will get vmpressure notifications though and can help to release
+excessive buffers which were allocated optimistically.
+
+> Also, I guess it'd be beneficial to have
+> 
+>  - mlocked pages accounting per cgroup, because they affect memory
+>    reclaim, and how low/high limits work, so it'd be nice to have them
+>    limited to a sane value;
+> 
+>  - shmem areas accounting per cgroup, because the total amount of shmem
+>    on the system is limited, and it'll be no good if malicious
+>    containers eat it all.
+> 
+> IMO It wouldn't be a good idea to overwhelm memcg with those limits, the
+> VM controller suits much better.
+
+yeah, I do not think adding more to memcg is a good idea. I am still not
+sure whether working around bad design decisions in applications is a
+good rationale for a new controller.
+
+-- 
+Michal Hocko
+SUSE Labs
