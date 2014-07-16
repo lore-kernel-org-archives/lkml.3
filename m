@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030417AbaGPHBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:01:37 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:56831 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808AbaGPHBf (ORCPT
+	id S1030440AbaGPHBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:01:44 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:43588 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932808AbaGPHBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:01:35 -0400
+	Wed, 16 Jul 2014 03:01:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1405465241-28684-4-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1405465241-28684-4-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Wed, 16 Jul 2014 12:31:33 +0530
-Message-ID: <CAMf-jSn2YHF7ihRpXMfkPWYt8pNCj4o395OGha3BHD3K3mUv9g@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] regulator: qcom-rpm: Regulator driver for the
- Qualcomm RPM
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
+In-Reply-To: <525DB349B3FB5444AE057A887CB2A8D8543381@nice.asicdesigners.com>
+References: <1405479036-6763-1-git-send-email-ethan.zhao@oracle.com>
+	<1405484432.14773.19.camel@joe-AO725>
+	<525DB349B3FB5444AE057A887CB2A8D8543381@nice.asicdesigners.com>
+Date: Wed, 16 Jul 2014 15:01:40 +0800
+Message-ID: <CABawtvO3K0141gC8vh-TwUNnegbGVLuqXizjJXWR2W5B89PE2A@mail.gmail.com>
+Subject: Re: [Bug report] Hit false positives bug with script/checkpatch.pl
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Anish Bhatt <anish@chelsio.com>
+Cc: Joe Perches <joe@perches.com>, Ethan Zhao <ethan.zhao@oracle.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joe.jin@oracle.com" <joe.jin@oracle.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On Wed, Jul 16, 2014 at 1:39 PM, Anish Bhatt <anish@chelsio.com> wrote:
+> Parantheses/do {...} while(0) would not work for direct value substituons like this obviously but fixing this false positive seems hard. An exception
 
-On Wed, Jul 16, 2014 at 4:30 AM, Bjorn Andersson
-<bjorn.andersson@sonymobile.com> wrote:
-> Driver for regulators exposed by the Resource Power Manager (RPM) found
-> in Qualcomm 8660, 8960 and 8064 based devices.
+How about lower it to warning... ... if it is hard to fix.
+
+Ethan
+
+case that is something like "macros with complex values separated by
+commas but no statements terminated by semicolons" is my best but
+seems-very-vague guess.
+> -Anish
+> ________________________________________
+> From: Joe Perches [joe@perches.com]
+> Sent: Tuesday, July 15, 2014 9:20 PM
+> To: Ethan Zhao
+> Cc: Anish Bhatt; apw@canonical.com; linux-kernel@vger.kernel.org; ethan.kernel@gmail.com; joe.jin@oracle.com
+> Subject: Re: [Bug report] Hit false positives bug with script/checkpatch.pl
 >
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
->  drivers/regulator/Kconfig              |  12 +
->  drivers/regulator/Makefile             |   1 +
->  drivers/regulator/qcom_rpm-regulator.c | 787 +++++++++++++++++++++++++++++++++
->  3 files changed, 800 insertions(+)
-.
-.
-[snip]
-.
-.
-> + * Physically available PMIC regulator voltage ranges
-> + */
-> +static const struct regulator_linear_range pldo_ranges[] = {
-> +       REGULATOR_LINEAR_RANGE( 750000,   0,  59, 12500),
-
-ERROR: space prohibited after that open parenthesis '('
-
-> +       REGULATOR_LINEAR_RANGE(1500000,  60, 123, 25000),
-> +       REGULATOR_LINEAR_RANGE(3100000, 124, 160, 50000),
-> +};
-> +
-> +static const struct regulator_linear_range nldo_ranges[] = {
-> +       REGULATOR_LINEAR_RANGE( 750000,   0,  63, 12500),
-
-Ditto.
-
-> +};
-> +
-> +static const struct regulator_linear_range nldo1200_ranges[] = {
-> +       REGULATOR_LINEAR_RANGE( 375000,   0,  59,  6250),
-> +       REGULATOR_LINEAR_RANGE( 750000,  60, 123, 12500),
-
-Ditto
-
-> +};
-> +
-> +static const struct regulator_linear_range smps_ranges[] = {
-> +       REGULATOR_LINEAR_RANGE( 375000,   0,  29, 12500),
-> +       REGULATOR_LINEAR_RANGE( 750000,  30,  89, 12500),
-> +       REGULATOR_LINEAR_RANGE(1500000,  90, 153, 25000),
-> +};
-> +
-> +static const struct regulator_linear_range ftsmps_ranges[] = {
-> +       REGULATOR_LINEAR_RANGE( 350000,   0,   6, 50000),
-> +       REGULATOR_LINEAR_RANGE( 700000,   7,  63, 12500),
-> +       REGULATOR_LINEAR_RANGE(1500000,  64, 100, 50000),
-> +};
-
-Ditto
-
-> +
-> +static const struct regulator_linear_range ncp_ranges[] = {
-> +       REGULATOR_LINEAR_RANGE(1500000,   0,  31, 50000),
-
-[snip]
-
-> +MODULE_DESCRIPTION("Qualcomm RPM regulator driver");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.8.2.2
+> On Wed, 2014-07-16 at 10:50 +0800, Ethan Zhao wrote:
+>> Hi,
+>>      I hit a false positives bug when run script/checkpatch.pl to my patch,
+>> It reported  errors to following macro definition, but in fact the macro is
+>> correct, I couldn't change that macro according to the error message output
+>> by script/checkpatch.pl. because of this bug, my patch was rejected by some
+>> guy's patchwork.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Thanks and Regards
-Pramod
+> You could tell the guy checkpatch isn't always right.
+>
+> You could also change the macro to something like:
+>
+> #define NETXEN_NIC_STAT(name, m)                                \
+> {                                                               \
+>         .name = name,                                           \
+>         .type = m,                                              \
+>         .sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),  \
+>         .stat_offset = offsetof(struct netxen_adapter, m)       \
+> }
+>
+> and change the uses like:
+>
+> static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
+>         NETXEN_NIC_STAT("xmit called", stats.xmitcalled),
+>         NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
+>
+> etc...
+>
+>
