@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498AbaGPLs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:48:57 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:33283 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759364AbaGPLsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:48:54 -0400
-Date: Wed, 16 Jul 2014 13:48:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL 0/4] perf/core improvements and fixes
-Message-ID: <20140716114847.GB28434@gmail.com>
-References: <1405026417-9094-1-git-send-email-jolsa@kernel.org>
+	id S1759696AbaGPLu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:50:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547AbaGPLu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:50:27 -0400
+Message-ID: <53C666E5.6030009@redhat.com>
+Date: Wed, 16 Jul 2014 13:49:57 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405026417-9094-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mikko Perttunen <mperttunen@nvidia.com>, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com, tj@kernel.org
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v4 1/8] of: Add NVIDIA Tegra SATA controller binding
+References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <1405510814-31928-1-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1405510814-31928-1-git-send-email-mperttunen@nvidia.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Jiri Olsa <jolsa@kernel.org> wrote:
+On 07/16/2014 01:40 PM, Mikko Perttunen wrote:
+> This patch adds device tree binding documentation for the SATA
+> controller found on NVIDIA Tegra SoCs.
+> 
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> ---
+> v4: clarify mandatory clock order
 
-> hi Ingo,
-> please consider pulling
-> 
-> thanks,
-> jirka
-> 
-> 
-> The following changes since commit 8b5b584daf3b92fc5cdc83919e64231817d2f5a7:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-07-05 11:29:32 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to d243144af0b52fc5164a0823194f29a5979e236c:
-> 
->   perf timechart: Add more options to IO mode (2014-07-10 00:22:54 +0200)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . Add IO mode into timechart command (Stanislav Fomichev)
-> 
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> 
-> ----------------------------------------------------------------
-> Stanislav Fomichev (4):
->       perf timechart: Fix rendering in Firefox
->       perf timechart: Implement IO mode
->       perf timechart: Conditionally update start_time on fork
->       perf timechart: Add more options to IO mode
-> 
->  tools/perf/Documentation/perf-timechart.txt |  38 +-
->  tools/perf/builtin-timechart.c              | 693 +++++++++++++++++++++++++++-
->  tools/perf/util/svghelper.c                 | 168 +++++--
->  tools/perf/util/svghelper.h                 |   6 +-
->  4 files changed, 845 insertions(+), 60 deletions(-)
+Thanks this and the new v4 of "ata: Add support for the Tegra124 SATA controller"
+both look good to me. So these 2 + v3 for the rest of the series are:
 
-Pulled, thanks a lot Jiri!
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-	Ingo
+Regards,
+
+Hans
+
+
+
+> 
+>  .../devicetree/bindings/ata/tegra-sata.txt         | 31 ++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/tegra-sata.txt b/Documentation/devicetree/bindings/ata/tegra-sata.txt
+> new file mode 100644
+> index 0000000..de2f775
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ata/tegra-sata.txt
+> @@ -0,0 +1,31 @@
+> +Tegra124 SoC SATA AHCI controller
+> +
+> +Required properties :
+> +- compatible : "nvidia,tegra124-ahci".
+> +- reg : Should contain 2 entries:
+> +  - AHCI register set (SATA BAR5)
+> +  - SATA register set
+> +- interrupts : Defines the interrupt used by SATA
+> +- clocks : Must contain an entry for each entry in clock-names.
+> +  See ../clocks/clock-bindings.txt for details.
+> +- clock-names : Must include the following entries in the same
+> +  order as listed here:
+> +  - sata
+> +  - sata-oob
+> +  - cml1
+> +  - pll_e
+> +- resets : Must contain an entry for each entry in reset-names.
+> +  See ../reset/reset.txt for details.
+> +- reset-names : Must include the following entries:
+> +  - sata
+> +  - sata-oob
+> +  - sata-cold
+> +- phys : Must contain an entry for each entry in phy-names.
+> +  See ../phy/phy-bindings.txt for details.
+> +- phy-names : Must include the following entries:
+> +  - sata-phy : XUSB PADCTL SATA PHY
+> +- hvdd-supply : Defines the SATA HVDD regulator
+> +- vddio-supply : Defines the SATA VDDIO regulator
+> +- avdd-supply : Defines the SATA AVDD regulator
+> +- target-5v-supply : Defines the SATA 5V power regulator
+> +- target-12v-supply : Defines the SATA 12V power regulator
+> 
