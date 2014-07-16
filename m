@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaGPVMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:12:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59794 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaGPVEt (ORCPT
+	id S1753880AbaGPVMS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:12:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49646 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753823AbaGPVML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:04:49 -0400
-Message-Id: <20140716205055.584960520@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Wed, 16 Jul 2014 21:04:47 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jean Delvare <jdelvare@suse.de>
-Subject: [patch V2 40/64] hwmon: ibmaem: Use ktime_get_ns()
-References: <20140716205018.175419210@linutronix.de>
+	Wed, 16 Jul 2014 17:12:11 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Vidya Sagar <sagar.tv@gmail.com>, matthew.garrett@nebula.com,
+        nchumbalkar@lenovo.com, thierry.reding@gmail.com, swarren@nvidia.com,
+        linux-pci@vger.kernel.org, kthota@nvidia.com,
+        linux-kernel@vger.kernel.org, vidyas@nvidia.com
+Subject: Re: [PATCH v3] PCI: enable ASPM configuration in PCIE POWERSAVE mode
+Date: Wed, 16 Jul 2014 23:30:27 +0200
+Message-ID: <1480976.v66rlUIZnu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140716193637.GA14366@google.com>
+References: <1405505022-7593-1-git-send-email-vidyas@nvidia.com> <20140716193637.GA14366@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=hwmon-ibmaem-use-ktime.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the wall clock time for delta time calculations is wrong to
-begin with because wall clock time can be set from userspace and NTP.
-Such data wants to be based on clock monotonic.
+On Wednesday, July 16, 2014 01:36:37 PM Bjorn Helgaas wrote:
+> On Wed, Jul 16, 2014 at 03:33:42PM +0530, Vidya Sagar wrote:
+> > From: Vidya Sagar <sagar.tv@gmail.com>
+> > 
+> > Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
+> >  under POWERSAVE mode") moved pcie_aspm_powersave_config_link() out of
+> > pci_raw_set_power_state() to pci_set_power_state() which would enable
+> > ASPM. But, with Commit db288c9c5f9d ("PCI / PM: restore the original
+> >  behavior of pci_set_power_state()"), which re-introduced the following check
+> > ./drivers/pci/pci.c: pci_set_power_state()
+> > 
+> > +	/* Check if we're already there */
+> > +	if (dev->current_state == state)
+> > +	   return 0;
+> > 
+> > in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
+> > made leaving ASPM broken.
+> > Fix it by configuring links for ASPM in do_pci_enable_device() instead of
+> > pci_set_power_state()
+> > 
+> > Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+> > Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
+> 
+> I applied this to pci/misc for v3.17 with the following changelog:
+> 
+> It would still make me feel better if Matthew and/or Rafael acked this.
+> 
+>     PCI: Configure ASPM when enabling device
+>     
+>     We can't do ASPM configuration at enumeration-time because enabling it
+>     makes some defective hardware unresponsive, even if ASPM is disabled later
+>     (see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
+>     to veto it").  Therefore, we have to do it after a driver claims the
+>     device.
+>     
+>     We previously configured ASPM in pci_set_power_state(), but that's not a
+>     very good place because it's not really related to setting the PCI device
+>     power state, and doing it there means:
+>     
+>       - We incorrectly skipped ASPM config when setting a device that's
+>         already in D0 to D0.
+>     
+>       - We unnecessarily configured ASPM when setting a device to a low-power
+>         state (the ASPM feature only applies when the device is in D0).
+>     
+>       - We unnecessarily configured ASPM when called from a .resume() method
+>         (ASPM configuration needs to be restored during resume, but I think
+>         pci_restore_pcie_state() should already do this).
+>     
+>     Move ASPM configuration from pci_set_power_state() to
+>     do_pci_enable_device() so we do it when a driver enables a device.
+>     
+>     [bhelgaas: changelog]
+>     Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
+> 
+> It would still make me feel better if Matthew and/or Rafael chimed in to
+> make sure this is sane.
 
-The calcuations also are done on a nanosecond basis. Use the
-nanoseconds based interface right away.
+I like the change, but I'm not sure whether or not it will work for everyone.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jean Delvare <jdelvare@suse.de>
----
- drivers/hwmon/ibmaem.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+The only way to verify that seems to be to apply it, however.
 
-Index: tip/drivers/hwmon/ibmaem.c
-===================================================================
---- tip.orig/drivers/hwmon/ibmaem.c
-+++ tip/drivers/hwmon/ibmaem.c
-@@ -842,11 +842,10 @@ static ssize_t aem_show_power(struct dev
- 	struct aem_data *data = dev_get_drvdata(dev);
- 	u64 before, after, delta, time;
- 	signed long leftover;
--	struct timespec b, a;
- 
- 	mutex_lock(&data->lock);
- 	update_aem_energy_one(data, attr->index);
--	getnstimeofday(&b);
-+	time = ktime_get_ns();
- 	before = data->energy[attr->index];
- 
- 	leftover = schedule_timeout_interruptible(
-@@ -858,11 +857,10 @@ static ssize_t aem_show_power(struct dev
- 	}
- 
- 	update_aem_energy_one(data, attr->index);
--	getnstimeofday(&a);
-+	time = ktime_get_ns() - time;
- 	after = data->energy[attr->index];
- 	mutex_unlock(&data->lock);
- 
--	time = timespec_to_ns(&a) - timespec_to_ns(&b);
- 	delta = (after - before) * UJ_PER_MJ;
- 
- 	return sprintf(buf, "%llu\n",
-
+Rafael
 
