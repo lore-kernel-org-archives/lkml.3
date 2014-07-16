@@ -1,96 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaGPUf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 16:35:28 -0400
-Received: from borg.tf-network.de ([62.75.218.204]:40427 "EHLO
-	borg.tf-network.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703AbaGPUf0 (ORCPT
+	id S1752186AbaGPUfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 16:35:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31897 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbaGPUft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 16:35:26 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 16:35:25 EDT
-Message-ID: <53C6E07A.7070303@whissi.de>
-Date: Wed, 16 Jul 2014 22:28:42 +0200
-From: "Thomas D." <whissi@whissi.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 16:35:49 -0400
+Message-ID: <53C6E214.3030902@oracle.com>
+Date: Wed, 16 Jul 2014 14:35:32 -0600
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Backport request for 3.14 stable to use rdmsrl_safe() first when
- initializing RAPL PMU to allow KVM guests to boot on Intel hosts
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: davem@davemloft.net, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc: Add support for seek and shorter read to /dev/mdesc
+References: <1405519323-3092-1-git-send-email-khalid.aziz@oracle.com> <20140716190414.GA6028@ravnborg.org>
+In-Reply-To: <20140716190414.GA6028@ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Sam,
 
-I upgraded my KVM guest from linux-3.10.48 to linux-3.14.12 and
-rebooting into the new kernel failed with
+Thanks for the feedback.
 
-  [     0.930047] Call Trace:
-  [     0.930047]  [<ffffffff81af1d36>] rapl_pmu_init+0xae/0x1b4
-  [     0.930047]  [<ffffffff81af1c88>] ? uncore_cpu_setup+0x13/0x13
-  [     0.930047]  [<ffffffff81000332>] do_one_initcall+0x112/0x160
-  [     0.930047]  [<ffffffff810df618>] ? parse_args+0x1e8/0x320
-  [     0.930047]  [<ffffffff81aea02c>] kernel_init_freeable+0x173/0x1fe
-  [     0.930047]  [<ffffffff81ae9842>] ? do_early_param+0x88/0x88
-  [     0.930047]  [<ffffffff815c4d20>] ? rest_init+0x80/0x80
-  [     0.930047]  [<ffffffff815c4d2e>] kernel_init+0xe/0xf0
-  [     0.930047]  [<ffffffff815da56c>] ret_from_fork+0x7c/0xb0
-  [     0.930047]  [<ffffffff815c4d20>] ? rest_init+0x80/0x80
-  [     0.930047] Code: 8b 14 10 e8 b0 47 1b 00 48 85 c0 49 89 c6 0f 84
-8f 00 00 00 31 c0 b9 06 06 00 00 66 41 89 06 49 8d 46 10 49 89 46 10 49
-89 46 18 <0f> 32 48 c1 e8 08 66 b9 1f 00 49 c7 46 20 c0 c7 a1 81 83 e0 1f
-  [     0.930047] RIP  [<ffffffff8101f4b3>] rapl_cpu_prepare+0x83/0x110
-  [     0.930047]  RSP <ffff88007c777dc0>
-  [     0.953901] ---[ end trace 1a5a32cf5298005d ]---
-  [     0.954374] Kernel panic - not syncing: Fatal exception
-  [     0.954947] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation
-range: 0xffffffff80000000-0xffffffff9fffffff)
+On 07/16/2014 01:04 PM, Sam Ravnborg wrote:
+> Hi Kahlid.
+>
+> On Wed, Jul 16, 2014 at 08:02:03AM -0600, Khalid Aziz wrote:
+>> /dev/mdesc on Linux does not support reading arbitrary number
+>> of bytes and seeking while /dev/mdesc on Solaris does. This
+>> causes tools that work on Solaris to break on Linux. This patch
+>> adds these two capabilities to /dev/mdesc.
+>>
+>> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+>> ---
+>>   arch/sparc/kernel/mdesc.c | 77 ++++++++++++++++++++++++++++++++++++++++-------
+>>   1 file changed, 66 insertions(+), 11 deletions(-)
+>>
+>> +/* mdesc_open() - Grab a reference to mdesc_handle when /dev/mdesc is
+>> + *	opened. Hold this reference until /dev/mdesc is closed to ensure
+>> + *	mdesc data structure is not released underneath us. Store the
+>> + *	pointer to mdesc structure in private_data for read and seek to use
+>> + */
+>> +static int mdesc_open(struct inode *inode, struct file *file)
+>>   {
+>>   	struct mdesc_handle *hp = mdesc_grab();
+>>
+>>   	if (!hp)
+>>   		return -ENODEV;
+>>
+>> +	file->private_data = hp;
+>> +	return 0;
+>> +}
+>
+> Do we know the open/close always come in pairs?
+> I assume so - but there is no check fo this (at least on this level).
 
-I started a kernel bisect and the bad commit causing the problem was
+Most likely yes, but I wouldn't assume that to be guaranteed. Is that a 
+concern? Isn't "struct file" unique for each instance of open?
 
-commit 4788e5b4b2338f85fa42a712a182d8afd65d7c58
-Author: Stephane Eranian <eranian@google.com>
-Date:   Tue Nov 12 17:58:50 2013 +0100
+>
+>> +
+>> +static ssize_t mdesc_read(struct file *file, char __user *buf,
+>> +			  size_t len, loff_t *offp)
+>> +{
+>> +	struct mdesc_handle *hp = file->private_data;
+>> +	unsigned char *mdesc;
+>> +	int err, bytes_left;
+>> +
+>> +	if (*offp >= hp->handle_size)
+>> +		return 0;
+>> +	err = len;
+>> +	bytes_left = hp->handle_size - *offp;
+>> +	if (len > bytes_left)
+>> +		err = bytes_left;
+>> +	mdesc = (unsigned char *)&hp->mdesc;
+>> +	mdesc += *offp;
+>> +	if (copy_to_user(buf, mdesc, err))
+>>   		err = -EFAULT;
+>> -	mdesc_release(hp);
+>> +	else
+>> +		*offp += err;
+>> +
+>> +	return err;
+>> +}
+>
+> When reading your code it is confusing to read that err is set to len,
+> and then maybe later set to an error value or a new len.
+>
+> See the following refactoring of mdesc_read() that avoids the err local
+> variable resulting in more readable code.
+>
+> static ssize_t mdesc_read(struct file *file, char __user *buf,
+>                         size_t len, loff_t *offp)
+> {
+>       struct mdesc_handle *hp = file->private_data;
+>       unsigned char *mdesc;
+>       int bytes_left;
+>
+>       if (*offp >= hp->handle_size)
+>               return 0;
+>
+>       bytes_left = hp->handle_size - *offp;
+>       if (len > bytes_left)
+>               len = bytes_left;
+>
+>       mdesc = (unsigned char *)&hp->mdesc;
+>       mdesc += *offp;
+>       if (!copy_to_user(buf, mdesc, len)) {
+>               *offp += len;
+> 	     return len;
+>       } else {
+>               return -EFAULT;
+>       }
+> }
+>
+> The above is IMO more readable.
 
-    perf/x86: Add Intel RAPL PMU support
+I was simply following how err was used in the original code, but I 
+agree this is more readable. I can redo the patch.
 
-    [...]
+>>
+>> +static loff_t mdesc_llseek(struct file *file, loff_t offset, int whence)
+>> +{
+>> +	struct mdesc_handle *hp;
+>> +	int err;
+>> +
+>> +	switch (whence) {
+>> +	case SEEK_CUR:
+>> +		offset += file->f_pos;
+>> +		break;
+>> +	case SEEK_SET:
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	err = offset;
+>> +	hp = file->private_data;
+>> +	if (offset > hp->handle_size)
+>> +		err = -EINVAL;
+>> +	else
+>> +		file->f_pos = offset;
+>>   	return err;
+>>   }
+> Same story here with err.
+>
+>
+> 	Sam
+> --
+> To unsubscribe from this list: send the line "unsubscribe sparclinux" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
+--
+Khalid
 
-In v3.15 this bug is already fixed with commit
-
-
-commit 24223657806a0ebd0ae5c9caaf7b021091889cf2
-Author: Venkatesh Srinivas <venkateshs@google.com>
-Date:   Thu Mar 13 12:36:26 2014 -0700
-
-    perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
-
-    CPUs which should support the RAPL counters according to
-    Family/Model/Stepping may still issue #GP when attempting to access
-    the RAPL MSRs. This may happen when Linux is running under KVM and
-    we are passing-through host F/M/S data, for example. Use rdmsrl_safe
-    to first access the RAPL_POWER_UNIT MSR; if this fails, do not
-    attempt to use this PMU.
-
-
-
-Could you please help me getting this fix into 3.14 stable kernel?
-
-I am not sure if applying 24223657 against 3.14 stable is enough. That's
-why I am posting this to linux-kernel@vger following the "Reporting bugs
-for the Linux kernel" guide (linux-kernel@vger is the mailing list for
-the perf subsystem according to the the MAINTAINERS file) instead of
-posting this to the stable@vger list.
-Please correct me if I am doing something wrong. This is my first time
-doing something like that.
-
-Thanks!
-
-Bugzilla: https://bugs.gentoo.org/show_bug.cgi?id=516908
-
-
--Thomas
