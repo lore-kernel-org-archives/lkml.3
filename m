@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934480AbaGPNuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:50:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55926 "EHLO mx2.suse.de"
+	id S964884AbaGPNuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:50:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55954 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933808AbaGPNs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933858AbaGPNs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jul 2014 09:48:59 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
@@ -12,13 +12,13 @@ To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
 Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
         Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH V4 10/15] mm, compaction: remember position within pageblock in free pages scanner
-Date: Wed, 16 Jul 2014 15:48:18 +0200
-Message-Id: <1405518503-27687-11-git-send-email-vbabka@suse.cz>
+        Minchan Kim <minchan@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH V4 12/15] mm: rename allocflags_to_migratetype for clarity
+Date: Wed, 16 Jul 2014 15:48:20 +0200
+Message-Id: <1405518503-27687-13-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
 References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
@@ -26,157 +26,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the migration scanner, the free scanner remembers the beginning of the
-last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-uselessly when called several times during single compaction. This might have
-been useful when pages were returned to the buddy allocator after a failed
-migration, but this is no longer the case.
+From: David Rientjes <rientjes@google.com>
 
-This patch changes the meaning of cc->free_pfn so that if it points to a
-middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-end. isolate_freepages_block() will record the pfn of the last page it looked
-at, which is then used to update cc->free_pfn.
+The page allocator has gfp flags (like __GFP_WAIT) and alloc flags (like
+ALLOC_CPUSET) that have separate semantics.
 
-In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-page, to 2.25 free pages per migrate page, without affecting success rates.
+The function allocflags_to_migratetype() actually takes gfp flags, not alloc
+flags, and returns a migratetype.  Rename it to gfpflags_to_migratetype().
 
-With __GFP_NO_KSWAPD allocations, this appears to result in a worse ratio (2.1
-instead of 1.8), but page migration successes increased by 10%, so this could
-mean that more useful work can be done until need_resched() aborts this kind
-of compaction.
-
+Signed-off-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: David Rientjes <rientjes@google.com>
 Acked-by: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- mm/compaction.c | 42 ++++++++++++++++++++++++++++++------------
- 1 file changed, 30 insertions(+), 12 deletions(-)
+ include/linux/gfp.h | 2 +-
+ mm/compaction.c     | 4 ++--
+ mm/page_alloc.c     | 6 +++---
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 5e7219d..41b30fd 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -156,7 +156,7 @@ struct vm_area_struct;
+ #define GFP_DMA32	__GFP_DMA32
+ 
+ /* Convert GFP flags to their corresponding migrate type */
+-static inline int allocflags_to_migratetype(gfp_t gfp_flags)
++static inline int gfpflags_to_migratetype(const gfp_t gfp_flags)
+ {
+ 	WARN_ON((gfp_flags & GFP_MOVABLE_MASK) == GFP_MOVABLE_MASK);
+ 
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 2b42397..d256c14 100644
+index 3cfc3a9..523c7bd 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -330,7 +330,7 @@ static bool suitable_migration_target(struct page *page)
-  * (even though it may still end up isolating some pages).
-  */
- static unsigned long isolate_freepages_block(struct compact_control *cc,
--				unsigned long blockpfn,
-+				unsigned long *start_pfn,
- 				unsigned long end_pfn,
- 				struct list_head *freelist,
- 				bool strict)
-@@ -339,6 +339,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	struct page *cursor, *valid_page = NULL;
- 	unsigned long flags;
- 	bool locked = false;
-+	unsigned long blockpfn = *start_pfn;
+@@ -1238,7 +1238,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+ 		.nr_freepages = 0,
+ 		.nr_migratepages = 0,
+ 		.order = order,
+-		.migratetype = allocflags_to_migratetype(gfp_mask),
++		.migratetype = gfpflags_to_migratetype(gfp_mask),
+ 		.zone = zone,
+ 		.mode = mode,
+ 	};
+@@ -1290,7 +1290,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 		return rc;
  
- 	cursor = pfn_to_page(blockpfn);
- 
-@@ -412,6 +413,9 @@ isolate_fail:
- 			break;
+ #ifdef CONFIG_CMA
+-	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
++	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
+ 	/* Compact each zone in the list */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index fb2988d..6f1c6e6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2496,7 +2496,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
  	}
+ #ifdef CONFIG_CMA
+-	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
++	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
+ 	return alloc_flags;
+@@ -2760,7 +2760,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	struct zone *preferred_zone;
+ 	struct zoneref *preferred_zoneref;
+ 	struct page *page = NULL;
+-	int migratetype = allocflags_to_migratetype(gfp_mask);
++	int migratetype = gfpflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+ 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	int classzone_idx;
+@@ -2794,7 +2794,7 @@ retry_cpuset:
+ 	classzone_idx = zonelist_zone_idx(preferred_zoneref);
  
-+	/* Record how far we have got within the block */
-+	*start_pfn = blockpfn;
-+
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
- 
- 	/*
-@@ -460,14 +464,13 @@ isolate_freepages_range(struct compact_control *cc,
- 
- 	for (; pfn < end_pfn; pfn += isolated,
- 				block_end_pfn += pageblock_nr_pages) {
-+		/* Protect pfn from changing by isolate_freepages_block */
-+		unsigned long isolate_start_pfn = pfn;
- 
- 		block_end_pfn = min(block_end_pfn, end_pfn);
- 
--		if (!pageblock_within_zone(pfn, block_end_pfn, cc->zone))
--			break;
--
--		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
--						   &freelist, true);
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-+						block_end_pfn, &freelist, true);
- 
- 		/*
- 		 * In strict mode, isolate_freepages_block() returns 0 if
-@@ -769,6 +772,7 @@ static void isolate_freepages(struct compact_control *cc)
- 	struct zone *zone = cc->zone;
- 	struct page *page;
- 	unsigned long block_start_pfn;	/* start of current pageblock */
-+	unsigned long isolate_start_pfn; /* exact pfn we start at */
- 	unsigned long block_end_pfn;	/* end of current pageblock */
- 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
- 	int nr_freepages = cc->nr_freepages;
-@@ -777,14 +781,15 @@ static void isolate_freepages(struct compact_control *cc)
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
- 	 * successfully isolated from, zone-cached value, or the end of the
--	 * zone when isolating for the first time. We need this aligned to
--	 * the pageblock boundary, because we do
-+	 * zone when isolating for the first time. For looping we also need
-+	 * this pfn aligned down to the pageblock boundary, because we do
- 	 * block_start_pfn -= pageblock_nr_pages in the for loop.
- 	 * For ending point, take care when isolating in last pageblock of a
- 	 * a zone which ends in the middle of a pageblock.
- 	 * The low boundary is the end of the pageblock the migration scanner
- 	 * is using.
- 	 */
-+	isolate_start_pfn = cc->free_pfn;
- 	block_start_pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	block_end_pfn = min(block_start_pfn + pageblock_nr_pages,
- 						zone_end_pfn(zone));
-@@ -797,7 +802,8 @@ static void isolate_freepages(struct compact_control *cc)
- 	 */
- 	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 				block_end_pfn = block_start_pfn,
--				block_start_pfn -= pageblock_nr_pages) {
-+				block_start_pfn -= pageblock_nr_pages,
-+				isolate_start_pfn = block_start_pfn) {
- 		unsigned long isolated;
- 
- 		/*
-@@ -822,13 +828,25 @@ static void isolate_freepages(struct compact_control *cc)
- 		if (!isolation_suitable(cc, page))
- 			continue;
- 
--		/* Found a block suitable for isolating free pages from */
--		cc->free_pfn = block_start_pfn;
--		isolated = isolate_freepages_block(cc, block_start_pfn,
-+		/* Found a block suitable for isolating free pages from. */
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
- 					block_end_pfn, freelist, false);
- 		nr_freepages += isolated;
- 
- 		/*
-+		 * Remember where the free scanner should restart next time,
-+		 * which is where isolate_freepages_block() left off.
-+		 * But if it scanned the whole pageblock, isolate_start_pfn
-+		 * now points at block_end_pfn, which is the start of the next
-+		 * pageblock.
-+		 * In that case we will however want to restart at the start
-+		 * of the previous pageblock.
-+		 */
-+		cc->free_pfn = (isolate_start_pfn < block_end_pfn) ?
-+				isolate_start_pfn :
-+				block_start_pfn - pageblock_nr_pages;
-+
-+		/*
- 		 * Set a flag that we successfully isolated in this pageblock.
- 		 * In the next loop iteration, zone->compact_cached_free_pfn
- 		 * will not be updated and thus it will effectively contain the
+ #ifdef CONFIG_CMA
+-	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
++	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
+ retry:
 -- 
 1.8.4.5
 
