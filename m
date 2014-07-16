@@ -1,133 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442AbaGPBWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:22:50 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48171 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410AbaGPBWs (ORCPT
+	id S1760498AbaGPBXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 21:23:00 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:29261 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760454AbaGPBW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:22:48 -0400
-Message-ID: <53C5D3D2.8080000@oracle.com>
-Date: Wed, 16 Jul 2014 09:22:26 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 15 Jul 2014 21:22:56 -0400
+X-IronPort-AV: E=Sophos;i="5.00,899,1396972800"; 
+   d="scan'208";a="33327146"
+Message-ID: <53C5D432.8000601@cn.fujitsu.com>
+Date: Wed, 16 Jul 2014 09:24:02 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] mm, tmp: only collapse hugepages to nodes with affinity
- for zone_reclaim_mode
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1 V2] workqueue: remove the del_timer_sync()s in maybe_create_worker()
+References: <1405265479-827-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-1-git-send-email-laijs@cn.fujitsu.com> <1405325601-12437-2-git-send-email-laijs@cn.fujitsu.com> <20140714142707.GB31610@htj.dyndns.org> <alpine.DEB.2.10.1407141731240.24854@nanos> <53C44915.4000405@cn.fujitsu.com> <alpine.DEB.2.10.1407142340170.24854@nanos>
+In-Reply-To: <alpine.DEB.2.10.1407142340170.24854@nanos>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 07/16/2014 08:13 AM, David Rientjes wrote:
-> Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target 
-> node") improved the previous khugepaged logic which allocated a 
-> transparent hugepages from the node of the first page being collapsed.
+On 07/15/2014 05:42 AM, Thomas Gleixner wrote:
+> On Tue, 15 Jul 2014, Lai Jiangshan wrote:
+>> On 07/14/2014 11:33 PM, Thomas Gleixner wrote:
+>>> On Mon, 14 Jul 2014, Tejun Heo wrote:
+>>>
+>>>> Hello,
+>>>>
+>>>> On Mon, Jul 14, 2014 at 04:13:21PM +0800, Lai Jiangshan wrote:
+>>>>> It is said in the document that the timer which is being
+>>>>> deleted by del_timer_sync() should not be restarted:
+>>>>>   Synchronization rules: Callers must prevent restarting of
+>>>>>   the timer, otherwise this function is meaningless.
+>>>>>
+>>>>> Repeating timer may cause the del_timer_sync() spin longer,
+>>>>> or even spin forever in very very very very extreme condition.
+>>>>
+>>>> I'm fairly sure del_timer_sync() can delete self-requeueing timers.
+>>>> The implementation busy-waits if the queued timer is the currently
+>>>> executing one and dequeues only while the timer isn't running which
+>>>> should be able to handle self-requeueing ones just fine.  Thomas,
+>>>> del_timer_sync() can reliably delete self-requeueing ones, right?
+>>>
+>>> Yes. 
+>>
+>> The comments of the del_timer_sync() needs to be updated
+>> if I did not misunderstood?
+>>
+>>> If the timer callback is running on the other cpu, then it waits
+>>> for the callback to finish before checking whether the timer is
+>>> enqueued or not.
+>>
+>> The syncer may be interrupted here, after it comes back, the timer
+>> may be running again (and maybe again and again).
 > 
-> However, it is still possible to collapse pages to remote memory which may 
-> suffer from additional access latency.  With the current policy, it is 
-> possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed remotely 
-> if the majority are allocated from that node.
-> 
-> When zone_reclaim_mode is enabled, it means the VM should make every attempt
-> to allocate locally to prevent NUMA performance degradation.  In this case,
-> we do not want to collapse hugepages to remote nodes that would suffer from
-> increased access latency.  Thus, when zone_reclaim_mode is enabled, only
-> allow collapsing to nodes with RECLAIM_DISTANCE or less.
-> 
-> There is no functional change for systems that disable zone_reclaim_mode.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  v2: only change behavior for zone_reclaim_mode per Dave Hansen
-> 
->  mm/huge_memory.c | 31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -2234,6 +2234,26 @@ static void khugepaged_alloc_sleep(void)
->  static int khugepaged_node_load[MAX_NUMNODES];
->  
->  #ifdef CONFIG_NUMA
-> +static bool khugepaged_scan_abort(int nid)
-> +{
-> +	int i;
-> +
-> +	/*
-> +	 * If zone_reclaim_mode is disabled, then no extra effort is made to
-> +	 * allocate memory locally.
-> +	 */
-> +	if (!zone_reclaim_mode)
-> +		return false;
-> +
-> +	for (i = 0; i < MAX_NUMNODES; i++) {
-> +		if (!khugepaged_node_load[i])
-> +			continue;
-> +		if (node_distance(nid, i) > RECLAIM_DISTANCE)
-> +			return true;
-> +	}
-> +	return false;
-> +}
-> +
->  static int khugepaged_find_target_node(void)
->  {
->  	static int last_khugepaged_target_node = NUMA_NO_NODE;
-> @@ -2309,6 +2329,11 @@ static struct page
->  	return *hpage;
->  }
->  #else
-> +static bool khugepaged_scan_abort(int nid)
-> +{
-> +	return false;
-> +}
-> +
->  static int khugepaged_find_target_node(void)
->  {
->  	return 0;
-> @@ -2515,6 +2540,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
->  	unsigned long _address;
->  	spinlock_t *ptl;
->  	int node = NUMA_NO_NODE;
-> +	int last_node = node;
->  
->  	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
->  
-> @@ -2545,6 +2571,11 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
->  		 * hit record.
->  		 */
->  		node = page_to_nid(page);
-> +		if (node != last_node) {
-> +			if (khugepaged_scan_abort(node))
-> +				goto out_unmap;
-
-Nitpick: How about not break the loop but only reset the related
-khugepaged_node_load[] to zero. E.g. modify khugepaged_scan_abort() like
-this:
-if (node_distance(nid, i) > RECLAIM_DISTANCE)
-   khugepaged_node_load[i] = 0;
-
-By this way, we may have a chance to find a more suitable node.
-
-> +			last_node = node;
-> +		}
->  		khugepaged_node_load[node]++;
->  		VM_BUG_ON_PAGE(PageCompound(page), page);
->  		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+> No. The del_timer_sync() code holds the base lock with interrupts
+> disabled. So it can't be interrupted.
 > 
 
--- 
-Regards,
--Bob
+The del_timer_sync() waits via cpu_relax() without interrupts
+disabled. Could you wipe out my concern?
+
+> 
+> .
+> 
+
