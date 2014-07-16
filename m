@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaGPXJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 19:09:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55358 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623AbaGPXJD (ORCPT
+	id S1754855AbaGPXJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 19:09:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50467 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754155AbaGPXJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 19:09:03 -0400
-Date: Wed, 16 Jul 2014 16:09:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/84] 3.15.6-stable review
-Message-ID: <20140716230902.GA13304@kroah.com>
-References: <20140715231713.193785557@linuxfoundation.org>
+	Wed, 16 Jul 2014 19:09:30 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Add "rpm_not_supported" flag
+Date: Thu, 17 Jul 2014 01:27:45 +0200
+Message-ID: <1961774.JeWiFOnpio@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140716230345.GA3220@kroah.com>
+References: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org> <1908592.0t6juNfLFj@vostro.rjw.lan> <20140716230345.GA3220@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715231713.193785557@linuxfoundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 04:16:57PM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.15.6 release.
-> There are 84 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Wednesday, July 16, 2014 04:03:45 PM Greg Kroah-Hartman wrote:
+> On Thu, Jul 17, 2014 at 12:40:23AM +0200, Rafael J. Wysocki wrote:
+> > On Wednesday, July 02, 2014 10:27:06 AM Alan Stern wrote:
+> > > Here's a brief summary of the story behind this patch...
+> > > 
+> > > At one point, I suggested to Dan that instead of doing something
+> > > special for these devices, we could simply have the runtime_suspend()
+> > > routine always return -EBUSY.  He didn't like that idea because then
+> > > the user would see the device was never powering down but would have no
+> > > idea why.  The rpm_not_supported flag provides this information to the
+> > > user by causing the power/runtime_status attribute to say "not
+> > > supported".  (Although to be entirely fair, we could just put a message
+> > > in the kernel log during probe if the hardware doesn't support runtime
+> > > suspend.)
+> > > 
+> > > Instead, Dan introduced a messy PM QoS mechanism in commit
+> > > e3d105055525.  I didn't like that approach, but Greg merged it before I
+> > > objected.
+> > 
+> > That really looks a bit like a hack to me to be honest.
+> > 
+> > Greg, what's your plan toward this?
 > 
-> Responses should be made by Thu Jul 17 23:17:00 UTC 2014.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.6-rc1.gz
-> and the diffstat can be found below.
+> If I need to revert something that you all find was wrong, I'll be glad
+> to do so, sorry for merging something too early.
 
-Due to some problems with Xen, I've removed a bunch of patches from this
-series (and the 3.4, 3.10, and 3.14 series) and done a -rc2 release with
-the updated set:
+Alan, what do you think?
 
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.6-rc2.gz
+I think we're still unsure if the approach taken by that commit is correct,
+but then I suppose we don't need to revert it at this point and we can fix
+it later.  Is that correct, or would fixing it be difficult for some reason?
 
-thanks,
+Rafael
 
-greg k-h
