@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622AbaGPV2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:28:19 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:44689 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320AbaGPV2A (ORCPT
+	id S1752864AbaGPVbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:31:10 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54899 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaGPVbH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:28:00 -0400
+	Wed, 16 Jul 2014 17:31:07 -0400
+Message-ID: <53C6EF16.30506@arm.com>
+Date: Wed, 16 Jul 2014 23:31:02 +0200
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKMwiAxeCVZVPS72XWCd2KhiR-uc4VFKT0mvD9s-cTO_Q@mail.gmail.com>
-References: <1405017631-27346-1-git-send-email-keescook@chromium.org>
- <20140711164931.GA18473@redhat.com> <CAGXu5jK-x0=Rr7kX2a=b4Z8ueA77uwmhNZZAayG8cwmNOKa8Ug@mail.gmail.com>
- <CALCETrVXgA9a2f7VwnCYW4_XB+JAPRSR8xsuH_ZYbA82=ZozRw@mail.gmail.com>
- <CAGXu5j+r-CpJiXipCT=j09+ZfJjF9jTc3kuZFAH3ZxgUEvktTA@mail.gmail.com>
- <CALCETrX48nuR6wqEV4Nu47BF4Z3XFvBpYer_fzwaqJdi0fpdKw@mail.gmail.com> <CAGXu5jKMwiAxeCVZVPS72XWCd2KhiR-uc4VFKT0mvD9s-cTO_Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Jul 2014 14:27:38 -0700
-Message-ID: <CALCETrUXRszBEhB7aOu6nXtCj09zofY_b_5BUNbJk-EFefA6fw@mail.gmail.com>
-Subject: Re: [PATCH v10 0/11] seccomp: add thread sync ability
-To: Kees Cook <keescook@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Donald <gdonald@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: find_busiest_group divide error
+References: <20140714165659.GA9289@gmail.com> <20140716152736.GD19379@twins.programming.kicks-ass.net> <20140716175259.GA5956@gmail.com>
+In-Reply-To: <20140716175259.GA5956@gmail.com>
+X-OriginalArrivalTime: 16 Jul 2014 21:31:03.0549 (UTC) FILETIME=[3EC94AD0:01CFA13D]
+X-MC-Unique: 114071622310500201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 2:23 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Jul 16, 2014 at 12:45 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> In seccomp_prepare_user_filter, would it make sense to return -EINVAL
->> if !user_filter?  That will make it slightly more pleasant to
->> implement TSYNC-without-change if anyone ever wants it.  (This isn't
->> really necessary -- it's just slightly more polite.)
+Hi Greg,
+
+On 16/07/14 19:52, Greg Donald wrote:
+> On Wed, Jul 16, 2014 at 05:27:36PM +0200, Peter Zijlstra wrote:
+>> Could you confirm if reverting caffcdd8d27ba78730d5540396ce72ad022aff2c
+>> cures things for you?
+>>
+>> Otherwise there's two very similar issues, see also:
+>>
+>>     lkml.kernel.org/r/20140716145546.GA6922@wolff.to
 >
-> I can't do this since EFAULT is already used to detect seccomp
-> capabilities from userspace.
+> Cured.
+>
+> I reverted caffcdd8d27ba78730d5540396ce72ad022aff2c which did nothing as
+> far as I can tell, then I removed the
+> two lines from http://marc.info/?l=linux-kernel&m=140552264825755, then
+> I added back the one line from
+> https://bugzilla.kernel.org/show_bug.cgi?id=80251#c8.
 
-Aha.  In that case, can you (separately) send a prctl.2 manpage patch
-documenting that?  Also, I'm pretty sure you can get away with doing
-this for seccomp(2) -- EINVAL and ENOSYS are easily distinguishable,
-but the current behavior is IMO also fine if documented.
+My patch caffcdd8d27ba78730d5540396ce72ad022aff2c got rid of 
+cpumask_clear(sched_group_cpus(sg)); and sg->sgp->power = 0; so 
+reverting it (and replacing sg->sgp->power = 0 with
+sg->sgc->capacity = 0) should cure it too. (although the missing 
+cpumask_clear() is the culprit on your machine here).
 
---Andy
+Could I ask you to share the content of your /proc/cpuinfo file? I 
+suspect it might be the same topology as the one Bruno just sent out 
+(the one of a dual single core CPU with hyper-threading ?)
+
+https://lkml.org/lkml/2014/7/16/603
+
+Thanks,
+
+-- Dietmar
+
+>
+> I ended up with
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index dc2927c..7c3674d 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5848,7 +5848,6 @@ build_sched_groups(struct sched_domain *sd, int
+> cpu)
+>
+>                  group = get_group(i, sdd, &sg);
+>                  cpumask_clear(sched_group_cpus(sg));
+> -               sg->sgp->power = 0;
+>                  cpumask_setall(sched_group_mask(sg));
+>
+>                  for_each_cpu(j, span) {
+>
+>
+> Thanks.
+>
+
+
