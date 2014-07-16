@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaGPVRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:17:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59695 "EHLO
+	id S1752777AbaGPVEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:04:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59663 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaGPVEX (ORCPT
+	with ESMTP id S1751165AbaGPVEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:04:23 -0400
-Message-Id: <20140716205054.109538036@linutronix.de>
+	Wed, 16 Jul 2014 17:04:15 -0400
+Message-Id: <20140716205053.588740065@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Wed, 16 Jul 2014 21:04:22 -0000
+Date: Wed, 16 Jul 2014 21:04:13 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch V2 23/64] timekeeping: Provide ktime_mono_to_any()
+Subject: [patch V2 17/64] timekeeping: Provide ktime_get_with_offset()
 References: <20140716205018.175419210@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=timekeeping-provide-ktime-mono_to-wall.patch
+Content-Disposition: inline; filename=timekeeping-provide-__ktime_get.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,72 +26,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ktime based conversion function to map a monotonic time stamp to a
-different CLOCK.
+Provide a helper function which lets us implement ktime_t based
+interfaces for real, boot and tai clocks.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
  include/linux/timekeeping.h |    9 +++++++++
- kernel/time/timekeeping.c   |   20 ++++++++++++++++++++
- 2 files changed, 29 insertions(+)
+ kernel/time/timekeeping.c   |   27 +++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+)
 
 Index: tip/include/linux/timekeeping.h
 ===================================================================
 --- tip.orig/include/linux/timekeeping.h
 +++ tip/include/linux/timekeeping.h
-@@ -109,6 +109,7 @@ enum tk_offsets {
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
- extern ktime_t ktime_get_monotonic_offset(void);
-+extern ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs);
- 
- /**
-  * ktime_get_real - get the real (wall-) time in ktime_t format
-@@ -137,6 +138,14 @@ static inline ktime_t ktime_get_clocktai
- 	return ktime_get_with_offset(TK_OFFS_TAI);
- }
- 
-+/**
-+ * ktime_mono_to_real - Convert monotonic time to clock realtime
-+ */
-+static inline ktime_t ktime_mono_to_real(ktime_t mono)
-+{
-+	return ktime_mono_to_any(mono, TK_OFFS_REAL);
-+}
-+
+@@ -98,7 +98,16 @@ extern void getboottime(struct timespec
  /*
-  * RTC specific
+  * ktime_t based interfaces
   */
++
++enum tk_offsets {
++	TK_OFFS_REAL,
++	TK_OFFS_BOOT,
++	TK_OFFS_TAI,
++	TK_OFFS_MAX,
++};
++
+ extern ktime_t ktime_get(void);
++extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
+ extern ktime_t ktime_get_real(void);
+ extern ktime_t ktime_get_boottime(void);
+ extern ktime_t ktime_get_monotonic_offset(void);
 Index: tip/kernel/time/timekeeping.c
 ===================================================================
 --- tip.orig/kernel/time/timekeeping.c
 +++ tip/kernel/time/timekeeping.c
-@@ -451,6 +451,26 @@ ktime_t ktime_get_with_offset(enum tk_of
- EXPORT_SYMBOL_GPL(ktime_get_with_offset);
+@@ -423,6 +423,33 @@ ktime_t ktime_get(void)
+ }
+ EXPORT_SYMBOL_GPL(ktime_get);
  
- /**
-+ * ktime_mono_to_any() - convert mononotic time to any other time
-+ * @tmono:	time to convert.
-+ * @offs:	which offset to use
-+ */
-+ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs)
++static ktime_t *offsets[TK_OFFS_MAX] = {
++	[TK_OFFS_REAL]	= &tk_core.timekeeper.offs_real,
++	[TK_OFFS_BOOT]	= &tk_core.timekeeper.offs_boot,
++	[TK_OFFS_TAI]	= &tk_core.timekeeper.offs_tai,
++};
++
++ktime_t ktime_get_with_offset(enum tk_offsets offs)
 +{
-+	ktime_t *offset = offsets[offs];
-+	unsigned long seq;
-+	ktime_t tconv;
++	struct timekeeper *tk = &tk_core.timekeeper;
++	unsigned int seq;
++	ktime_t base, *offset = offsets[offs];
++	s64 nsecs;
++
++	WARN_ON(timekeeping_suspended);
 +
 +	do {
 +		seq = read_seqcount_begin(&tk_core.seq);
-+		tconv = ktime_add(tmono, *offset);
++		base = ktime_add(tk->base_mono, *offset);
++		nsecs = timekeeping_get_ns(tk);
++
 +	} while (read_seqcount_retry(&tk_core.seq, seq));
 +
-+	return tconv;
-+}
-+EXPORT_SYMBOL_GPL(ktime_mono_to_any);
++	return ktime_add_ns(base, nsecs);
 +
-+/**
++}
++EXPORT_SYMBOL_GPL(ktime_get_with_offset);
++
+ /**
   * ktime_get_ts64 - get the monotonic clock in timespec64 format
   * @ts:		pointer to timespec variable
-  *
 
 
