@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaGPXD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 19:03:56 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:51704 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaGPXDw (ORCPT
+	id S1754573AbaGPXIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 19:08:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48649 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261AbaGPXIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 19:03:52 -0400
-From: Josep Puigdemont <josep.puigdemont@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Josep Puigdemont <josep.puigdemont@gmail.com>
-Subject: [PATCH] lustre: plain interger was used as NULL pointer
-Date: Thu, 17 Jul 2014 01:03:39 +0200
-Message-Id: <1405551819-2699-1-git-send-email-josep.puigdemont@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Wed, 16 Jul 2014 19:08:13 -0400
+Message-ID: <53C705DB.3040700@codeaurora.org>
+Date: Wed, 16 Jul 2014 16:08:11 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Alexander Kolesnikov <akolesni@codeaurora.org>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>
+Subject: Re: char interface to sdio, chdio.c
+References: <20140716032655.GB30412@kroah.com> <53C6C2C5.1050804@codeaurora.org> <20140716184409.GB10633@kroah.com> <53C6D4B6.3030506@codeaurora.org>
+In-Reply-To: <53C6D4B6.3030506@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following warnings found when running sparse:
-.../lproc_echo.c:43:11: warning: Using plain integer as NULL pointer
-.../lproc_echo.c:49:11: warning: Using plain integer as NULL pointer
+On 07/16/14 12:38, Stephen Boyd wrote:
+> On 07/16/14 11:44, Greg KH wrote:
+>> My specific question is why 2 different interfaces?
+> Ok. It definitely looks odd to support set/get of the VDD with sysfs and
+> ioctl interfaces. I'm just guessing, but I suspect it's a permissions
+> thing given that the patch that introduces the VDD stuff also updates
+> the permissions of the device node. Of course, the commit text only
+> mentions an ioctl, nothing about sysfs. The only other sysfs stuff seems
+> to be module parameters to change the vendor ids.
+>
+> I'll have to go repo diving to figure out if the sysfs interface was
+> ever used. Maybe Alex or Konstantin can respond before I have to do that.
+>
+>
 
-Signed-off-by: Josep Puigdemont <josep.puigdemont@gmail.com>
----
- drivers/staging/lustre/lustre/obdecho/lproc_echo.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I couldn't find any usage of the sysfs interface. The only thing I see
+used is the host_name field when the module is inserted, if that even
+happens at all (I'm not sure because it's behind some ifdef that may or
+may not be defined). Sorry this doesn't explain why there are two
+different interfaces for the VDD stuff. Hopefully Alex or Konstantin can
+help.
 
-diff --git a/drivers/staging/lustre/lustre/obdecho/lproc_echo.c b/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
-index 487c4f3..1d3bf6c 100644
---- a/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
-+++ b/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
-@@ -40,13 +40,13 @@
- LPROC_SEQ_FOPS_RO_TYPE(echo, uuid);
- static struct lprocfs_vars lprocfs_echo_obd_vars[] = {
- 	{ "uuid",	 &echo_uuid_fops,	NULL, 0 },
--	{ 0 }
-+	{ NULL }
- };
- 
- LPROC_SEQ_FOPS_RO_TYPE(echo, numrefs);
- static struct lprocfs_vars lprocfs_echo_module_vars[] = {
- 	{ "num_refs",     &echo_numrefs_fops,     NULL, 0 },
--	{ 0 }
-+	{ NULL }
- };
- 
- void lprocfs_echo_init_vars(struct lprocfs_static_vars *lvars)
 -- 
-1.9.3
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
