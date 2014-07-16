@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964804AbaGPOCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:02:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933826AbaGPOCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:02:38 -0400
-Date: Wed, 16 Jul 2014 16:02:02 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 12/41] perf tools: Fix leak of 'struct thread' on error
- path
-Message-ID: <20140716140202.GB9441@krava.redhat.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
+	id S934194AbaGPOIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:08:21 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:43916 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759202AbaGPOIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 10:08:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405332185-4050-13-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53C62B68.50702@redhat.com>
+References: <cover.1405477965.git.luto@amacapital.net> <20140716064110.GV18167@minantech.com>
+ <53C62563.6050106@redhat.com> <53C62B68.50702@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Jul 2014 07:07:58 -0700
+Message-ID: <CALCETrVLJ7qH3y04K9Sz1pU3i9+H9Cq_RoDfBeWnsH0VC68qKw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 01:02:36PM +0300, Adrian Hunter wrote:
-> __machine__findnew_thread() creates a 'struct thread'
-> but does not free it on the error path.
-> 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/util/machine.c | 4 +++-
->  tools/perf/util/thread.c  | 6 ++++--
->  2 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index c1c5ca3..18eaf31 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -349,8 +349,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
->  		 * within thread__init_map_groups to find the thread
->  		 * leader and that would screwed the rb tree.
->  		 */
-> -		if (thread__init_map_groups(th, machine))
-> +		if (thread__init_map_groups(th, machine)) {
-> +			thread__delete(th);
->  			return NULL;
-> +		}
->  	}
->  
->  	return th;
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index 149e417..b9a3ee4 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -95,8 +95,10 @@ void thread__delete(struct thread *thread)
->  {
->  	struct comm *comm, *tmp;
->  
-> -	map_groups__put(thread->mg);
-> -	thread->mg = NULL;
-> +	if (thread->mg) {
-> +		map_groups__put(thread->mg);
-> +		thread->mg = NULL;
-> +	}
+On Wed, Jul 16, 2014 at 12:36 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 16/07/2014 09:10, Daniel Borkmann ha scritto:
+>
+>> On 07/16/2014 08:41 AM, Gleb Natapov wrote:
+>>>
+>>> On Tue, Jul 15, 2014 at 07:48:06PM -0700, Andy Lutomirski wrote:
+>>>>
+>>>> virtio-rng is both too complicated and insufficient for initial rng
+>>>> seeding.  It's far too complicated to use for KASLR or any other
+>>>> early boot random number needs.  It also provides /dev/random-style
+>>>> bits, which means that making guest boot wait for virtio-rng is
+>>>> unacceptably slow, and doing it asynchronously means that
+>>>> /dev/urandom might be predictable when userspace starts.
+>>>>
+>>>> This introduces a very simple synchronous mechanism to get
+>>>> /dev/urandom-style bits.
+>>>
+>>>
+>>> Why can't you use RDRAND instruction for that?
+>>
+>>
+>> You mean using it directly? I think simply for the very same reasons
+>> as in c2557a303a ...
+>
+>
+> No, this is very different.  This mechanism "provides no guarantee that the
+> result contains any actual entropy".  In fact, patch 3 adds a call to the
+> new arch_get_slow_rng_u64 just below a call to arch_get_random_lang aka
+> RDRAND.  I agree with Gleb that it's simpler to just expect a relatively
+> recent processor and use RDRAND.
+>
+> BTW, the logic for crediting entropy to RDSEED but not RDRAND escapes me.
+> If you trust the processor, you could use Intel's algorithm to force
+> reseeding of RDRAND.  If you don't trust the processor, the same paranoia
+> applies to RDRAND and RDSEED.
+>
+> In a guest you must trust the hypervisor anyway to use RDRAND or RDSEED,
+> since the hypervisor can trap it.  A malicious hypervisor is no different
+> from a malicious processor.
+>
 
-I dont think this is ^^^ needed..  each thread has ->mg defined
+This patch has nothing whatsoever to do with how much I trust the CPU
+vs the hypervisor.  It's for the enormous installed base of machines
+without RDRAND.
 
-jirka
+hpa suggested emulating RDRAND awhile ago, but I think that'll
+unusably slow -- the kernel uses RDRAND in various places where it's
+expected to be fast, and not using it at all will be preferable to
+causing a VM exit for every few bytes.  I've been careful to only use
+this in the guest in places where a few hundred to a few thousand
+cycles per 64 bits of RNG seed is acceptable.
+
+> In any case, is there a matching QEMU patch somewhere?
+
+What QEMU change is needed?  I admit I'm a bit vague on how QEMU and
+KVM cooperate here, but there's no state to save and restore.  I guess
+that QEMU wants the ability to turn this on and off for migration.
+How does that work?  I couldn't spot the KVM code that allows this
+type of control.
+
+--Andy
