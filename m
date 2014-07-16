@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaGPVe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:34:56 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40775 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaGPVev (ORCPT
+	id S1754102AbaGPVfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:35:16 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62423 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751359AbaGPVfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:34:51 -0400
-Date: Wed, 16 Jul 2014 22:34:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org
-Message-ID: <20140716213433.GD17528@sirena.org.uk>
-References: <cover.1387336613.git.lv.zheng@intel.com>
- <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com>
- <20140716120750.GM17528@sirena.org.uk>
- <4307509.CpjlMkz69H@vostro.rjw.lan>
+	Wed, 16 Jul 2014 17:35:11 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Subject: Re: linux-next: manual merge of the pm tree with the ia64 tree
+Date: Wed, 16 Jul 2014 23:53:26 +0200
+Message-ID: <1945215.v4beMAkkaN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802641B27@SHSMSX101.ccr.corp.intel.com>
+References: <20140715135620.2e68ee57@canb.auug.org.au> <2083565.B2UV9LfG6j@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802641B27@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P6PRkhImOxklJvkF"
-Content-Disposition: inline
-In-Reply-To: <4307509.CpjlMkz69H@vostro.rjw.lan>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 7/7] ACPI: Cleanup useless ACPI inclusion.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, July 16, 2014 03:06:13 AM Zheng, Lv wrote:
+> Hi,
+> 
+> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > Sent: Tuesday, July 15, 2014 8:15 PM
+> > 
+> > On Tuesday, July 15, 2014 01:56:20 PM Stephen Rothwell wrote:
+> > >
+> > > --Sig_/Cs291xJCrI1kc_+PiCdNT0M
+> > > Content-Type: text/plain; charset=US-ASCII
+> > > Content-Transfer-Encoding: quoted-printable
+> > >
+> > > Hi Rafael,
+> > >
+> > > Today's linux-next merge of the pm tree got a conflict in
+> > > drivers/acpi/acpi_extlog.c between commits 2dfb7d51a61d ("trace, RAS:
+> > > Add eMCA trace event interface") and d6cae935ec5b ("trace, eMCA: Add a
+> > > knob to adjust where to save event log") from the ia64 tree and commit
+> > > 0a00fd5e20fd ("ACPICA: Restore error table definitions to reduce code
+> > > differences between Linux and ACPICA upstream") from the pm tree.
+> > >
+> > > I fixed it up (hopefully - see below) and can carry the fix as
+> > > necessary (no action is required).
+> > 
+> > Thanks for fixing this up!
+> > 
+> > Lv, can you please check if acpi_extlog.c is fine in linux-next?
+> 
+> I checked.
+> 
+> There is no problem in rafael/linux-pm.git/linux-next branch.
+> The 2 commits:
+>   trace, RAS: Add eMCA trace event interface
+>   trace, eMCA: Add a knob to adjust where to save event log
+> are not in torvalds/linux.git/master branch, I found them in aegl/linux.git/next branch.
+> 
+> So if torvalds/linux.git/master merges rafael/linux-pm.git/linux-next before merging aegl/linux.git/next, we will need the following fix.
+> And the following collision fix is correct.
 
---P6PRkhImOxklJvkF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for checking!
 
-On Wed, Jul 16, 2014 at 11:46:14PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, July 16, 2014 01:07:50 PM Mark Brown wrote:
-> > On Wed, Jul 16, 2014 at 04:59:02PM +0800, Lv Zheng wrote:
+Rafael
 
-> > > The sst-haswell-dsp.c is an ACPI independent file, this patch removes
-> > > ACPI header files for it.
-
-> > Applied, thanks.  Please use subject lines matching the style for the
-> > subsystem and send at least the cover letter for the series to everyone
-> > so that they know what's going on with dependencies and so on.
-
-> Lv thought that this would go through the ACPI tree I suppose.
-
-Even so the subject line should still line up (it's part of how some of
-us pick out which mail to read).
-
---P6PRkhImOxklJvkF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxu/lAAoJELSic+t+oim9wBkP/1QbAlgd9M7esohmJeMORy+S
-QWPqzk1Nw/fur4BH2EZO+fc3WRRtpIk7gWXWgV+S9SHu1xIm5qjQreQriEf6DRFC
-zH9iGs32EkRDq+6GAI1qlmHF2w153nQhMUt4MeD4GnaVfsZtc8Ny9x6AvOoDcdka
-JV78pmoZ2acIVLLEUGgztfFFEV4boq8fdgoyIdKZRD+1F+1PDTi4+sK7LY8aS/7p
-bXpdl6vF6SMLuLaC/nvVAdLHNDj6N61cDkpu/DF3ReTIdfCM8pGZyv3TgwnAYt6M
-lffxpgLCiyklhJ1cDph0TCu6IOWyAyMZhpUFDEw+b1wDr5xFtzdI/YoiEcJQ6t+y
-D3OAaAN2kNG70EskwH0yU8MCyDFqAnSbwQpUuxEzBCToIOT96HNvgGYDcpuYKAcY
-Pv/Hg3xQSIQvRc7nOP/NunSHFi6Iw1EsHmfKttiAzoIq0vpRNN9H78rs66XtTM+t
-rjyQ9zGNqZOQZIPclnmZoNFGv9gUK79X96CDU97NFib7kXm2rZOEfyxDLSEnSYkN
-v3+popRs6i/guW5yMv1SY2kAESE5l/Exdm5N8gWgKNZi7sFZBRez+4qQb8a4GnSH
-ewxUx98UerBq8QI1Mu2H/oefdGDj1o1IDaMTsezpEi6mQPe614CVTOAhTJyMhn0d
-imclPC3RSOh3tJXAApV/
-=MK6C
------END PGP SIGNATURE-----
-
---P6PRkhImOxklJvkF--
