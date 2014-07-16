@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030346AbaGPGvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 02:51:23 -0400
-Received: from blu004-omc3s8.hotmail.com ([65.55.116.83]:57358 "EHLO
-	BLU004-OMC3S8.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875AbaGPGvV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 02:51:21 -0400
-X-TMN: [XWY6EXQdxuTNy4KPbZU8nePBg/q49DcGlgLQ9nLwtB0=]
-X-Originating-Email: [beanhuo@outlook.com]
-Message-ID: <BLU185-W11C4857F0149224171239EA6F70@phx.gbl>
-From: Bean Huo <beanhuo@outlook.com>
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-Subject: [PATCH v4] mtd:nor:timeout:fix do_write_buffer() timeout error
-Date: Wed, 16 Jul 2014 06:51:20 +0000
-Importance: Normal
-Content-Type: text/plain; charset="gb2312"
+	id S1030366AbaGPGve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 02:51:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030348AbaGPGvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 02:51:31 -0400
+Message-ID: <53C620DD.7090700@redhat.com>
+Date: Wed, 16 Jul 2014 08:51:09 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 16 Jul 2014 06:51:20.0904 (UTC) FILETIME=[59E0D480:01CFA0C2]
+To: Jens Axboe <axboe@kernel.dk>, Mike Qiu <qiudayu@linux.vnet.ibm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ming.lei@canonical.com" <ming.lei@canonical.com>,
+        "dongsu.park@profitbricks.com" <dongsu.park@profitbricks.com>,
+        "jet.chen@intel.com" <jet.chen@intel.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "hch@lst.de" <hch@lst.de>, "kmo@daterainc.com" <kmo@daterainc.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "axboe@fb.com" <axboe@fb.com>
+Subject: Re: Bug_ON with patch: bio: modify __bio_add_page() to accept pages
+ that don't start a new segment
+References: <53C4E2F0.8000307@linux.vnet.ibm.com> <E83EB052-8DC9-4B0E-830D-AF7A2557BEF6@kernel.dk> <53C4E9F1.7070302@redhat.com>
+In-Reply-To: <53C4E9F1.7070302@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6G6pSh8025044
 
-For some Norflashes,the size of the buffer program has been
-increased from 256 bytes to 512 bytes,2ms maximum timeout can
-not adapt to all the different vendor's norflash.There maximum
-timeout information in the CFI area,so the best way is to choose
-the result calculated according to timeout field of struct cfi_ident
-that probed from norflash's CFI aera.This is also a standard defined
-by CFI.If haven't probed this information,or smaller than 2000us,then
-specify a defualt value 2000us.
-Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
-Signed-off-by: bean huo beanhuo@outlook.com
----
-changes
- v1->v2:Deleted unused parameters in this patch 
-  (word_write_time_max and erase_time_max).Using usecs_to_jiffies
-  instead of msecs_to_jiffies for convert timeout value into jiffies.
- v2->v3:Removed unnecessary messages form comments and deleted trailing whitespace.
- V3->v4:If haven't probed timeout information,or smaller than 2000us,specify default
-        2000us.
- drivers/mtd/chips/cfi_cmdset_0002.c |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index e21fde9..c248a8c 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -628,6 +628,24 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
-   cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
-   cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
-   cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
-+  /*
-+   * First calculate the timeout max according to timeout
-+   * field of struct cfi_ident that probed from chip's CFI
-+   * aera.If haven't probed this information,or smaller than
-+   * 2000us,we will specify defualt value 2000us,and the time
-+   * unit is us.
-+   */
-+  if (cfi->cfiq->BufWriteTimeoutTyp &&
-+   cfi->cfiq->BufWriteTimeoutMax){
-+   cfi->chips[i].buffer_write_time_max =
-+    1<<(cfi->cfiq->BufWriteTimeoutTyp +
-+     cfi->cfiq->BufWriteTimeoutMax);
-+   } else {
-+    cfi->chips[i].buffer_write_time_max = 0;
-+    }
-+  cfi->chips[i].buffer_write_time_max =
-+   ((cfi->chips[i].buffer_write_time_max>= 2000)
-+    ? cfi->chips[i].buffer_write_time_max : 2000);
-   cfi->chips[i].ref_point_counter = 0;
-   init_waitqueue_head(&(cfi->chips[i].wq));
-  }
-@@ -1462,8 +1480,14 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- {
-  struct cfi_private *cfi = map->fldrv_priv;
-  unsigned long timeo = jiffies + HZ;
-- /* see comments in do_write_oneword() regarding uWriteTimeo. */
-- unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
-+ /*
-+  * Use the result that calculated according to timeout field
-+  * of struct cfi_ident that probed from norflash's CFI aera.
-+  * See more comments in cfi_cmdset_0002().uWriteTimeout is
-+  * used for timeout step,it must be concerted into jiffies.
-+  */
-+ unsigned long uWriteTimeout =
-+    usecs_to_jiffies(chip->buffer_write_time_max);
-  int ret = -EIO;
-  unsigned long cmd_adr;
-  int z, words;
--- 
-1.7.9.5 		 	   		  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hi,
+
+On 07/15/2014 10:44 AM, Maurizio Lombardi wrote:
+>> I have reverted it yesterday in my tree. 
+>>
+> 
+> 
+> The problem was here:
+> 
+>         if (q->merge_bvec_fn) {
+>                 struct bvec_merge_data bvm = {
+>                         .bi_bdev = bio->bi_bdev,
+>                         .bi_sector = bio->bi_iter.bi_sector,
+>                         .bi_size = bio->bi_iter.bi_size, <-------
+>                         .bi_rw = bio->bi_rw,
+>                 };
+> 
+>                 /*
+>                  * merge_bvec_fn() returns number of bytes it can accept
+>                  * at this offset
+>                  */
+>                 if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
+>                         goto failed;
+>         }
+> 
+>         /* If we may be able to merge these biovecs, force a recount */
+>         if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
+>                 bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+> 
+> 
+> it should have been ".bi_size = bio->bi_iter.bi_size - len"
+> 
+
+Jens, will you restore the patch in your tree if I submit
+this fix?
+
+Thanks,
+Maurizio Lombardi
