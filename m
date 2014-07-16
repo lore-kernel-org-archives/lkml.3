@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030534AbaGPHTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:19:42 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:38811 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030517AbaGPHTh (ORCPT
+	id S1030549AbaGPHU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:20:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33077 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933904AbaGPHU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:19:37 -0400
-Date: Wed, 16 Jul 2014 09:19:33 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/6] clk: tegra: make tegra_clocks_apply_init_table
- arch_initcall
-Message-ID: <20140716071932.GB7978@ulmo>
-References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
- <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
+	Wed, 16 Jul 2014 03:20:26 -0400
+Date: Wed, 16 Jul 2014 09:20:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [patch 14/55] timekeeping: Provide internal ktime_t based data
+Message-ID: <20140716072017.GV6758@twins.programming.kicks-ass.net>
+References: <20140711133623.530368377@linutronix.de>
+ <20140711133706.426549845@linutronix.de>
+ <CALAqxLUPjqCidKaXQowDw5L2WQnyZsozpjhwO0QQcXvpXBt5fg@mail.gmail.com>
+ <alpine.DEB.2.10.1407160859110.24854@nanos>
+ <alpine.DEB.2.10.1407160909310.24854@nanos>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
+	protocol="application/pgp-signature"; boundary="xWrScvulqIuecunV"
 Content-Disposition: inline
-In-Reply-To: <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.10.1407160909310.24854@nanos>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---wzJLGUyc3ArbnUjN
+--xWrScvulqIuecunV
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 15, 2014 at 06:24:32PM +0300, Peter De Schrijver wrote:
-[...]
-> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-> index d081732..65cde4e 100644
-> --- a/drivers/clk/tegra/clk.c
-> +++ b/drivers/clk/tegra/clk.c
-> @@ -290,10 +290,13 @@ struct clk ** __init tegra_lookup_dt_id(int clk_id,
-> =20
->  tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
-> =20
-> -void __init tegra_clocks_apply_init_table(void)
-> +static int __init tegra_clocks_apply_init_table(void)
->  {
->  	if (!tegra_clk_apply_init_table)
-> -		return;
-> +		return 0;
+On Wed, Jul 16, 2014 at 09:12:52AM +0200, Thomas Gleixner wrote:
+> Looking into it I think for now it's the least risky approach to keep
+> the core logic based on the timespec stuff unmodified and update the
+> ktime_t members in timekeeping_update(). Converting the whole thing to
+> a pure nsec based mechanism and update the timespec stuff in
+> timekeeping_update() needs a lot more thought and we should do that
+> later on. It wont change any of the interfaces.
 
-Shouldn't this be an error? Or perhaps WARN()? To make sure this gets
-noticed since it's obviously a mistake. I'm wondering if perhaps we
-could simply remove this check and let the kernel crash if it isn't a
-valid function pointer. Is there a case where this not being set at
-this point is even possible (or valid?). If not, perhaps it would be
-better to just call the SoC generation versions of this function from
-here directly rather than going through a function pointer?
+So I don't think you can only do nsec, seeing how the conversion from
+nsec to timespec is expensive. So if we want to also avoid the timespec
+-> nsec conversion we need to keep both, no two ways around it.
 
-Thierry
+That said the timespec -> nsec conversion is heaps cheaper, although
+still not what you call really sheep ;-)
 
---wzJLGUyc3ArbnUjN
+
+--xWrScvulqIuecunV
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTxieEAAoJEN0jrNd/PrOh+GcQALJtJmOd0i1gIbvE1ycNEefG
-zLlK2YmWMEoa9DnMMAQREbx76JuOctfZKJVZILKWcAhpOhW8eU+LK5y5b+HAWbRS
-g+IlfF6KmKv32jEKTthe62jqc6i5BSxd2MrIYSOb3rXYdvTTN7CBKWWMS5rL0wNq
-DhemWu1+n5sn5BQpDRyy7yWZWsU1XZsxGz5AWVS/nXKPHbwIoWSQaOjg/CTgKcuQ
-Yt0G5eMzNild0uwnqZCleHpO6e/I19mQZWqO04zw0mV98CUVpFqsFVLOIWwuiUR7
-tgK3ZzSqHOqpYsFplcTZuOWIh4HMlRr7Qkwt3KO3gQXkyfsePZ+uweYrAGt/SRcL
-TjIq/VOkNl56JdZYunvYtkCXVk1uMhtkM1ocC6oWBnmq74zkC/mpghFTIsSR/9yu
-3oAom7gGrwB+vsxfqDH4e7YnzlUWZKflsM/tf3u8c/j43N8oBHMePlb+As02iw1s
-buCH6eORKIHCk1Z52zICEjMhrAnzC9IZCh9a+0tKV2WplA1hk0f6ZJTvBmiMOQSB
-Njfn1joB5iNDflXsbpUOk94zRVThBcXbz14bzjL0cBSqtGhT+NjbuQQ7gxsP2tm1
-3As4wnZoeUfOEIymntbtDlscGopAGtGf6UNfAlw59LuIWQcnbOylOvES0TtmJwIt
-Q3eF1fld11NaKxJer89F
-=9UKY
+iQIcBAEBAgAGBQJTxiexAAoJEHZH4aRLwOS6JgEQALN5QvJQ8Irocf8VbUSTBVnc
+/CrW9qhwBfOUOnQ+2OkuEwT3Hei5a/FTctxaJCXoTQQpkAeNG2i32OBgCe4iKo6G
+OT5UnJ4OKqq896uHUlx45aqlB73k/K2uinVdBC0Pq3O74JzcCfIgAe/bsOM8KNPh
+UNIgDWNoMcu8NriYb11Aojy8HHIZcmZbOaz/zRiRGV4xyO2Rx2eiGVwe+qd58Zhc
+V/JwKEoMcV4vhqS3pV6jbWjG1REvmFjOuPO+vFdraDPzdXGFQbBaDW/nzC4P1uyc
+viOgNHgoQuJxayrys7D/4GeXK9ahDlQnavy0dvi/8KTKdUGd5yS2WqSNys/2oBBt
+/59PDKGIKSJhDd78DjhzC2jQ4nPIABl+vtaVSy8ziLPuz22llSRwa2RvOBTCcoVE
+LMal2zY4dFB8qPcJfr+c2T7CtiD2w88jCMJmtGtE0hzImIDG5lvAIeLJ05XpGAiP
+2WXA3IXijLeeam/q0v2S6RCYxsbuCT+CDrA6/cZzJFUFPukbBCxN5RXdnerX6ePJ
+/i+gsg/8K775ltrn4yCNuQFHxDwk/Z8HuDFnIfrtGynIi/g0pCc0TOlDB9gCMozw
+vmd0C8dCCnYuvodS+CJYDA5Z4UjXuywMQp9byBRIZj5iJ9y0XsEuu/qBkqp7dQ7r
+bfj1HHYIEOV6dt6HmGxe
+=MLOh
 -----END PGP SIGNATURE-----
 
---wzJLGUyc3ArbnUjN--
+--xWrScvulqIuecunV--
