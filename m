@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759832AbaGPAhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:37:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46110 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaGPAha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:37:30 -0400
-Date: Tue, 15 Jul 2014 17:42:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [PATCH 3.15 14/84] serial: imx: Fix build breakage
-Message-ID: <20140716004202.GB6908@kroah.com>
-References: <20140715231713.193785557@linuxfoundation.org>
- <20140715231713.621762682@linuxfoundation.org>
- <20140716102414.337e58ce@canb.auug.org.au>
+	id S1760059AbaGPAh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:37:59 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:48874
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754279AbaGPAh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:37:57 -0400
+Date: Wed, 16 Jul 2014 08:32:45 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
+Message-ID: <20140716003244.GA30419@shlinux1.ap.freescale.net>
+References: <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140627032506.GA18039@shlinux1.ap.freescale.net>
+ <20140630133313.GA11880@kwain>
+ <20140701002112.GA26146@shlinux1.ap.freescale.net>
+ <53B27789.3090509@gmail.com>
+ <20140701083007.GB26146@shlinux1.ap.freescale.net>
+ <20140701104254.GD3427@piout.net> <53B2D151.60404@cogentembedded.com>
+ <1d01427f91084d67bf63721e2267e160@BL2PR03MB226.namprd03.prod.outlook.com>
+ <20140715152230.GE1011@kwain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20140716102414.337e58ce@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140715152230.GE1011@kwain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(199002)(76104003)(51704005)(479174003)(377454003)(189002)(54356999)(95666004)(23756003)(76482001)(50986999)(81342001)(84676001)(81542001)(64706001)(76176999)(99396002)(20776003)(85306003)(4396001)(83506001)(85852003)(47776003)(80022001)(93886003)(107046002)(83072002)(105606002)(21056001)(86362001)(79102001)(33656002)(74662001)(92566001)(106466001)(97736001)(92726001)(31966008)(77982001)(69596002)(26826002)(83322001)(68736004)(74502001)(44976005)(87936001)(6806004)(102836001)(104016003)(46102001)(110136001)(81156004)(50466002)(41533002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB564;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0274272F87
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 10:24:14AM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Tue, Jul 15, 2014 at 05:22:30PM +0200, Antoine Ténart wrote:
+> Hi guys,
 > 
-> On Tue, 15 Jul 2014 16:17:11 -0700 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> >
-> > 3.15-stable review patch.  If anyone has any objections, please let me know.
+> On Wed, Jul 02, 2014 at 01:10:00AM +0000, Peter Chen wrote:
+> > > On 07/01/2014 02:42 PM, Alexandre Belloni wrote:
+> > > 
+> > > >>>>> Well, there is nothing specific about the Berlin CI. Some
+> > > >>>>> subsystems use the 'generic' keyword in these cases. Do you see a
+> > > >>>>> particular reason I should use some Berlin related compatible here?
+> > > 
+> > > >>>> Not must, one suggestion is: can you change the compatible string
+> > > >>>> to "chipidea-usb-generic"?
+> > > 
+> > > >>> I don't know about ChipIdea/ARC/DW's product portfolio but I guess
+> > > >>> the compatible should also carry '2.0' or 'usb2' in it. Or we just
+> > > >>> use some version number like 'chipidea,ci13000' or 'chipidea,ci13xxx'.
+> > > 
+> > > >> The recommended format for compatible string is:
+> > > >> "manufacturer,model", I agree with "chipidea,ci13xxx", thanks.
+> > > 
+> > > > I think we should probably avoid using wildcards in the compatible
+> > > > string.
+> > > 
+> > >     I'm sure wildcards shouldn't be allowed there. :-)
 > > 
-> > ------------------
-> > 
-> > From: Peter Hurley <peter@hurleysoftware.com>
-> > 
-> > commit 8bec751bd63847b4044aab8b215db52aa6abde61 upstream.
-> > 
-> > Fix breakage introduced by
-> > commit c557d392fbf5badd693ea1946a4317c87a26a716,
-> > 'serial: Test for no tx data on tx restart'.
+> > Then, what's your guys recommend, how about "chipidea,usb2-generic"?
 > 
-> That commit only entered Linus' tree at v3.16-rc5, so this fix
-> shouldn't need to go into 3.15-stable (unless the original patch was
-> backported as well - in which case maybe the backport commit id should
-> be mentioned as well).
+> So what do you think? "chipidea,ci13", "chipidea,usb2-generic" or
+> something else?
+> 
 
-c557d392fbf5badd693ea1946a4317c87a26a716, is marked for stable (and is
-earlier in the series) so leaving this as-is, should be fine, as that
-commit id will show up in the stable kernels as well in the changelog
-entry.
+Do you agree to use "chipidea,usb2", And add ci13xxx at
+MODULE_DESCRIPTION?
 
-thanks,
+-- 
 
-greg k-h
+Best Regards,
+Peter Chen
