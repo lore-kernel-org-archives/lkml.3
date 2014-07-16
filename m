@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935061AbaGPTUT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:20:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44277 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760456AbaGPTUK (ORCPT
+	id S1030467AbaGPTVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:21:20 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23118 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081AbaGPTVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:20:10 -0400
-Date: Wed, 16 Jul 2014 12:19:39 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-7711fe4fc2606712125cff1a55ce00df2ae0f1fb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        acme@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, acme@kernel.org, tglx@linutronix.de
-In-Reply-To: <20140630144624.GA2604@quad>
-References: <20140630144624.GA2604@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/intel/uncore: Fix SNB-EP/
- IVT Cbox filter mappings
-Git-Commit-ID: 7711fe4fc2606712125cff1a55ce00df2ae0f1fb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 16 Jul 2014 15:21:11 -0400
+To: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        "martin.petersen\@oracle.com" <martin.petersen@oracle.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch\@infradead.org" <hch@infradead.org>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "kys\@microsoft.com" <kys@microsoft.com>,
+        "stable\@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering\@suse.com" <ohering@suse.com>,
+        "jasowang\@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140709084300.GD6012@infradead.org>
+	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	<20140711063216.GA20660@infradead.org>
+	<328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+	<yq1a98d2z5x.fsf@sermon.lab.mkp.net>
+	<20140716110111.GA7382@infradead.org>
+	<yq14myhtijx.fsf@sermon.lab.mkp.net>
+	<20140716173827.GB20528@infradead.org>
+	<yq1fvi1rya0.fsf@sermon.lab.mkp.net>
+	<1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
+	<94D0CD8314A33A4D9D801C0FE68B402958BA721F@G9W0745.americas.hpqcorp.net>
+Date: Wed, 16 Jul 2014 15:20:00 -0400
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958BA721F@G9W0745.americas.hpqcorp.net>
+	(Robert Elliott's message of "Wed, 16 Jul 2014 18:43:43 +0000")
+Message-ID: <yq138e1rtzz.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7711fe4fc2606712125cff1a55ce00df2ae0f1fb
-Gitweb:     http://git.kernel.org/tip/7711fe4fc2606712125cff1a55ce00df2ae0f1fb
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Mon, 30 Jun 2014 16:46:24 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:18:41 +0200
+>>>>> "Rob" == Elliott, Robert (Server Storage) <Elliott@hp.com> writes:
 
-perf/x86/intel/uncore: Fix SNB-EP/IVT Cbox filter mappings
+Rob> WRITE SAME with the UNMAP bit set to one (and a few other
+Rob> conditions) guarantees that the data is zeroed out, while the UNMAP
+Rob> command is just a hint.  They're not fully interchangeable.  Which
+Rob> semantics are implied by REQ_DISCARD and these functions?
 
-This patch fixes the SNB-EP and IVT Cbox filter mapping
-table. The table controls which filters are supported by
-which events. There were several mistakes in those tables
-causing some filters to be ignored, such as NID on
-TOR_INSERTS.
+Voluntary deprovisioning of a block range.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: zheng.z.yan@intel.com
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140630144624.GA2604@quad
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+Rob> One benefit of UNMAP is that UNMAP supports a list of discontiguous
+Rob> LBA ranges, whereas WRITE SAME just supports one LBA range.
+Rob> sd_setup_discard_cmnd is not taking advantage of this feature,
+Rob> though.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 65bbbea..ae6552a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -550,16 +550,16 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
--	SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xc),
--	SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xc),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xa),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xa),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4435, 0xffff, 0x2),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4835, 0xffff, 0x2),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4a35, 0xffff, 0x2),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x5035, 0xffff, 0x2),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x8),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x8),
--	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xc),
--	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xc),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xa),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xa),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4436, 0xffff, 0x2),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4836, 0xffff, 0x2),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4a36, 0xffff, 0x2),
-@@ -1222,6 +1222,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
- 	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
- 				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
-+
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
-@@ -1245,7 +1246,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x8335, 0xffff, 0x10),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x10),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x10),
--	SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x2136, 0xffff, 0x10),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0x18),
- 	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0x18),
+The block layer can only describe one contiguous block range in a
+request. My copy offload patches introduces the bi_special field that
+allows us to attach additional information to an I/O. I have
+experimented with doing that for discards to overcome the suck of DSM
+TRIM. Splitting and merging requests in MD/DM gets much more cumbersome,
+though.
+
+Rob> Ideally, the block layer would merge multiple discards into one
+Rob> UNMAP command if they're stuck on the request queue for a while,
+Rob> like it merges adjacent reads and writes. 
+
+We support merging contiguous smaller discard requests.
+
+We did discuss having a (separate) I/O scheduler to coalesce
+discontiguous discard requests. However, the attempts at this turned out
+to be pretty hideous.
+
+It also wasn't evident that it was worth the hassle. While UNMAP allows
+us to express large regions, DSM TRIM on the SATA side is limited to 32
+MB per range. So in many cases we end up maxing out the payload capacity
+even with a single contiguous range.
+
+We expect LBP SCSI devices to queue commands. Being able to express
+multiple ranges in one shot is less critical in that case.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
