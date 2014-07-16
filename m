@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaGPT2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:28:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44446 "EHLO
+	id S1751607AbaGPT2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:28:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44472 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965771AbaGPTW5 (ORCPT
+	with ESMTP id S965777AbaGPTXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:22:57 -0400
-Date: Wed, 16 Jul 2014 12:21:45 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-fbe26abe118ee1262b4ab0d12fefd42647eaea35@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, acme@kernel.org, namhyung@kernel.org,
-        luto@amacapital.net, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        namhyung@kernel.org, luto@amacapital.net, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
-References: <1405353439-14211-1-git-send-email-jolsa@kernel.org>
+	Wed, 16 Jul 2014 15:23:02 -0400
+Date: Wed, 16 Jul 2014 12:22:10 -0700
+From: tip-bot for Mateusz Guzik <tipbot@zytor.com>
+Message-ID: <tip-b0ab99e7736af88b8ac1b7ae50ea287fffa2badc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, mguzik@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, mguzik@redhat.com
+In-Reply-To: <1402750809-31991-1-git-send-email-mguzik@redhat.com>
+References: <1402750809-31991-1-git-send-email-mguzik@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Add vm_ops->
- name call for mmap event name retrieval
-Git-Commit-ID: fbe26abe118ee1262b4ab0d12fefd42647eaea35
+Subject: [tip:sched/urgent] sched: Fix possible divide by zero in avg_atom
+ () calculation
+Git-Commit-ID: b0ab99e7736af88b8ac1b7ae50ea287fffa2badc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,65 +34,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fbe26abe118ee1262b4ab0d12fefd42647eaea35
-Gitweb:     http://git.kernel.org/tip/fbe26abe118ee1262b4ab0d12fefd42647eaea35
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 14 Jul 2014 17:57:19 +0200
+Commit-ID:  b0ab99e7736af88b8ac1b7ae50ea287fffa2badc
+Gitweb:     http://git.kernel.org/tip/b0ab99e7736af88b8ac1b7ae50ea287fffa2badc
+Author:     Mateusz Guzik <mguzik@redhat.com>
+AuthorDate: Sat, 14 Jun 2014 15:00:09 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:31:22 +0200
+CommitDate: Wed, 16 Jul 2014 13:36:07 +0200
 
-perf: Add vm_ops->name call for mmap event name retrieval
+sched: Fix possible divide by zero in avg_atom() calculation
 
-The following patch added another way to get mmap name: 78d683e838a6
-("mm, fs: Add vm_ops->name as an alternative to arch_vma_name")
+proc_sched_show_task() does:
 
-The vdso vma mapping already switch to this and we no longer get vdso
-name via arch_vma_name function. Adding this way to the perf mmap
-event name retrieval code.
+  if (nr_switches)
+	do_div(avg_atom, nr_switches);
 
-Caught this via perf test:
+nr_switches is unsigned long and do_div truncates it to 32 bits, which
+means it can test non-zero on e.g. x86-64 and be truncated to zero for
+division.
 
-  $ sudo ./perf test -v 7
-   7: Validate PERF_RECORD_* events & perf_sample fields     :
-  --- start ---
+Fix the problem by using div64_ul() instead.
 
-SNIP
+As a side effect calculations of avg_atom for big nr_switches are now correct.
 
-  PERF_RECORD_MMAP for [vdso] missing!
-  test child finished with 255
-  ---- end ----
-  Validate PERF_RECORD_* events & perf_sample fields: FAILED!
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: stable@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1405353439-14211-1-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1402750809-31991-1-git-send-email-mguzik@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/sched/debug.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 67e3b9c..4799676 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5266,6 +5266,12 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 695f977..627b3c3 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -608,7 +608,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
  
- 		goto got_name;
- 	} else {
-+		if (vma->vm_ops && vma->vm_ops->name) {
-+			name = (char *) vma->vm_ops->name(vma);
-+			if (name)
-+				goto cpy_name;
-+		}
-+
- 		name = (char *)arch_vma_name(vma);
- 		if (name)
- 			goto cpy_name;
+ 		avg_atom = p->se.sum_exec_runtime;
+ 		if (nr_switches)
+-			do_div(avg_atom, nr_switches);
++			avg_atom = div64_ul(avg_atom, nr_switches);
+ 		else
+ 			avg_atom = -1LL;
+ 
