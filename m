@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965817AbaGPSFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:05:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22971 "EHLO mx1.redhat.com"
+	id S965832AbaGPSFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:05:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33231 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965736AbaGPSF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965791AbaGPSF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jul 2014 14:05:27 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
         Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
         linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 19/23] pmcraid: Get rid of a redundant assignment
-Date: Wed, 16 Jul 2014 20:05:23 +0200
-Message-Id: <d37c53e35c578fd819d1faad176b109f8d397855.1405533479.git.agordeev@redhat.com>
+Subject: [PATCH v2 RESEND 20/23] pmcraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Wed, 16 Jul 2014 20:05:24 +0200
+Message-Id: <0d3b343a9a1e2146add1dcf51791c4e5914d5612.1405533479.git.agordeev@redhat.com>
 In-Reply-To: <cover.1405533479.git.agordeev@redhat.com>
 References: <cover.1405533479.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
+
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 Cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/scsi/pmcraid.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/scsi/pmcraid.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
-index be8ce54..c06af7f 100644
+index c06af7f..6d0f208 100644
 --- a/drivers/scsi/pmcraid.c
 +++ b/drivers/scsi/pmcraid.c
-@@ -4746,7 +4746,6 @@ pmcraid_isr_legacy:
- 	pinstance->hrrq_vector[0].drv_inst = pinstance;
- 	pinstance->hrrq_vector[0].vector = pdev->irq;
- 	pinstance->num_hrrq = 1;
--	rc = 0;
+@@ -4698,19 +4698,10 @@ pmcraid_register_interrupt_handler(struct pmcraid_instance *pinstance)
+ 		for (i = 0; i < PMCRAID_NUM_MSIX_VECTORS; i++)
+ 			entries[i].entry = i;
  
- 	rc = request_irq(pdev->irq, pmcraid_isr, IRQF_SHARED,
- 			 PMCRAID_DRIVER_NAME, &pinstance->hrrq_vector[0]);
+-		rc = pci_enable_msix(pdev, entries, num_hrrq);
+-		if (rc < 0)
++		num_hrrq = pci_enable_msix_range(pdev, entries, 1, num_hrrq);
++		if (num_hrrq < 0)
+ 			goto pmcraid_isr_legacy;
+ 
+-		/* Check how many MSIX vectors are allocated and register
+-		 * msi-x handlers for each of them giving appropriate buffer
+-		 */
+-		if (rc > 0) {
+-			num_hrrq = rc;
+-			if (pci_enable_msix(pdev, entries, num_hrrq))
+-				goto pmcraid_isr_legacy;
+-		}
+-
+ 		for (i = 0; i < num_hrrq; i++) {
+ 			pinstance->hrrq_vector[i].hrrq_id = i;
+ 			pinstance->hrrq_vector[i].drv_inst = pinstance;
 -- 
 1.7.7.6
 
