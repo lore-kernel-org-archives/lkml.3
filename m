@@ -1,37 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750998AbaGPT0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:26:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44679 "EHLO
+	id S1030524AbaGPT0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:26:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44670 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbaGPT0d (ORCPT
+	with ESMTP id S1030382AbaGPT0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:26:33 -0400
-Date: Wed, 16 Jul 2014 12:24:31 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-4badad352a6bb202ec68afa7a574c0bb961e5ebc@git.kernel.org>
-Cc: mingo@kernel.org, catalin.marinas@arm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, cmetcalf@tilera.com, jason.low2@hp.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, dave.anglin@bell.net,
-        James.Bottomley@hansenpartnership.com, will.deacon@arm.com,
-        waiman.long@hp.com, james.hogan@imgtec.com, mpatocka@redhat.com,
-        davem@davemloft.net, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, vgupta@synopsys.com, jejb@parisc-linux.org
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        catalin.marinas@arm.com, peterz@infradead.org, cmetcalf@tilera.com,
-        jason.low2@hp.com, linux@arm.linux.org.uk, tglx@linutronix.de,
-        davidlohr@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        dave.anglin@bell.net, James.Bottomley@hansenpartnership.com,
-        will.deacon@arm.com, waiman.long@hp.com, james.hogan@imgtec.com,
-        mpatocka@redhat.com, davem@davemloft.net, paulmck@linux.vnet.ibm.com,
-        vgupta@synopsys.com, benh@kernel.crashing.org, jejb@parisc-linux.org
-In-Reply-To: <20140606175316.GV13930@laptop.programming.kicks-ass.net>
-References: <20140606175316.GV13930@laptop.programming.kicks-ass.net>
+	Wed, 16 Jul 2014 15:26:17 -0400
+Date: Wed, 16 Jul 2014 12:25:18 -0700
+From: tip-bot for NeilBrown <tipbot@zytor.com>
+Message-ID: <tip-c1221321b7c25b53204447cff9949a6d5a7ddddc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, sfrench@samba.org,
+        swhiteho@redhat.com, dhowells@redhat.com, neilb@suse.de,
+        tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, sfrench@samba.org,
+        swhiteho@redhat.com, dhowells@redhat.com, neilb@suse.de,
+        oleg@redhat.com, tglx@linutronix.de
+In-Reply-To: <20140707051604.28027.41257.stgit@notabene.brown>
+References: <20140707051604.28027.41257.stgit@notabene.brown>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] locking/mutex:
-  Disable optimistic spinning on some architectures
-Git-Commit-ID: 4badad352a6bb202ec68afa7a574c0bb961e5ebc
+Subject: [tip:sched/core] sched: Allow wait_on_bit_action()
+  functions to support a timeout
+Git-Commit-ID: c1221321b7c25b53204447cff9949a6d5a7ddddc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -44,133 +36,310 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4badad352a6bb202ec68afa7a574c0bb961e5ebc
-Gitweb:     http://git.kernel.org/tip/4badad352a6bb202ec68afa7a574c0bb961e5ebc
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 6 Jun 2014 19:53:16 +0200
+Commit-ID:  c1221321b7c25b53204447cff9949a6d5a7ddddc
+Gitweb:     http://git.kernel.org/tip/c1221321b7c25b53204447cff9949a6d5a7ddddc
+Author:     NeilBrown <neilb@suse.de>
+AuthorDate: Mon, 7 Jul 2014 15:16:04 +1000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 14:57:07 +0200
+CommitDate: Wed, 16 Jul 2014 15:10:41 +0200
 
-locking/mutex: Disable optimistic spinning on some architectures
+sched: Allow wait_on_bit_action() functions to support a timeout
 
-The optimistic spin code assumes regular stores and cmpxchg() play nice;
-this is found to not be true for at least: parisc, sparc32, tile32,
-metag-lock1, arc-!llsc and hexagon.
+It is currently not possible for various wait_on_bit functions
+to implement a timeout.
 
-There is further wreckage, but this in particular seemed easy to
-trigger, so blacklist this.
+While the "action" function that is called to do the waiting
+could certainly use schedule_timeout(), there is no way to carry
+forward the remaining timeout after a false wake-up.
+As false-wakeups a clearly possible at least due to possible
+hash collisions in bit_waitqueue(), this is a real problem.
 
-Opt in for known good archs.
+The 'action' function is currently passed a pointer to the word
+containing the bit being waited on.  No current action functions
+use this pointer.  So changing it to something else will be a
+little noisy but will have no immediate effect.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Waiman Long <waiman.long@hp.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John David Anglin <dave.anglin@bell.net>
-Cc: James Hogan <james.hogan@imgtec.com>
+This patch changes the 'action' function to take a pointer to
+the "struct wait_bit_key", which contains a pointer to the word
+containing the bit so nothing is really lost.
+
+It also adds a 'private' field to "struct wait_bit_key", which
+is initialized to zero.
+
+An action function can now implement a timeout with something
+like
+
+static int timed_out_waiter(struct wait_bit_key *key)
+{
+	unsigned long waited;
+	if (key->private == 0) {
+		key->private = jiffies;
+		if (key->private == 0)
+			key->private -= 1;
+	}
+	waited = jiffies - key->private;
+	if (waited > 10 * HZ)
+		return -EAGAIN;
+	schedule_timeout(waited - 10 * HZ);
+	return 0;
+}
+
+If any other need for context in a waiter were found it would be
+easy to use ->private for some other purpose, or even extend
+"struct wait_bit_key".
+
+My particular need is to support timeouts in nfs_release_page()
+to avoid deadlocks with loopback mounted NFS.
+
+While wait_on_bit_timeout() would be a cleaner interface, it
+will not meet my need.  I need the timeout to be sensitive to
+the state of the connection with the server, which could change.
+ So I need to use an 'action' interface.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Steve French <sfrench@samba.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: stable@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: sparclinux@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
+Link: http://lkml.kernel.org/r/20140707051604.28027.41257.stgit@notabene.brown
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/arm/Kconfig     | 1 +
- arch/arm64/Kconfig   | 1 +
- arch/powerpc/Kconfig | 1 +
- arch/sparc/Kconfig   | 1 +
- arch/x86/Kconfig     | 1 +
- kernel/Kconfig.locks | 5 ++++-
- 6 files changed, 9 insertions(+), 1 deletion(-)
+ fs/cifs/inode.c              |  2 +-
+ fs/nfs/inode.c               |  2 +-
+ fs/nfs/internal.h            |  2 +-
+ fs/nfs/pagelist.c            |  2 +-
+ include/linux/sunrpc/sched.h |  2 +-
+ include/linux/wait.h         | 18 ++++++++++--------
+ kernel/sched/wait.c          | 16 ++++++++--------
+ net/sunrpc/sched.c           |  4 ++--
+ 8 files changed, 25 insertions(+), 23 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 245058b..88acf8b 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -6,6 +6,7 @@ config ARM
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select ARCH_MIGHT_HAVE_PC_PARPORT
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_USE_BUILTIN_BSWAP
- 	select ARCH_USE_CMPXCHG_LOCKREF
- 	select ARCH_WANT_IPC_PARSE_VERSION
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index a474de34..839f48c 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -4,6 +4,7 @@ config ARM64
- 	select ARCH_HAS_OPP
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_USE_CMPXCHG_LOCKREF
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- 	select ARCH_WANT_FRAME_POINTERS
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index fefe7c8..80b94b0 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -145,6 +145,7 @@ config PPC
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
- 	select ARCH_USE_CMPXCHG_LOCKREF if PPC64
- 	select HAVE_ARCH_AUDITSYSCALL
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 213c458..41de393 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -1780,7 +1780,7 @@ cifs_invalidate_mapping(struct inode *inode)
+  * @word: long word containing the bit lock
+  */
+ static int
+-cifs_wait_bit_killable(void *word)
++cifs_wait_bit_killable(struct wait_bit_key *key)
+ {
+ 	if (fatal_signal_pending(current))
+ 		return -ERESTARTSYS;
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index b7b710e..abd37a3 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -75,7 +75,7 @@ nfs_fattr_to_ino_t(struct nfs_fattr *fattr)
+  * nfs_wait_bit_killable - helper for functions that are sleeping on bit locks
+  * @word: long word containing the bit lock
+  */
+-int nfs_wait_bit_killable(void *word)
++int nfs_wait_bit_killable(struct wait_bit_key *key)
+ {
+ 	if (fatal_signal_pending(current))
+ 		return -ERESTARTSYS;
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index 82ddbf4..e0193d6 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -347,7 +347,7 @@ extern int nfs_drop_inode(struct inode *);
+ extern void nfs_clear_inode(struct inode *);
+ extern void nfs_evict_inode(struct inode *);
+ void nfs_zap_acl_cache(struct inode *inode);
+-extern int nfs_wait_bit_killable(void *word);
++extern int nfs_wait_bit_killable(struct wait_bit_key *key);
  
- config GENERIC_CSUM
- 	def_bool CPU_LITTLE_ENDIAN
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 29f2e98..407c87d 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -78,6 +78,7 @@ config SPARC64
- 	select HAVE_C_RECORDMCOUNT
- 	select NO_BOOTMEM
- 	select HAVE_ARCH_AUDITSYSCALL
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+ /* super.c */
+ extern const struct super_operations nfs_sops;
+diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+index 6104d35..745a612d 100644
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -117,7 +117,7 @@ __nfs_iocounter_wait(struct nfs_io_counter *c)
+ 		set_bit(NFS_IO_INPROGRESS, &c->flags);
+ 		if (atomic_read(&c->io_count) == 0)
+ 			break;
+-		ret = nfs_wait_bit_killable(&c->flags);
++		ret = nfs_wait_bit_killable(&q.key);
+ 	} while (atomic_read(&c->io_count) != 0);
+ 	finish_wait(wq, &q.wait);
+ 	return ret;
+diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
+index ad7dbe2..1a89599 100644
+--- a/include/linux/sunrpc/sched.h
++++ b/include/linux/sunrpc/sched.h
+@@ -236,7 +236,7 @@ void *		rpc_malloc(struct rpc_task *, size_t);
+ void		rpc_free(void *);
+ int		rpciod_up(void);
+ void		rpciod_down(void);
+-int		__rpc_wait_for_completion_task(struct rpc_task *task, int (*)(void *));
++int		__rpc_wait_for_completion_task(struct rpc_task *task, wait_bit_action_f *);
+ #ifdef RPC_DEBUG
+ struct net;
+ void		rpc_show_tasks(struct net *);
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 73960ff..6fb1ba5 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -25,6 +25,7 @@ struct wait_bit_key {
+ 	void			*flags;
+ 	int			bit_nr;
+ #define WAIT_ATOMIC_T_BIT_NR	-1
++	unsigned long		private;
+ };
  
- config ARCH_DEFCONFIG
- 	string
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a8f749e..d24887b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -131,6 +131,7 @@ config X86
- 	select HAVE_CC_STACKPROTECTOR
- 	select GENERIC_CPU_AUTOPROBE
- 	select HAVE_ARCH_AUDITSYSCALL
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+ struct wait_bit_queue {
+@@ -141,18 +142,19 @@ __remove_wait_queue(wait_queue_head_t *head, wait_queue_t *old)
+ 	list_del(&old->task_list);
+ }
  
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index 35536d9..8190794 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -220,9 +220,12 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
++typedef int wait_bit_action_f(struct wait_bit_key *);
+ void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
+ void __wake_up_locked_key(wait_queue_head_t *q, unsigned int mode, void *key);
+ void __wake_up_sync_key(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
+ void __wake_up_locked(wait_queue_head_t *q, unsigned int mode, int nr);
+ void __wake_up_sync(wait_queue_head_t *q, unsigned int mode, int nr);
+ void __wake_up_bit(wait_queue_head_t *, void *, int);
+-int __wait_on_bit(wait_queue_head_t *, struct wait_bit_queue *, int (*)(void *), unsigned);
+-int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, int (*)(void *), unsigned);
++int __wait_on_bit(wait_queue_head_t *, struct wait_bit_queue *, wait_bit_action_f *, unsigned);
++int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, wait_bit_action_f *, unsigned);
+ void wake_up_bit(void *, int);
+ void wake_up_atomic_t(atomic_t *);
+-int out_of_line_wait_on_bit(void *, int, int (*)(void *), unsigned);
+-int out_of_line_wait_on_bit_lock(void *, int, int (*)(void *), unsigned);
++int out_of_line_wait_on_bit(void *, int, wait_bit_action_f *, unsigned);
++int out_of_line_wait_on_bit_lock(void *, int, wait_bit_action_f *, unsigned);
+ int out_of_line_wait_on_atomic_t(atomic_t *, int (*)(atomic_t *), unsigned);
+ wait_queue_head_t *bit_waitqueue(void *, int);
  
- endif
+@@ -855,8 +857,8 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
+ 	} while (0)
  
-+config ARCH_SUPPORTS_ATOMIC_RMW
-+	bool
-+
- config MUTEX_SPIN_ON_OWNER
- 	def_bool y
--	depends on SMP && !DEBUG_MUTEXES
-+	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
  
- config ARCH_USE_QUEUE_RWLOCK
- 	bool
+-extern int bit_wait(void *);
+-extern int bit_wait_io(void *);
++extern int bit_wait(struct wait_bit_key *);
++extern int bit_wait_io(struct wait_bit_key *);
+ 
+ /**
+  * wait_on_bit - wait for a bit to be cleared
+@@ -925,7 +927,7 @@ wait_on_bit_io(void *word, int bit, unsigned mode)
+  * on that signal.
+  */
+ static inline int
+-wait_on_bit_action(void *word, int bit, int (*action)(void *), unsigned mode)
++wait_on_bit_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
+ {
+ 	if (!test_bit(bit, word))
+ 		return 0;
+@@ -1000,7 +1002,7 @@ wait_on_bit_lock_io(void *word, int bit, unsigned mode)
+  * the @mode allows that signal to wake the process.
+  */
+ static inline int
+-wait_on_bit_lock_action(void *word, int bit, int (*action)(void *), unsigned mode)
++wait_on_bit_lock_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
+ {
+ 	if (!test_and_set_bit(bit, word))
+ 		return 0;
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index a104879..15cab1a 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -319,14 +319,14 @@ EXPORT_SYMBOL(wake_bit_function);
+  */
+ int __sched
+ __wait_on_bit(wait_queue_head_t *wq, struct wait_bit_queue *q,
+-			int (*action)(void *), unsigned mode)
++	      wait_bit_action_f *action, unsigned mode)
+ {
+ 	int ret = 0;
+ 
+ 	do {
+ 		prepare_to_wait(wq, &q->wait, mode);
+ 		if (test_bit(q->key.bit_nr, q->key.flags))
+-			ret = (*action)(q->key.flags);
++			ret = (*action)(&q->key);
+ 	} while (test_bit(q->key.bit_nr, q->key.flags) && !ret);
+ 	finish_wait(wq, &q->wait);
+ 	return ret;
+@@ -334,7 +334,7 @@ __wait_on_bit(wait_queue_head_t *wq, struct wait_bit_queue *q,
+ EXPORT_SYMBOL(__wait_on_bit);
+ 
+ int __sched out_of_line_wait_on_bit(void *word, int bit,
+-					int (*action)(void *), unsigned mode)
++				    wait_bit_action_f *action, unsigned mode)
+ {
+ 	wait_queue_head_t *wq = bit_waitqueue(word, bit);
+ 	DEFINE_WAIT_BIT(wait, word, bit);
+@@ -345,7 +345,7 @@ EXPORT_SYMBOL(out_of_line_wait_on_bit);
+ 
+ int __sched
+ __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
+-			int (*action)(void *), unsigned mode)
++			wait_bit_action_f *action, unsigned mode)
+ {
+ 	do {
+ 		int ret;
+@@ -353,7 +353,7 @@ __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
+ 		prepare_to_wait_exclusive(wq, &q->wait, mode);
+ 		if (!test_bit(q->key.bit_nr, q->key.flags))
+ 			continue;
+-		ret = action(q->key.flags);
++		ret = action(&q->key);
+ 		if (!ret)
+ 			continue;
+ 		abort_exclusive_wait(wq, &q->wait, mode, &q->key);
+@@ -365,7 +365,7 @@ __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
+ EXPORT_SYMBOL(__wait_on_bit_lock);
+ 
+ int __sched out_of_line_wait_on_bit_lock(void *word, int bit,
+-					int (*action)(void *), unsigned mode)
++					 wait_bit_action_f *action, unsigned mode)
+ {
+ 	wait_queue_head_t *wq = bit_waitqueue(word, bit);
+ 	DEFINE_WAIT_BIT(wait, word, bit);
+@@ -503,7 +503,7 @@ void wake_up_atomic_t(atomic_t *p)
+ }
+ EXPORT_SYMBOL(wake_up_atomic_t);
+ 
+-__sched int bit_wait(void *word)
++__sched int bit_wait(struct wait_bit_key *word)
+ {
+ 	if (signal_pending_state(current->state, current))
+ 		return 1;
+@@ -512,7 +512,7 @@ __sched int bit_wait(void *word)
+ }
+ EXPORT_SYMBOL(bit_wait);
+ 
+-__sched int bit_wait_io(void *word)
++__sched int bit_wait_io(struct wait_bit_key *word)
+ {
+ 	if (signal_pending_state(current->state, current))
+ 		return 1;
+diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+index c0365c1..9358c79 100644
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -250,7 +250,7 @@ void rpc_destroy_wait_queue(struct rpc_wait_queue *queue)
+ }
+ EXPORT_SYMBOL_GPL(rpc_destroy_wait_queue);
+ 
+-static int rpc_wait_bit_killable(void *word)
++static int rpc_wait_bit_killable(struct wait_bit_key *key)
+ {
+ 	if (fatal_signal_pending(current))
+ 		return -ERESTARTSYS;
+@@ -309,7 +309,7 @@ static int rpc_complete_task(struct rpc_task *task)
+  * to enforce taking of the wq->lock and hence avoid races with
+  * rpc_complete_task().
+  */
+-int __rpc_wait_for_completion_task(struct rpc_task *task, int (*action)(void *))
++int __rpc_wait_for_completion_task(struct rpc_task *task, wait_bit_action_f *action)
+ {
+ 	if (action == NULL)
+ 		action = rpc_wait_bit_killable;
