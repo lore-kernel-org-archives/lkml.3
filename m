@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965946AbaGPSIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:08:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12583 "EHLO mx1.redhat.com"
+	id S934780AbaGPSOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:14:51 -0400
+Received: from ring0.de ([5.45.105.125]:40577 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965683AbaGPSFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:05:05 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, iss_storagedev@hp.com,
-        intel-linux-scu@intel.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
-        qla2xxx-upstream@qlogic.com, iscsi-driver@qlogic.com,
-        pv-drivers@vmware.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 00/23] scsi: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Wed, 16 Jul 2014 20:05:04 +0200
-Message-Id: <cover.1405533479.git.agordeev@redhat.com>
+	id S932418AbaGPSOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:14:49 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	*  0.8 BAYES_50 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 40-60%
+	*      [score: 0.4580]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCHv2] MAINTAINERS: power_supply: update maintainership
+Date: Wed, 16 Jul 2014 20:14:30 +0200
+Message-Id: <1405534470-7888-1-git-send-email-sre@kernel.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1402759929-15418-1-git-send-email-sre@kernel.org>
+References: <1402759929-15418-1-git-send-email-sre@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Take over maintanence for orphaned power supply subsystem
+and assign linux-pm@vger.kernel.org as mailing list.
 
-This is a series of mostly trivial patches. Once accepted,
-we could phase out pci_enable_msix() interface.
+Signed-off-by: Sebastian Reichel <sre@kernel.org>
+---
+Changes since PATCHv1 [0]:
+ * Add linux-pm@vger.kernel.org as mailing list for
+   the power supply subsystem
+ * Do not change the git tree
+   (I will get access to the tree on infradead.org)
+ * Do not remove existing maintainers
+   (So that they can can take over again when they return)
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+[0] https://lkml.org/lkml/2014/6/14/89
+---
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks!
-
-Cc: iss_storagedev@hp.com
-Cc: intel-linux-scu@intel.com
-Cc: support@lsi.com
-Cc: DL-MPTFusionLinux@lsi.com
-Cc: qla2xxx-upstream@qlogic.com
-Cc: iscsi-driver@qlogic.com
-Cc: pv-drivers@vmware.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
-
-Alexander Gordeev (23):
-  be2iscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  bfa: Do not call pci_enable_msix() after it failed once
-  bfa: Cleanup bfad_setup_intr() function
-  bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  csiostor: Remove superfluous call to pci_disable_msix()
-  csiostor: Use pci_enable_msix_range() instead of pci_enable_msix()
-  fnic: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  hpsa: Fallback to MSI rather than to INTx if MSI-X failed
-  hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
-  isci: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  lpfc: Remove superfluous call to pci_disable_msix()
-  lpfc: Use pci_enable_msix_range() instead of pci_enable_msix()
-  megaraid: Fail resume if MSI-X re-initialization failed
-  megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
-  mpt2sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  mpt3sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  pm8001: Fix invalid return when request_irq() failed
-  pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  pmcraid: Get rid of a redundant assignment
-  pmcraid: Use pci_enable_msix_range() instead of pci_enable_msix()
-  qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
-  qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
-  vmw_pvscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
-
- drivers/scsi/be2iscsi/be_main.c           |    6 +--
- drivers/scsi/bfa/bfad.c                   |   62 ++++++++++++-----------------
- drivers/scsi/csiostor/csio_hw.h           |    2 +-
- drivers/scsi/csiostor/csio_isr.c          |   24 ++++-------
- drivers/scsi/fnic/fnic_isr.c              |    4 +-
- drivers/scsi/hpsa.c                       |   28 ++++++-------
- drivers/scsi/isci/init.c                  |    2 +-
- drivers/scsi/lpfc/lpfc_init.c             |   47 +++++++++++-----------
- drivers/scsi/megaraid/megaraid_sas_base.c |   24 +++++------
- drivers/scsi/mpt2sas/mpt2sas_base.c       |    6 +-
- drivers/scsi/mpt3sas/mpt3sas_base.c       |    4 +-
- drivers/scsi/pm8001/pm8001_init.c         |   44 +++++++++++----------
- drivers/scsi/pmcraid.c                    |   14 +------
- drivers/scsi/qla2xxx/qla_isr.c            |   27 +++++-------
- drivers/scsi/qla4xxx/ql4_nx.c             |    2 +-
- drivers/scsi/vmw_pvscsi.c                 |    2 +-
- 16 files changed, 128 insertions(+), 170 deletions(-)
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6c484ac..14e227b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6928,8 +6928,10 @@ F:	include/linux/timer*
+ F:	kernel/*timer*
+ 
+ POWER SUPPLY CLASS/SUBSYSTEM and DRIVERS
++M:	Sebastian Reichel <sre@kernel.org>
+ M:	Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+ M:	David Woodhouse <dwmw2@infradead.org>
++L:	linux-pm@vger.kernel.org
+ T:	git git://git.infradead.org/battery-2.6.git
+ S:	Maintained
+ F:	include/linux/power_supply.h
 -- 
-1.7.7.6
+2.0.1
 
