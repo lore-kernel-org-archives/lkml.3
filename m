@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965549AbaGPPwy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:52:54 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:6092 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965166AbaGPPvv (ORCPT
+	id S965565AbaGPPw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:52:59 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:35364 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965166AbaGPPwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:51:51 -0400
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-To: <ralf@linux-mips.org>, <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        <m.szyprowski@samsung.com>, <mina86@mina86.com>
-CC: <x86@kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <linux-arch@vger.kernel.org>
-Subject: [PATCH 2/4] arm64: use generic dma-contiguous.h
-Date: Wed, 16 Jul 2014 16:51:30 +0100
-Message-ID: <1405525892-60383-3-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.89]
+	Wed, 16 Jul 2014 11:52:55 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, x86@kernel.org,
+        qemu-devel@nongnu.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH qemu] i386,linux-headers: Add support for kvm_get_rng_seed
+Date: Wed, 16 Jul 2014 08:52:50 -0700
+Message-Id: <3b8cd70724017ab9604f1c34644df75549e61846.1405525932.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma-contiguous.h is now in asm-generic. Use that to avoid code
-repetition in arm64.
+This updates x86's kvm_para.h for the feature bit definition and
+target-i386/cpu.c for the feature name and default.
 
-Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/arm64/include/asm/Kbuild           |  1 +
- arch/arm64/include/asm/dma-contiguous.h | 28 ----------------------------
- 2 files changed, 1 insertion(+), 28 deletions(-)
- delete mode 100644 arch/arm64/include/asm/dma-contiguous.h
+ linux-headers/asm-x86/kvm_para.h | 2 ++
+ target-i386/cpu.c                | 5 +++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index 0b3fcf8..92bf7cb 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -9,6 +9,7 @@ generic-y += current.h
- generic-y += delay.h
- generic-y += div64.h
- generic-y += dma.h
-+generic-y += dma-contiguous.h
- generic-y += emergency-restart.h
- generic-y += early_ioremap.h
- generic-y += errno.h
-diff --git a/arch/arm64/include/asm/dma-contiguous.h b/arch/arm64/include/asm/dma-contiguous.h
-deleted file mode 100644
-index 14c4c0c..0000000
---- a/arch/arm64/include/asm/dma-contiguous.h
-+++ /dev/null
-@@ -1,28 +0,0 @@
--/*
-- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#ifndef _ASM_DMA_CONTIGUOUS_H
--#define _ASM_DMA_CONTIGUOUS_H
--
--#ifdef __KERNEL__
--#ifdef CONFIG_DMA_CMA
--
--#include <linux/types.h>
--
--static inline void
--dma_contiguous_early_fixup(phys_addr_t base, unsigned long size) { }
--
--#endif
--#endif
--
--#endif
+diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
+index e41c5c1..a9b27ce 100644
+--- a/linux-headers/asm-x86/kvm_para.h
++++ b/linux-headers/asm-x86/kvm_para.h
+@@ -24,6 +24,7 @@
+ #define KVM_FEATURE_STEAL_TIME		5
+ #define KVM_FEATURE_PV_EOI		6
+ #define KVM_FEATURE_PV_UNHALT		7
++#define KVM_FEATURE_GET_RNG_SEED	8
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+@@ -40,6 +41,7 @@
+ #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+ #define MSR_KVM_STEAL_TIME  0x4b564d03
+ #define MSR_KVM_PV_EOI_EN      0x4b564d04
++#define MSR_KVM_GET_RNG_SEED 0x4b564d05
+ 
+ struct kvm_steal_time {
+ 	__u64 steal;
+diff --git a/target-i386/cpu.c b/target-i386/cpu.c
+index 8fd1497..4ea7e6c 100644
+--- a/target-i386/cpu.c
++++ b/target-i386/cpu.c
+@@ -236,7 +236,7 @@ static const char *ext4_feature_name[] = {
+ static const char *kvm_feature_name[] = {
+     "kvmclock", "kvm_nopiodelay", "kvm_mmu", "kvmclock",
+     "kvm_asyncpf", "kvm_steal_time", "kvm_pv_eoi", "kvm_pv_unhalt",
+-    NULL, NULL, NULL, NULL,
++    "kvm_get_rng_seed", NULL, NULL, NULL,
+     NULL, NULL, NULL, NULL,
+     NULL, NULL, NULL, NULL,
+     NULL, NULL, NULL, NULL,
+@@ -368,7 +368,8 @@ static uint32_t kvm_default_features[FEATURE_WORDS] = {
+         (1 << KVM_FEATURE_ASYNC_PF) |
+         (1 << KVM_FEATURE_STEAL_TIME) |
+         (1 << KVM_FEATURE_PV_EOI) |
+-        (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT),
++        (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
++        (1 << KVM_FEATURE_GET_RNG_SEED),
+     [FEAT_1_ECX] = CPUID_EXT_X2APIC,
+ };
+ 
 -- 
-1.9.1
+1.9.3
 
