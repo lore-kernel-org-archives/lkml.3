@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000AbaGPIeB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:34:01 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60599 "EHLO
+	id S1760625AbaGPId7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:33:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60606 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754739AbaGPI0L (ORCPT
+	with ESMTP id S1758622AbaGPI0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:26:11 -0400
+	Wed, 16 Jul 2014 04:26:12 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
@@ -18,9 +18,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 03/12] ARM: Berlin: select the reset controller
-Date: Wed, 16 Jul 2014 10:25:57 +0200
-Message-Id: <1405499166-6726-4-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v3 04/12] ARM: dts: berlin: add a required reset property in the chip controller node
+Date: Wed, 16 Jul 2014 10:25:58 +0200
+Message-Id: <1405499166-6726-5-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -31,32 +31,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Marvell Berlin SoCs now has a reset controller. Add the needed
-configuration.
+The chip controller node now also describes the Marvell Berlin reset
+controller. Add the required 'reset-cells' property.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- arch/arm/mach-berlin/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/boot/dts/berlin2.dtsi   | 1 +
+ arch/arm/boot/dts/berlin2cd.dtsi | 1 +
+ arch/arm/boot/dts/berlin2q.dtsi  | 1 +
+ 3 files changed, 3 insertions(+)
 
-diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
-index 2631cfc5ab0d..3a4fd1e41801 100644
---- a/arch/arm/mach-berlin/Kconfig
-+++ b/arch/arm/mach-berlin/Kconfig
-@@ -1,11 +1,13 @@
- menuconfig ARCH_BERLIN
- 	bool "Marvell Berlin SoCs" if ARCH_MULTI_V7
-+	select ARCH_HAS_RESET_CONTROLLER
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_GIC
- 	select GENERIC_IRQ_CHIP
- 	select DW_APB_ICTL
- 	select DW_APB_TIMER_OF
- 	select PINCTRL
-+	select RESET_CONTROLLER
- 
- if ARCH_BERLIN
- 
+diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+index 2477dac4d643..97b12492675e 100644
+--- a/arch/arm/boot/dts/berlin2.dtsi
++++ b/arch/arm/boot/dts/berlin2.dtsi
+@@ -243,6 +243,7 @@
+ 		chip: chip-control@ea0000 {
+ 			compatible = "marvell,berlin2-chip-ctrl";
+ 			#clock-cells = <1>;
++			#reset-cells = <2>;
+ 			reg = <0xea0000 0x400>;
+ 			clocks = <&refclk>;
+ 			clock-names = "refclk";
+diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
+index cc1df65da504..68f7032b4686 100644
+--- a/arch/arm/boot/dts/berlin2cd.dtsi
++++ b/arch/arm/boot/dts/berlin2cd.dtsi
+@@ -231,6 +231,7 @@
+ 		chip: chip-control@ea0000 {
+ 			compatible = "marvell,berlin2cd-chip-ctrl";
+ 			#clock-cells = <1>;
++			#reset-cells = <2>;
+ 			reg = <0xea0000 0x400>;
+ 			clocks = <&refclk>;
+ 			clock-names = "refclk";
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 635a16a64cb4..a6f7ec325200 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -298,6 +298,7 @@
+ 		chip: chip-control@ea0000 {
+ 			compatible = "marvell,berlin2q-chip-ctrl";
+ 			#clock-cells = <1>;
++			#reset-cells = <2>;
+ 			reg = <0xea0000 0x400>, <0xdd0170 0x10>;
+ 			clocks = <&refclk>;
+ 			clock-names = "refclk";
 -- 
 1.9.1
 
