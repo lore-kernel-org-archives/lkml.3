@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052AbaGPFTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 01:19:00 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:50136 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973AbaGPFS5 (ORCPT
+	id S934090AbaGPFZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 01:25:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47582 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973AbaGPFZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 01:18:57 -0400
-From: varkabhadram@gmail.com
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next] netlink: fix in netlink_filter_tap
-Date: Wed, 16 Jul 2014 10:47:24 +0530
-Message-Id: <1405487844-25969-1-git-send-email-varkabhadram@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 16 Jul 2014 01:25:09 -0400
+Date: Tue, 15 Jul 2014 22:25:06 -0700 (PDT)
+Message-Id: <20140715.222506.441840340242813808.davem@davemloft.net>
+To: varkabhadram@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, varkab@cdac.in
+Subject: Re: [PATCH net-next] netlink: fix in netlink_filter_tap
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1405487844-25969-1-git-send-email-varkabhadram@gmail.com>
+References: <1405487844-25969-1-git-send-email-varkabhadram@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 15 Jul 2014 22:25:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkab@cdac.in>
+From: varkabhadram@gmail.com
+Date: Wed, 16 Jul 2014 10:47:24 +0530
 
-Remove the bool variable 'pass'. Return the true/false directly.
+> From: Varka Bhadram <varkab@cdac.in>
+> 
+> Remove the bool variable 'pass'. Return the true/false directly.
+> 
+> Signed-off-by: Varka Bhadram <varkab@cdac.in>
 
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- net/netlink/af_netlink.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+This doesn't "fix" anything, it's a cleanup.
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index e8c9f97..5dd8193 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -170,7 +170,6 @@ EXPORT_SYMBOL_GPL(netlink_remove_tap);
- static bool netlink_filter_tap(const struct sk_buff *skb)
- {
- 	struct sock *sk = skb->sk;
--	bool pass = false;
- 
- 	/* We take the more conservative approach and
- 	 * whitelist socket protocols that may pass.
-@@ -184,11 +183,10 @@ static bool netlink_filter_tap(const struct sk_buff *skb)
- 	case NETLINK_FIB_LOOKUP:
- 	case NETLINK_NETFILTER:
- 	case NETLINK_GENERIC:
--		pass = true;
--		break;
-+		return true;
- 	}
- 
--	return pass;
-+	return false;
- }
- 
- static int __netlink_deliver_tap_skb(struct sk_buff *skb,
--- 
-1.7.9.5
-
+Please resubmit this with a more correct commit header line and
+commit message.
