@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759395AbaGPHgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:36:17 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:54767 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755AbaGPHgP (ORCPT
+	id S1759365AbaGPHmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:42:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51678 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaGPHmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:36:15 -0400
-Message-ID: <53C62B68.50702@redhat.com>
-Date: Wed, 16 Jul 2014 09:36:08 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 03:42:02 -0400
+Date: Wed, 16 Jul 2014 15:41:21 +0800
+From: Liu Bo <bo.li.liu@oracle.com>
+To: Hugo Mills <hugo-lkml@carfax.org.uk>, Norbert Preining <preining@logic.at>,
+        Btrfs mailing list <linux-btrfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: btrfs hanging since 3.16-rc3 or so
+Message-ID: <20140716074120.GA29931@localhost.localdomain>
+Reply-To: bo.li.liu@oracle.com
+References: <20140715134046.GX23620@auth.logic.tuwien.ac.at>
+ <20140715214701.GD4834@carfax.org.uk>
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>, Gleb Natapov <gleb@kernel.org>
-CC: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        x86@kernel.org, Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
-References: <cover.1405477965.git.luto@amacapital.net> <20140716064110.GV18167@minantech.com> <53C62563.6050106@redhat.com>
-In-Reply-To: <53C62563.6050106@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715214701.GD4834@carfax.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/07/2014 09:10, Daniel Borkmann ha scritto:
-> On 07/16/2014 08:41 AM, Gleb Natapov wrote:
->> On Tue, Jul 15, 2014 at 07:48:06PM -0700, Andy Lutomirski wrote:
->>> virtio-rng is both too complicated and insufficient for initial rng
->>> seeding.  It's far too complicated to use for KASLR or any other
->>> early boot random number needs.  It also provides /dev/random-style
->>> bits, which means that making guest boot wait for virtio-rng is
->>> unacceptably slow, and doing it asynchronously means that
->>> /dev/urandom might be predictable when userspace starts.
->>>
->>> This introduces a very simple synchronous mechanism to get
->>> /dev/urandom-style bits.
->>
->> Why can't you use RDRAND instruction for that?
->
-> You mean using it directly? I think simply for the very same reasons
-> as in c2557a303a ...
+Hi,
 
-No, this is very different.  This mechanism "provides no guarantee that 
-the result contains any actual entropy".  In fact, patch 3 adds a call 
-to the new arch_get_slow_rng_u64 just below a call to 
-arch_get_random_lang aka RDRAND.  I agree with Gleb that it's simpler to 
-just expect a relatively recent processor and use RDRAND.
+On Tue, Jul 15, 2014 at 10:47:01PM +0100, Hugo Mills wrote:
+> cc linux-btrfs list
+> 
+> On Tue, Jul 15, 2014 at 10:40:46PM +0900, Norbert Preining wrote:
+> > Dear all
+> > 
+> > (please keep Cc)
+> > 
+> > Since 3.16-rc3 or so I regularly get btrfs hanging in some transations.
+> > 
+> > Usually during apt-get upgrade or some other large file operations
+> > (cowbuilder building of packages).
+> > 
+> > The log files give me for loads of processes things like:
+> > [ 6236.746546] INFO: task aptitude:22775 blocked for more than 120 seconds.
+> > [ 6236.746547]       Tainted: G        W  O  3.16.0-rc5 #27
+> > [ 6236.746548] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > [ 6236.746549] aptitude        D ffff8800b21a3868     0 22775  22709 0x00000000
+> > [ 6236.746550]  ffff88003644fd10 0000000000000082 ffffffff81a15500 ffff88003644ffd8
+> > [ 6236.746552]  ffff8800b21a3430 0000000000011c00 ffff880147da9c30 ffff880147da9c30
+> > [ 6236.746553]  ffff88003644fd58 ffff880034b3ed48 ffff880034b3ed38 ffff88003644fd20
+> > [ 6236.746555] Call Trace:
+> > [ 6236.746557]  [<ffffffff81585b4a>] schedule+0x64/0x66
+> > [ 6236.746560]  [<ffffffff811bb22e>] btrfs_wait_logged_extents+0xa4/0xdc
+> > [ 6236.746561]  [<ffffffff810635c1>] ? finish_wait+0x5d/0x5d
+> > [ 6236.746564]  [<ffffffff811d9489>] btrfs_sync_log+0x5ef/0x8a2
+> > [ 6236.746567]  [<ffffffff811b43cf>] btrfs_sync_file+0x21b/0x24d
+> > [ 6236.746569]  [<ffffffff811b43cf>] ? btrfs_sync_file+0x21b/0x24d
+> > [ 6236.746571]  [<ffffffff8110db8a>] vfs_fsync_range+0x1c/0x1e
+> > [ 6236.746574]  [<ffffffff810d1681>] SyS_msync+0x15d/0x1ea
+> > [ 6236.746575]  [<ffffffff81588712>] system_call_fastpath+0x16/0x1b
+> > 
+> > THis is aptitude, but I have all the other tasks accessing the disk
+> > hanging, too.
+> > 
+> > This time, issueing a Sysrq-s for emergency syncing did the laptop
+> > out of the hang.
+> > 
+> > Hardware: Sonly VAIO Pro 13
+> > Distribution: Debian/sid
+> > self compiled kernel, config on request.
+> > 
+> > Please let me know if there is anything else I can provide.
 
-BTW, the logic for crediting entropy to RDSEED but not RDRAND escapes 
-me.  If you trust the processor, you could use Intel's algorithm to 
-force reseeding of RDRAND.  If you don't trust the processor, the same 
-paranoia applies to RDRAND and RDSEED.
+Would you please try this patch?
 
-In a guest you must trust the hypervisor anyway to use RDRAND or RDSEED, 
-since the hypervisor can trap it.  A malicious hypervisor is no 
-different from a malicious processor.
+[PATCH] Btrfs: fix abnormal long waiting in fsync
+https://patchwork.kernel.org/patch/4564961/
 
-In any case, is there a matching QEMU patch somewhere?
+thanks,
+-liubo
 
-Paolo
+
+> > 
+> > Thanks a lot
+> > 
+> > Norbert
+> > 
+> > ------------------------------------------------------------------------
+> > PREINING, Norbert                               http://www.preining.info
+> > JAIST, Japan                                 TeX Live & Debian Developer
+> > GPG: 0x860CDC13   fp: F7D8 A928 26E3 16A1 9FA0  ACF0 6CAC A448 860C DC13
+> > ------------------------------------------------------------------------
+> 
+> -- 
+> === Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+>   PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+>       --- Normaliser unix c'est comme pasteuriser le Camembert ---       
