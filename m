@@ -1,119 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934967AbaGPSmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:42:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37209 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934741AbaGPSmc (ORCPT
+	id S934984AbaGPSnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:43:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53536 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934606AbaGPSnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:42:32 -0400
-Date: Wed, 16 Jul 2014 13:41:52 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, <will.deacon@arm.com>,
-        <mingo@redhat.com>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: Function Profiler broken on today's linux-next
-Message-ID: <20140716184152.GM3016@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140716162328.GJ1365@saruman.home>
- <20140716122921.71b118a9@gandalf.local.home>
- <20140716164141.GA3016@saruman.home>
- <20140716132413.1ede8e1d@gandalf.local.home>
- <20140716182944.GK3016@saruman.home>
+	Wed, 16 Jul 2014 14:43:02 -0400
+Date: Wed, 16 Jul 2014 11:47:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8 V2] staging: dgap: remove unneeded dgap_err()
+Message-ID: <20140716184736.GC10633@kroah.com>
+References: <20140715091144.GA19080@devel.8.8.4.4>
+ <20140715152929.GA8844@kroah.com>
+ <CAHb8M2B0EAjDr=yTfWQ_YsRcX9JumU8rUQ1mQeoqMWeBbY4gnQ@mail.gmail.com>
+ <20140715235058.GB32651@kroah.com>
+ <CAHb8M2BxN0hwJErX5F7E0KeoiPFBvnkGT7eQSXxHktRQCHv0Dw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R92lf0Oi2sxyK3LA"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716182944.GK3016@saruman.home>
+In-Reply-To: <CAHb8M2BxN0hwJErX5F7E0KeoiPFBvnkGT7eQSXxHktRQCHv0Dw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---R92lf0Oi2sxyK3LA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 16, 2014 at 06:26:17PM +0900, DaeSeok Youn wrote:
+> 2014-07-16 8:50 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> > On Wed, Jul 16, 2014 at 08:21:30AM +0900, DaeSeok Youn wrote:
+> >> Hi,
+> >>
+> >> 2014-07-16 0:29 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> >> > On Tue, Jul 15, 2014 at 06:11:44PM +0900, Daeseok Youn wrote:
+> >> >> The dgap_err() is printing a message with pr_err(),
+> >> >> so all those are replaced.
+> >> >>
+> >> >> Use definition "pr_fmt" and then all of "dgap:" in
+> >> >> the beginning of print messages are removed.
+> >> >>
+> >> >> And also removed "out of memory" message because
+> >> >> the kernel has own message for that.
+> >> >>
+> >> >> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> >> >> ---
+> >> >> V2: use pr_fmt "dgap:" prefix on print message on dgap.
+> >> >>     remove "out of memory" message.
+> >> >>
+> >> >>     Adds Mark to TO list and CC list for checking send
+> >> >>     this email properly to him.
+> >> >>
+> >> >>  drivers/staging/dgap/dgap.c |  306 +++++++++++++++++++------------------------
+> >> >>  1 files changed, 133 insertions(+), 173 deletions(-)
+> >> >>
+> >> >> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> >> >> index 06c55cb..9e750fb 100644
+> >> >> --- a/drivers/staging/dgap/dgap.c
+> >> >> +++ b/drivers/staging/dgap/dgap.c
+> >> >> @@ -41,6 +41,8 @@
+> >> >>   */
+> >> >>  #undef DIGI_CONCENTRATORS_SUPPORTED
+> >> >>
+> >> >> +#define pr_fmt(fmt) "dgap: " fmt
+> >> >> +
+> >> >>  #include <linux/kernel.h>
+> >> >>  #include <linux/module.h>
+> >> >>  #include <linux/pci.h>
+> >> >> @@ -153,7 +155,6 @@ static void dgap_firmware_reset_port(struct channel_t *ch);
+> >> >>  static int dgap_gettok(char **in);
+> >> >>  static char *dgap_getword(char **in);
+> >> >>  static int dgap_checknode(struct cnode *p);
+> >> >> -static void dgap_err(char *s);
+> >> >>
+> >> >>  /*
+> >> >>   * Function prototypes from dgap_sysfs.h
+> >> >> @@ -815,7 +816,7 @@ static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
+> >> >>       if (ret)
+> >> >>               goto free_brd;
+> >> >>
+> >> >> -     pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+> >> >> +     pr_info("board %d: %s (rev %d), irq %ld\n",
+> >> >>               boardnum, brd->name, brd->rev, brd->irq);
+> >> >
+> >> > Almost all of the pr_*() calls in this driver should be converted over
+> >> > to use dev_*() calls instead.  And some of them, like this one, should
+> >> > be removed entirely (no need for a driver to be "noisy" when a device
+> >> > for it is found, it should be quiet if at all possible, unless something
+> >> > went wrong.)
+> >> >
+> >> > So can you do that here instead?  I've applied the earlier patches in
+> >> > this series, and stopped here.
+> >> OK. I can. pr_*() calls are replaced with dev_*() calls.
+> >> And also removes some of print message which are useless like "out
+> >> of memory"
+> >
+> > Yes, please do that, that would be great.
+> I have been working to change pr_*() to dev_*(), but dgap_parse() has no
+> "struct device" for using dev_*(). If dgap_parse still need for this driver,
+> it need to take a parameter for using dev_*(), it may be "pdev" but
+> configuration
+> file doesn't need to parse in kernel at all, dgap_parse() will be removed.
 
-Hi,
+For now keep the parsing code, and find a device to use, there should be
+one somewhere, as it is a driver :)
 
-On Wed, Jul 16, 2014 at 01:29:44PM -0500, Felipe Balbi wrote:
-> On Wed, Jul 16, 2014 at 01:24:13PM -0400, Steven Rostedt wrote:
-> > On Wed, 16 Jul 2014 11:41:42 -0500
-> > Felipe Balbi <balbi@ti.com> wrote:
-> >=20
-> >=20
-> > > .config attached. It's actually an ARM platform, I can help out with
-> > > testing anything you need.
-> >=20
-> > In that case, can you see if it works under my repo?
-> >=20
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> > branch: ftrace/core
->=20
-> works fine, thanks. FWIW
->=20
-> Tested-by: Felipe Balbi <balbi@ti.com>
+thanks,
 
-Actually it seems like it's not counting time properly if I run my test
-multiple times in a row:
-
-# /root/testusb -t 1 -c 100000 -s 2048 -a
-# head -3 trace_stat/function0
-  Function                         Hit    Time                Avg          =
- s^2
-  --------                         ---    ----                ---          =
- ---
-  thread_interrupt               174876    166120839 us     949.935 us  304=
-8498 us
-
-# /root/testusb -t 1 -c 100000 -s 2048 -a
-# head -3 trace_stat/function0
-  Function                           Hit       Time                    Avg =
-         s^2
-  --------                           ---       ----                    --- =
-         ---
-  dwc3_thread_interrupt            286796    967267300 us         419054519=
-9 us     3241109 us=20
-
-# /root/testusb -t 1 -c 100000 -s 2048 -a
-# head -3 trace_stat/function0
-  Function                              Hit      Time                 Avg  =
-             s^2
-    --------                            ---       ----                 --- =
-             ---
-  dwc3_thread_interrupt               401346    642632072 us       1601.192=
- us     1194316 us=20
-
-and so on...
-
---=20
-balbi
-
---R92lf0Oi2sxyK3LA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTxsdwAAoJEIaOsuA1yqREe1IP/Amm7anoxfyJP1poBVSQXvHk
-Mq0+w5HGk1hQvdIZASDoQw92X9LRgSByB0/fgupoeD1LkH/dXlMf05aON+YMd1p4
-I0DCoug83fk/DYy4ymJRvw4q/5mTeQ0INF0a4CBKSu76FUMeW0h9R91ekxOyjBQd
-9OeIIpa5If7Mq6jR1hqxCWmB8Ugt4oIGBv06iOIk5igRFa+DUVU8aSPzofoTUAgy
-I94VaC9RM6WL+4vpnjd4MyR4ywYx52m//AQ6qe2gICr017hftGzK3j4Rv5LhBDaw
-JxeTjuO3Zm50DF6IDOPoE3BSeuHn5KCwwrl+L/SNYrqSDnNWWTpUqvWeQ2SmJrCt
-EIO45rYQUbNAByW8aaBEqq+dTPRKTJ9kslKEHUUrI2am8lYBdBfIh2G2OrZNAEaq
-iSXxDN1BajpsssG3SD5a8A0/s6Dmreo2dbbsGYrWoCdtgRDQD7sYbRAAOU+t7XuI
-N0LlOTtdrEYGx3Ess+ZJUN+zYZ+lzEA+BqMZeywr5R+Mt82K0Xgao6XOpkIXngaE
-3ECkuEnmMaOd7rUV1TW8c4nkbOSChuyPEFwb7Ld7Yo5i79wVlgWVUjaILD6tg3z3
-WG4pTCbU1UONez+gH6mLFs9JzFQnffbGWQaFq2d/Bi9l6/3nqR/AyzWpCLAgepdc
-BGIEEPNQlpb1Myd3y9lG
-=fYq6
------END PGP SIGNATURE-----
-
---R92lf0Oi2sxyK3LA--
+greg k-h
