@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902AbaGPKYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:24:12 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:38701 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932680AbaGPKXZ (ORCPT
+	id S932978AbaGPKYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:24:35 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:49668 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932680AbaGPKYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:23:25 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-83-53c6529c6cd4
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 12/12] usb: dwc2/gadget: avoid disabling ep0
-Date: Wed, 16 Jul 2014 12:22:30 +0200
-Message-id: <1405506150-16185-13-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
-References: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd05QceCDRpfiFvMetnOYnHwfr1F
-	8+L1bBaXd81hs1i0rJXZYu2Ru+wW26dMZ7J4cHgnuwOHx/65a9g9+rasYvTYsv8zo8fxG9uZ
-	PD5vkgtgjeKySUnNySxLLdK3S+DKeNE8mb3gNmvFwR8/WRsY77F0MXJwSAiYSNzZEtzFyAlk
-	iklcuLeerYuRi0NIYDqjxOXdJ1ggnHYmiTW7rrKDVLEJ6Ehs+T6BEcQWERCQWP/iEjtIEbPA
-	CUaJjv8X2EASwgL2EjPfrGMFsVkEVCW27tsI1swr4CaxclEXI8Q6OYmTxyaD1XACxde8bgar
-	ERJwlTi+bhnTBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCw+uZ9A7GVQ0WhxgF
-	OBiVeHg3hBwNFmJNLCuuzD3EKMHBrCTC6+B/LFiINyWxsiq1KD++qDQntfgQozQHi5I478FW
-	60AhgfTEktTs1NSC1CKYLBMHp1QDY87kiRfLu1rzly6ZcW0G7w/mJR9Wfk/7Jx63d6s/j8+n
-	Y8djV4av6ec2vWR+7dKxZa+V/fcvy3jCqnb8ksKhfab7WquuH3ztfYp9i/59O62pcXmfS0U4
-	xW0Kd4ucj114+4+u9ard0+wrpe5/Ft68K5uxU/Lj7O1XV3Pkir+ZEeN6nvVmd4rxcS8lluKM
-	REMt5qLiRACqv8EQKwIAAA==
+	Wed, 16 Jul 2014 06:24:31 -0400
+Message-ID: <1405506268.4408.28.camel@x220>
+Subject: Re: [PATCH 18/19] ARM: SAMSUNG: Remove remaining legacy code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Date: Wed, 16 Jul 2014 12:24:28 +0200
+In-Reply-To: <1404496099-26708-19-git-send-email-t.figa@samsung.com>
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+	 <1404496099-26708-19-git-send-email-t.figa@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jul 2014 10:24:29.0240 (UTC) FILETIME=[20520B80:01CFA0E0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Endpoint 0 should not be disabled, so we start loop counter from number 1.
+On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
+> After refactoring suspend/resume, which was last part with dependencies
+> on legacy code, all Kconfig symbols related to Samsung ATAGS support can
+> be deselected and more unused code removed. This includes most of s5p-*
+> code as well, as s5pv210 was their last user.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/dwc2/gadget.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And I noticed another issue as this patch showed up in linux-next (this
+should be the last issue for this series).
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 68b764e..3e4c3b9 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -2930,7 +2930,7 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
- 		return -ENODEV;
- 
- 	/* all endpoints should be shutdown */
--	for (ep = 0; ep < hsotg->num_of_eps; ep++)
-+	for (ep = 1; ep < hsotg->num_of_eps; ep++)
- 		s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
- 
- 	spin_lock_irqsave(&hsotg->lock, flags);
--- 
-1.9.1
+> [...]
+> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+> index f8185b5..1091b0a 100644
+> --- a/arch/arm/plat-samsung/Kconfig
+> +++ b/arch/arm/plat-samsung/Kconfig
+>[...]
+> @@ -64,31 +51,6 @@ config SAMSUNG_ATAGS
+>  
+>  if SAMSUNG_ATAGS
+>  
+> -# options for IRQ support
+> -
+> -config S5P_IRQ
+> -	def_bool ARCH_S5PV210
+> -	help
+> -	  Support common interrupt part for ARCH_S5P SoCs
+> -
+> -config S5P_EXT_INT
+> -	bool
+> -	help
+> -	  Use the external interrupts (other than GPIO interrupts.)
+> -
+> -config S5P_GPIO_INT
+> -	bool
+> -	help
+> -	  Common code for the GPIO interrupts (other than external interrupts.)
+> -
+> -# options for gpio configuration support
+> -
+> -config S5P_GPIO_DRVSTR
+> -	bool
+> -	help
+> -	  Internal configuration to get and set correct GPIO driver strength
+> -	  helper
+> -
+
+This one is used (as a macro) in drivers/gpio/gpio-samsung.c. Is a patch
+that touches that macro queued somewhere?
+
+>  config SAMSUNG_GPIO_EXTRA
+>  	int "Number of additional GPIO pins"
+>  	default 128 if SAMSUNG_GPIO_EXTRA128
+
+Thanks,
+
+
+Paul Bolle
 
