@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaGPVdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:33:12 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:48463 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621AbaGPVdJ (ORCPT
+	id S1753785AbaGPVeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:34:18 -0400
+Received: from infernal.debian.net ([176.28.9.132]:35094 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaGPVeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:33:09 -0400
+	Wed, 16 Jul 2014 17:34:12 -0400
+Date: Wed, 16 Jul 2014 23:34:08 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [REGRESSION] Boot hang with 939f04bec printk: enable interrupts
+ before calling console_trylock_for_printk()
+Message-ID: <20140716213408.GA8749@amos.fritz.box>
+References: <20140628225050.GA3484@amos.fritz.box>
+ <20140714083527.GA30550@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <53C6DEA5.7010203@zytor.com>
-References: <cover.1405477965.git.luto@amacapital.net> <20140716064110.GV18167@minantech.com>
- <53C62563.6050106@redhat.com> <53C62B68.50702@redhat.com> <CALCETrVLJ7qH3y04K9Sz1pU3i9+H9Cq_RoDfBeWnsH0VC68qKw@mail.gmail.com>
- <53C6A236.7040904@zytor.com> <53C6A362.7090709@redhat.com>
- <53C6A4A3.1040702@zytor.com> <20140716162133.GO4399@minantech.com> <53C6DEA5.7010203@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Jul 2014 14:32:47 -0700
-Message-ID: <CALCETrX4MVbkmMejQ6O_-Wt_uKDfR1K=XGnb3_59w-hmzV++iA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140714083527.GA30550@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 1:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/16/2014 09:21 AM, Gleb Natapov wrote:
->> On Wed, Jul 16, 2014 at 09:13:23AM -0700, H. Peter Anvin wrote:
->>> On 07/16/2014 09:08 AM, Paolo Bonzini wrote:
->>>> Il 16/07/2014 18:03, H. Peter Anvin ha scritto:
->>>>> I suggested emulating RDRAND *but not set the CPUID bit*.  We already
->>>>> developed a protocol in KVM/Qemu to enumerate emulated features (created
->>>>> for MOVBE as I recall), specifically to service the semantic "feature X
->>>>> will work but will be substantially slower than normal."
->>>>
->>>> But those will set the CPUID bit.  There is currently no way for KVM
->>>> guests to know if a CPUID bit is real or emulated.
->>>>
->>>
->>> OK, so there wasn't any protocol implemented in the end.  I sit corrected.
->>>
->> That protocol that was implemented is between qemu and kvm, not kvm and a guest.
->>
->
-> Either which way, the notion was to have a PV CPUID bit like the
-> proposed kvm_get_rng_seed bit, but to have it exercised by executing RDRAND.
->
-> The biggest reason to *not* do this would be that with an MSR it is not
-> available to guest user space, which may be better under the circumstances.
+On Mon, Jul 14, 2014 at 10:35:27AM +0200, Jan Kara wrote:
+> On Sun 29-06-14 00:50:50, Andreas Bombe wrote:
+> > None of the post 3.15 kernel boot for me. They all hang at the GRUB
+> > screen telling me it loaded and started the kernel, but the kernel
+> > itself stops before it prints anything (or even replaces the GRUB
+> > background graphics).
+> > 
+> > I bisected it down to 939f04bec1a4ef6ba4370b0f34b01decc844b1b1 "printk:
+> > enable interrupts before calling console_trylock_for_printk()".
+> > Reverting that patch on the latest kernel (git 24b414d5a7) allows me to
+> > boot normally. I fixed the conflict in the revert by leaving in the "if
+> > (in_sched) return printed_len;".
+> > 
+> > I have the "early printk via the EFI framebuffer" option enabled,
+> > disabling it made no difference however.
+>   Thanks for report. I've been on vacation so I'm replying with a delay. I
+> believe this is one of the issues where this patch just uncovers underlying
+> problem - I belive lockdep tries to report some locking issue in console
+> driver code (this patch increased lockdep coverage of console driver code)
+> however we are holding some locks in printk code which make lockdep
+> deadlock. Can you try running with the attached patch?
 
-On the theory that I see no legitimate reason to expose this to guest
-user space, I think we shouldn't expose it.  If we wanted to add a
-get_random_bytes syscall, that would be an entirely different story,
-though.
+EUNABLE
 
-Should I send v3 as one series or should I split it into host and guest parts?
-
---Andy
+You forgot to attach a patch.
