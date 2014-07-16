@@ -1,485 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956AbaGPNwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:52:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933637AbaGPNs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:48:58 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH V4 05/15] mm, compaction: move pageblock checks up from isolate_migratepages_range()
-Date: Wed, 16 Jul 2014 15:48:13 +0200
-Message-Id: <1405518503-27687-6-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
-References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+	id S1759853AbaGPNxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:53:01 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54779 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759452AbaGPNw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:52:57 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53C683B7.9090805@roeck-us.net>
+Date: Wed, 16 Jul 2014 06:52:55 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kamil Debski <k.debski@samsung.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+CC: t.figa@samsung.com, m.szyprowski@samsung.com, tklauser@distanz.ch,
+        linux-pwm@vger.kernel.org, varkabhadram@gmail.com
+Subject: Re: [PATCH v4] hwmon: pwm-fan: Add pwm-fan driver
+References: <1405505014-24983-1-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1405505014-24983-1-git-send-email-k.debski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isolate_migratepages_range() is the main function of the compaction scanner,
-called either on a single pageblock by isolate_migratepages() during regular
-compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
-It currently perfoms two pageblock-wide compaction suitability checks, and
-because of the CMA callpath, it tracks if it crossed a pageblock boundary in
-order to repeat those checks.
+Hi Kamil,
 
-However, closer inspection shows that those checks are always true for CMA:
-- isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
-- migrate_async_suitable() check is skipped because CMA uses sync compaction
+comments inline.
 
-We can therefore move the compaction-specific checks to isolate_migratepages()
-and simplify isolate_migratepages_range(). Furthermore, we can mimic the
-freepage scanner family of functions, which has isolate_freepages_block()
-function called both by compaction from isolate_freepages() and by CMA from
-isolate_freepages_range(), where each use-case adds own specific glue code.
-This allows further code simplification.
+Thanks,
+Guenter
 
-Therefore, we rename isolate_migratepages_range() to isolate_freepages_block()
-and limit its functionality to a single pageblock (or its subset). For CMA,
-a new different isolate_migratepages_range() is created as a CMA-specific
-wrapper for the _block() function. The checks specific to compaction are moved
-to isolate_migratepages(). As part of the unification of these two families of
-functions, we remove the redundant zone parameter where applicable, since zone
-pointer is already passed in cc->zone.
+On 07/16/2014 03:03 AM, Kamil Debski wrote:
+> The pwm-fan driver enables control of fans connected to PWM lines.
+> This driver uses the PWM framework, so it is compatible with all
+> PWM devices that provide drivers through the PWM framework.
+>
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> ---
+> Changes since v3:
+> - fix missing "\n" in error messages
+> - remove of_match_ptr which was not necessary
+> - change error returned in case of failed allocation to -ENOMEM
+> Changes since v2:
+> - add CONFIG_PM_SLEEP around pwm_fan_suspend and pwm_fan_resume
+> Changes since v1:
+> - added documentation to Documentation/hwmon
+> - fix checkpatch errors
+> 	- added extra description to Kconfig
+> 	- removed whitespace errors
+> - include files rearranged to be in alphabetical order
+> - remove unused sysfs entry pwm1_enable
+> - changed the behavior of the set_pwm function
+> 	- when 0 PWM value is set pwm_disable is run
+> 	- pwm_config return value is checked for errors
+> - use of ATTRIBUTE_GROUPS was added
+> - removed "Not enouch memory" error message
+> - fixed probe return value in case of devm_of_pwm_get error
+> - changed hwmon_device_register_with_groups to
+>    devm_hwmon_device_register_with_groups
+> - changes suspend/resume to use pwm_disable/enable
+> - removed unnecessary CONFIG_PM_SLEEP ifdefs
+> ---
+>   .../devicetree/bindings/hwmon/pwm-fan.txt          |   12 ++
+>   Documentation/hwmon/pwm-fan                        |   17 ++
+>   drivers/hwmon/Kconfig                              |   11 ++
+>   drivers/hwmon/Makefile                             |    1 +
+>   drivers/hwmon/pwm-fan.c                            |  202 ++++++++++++++++++++
+>   5 files changed, 243 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/hwmon/pwm-fan.txt
+>   create mode 100644 Documentation/hwmon/pwm-fan
+>   create mode 100644 drivers/hwmon/pwm-fan.c
+>
+> diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
+> new file mode 100644
+> index 0000000..610757c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
+> @@ -0,0 +1,12 @@
+> +Bindings for a fan connected to the PWM lines
+> +
+> +Required properties:
+> +- compatible	: "pwm-fan"
+> +- pwms		: the PWM that is used to control the PWM fan
+> +
+> +Example:
+> +	pwm-fan {
+> +		compatible = "pwm-fan";
+> +		status = "okay";
+> +		pwms = <&pwm 0 10000 0>;
+> +	};
+> diff --git a/Documentation/hwmon/pwm-fan b/Documentation/hwmon/pwm-fan
+> new file mode 100644
+> index 0000000..18529d2
+> --- /dev/null
+> +++ b/Documentation/hwmon/pwm-fan
+> @@ -0,0 +1,17 @@
+> +Kernel driver pwm-fan
+> +=====================
+> +
+> +This driver enables the use of a PWM module to drive a fan. It uses the
+> +generic PWM interface thus it is hardware independent. It can be used on
+> +many SoCs, as long as the SoC supplies a PWM line driver that exposes
+> +the generic PWM API.
+> +
+> +Author: Kamil Debski <k.debski@samsung.com>
+> +
+> +Description
+> +-----------
+> +
+> +The driver implements a simple interface for driving a fan connected to
+> +a PWM output. It uses the generic PWM interface, thus it can be used with
+> +a range of SoCs. The driver exposes the fan to the user space through
+> +the hwmon's sysfs interface.
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 02d3d85..4ac13ab 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -1105,6 +1105,17 @@ config SENSORS_PCF8591
+>
+>   source drivers/hwmon/pmbus/Kconfig
+>
+> +config SENSORS_PWM_FAN
+> +	tristate "PWM fan"
+> +	depends on PWM
+> +	help
+> +	  If you say yes here you get support for fans connected to PWM lines.
+> +	  The driver uses the generic PWM interface, thus it will work on a
+> +	  variety of SoCs.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called pwm-fan.
+> +
+>   config SENSORS_SHT15
+>   	tristate "Sensiron humidity and temperature sensors. SHT15 and compat."
+>   	depends on GPIOLIB
+> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> index 3dc0f02..3967ecf 100644
+> --- a/drivers/hwmon/Makefile
+> +++ b/drivers/hwmon/Makefile
+> @@ -120,6 +120,7 @@ obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
+>   obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
+>   obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
+>   obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
+> +obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
+>   obj-$(CONFIG_SENSORS_S3C)	+= s3c-hwmon.o
+>   obj-$(CONFIG_SENSORS_SCH56XX_COMMON)+= sch56xx-common.o
+>   obj-$(CONFIG_SENSORS_SCH5627)	+= sch5627.o
+> diff --git a/drivers/hwmon/pwm-fan.c b/drivers/hwmon/pwm-fan.c
+> new file mode 100644
+> index 0000000..cacb20a
+> --- /dev/null
+> +++ b/drivers/hwmon/pwm-fan.c
+> @@ -0,0 +1,202 @@
+> +/*
+> + * pwm-fan.c - Hwmon driver for fans connected to PWM lines.
+> + *
+> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+> + *
+> + * Author: Kamil Debski <k.debski@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/hwmon.h>
+> +#include <linux/hwmon-sysfs.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pwm.h>
+> +#include <linux/sysfs.h>
+> +
+> +#define MAX_PWM 255
+> +
+> +struct pwm_fan_ctx {
+> +	struct device *hwmon;
+> +	struct mutex lock;
+> +	struct platform_device *pdev;
 
-Furthermore, going back to compact_zone() and compact_finished() when pageblock
-is found unsuitable (now by isolate_migratepages()) is wasteful - the checks
-are meant to skip pageblocks quickly. The patch therefore also introduces a
-simple loop into isolate_migratepages() so that it does not return immediately
-on failed pageblock checks, but keeps going until isolate_migratepages_range()
-gets called once. Similarily to isolate_freepages(), the function periodically
-checks if it needs to reschedule or abort async compaction.
+Neither hwmon nor pdev are used anywhere and are thus unnecessary.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
----
- mm/compaction.c | 234 +++++++++++++++++++++++++++++++++-----------------------
- mm/internal.h   |   4 +-
- mm/page_alloc.c |   3 +-
- 3 files changed, 140 insertions(+), 101 deletions(-)
+> +	struct pwm_device *pwm;
+> +	unsigned int duty_cycle;
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 0a871e5..28e48ea 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -132,7 +132,7 @@ void reset_isolation_suitable(pg_data_t *pgdat)
-  */
- static void update_pageblock_skip(struct compact_control *cc,
- 			struct page *page, unsigned long nr_isolated,
--			bool set_unsuitable, bool migrate_scanner)
-+			bool migrate_scanner)
- {
- 	struct zone *zone = cc->zone;
- 	unsigned long pfn;
-@@ -146,12 +146,7 @@ static void update_pageblock_skip(struct compact_control *cc,
- 	if (nr_isolated)
- 		return;
- 
--	/*
--	 * Only skip pageblocks when all forms of compaction will be known to
--	 * fail in the near future.
--	 */
--	if (set_unsuitable)
--		set_pageblock_skip(page);
-+	set_pageblock_skip(page);
- 
- 	pfn = page_to_pfn(page);
- 
-@@ -180,7 +175,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
- 
- static void update_pageblock_skip(struct compact_control *cc,
- 			struct page *page, unsigned long nr_isolated,
--			bool set_unsuitable, bool migrate_scanner)
-+			bool migrate_scanner)
- {
- }
- #endif /* CONFIG_COMPACTION */
-@@ -345,8 +340,7 @@ isolate_fail:
- 
- 	/* Update the pageblock-skip if the whole pageblock was scanned */
- 	if (blockpfn == end_pfn)
--		update_pageblock_skip(cc, valid_page, total_isolated, true,
--				      false);
-+		update_pageblock_skip(cc, valid_page, total_isolated, false);
- 
- 	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
- 	if (total_isolated)
-@@ -451,40 +445,34 @@ static bool too_many_isolated(struct zone *zone)
- }
- 
- /**
-- * isolate_migratepages_range() - isolate all migrate-able pages in range.
-- * @zone:	Zone pages are in.
-+ * isolate_migratepages_block() - isolate all migrate-able pages within
-+ *				  a single pageblock
-  * @cc:		Compaction control structure.
-- * @low_pfn:	The first PFN of the range.
-- * @end_pfn:	The one-past-the-last PFN of the range.
-- * @unevictable: true if it allows to isolate unevictable pages
-+ * @low_pfn:	The first PFN to isolate
-+ * @end_pfn:	The one-past-the-last PFN to isolate, within same pageblock
-+ * @isolate_mode: Isolation mode to be used.
-  *
-  * Isolate all pages that can be migrated from the range specified by
-- * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
-- * pending), otherwise PFN of the first page that was not scanned
-- * (which may be both less, equal to or more then end_pfn).
-- *
-- * Assumes that cc->migratepages is empty and cc->nr_migratepages is
-- * zero.
-+ * [low_pfn, end_pfn). The range is expected to be within same pageblock.
-+ * Returns zero if there is a fatal signal pending, otherwise PFN of the
-+ * first page that was not scanned (which may be both less, equal to or more
-+ * than end_pfn).
-  *
-- * Apart from cc->migratepages and cc->nr_migratetypes this function
-- * does not modify any cc's fields, in particular it does not modify
-- * (or read for that matter) cc->migrate_pfn.
-+ * The pages are isolated on cc->migratepages list (not required to be empty),
-+ * and cc->nr_migratepages is updated accordingly. The cc->migrate_pfn field
-+ * is neither read nor updated.
-  */
--unsigned long
--isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
--		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
-+static unsigned long
-+isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
-+			unsigned long end_pfn, isolate_mode_t isolate_mode)
- {
--	unsigned long last_pageblock_nr = 0, pageblock_nr;
-+	struct zone *zone = cc->zone;
- 	unsigned long nr_scanned = 0, nr_isolated = 0;
- 	struct list_head *migratelist = &cc->migratepages;
- 	struct lruvec *lruvec;
- 	unsigned long flags;
- 	bool locked = false;
- 	struct page *page = NULL, *valid_page = NULL;
--	bool set_unsuitable = true;
--	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
--					ISOLATE_ASYNC_MIGRATE : 0) |
--				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
- 
- 	/*
- 	 * Ensure that there are not too many pages isolated from the LRU
-@@ -515,19 +503,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			}
- 		}
- 
--		/*
--		 * migrate_pfn does not necessarily start aligned to a
--		 * pageblock. Ensure that pfn_valid is called when moving
--		 * into a new MAX_ORDER_NR_PAGES range in case of large
--		 * memory holes within the zone
--		 */
--		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
--			if (!pfn_valid(low_pfn)) {
--				low_pfn += MAX_ORDER_NR_PAGES - 1;
--				continue;
--			}
--		}
--
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
-@@ -545,28 +520,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		if (!valid_page)
- 			valid_page = page;
- 
--		/* If isolation recently failed, do not retry */
--		pageblock_nr = low_pfn >> pageblock_order;
--		if (last_pageblock_nr != pageblock_nr) {
--			int mt;
--
--			last_pageblock_nr = pageblock_nr;
--			if (!isolation_suitable(cc, page))
--				goto next_pageblock;
--
--			/*
--			 * For async migration, also only scan in MOVABLE
--			 * blocks. Async migration is optimistic to see if
--			 * the minimum amount of work satisfies the allocation
--			 */
--			mt = get_pageblock_migratetype(page);
--			if (cc->mode == MIGRATE_ASYNC &&
--			    !migrate_async_suitable(mt)) {
--				set_unsuitable = false;
--				goto next_pageblock;
--			}
--		}
--
- 		/*
- 		 * Skip if free. page_order cannot be used without zone->lock
- 		 * as nothing prevents parallel allocations or buddy merging.
-@@ -601,8 +554,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		 */
- 		if (PageTransHuge(page)) {
- 			if (!locked)
--				goto next_pageblock;
--			low_pfn += (1 << compound_order(page)) - 1;
-+				low_pfn = ALIGN(low_pfn + 1,
-+						pageblock_nr_pages) - 1;
-+			else
-+				low_pfn += (1 << compound_order(page)) - 1;
-+
- 			continue;
- 		}
- 
-@@ -632,7 +588,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		lruvec = mem_cgroup_page_lruvec(page, zone);
- 
- 		/* Try isolate the page */
--		if (__isolate_lru_page(page, mode) != 0)
-+		if (__isolate_lru_page(page, isolate_mode) != 0)
- 			continue;
- 
- 		VM_BUG_ON_PAGE(PageTransCompound(page), page);
-@@ -651,11 +607,6 @@ isolate_success:
- 			++low_pfn;
- 			break;
- 		}
--
--		continue;
--
--next_pageblock:
--		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
- 	}
- 
- 	acct_isolated(zone, locked, cc);
-@@ -668,8 +619,7 @@ next_pageblock:
- 	 * if the whole pageblock was scanned without isolating any page.
- 	 */
- 	if (low_pfn == end_pfn)
--		update_pageblock_skip(cc, valid_page, nr_isolated,
--				      set_unsuitable, true);
-+		update_pageblock_skip(cc, valid_page, nr_isolated, true);
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
-@@ -680,15 +630,61 @@ next_pageblock:
- 	return low_pfn;
- }
- 
-+/**
-+ * isolate_migratepages_range() - isolate migrate-able pages in a PFN range
-+ * @start_pfn: The first PFN to start isolating.
-+ * @end_pfn:   The one-past-last PFN.
-+ *
-+ * Returns zero if isolation fails fatally due to e.g. pending signal.
-+ * Otherwise, function returns one-past-the-last PFN of isolated page
-+ * (which may be greater than end_pfn if end fell in a middle of a THP page).
-+ */
-+unsigned long
-+isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
-+							unsigned long end_pfn)
-+{
-+	unsigned long pfn, block_end_pfn;
-+
-+	/* Scan block by block. First and last block may be incomplete */
-+	pfn = start_pfn;
-+	block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-+
-+	for (; pfn < end_pfn; pfn = block_end_pfn,
-+				block_end_pfn += pageblock_nr_pages) {
-+
-+		block_end_pfn = min(block_end_pfn, end_pfn);
-+
-+		/* Skip whole pageblock in case of a memory hole */
-+		if (!pfn_valid(pfn))
-+			continue;
-+
-+		pfn = isolate_migratepages_block(cc, pfn, block_end_pfn,
-+							ISOLATE_UNEVICTABLE);
-+
-+		/*
-+		 * In case of fatal failure, release everything that might
-+		 * have been isolated in the previous iteration, and signal
-+		 * the failure back to caller.
-+                 */
-+		if (!pfn) {
-+			putback_movable_pages(&cc->migratepages);
-+			cc->nr_migratepages = 0;
-+			break;
-+		}
-+	}
-+
-+	return pfn;
-+}
-+
- #endif /* CONFIG_COMPACTION || CONFIG_CMA */
- #ifdef CONFIG_COMPACTION
- /*
-  * Based on information in the current compact_control, find blocks
-  * suitable for isolating free pages from and then isolate them.
-  */
--static void isolate_freepages(struct zone *zone,
--				struct compact_control *cc)
-+static void isolate_freepages(struct compact_control *cc)
- {
-+	struct zone *zone = cc->zone;
- 	struct page *page;
- 	unsigned long block_start_pfn;	/* start of current pageblock */
- 	unsigned long block_end_pfn;	/* end of current pageblock */
-@@ -806,7 +802,7 @@ static struct page *compaction_alloc(struct page *migratepage,
- 	 */
- 	if (list_empty(&cc->freepages)) {
- 		if (!cc->contended)
--			isolate_freepages(cc->zone, cc);
-+			isolate_freepages(cc);
- 
- 		if (list_empty(&cc->freepages))
- 			return NULL;
-@@ -840,34 +836,81 @@ typedef enum {
- } isolate_migrate_t;
- 
- /*
-- * Isolate all pages that can be migrated from the block pointed to by
-- * the migrate scanner within compact_control.
-+ * Isolate all pages that can be migrated from the first suitable block,
-+ * starting at the block pointed to by the migrate scanner pfn within
-+ * compact_control.
-  */
- static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 					struct compact_control *cc)
- {
- 	unsigned long low_pfn, end_pfn;
-+	struct page *page;
-+	const isolate_mode_t isolate_mode =
-+		(cc->mode == MIGRATE_ASYNC ? ISOLATE_ASYNC_MIGRATE : 0);
- 
--	/* Do not scan outside zone boundaries */
--	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-+	/*
-+	 * Start at where we last stopped, or beginning of the zone as
-+	 * initialized by compact_zone()
-+	 */
-+	low_pfn = cc->migrate_pfn;
- 
- 	/* Only scan within a pageblock boundary */
- 	end_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages);
- 
--	/* Do not cross the free scanner or scan within a memory hole */
--	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
--		cc->migrate_pfn = end_pfn;
--		return ISOLATE_NONE;
--	}
-+	/*
-+	 * Iterate over whole pageblocks until we find the first suitable.
-+	 * Do not cross the free scanner.
-+	 */
-+	for (; end_pfn <= cc->free_pfn;
-+			low_pfn = end_pfn, end_pfn += pageblock_nr_pages) {
-+
-+		/*
-+		 * This can potentially iterate a massively long zone with
-+		 * many pageblocks unsuitable, so periodically check if we
-+		 * need to schedule, or even abort async compaction.
-+		 */
-+		if (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-+						&& compact_should_abort(cc))
-+			break;
-+
-+		/* Skip whole pageblock in case of a memory hole */
-+		if (!pfn_valid(low_pfn))
-+			continue;
-+
-+		page = pfn_to_page(low_pfn);
-+
-+		/* If isolation recently failed, do not retry */
-+		if (!isolation_suitable(cc, page))
-+			continue;
-+
-+		/*
-+		 * For async compaction, also only scan in MOVABLE blocks.
-+		 * Async compaction is optimistic to see if the minimum amount
-+		 * of work satisfies the allocation.
-+		 */
-+		if (cc->mode == MIGRATE_ASYNC &&
-+		    !migrate_async_suitable(get_pageblock_migratetype(page)))
-+			continue;
-+
-+		/* Perform the isolation */
-+		low_pfn = isolate_migratepages_block(cc, low_pfn, end_pfn,
-+								isolate_mode);
-+
-+		if (!low_pfn || cc->contended)
-+			return ISOLATE_ABORT;
- 
--	/* Perform the isolation */
--	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
--	if (!low_pfn || cc->contended)
--		return ISOLATE_ABORT;
-+		/*
-+		 * Either we isolated something and proceed with migration. Or
-+		 * we failed and compact_zone should decide if we should
-+		 * continue or not.
-+		 */
-+		break;
-+	}
- 
-+	/* Record where migration scanner will be restarted */
- 	cc->migrate_pfn = low_pfn;
- 
--	return ISOLATE_SUCCESS;
-+	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
- }
- 
- static int compact_finished(struct zone *zone,
-@@ -1040,9 +1083,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 			;
- 		}
- 
--		if (!cc->nr_migratepages)
--			continue;
--
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
- 				compaction_free, (unsigned long)cc, cc->mode,
- 				MR_COMPACTION);
-diff --git a/mm/internal.h b/mm/internal.h
-index a1b651b..5a0738f 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -154,8 +154,8 @@ unsigned long
- isolate_freepages_range(struct compact_control *cc,
- 			unsigned long start_pfn, unsigned long end_pfn);
- unsigned long
--isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
--	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
-+isolate_migratepages_range(struct compact_control *cc,
-+			   unsigned long low_pfn, unsigned long end_pfn);
- 
- #endif
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 69a14b7..f16aa37 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6282,8 +6282,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
- 
- 		if (list_empty(&cc->migratepages)) {
- 			cc->nr_migratepages = 0;
--			pfn = isolate_migratepages_range(cc->zone, cc,
--							 pfn, end, true);
-+			pfn = isolate_migratepages_range(cc, pfn, end);
- 			if (!pfn) {
- 				ret = -EINTR;
- 				break;
--- 
-1.8.4.5
+duty_cycle is only used in the probe function, and is thus unnecessary as well.
+
+> +	unsigned char pwm_value;
+> +};
+> +
+> +static ssize_t set_pwm(struct device *dev, struct device_attribute *attr,
+> +		       const char *buf, size_t count)
+> +{
+> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
+> +	unsigned long pwm, duty;
+> +	int ret;
+> +
+> +	if (kstrtoul(buf, 10, &pwm) || pwm > MAX_PWM)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&ctx->lock);
+> +
+> +	if (ctx->pwm_value == pwm)
+> +		goto exit_set_pwm;
+> +
+> +	if (pwm == 0) {
+> +		pwm_disable(ctx->pwm);
+> +		ctx->pwm_value = pwm;
+> +		goto exit_set_pwm;
+
+You can add another label below to save the double assignment.
+
+> +	}
+> +
+> +	duty = DIV_ROUND_UP(pwm * (ctx->pwm->period - 1), MAX_PWM);
+> +	ret = pwm_config(ctx->pwm, duty, ctx->pwm->period);
+> +	if (ret) {
+> +		count = ret; /* Set the return value */
+
+Subtle problem: count is of type size_t which is unsigned. Sure it may well be
+that the negative value is converted to unsigned and then converted back to signed
+on return, but it is not a good idea to depend on it. I would suggest to return ret
+and assign
+	ret = count;
+in the success case further below. You'll need an extra label for the success cases
+above.
+
+> +		goto exit_set_pwm;
+> +	}
+> +
+> +	if (ctx->pwm_value == 0)
+> +		ret = pwm_enable(ctx->pwm);
+> +	if (ret) {
+> +		count = ret; /* Set the return value */
+> +		goto exit_set_pwm;
+> +	}
+
+This check for ret should really be within the if() statement.
+
+> +
+> +	ctx->duty_cycle = duty;
+> +	ctx->pwm_value = pwm;
+> +
+> +exit_set_pwm:
+> +	mutex_unlock(&ctx->lock);
+> +	return count;
+> +}
+> +
+> +static ssize_t show_pwm(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
+> +
+> +	return sprintf(buf, "%u\n", ctx->pwm_value);
+> +}
+> +
+> +
+> +static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR,
+> +		   show_pwm, set_pwm, 0);
+> +
+Continuation line is not needed here.
+
+> +static struct attribute *pwm_fan_attrs[] = {
+> +	&sensor_dev_attr_pwm1.dev_attr.attr,
+> +	NULL,
+> +};
+> +
+> +ATTRIBUTE_GROUPS(pwm_fan);
+> +
+> +static int pwm_fan_probe(struct platform_device *pdev)
+> +{
+> +	struct pwm_fan_ctx *ctx;
+> +	int ret;
+> +
+> +	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+> +	if (!ctx)
+> +		return -ENOMEM;
+> +
+> +	ctx->pdev = pdev;
+> +	mutex_init(&ctx->lock);
+> +
+> +	ctx->pwm = devm_of_pwm_get(&pdev->dev, pdev->dev.of_node, 0);
+> +	if (IS_ERR(ctx->pwm)) {
+> +		dev_err(&pdev->dev, "Could not get PWM\n");
+> +		return PTR_ERR(ctx->pwm);
+> +	}
+> +
+> +	dev_set_drvdata(&pdev->dev, ctx);
+> +	platform_set_drvdata(pdev, ctx);
+> +
+> +	/* Set duty cycle to maximum allowed */
+> +	ctx->duty_cycle = ctx->pwm->period - 1;
+> +	ctx->pwm_value = MAX_PWM;
+> +
+> +	ret = pwm_config(ctx->pwm, ctx->duty_cycle, ctx->pwm->period);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to configure PWM\n");
+> +		return ret;
+> +	}
+> +
+> +	/* Enbale PWM output */
+> +	ret = pwm_enable(ctx->pwm);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to enable PWM\n");
+> +		return ret;
+> +	}
+> +
+> +	ctx->hwmon = devm_hwmon_device_register_with_groups(&pdev->dev,
+> +							    "pwmfan", ctx,
+> +							    pwm_fan_groups);
+> +
+> +	if (IS_ERR(ctx->hwmon)) {
+> +		dev_err(&pdev->dev, "Failed to register hwmon device\n");
+> +		pwm_disable(ctx->pwm);
+> +		return PTR_ERR(ctx->hwmon);
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int pwm_fan_remove(struct platform_device *pdev)
+> +{
+> +	struct pwm_fan_ctx *ctx = platform_get_drvdata(pdev);
+> +
+> +	if (ctx->pwm_value)
+> +		pwm_disable(ctx->pwm);
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int pwm_fan_suspend(struct device *dev)
+> +{
+> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
+> +
+> +	if (ctx->pwm_value)
+> +		pwm_disable(ctx->pwm);
+> +	return 0;
+> +}
+> +
+> +static int pwm_fan_resume(struct device *dev)
+> +{
+> +	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
+> +
+> +	if (ctx->pwm_value)
+> +		return pwm_enable(ctx->pwm);
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(pwm_fan_pm, pwm_fan_suspend, pwm_fan_resume);
+> +
+> +static struct of_device_id of_pwm_fan_match[] = {
+> +	{ .compatible = "pwm-fan", },
+> +	{},
+> +};
+> +
+> +static struct platform_driver pwm_fan_driver = {
+> +	.probe		= pwm_fan_probe,
+> +	.remove		= pwm_fan_remove,
+> +	.driver	= {
+> +		.name		= "pwm-fan",
+> +		.pm		= &pwm_fan_pm,
+> +		.of_match_table	= of_pwm_fan_match,
+> +	},
+> +};
+> +
+> +module_platform_driver(pwm_fan_driver);
+> +
+> +MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
+> +MODULE_ALIAS("platform:pwm-fan");
+> +MODULE_DESCRIPTION("PWM FAN driver");
+> +MODULE_LICENSE("GPL");
+>
 
