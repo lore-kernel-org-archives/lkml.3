@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433AbaGPAuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:50:02 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:56508
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754124AbaGPAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:50:00 -0400
-Date: Wed, 16 Jul 2014 08:44:32 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: punnaiah choudary kalluri <punnaia@xilinx.com>,
-        <sebastian.hesselbarth@gmail.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-Message-ID: <20140716004431.GB30419@shlinux1.ap.freescale.net>
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
- <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
- <CAGnW=BbA3gLdSv8AKkD_ysnYAaN0KoCdVW+wxWPB9zzGCh9+jQ@mail.gmail.com>
- <20140715152437.GF1011@kwain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140715152437.GF1011@kwain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(189002)(199002)(51704005)(87936001)(74502001)(86362001)(50466002)(74662001)(102836001)(93886003)(76482001)(97736001)(92726001)(81542001)(83072002)(81342001)(107046002)(85852003)(23756003)(33656002)(26826002)(77982001)(6806004)(85306003)(4396001)(106466001)(81156004)(54356999)(110136001)(99396002)(64706001)(84676001)(20776003)(47776003)(76176999)(80022001)(50986999)(79102001)(31966008)(95666004)(104016003)(92566001)(105606002)(46102001)(83506001)(21056001)(69596002)(44976005)(68736004)(83322001)(41533002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB575;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0274272F87
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1760090AbaGPAxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:53:15 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37979 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940AbaGPAxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:53:11 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-05-53c5ccf5d2f6
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Tomasz Figa'" <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org,
+        "=?ISO-8859-1?Q?'Heiko_St=FCbner'?=" <heiko@sntech.de>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+ <1404496099-26708-14-git-send-email-t.figa@samsung.com>
+ <53C5BF24.9030302@samsung.com>
+In-reply-to: <53C5BF24.9030302@samsung.com>
+Subject: RE: [PATCH 13/19] ARM: s5pv210: move debug-macro.S into the common
+ space
+Date: Wed, 16 Jul 2014 09:53:11 +0900
+Message-id: <046101cfa090$51757260$f4605720$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFp3eVipvgYGaNqEQJQzJSPj11OIgLMolGIAdCoUDucSHnQgA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+Zge7XM0eDDbZME7H4O+kYu8XUh0/Y
+	LP4/es1qsenxNVaLy7vmsFnMOL+PyWLtkbvsFqeuf2azWD/jNYvFql1/GB24PH7/msTosXPW
+	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CVsfryJKaC
+	WZwVD7onMjcwLmPvYuTkkBAwkdi+YgErhC0mceHeejYQW0hgGaPEzM9JMDVLdtwHqucCik9n
+	lOhvnAfl/GWU2DLvMjNIFZuAhsTh98/ApooIqEn83v8NrIhZ4BmTxNeD21ggOuYySjzoWwi2
+	g1NAW+Jd7zqw3cICwRKvr95nAbFZBFQl/k/bBGbzClhK/OvYAWULSvyYfA/MZhbQkdjfOo0N
+	wpaX2LzmLTPErQoSO86+ZoS4wkni+eTpTBA1IhL7XrxjBDlCQmAih0T359WsEMsEJL5NPgQ0
+	lAMoISux6QDUHEmJgytusExglJiFZPUsJKtnIVk9C8mKBYwsqxhFUwuSC4qT0otM9YoTc4tL
+	89L1kvNzNzFCon/iDsb7B6wPMSYDrZ/ILCWanA9MHnkl8YbGZkYWpiamxkbmlmakCSuJ86Y/
+	SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJi6p6Gfz3u2n7JS+CxjztWHFSQEc7tOlUvs
+	zL62JPm8Q1C3gd2mZy57z0luy1nw7YvfnOXl6nOcPKI3Zym/Llx5bjLDyvlTXQtPl218fcfu
+	p7D79/x9X492/Uut2srqJf6nyvfce7ftsi13o6M+C3vpL5F9tbbYtluI89rtzIJLb4uXWJqL
+	RSixFGckGmoxFxUnAgCao8gbFAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jQd2vZ44GG7x8y2/xd9IxdoupD5+w
+	Wfx/9JrVYtPja6wWl3fNYbOYcX4fk8XaI3fZLU5d/8xmsX7GaxaLVbv+MDpwefz+NYnRY+es
+	u+wem1Z1snlsXlLvceVEE6tH35ZVjB7br81j9vi8SS6AI6qB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6EglhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8bqy5OYCmZxVjzonsjcwLiMvYuRk0NCwERiyY77ULaYxIV769m6
+	GLk4hASmM0r0N85jh3D+MkpsmXeZGaSKTUBD4vD7Z2AdIgJqEr/3fwMrYhZ4xiTx9eA2FoiO
+	uYwSD/oWsoFUcQpoS7zrXccKYgsLBEu8vnqfBcRmEVCV+D9tE5jNK2Ap8a9jB5QtKPFj8j0w
+	m1lAR2J/6zQ2CFteYvOat8wQtypI7Dj7mhHiCieJ55OnM0HUiEjse/GOcQKj0Cwko2YhGTUL
+	yahZSFoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAhOLs+kdzCuarA4xCjAwajEw7sh
+	5GiwEGtiWXFl7iFGCQ5mJRHeH2uBQrwpiZVVqUX58UWlOanFhxhNgT6dyCwlmpwPTHx5JfGG
+	xiZmRpZGZhZGJubmSuK8B1utA4UE0hNLUrNTUwtSi2D6mDg4pRoYlywQFT1w3vHRbZvIN6uK
+	YnRvz0x6mv8o7Zp3ifYB9ndp4axq/p2zOK2VetV2n4v9MV38wXchxpoXNirBhfcuXitZMCc3
+	LzisKMbo6q9d5jZrT20ve26g73WwsO23Xax2vYQy57Xfj9iniqi1T5/1WsTcMHdR5xPnXSeZ
+	ZoTsVci54Ci4/v0WJZbijERDLeai4kQAI+ScEkQDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 05:24:37PM +0200, Antoine Ténart wrote:
-> Hi,
+Kukjin Kim wrote:
 > 
-> On Thu, Jul 03, 2014 at 08:17:34AM +0530, punnaiah choudary kalluri wrote:
-> > Since its a generic driver, support for configuring the dma_mask using
-> > dma_coerce_mask_and_coherent would be good.
-> > 
+> On 07/05/14 02:48, Tomasz Figa wrote:
+> > Move debug-macro.S from mach/include to include/debug where
+> > all other common debug macros are.
+> >
+> > Signed-off-by: Tomasz Figa<t.figa@samsung.com>
+> > ---
+> >   arch/arm/Kconfig.debug                           | 12 +++++--
+> >   arch/arm/include/debug/s5pv210.S                 | 34 ++++++++++++++++++++
+> >   arch/arm/mach-s5pv210/include/mach/debug-macro.S | 41 ------------------------
+> >   3 files changed, 44 insertions(+), 43 deletions(-)
+> >   create mode 100644 arch/arm/include/debug/s5pv210.S
+> >   delete mode 100644 arch/arm/mach-s5pv210/include/mach/debug-macro.S
+
+[...]
+
+> Tomasz,
 > 
-> Should I add a DMA mask dt property? Or just not add this and wait for
-> someone needing it in his case?
+> I couldn't apply this one from this your series because of conflict with
+> others. Can you please respin this one?
 > 
+One more note, since I didn't apply this, there is a build breakage for
+s5pv210_defconfig now...
 
-As a dt property, since most of platforms will use it. For PIO mode, the
-property can be NULL.
+arch/arm/kernel/debug.S:24:33: fatal error: mach/debug-macro.S: No such file or directory
+compilation terminated.
+make[2]: *** [arch/arm/kernel/debug.o] Error 1
+make[1]: *** [arch/arm/kernel] Error 2
+make[1]: *** Waiting for unfinished jobs....
 
--- 
+- Kukjin
 
-Best Regards,
-Peter Chen
