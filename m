@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607AbaGPHKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:10:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753334AbaGPHKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:10:42 -0400
-Message-ID: <53C62563.6050106@redhat.com>
-Date: Wed, 16 Jul 2014 09:10:27 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1759725AbaGPHM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:12:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53487 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759184AbaGPHMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 03:12:55 -0400
+Date: Wed, 16 Jul 2014 09:12:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [patch 14/55] timekeeping: Provide internal ktime_t based data
+In-Reply-To: <alpine.DEB.2.10.1407160859110.24854@nanos>
+Message-ID: <alpine.DEB.2.10.1407160909310.24854@nanos>
+References: <20140711133623.530368377@linutronix.de> <20140711133706.426549845@linutronix.de> <CALAqxLUPjqCidKaXQowDw5L2WQnyZsozpjhwO0QQcXvpXBt5fg@mail.gmail.com> <alpine.DEB.2.10.1407160859110.24854@nanos>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        x86@kernel.org, Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
-References: <cover.1405477965.git.luto@amacapital.net> <20140716064110.GV18167@minantech.com>
-In-Reply-To: <20140716064110.GV18167@minantech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 08:41 AM, Gleb Natapov wrote:
-> On Tue, Jul 15, 2014 at 07:48:06PM -0700, Andy Lutomirski wrote:
->> virtio-rng is both too complicated and insufficient for initial rng
->> seeding.  It's far too complicated to use for KASLR or any other
->> early boot random number needs.  It also provides /dev/random-style
->> bits, which means that making guest boot wait for virtio-rng is
->> unacceptably slow, and doing it asynchronously means that
->> /dev/urandom might be predictable when userspace starts.
->>
->> This introduces a very simple synchronous mechanism to get
->> /dev/urandom-style bits.
- >
-> Why can't you use RDRAND instruction for that?
+On Wed, 16 Jul 2014, Thomas Gleixner wrote:
 
-You mean using it directly? I think simply for the very same reasons
-as in c2557a303a ...
+> On Tue, 15 Jul 2014, John Stultz wrote:
+> > Hrmm.. So I do understand why this is useful performance wise.
+> > However, I'm really starting to feel that keeping all this duplicate
+> > data is a real maintenance burden, as remembering to keep the values
+> > in sync always is prone to error.
+> > 
+> > So I may have to just put up with it, but I'd like to start thinking
+> > about how to reduce the duplicated data in the future. Arnd had an
+> > interesting idea for something like storing fixed point seconds, which
+> > could be cheaply converted to either ktime_t or timespec values.
+> > However, I suspect that would be even more complex for folks to
+> > understand, which I'd rather not do.
+> > 
+> > Overall, it might be best if we just kill the timespec
+> > wall_to_monotonic/total_sleep_time/tai_offset values and keep the
+> > timekeeper values almost all in timespecs. Then we can leave the
+> 
+> So we kill the time specs and store everything in timespecs :)
+> 
+> > conversion process to basically cache the timespec values to the
+> > vsyscall_update logic?
+
+Looking into it I think for now it's the least risky approach to keep
+the core logic based on the timespec stuff unmodified and update the
+ktime_t members in timekeeping_update(). Converting the whole thing to
+a pure nsec based mechanism and update the timespec stuff in
+timekeeping_update() needs a lot more thought and we should do that
+later on. It wont change any of the interfaces.
+
+Thanks,
+
+	tglx
