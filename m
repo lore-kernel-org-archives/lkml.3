@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490AbaGPEGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:06:55 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:43431 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaGPEGx (ORCPT
+	id S933694AbaGPEIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:08:47 -0400
+Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:34430 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933644AbaGPEIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:06:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
-References: <CAH2r5muwjdPopeGCOi8a7OxAm=8cFsFKsEBywz5N1NQWotni6Q@mail.gmail.com>
-From: Steve French <smfrench@gmail.com>
-Date: Tue, 15 Jul 2014 23:06:32 -0500
-Message-ID: <CAH2r5mtW+f0OeT-3ZJHMwU16_X0zip1Bf6bPZpsQRhzPS1aXDQ@mail.gmail.com>
-Subject: Re: Additional performance data on Pavel's smb3 multi credit patch series
-To: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Jul 2014 00:08:45 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2692:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4321:4605:5007:7514:7652:7903:8957:10004:10400:10450:10455:10848:11026:11232:11658:11914:12296:12517:12519:12555:12740:13069:13255:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dad51_694d700ccec37
+X-Filterd-Recvd-Size: 2200
+Message-ID: <1405483722.14773.12.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] scripts/get_maintainer: increase threshold for
+ --follow to reduce time
+From: Joe Perches <joe@perches.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: open list <linux-kernel@vger.kernel.org>
+Date: Tue, 15 Jul 2014 21:08:42 -0700
+In-Reply-To: <CAJhHMCC1bY5ras7-W17Qh7yZq5-_eD0C-CJfa09ZpjWNoTOZ=w@mail.gmail.com>
+References: <1405193128-6848-1-git-send-email-bobby.prani@gmail.com>
+	 <CAJhHMCC1bY5ras7-W17Qh7yZq5-_eD0C-CJfa09ZpjWNoTOZ=w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Continuing testing of Pavel's newest SMB3 multicredit patch series,
-which significantly improves large file read/write speeds to Samba and
-Windows from Linux. For this workload LInux to Linux - SMB3 seems
-faster than alternatives for read (copying from the server) but about
-the same as NFS for write (copy to server).  Some additional data:
+On Tue, 2014-07-15 at 22:23 -0400, Pranith Kumar wrote:
+> ping?
+> 
+> On Sat, Jul 12, 2014 at 3:25 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> > get_maintainer tries to follow files with a matching threshold of default 50%.
+> > This is not really necessary as we do not change a file and move it in the same
+> > commit usually. Increasing the threshold to 90% should be sufficient.
+[]
+> > diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+> > index d701627..bc4a69e 100755
+> > --- a/scripts/get_maintainer.pl
+> > +++ b/scripts/get_maintainer.pl
+> > @@ -98,7 +98,7 @@ my %VCS_cmds_git = (
+> >      "execute_cmd" => \&git_execute_cmd,
+> >      "available" => '(which("git") ne "") && (-e ".git")',
+> >      "find_signers_cmd" =>
+> > -       "git log --no-color --follow --since=\$email_git_since " .
+> > +       "git log --no-color --follow -M90 --since=\$email_git_since " .
+> >             '--numstat --no-merges ' .
+> >             '--format="GitCommit: %H%n' .
+> >                       'GitAuthor: %an <%ae>%n' .
 
-client Ubuntu with 3.16-rc4 and Pavel's patch series, server Fedora 20
-(3.14.9 kernel, and Samba server version 4.1.9)
+While I understand the goal, I wonder if this should
+be in a .gitconfig, not in get_maintainers at all.
 
- dd if=/mnt/testfile of=/dev/null bs=50M count=30
+(git doesn't seem to have a config entry for score though)
 
-testfile is 1.5GB existing file, unmount/mount inbetween each large
-file copy to avoid any caching effect on client (although server will
-have cached it)
-
-SMB3 averaged 199MB/sec reads (copy from server)
-CIFS averaged 170MB/sec reads (copy from server)
-NFSv3 averaged 116MB/sec (copy from server)
-NFSv4 and v4.1 averaged 110MB/sec (copy from server)
-
-Write speeds (doing dd if=/dev/zero of=/mnt/testfile bs=60M count=25)
-were more widely varied but averaged similar speeds for copy to server
-for both NFSv3/v4/v4.1 and SMB3 (about 175MB/s)
-
-On Sun, Jul 13, 2014 at 2:23 PM, Steve French <smfrench@gmail.com> wrote:
-> Performance of Pavel's multicredit i/o SMB3 patches continues to look
-> good.  Additional informal performance results below comparing cifs
-> mounts with smb3 mounts (vers=3.0) with and without Pavel's patch set.
-> I plan to do additional testing with large rsize/wsize (default with
-> Pavel's code is 1MB).
->
-> 3.16-rc4 (Ubuntu) on client.  Server is Windows 8.1.  Both VMs on same
-> host (host disk is fairly fast SSD).
->
-> Copy to server performance increased about 20% percent
-> dd if=/dev/zero of=/mnt/targetfile bs=80M count=25
-> got similar results with or without conv=fdatasync
->
-> 1st run copying to empty directory, 2nd run copying over targetfile,
-> (pattern repeated multiple times) averaging results
->
-> New code (with Pavel's patches)
-> ---------------------------------------------
-> CIFS 167MB/s
-> SMB3 200MB/s
->
-> Existing code (without his patches)
-> ------------------------------------------------
-> SMB3 166MB/s
-> CIFS 164.5MB/s
->
-> For large file reading SMB3 performance with Pavel's patches increased
-> 76% over existing SMB3 code
-> dd of=/dev/null if=/mnt/targetfile bs=80M count=25
-> (mounting and unmounting between attempts to avoid caching effects on
-> the client)
->
-> New code (with Pavel's patches)
-> ---------------------------------------------
-> CIFS 114MB/s
-> SMB3 216MB/s
->
-> Existing code (without his patches)
-> ------------------------------------------------
-> SMB3 123MB/s
-> CIFS 110MB/s
->
-> --
-> Thanks,
->
-> Steve
+If not, the % should probably be cmd-line configurable.
 
 
-
--- 
-Thanks,
-
-Steve
