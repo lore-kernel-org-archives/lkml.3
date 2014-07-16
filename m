@@ -1,110 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760830AbaGPD0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 23:26:44 -0400
+	id S1760860AbaGPD1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 23:27:05 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55746 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758305AbaGPD0i (ORCPT
+	by vger.kernel.org with ESMTP id S1760775AbaGPD0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 23:26:38 -0400
-Message-Id: <20140716032636.883635728@goodmis.org>
+	Tue, 15 Jul 2014 23:26:39 -0400
+Message-Id: <20140716032637.509579203@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Tue, 15 Jul 2014 23:24:56 -0400
+Date: Tue, 15 Jul 2014 23:24:59 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH 1/4] tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
+        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
+        Martin Lau <kafai@fb.com>
+Subject: [PATCH 4/4] ring-buffer: Fix polling on trace_pipe
 References: <20140716032455.761976900@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-tracing-Add-ftrace_trace_stack-into-__trace_puts-__t.patch
+Content-Disposition: inline; filename=0004-ring-buffer-Fix-polling-on-trace_pipe.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Martin Lau <kafai@fb.com>
 
-Currently trace option stacktrace is not applicable for
-trace_printk with constant string argument, the reason is
-in __trace_puts/__trace_bputs ftrace_trace_stack is missing.
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-In contrast, when using trace_printk with non constant string
-argument(will call into __trace_printk/__trace_bprintk), then
-trace option stacktrace is workable, this inconstant result
-will confuses users a lot.
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-Link: http://lkml.kernel.org/p/51E7A7C9.9040401@huawei.com
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-Cc: stable@vger.kernel.org # 3.10+
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
+
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
+
+Cc: stable@vger.kernel.org # 2.6.27
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index f243444a3772..a6ffc8918dda 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -466,6 +466,9 @@ int __trace_puts(unsigned long ip, const char *str, int size)
- 	struct print_entry *entry;
- 	unsigned long irq_flags;
- 	int alloc;
-+	int pc;
-+
-+	pc = preempt_count();
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 7c56c3d06943..ff7027199a9a 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
  
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
- 		return 0;
-@@ -475,7 +478,7 @@ int __trace_puts(unsigned long ip, const char *str, int size)
- 	local_save_flags(irq_flags);
- 	buffer = global_trace.trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, alloc, 
--					  irq_flags, preempt_count());
-+					  irq_flags, pc);
- 	if (!event)
- 		return 0;
- 
-@@ -492,6 +495,7 @@ int __trace_puts(unsigned long ip, const char *str, int size)
- 		entry->buf[size] = '\0';
- 
- 	__buffer_unlock_commit(buffer, event);
-+	ftrace_trace_stack(buffer, irq_flags, 4, pc);
- 
- 	return size;
- }
-@@ -509,6 +513,9 @@ int __trace_bputs(unsigned long ip, const char *str)
- 	struct bputs_entry *entry;
- 	unsigned long irq_flags;
- 	int size = sizeof(struct bputs_entry);
-+	int pc;
-+
-+	pc = preempt_count();
- 
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
- 		return 0;
-@@ -516,7 +523,7 @@ int __trace_bputs(unsigned long ip, const char *str)
- 	local_save_flags(irq_flags);
- 	buffer = global_trace.trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
--					  irq_flags, preempt_count());
-+					  irq_flags, pc);
- 	if (!event)
- 		return 0;
- 
-@@ -525,6 +532,7 @@ int __trace_bputs(unsigned long ip, const char *str)
- 	entry->str			= str;
- 
- 	__buffer_unlock_commit(buffer, event);
-+	ftrace_trace_stack(buffer, irq_flags, 4, pc);
- 
- 	return 1;
- }
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
+-
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
 -- 
 2.0.0
 
