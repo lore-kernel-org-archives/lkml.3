@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760659AbaGPIfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:35:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41996 "EHLO mx2.suse.de"
+	id S1760704AbaGPIg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:36:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38519 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758622AbaGPIe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:34:59 -0400
-Date: Wed, 16 Jul 2014 10:34:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] mm: memcontrol: rewrite uncharge API fix - double
- migration
-Message-ID: <20140716083456.GC7121@dhcp22.suse.cz>
-References: <1404759133-29218-1-git-send-email-hannes@cmpxchg.org>
- <1404759133-29218-3-git-send-email-hannes@cmpxchg.org>
- <alpine.LSU.2.11.1407141246340.17669@eggly.anvils>
- <20140715144539.GR29639@cmpxchg.org>
+	id S1756914AbaGPIg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:36:56 -0400
+From: Lokesh Vutla <lokeshvutla@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
+        <nsekhar@ti.com>, <j-keerthy@ti.com>, <nm@ti.com>, <rogerq@ti.com>,
+        <lokeshvutla@ti.com>
+Subject: [PATCH 0/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists
+Date: Wed, 16 Jul 2014 14:06:12 +0530
+Message-ID: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140715144539.GR29639@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sorry I have missed this thread]
+This series add seperate ocp interface lists that are specific to dra74x
+and dra72x, and moving USB OTG SS4 to dra74x only since its not present
+in dra72x. Without this USB OTG SS4 hwmod gives an abort on dra72x.
 
-On Tue 15-07-14 10:45:39, Johannes Weiner wrote:
-[...]
-> From 274b94ad83b38fe7dc1707a8eb4015b3ab1673c5 Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Thu, 10 Jul 2014 01:02:11 +0000
-> Subject: [patch] mm: memcontrol: rewrite uncharge API fix - double migration
-> 
-> Hugh reports:
-> 
-> VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-> mm/memcontrol.c:6680!
-> page had count 1 mapcount 0 mapping anon index 0x196
-> flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-> mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-> compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-> __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-> handle_mm_fault < __do_page_fault
-> 
-> mem_cgroup_migrate() assumes that a page is only migrated once and
-> then freed immediately after.
-> 
-> However, putting the page back on the LRU list and dropping the
-> isolation refcount is not done atomically.  This allows a PFN-based
-> migrator like compaction to isolate the page, see the expected
-> anonymous page refcount of 1, and migrate the page once more.
-> 
-> Furthermore, once the charges are transferred to the new page, the old
-> page no longer has a pin on the memcg, which might get released before
-> the page itself now.  pc->mem_cgroup is invalid at this point, but
-> PCG_USED suggests otherwise, provoking use-after-free.
+Adding support for soc_is_dra74x() and soc_is_dra72x() in order to differentiate
+between dra74x and dra72x and pass the respective ocp interface lists.
 
-The same applies to to the new page because we are transferring only
-statistics. The old page with PCG_USED would uncharge the res_counter
-and so the new page is not backed by any and so memcg can go away.
-This sounds like a more probable scenario to me because old page should
-go away quite early after successful migration.
+Verified on dra74x evm and dra72x evm using 3.16-rc5 based mainline kernel.
 
-> Properly uncharge the page after it's been migrated, including the
-> clearing of PCG_USED, so that a subsequent charge migration attempt
-> will be able to detect it and bail out.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reported-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/memcontrol.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 1e3b27f8dc2f..1439537fe7c9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6655,7 +6655,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  
->  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
->  	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
-> -	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
->  
->  	if (PageTransHuge(oldpage)) {
->  		nr_pages <<= compound_order(oldpage);
-> @@ -6663,6 +6662,13 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
->  	}
->  
-> +	pc->flags = 0;
-> +
-> +	local_irq_disable();
-> +	mem_cgroup_charge_statistics(pc->mem_cgroup, oldpage, -nr_pages);
-> +	memcg_check_events(pc->mem_cgroup, oldpage);
-> +	local_irq_enable();
-> +
->  	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
->  }
+Before:
+dra74x : http://paste.ubuntu.com/7802364/ 
+dra72x : http://paste.ubuntu.com/7802334/ (Kernel panic)
 
-Looks good to me. I am just wondering whether we should really
-fiddle with stats and events when actually nothing changed during
-the transition. I would simply extract core of commit_charge into
-__commit_charge which would be called from here.
+After-
+dra74x : http://paste.ubuntu.com/7802340/
+dra72x : http://paste.ubuntu.com/7802338/ (booted)
 
-The impact is minimal because events are rate limited and stats are
-per-cpu so it is not a big deal it just looks ugly to me.
+Rajendra Nayak (2):
+  ARM: DRA7: Add support for soc_is_dra74x() and soc_is_dra72x()
+    varients
+  ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists
+
+ arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
+ arch/arm/mach-omap2/soc.h                 |    7 +++++++
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
