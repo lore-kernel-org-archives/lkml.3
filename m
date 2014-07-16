@@ -1,187 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758756AbaGPLL0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:11:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38405 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757528AbaGPLLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:11:13 -0400
-Date: Wed, 16 Jul 2014 13:11:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        toshi.kani@hp.com, imammedo@redhat.com, huawei.libin@huawei.com,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, umgwanakikbuti@gmail.com,
-        peterz@infradead.org
-Subject: Re: [PATCH v2] x86,cpu-hotplug: assign same CPU number to readded CPU
-Message-ID: <20140716111107.GB17464@pd.tnic>
-References: <53C62AAF.7060509@jp.fujitsu.com>
+	id S1759143AbaGPLL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:11:59 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:61566 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830AbaGPLLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:11:53 -0400
+Date: Wed, 16 Jul 2014 13:11:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140716111145.GA6150@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C62AAF.7060509@jp.fujitsu.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 04:33:03PM +0900, Yasuaki Ishimatsu wrote:
-> llc_shared_map is not cleared even if CPU is offline or hot removed.
-> So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
-> the mask has wrong value. The mask is used by CSF schduler to create
-> sched_domain. So it breaks CFS scheduler.
-> 
-> Here is a example on my system.
-> My system has 4 sockets and each socket has 15 cores and HT is enabled.
-> In this case, each core of sockes is numbered as follows:
-> 
->          | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-44, 90-104
-> Socket#3 | 45-59, 105-119
-> 
-> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-> It means that last level cache of Socket#2 is shared with
-> CPU#30-44 and 90-104.
-> 
-> When hot-removing socket#2 and #3, each core of sockets is numbered
-> as follows:
-> 
->          | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> 
-> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-> having 0x3fff80000001fffc0000000.
-> 
-> After that, when hot-adding socket#2 and #3, each core of sockets is
-> numbered as follows:
-> 
->          | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-59
-> Socket#3 | 90-119
-> 
-> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-> It means that last level cache of Socket#2 is shared with CPU#30-59
-> and 90-104. So the mask has wrong value.
-> 
-> At first, I cleared hot-removed CPU number's bit from llc_shared_map
-> when hot removing CPU. But Borislav suggested that the problem will
-> disappear if readded CPU is assigned same CPU number. And llc_shared_map
-> must not be changed.
-> 
-> So the patch assigns same CPU number to readded CPU by linking CPU
-> number to APIC ID. And by the patch, the problem disappers.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Suggested-by: Borislav Petkov <bp@alien8.de1>
+Linus,
 
-You can remove the "1" above as the domain is .de :-)
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Ok, so after looking at the dmesg you sent me, it looks like it works as
-expected.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-Apparently, the cores get enumerated in the order they're listed in SRAT
-- this also explains the mapping between APIC ID and core number in
-Linux.
+   # HEAD: 1f9a7268c67f0290837aada443d28fd953ddca90 perf: Do not allow optimized switch for non-cloned events
 
-Your patch looks simple enough as you're basically making that mapping
-explicit with apicid_to_cpunum and make sure it remains stable when the
-cores reappear.
+Tooling fixes and an Intel PMU driver fixlet.
 
-And since APIC ID doesn't change across physical hotplug (does it?), it
-all works as expected.
+ Thanks,
 
-But, since this is BIOS and BIOS does crazy hacks to accomodate b0rked
-OSes, I'd like it if Tony looked at this too, whether it makes sense and
-whether that solution is fine.
+	Ingo
 
-@Tony: the text should explain it all, leaving in the rest.
+------------------>
+HATAYAMA Daisuke (1):
+      perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
 
-Thanks.
+Jiri Olsa (2):
+      perf tools: Fix segfault in cumulative.callchain report
+      perf: Do not allow optimized switch for non-cloned events
 
-> ---
-> v2: change cpuid to cpunum
-> ---
->  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
->  1 file changed, 32 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index ad28db7..5dc3e50 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -220,6 +220,23 @@ static void apic_pm_activate(void);
->  static unsigned long apic_phys;
-> 
->  /*
-> + * Bind ACPI ID to Logical CPU number
-> + * Logical CPU number to APIC ID does not change by this array
-> + * even if CPU is hotplugged. So don't clear the array even if
-> + * CPU is hot-removed
-> + */
-> +static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
-> +	[0 ... MAX_LOCAL_APIC-1] = -1,
-> +};
-> +
-> +/*
-> + * Represent Logical CPU number bound to APIC ID
-> + * Don't clear a bit even if CPU is hot-removed
-> + */
-> +static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
-> +static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
-> +
-> +/*
->   * Get the LAPIC version
->   */
->  static inline int lapic_get_version(void)
-> @@ -2122,6 +2139,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
->  	apic_write(APIC_LVT1, value);
->  }
-> 
-> +static int get_cpunum(int apicid)
-> +{
-> +	int cpu;
-> +
-> +	cpu = apicid_to_cpunum[apicid];
-> +	if (cpu < 0)
-> +		cpu = cpumask_next_zero(-1, cpu_used_mask);
-> +
-> +	return cpu;
-> +}
-> +
->  int generic_processor_info(int apicid, int version)
->  {
->  	int cpu, max = nr_cpu_ids;
-> @@ -2199,7 +2227,9 @@ int generic_processor_info(int apicid, int version)
->  		 */
->  		cpu = 0;
->  	} else
-> -		cpu = cpumask_next_zero(-1, cpu_present_mask);
-> +		cpu = get_cpunum(apicid);
-> +
-> +	apicid_to_cpunum[apicid] = cpu;
-> 
->  	/*
->  	 * Validate version
-> @@ -2228,6 +2258,7 @@ int generic_processor_info(int apicid, int version)
->  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
->  		apic->x86_32_early_logical_apicid(cpu);
->  #endif
-> +	cpumask_set_cpu(cpu, cpu_used_mask);
->  	set_cpu_possible(cpu, true);
->  	set_cpu_present(cpu, true);
-> 
-> 
-> 
+Simon Que (1):
+      perf symbols: Get kernel start address by symbol name
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+ arch/x86/kernel/cpu/perf_event_intel.c |  9 ++++++
+ kernel/events/core.c                   |  2 +-
+ tools/perf/ui/browsers/hists.c         | 21 +++++++++----
+ tools/perf/util/machine.c              | 54 ++++++++++++++--------------------
+ 4 files changed, 48 insertions(+), 38 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index adb02aa..07846d7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1382,6 +1382,15 @@ again:
+ 	intel_pmu_lbr_read();
+ 
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
++
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a33d9a2b..b0c95f0 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2320,7 +2320,7 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+ 	next_parent = rcu_dereference(next_ctx->parent_ctx);
+ 
+ 	/* If neither context have a parent context; they cannot be clones. */
+-	if (!parent && !next_parent)
++	if (!parent || !next_parent)
+ 		goto unlock;
+ 
+ 	if (next_parent == ctx || next_ctx == parent || next_parent == parent) {
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 52c03fb..04a229a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -17,6 +17,7 @@
+ #include "../util.h"
+ #include "../ui.h"
+ #include "map.h"
++#include "annotate.h"
+ 
+ struct hist_browser {
+ 	struct ui_browser   b;
+@@ -1593,13 +1594,18 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					 bi->to.sym->name) > 0)
+ 				annotate_t = nr_options++;
+ 		} else {
+-
+ 			if (browser->selection != NULL &&
+ 			    browser->selection->sym != NULL &&
+-			    !browser->selection->map->dso->annotate_warned &&
+-				asprintf(&options[nr_options], "Annotate %s",
+-					 browser->selection->sym->name) > 0)
+-				annotate = nr_options++;
++			    !browser->selection->map->dso->annotate_warned) {
++				struct annotation *notes;
++
++				notes = symbol__annotation(browser->selection->sym);
++
++				if (notes->src &&
++				    asprintf(&options[nr_options], "Annotate %s",
++						 browser->selection->sym->name) > 0)
++					annotate = nr_options++;
++			}
+ 		}
+ 
+ 		if (thread != NULL &&
+@@ -1656,6 +1662,7 @@ retry_popup_menu:
+ 
+ 		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
+ 			struct hist_entry *he;
++			struct annotation *notes;
+ 			int err;
+ do_annotate:
+ 			if (!objdump_path && perf_session_env__lookup_objdump(env))
+@@ -1679,6 +1686,10 @@ do_annotate:
+ 				he->ms.map = he->branch_info->to.map;
+ 			}
+ 
++			notes = symbol__annotation(he->ms.sym);
++			if (!notes->src)
++				continue;
++
+ 			/*
+ 			 * Don't let this be freed, say, by hists__decay_entry.
+ 			 */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 0e5fea9..c73e1fc 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -496,18 +496,6 @@ struct process_args {
+ 	u64 start;
+ };
+ 
+-static int symbol__in_kernel(void *arg, const char *name,
+-			     char type __maybe_unused, u64 start)
+-{
+-	struct process_args *args = arg;
+-
+-	if (strchr(name, '['))
+-		return 0;
+-
+-	args->start = start;
+-	return 1;
+-}
+-
+ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
+ 					   size_t bufsz)
+ {
+@@ -517,27 +505,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
+ 		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
+ }
+ 
+-/* Figure out the start address of kernel map from /proc/kallsyms */
+-static u64 machine__get_kernel_start_addr(struct machine *machine)
++const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
++
++/* Figure out the start address of kernel map from /proc/kallsyms.
++ * Returns the name of the start symbol in *symbol_name. Pass in NULL as
++ * symbol_name if it's not that important.
++ */
++static u64 machine__get_kernel_start_addr(struct machine *machine,
++					  const char **symbol_name)
+ {
+ 	char filename[PATH_MAX];
+-	struct process_args args;
++	int i;
++	const char *name;
++	u64 addr = 0;
+ 
+ 	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+ 
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return 0;
+ 
+-	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
+-		return 0;
++	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
++		addr = kallsyms__get_function_start(filename, name);
++		if (addr)
++			break;
++	}
++
++	if (symbol_name)
++		*symbol_name = name;
+ 
+-	return args.start;
++	return addr;
+ }
+ 
+ int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
+ {
+ 	enum map_type type;
+-	u64 start = machine__get_kernel_start_addr(machine);
++	u64 start = machine__get_kernel_start_addr(machine, NULL);
+ 
+ 	for (type = 0; type < MAP__NR_TYPES; ++type) {
+ 		struct kmap *kmap;
+@@ -852,23 +854,11 @@ static int machine__create_modules(struct machine *machine)
+ 	return 0;
+ }
+ 
+-const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
+-
+ int machine__create_kernel_maps(struct machine *machine)
+ {
+ 	struct dso *kernel = machine__get_kernel(machine);
+-	char filename[PATH_MAX];
+ 	const char *name;
+-	u64 addr = 0;
+-	int i;
+-
+-	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+-
+-	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
+-		addr = kallsyms__get_function_start(filename, name);
+-		if (addr)
+-			break;
+-	}
++	u64 addr = machine__get_kernel_start_addr(machine, &name);
+ 	if (!addr)
+ 		return -1;
+ 
