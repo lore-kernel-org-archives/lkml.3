@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164AbaGPL1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:27:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51396 "EHLO bear.ext.ti.com"
+	id S932702AbaGPL1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:27:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42014 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422AbaGPL1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:27:05 -0400
+	id S1759309AbaGPL13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:27:29 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>, <santosh.shilimkar@ti.com>,
@@ -15,42 +15,92 @@ CC: <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
         <devicetree@vger.kernel.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <mugunthanvnm@ti.com>, Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2 0/2] net: davinci_mdio: reuse for keystone2 arch
-Date: Wed, 16 Jul 2014 15:13:01 +0300
-Message-ID: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com>
+Subject: [PATCH v2 2/2] net: davinci_mdio: allow to create phys from dt
+Date: Wed, 16 Jul 2014 15:13:03 +0300
+Message-ID: <1405512783-20307-3-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com>
+References: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The similar MDIO HW blocks is used by keystone 2 SoCs as
-in Davinci SoCs:
-- one in Gigabit Ethernet (GbE) Switch Subsystem
-  See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
-- one in 10 Gigabit Ethernet Subsystem
-  See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
+This patch allows to create PHYs from DT in case
+if they are explicitly defined. The of_mdiobus_register() is
+used for such purposes.
 
-Hence, reuse Davinci MDIO driver for Keystone 2 and
-enable TI networking for Keystone 2 devices.
+For backward compatibility, call  of_mdiobus_register() only in case
+if at least one PHY's child is defined in DT, otherwise rollback to
+mdiobus_register().
 
-Also, as part of this series, enable PHY's creation from DT, because
-Keystone 2 supports DT boot mode only.
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+Hi Santosh,
 
-Changes in v2:
-- review comments applied. 
-  Keystone 2 compatibility string changed to "ti,keystone_mdio".
+I haven't changed style for long-comments, because Networking subsystem
+requires first line of comment not to be empty:
+WARNING:NETWORKING_BLOCK_COMMENT_STYLE: networking block comments don't use an empty /* line, use /* Comment...
 
-Grygorii Strashko (2):
-  net: davinci_mdio: reuse for keystone2 arch
-  net: davinci_mdio: allow to create phys from dt
+ drivers/net/ethernet/ti/davinci_mdio.c |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
- .../devicetree/bindings/net/davinci-mdio.txt       |    8 ++++----
- drivers/net/ethernet/ti/Kconfig                    |    4 ++--
- drivers/net/ethernet/ti/davinci_mdio.c             |   21 ++++++++++++++++++--
- 3 files changed, 25 insertions(+), 8 deletions(-)
-
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 735dc53..2791f6f 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -38,6 +38,7 @@
+ #include <linux/davinci_emac.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/of_mdio.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+ /*
+@@ -95,6 +96,10 @@ struct davinci_mdio_data {
+ 	struct mii_bus	*bus;
+ 	bool		suspended;
+ 	unsigned long	access_time; /* jiffies */
++	/* Indicates that driver shouldn't modify phy_mask in case
++	 * if MDIO bus is registered from DT.
++	 */
++	bool		skip_scan;
+ };
+ 
+ static void __davinci_mdio_reset(struct davinci_mdio_data *data)
+@@ -144,6 +149,9 @@ static int davinci_mdio_reset(struct mii_bus *bus)
+ 	dev_info(data->dev, "davinci mdio revision %d.%d\n",
+ 		 (ver >> 8) & 0xff, ver & 0xff);
+ 
++	if (data->skip_scan)
++		return 0;
++
+ 	/* get phy mask from the alive register */
+ 	phy_mask = __raw_readl(&data->regs->alive);
+ 	if (phy_mask) {
+@@ -369,8 +377,17 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 		goto bail_out;
+ 	}
+ 
+-	/* register the mii bus */
+-	ret = mdiobus_register(data->bus);
++	/* register the mii bus
++	 * Create PHYs from DT only in case if PHY child nodes are explicitly
++	 * defined to support backward compatibility with DTs which assume that
++	 * Davinci MDIO will always scan the bus for PHYs detection.
++	 */
++	if (dev->of_node && of_get_child_count(dev->of_node)) {
++		data->skip_scan = true;
++		ret = of_mdiobus_register(data->bus, dev->of_node);
++	} else {
++		ret = mdiobus_register(data->bus);
++	}
+ 	if (ret)
+ 		goto bail_out;
+ 
 -- 
 1.7.9.5
 
