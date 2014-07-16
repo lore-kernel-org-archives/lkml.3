@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaGPVeU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:34:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38616 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122AbaGPVeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:34:16 -0400
-Date: Wed, 16 Jul 2014 23:34:12 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: viro@zeniv.linux.org.uk, clm@fb.com, jbacik@fb.com,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffm@suse.com, fdmanana@suse.com
-Subject: Re: [RFC 0/2] vfs / btrfs: add support for ustat()
-Message-ID: <20140716213412.GP10393@wotan.suse.de>
-References: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1754060AbaGPVeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:34:44 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61822 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaGPVek (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 17:34:40 -0400
+Date: Thu, 17 Jul 2014 00:34:34 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 06/10] proc: convert /proc/$PID/schedstat to seq_file
+ interface
+Message-ID: <20140716213434.GE21290@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 04:07:03PM -0700, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> ustat() does not work for btrfs, the reason is the VFS layer
-> cannot get to the super block from the anonymous bdevs. The
-> way these are used within btrfs though are to actually use a
-> series of them per superblock. This modifies the way the
-> VFS exposes these bdevs by pegging them onto the super
-> block on a linked list. This should also allow us to grow
-> the subdevices on the super block with any other information
-> that might be better suited underneath so that the VFS
-> layer is aware. If this approach is reasonable then perhaps
-> we should next remove the exported symbol for get_anon_bdev()
-> as btrfs was the only user.
-> 
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Based on some private review I got this can be simplified leaving
-the embedded the struct on the fs data structure and just using
-it to expose it on the VFS. Will send a v2.
+ fs/proc/base.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-  Luis
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -311,9 +311,10 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ /*
+  * Provides /proc/PID/schedstat
+  */
+-static int proc_pid_schedstat(struct task_struct *task, char *buffer)
++static int proc_pid_schedstat(struct seq_file *m, struct pid_namespace *ns,
++			      struct pid *pid, struct task_struct *task)
+ {
+-	return sprintf(buffer, "%llu %llu %lu\n",
++	return seq_printf(m, "%llu %llu %lu\n",
+ 			(unsigned long long)task->se.sum_exec_runtime,
+ 			(unsigned long long)task->sched_info.run_delay,
+ 			task->sched_info.pcount);
+@@ -2605,7 +2606,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+-	INF("schedstat",  S_IRUGO, proc_pid_schedstat),
++	ONE("schedstat",  S_IRUGO, proc_pid_schedstat),
+ #endif
+ #ifdef CONFIG_LATENCYTOP
+ 	REG("latency",  S_IRUGO, proc_lstats_operations),
+@@ -2943,7 +2944,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+-	INF("schedstat", S_IRUGO, proc_pid_schedstat),
++	ONE("schedstat", S_IRUGO, proc_pid_schedstat),
+ #endif
+ #ifdef CONFIG_LATENCYTOP
+ 	REG("latency",  S_IRUGO, proc_lstats_operations),
