@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933493AbaGPMaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:30:06 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.40]:40777 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933140AbaGPMaD (ORCPT
+	id S933590AbaGPMaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:30:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47859 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933226AbaGPM3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:30:03 -0400
-X-Greylist: delayed 3337 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 08:30:03 EDT
-Message-ID: <53C6633D.9080905@ladisch.de>
-Date: Wed, 16 Jul 2014 13:34:21 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 08:29:37 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <nsekhar@ti.com>, <joelf@ti.com>, <vinod.koul@intel.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <dmaengine@vger.kernel.org>, <tglx@linutronix.de>
+Subject: [PATCH 1/2] dma: edma: Update caps->residue_granularity to match with reality
+Date: Wed, 16 Jul 2014 15:29:20 +0300
+Message-ID: <1405513761-23739-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1405513761-23739-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1405513761-23739-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: firewire: CLOCK_MONOTONIC_RAW exposure
-References: <alpine.DEB.2.10.1407161151450.24854@nanos>
-In-Reply-To: <alpine.DEB.2.10.1407161151450.24854@nanos>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
-> I wonder why firewire exposed CLOCK_MONOTONIC_RAW to user space.
->
-> What's the purpose of that? CLOCK_MONOTONIC_RAW is the raw time based
-> on the initial frequency setup of the clocksource. That can be quite
-> off from the NTP corrected frequency which is exposed by
-> CLOCK_MONOTONIC.
+The edma can report accurate DMA position so update the residue_granularity
+to DMA_RESIDUE_GRANULARITY_BURST.
 
-The purpose is to get a stable clock, i.e., to avoid clock rate changes
-caused by NTP corrections.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/dma/edma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-ALSA is adding CLOCK_MONOTONIC_RAW for the same reason.
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index fe55f78ea137..d5017abcf7cb 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -1001,7 +1001,7 @@ static int edma_dma_device_slave_caps(struct dma_chan *dchan,
+ 	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+ 	caps->cmd_pause = true;
+ 	caps->cmd_terminate = true;
+-	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_DESCRIPTOR;
++	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
+ 
+ 	return 0;
+ }
+-- 
+2.0.0
 
-
-Regards,
-Clemens
