@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934997AbaGPTPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:15:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43955 "EHLO
+	id S1760675AbaGPTOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:14:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43946 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760682AbaGPTOb (ORCPT
+	with ESMTP id S1760551AbaGPTOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:14:31 -0400
-Date: Wed, 16 Jul 2014 12:13:52 -0700
+	Wed, 16 Jul 2014 15:14:25 -0400
+Date: Wed, 16 Jul 2014 12:13:37 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-otc3ployokfci5qi81o7jo22@git.kernel.org>
+Message-ID: <tip-ielvluuemzn30bneh0zk3twi@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
@@ -21,8 +21,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists browser: Introduce gotorc method
-Git-Commit-ID: ca3ff33b5c2dc67daa8d4d130e3bd6231fcb3d14
+Subject: [tip:perf/core] perf ui browser:
+  Allow overriding refresh_dimensions method
+Git-Commit-ID: fa70b5d66d6e9de3331f57e434a16bc0eee980a8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,17 +36,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ca3ff33b5c2dc67daa8d4d130e3bd6231fcb3d14
-Gitweb:     http://git.kernel.org/tip/ca3ff33b5c2dc67daa8d4d130e3bd6231fcb3d14
+Commit-ID:  fa70b5d66d6e9de3331f57e434a16bc0eee980a8
+Gitweb:     http://git.kernel.org/tip/fa70b5d66d6e9de3331f57e434a16bc0eee980a8
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 1 Jul 2014 16:42:24 -0300
+AuthorDate: Tue, 1 Jul 2014 16:34:42 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 7 Jul 2014 12:36:54 -0300
 
-perf hists browser: Introduce gotorc method
+perf ui browser: Allow overriding refresh_dimensions method
 
-That will allow us to add a row offset to open up space for the column
-headers.
+Some browsers, like the hist_browser, may want to be notified everytime
+a refresh_dimensions is needed, so that it can reset ui_browser->rows,
+for instance, or do some other related reaction to screen resizings.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -57,52 +59,47 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-otc3ployokfci5qi81o7jo22@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ielvluuemzn30bneh0zk3twi@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ tools/perf/ui/browser.c | 7 +++++--
+ tools/perf/ui/browser.h | 1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index e16aff4..ca63564 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -63,6 +63,11 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- 			     sizeof("[k]"));
- }
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index adb294a..6680fa5 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -250,7 +250,10 @@ int ui_browser__show(struct ui_browser *browser, const char *title,
+ 	int err;
+ 	va_list ap;
  
-+static void hist_browser__gotorc(struct hist_browser *browser, int row, int column)
-+{
-+	ui_browser__gotorc(&browser->b, row, column);
-+}
+-	ui_browser__refresh_dimensions(browser);
++	if (browser->refresh_dimensions == NULL)
++		browser->refresh_dimensions = ui_browser__refresh_dimensions;
 +
- static void hist_browser__reset(struct hist_browser *browser)
- {
- 	/*
-@@ -508,7 +513,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browse
- 			}
++	browser->refresh_dimensions(browser);
  
- 			ui_browser__set_color(&browser->b, color);
--			ui_browser__gotorc(&browser->b, row, 0);
-+			hist_browser__gotorc(browser, row, 0);
- 			slsmg_write_nstring(" ", offset + extra_offset);
- 			slsmg_printf("%c ", folded_sign);
- 			slsmg_write_nstring(str, width);
-@@ -567,7 +572,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *browser,
+ 	pthread_mutex_lock(&ui__lock);
+ 	__ui_browser__show_title(browser, title);
+@@ -367,7 +370,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
  
- 		s = callchain_list__sym_name(chain, bf, sizeof(bf),
- 					     browser->show_dso);
--		ui_browser__gotorc(&browser->b, row, 0);
-+		hist_browser__gotorc(browser, row, 0);
- 		ui_browser__set_color(&browser->b, color);
- 		slsmg_write_nstring(" ", offset);
- 		slsmg_printf("%c ", folded_sign);
-@@ -732,7 +737,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 			.ptr		= &arg,
- 		};
- 
--		ui_browser__gotorc(&browser->b, row, 0);
-+		hist_browser__gotorc(browser, row, 0);
- 
- 		perf_hpp__for_each_format(fmt) {
- 			if (perf_hpp__should_skip(fmt))
+ 		if (key == K_RESIZE) {
+ 			ui__refresh_dimensions(false);
+-			ui_browser__refresh_dimensions(browser);
++			browser->refresh_dimensions(browser);
+ 			__ui_browser__show_title(browser, browser->title);
+ 			ui_helpline__puts(browser->helpline);
+ 			continue;
+diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
+index cb8f39a..92ae721 100644
+--- a/tools/perf/ui/browser.h
++++ b/tools/perf/ui/browser.h
+@@ -19,6 +19,7 @@ struct ui_browser {
+ 	void	      *priv;
+ 	const char    *title;
+ 	char	      *helpline;
++	void 	      (*refresh_dimensions)(struct ui_browser *browser);
+ 	unsigned int  (*refresh)(struct ui_browser *browser);
+ 	void	      (*write)(struct ui_browser *browser, void *entry, int row);
+ 	void	      (*seek)(struct ui_browser *browser, off_t offset, int whence);
