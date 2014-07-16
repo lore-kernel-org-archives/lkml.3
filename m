@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934881AbaGPSnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:43:37 -0400
-Received: from mail.kernel.org ([198.145.19.201]:60690 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaGPSnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:43:35 -0400
-Date: Wed, 16 Jul 2014 20:43:30 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH v2] power: poweroff: gpio: convert to use descriptors
-Message-ID: <20140716184330.GC6438@earth.universe>
-References: <1404729272-17873-1-git-send-email-linus.walleij@linaro.org>
+	id S935001AbaGPSpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:45:14 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:30890 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934841AbaGPSpL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:45:11 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: James Bottomley <jbottomley@parallels.com>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "kys@microsoft.com" <kys@microsoft.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Thread-Index: AQHPoR4GwAidebdDdkqVl4qxemzvp5ui/ekAgAABJhA=
+Date: Wed, 16 Jul 2014 18:43:43 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958BA721F@G9W0745.americas.hpqcorp.net>
+References: <20140709084300.GD6012@infradead.org>
+	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
+	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
+	 <20140711063216.GA20660@infradead.org>
+	 <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <yq1a98d2z5x.fsf@sermon.lab.mkp.net> <20140716110111.GA7382@infradead.org>
+	 <yq14myhtijx.fsf@sermon.lab.mkp.net> <20140716173827.GB20528@infradead.org>
+	 <yq1fvi1rya0.fsf@sermon.lab.mkp.net>
+ <1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="E13BgyNx05feLLmH"
-Content-Disposition: inline
-In-Reply-To: <1404729272-17873-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---E13BgyNx05feLLmH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of James Bottomley
+> Sent: Wednesday, 16 July, 2014 1:02 PM
+> To: martin.petersen@oracle.com
+> Cc: linux-kernel@vger.kernel.org; hch@infradead.org;
+> devel@linuxdriverproject.org; apw@canonical.com; kys@microsoft.com;
+> stable@vger.kernel.org; linux-scsi@vger.kernel.org; ohering@suse.com;
+> jasowang@redhat.com
+> Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+> 
+> On Wed, 2014-07-16 at 13:47 -0400, Martin K. Petersen wrote:
+> > >>>>> "Christoph" == hch@infradead org <hch@infradead.org> writes:
+> >
+> > Christoph> Oh, we actually have devices that support WRITE SAME with
+> > Christoph> unmap, but not without?  That's defintively a little strange.
+> >
+> > Yep :(
+> >
+> > There were several SSDs that did not want to support wearing out flash
+> > by writing gobs of zeroes and only support the UNMAP case.
+> >
+> > Christoph> Yes, and it did this intentionally.  I really wouldn't expect
+> > Christoph> devices to support WRITE SAME with UNMAP but blow up on a
+> > Christoph> WRITE SAME without it (and not just simple fail it in an
+> > Christoph> orderly way).
+> >
+> > *sigh*
+> >
+> > Christoph> It definitively seems odd to default to trying WRITE SAME for
+> > Christoph> unmap for a device that explicitly tells us that it doesn't
+> > Christoph> support WRITE SAME.
+> >
+> > Maybe it's just a naming thing. I was really trying to convey
+> > no_req_write_same support, not no_write_same_10_or_16.
+> >
+> > Christoph> Note that I'm not against your patch - I suspect forcing us
+> > Christoph> to read EVPD pages even for devices that claim to be SPC-2
+> > Christoph> will come in useful in various scenarios.
+> >
+> > I don't have a problem with a BLIST_PREFER_UNMAP flag or something like
+> > that. But BLIST_TRY_VPD_PAGES seems more generally useful and it does
+> > fix the problem at hand. That's why I went that route.
+> 
+> Hang on ... unless we apply Christoph or my fix, we'll get the same
+> issue with every raid driver (that's about 10 I think) that set
+> no_write_same when they hit a >2TB RAID volume, so I think we need both
+> fixes.
+> 
+> James
+> 
 
-On Mon, Jul 07, 2014 at 12:34:32PM +0200, Linus Walleij wrote:
-> This switches the GPIO poweroff driver to use GPIO descriptors
-> rather than numeral GPIOs. We get rid of the specific inversion
-> handling as GPIO descriptors know if they are active low or
-> high and can assert the line properly, so we do not need to
-> check the flag OF_GPIO_ACTIVE_LOW returned from the old call
-> of_get_gpio_flags() anymore.
->=20
-> Also convert to use managed resources and use dev_* message
-> printing while we're at it.
+WRITE SAME with the UNMAP bit set to one (and a few other
+conditions) guarantees that the data is zeroed out, while
+the UNMAP command is just a hint.  They're not fully
+interchangeable.  Which semantics are implied by REQ_DISCARD
+and these functions?
 
-I added this patch to [0], which I use to queue patches until I get
-access to battery.git.
+One benefit of UNMAP is that UNMAP supports a list of 
+discontiguous LBA ranges, whereas WRITE SAME just supports 
+one LBA range.  sd_setup_discard_cmnd is not taking
+advantage of this feature, though.  Ideally, the block
+layer would merge multiple discards into one UNMAP command 
+if they're stuck on the request queue for a while, like 
+it merges adjacent reads and writes.  That would pave the way
+for building up WRITE SCATTERED and READ GATHERED commands.
 
-[0] https://git.kernel.org/cgit/linux/kernel/git/sre/linux-power-supply.git=
-/commit/?h=3Ddev&id=3D81324804b10c775fc328dbd417114791aa01d5e1
 
--- Sebastian
-
---E13BgyNx05feLLmH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTxsfSAAoJENju1/PIO/qafXgP/iPVpMerCFoW9rHw+eLET4R0
-a14EDnVuCSsFczje7zjLv8Eg7XLnk+aaCkEMXG4xiTnu/ZmqZiJukAZzdFkA2b4E
-aHc2oNJH5E+fYkGoob+Na10LCGnylkuXnLdHjDF39DbgrSZOzhCQXRiYvfU3ez3Q
-geNGrpX1eYDlOQ8diVdEHbzxJM84MgLYTFANWF7UPm6+h6eSpPH0nGAbQDE4U5It
-C12sw7t1cffTQaCXKhQIB3lpN281n8BJOw9dibzS2pcqbJtIKMRVXBPNf0GJC5d/
-QfRRt0vv3Z4hwyfDD2JNV0MbFQGg1gAwU9Db6WfjDYO4hVDSYH/tjlSzYWYPsHKp
-yLRMAiUgNL9J1zDCyj45HoDQvqOQL9sbf8XM7zHTjNHlgOgv/jNFNwGwkDlgeVjg
-jiNcSVrHwcTtt859Rdn4OxoAwMfNcaN+/3uZV6pysoqOy3N6AbG1D/vcCl0h4zUX
-RzG77aWjgdaI0cRIS0ejrrycyrPlzSnU3c22dfTuMtjQ6U4zPKkJQivSl6ilCjh1
-6zOoj6ezm9YW3RlVjo+YPVmNRMQFJg3LusSYmGUsx7sVxGAnR/NUbAs72xKf3OB+
-HsDa6lBv4djYwXi5RD6QCUgO6/guHBrrbJUcFo3SMOY7I4+4zx47FjJcfTt3pau1
-epOyz0n+C009ODPu/tOg
-=BouM
------END PGP SIGNATURE-----
-
---E13BgyNx05feLLmH--
