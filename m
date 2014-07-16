@@ -1,490 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381AbaGPLlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:41:09 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16030 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758916AbaGPLlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:41:06 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 16 Jul 2014 04:33:38 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
-        <hdegoede@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v4 7/8] ata: Add support for the Tegra124 SATA controller
-Date: Wed, 16 Jul 2014 14:40:58 +0300
-Message-ID: <1405510858-32195-1-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1405500863-19696-8-git-send-email-mperttunen@nvidia.com>
-References: <1405500863-19696-8-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
+	id S1759475AbaGPLlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:41:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758324AbaGPLlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:41:19 -0400
+Date: Wed, 16 Jul 2014 08:41:00 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] ensure guest's kvmclock never goes backwards when TSC
+ jumps backward
+Message-ID: <20140716114100.GA7394@amt.cnet>
+References: <1405504368-5581-1-git-send-email-imammedo@redhat.com>
+ <53C6517D.9090600@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C6517D.9090600@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the integrated AHCI-compliant Serial ATA
-controller present on the NVIDIA Tegra124 system-on-chip.
+On Wed, Jul 16, 2014 at 12:18:37PM +0200, Paolo Bonzini wrote:
+> Il 16/07/2014 11:52, Igor Mammedov ha scritto:
+> >There are buggy hosts in the wild that advertise invariant
+> >TSC and as result host uses TSC as clocksource, but TSC on
+> >such host sometimes sporadically jumps backwards.
+> >
+> >This causes kvmclock to go backwards if host advertises
+> >PVCLOCK_TSC_STABLE_BIT, which turns off aggregated clock
+> >accumulator and returns:
+> >  pvclock_vcpu_time_info.system_timestamp + offset
+> >where 'offset' is calculated using TSC.
+> >Since TSC is not virtualized in KVM, it makes guest see
+> >TSC jumped backwards and leads to kvmclock going backwards
+> >as well.
+> >
+> >This is defensive patch that keeps per CPU last clock value
+> >and ensures that clock will never go backwards even with
+> >using PVCLOCK_TSC_STABLE_BIT enabled path.
+> 
+> I'm not sure that a per-CPU value is enough; your patch can make the
+> problem much less frequent of course, but I'm not sure neither
+> detection nor correction are 100% reliable.  Your addition is
+> basically a faster but less reliable version of the last_value
+> logic.
+> 
+> If may be okay to have detection that is faster but not 100%
+> reliable. However, once you find that the host is buggy I think the
+> correct thing to do is to write last_value and kill
+> PVCLOCK_TSC_STABLE_BIT from valid_flags.
+> 
+> Did you check that the affected host has the latest microcode?
+> Alternatively, could we simply blacklist some CPU steppings?  I'm
+> not sure who we could ask at AMD :( but perhaps there is an erratum.
+> 
+> Paolo
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
-v4: init phy in power_on
+Igor,
 
- drivers/ata/Kconfig      |   9 ++
- drivers/ata/Makefile     |   1 +
- drivers/ata/ahci_tegra.c | 406 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 416 insertions(+)
- create mode 100644 drivers/ata/ahci_tegra.c
+Can we move detection to the host TSC clocksource driver ?
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index b0d5b5a..e1b9278 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -142,6 +142,15 @@ config AHCI_SUNXI
- 
- 	  If unsure, say N.
- 
-+config AHCI_TEGRA
-+	tristate "NVIDIA Tegra124 AHCI SATA support"
-+	depends on ARCH_TEGRA
-+	help
-+	  This option enables support for the NVIDIA Tegra124 SoC's
-+	  onboard AHCI SATA.
-+
-+	  If unsure, say N.
-+
- config AHCI_XGENE
- 	tristate "APM X-Gene 6.0Gbps AHCI SATA host controller support"
- 	depends on PHY_XGENE
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index 5a02aee..ae41107 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
-+obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_XGENE)	+= ahci_xgene.o libahci.o libahci_platform.o
- 
- # SFF w/ custom DMA
-diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
-new file mode 100644
-index 0000000..0f59ae4
---- /dev/null
-+++ b/drivers/ata/ahci_tegra.c
-@@ -0,0 +1,406 @@
-+/*
-+ * drivers/ata/ahci_tegra.c
-+ *
-+ * Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * Author:
-+ *	Mikko Perttunen <mperttunen@nvidia.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/ahci_platform.h>
-+#include <linux/reset.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/tegra-powergate.h>
-+#include <linux/regulator/consumer.h>
-+#include "ahci.h"
-+
-+#define SATA_CONFIGURATION_0				0x180
-+#define SATA_CONFIGURATION_EN_FPCI			BIT(0)
-+
-+#define SCFG_OFFSET					0x1000
-+
-+#define T_SATA0_CFG_1					0x04
-+#define T_SATA0_CFG_1_IO_SPACE				BIT(0)
-+#define T_SATA0_CFG_1_MEMORY_SPACE			BIT(1)
-+#define T_SATA0_CFG_1_BUS_MASTER			BIT(2)
-+#define T_SATA0_CFG_1_SERR				BIT(8)
-+
-+#define T_SATA0_CFG_9					0x24
-+#define T_SATA0_CFG_9_BASE_ADDRESS_SHIFT		13
-+
-+#define SATA_FPCI_BAR5					0x94
-+#define SATA_FPCI_BAR5_START_SHIFT			4
-+
-+#define SATA_INTR_MASK					0x188
-+#define SATA_INTR_MASK_IP_INT_MASK			BIT(16)
-+
-+#define T_SATA0_AHCI_HBA_CAP_BKDR			0x300
-+
-+#define T_SATA0_BKDOOR_CC				0x4a4
-+
-+#define T_SATA0_CFG_SATA				0x54c
-+#define T_SATA0_CFG_SATA_BACKDOOR_PROG_IF_EN		BIT(12)
-+
-+#define T_SATA0_CFG_MISC				0x550
-+
-+#define T_SATA0_INDEX					0x680
-+
-+#define T_SATA0_CHX_PHY_CTRL1_GEN1			0x690
-+#define T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_MASK		0xff
-+#define T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_SHIFT		0
-+#define T_SATA0_CHX_PHY_CTRL1_GEN1_TX_PEAK_MASK		(0xff << 8)
-+#define T_SATA0_CHX_PHY_CTRL1_GEN1_TX_PEAK_SHIFT	8
-+
-+#define T_SATA0_CHX_PHY_CTRL1_GEN2			0x694
-+#define T_SATA0_CHX_PHY_CTRL1_GEN2_TX_AMP_MASK		0xff
-+#define T_SATA0_CHX_PHY_CTRL1_GEN2_TX_AMP_SHIFT		0
-+#define T_SATA0_CHX_PHY_CTRL1_GEN2_TX_PEAK_MASK		(0xff << 12)
-+#define T_SATA0_CHX_PHY_CTRL1_GEN2_TX_PEAK_SHIFT	12
-+
-+#define T_SATA0_CHX_PHY_CTRL2				0x69c
-+#define T_SATA0_CHX_PHY_CTRL2_CDR_CNTL_GEN1		0x23
-+
-+#define T_SATA0_CHX_PHY_CTRL11				0x6d0
-+#define T_SATA0_CHX_PHY_CTRL11_GEN2_RX_EQ		(0x2800 << 16)
-+
-+#define FUSE_SATA_CALIB					0x124
-+#define FUSE_SATA_CALIB_MASK				0x3
-+
-+enum sata_clks {
-+	AHCI_CLK_SATA		= 0,
-+	AHCI_CLK_SATA_OOB	= 1,
-+	AHCI_CLK_CML1		= 2,
-+	AHCI_CLK_PLL_E		= 3
-+};
-+
-+struct sata_pad_calibration {
-+	u8 gen1_tx_amp;
-+	u8 gen1_tx_peak;
-+	u8 gen2_tx_amp;
-+	u8 gen2_tx_peak;
-+};
-+
-+static const struct sata_pad_calibration tegra124_pad_calibration[] = {
-+	{0x18, 0x04, 0x18, 0x0a},
-+	{0x0e, 0x04, 0x14, 0x0a},
-+	{0x0e, 0x07, 0x1a, 0x0e},
-+	{0x14, 0x0e, 0x1a, 0x0e},
-+};
-+
-+struct tegra_ahci_priv {
-+	struct platform_device	   *pdev;
-+	void __iomem		   *sata_regs;
-+	struct reset_control	   *sata_rst;
-+	struct reset_control	   *sata_oob_rst;
-+	struct reset_control	   *sata_cold_rst;
-+	struct regulator_bulk_data supplies[5];
-+};
-+
-+static int tegra_ahci_power_on(struct ahci_host_priv *hpriv)
-+{
-+	struct tegra_ahci_priv *tegra = hpriv->plat_data;
-+	int ret;
-+
-+	ret = regulator_bulk_enable(ARRAY_SIZE(tegra->supplies),
-+				    tegra->supplies);
-+	if (ret)
-+		return ret;
-+
-+	ret = tegra_powergate_sequence_power_up(TEGRA_POWERGATE_SATA,
-+						hpriv->clks[AHCI_CLK_SATA],
-+						tegra->sata_rst);
-+	if (ret)
-+		goto disable_regulators;
-+
-+	reset_control_assert(tegra->sata_oob_rst);
-+	reset_control_assert(tegra->sata_cold_rst);
-+
-+	ret = clk_prepare_enable(hpriv->clks[AHCI_CLK_SATA_OOB]);
-+	if (ret)
-+		goto disable_power;
-+
-+	ret = clk_prepare_enable(hpriv->clks[AHCI_CLK_CML1]);
-+	if (ret)
-+		goto disable_oob;
-+
-+	ret = clk_prepare_enable(hpriv->clks[AHCI_CLK_PLL_E]);
-+	if (ret)
-+		goto disable_cml1;
-+
-+	reset_control_deassert(tegra->sata_cold_rst);
-+	reset_control_deassert(tegra->sata_oob_rst);
-+
-+	ret = phy_init(hpriv->phy);
-+	if (ret)
-+		goto disable_plle;
-+
-+	ret = phy_power_on(hpriv->phy);
-+	if (ret)
-+		goto exit_phy;
-+
-+	return 0;
-+
-+exit_phy:
-+	phy_exit(hpriv->phy);
-+
-+disable_plle:
-+	clk_disable_unprepare(hpriv->clks[AHCI_CLK_PLL_E]);
-+
-+disable_cml1:
-+	clk_disable_unprepare(hpriv->clks[AHCI_CLK_CML1]);
-+
-+disable_oob:
-+	clk_disable_unprepare(hpriv->clks[AHCI_CLK_SATA_OOB]);
-+
-+disable_power:
-+	clk_disable_unprepare(hpriv->clks[AHCI_CLK_SATA]);
-+
-+	tegra_powergate_power_off(TEGRA_POWERGATE_SATA);
-+
-+disable_regulators:
-+	regulator_bulk_disable(ARRAY_SIZE(tegra->supplies), tegra->supplies);
-+
-+	return ret;
-+}
-+
-+static void tegra_ahci_power_off(struct ahci_host_priv *hpriv)
-+{
-+	struct tegra_ahci_priv *tegra = hpriv->plat_data;
-+
-+	ahci_platform_disable_resources(hpriv);
-+
-+	reset_control_assert(tegra->sata_rst);
-+	reset_control_assert(tegra->sata_oob_rst);
-+	reset_control_assert(tegra->sata_cold_rst);
-+
-+	tegra_powergate_power_off(TEGRA_POWERGATE_SATA);
-+
-+	regulator_bulk_disable(ARRAY_SIZE(tegra->supplies), tegra->supplies);
-+}
-+
-+static int tegra_ahci_controller_init(struct ahci_host_priv *hpriv)
-+{
-+	struct tegra_ahci_priv *tegra = hpriv->plat_data;
-+	int ret;
-+	unsigned int val;
-+	struct sata_pad_calibration calib;
-+
-+	ret = tegra_ahci_power_on(hpriv);
-+	if (ret) {
-+		dev_err(&tegra->pdev->dev,
-+			"failed to power on AHCI controller: %d\n", ret);
-+		return ret;
-+	}
-+
-+	val = readl(tegra->sata_regs + SATA_CONFIGURATION_0);
-+	val |= SATA_CONFIGURATION_EN_FPCI;
-+	writel(val, tegra->sata_regs + SATA_CONFIGURATION_0);
-+
-+	/* Pad calibration */
-+
-+	/* FIXME Always use calibration 0. Change this to read the calibration
-+	 * fuse once the fuse driver has landed. */
-+	val = 0;
-+
-+	calib = tegra124_pad_calibration[val & FUSE_SATA_CALIB_MASK];
-+
-+	writel(BIT(0), tegra->sata_regs + SCFG_OFFSET + T_SATA0_INDEX);
-+
-+	val = readl(tegra->sata_regs +
-+		SCFG_OFFSET + T_SATA0_CHX_PHY_CTRL1_GEN1);
-+	val &= ~T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_MASK;
-+	val &= ~T_SATA0_CHX_PHY_CTRL1_GEN1_TX_PEAK_MASK;
-+	val |= calib.gen1_tx_amp <<
-+			T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_SHIFT;
-+	val |= calib.gen1_tx_peak <<
-+			T_SATA0_CHX_PHY_CTRL1_GEN1_TX_PEAK_SHIFT;
-+	writel(val, tegra->sata_regs + SCFG_OFFSET +
-+		T_SATA0_CHX_PHY_CTRL1_GEN1);
-+
-+	val = readl(tegra->sata_regs +
-+			SCFG_OFFSET + T_SATA0_CHX_PHY_CTRL1_GEN2);
-+	val &= ~T_SATA0_CHX_PHY_CTRL1_GEN2_TX_AMP_MASK;
-+	val &= ~T_SATA0_CHX_PHY_CTRL1_GEN2_TX_PEAK_MASK;
-+	val |= calib.gen2_tx_amp <<
-+			T_SATA0_CHX_PHY_CTRL1_GEN1_TX_AMP_SHIFT;
-+	val |= calib.gen2_tx_peak <<
-+			T_SATA0_CHX_PHY_CTRL1_GEN1_TX_PEAK_SHIFT;
-+	writel(val, tegra->sata_regs + SCFG_OFFSET +
-+		T_SATA0_CHX_PHY_CTRL1_GEN2);
-+
-+	writel(T_SATA0_CHX_PHY_CTRL11_GEN2_RX_EQ,
-+		tegra->sata_regs + SCFG_OFFSET + T_SATA0_CHX_PHY_CTRL11);
-+	writel(T_SATA0_CHX_PHY_CTRL2_CDR_CNTL_GEN1,
-+		tegra->sata_regs + SCFG_OFFSET + T_SATA0_CHX_PHY_CTRL2);
-+
-+	writel(0, tegra->sata_regs + SCFG_OFFSET + T_SATA0_INDEX);
-+
-+	/* Program controller device ID */
-+
-+	val = readl(tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_SATA);
-+	val |= T_SATA0_CFG_SATA_BACKDOOR_PROG_IF_EN;
-+	writel(val, tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_SATA);
-+
-+	writel(0x01060100, tegra->sata_regs + SCFG_OFFSET + T_SATA0_BKDOOR_CC);
-+
-+	val = readl(tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_SATA);
-+	val &= ~T_SATA0_CFG_SATA_BACKDOOR_PROG_IF_EN;
-+	writel(val, tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_SATA);
-+
-+	/* Enable IO & memory access, bus master mode */
-+
-+	val = readl(tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_1);
-+	val |= T_SATA0_CFG_1_IO_SPACE | T_SATA0_CFG_1_MEMORY_SPACE |
-+		T_SATA0_CFG_1_BUS_MASTER | T_SATA0_CFG_1_SERR;
-+	writel(val, tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_1);
-+
-+	/* Program SATA MMIO */
-+
-+	writel(0x10000 << SATA_FPCI_BAR5_START_SHIFT,
-+	       tegra->sata_regs + SATA_FPCI_BAR5);
-+
-+	writel(0x08000 << T_SATA0_CFG_9_BASE_ADDRESS_SHIFT,
-+	       tegra->sata_regs + SCFG_OFFSET + T_SATA0_CFG_9);
-+
-+	/* Unmask SATA interrupts */
-+
-+	val = readl(tegra->sata_regs + SATA_INTR_MASK);
-+	val |= SATA_INTR_MASK_IP_INT_MASK;
-+	writel(val, tegra->sata_regs + SATA_INTR_MASK);
-+
-+	return 0;
-+}
-+
-+static void tegra_ahci_controller_deinit(struct ahci_host_priv *hpriv)
-+{
-+	tegra_ahci_power_off(hpriv);
-+}
-+
-+static void tegra_ahci_host_stop(struct ata_host *host)
-+{
-+	struct ahci_host_priv *hpriv = host->private_data;
-+
-+	tegra_ahci_controller_deinit(hpriv);
-+}
-+
-+static struct ata_port_operations ahci_tegra_port_ops = {
-+	.inherits	= &ahci_ops,
-+	.host_stop	= tegra_ahci_host_stop,
-+};
-+
-+static const struct ata_port_info ahci_tegra_port_info = {
-+	.flags		= AHCI_FLAG_COMMON,
-+	.pio_mask	= ATA_PIO4,
-+	.udma_mask	= ATA_UDMA6,
-+	.port_ops	= &ahci_tegra_port_ops,
-+};
-+
-+static const struct of_device_id tegra_ahci_of_match[] = {
-+	{ .compatible = "nvidia,tegra124-ahci" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, tegra_ahci_of_match);
-+
-+static int tegra_ahci_probe(struct platform_device *pdev)
-+{
-+	struct ahci_host_priv *hpriv;
-+	struct tegra_ahci_priv *tegra;
-+	struct resource *res;
-+	int ret;
-+
-+	hpriv = ahci_platform_get_resources(pdev);
-+	if (IS_ERR(hpriv))
-+		return PTR_ERR(hpriv);
-+
-+	tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra), GFP_KERNEL);
-+	if (!tegra)
-+		return -ENOMEM;
-+
-+	hpriv->plat_data = tegra;
-+
-+	tegra->pdev = pdev;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	tegra->sata_regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(tegra->sata_regs))
-+		return PTR_ERR(tegra->sata_regs);
-+
-+	tegra->sata_rst = devm_reset_control_get(&pdev->dev, "sata");
-+	if (IS_ERR(tegra->sata_rst)) {
-+		dev_err(&pdev->dev, "Failed to get sata reset\n");
-+		return PTR_ERR(tegra->sata_rst);
-+	}
-+
-+	tegra->sata_oob_rst = devm_reset_control_get(&pdev->dev, "sata-oob");
-+	if (IS_ERR(tegra->sata_oob_rst)) {
-+		dev_err(&pdev->dev, "Failed to get sata-oob reset\n");
-+		return PTR_ERR(tegra->sata_oob_rst);
-+	}
-+
-+	tegra->sata_cold_rst = devm_reset_control_get(&pdev->dev, "sata-cold");
-+	if (IS_ERR(tegra->sata_cold_rst)) {
-+		dev_err(&pdev->dev, "Failed to get sata-cold reset\n");
-+		return PTR_ERR(tegra->sata_cold_rst);
-+	}
-+
-+	if (!hpriv->clks[AHCI_CLK_PLL_E])
-+		return -EPROBE_DEFER;
-+
-+	tegra->supplies[0].supply = "avdd";
-+	tegra->supplies[1].supply = "hvdd";
-+	tegra->supplies[2].supply = "vddio";
-+	tegra->supplies[3].supply = "target-5v";
-+	tegra->supplies[4].supply = "target-12v";
-+
-+	ret = devm_regulator_bulk_get(&pdev->dev, ARRAY_SIZE(tegra->supplies),
-+				      tegra->supplies);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to get regulators\n");
-+		return ret;
-+	}
-+
-+	ret = tegra_ahci_controller_init(hpriv);
-+	if (ret)
-+		return ret;
-+
-+	ret = ahci_platform_init_host(pdev, hpriv, &ahci_tegra_port_info,
-+				      0, 0, 0);
-+	if (ret)
-+		goto deinit_controller;
-+
-+	return 0;
-+
-+deinit_controller:
-+	tegra_ahci_controller_deinit(hpriv);
-+
-+	return ret;
-+};
-+
-+static struct platform_driver tegra_ahci_driver = {
-+	.probe = tegra_ahci_probe,
-+	.remove = ata_platform_remove_one,
-+	.driver = {
-+		.name = "tegra-ahci",
-+		.of_match_table = tegra_ahci_of_match,
-+	},
-+	/* LP0 suspend support not implemented */
-+};
-+module_platform_driver(tegra_ahci_driver);
-+
-+MODULE_AUTHOR("Mikko Perttunen <mperttunen@nvidia.com>");
-+MODULE_DESCRIPTION("Tegra124 AHCI SATA driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.8.1.5
+Because it is responsability of the host system to provide a non
+backwards clock_gettime() interface as well.
+
+How did you prove its the host TSC in fact going backwards?
+Is it cross-CPU detection?
 
