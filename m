@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973AbaGPMIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:08:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40178 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759916AbaGPMIN (ORCPT
+	id S1760006AbaGPMLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:11:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59490 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758780AbaGPMK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:08:13 -0400
-Date: Wed, 16 Jul 2014 13:07:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org
-Message-ID: <20140716120750.GM17528@sirena.org.uk>
-References: <cover.1387336613.git.lv.zheng@intel.com>
- <cover.1405500886.git.lv.zheng@intel.com>
- <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com>
+	Wed, 16 Jul 2014 08:10:59 -0400
+Date: Wed, 16 Jul 2014 13:10:39 +0100
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: perex@perex.cz, tiwai@suse.de, lgirdwood@gmail.com, broonie@kernel.org
+Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: arizona: Disable AIF TX/RX before configuring it
+Message-ID: <20140716121029.GA22222@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5me2qT3T17SWzdxI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 7/7] ACPI: Cleanup useless ACPI inclusion.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we don't disable the AIF TX/RX then we may fall into a
+situation where the new AIF settings are ignored by the device.
+For example, this problem manifests when switching between
+different sample rates.
 
---5me2qT3T17SWzdxI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/arizona.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
 
-On Wed, Jul 16, 2014 at 04:59:02PM +0800, Lv Zheng wrote:
-> The sst-haswell-dsp.c is an ACPI independent file, this patch removes
-> ACPI header files for it.
+diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
+index fb30c82..270e7ad 100644
+--- a/sound/soc/codecs/arizona.c
++++ b/sound/soc/codecs/arizona.c
+@@ -1249,6 +1249,7 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
+ 	int tdm_width = arizona->tdm_width[dai->id - 1];
+ 	int tdm_slots = arizona->tdm_slots[dai->id - 1];
+ 	int bclk, lrclk, wl, frame, bclk_target;
++	unsigned int aif_tx_state, aif_rx_state;
+ 
+ 	if (params_rate(params) % 8000)
+ 		rates = &arizona_44k1_bclk_rates[0];
+@@ -1299,9 +1300,18 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
+ 	wl = snd_pcm_format_width(params_format(params));
+ 	frame = wl << ARIZONA_AIF1TX_WL_SHIFT | wl;
+ 
++	/* Save AIF TX/RX state */
++	aif_tx_state = snd_soc_read(codec, base + ARIZONA_AIF_TX_ENABLES);
++	aif_rx_state = snd_soc_read(codec, base + ARIZONA_AIF_RX_ENABLES);
++	/* Disable AIF TX/RX before configuring it */
++	snd_soc_update_bits(codec, base + ARIZONA_AIF_TX_ENABLES,
++			    0xff, 0x0);
++	snd_soc_update_bits(codec, base + ARIZONA_AIF_RX_ENABLES,
++			    0xff, 0x0);
++
+ 	ret = arizona_hw_params_rate(substream, params, dai);
+ 	if (ret != 0)
+-		return ret;
++		goto restore_aif;
+ 
+ 	regmap_update_bits_async(arizona->regmap,
+ 				 base + ARIZONA_AIF_BCLK_CTRL,
+@@ -1320,7 +1330,13 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
+ 			   ARIZONA_AIF1RX_WL_MASK |
+ 			   ARIZONA_AIF1RX_SLOT_LEN_MASK, frame);
+ 
+-	return 0;
++restore_aif:
++	/* Restore AIF TX/RX state */
++	snd_soc_update_bits(codec, base + ARIZONA_AIF_TX_ENABLES,
++			    0xff, aif_tx_state);
++	snd_soc_update_bits(codec, base + ARIZONA_AIF_RX_ENABLES,
++			    0xff, aif_rx_state);
++	return ret;
+ }
+ 
+ static const char *arizona_dai_clk_str(int clk_id)
+-- 
+1.7.2.5
 
-Applied, thanks.  Please use subject lines matching the style for the
-subsystem and send at least the cover letter for the series to everyone
-so that they know what's going on with dependencies and so on.
-
---5me2qT3T17SWzdxI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxmsTAAoJELSic+t+oim9wDgQAIGj1IsQmCiC9wzzx0I14JOl
-d70+ZlvbDYeXiL0fVaF7QdArfjt99hRdvn0KUSd/QcykHl0nSwYAT6MrAmkla44K
-3QXJmODQpC4TIXUDIlIVH1hMd/3uZvn2pzz6+QtqcrJk4BeMzYKGnbz90nUayx6p
-cAb1XEBTQJwVR8zdrSE2oXzYr9JbSMt+YTmgLlyz9te/FYQ8GwaFcj3bpF+1Ykbv
-plLSnY8pkG8YjgpLeuA//0XsCPLGYOn8oM77uRDkmJSYcE9EOWSAJBNuZicsIhOu
-kvkWONtvfIDBzT/2tcZJ37jpuRC/f9SLeMj/tk8ZgqaR7WxPMNuTRK/4eSPYqocr
-eP/xZOeul04gJa8tEg/gECwdPU61NCvgrr1g1/l19D76ItNlyOF1Tz/2hXrDadMh
-8ypSdoW/NBrWoq+rF3sZYpemD11AHO+wJ5T6H7WZyTDf+jA51uZGBK+Tijq98edL
-r6kZpyNNg8enhQNaN8qN6zG4x1kBcP9Ohfo8+L1e21D7PpEpWIcIAATFxvWETR+t
-4L0occpODtwYqY4XRs2YhXV2lJ3ljx42iLqRSsuELZuAVGCwrQArirMrIy6gRM0i
-S1icS3VbPXBvJHmqPTAI0cV0oHeF1M0gPSd4g1+h1hG9irbRRb4+rJxnFBaE3HFm
-yT1t5g6go3gfewKLMUpy
-=A3iP
------END PGP SIGNATURE-----
-
---5me2qT3T17SWzdxI--
