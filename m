@@ -1,254 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373AbaGPKIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:08:43 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:57199 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaGPKIi (ORCPT
+	id S1757797AbaGPKJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:09:09 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:55806 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757535AbaGPKJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:08:38 -0400
-Date: Wed, 16 Jul 2014 03:07:00 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Herrmann <dh.herrmann@gmail.com>
-cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
-In-Reply-To: <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
-Message-ID: <alpine.LSU.2.11.1407160306420.1775@eggly.anvils>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com> <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 16 Jul 2014 06:09:07 -0400
+X-IronPort-AV: E=Sophos;i="5.00,902,1396972800"; 
+   d="scan'208";a="33350985"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 1/2] workqueue: remove unneeded test before wake up next worker
+Date: Wed, 16 Jul 2014 18:09:58 +0800
+Message-ID: <1405505409-12058-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, David Herrmann wrote:
+In this code:
+	if ((worker->flags & WORKER_UNBOUND) && need_more_worker(pool))
+		wake_up_worker(pool);
 
-> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
-> that you can pass to mmap(). It can support sealing and avoids any
-> connection to user-visible mount-points. Thus, it's not subject to quotas
-> on mounted file-systems, but can be used like malloc()'ed memory, but
-> with a file-descriptor to it.
-> 
-> memfd_create() returns the raw shmem file, so calls like ftruncate() can
-> be used to modify the underlying inode. Also calls like fstat()
-> will return proper information and mark the file as regular file. If you
-> want sealing, you can specify MFD_ALLOW_SEALING. Otherwise, sealing is not
-> supported (like on all other regular files).
-> 
-> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
-> subject to quotas and alike. It is still properly accounted to memcg
-> limits, though.
+the first test is unneeded. Even the first test is removed, it doesn't affect
+the wake-up logic when WORKER_UNBOUND. And it will not introduce any useless
+wake-up when !WORKER_UNBOUND since the nr_running >= 1 except only one case.
+It will introduce useless/redundant wake-up when cpu_intensive, but this
+case is rare and next patch will also remove this redundant wake-up.
 
-It's an important point, but unclear quite what "quotas and alike" means.
-There's never been any quota support in shmem/tmpfs, but filesystem size
-can be limited.  Maybe say "and is not subject to a filesystem size limit.
-It is still properly accounted to memcg limits, though, and to the same
-overcommit or no-overcommit accounting as all user memory."
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-> 
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f8d54c1..6d11b9a 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2047,11 +2047,8 @@ __acquires(&pool->lock)
+ 	if (unlikely(cpu_intensive))
+ 		worker_set_flags(worker, WORKER_CPU_INTENSIVE, true);
+ 
+-	/*
+-	 * Unbound pool isn't concurrency managed and work items should be
+-	 * executed ASAP.  Wake up another worker if necessary.
+-	 */
+-	if ((worker->flags & WORKER_UNBOUND) && need_more_worker(pool))
++	/* Wake up another worker if necessary. */
++	if (need_more_worker(pool))
+ 		wake_up_worker(pool);
+ 
+ 	/*
+-- 
+1.7.4.4
 
-A comment or two below, but this is okay by me.  I'm not wildly excited
-to be getting a new system call in mm/shmem.c.  I do like it much better
-now that you've dropped the size arg, thank you, but I still find it an
-odd system call: if it were not for the name, that you want so much for
-debugging, I think we would just implement this with a /dev/sealable
-alongside /dev/zero, which gave you your own object on opening (in the
-way that /dev/zero gives you your own object on mmap'ing).
-
-I haven't checked the manpage, I hope it's made very clear that
-there's no uniqueness imposed on the name, that it's merely a tag
-attached to the object.
-
-But from a shmem point of view this seems fine: if everyone else
-is happy with memfd_create(), it's fine by me.
-
-> ---
->  arch/x86/syscalls/syscall_32.tbl |  1 +
->  arch/x86/syscalls/syscall_64.tbl |  1 +
->  include/linux/syscalls.h         |  1 +
->  include/uapi/linux/memfd.h       |  8 +++++
->  kernel/sys_ni.c                  |  1 +
->  mm/shmem.c                       | 72 ++++++++++++++++++++++++++++++++++++++++
->  6 files changed, 84 insertions(+)
->  create mode 100644 include/uapi/linux/memfd.h
-> 
-> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-> index d6b8679..e7495b4 100644
-> --- a/arch/x86/syscalls/syscall_32.tbl
-> +++ b/arch/x86/syscalls/syscall_32.tbl
-> @@ -360,3 +360,4 @@
->  351	i386	sched_setattr		sys_sched_setattr
->  352	i386	sched_getattr		sys_sched_getattr
->  353	i386	renameat2		sys_renameat2
-> +354	i386	memfd_create		sys_memfd_create
-> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-> index ec255a1..28be0e1 100644
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -323,6 +323,7 @@
->  314	common	sched_setattr		sys_sched_setattr
->  315	common	sched_getattr		sys_sched_getattr
->  316	common	renameat2		sys_renameat2
-> +317	common	memfd_create		sys_memfd_create
->  
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index b0881a0..0be5d4d 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -802,6 +802,7 @@ asmlinkage long sys_timerfd_settime(int ufd, int flags,
->  asmlinkage long sys_timerfd_gettime(int ufd, struct itimerspec __user *otmr);
->  asmlinkage long sys_eventfd(unsigned int count);
->  asmlinkage long sys_eventfd2(unsigned int count, int flags);
-> +asmlinkage long sys_memfd_create(const char *uname_ptr, unsigned int flags);
->  asmlinkage long sys_fallocate(int fd, int mode, loff_t offset, loff_t len);
->  asmlinkage long sys_old_readdir(unsigned int, struct old_linux_dirent __user *, unsigned int);
->  asmlinkage long sys_pselect6(int, fd_set __user *, fd_set __user *,
-> diff --git a/include/uapi/linux/memfd.h b/include/uapi/linux/memfd.h
-> new file mode 100644
-> index 0000000..534e364
-> --- /dev/null
-> +++ b/include/uapi/linux/memfd.h
-> @@ -0,0 +1,8 @@
-> +#ifndef _UAPI_LINUX_MEMFD_H
-> +#define _UAPI_LINUX_MEMFD_H
-> +
-> +/* flags for memfd_create(2) (unsigned int) */
-> +#define MFD_CLOEXEC		0x0001U
-> +#define MFD_ALLOW_SEALING	0x0002U
-> +
-> +#endif /* _UAPI_LINUX_MEMFD_H */
-> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-> index 36441b5..489a4e6 100644
-> --- a/kernel/sys_ni.c
-> +++ b/kernel/sys_ni.c
-> @@ -197,6 +197,7 @@ cond_syscall(compat_sys_timerfd_settime);
->  cond_syscall(compat_sys_timerfd_gettime);
->  cond_syscall(sys_eventfd);
->  cond_syscall(sys_eventfd2);
-> +cond_syscall(sys_memfd_create);
->  
->  /* performance counters: */
->  cond_syscall(sys_perf_event_open);
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 1438b3e..e7c5fe1 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -66,7 +66,9 @@ static struct vfsmount *shm_mnt;
->  #include <linux/highmem.h>
->  #include <linux/seq_file.h>
->  #include <linux/magic.h>
-> +#include <linux/syscalls.h>
->  #include <linux/fcntl.h>
-> +#include <uapi/linux/memfd.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/pgtable.h>
-> @@ -2662,6 +2664,76 @@ static int shmem_show_options(struct seq_file *seq, struct dentry *root)
->  	shmem_show_mpol(seq, sbinfo->mpol);
->  	return 0;
->  }
-> +
-> +#define MFD_NAME_PREFIX "memfd:"
-> +#define MFD_NAME_PREFIX_LEN (sizeof(MFD_NAME_PREFIX) - 1)
-> +#define MFD_NAME_MAX_LEN (NAME_MAX - MFD_NAME_PREFIX_LEN)
-> +
-> +#define MFD_ALL_FLAGS (MFD_CLOEXEC | MFD_ALLOW_SEALING)
-> +
-> +SYSCALL_DEFINE2(memfd_create,
-> +		const char*, uname,
-
-Jann Horn suggested "const char __user *" rather than "const char *",
-here and in syscalls.h, I think that's right (for sparse: compare
-with sys_open, for example).
-
-> +		unsigned int, flags)
-> +{
-> +	struct shmem_inode_info *info;
-> +	struct file *file;
-> +	int fd, error;
-> +	char *name;
-> +	long len;
-> +
-> +	if (flags & ~(unsigned int)MFD_ALL_FLAGS)
-> +		return -EINVAL;
-> +
-> +	/* length includes terminating zero */
-> +	len = strnlen_user(uname, MFD_NAME_MAX_LEN + 1);
-> +	if (len <= 0)
-> +		return -EFAULT;
-> +	if (len > MFD_NAME_MAX_LEN + 1)
-> +		return -EINVAL;
-> +
-> +	name = kmalloc(len + MFD_NAME_PREFIX_LEN, GFP_TEMPORARY);
-> +	if (!name)
-> +		return -ENOMEM;
-> +
-> +	strcpy(name, MFD_NAME_PREFIX);
-> +	if (copy_from_user(&name[MFD_NAME_PREFIX_LEN], uname, len)) {
-> +		error = -EFAULT;
-> +		goto err_name;
-> +	}
-> +
-> +	/* terminating-zero may have changed after strnlen_user() returned */
-> +	if (name[len + MFD_NAME_PREFIX_LEN - 1]) {
-> +		error = -EFAULT;
-> +		goto err_name;
-> +	}
-> +
-> +	fd = get_unused_fd_flags((flags & MFD_CLOEXEC) ? O_CLOEXEC : 0);
-
-Perhaps we should throw O_LARGEFILE in there too?  So 32-bit is not
-surprised when it accesses beyond MAX_NON_LFS.  I guess it's almost
-a non-issue, since the file is in memory, so not expected to be very
-large; but I seem to recall being caught out by a missing O_LARGEFILE
-in the past, and a new interface like this might do better to force it.
-
-But I'm not very sure of my ground here: please ask around, an fsdevel
-person will have a better idea than me, whether it's best included.
-
-> +	if (fd < 0) {
-> +		error = fd;
-> +		goto err_name;
-> +	}
-> +
-> +	file = shmem_file_setup(name, 0, VM_NORESERVE);
-> +	if (IS_ERR(file)) {
-> +		error = PTR_ERR(file);
-> +		goto err_fd;
-> +	}
-> +	info = SHMEM_I(file_inode(file));
-> +	file->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
-> +	if (flags & MFD_ALLOW_SEALING)
-> +		info->seals &= ~F_SEAL_SEAL;
-> +
-> +	fd_install(fd, file);
-> +	kfree(name);
-> +	return fd;
-> +
-> +err_fd:
-> +	put_unused_fd(fd);
-> +err_name:
-> +	kfree(name);
-> +	return error;
-> +}
-> +
->  #endif /* CONFIG_TMPFS */
->  
->  static void shmem_put_super(struct super_block *sb)
-> -- 
-> 2.0.0
