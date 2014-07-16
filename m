@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759079AbaGPI0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:26:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60594 "EHLO
+	id S1759373AbaGPI0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:26:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60648 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758204AbaGPI0L (ORCPT
+	with ESMTP id S1758904AbaGPI0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:26:11 -0400
+	Wed, 16 Jul 2014 04:26:18 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 02/12] Documentation: bindings: add reset bindings docs for Marvell Berlin SoCs
-Date: Wed, 16 Jul 2014 10:25:56 +0200
-Message-Id: <1405499166-6726-3-git-send-email-antoine.tenart@free-electrons.com>
+Cc: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 12/12] ARM: dts: berlin: enable USB on the Google Chromecast
+Date: Wed, 16 Jul 2014 10:26:06 +0200
+Message-Id: <1405499166-6726-13-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the reset binding documentation to the SoC binding documentation as
-the reset driver in Marvell Berlin SoC is part of the chip/system
-control registers. This patch adds the required properties to configure
-the reset controller.
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+Enable usb1 on Google Chromecast which is connected to micro-USB
+plug used for external power supply, too.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- Documentation/devicetree/bindings/arm/marvell,berlin.txt | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/boot/dts/berlin2cd-google-chromecast.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/marvell,berlin.txt b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
-index 94013a9a8769..32a1a8a652ad 100644
---- a/Documentation/devicetree/bindings/arm/marvell,berlin.txt
-+++ b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
-@@ -90,11 +90,21 @@ Required subnode-properties:
- - groups: a list of strings describing the group names.
- - function: a string describing the function used to mux the groups.
+diff --git a/arch/arm/boot/dts/berlin2cd-google-chromecast.dts b/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
+index bcd81ffc495d..5c42c3bfb613 100644
+--- a/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
++++ b/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
+@@ -27,3 +27,7 @@
+ };
  
-+* Reset controller binding
+ &uart0 { status = "okay"; };
 +
-+A reset controller is part of the chip control registers set. The chip control
-+node also provides the reset. The register set is not at the same offset between
-+Berlin SoCs.
++&usb_phy1 { status = "okay"; };
 +
-+Required property:
-+- #reset-cells: must be set to 2
-+
- Example:
- 
- chip: chip-control@ea0000 {
- 	compatible = "marvell,berlin2-chip-ctrl";
- 	#clock-cells = <1>;
-+	#reset-cells = <2>;
- 	reg = <0xea0000 0x400>;
- 	clocks = <&refclk>, <&externaldev 0>;
- 	clock-names = "refclk", "video_ext0";
++&usb1 { status = "okay"; };
 -- 
 1.9.1
 
