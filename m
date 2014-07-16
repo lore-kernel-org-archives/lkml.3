@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934987AbaGPSZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:25:03 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:48802 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934742AbaGPSY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:24:59 -0400
-Message-ID: <53C6C377.7020900@gmail.com>
-Date: Wed, 16 Jul 2014 14:24:55 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        fabf@skynet.be, davidshan@tencent.com, joe@perches.com,
-        keescook@chromium.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
-References: <20140713184237.GA30855@linux.vnet.ibm.com> <20140716115046.GC28434@gmail.com> <20140716131322.GA16396@gmail.com> <20140716141707.GU8690@linux.vnet.ibm.com> <20140716152629.GA9340@linux.vnet.ibm.com> <53C6A0E7.30006@gmail.com> <20140716172410.GV8690@linux.vnet.ibm.com> <53C6C156.5010207@gmail.com>
-In-Reply-To: <53C6C156.5010207@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S934990AbaGPS0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:26:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36347 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934773AbaGPS0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:26:17 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, Amit Shah <amit.shah@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, <stable@vger.kernel.org>
+Subject: [PATCH 1/1] Revert "drm/i915: drop i915_ prefix from enable_rc6, enable_fbc, enable_ppgtt parameters"
+Date: Wed, 16 Jul 2014 23:55:16 +0530
+Message-Id: <93fec4e4ac212811364335e3343288d058dbf512.1405535116.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 02:15 PM, Pranith Kumar wrote:
->
-> On 07/16/2014 01:24 PM, Paul E. McKenney wrote:
->>>> And of course if you don't actually specify a nohz_full= mask, then
->>>> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
->>>> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
->>>> forever.
->>>>
->>> Hi Paul,
->>>
->>> The other location where tick_nohz_full_mask is being allocated is in
->>> tick_nohz_init_all(), called from tick_nohz_init(). rcu_init() is called before
->>> tick_nohz_init() in init/main.c. CONFIG_NO_HZ_FULL_ALL for allocation of the
->>> mask does not take effect when rcu_init() runs.
->>>
->>> So if nohz_full command line arg is not specified, tick_nohz_full_mask will
->>> always be NULL when rcu_init() runs. So just checking for tick_nohz_full_mask
->>> is NULL should be enough I guess.
->> Yep, that is indeed one of the conditions called out in the commit log
->> below.
->>
->>                             Thanx, Paul
->>
->
-> Sorry, I was not clear.
->
-> nohz_full= boot time parameter overrides the CONFIG_NO_HZ_FULL_ALL build time parameter.
-> The check for !CONFIG_NO_HZ_FULL_ALL will disable masking out the cpus on which NOHZ is
-> not enabled using the nohz_full boot time parameter, and hence you will enable callback
-> offloading on all CPUs as was previously being done.
->
-> So, if I have CONFIG_NO_HZ_FULL_ALL enabled at build time but pass nohz_cpu=1 at boot
-> time, all the CPUs will have callback offloading enabled.
->
-> I think the following looks like what is needed in our case:
->
+This reverts commit 3adee7a7976012a20f1d3b5a529a3c105e29fef1.
 
-The previous patch will fail if CONFIG_NO_HZ_FULL is not defined, this should work.
+After upgrading to v3.15, my laptop's battery started draining quite
+fast.  Powertop pointed to the deep RC6 states not being used.  The
+kernel param I had put to enable them had stopped working the way it
+used to; so I disagree with the 'not maintaing ABI' part of the param
+name change.
 
-Thoughts?
+However weird the names may be, they're in active use and changing them
+only causes pain for users.  This also isn't advertised (marked
+deprecated, big warning shown, etc.), so just reverting now.
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 00dc411..83f3f58 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2479,10 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Jani Nikula <jani.nikula@linux.intel.com>
+CC: David Airlie <airlied@linux.ie>
+CC: <stable@vger.kernel.org> # v3.15+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+---
+ drivers/gpu/drm/i915/i915_params.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_params.c b/drivers/gpu/drm/i915/i915_params.c
+index d05a2af..053981d 100644
+--- a/drivers/gpu/drm/i915/i915_params.c
++++ b/drivers/gpu/drm/i915/i915_params.c
+@@ -69,16 +69,16 @@ MODULE_PARM_DESC(semaphores,
+ 	"Use semaphores for inter-ring sync "
+ 	"(default: -1 (use per-chip defaults))");
  
-        if (rcu_nocb_mask == NULL)
-                return;
--#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-+#if defined(CONFIG_NO_HZ_FULL)
-        if (tick_nohz_full_running)
-                cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
--#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
-+#endif /* #if defined(CONFIG_NO_HZ_FULL) */
-        if (ls == -1) {
-                ls = int_sqrt(nr_cpu_ids);
-                rcu_nocb_leader_stride = ls;
-
---
-Pranith
-
-
-
-
+-module_param_named(enable_rc6, i915.enable_rc6, int, 0400);
+-MODULE_PARM_DESC(enable_rc6,
++module_param_named(i915_enable_rc6, i915.enable_rc6, int, 0400);
++MODULE_PARM_DESC(i915_enable_rc6,
+ 	"Enable power-saving render C-state 6. "
+ 	"Different stages can be selected via bitmask values "
+ 	"(0 = disable; 1 = enable rc6; 2 = enable deep rc6; 4 = enable deepest rc6). "
+ 	"For example, 3 would enable rc6 and deep rc6, and 7 would enable everything. "
+ 	"default: -1 (use per-chip default)");
+ 
+-module_param_named(enable_fbc, i915.enable_fbc, int, 0600);
+-MODULE_PARM_DESC(enable_fbc,
++module_param_named(i915_enable_fbc, i915.enable_fbc, int, 0600);
++MODULE_PARM_DESC(i915_enable_fbc,
+ 	"Enable frame buffer compression for power savings "
+ 	"(default: -1 (use per-chip default))");
+ 
+@@ -111,8 +111,8 @@ MODULE_PARM_DESC(enable_hangcheck,
+ 	"WARNING: Disabling this can cause system wide hangs. "
+ 	"(default: true)");
+ 
+-module_param_named(enable_ppgtt, i915.enable_ppgtt, int, 0400);
+-MODULE_PARM_DESC(enable_ppgtt,
++module_param_named(i915_enable_ppgtt, i915.enable_ppgtt, int, 0400);
++MODULE_PARM_DESC(i915_enable_ppgtt,
+ 	"Override PPGTT usage. "
+ 	"(-1=auto [default], 0=disabled, 1=aliasing, 2=full)");
+ 
+-- 
+1.9.3
 
