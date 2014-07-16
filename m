@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115AbaGPTJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:09:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17024 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaGPTI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:08:58 -0400
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "martin.petersen\@oracle.com" <martin.petersen@oracle.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw\@canonical.com" <apw@canonical.com>,
-        "kys\@microsoft.com" <kys@microsoft.com>,
-        "stable\@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering\@suse.com" <ohering@suse.com>,
-        "jasowang\@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140709084300.GD6012@infradead.org>
-	<a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
-	<1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
-	<2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-	<1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
-	<20140711063216.GA20660@infradead.org>
-	<328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
-	<yq1a98d2z5x.fsf@sermon.lab.mkp.net>
-	<20140716110111.GA7382@infradead.org>
-	<yq14myhtijx.fsf@sermon.lab.mkp.net>
-	<20140716173827.GB20528@infradead.org>
-	<yq1fvi1rya0.fsf@sermon.lab.mkp.net>
-	<1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
-	<yq1bnsprvl1.fsf@sermon.lab.mkp.net>
-	<1405536631.3165.23.camel@dabdike.int.hansenpartnership.com>
-Date: Wed, 16 Jul 2014 15:08:13 -0400
-In-Reply-To: <1405536631.3165.23.camel@dabdike.int.hansenpartnership.com>
-	(James Bottomley's message of "Wed, 16 Jul 2014 18:50:31 +0000")
-Message-ID: <yq17g3drujm.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+	id S934895AbaGPTNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:13:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36478 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754891AbaGPTNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 15:13:21 -0400
+Date: Wed, 16 Jul 2014 21:13:19 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, viro@zeniv.linux.org.uk,
+        clm@fb.com, jbacik@fb.com, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeffm@suse.com, fdmanana@suse.com
+Subject: Re: [RFC 0/2] vfs / btrfs: add support for ustat()
+Message-ID: <20140716191319.GN10393@wotan.suse.de>
+References: <1405465625-1122-1-git-send-email-mcgrof@do-not-panic.com> <20140716052919.GA3486@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fig2xvG2VGoz8o/s"
+Content-Disposition: inline
+In-Reply-To: <20140716052919.GA3486@infradead.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "James" == James Bottomley <jbottomley@parallels.com> writes:
 
-James> It's the code we identified in sd.c:read_capacity_16():
+--Fig2xvG2VGoz8o/s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That's there to support devices that implement thin provisioning but
-which predate the LBP VPD page. And thus have no way to tell us their
-preferred command variant.
+On Tue, Jul 15, 2014 at 10:29:19PM -0700, Christoph Hellwig wrote:
+> Isn't this the problem again the btrfs uses different assignments for
+> st_dev than s_dev?  I don't even want to think about a mess like this
+> before that is fixed.
 
-James> If the inquiry shows LBPME set, we'll do write same regardless of
-James> the no_write_same bit.  That's why for SPC-2 devices it only
-James> shows up on >> 2TB devices because they force RC16.
+As much as I'd like to see that happen based on discussions so far its unclear
+if this is going to be possible unless strong commitment is reached... so what
+this tried to do was to take the other way around the problem, by slowly
+shifting out junk. Although I'm frankly new to this -- I think this approach might
+be more feasible over time. As I see it this is an extension to Al's original
+commit 0ee5dc676 but more in line with how they are really are used and exposes
+more information to the VFS. As it stands now other filesystems can pop up and
+do similar things, this at least extends the original API to fit the use case a
+bit more closely to how its used and allows more room to grow.
 
-But we only do so if they have LBPME set. Generally they don't.
+  Luis
 
-The problem for hyperv was that LBPME was set. And because it claimed
-SBC-2 we did not check the LBP VPD page to see that it prefers UNMAP.
+--Fig2xvG2VGoz8o/s
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-I believe we did consider unconditionally checking for VPDs when LBPME
-was set but I seem to recall that it broke some device that had garbage
-in the READ CAPACITY(16) response. I'll see if I can locate the details.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.9 (GNU/Linux)
 
-Otherwise I'm willing to entertain that idea.
+iQIcBAEBAgAGBQJTxs7PAAoJEPep4JnvMe6zxT4P+wTBzy3cElHo2NgkR36hwjBP
+J1GhcgKZvrnlTaI4g3NtMlypCgC7fyhccNsEqSWJYUZqPJz75mHbTFVuQH3Uvoxi
+MYn6ULD3dUtX0Inpp5HxbEw7SxNPWXFev+ERetwPZC8+YO+2zlzGh98GX1L3mX/q
+Pj3Vn7rrAHn3cSD8aYr6cm8eW538dGG68OhcwJQ7MKmI8xTQgmw+t+fmjfXh1unj
+aneDgbrnON14zl82WVKhC/JRrcdP8MFpV1W/yjdieHILnFImSLW8bzJ+SoZRtDmW
+cQZUa8/1jR8D70/ZH42YZnaACSi59j5UKv9rhodqxSg/ZA8HqufKiG9Zvl/PZJuK
+3UsSgzroiQe7/xYxLmR7JCloq7bSkg8cO9XZWVAlNkzMH2VJnDWJ1kqQC7EZzdY5
+Z3sgL0rZLJzFYWlCdj1p/iVCfbx+FXSA4kArIjDe1kgPIWeirWEPkhxvoKpY1QVW
+WOI+V2c7RWYol793QXSUsc02YCc6XVO75wfCOgUzBGMODCUk+4N35mgO8CFhKJ+z
+bSKJCQXDPlJnv47m3G3Dgc5d4PVDorL6kG6Y+m4kTbzUmgT9HKdze49cxTYiIHr7
+Gj/7e9jXjJGfV3RxlErXGjuqoTS1PTZYTcesNtQkB2W7w5QjsI1HJF0UZqAPh98D
+p3lWcfpn7KvL8mg72nL9
+=mNLj
+-----END PGP SIGNATURE-----
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+--Fig2xvG2VGoz8o/s--
