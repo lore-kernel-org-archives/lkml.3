@@ -1,138 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaGPVyW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:54:22 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:43045 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400AbaGPVvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:51:38 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>, James Morris <jmorris@namei.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v11 10/11] seccomp: allow mode setting across threads
-Date: Wed, 16 Jul 2014 14:50:41 -0700
-Message-Id: <1405547442-26641-11-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405547442-26641-1-git-send-email-keescook@chromium.org>
-References: <1405547442-26641-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1753841AbaGPVzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:55:24 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:33553 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751907AbaGPVzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 17:55:20 -0400
+Date: Thu, 17 Jul 2014 00:54:44 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH/RFC v4 06/21] leds: add API for setting torch brightness
+Message-ID: <20140716215444.GK16460@valkosipuli.retiisi.org.uk>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+ <1405087464-13762-7-git-send-email-j.anaszewski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1405087464-13762-7-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes the mode setting helper to allow threads to change the
-seccomp mode from another thread. We must maintain barriers to keep
-TIF_SECCOMP synchronized with the rest of the seccomp state.
+Hi Jacek,
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
----
- kernel/seccomp.c |   36 +++++++++++++++++++++++++-----------
- 1 file changed, 25 insertions(+), 11 deletions(-)
+Jacek Anaszewski wrote:
+...
+> diff --git a/include/linux/leds.h b/include/linux/leds.h
+> index 1a130cc..9bea9e6 100644
+> --- a/include/linux/leds.h
+> +++ b/include/linux/leds.h
+> @@ -44,11 +44,21 @@ struct led_classdev {
+>   #define LED_BLINK_ONESHOT_STOP	(1 << 18)
+>   #define LED_BLINK_INVERT	(1 << 19)
+>   #define LED_SYSFS_LOCK		(1 << 20)
+> +#define LED_DEV_CAP_TORCH	(1 << 21)
+>
+>   	/* Set LED brightness level */
+>   	/* Must not sleep, use a workqueue if needed */
+>   	void		(*brightness_set)(struct led_classdev *led_cdev,
+>   					  enum led_brightness brightness);
+> +	/*
+> +	 * Set LED brightness immediately - it is required for flash led
+> +	 * devices as they require setting torch brightness to have immediate
+> +	 * effect. brightness_set op cannot be used for this purpose because
+> +	 * the led drivers schedule a work queue task in it to allow for
+> +	 * being called from led-triggers, i.e. from the timer irq context.
+> +	 */
 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index d5543e787e4e..9065d2c79c56 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -173,21 +173,24 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
-  */
- static u32 seccomp_run_filters(int syscall)
- {
--	struct seccomp_filter *f;
-+	struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
- 	struct seccomp_data sd;
- 	u32 ret = SECCOMP_RET_ALLOW;
- 
- 	/* Ensure unexpected behavior doesn't result in failing open. */
--	if (WARN_ON(current->seccomp.filter == NULL))
-+	if (unlikely(WARN_ON(f == NULL)))
- 		return SECCOMP_RET_KILL;
- 
-+	/* Make sure cross-thread synced filter points somewhere sane. */
-+	smp_read_barrier_depends();
-+
- 	populate_seccomp_data(&sd);
- 
- 	/*
- 	 * All filters in the list are evaluated and the lowest BPF return
- 	 * value always takes priority (ignoring the DATA).
- 	 */
--	for (f = current->seccomp.filter; f; f = f->prev) {
-+	for (; f; f = f->prev) {
- 		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
- 
- 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
-@@ -207,12 +210,18 @@ static inline bool seccomp_may_assign_mode(unsigned long seccomp_mode)
- 	return true;
- }
- 
--static inline void seccomp_assign_mode(unsigned long seccomp_mode)
-+static inline void seccomp_assign_mode(struct task_struct *task,
-+				       unsigned long seccomp_mode)
- {
--	BUG_ON(!spin_is_locked(&current->sighand->siglock));
-+	BUG_ON(!spin_is_locked(&task->sighand->siglock));
- 
--	current->seccomp.mode = seccomp_mode;
--	set_tsk_thread_flag(current, TIF_SECCOMP);
-+	task->seccomp.mode = seccomp_mode;
-+	/*
-+	 * Make sure TIF_SECCOMP cannot be set before the mode (and
-+	 * filter) is set.
-+	 */
-+	smp_mb__before_atomic();
-+	set_tsk_thread_flag(task, TIF_SECCOMP);
- }
- 
- #ifdef CONFIG_SECCOMP_FILTER
-@@ -435,12 +444,17 @@ static int mode1_syscalls_32[] = {
- 
- int __secure_computing(int this_syscall)
- {
--	int mode = current->seccomp.mode;
- 	int exit_sig = 0;
- 	int *syscall;
- 	u32 ret;
- 
--	switch (mode) {
-+	/*
-+	 * Make sure that any changes to mode from another thread have
-+	 * been seen after TIF_SECCOMP was seen.
-+	 */
-+	rmb();
-+
-+	switch (current->seccomp.mode) {
- 	case SECCOMP_MODE_STRICT:
- 		syscall = mode1_syscalls;
- #ifdef CONFIG_COMPAT
-@@ -545,7 +559,7 @@ static long seccomp_set_mode_strict(void)
- #ifdef TIF_NOTSC
- 	disable_TSC();
- #endif
--	seccomp_assign_mode(seccomp_mode);
-+	seccomp_assign_mode(current, seccomp_mode);
- 	ret = 0;
- 
- out:
-@@ -595,7 +609,7 @@ static long seccomp_set_mode_filter(unsigned int flags,
- 	/* Do not free the successfully attached filter. */
- 	prepared = NULL;
- 
--	seccomp_assign_mode(seccomp_mode);
-+	seccomp_assign_mode(current, seccomp_mode);
- out:
- 	spin_unlock_irq(&current->sighand->siglock);
- 	seccomp_filter_free(prepared);
+Do we need to classify actual devices based on this? I think it's rather 
+a different API behaviour between the LED and the V4L2 APIs.
+
+On devices that are slow to control, the behaviour should be asynchronous
+over the LED API and synchronous when accessed through the V4L2 API. How
+about implementing the work queue, as I have suggested, in the framework, so
+that individual drivers don't need to care about this and just implement the
+synchronous variant of this op? A flag could be added to distinguish devices
+that are fast so that the work queue isn't needed.
+
+It'd be nice to avoid individual drivers having to implement multiple ops to
+do the same thing, just for differing user space interfacs.
+
 -- 
-1.7.9.5
+Kind regards,
 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi     XMPP: sailus@retiisi.org.uk
