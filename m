@@ -1,139 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaGPTgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:36:43 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:48324 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaGPTgl (ORCPT
+	id S1752016AbaGPThG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:37:06 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33732 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaGPThC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:36:41 -0400
-Date: Wed, 16 Jul 2014 13:36:37 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Vidya Sagar <sagar.tv@gmail.com>
-Cc: matthew.garrett@nebula.com, rjw@rjwysocki.net, nchumbalkar@lenovo.com,
-        thierry.reding@gmail.com, swarren@nvidia.com,
-        linux-pci@vger.kernel.org, kthota@nvidia.com,
-        linux-kernel@vger.kernel.org, vidyas@nvidia.com
-Subject: Re: [PATCH v3] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Message-ID: <20140716193637.GA14366@google.com>
-References: <1405505022-7593-1-git-send-email-vidyas@nvidia.com>
+	Wed, 16 Jul 2014 15:37:02 -0400
+Date: Wed, 16 Jul 2014 12:36:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, fabf@skynet.be, bobby.prani@gmail.com,
+        davidshan@tencent.com, joe@perches.com, keescook@chromium.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
+Message-ID: <20140716193647.GA16219@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140713184237.GA30855@linux.vnet.ibm.com>
+ <20140716115046.GC28434@gmail.com>
+ <20140716131322.GA16396@gmail.com>
+ <20140716141707.GU8690@linux.vnet.ibm.com>
+ <20140716152629.GA9340@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405505022-7593-1-git-send-email-vidyas@nvidia.com>
+In-Reply-To: <20140716152629.GA9340@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071619-8236-0000-0000-000003E36E1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 03:33:42PM +0530, Vidya Sagar wrote:
-> From: Vidya Sagar <sagar.tv@gmail.com>
+On Wed, Jul 16, 2014 at 08:26:29AM -0700, Paul E. McKenney wrote:
+> On Wed, Jul 16, 2014 at 07:17:07AM -0700, Paul E. McKenney wrote:
+> > On Wed, Jul 16, 2014 at 03:13:22PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Ingo Molnar <mingo@kernel.org> wrote:
+> > > 
+> > > > 
+> > > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > > > 
+> > > > > Hello, Ingo,
+> > > > > 
+> > > > > The changes in this series include:
+> > > > > 
+> > > > > 1.	Update RCU documentation.  These were posted to LKML at
+> > > > > 	https://lkml.org/lkml/2014/7/7/650.
+> > > > > 
+> > > > > 2.	Miscellaneous fixes.  These were posted to LKML at
+> > > > > 	https://lkml.org/lkml/2014/7/7/678.
+> > > > > 
+> > > > > 3.	Maintainership changes.  These were posted to LKML at
+> > > > > 	https://lkml.org/lkml/2014/7/7/713, with a couple of
+> > > > > 	additional at https://lkml.org/lkml/2014/7/3/812 and
+> > > > > 	https://lkml.org/lkml/2014/6/2/585.
+> > > > > 
+> > > > > 4.	Torture-test updates.  These were posted to LKML at
+> > > > > 	https://lkml.org/lkml/2014/7/7/816.
+> > > > > 
+> > > > > 5.	Callback-offloading changes.  These were posted to LKML at
+> > > > > 	https://lkml.org/lkml/2014/7/7/1007.
+> > > > > 
+> > > > > All of these have been exposed to -next testing.
+> > > 
+> > > JFYI, the attached x86 (rand!-) config crashes on early bootup:
+> > > 
+> > > [    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+> > > [    0.000000] ------------[ cut here ]------------
+> > > [    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1439 warn_pre_alternatives+0x1e/0x20()
+> > > [    0.000000] You're using static_cpu_has before alternatives have run!
+> > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc5+ #236363
+> > > [    0.000000] Hardware name: System manufacturer System Product Name/A8N-E, BIOS ASUS A8N-E ACPI BIOS Revision 1008 08/22/2005
+> > > [    0.000000]  0000000000000000 ffffffff82787c60 ffffffff81ff4ec0 ffffffff82787ca8
+> > > [    0.000000]  ffffffff82787c98 ffffffff810651ac ffffffff81011531 ffffffff82787e48
+> > > [    0.000000]  0000000000000000 0000000000000000 ffffffff827cf880 ffffffff82787cf8
+> > > [    0.000000] Call Trace:
+> > > [    0.000000]  [<ffffffff81ff4ec0>] dump_stack+0x4d/0x66
+> > > [    0.000000]  [<ffffffff810651ac>] warn_slowpath_common+0x7a/0x93
+> > > [    0.000000]  [<ffffffff81011531>] ? warn_pre_alternatives+0x1e/0x20
+> > > [    0.000000]  [<ffffffff81065239>] warn_slowpath_fmt+0x4c/0x4e
+> > > [    0.000000]  [<ffffffff82005817>] ? irq_return+0x7/0x7
+> > > [    0.000000]  [<ffffffff81011531>] warn_pre_alternatives+0x1e/0x20
+> > > [    0.000000]  [<ffffffff81033d31>] __do_page_fault+0xc3/0x43f
+> > > [    0.000000]  [<ffffffff81005347>] ? print_context_stack+0x6a/0xb6
+> > > [    0.000000]  [<ffffffff810045f1>] ? dump_trace+0x27d/0x294
+> > > [    0.000000]  [<ffffffff815b185b>] ? number.isra.1+0x127/0x22c
+> > > [    0.000000]  [<ffffffff8109abe2>] ? print_time.part.5+0x58/0x5c
+> > > [    0.000000]  [<ffffffff81086a9a>] ? sched_clock_cpu+0x11/0xb9
+> > > [    0.000000]  [<ffffffff810340ef>] do_page_fault+0x1e/0x54
+> > > [    0.000000]  [<ffffffff82005817>] ? irq_return+0x7/0x7
+> > > [    0.000000]  [<ffffffff82006872>] page_fault+0x22/0x30
+> > > [    0.000000]  [<ffffffff815b65fa>] ? __bitmap_or+0x15/0x28
+> > > [    0.000000]  [<ffffffff82c876f0>] rcu_init_one+0x4c0/0x55d
+> > > [    0.000000]  [<ffffffff82c87b00>] rcu_init+0x270/0x2da
+> > > [    0.000000]  [<ffffffff82c6ec82>] start_kernel+0x24f/0x4d2
+> > > [    0.000000]  [<ffffffff82c6e841>] ? set_init_arg+0x53/0x53
+> > > [    0.000000]  [<ffffffff82c6e453>] x86_64_start_reservations+0x2a/0x2c
+> > > [    0.000000]  [<ffffffff82c6e546>] x86_64_start_kernel+0xf1/0xf4
+> > > [    0.000000] ---[ end trace 4650963e41188009 ]---
+> > > [    0.000000] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > > [    0.000000] IP: [<ffffffff815b65fa>] __bitmap_or+0x15/0x28
+> > > [    0.000000] PGD 0 
+> > > [    0.000000] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+> > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W     3.16.0-rc5+ #236363
+> > > [    0.000000] Hardware name: System manufacturer System Product Name/A8N-E, BIOS ASUS A8N-E ACPI BIOS Revision 1008 08/22/2005
+> > > [    0.000000] task: ffffffff827a3480 ti: ffffffff82784000 task.ti: ffffffff82784000
+> > > [    0.000000] RIP: 0010:[<ffffffff815b65fa>]  [<ffffffff815b65fa>] __bitmap_or+0x15/0x28
+> > > [    0.000000] RSP: 0000:ffffffff82787ef8  EFLAGS: 00010002
+> > > [    0.000000] RAX: 0000000000000000 RBX: 00000000ffffffff RCX: 0000000000000001
+> > > [    0.000000] RDX: 0000000000000000 RSI: ffff880000019800 RDI: ffff880000019800
+> > > [    0.000000] RBP: ffffffff82787ef8 R08: 0000000000000000 R09: 0000000000000000
+> > > [    0.000000] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff827cf880
+> > > [    0.000000] R13: 0000000000000002 R14: ffffffff827cf880 R15: 00000000001cd000
+> > > [    0.000000] FS:  0000000000000000(0000) GS:ffff88003f800000(0000) knlGS:0000000000000000
+> > > [    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > > [    0.000000] CR2: 0000000000000000 CR3: 000000000279e000 CR4: 00000000000006b0
+> > > [    0.000000] Stack:
+> > > [    0.000000]  ffffffff82787f50 ffffffff82c876f0 ffffffff83b7e7a0 0000000000000001
+> > > [    0.000000]  0000000000000082 0000000200000000 00000000ffffffff ffffffff82d37920
+> > > [    0.000000]  ffff88003ffbba40 ffffffff82d3e890 0000000000000000 ffffffff82787f80
+> > > [    0.000000] Call Trace:
+> > > [    0.000000]  [<ffffffff82c876f0>] rcu_init_one+0x4c0/0x55d
+> > > [    0.000000]  [<ffffffff82c87b00>] rcu_init+0x270/0x2da
+> > > [    0.000000]  [<ffffffff82c6ec82>] start_kernel+0x24f/0x4d2
+> > > [    0.000000]  [<ffffffff82c6e841>] ? set_init_arg+0x53/0x53
+> > > [    0.000000]  [<ffffffff82c6e453>] x86_64_start_reservations+0x2a/0x2c
+> > > [    0.000000]  [<ffffffff82c6e546>] x86_64_start_kernel+0xf1/0xf4
+> > > [    0.000000] Code: 4c 89 04 c7 4d 09 c1 48 ff c0 eb e8 31 c0 4d 85 c9 0f 95 c0 5d c3 55 48 63 c9 31 c0 48 83 c1 3f 48 89 e5 48 c1 e9 06 39 c1 7e 11 <4c> 8b 04 c2 4c 0b 04 c6 4c 89 04 c7 48 ff c0 eb eb 5d c3 55 48 
+> > > [    0.000000] RIP  [<ffffffff815b65fa>] __bitmap_or+0x15/0x28
+> > > [    0.000000]  RSP <ffffffff82787ef8>
+> > > [    0.000000] CR2: 0000000000000000
+> > > [    0.000000] ---[ end trace 4650963e4118800a ]---
+> > > [    0.000000] Kernel panic - not syncing: Attempted to kill the idle task!
+> > > [    0.000000] Rebooting in 1 seconds..Press any key to enter the menu
+> > > 
+> > > Excluding the new RCU bits from tip:master makes it boot.
+> > > 
+> > > Any idea what's wrong?
+> > 
+> > Looks like you have a setup that has NO_HZ_FULL=y, but that somehow
+> > avoids having a non-NULL tick_nohz_full_mask at rcu_init() time.  But you
+> > probably knew that already.  And of course when I test locally with the
+> > same RCU-related and NO_HZ_FULL-related configs, it all works just fine.
+> > Perhaps there is some interaction with some other code in -tip.
+> > 
+> > So let's see...
+> > 
+> > Now your .config has CONFIG_NO_HZ_FULL_ALL=y and therefore also has
+> > CONFIG_RCU_NOCB_CPU_ALL=y.  In that case, there is no point in doing the
+> > cpumask_or() because all the bits are already set.  So the only time
+> > that this cpumask_or() matters is when CONFIG_RCU_NOCB_CPU_ALL==n and
+> > an explicit nohz_full= mask was specified at boot time.  So one reasonable
+> > change is to replace the #ifndef guarding the cpumask_or() with:
+> > 
+> > 	#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_RCU_NOCB_CPU_ALL)
+> > 
+> > I am now looking to see how tick_nohz_full_mask might be NULL in this
+> > situation.  Depending on what I find, I might insert a check for that.
 > 
-> Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
->  under POWERSAVE mode") moved pcie_aspm_powersave_config_link() out of
-> pci_raw_set_power_state() to pci_set_power_state() which would enable
-> ASPM. But, with Commit db288c9c5f9d ("PCI / PM: restore the original
->  behavior of pci_set_power_state()"), which re-introduced the following check
-> ./drivers/pci/pci.c: pci_set_power_state()
+> And of course if you don't actually specify a nohz_full= mask, then
+> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
+> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
+> forever.
 > 
-> +	/* Check if we're already there */
-> +	if (dev->current_state == state)
-> +	   return 0;
-> 
-> in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
-> made leaving ASPM broken.
-> Fix it by configuring links for ASPM in do_pci_enable_device() instead of
-> pci_set_power_state()
-> 
-> Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-> Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
+> Does the following patch on top of 1823172ab582 (Merge branches
+> 'doc.2014.07.08a', 'fixes.2014.07.09a', 'maintainers.2014.07.08b',
+> 'nocbs.2014.07.07a' and 'torture.2014.07.07a' into HEAD) fix the
+> problem?
 
-I applied this to pci/misc for v3.17 with the following changelog:
+Sigh.  I needed to have tested sooner with CONFIG_CPUMASK_OFFSTACK=n.
+Fortunately, Fengguang Wu's scripts never forget.  ;-)
 
-It would still make me feel better if Matthew and/or Rafael acked this.
+So the following patch should work better.  The earlier one was prone
+to ORing garbage into the rcu_nocb_mask on !CONFIG_CPUMASK_OFFSTACK
+&& CONFIG_NO_HZ && !CONFIG_NO_HZ_ALL builds that were booted without
+the nohz_full= kernel parameter.
 
-    PCI: Configure ASPM when enabling device
-    
-    We can't do ASPM configuration at enumeration-time because enabling it
-    makes some defective hardware unresponsive, even if ASPM is disabled later
-    (see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
-    to veto it").  Therefore, we have to do it after a driver claims the
-    device.
-    
-    We previously configured ASPM in pci_set_power_state(), but that's not a
-    very good place because it's not really related to setting the PCI device
-    power state, and doing it there means:
-    
-      - We incorrectly skipped ASPM config when setting a device that's
-        already in D0 to D0.
-    
-      - We unnecessarily configured ASPM when setting a device to a low-power
-        state (the ASPM feature only applies when the device is in D0).
-    
-      - We unnecessarily configured ASPM when called from a .resume() method
-        (ASPM configuration needs to be restored during resume, but I think
-        pci_restore_pcie_state() should already do this).
-    
-    Move ASPM configuration from pci_set_power_state() to
-    do_pci_enable_device() so we do it when a driver enables a device.
-    
-    [bhelgaas: changelog]
-    Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
+							Thanx, Paul
 
-It would still make me feel better if Matthew and/or Rafael chimed in to
-make sure this is sane.
+------------------------------------------------------------------------
 
-Bjorn
+rcu: Allow for NULL tick_nohz_full_mask when nohz_full= missing
 
-> ---
-> v3:
-> * Modified commit message
->     removed single quotes around commit messages
->     added Suggested-by line
-> 
-> v2:
-> * Calling ASPM config code is moved from pci_set_power_state() to
-> * do_pci_enable_device()
-> 
->  drivers/pci/pci.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 1c8592b..81d49d3 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -839,12 +839,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  
->  	if (!__pci_complete_power_transition(dev, state))
->  		error = 0;
-> -	/*
-> -	 * When aspm_policy is "powersave" this call ensures
-> -	 * that ASPM is configured.
-> -	 */
-> -	if (!error && dev->bus->self)
-> -		pcie_aspm_powersave_config_link(dev->bus->self);
->  
->  	return error;
->  }
-> @@ -1195,12 +1189,18 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
->  static int do_pci_enable_device(struct pci_dev *dev, int bars)
->  {
->  	int err;
-> +	struct pci_dev *bridge;
->  	u16 cmd;
->  	u8 pin;
->  
->  	err = pci_set_power_state(dev, PCI_D0);
->  	if (err < 0 && err != -EIO)
->  		return err;
-> +
-> +	bridge = pci_upstream_bridge(dev);
-> +	if (bridge)
-> +		pcie_aspm_powersave_config_link(bridge);
-> +
->  	err = pcibios_enable_device(dev, bars);
->  	if (err < 0)
->  		return err;
-> -- 
-> 1.8.1.5
-> 
+If there isn't a nohz_full= kernel parameter specified, then
+tick_nohz_full_mask can legitimately be NULL.  This can cause
+problems when RCU's boot code tries to cpumask_or() this value into
+rcu_nocb_mask.  In addition, if NO_HZ_FULL_ALL=y, there is no point
+in doing the cpumask_or() in the first place because this will cause
+RCU_NOCB_CPU_ALL=y, which in turn will have all bits already set in
+rcu_nocb_mask.
+
+This commit therefore avoids the cpumask_or() if NO_HZ_FULL_ALL=y
+and checks for !tick_nohz_full_running otherwise, this latter check
+catching cases when there was no nohz_full= kernel parameter specified.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index f62b7f2f6abd..00dc411e9676 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2479,9 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ 
+ 	if (rcu_nocb_mask == NULL)
+ 		return;
+-#ifdef CONFIG_NO_HZ_FULL
+-	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
+-#endif /* #ifdef CONFIG_NO_HZ_FULL */
++#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
++	if (tick_nohz_full_running)
++		cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
++#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
+ 	if (ls == -1) {
+ 		ls = int_sqrt(nr_cpu_ids);
+ 		rcu_nocb_leader_stride = ls;
+
