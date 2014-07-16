@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710AbaGPIa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:30:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60633 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758803AbaGPI0Q (ORCPT
+	id S1759588AbaGPIcG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:32:06 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:7219 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760540AbaGPIbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:26:16 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 09/12] ARM: dts: berlin: add BG2Q nodes for USB support
-Date: Wed, 16 Jul 2014 10:26:03 +0200
-Message-Id: <1405499166-6726-10-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+	Wed, 16 Jul 2014 04:31:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 16 Jul 2014 01:20:33 -0700
+Date: Wed, 16 Jul 2014 11:31:50 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "Mike Turquette" <mturquette@linaro.org>,
+        Joseph Lo <josephl@nvidia.com>, "Alex Courbot" <acourbot@nvidia.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] clk: tegra: Add Tegra132 ccplex clocks
+Message-ID: <20140716083150.GM23218@tbergstrom-lnx.Nvidia.com>
+References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
+ <1405437890-6468-7-git-send-email-pdeschrijver@nvidia.com>
+ <53C5908C.5000009@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53C5908C.5000009@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds nodes describing the Marvell Berlin BG2Q USB PHY and USB. The BG2Q
-SoC has 3 USB host controller, compatible with ChipIdea.
+On Tue, Jul 15, 2014 at 10:35:24PM +0200, Rhyland Klein wrote:
+> On 7/15/2014 11:24 AM, Peter De Schrijver wrote:
+> > Add support for the ccplex clocks in Tegra132.
+> > 
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> > ---
+> >  drivers/clk/tegra/Makefile |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+> > index f7dfb72..4231865 100644
+> > --- a/drivers/clk/tegra/Makefile
+> > +++ b/drivers/clk/tegra/Makefile
+> > @@ -15,3 +15,5 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
+> >  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
+> >  obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
+> >  obj-$(CONFIG_ARCH_TEGRA_124_SOC)	+= clk-tegra124.o
+> > +obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra124.c
+> > +obj-$(CONFIG_ARCH_TEGRA_132_SOC)	+= clk-tegra132-ccplex.c
+> > 
+> 
+> This doesn't seem to actually add the clk-tegra132-ccplex.c file.
+> 
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q.dtsi | 52 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
-
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index a6f7ec325200..a56ee2ca196e 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -111,6 +111,39 @@
- 			#interrupt-cells = <3>;
- 		};
- 
-+		usb_phy2: phy@a2f400 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xa2f400 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 14>;
-+			status = "disabled";
-+		};
-+
-+		usb2: usb@a30000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xa30000 0x10000>;
-+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB2>;
-+			phys = <&usb_phy2>;
-+			status = "disabled";
-+		};
-+
-+		usb_phy0: phy@b74000 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xb74000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 12>;
-+			status = "disabled";
-+		};
-+
-+		usb_phy1: phy@b78000 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xb78000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 13>;
-+			status = "disabled";
-+		};
-+
- 		apb@e80000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -304,6 +337,24 @@
- 			clock-names = "refclk";
- 		};
- 
-+		usb0: usb@ed0000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xed0000 0x10000>;
-+			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB0>;
-+			phys = <&usb_phy0>;
-+			status = "disabled";
-+		};
-+
-+		usb1: usb@ee0000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xee0000 0x10000>;
-+			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB1>;
-+			phys = <&usb_phy1>;
-+			status = "disabled";
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -360,5 +411,6 @@
- 				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
- 			};
- 		};
-+
- 	};
- };
--- 
-1.9.1
-
+Indeed... how did that happen...
