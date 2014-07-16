@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589AbaGPVeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:34:15 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:55337 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646AbaGPVeL (ORCPT
+	id S1754234AbaGPVgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:36:22 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41425 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894AbaGPVgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:34:11 -0400
-Date: Thu, 17 Jul 2014 00:34:02 +0300
+	Wed, 16 Jul 2014 17:36:16 -0400
+Date: Thu, 17 Jul 2014 00:36:12 +0300
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 05/10] proc: convert /proc/$PID/wchan to seq_file interface
-Message-ID: <20140716213401.GD21290@p183.telecom.by>
+Subject: [PATCH 09/10] proc: convert /proc/$PID/hardwall to seq_file interface
+Message-ID: <20140716213612.GH21290@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,48 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
 
- fs/proc/base.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ arch/tile/include/asm/hardwall.h |    2 +-
+ arch/tile/kernel/hardwall.c      |    6 +++---
+ fs/proc/base.c                   |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
+--- a/arch/tile/include/asm/hardwall.h
++++ b/arch/tile/include/asm/hardwall.h
+@@ -23,7 +23,7 @@
+ struct proc_dir_entry;
+ #ifdef CONFIG_HARDWALL
+ void proc_tile_hardwall_init(struct proc_dir_entry *root);
+-int proc_pid_hardwall(struct task_struct *task, char *buffer);
++int proc_pid_hardwall(struct seq_file *m, struct pid_namespace *ns, struct pid *pid, struct task_struct *task);
+ #else
+ static inline void proc_tile_hardwall_init(struct proc_dir_entry *root) {}
+ #endif
+--- a/arch/tile/kernel/hardwall.c
++++ b/arch/tile/kernel/hardwall.c
+@@ -947,15 +947,15 @@ static void hardwall_remove_proc(struct hardwall_info *info)
+ 	remove_proc_entry(buf, info->type->proc_dir);
+ }
+ 
+-int proc_pid_hardwall(struct task_struct *task, char *buffer)
++int proc_pid_hardwall(struct seq_file *m, struct pid_namespace *ns,
++		      struct pid *pid, struct task_struct *task)
+ {
+ 	int i;
+ 	int n = 0;
+ 	for (i = 0; i < HARDWALL_TYPES; ++i) {
+ 		struct hardwall_info *info = task->thread.hardwall[i].info;
+ 		if (info)
+-			n += sprintf(&buffer[n], "%s: %d\n",
+-				     info->type->name, info->id);
++			seq_printf(m, "%s: %d\n", info->type->name, info->id);
+ 	}
+ 	return n;
+ }
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -235,7 +235,8 @@ static int proc_pid_auxv(struct seq_file *m, struct pid_namespace *ns,
-  * Provides a wchan file via kallsyms in a proper one-value-per-file format.
-  * Returns the resolved symbol.  If that fails, simply return the address.
-  */
--static int proc_pid_wchan(struct task_struct *task, char *buffer)
-+static int proc_pid_wchan(struct seq_file *m, struct pid_namespace *ns,
-+			  struct pid *pid, struct task_struct *task)
- {
- 	unsigned long wchan;
- 	char symname[KSYM_NAME_LEN];
-@@ -246,9 +247,9 @@ static int proc_pid_wchan(struct task_struct *task, char *buffer)
- 		if (!ptrace_may_access(task, PTRACE_MODE_READ))
- 			return 0;
- 		else
--			return sprintf(buffer, "%lu", wchan);
-+			return seq_printf(m, "%lu", wchan);
- 	else
--		return sprintf(buffer, "%s", symname);
-+		return seq_printf(m, "%s", symname);
- }
- #endif /* CONFIG_KALLSYMS */
- 
-@@ -2598,7 +2599,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	DIR("attr",       S_IRUGO|S_IXUGO, proc_attr_dir_inode_operations, proc_attr_dir_operations),
+@@ -2637,7 +2637,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	ONE("io",	S_IRUSR, proc_tgid_io_accounting),
  #endif
- #ifdef CONFIG_KALLSYMS
--	INF("wchan",      S_IRUGO, proc_pid_wchan),
-+	ONE("wchan",      S_IRUGO, proc_pid_wchan),
+ #ifdef CONFIG_HARDWALL
+-	INF("hardwall",   S_IRUGO, proc_pid_hardwall),
++	ONE("hardwall",   S_IRUGO, proc_pid_hardwall),
  #endif
- #ifdef CONFIG_STACKTRACE
- 	ONE("stack",      S_IRUSR, proc_pid_stack),
-@@ -2936,7 +2937,7 @@ static const struct pid_entry tid_base_stuff[] = {
- 	DIR("attr",      S_IRUGO|S_IXUGO, proc_attr_dir_inode_operations, proc_attr_dir_operations),
+ #ifdef CONFIG_USER_NS
+ 	REG("uid_map",    S_IRUGO|S_IWUSR, proc_uid_map_operations),
+@@ -2972,7 +2972,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	ONE("io",	S_IRUSR, proc_tid_io_accounting),
  #endif
- #ifdef CONFIG_KALLSYMS
--	INF("wchan",     S_IRUGO, proc_pid_wchan),
-+	ONE("wchan",     S_IRUGO, proc_pid_wchan),
+ #ifdef CONFIG_HARDWALL
+-	INF("hardwall",   S_IRUGO, proc_pid_hardwall),
++	ONE("hardwall",   S_IRUGO, proc_pid_hardwall),
  #endif
- #ifdef CONFIG_STACKTRACE
- 	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #ifdef CONFIG_USER_NS
+ 	REG("uid_map",    S_IRUGO|S_IWUSR, proc_uid_map_operations),
