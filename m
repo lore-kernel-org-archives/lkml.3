@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654AbaGPQKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:10:45 -0400
-Received: from blu004-omc4s1.hotmail.com ([65.55.111.140]:63149 "EHLO
-	BLU004-OMC4S1.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934607AbaGPQKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:10:41 -0400
-X-TMN: [JIpDUl3N6tmnet8DSJ0/V5h7KYU1r5tD]
-X-Originating-Email: [beanhuo@outlook.com]
-Message-ID: <BLU185-W360A909A392A2B589A7905A6F70@phx.gbl>
-From: Bean Huo <beanhuo@outlook.com>
-To: Jingoo Han <jg1.han@samsung.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-CC: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "b32955@freescale.com" <b32955@freescale.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "christian.riesch@omicron.at" <christian.riesch@omicron.at>
-Subject: RE: [PATCH v5] mtd:nor:timeout:fix do_write_buffer() timeout error
-Date: Wed, 16 Jul 2014 16:10:40 +0000
-Importance: Normal
-In-Reply-To: <003f01cfa0df$d79d5fc0$86d81f40$%han@samsung.com>
-References: <BLU185-W10713E955F9530C4D53490A6F70@phx.gbl>,<BLU185-W62B0858FCD7D3A71127B41A6F70@phx.gbl>,<002201cfa0ca$be634b10$3b29e130$%han@samsung.com>,<BLU185-W44C89261B8307EBFCC2EC0A6F70@phx.gbl>,<003f01cfa0df$d79d5fc0$86d81f40$%han@samsung.com>
-Content-Type: text/plain; charset="gb2312"
+	id S934667AbaGPQNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:13:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41505 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755437AbaGPQNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:13:38 -0400
+Message-ID: <53C6A4A3.1040702@zytor.com>
+Date: Wed, 16 Jul 2014 09:13:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 16 Jul 2014 16:10:40.0968 (UTC) FILETIME=[7D3C3480:01CFA110]
+To: Paolo Bonzini <pbonzini@redhat.com>, Andy Lutomirski <luto@amacapital.net>
+CC: Daniel Borkmann <dborkman@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+References: <cover.1405477965.git.luto@amacapital.net> <20140716064110.GV18167@minantech.com> <53C62563.6050106@redhat.com> <53C62B68.50702@redhat.com> <CALCETrVLJ7qH3y04K9Sz1pU3i9+H9Cq_RoDfBeWnsH0VC68qKw@mail.gmail.com> <53C6A236.7040904@zytor.com> <53C6A362.7090709@redhat.com>
+In-Reply-To: <53C6A362.7090709@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6GGApjT029210
 
-> However, one thing is clear; 'if' and 'else' should use the same
-> indentation level as below.
->
-> 1.
-> if(){
-> ...
-> } else {
-> ...
-> }
->
-> 2.
-> if(){
-> ...
-> } else {
-> ...
-> }
->
-> 3.
->
-> if(){
-> ...
-> } else {
-> ...
-> }
->
-> Best regards,
-> Jingoo Han
+On 07/16/2014 09:08 AM, Paolo Bonzini wrote:
+> Il 16/07/2014 18:03, H. Peter Anvin ha scritto:
+>> I suggested emulating RDRAND *but not set the CPUID bit*.  We already
+>> developed a protocol in KVM/Qemu to enumerate emulated features (created
+>> for MOVBE as I recall), specifically to service the semantic "feature X
+>> will work but will be substantially slower than normal."
+> 
+> But those will set the CPUID bit.  There is currently no way for KVM
+> guests to know if a CPUID bit is real or emulated.
+> 
 
-hi,Jinngoo
-I'm sorry for misunderstanding for you suggestion,and I will modify my patch in V6.thanks. 		 	   		  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+OK, so there wasn't any protocol implemented in the end.  I sit corrected.
+
+	-hpa
+
+
