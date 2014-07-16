@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030593AbaGPHVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:21:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1976 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030551AbaGPHVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:21:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
-   d="scan'208";a="573895398"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] perf tools: Allow deletion of a thread with no map groups
-Date: Wed, 16 Jul 2014 10:19:43 +0300
-Message-Id: <1405495184-20441-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1405495184-20441-1-git-send-email-adrian.hunter@intel.com>
-References: <20140714204310.GC18133@kernel.org>
- <1405495184-20441-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1030610AbaGPHVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:21:30 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43641 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030551AbaGPHVZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 03:21:25 -0400
+X-Sasl-enc: OFkRpxFTIIJNdM01ukg7vQcJ/mheC5KiLITwG/RVkyJu 1405495283
+Message-ID: <1405495280.2527.84.camel@perseus.fritz.box>
+Subject: Re: [PATCH 0/6] autofs4: support RCU-walk
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 Jul 2014 15:21:20 +0800
+In-Reply-To: <20140716160005.6c43668d@notabene.brown>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	 <1405481098.2527.9.camel@perseus.fritz.box>
+	 <20140716160005.6c43668d@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It needs to be possible to call thread__delete() on
-a thread with no map groups.  This is needed for
-a subsequent patch which deletes a thread on the
-error path before map groups have been attached.
+On Wed, 2014-07-16 at 16:00 +1000, NeilBrown wrote:
+> On Wed, 16 Jul 2014 11:24:58 +0800 Ian Kent <raven@themaw.net> wrote:
+> 
+> > On Thu, 2014-07-10 at 09:41 +1000, NeilBrown wrote:
+> > > autofs4 currently doesn't support RCU-walk - it immediately
+> > > aborts any attempt at RCU-walk to force REF-walk for path name
+> > > lookup.
+> > 
+> > As discussed I don't have time to properly test these just now but I'll
+> > do my best to review the patches and return to test them later.
+> 
+> Thanks.
+> 
+> > 
+> > My impression is that you will be submitting these patches rather than
+> > expecting me to pick them up and submit them. If that's not what your
+> > expecting please let me know.
+> 
+> I had assumed that you would take them as you are listed as the maintainer.
+> However if you would like me to send them on I can certainly do that.
+> You seem to send via Andrew Morton so I'll do that when they seem to be ready
+> if you like.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/thread.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Either or, we can decide that once we're done with the patches.
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 7a32f44..b9c36ef 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -60,8 +60,10 @@ void thread__delete(struct thread *thread)
- {
- 	struct comm *comm, *tmp;
- 
--	map_groups__put(thread->mg);
--	thread->mg = NULL;
-+	if (thread->mg) {
-+		map_groups__put(thread->mg);
-+		thread->mg = NULL;
-+	}
- 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
- 		list_del(&comm->list);
- 		comm__free(comm);
--- 
-1.8.3.2
+I don't maintain an autofs tree because the module isn't volatile enough
+to warrant it. I was sloppy with patches I sent to Linus a few times and
+Andrew politely asked me to send them via him, and rightly so, ;)
+
+I guess it comes down to how urgent it is to get these merged since I'd
+like to hammer them with my submount test before passing them on and at
+this point I don't know when I'll have time to work through that.
+
+I could just set aside some time to run the test a few times and not try
+and fix any problems at the time. Point being the test has a habit of
+exposing problems that can be difficult to work out let alone fix.
+
+Ian
+
 
