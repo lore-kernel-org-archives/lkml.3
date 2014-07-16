@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651AbaGPKQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:16:03 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:59243 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751016AbaGPKP7 (ORCPT
+	id S1758392AbaGPKRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:17:14 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:58001 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaGPKRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:15:59 -0400
-Message-ID: <1405505756.4408.24.camel@x220>
-Subject: Re: [PATCH 18/19] ARM: SAMSUNG: Remove remaining legacy code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Date: Wed, 16 Jul 2014 12:15:56 +0200
-In-Reply-To: <1404496099-26708-19-git-send-email-t.figa@samsung.com>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-	 <1404496099-26708-19-git-send-email-t.figa@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Jul 2014 10:15:56.0951 (UTC) FILETIME=[EEF8F270:01CFA0DE]
-X-RcptDomain: vger.kernel.org
+	Wed, 16 Jul 2014 06:17:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "s-anna@ti.com" <s-anna@ti.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+Date: Wed, 16 Jul 2014 12:16:22 +0200
+Message-ID: <5340858.B9CZUE8s0j@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53C64883.2050709@arm.com>
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org> <1405071325-14683-1-git-send-email-jaswinder.singh@linaro.org> <53C64883.2050709@arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:E2smyJG97VtVwwUxctuKhZaGMlCdzLdQxbF4ovCGlUI
+ GIT2+MSgHWMJHv+fMhP/o6fU8rxRFOqss8xP8yrFDmDVXPD3pK
+ dIzi686D8/s5SCumDgV5TfeeoWxaeVk8rqc4LOsWtH+GQrmid+
+ 8fnPkK6SnCDQr1exXcOoIwbqlvbulgK7ov4IHTd9Xg2DR51xPD
+ KBvtiIVYRlY4g4B/7ZJ3dI6LeefduyyYbrnP5ywx+q/Riml2DP
+ LMq6VlP95gmwbJAgqXAqPWGmiV7sU08d3wHqthsnHzuWodsXKr
+ a+Ay/Mi+yNmCfoho1PYXufxRTEjhE69n7WG1bdHXgkeF2vmwf3
+ XRUAjyVqwSvCVRa/XZI0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
-> After refactoring suspend/resume, which was last part with dependencies
-> on legacy code, all Kconfig symbols related to Samsung ATAGS support can
-> be deselected and more unused code removed. This includes most of s5p-*
-> code as well, as s5pv210 was their last user.
+On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
+> > +
+> > +Required property:
+> > +- mbox: List of phandle and mailbox channel specifier.
+> > +
+> > +- mbox-names: List of identifier strings for each mailbox channel
+> > +               required by the client.
+> > +
 > 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
+> IMO the mailbox names are more associated with the controller channels/
+> mailbox rather than the clients using it. Does it make sense to move
+> this under controller. It also avoid each client replicating the names.
 
-I noticed another thing now this patch showed up in next-20140716.
+I think it would be best to just make the mbox-names property optional,
+like we have for other subsystems.
 
->  [...]
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-> index f8185b5..1091b0a 100644
-> --- a/arch/arm/plat-samsung/Kconfig
-> +++ b/arch/arm/plat-samsung/Kconfig
-> @@ -6,29 +6,16 @@
->  
->  config PLAT_SAMSUNG
->  	bool
-> -	depends on PLAT_S3C24XX || ARCH_S3C64XX || PLAT_S5P || ARCH_EXYNOS
-> +	depends on PLAT_S3C24XX || ARCH_S3C64XX || ARCH_EXYNOS || ARCH_S5PV210
->  	default y
->  	select GENERIC_IRQ_CHIP
->  	select NO_IOPORT_MAP
->  	help
->  	  Base platform code for all Samsung SoC based systems
->  
-> -config PLAT_S5P
-> -	bool
-> -	depends on ARCH_S5PV210
-> -	default y
-> -	select ARCH_REQUIRE_GPIOLIB
-> -	select ARM_VIC
-> -	select NO_IOPORT_MAP
-> -	select PLAT_SAMSUNG
-> -	select S3C_GPIO_TRACK
-> -	select S5P_GPIO_DRVSTR
-> -	help
-> -	  Base platform code for Samsung's S5P series SoC.
-> -
+Doing it in the mbox-controller makes no sense at all, because the
+mbox controller has (or should have) no idea what the attached devices are.
 
-After this patch that symbol is still referenced in:
-drivers/media/platform/Kconfig:159:     depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
-drivers/media/platform/Kconfig:169:     depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
-drivers/media/platform/Kconfig:177:     depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
-drivers/media/platform/exynos4-is/Kconfig:5:    depends on (PLAT_S5P || ARCH_EXYNOS)
-drivers/media/platform/s5p-tv/Kconfig:11:       depends on (PLAT_S5P || ARCH_EXYNOS) && PM_RUNTIME
-drivers/usb/host/Kconfig:223:       depends on PLAT_S5P || ARCH_EXYNOS
-drivers/usb/host/Kconfig:530:   depends on PLAT_S5P || ARCH_EXYNOS
-
-Again, I assume patches to remove these references are pending. But is
-that correct?
-
-
-Paul Bolle
-
+	Arnd
