@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965488AbaGPPrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:47:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22922 "EHLO mga01.intel.com"
+	id S965504AbaGPPrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:47:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33229 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964942AbaGPPrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:47:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,673,1400050800"; 
-   d="scan'208";a="570780941"
-Message-ID: <53C69E64.4030801@iki.fi>
-Date: Wed, 16 Jul 2014 18:46:44 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:29.0) Gecko/20100101 SeaMonkey/2.26.1
+	id S965166AbaGPPre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 11:47:34 -0400
+Message-ID: <53C69E92.70608@suse.cz>
+Date: Wed, 16 Jul 2014 17:47:30 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH/RFC v4 05/21] leds: avoid using deprecated DEVICE_ATTR
- macro
-References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com> <1405087464-13762-6-git-send-email-j.anaszewski@samsung.com>
-In-Reply-To: <1405087464-13762-6-git-send-email-j.anaszewski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bob Liu <bob.liu@oracle.com>, David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] mm, tmp: only collapse hugepages to nodes with affinity
+ for zone_reclaim_mode
+References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com> <53C5D3D2.8080000@oracle.com>
+In-Reply-To: <53C5D3D2.8080000@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+On 07/16/2014 03:22 AM, Bob Liu wrote:
+>> @@ -2545,6 +2571,11 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+>>  		 * hit record.
+>>  		 */
+>>  		node = page_to_nid(page);
+>> +		if (node != last_node) {
+>> +			if (khugepaged_scan_abort(node))
+>> +				goto out_unmap;
+> 
+> Nitpick: How about not break the loop but only reset the related
+> khugepaged_node_load[] to zero. E.g. modify khugepaged_scan_abort() like
+> this:
+> if (node_distance(nid, i) > RECLAIM_DISTANCE)
+>    khugepaged_node_load[i] = 0;
+> 
+> By this way, we may have a chance to find a more suitable node.
 
-Jacek Anaszewski wrote:
-> Make the sysfs attributes definition consistent in the whole file.
-> The modification entails change of the function name:
-> led_max_brightness_show -> max_brightness_show
+Hm theoretically there might be a suitable node, but this approach wouldn't
+work. By resetting it to zero you forget that there ever was node 'i'. If there
+is no more base page from node 'i', the load remains zero and the next call with
+'nid' will think that 'nid' is OK.
 
-I'm not sure whether DEVICE_ATTR() is really deprecated but nevertheless 
-this is cleaner.
+So the correct way would be more complex but I wonder if it's worth the trouble...
 
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+>> +			last_node = node;
+>> +		}
+>>  		khugepaged_node_load[node]++;
+>>  		VM_BUG_ON_PAGE(PageCompound(page), page);
+>>  		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+>> 
+> 
 
--- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi     XMPP: sailus@retiisi.org.uk
