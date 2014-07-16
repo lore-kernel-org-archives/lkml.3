@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965671AbaGPSE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:04:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49698 "EHLO mx1.redhat.com"
+	id S965715AbaGPSFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:05:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52414 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965602AbaGPSEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:04:55 -0400
+	id S965673AbaGPSFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:05:02 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Subject: [PATCH v2 RESEND 01/23] be2iscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Wed, 16 Jul 2014 20:05:05 +0200
-Message-Id: <c59d60c1d8b848222bbac6d32c314c9dfbfb13f2.1405533479.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Anil Gurumurthy <agurumur@brocade.com>,
+        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
+Date: Wed, 16 Jul 2014 20:05:08 +0200
+Message-Id: <bc13ddf17d035921de994d2f8a52902e0a5d1a60.1405533479.git.agordeev@redhat.com>
 In-Reply-To: <cover.1405533479.git.agordeev@redhat.com>
 References: <cover.1405533479.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,29 +29,55 @@ and pci_enable_msix_range() or pci_enable_msix_exact()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Anil Gurumurthy <agurumur@brocade.com>
+Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
 ---
- drivers/scsi/be2iscsi/be_main.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/scsi/bfa/bfad.c |   20 ++++++--------------
+ 1 files changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
-index 56467df..1f63169 100644
---- a/drivers/scsi/be2iscsi/be_main.c
-+++ b/drivers/scsi/be2iscsi/be_main.c
-@@ -5278,12 +5278,10 @@ static void beiscsi_msix_enable(struct beiscsi_hba *phba)
- 	for (i = 0; i <= phba->num_cpus; i++)
- 		phba->msix_entries[i].entry = i;
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+index c18279f..e90a374 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1234,29 +1234,21 @@ bfad_setup_intr(struct bfad_s *bfad)
+ 	if ((bfa_asic_id_ctc(pdev->device) && !msix_disable_ct) ||
+ 	   (bfa_asic_id_cb(pdev->device) && !msix_disable_cb)) {
  
--	status = pci_enable_msix(phba->pcidev, phba->msix_entries,
--				 (phba->num_cpus + 1));
-+	status = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
-+				       phba->num_cpus + 1);
- 	if (!status)
- 		phba->msix_enabled = true;
--
--	return;
- }
+-		error = pci_enable_msix(bfad->pcidev, msix_entries, bfad->nvec);
++		error = pci_enable_msix_exact(bfad->pcidev,
++					      msix_entries, bfad->nvec);
+ 		/* In CT1 & CT2, try to allocate just one vector */
+-		if (error > 0 && bfa_asic_id_ctc(pdev->device)) {
++		if (error == -ENOSPC && bfa_asic_id_ctc(pdev->device)) {
+ 			printk(KERN_WARNING "bfa %s: trying one msix "
+ 			       "vector failed to allocate %d[%d]\n",
+ 			       bfad->pci_name, bfad->nvec, error);
+ 			bfad->nvec = 1;
+-			error = pci_enable_msix(bfad->pcidev,
+-						msix_entries, bfad->nvec);
++			error = pci_enable_msix_exact(bfad->pcidev,
++						      msix_entries, 1);
+ 		}
  
- static void be_eqd_update(struct beiscsi_hba *phba)
+-		/*
+-		 * Only error number of vector is available.
+-		 * We don't have a mechanism to map multiple
+-		 * interrupts into one vector, so even if we
+-		 * can try to request less vectors, we don't
+-		 * know how to associate interrupt events to
+-		 *  vectors. Linux doesn't duplicate vectors
+-		 * in the MSIX table for this case.
+-		 */
+ 		if (error) {
+ 			printk(KERN_WARNING "bfad%d: "
+-			       "pci_enable_msix failed (%d), "
++			       "pci_enable_msix_exact failed (%d), "
+ 			       "use line based.\n",
+ 				bfad->inst_no, error);
+ 			goto line_based;
 -- 
 1.7.7.6
 
