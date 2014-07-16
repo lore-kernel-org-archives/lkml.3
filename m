@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaGPVQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:16:11 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:47698 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaGPVQG (ORCPT
+	id S1754094AbaGPVQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:16:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59716 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298AbaGPVE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:16:06 -0400
+	Wed, 16 Jul 2014 17:04:29 -0400
+Message-Id: <20140716205054.452948712@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Wed, 16 Jul 2014 21:04:28 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [patch V2 27/64] timekeeping: Remove ktime_get_monotonic_offset()
+References: <20140716205018.175419210@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJornzMJjyPXVZB_eYi-FRet=bXcJWJDa1vnB_oU9ZA_Q@mail.gmail.com>
-References: <cover.1405452484.git.luto@amacapital.net> <bd4e2efb7cd97f2bf9d4f1e2065f16c9091d799a.1405452484.git.luto@amacapital.net>
- <CAGXu5jJornzMJjyPXVZB_eYi-FRet=bXcJWJDa1vnB_oU9ZA_Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Jul 2014 14:15:44 -0700
-Message-ID: <CALCETrWuWxZANoKAR=FG55EOHtzvTHmc3euMdtf8yfibtK-QYw@mail.gmail.com>
-Subject: Re: [PATCH 5/7] x86: Split syscall_trace_enter into two phases
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline;
+ filename=timekeeping-remove-ktime_get_monotonic_offset.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 1:21 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Tue, Jul 15, 2014 at 12:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> +
->> +               ret = seccomp_phase1(&sd);
->> +               if (ret == SECCOMP_PHASE1_SKIP) {
->> +                       regs->orig_ax = -ENOSYS;
->
-> Before, seccomp didn't touch orig_ax on a skip. I don't see any
-> problem with this, and it's probably more clear this way, but are you
-> sure there aren't unexpected side-effects from this?
+No more users.
 
-It's necessary to cause the syscall to be skipped -- see syscall_trace_enter.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/timekeeping.h |    1 -
+ kernel/time/timekeeping.c   |   18 ------------------
+ 2 files changed, 19 deletions(-)
 
-That being said, setting it to -ENOSYS is nonsense and probably
-confused you at least as much as it confused me.  It should be
-regs->orig_ax = -1.
+Index: tip/include/linux/timekeeping.h
+===================================================================
+--- tip.orig/include/linux/timekeeping.h
++++ tip/include/linux/timekeeping.h
+@@ -108,7 +108,6 @@ enum tk_offsets {
+ 
+ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_with_offset(enum tk_offsets offs);
+-extern ktime_t ktime_get_monotonic_offset(void);
+ extern ktime_t ktime_mono_to_any(ktime_t tmono, enum tk_offsets offs);
+ 
+ /**
+Index: tip/kernel/time/timekeeping.c
+===================================================================
+--- tip.orig/kernel/time/timekeeping.c
++++ tip/kernel/time/timekeeping.c
+@@ -1708,24 +1708,6 @@ ktime_t ktime_get_update_offsets_now(kti
+ #endif
+ 
+ /**
+- * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+- */
+-ktime_t ktime_get_monotonic_offset(void)
+-{
+-	struct timekeeper *tk = &tk_core.timekeeper;
+-	unsigned long seq;
+-	struct timespec64 wtom;
+-
+-	do {
+-		seq = read_seqcount_begin(&tk_core.seq);
+-		wtom = tk->wall_to_monotonic;
+-	} while (read_seqcount_retry(&tk_core.seq, seq));
+-
+-	return timespec64_to_ktime(wtom);
+-}
+-EXPORT_SYMBOL_GPL(ktime_get_monotonic_offset);
+-
+-/**
+  * do_adjtimex() - Accessor function to NTP __do_adjtimex function
+  */
+ int do_adjtimex(struct timex *txc)
 
---Andy
+
