@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935214AbaGPTYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:24:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44535 "EHLO
+	id S935230AbaGPTYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:24:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44543 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934984AbaGPTYB (ORCPT
+	with ESMTP id S935174AbaGPTYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:24:01 -0400
-Date: Wed, 16 Jul 2014 12:23:06 -0700
-From: tip-bot for Jason Baron <tipbot@zytor.com>
-Message-ID: <tip-6e76ea8a8209386c3cc7ee5594e6ea5d25525cf2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, jbaron@akamai.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, jbaron@akamai.com
-In-Reply-To: <2ce52233ce200faad93b6029d90f1411cd926667.1404315388.git.jbaron@akamai.com>
-References: <2ce52233ce200faad93b6029d90f1411cd926667.1404315388.git.jbaron@akamai.com>
+	Wed, 16 Jul 2014 15:24:03 -0400
+Date: Wed, 16 Jul 2014 12:23:49 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-0cdd192cf40fb6dbf03ec3af1c670068de3fd26c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        tglx@linutronix.de
+In-Reply-To: <c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net>
+References: <c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Remove extra static_key*()
-  function indirection
-Git-Commit-ID: 6e76ea8a8209386c3cc7ee5594e6ea5d25525cf2
+Subject: [tip:perf/urgent] kprobes/x86: Don'
+ t try to resolve kprobe faults from userspace
+Git-Commit-ID: 0cdd192cf40fb6dbf03ec3af1c670068de3fd26c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,51 +33,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e76ea8a8209386c3cc7ee5594e6ea5d25525cf2
-Gitweb:     http://git.kernel.org/tip/6e76ea8a8209386c3cc7ee5594e6ea5d25525cf2
-Author:     Jason Baron <jbaron@akamai.com>
-AuthorDate: Wed, 2 Jul 2014 15:52:41 +0000
+Commit-ID:  0cdd192cf40fb6dbf03ec3af1c670068de3fd26c
+Gitweb:     http://git.kernel.org/tip/0cdd192cf40fb6dbf03ec3af1c670068de3fd26c
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Fri, 11 Jul 2014 10:27:01 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 13:38:20 +0200
+CommitDate: Wed, 16 Jul 2014 14:16:32 +0200
 
-sched: Remove extra static_key*() function indirection
+kprobes/x86: Don't try to resolve kprobe faults from userspace
 
-I think its a bit simpler without having to follow an extra layer of static
-inline fuctions. No functional change just cosmetic.
+This commit:
 
-Signed-off-by: Jason Baron <jbaron@akamai.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: rostedt@goodmis.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/2ce52233ce200faad93b6029d90f1411cd926667.1404315388.git.jbaron@akamai.com
+    commit 6f6343f53d133bae516caf3d254bce37d8774625
+    Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+    Date:   Thu Apr 17 17:17:33 2014 +0900
+
+        kprobes/x86: Call exception handlers directly from do_int3/do_debug
+
+appears to have inadvertently dropped a check that the int3 came
+from kernel mode.  Trying to dereference addr when addr is
+user-controlled is completely bogus.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/c4e339882c121aa76254f2adde3fcbdf502faec2.1405099506.git.luto@amacapital.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/sched.h | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ arch/x86/kernel/kprobes/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1283945..579712f 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -887,20 +887,10 @@ enum {
- #undef SCHED_FEAT
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 7596df6..67e6d19 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -574,6 +574,9 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	struct kprobe *p;
+ 	struct kprobe_ctlblk *kcb;
  
- #if defined(CONFIG_SCHED_DEBUG) && defined(HAVE_JUMP_LABEL)
--static __always_inline bool static_branch__true(struct static_key *key)
--{
--	return static_key_true(key); /* Not out of line branch. */
--}
--
--static __always_inline bool static_branch__false(struct static_key *key)
--{
--	return static_key_false(key); /* Out of line branch. */
--}
--
- #define SCHED_FEAT(name, enabled)					\
- static __always_inline bool static_branch_##name(struct static_key *key) \
- {									\
--	return static_branch__##enabled(key);				\
-+	return static_key_##enabled(key);				\
- }
- 
- #include "features.h"
++	if (user_mode_vm(regs))
++		return 0;
++
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+ 	/*
+ 	 * We don't want to be preempted for the entire
