@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaGPXPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 19:15:37 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63728 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753997AbaGPXPe (ORCPT
+	id S1753077AbaGPXRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 19:17:07 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:65018 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaGPXRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 19:15:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: Patrik Fimml <patrikf@chromium.org>, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dtor@google.com>, Benson Leung <bleung@google.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Power-managing devices that are not of interest at some point in time
-Date: Thu, 17 Jul 2014 01:33:50 +0200
-Message-ID: <1463038.d2xocpRFLY@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405552422.17757.5.camel@nuvo>
-References: <20140716013206.GA13409@google.com> <5611777.bNi5p029gt@vostro.rjw.lan> <1405552422.17757.5.camel@nuvo>
+	Wed, 16 Jul 2014 19:17:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <CALnjE+oQ31p4KrMqwM2mPve76_xX2LEogP4QfOMYJ1+29m4txA@mail.gmail.com>
+References: <1405550594-11786-1-git-send-email-teg@jklm.no>
+ <1405550594-11786-3-git-send-email-teg@jklm.no> <CALnjE+oQ31p4KrMqwM2mPve76_xX2LEogP4QfOMYJ1+29m4txA@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 17 Jul 2014 01:16:43 +0200
+Message-ID: <CAG-2HqUY_mUDRjT6XrwX68FZvgvTVSzkbAOs-m9g3--ZhYQ5Kw@mail.gmail.com>
+Subject: Re: [PATCH v8] net: openvswitch - set name assign type
+To: Pravin Shelar <pshelar@nicira.com>
+Cc: netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 17, 2014 01:13:42 AM Bastien Nocera wrote:
-> On Thu, 2014-07-17 at 01:11 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, July 15, 2014 06:32:06 PM Patrik Fimml wrote:
-> > > (Re-sending with correct mailing list addresses.)
-> > > 
-> > > Hi,
-> > > 
-> > > When the lid of a laptop is closed, certain devices can no longer
-> > > provide interesting input or will even produce bogus input, such as:
-> > > 
-> > > - input devices: touchscreen, touchpad, keyboard
-> > > - sensors: ambient light sensor, accelerometer, magnetometer
-> > > - a video camera mounted on the lid
-> > > - display backlight
-> > > 
-> > > Various workarounds cover some of these cases, and we have some ugly
-> > > hacks in ChromeOS to make things work. It would be nice if a userspace
-> > > power management daemon could listen to the lid-close event, and then
-> > > have a way to temporarily power off these devices, potentially through
-> > > sysfs.
-> > > 
-> > > I've been discussing this with Dmitry and Benson (cc'd), and we've been
-> > > wondering whether we could come up with a generic solution that could
-> > > benefit multiple device classes.
-> > > 
-> > > There's some overlap with runtime PM here. The action to be taken in
-> > > such a situation would probably be similar to a runtime suspend. The
-> > > match is not perfect though, since devices with more than two power
-> > > states might want to enter different states depending on the situation.
-> > > 
-> > > It's somewhat difficult to get the semantics right, since handles to
-> > > such devices might still be open. It might be easier to implement
-> > > behavior specific to device classes. On the other hand, it would be nice
-> > > to have a uniform way of shutting devices down, and not introduce
-> > > another possible path for a device to enter a power-saving state.
-> > > 
-> > > Rafael, can you give us your opinion on this?
-> > 
-> > Let me try to understand the scenario in the first place.
-> > 
-> > To start with, a number of devices is in use (that is, open, there are
-> > applications listening/talking to them etc).  Now, an event happens, such
-> > as a laptop lid close and you want some of those devices, but possibly
-> > not all of them, to quiesce themselves and go into low-power states.
-> > 
-> > Is that correct?
-> 
-> FWIW, I wouldn't build all this complication into the kernel, I would
-> expect:
-> - the kernel to make it easy to detect which of those devices are
-> internal to the machine
-> - make it easy to detect the state of the whole machine (for some
-> laptops like the Yoga, there's no SW_TABLET reporting)
-> - let well-behaved user-space handle the combined information (eg. it's
-> an internal device + lid is closed = shouldn't be used)
-> 
-> For input devices for example, I'd build this into gnome-settings-daemon
-> or gnome-shell directly, both of which have knowledge about input
-> devices used. I'd expect other desktop environments to do similar
-> things.
-> 
-> Applications can already check the lid status (through UPower), and with
-> the additional metadata from the kernel, know that the webcam won't be
-> usable when the lid is closed. Switching to external webcam, a webcam on
-> the outside of the case, or switch off the video stream would then be
-> the expected behaviour.
+On Thu, Jul 17, 2014 at 1:00 AM, Pravin Shelar <pshelar@nicira.com> wrote:
+> On Wed, Jul 16, 2014 at 3:43 PM, Tom Gundersen <teg@jklm.no> wrote:
+>> Signed-off-by: Tom Gundersen <teg@jklm.no>
+>> Cc: Pravin Shelar <pshelar@nicira.com>
+>> Cc: dev@openvswitch.org
+>> ---
+>>
+>> This patch goes on top of net-next.
+>>
+>>  net/openvswitch/datapath.c           | 1 +
+>>  net/openvswitch/vport-internal_dev.c | 2 +-
+>>  net/openvswitch/vport.h              | 2 ++
+>>  3 files changed, 4 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+>> index fe95b6c..c1400c0 100644
+>> --- a/net/openvswitch/datapath.c
+>> +++ b/net/openvswitch/datapath.c
+>> @@ -1370,6 +1370,7 @@ static int ovs_dp_cmd_new(struct sk_buff *skb, struct genl_info *info)
+>>
+>>         /* Set up our datapath device. */
+>>         parms.name = nla_data(a[OVS_DP_ATTR_NAME]);
+>> +       parms.name_assign_type = NET_NAME_USER;
+>>         parms.type = OVS_VPORT_TYPE_INTERNAL;
+>>         parms.options = NULL;
+>>         parms.dp = dp;
+>> diff --git a/net/openvswitch/vport-internal_dev.c b/net/openvswitch/vport-internal_dev.c
+>> index bd65855..df185a7 100644
+>> --- a/net/openvswitch/vport-internal_dev.c
+>> +++ b/net/openvswitch/vport-internal_dev.c
+>> @@ -165,7 +165,7 @@ static struct vport *internal_dev_create(const struct vport_parms *parms)
+>>         netdev_vport = netdev_vport_priv(vport);
+>>
+>>         netdev_vport->dev = alloc_netdev(sizeof(struct internal_dev),
+>> -                                        parms->name, NET_NAME_UNKNOWN,
+>> +                                        parms->name, parms->name_assign_type,
+>>                                          do_setup);
+>>         if (!netdev_vport->dev) {
+>>                 err = -ENOMEM;
+>
+> vport name is always configured by user. Therefore can you just
+> replace NET_NAME_UNKNOWN with NET_NAME_USER while calling
+> alloc_netdev().
 
-Well, is the scenario I described correct or not?  If not, then what
-exactly is the scenario you want to be able to handle?
+I did it in this way to 1) make it trivial to review the patch without
+necessarily knowing the code very well and 2) decrease the likelihood
+of whomever changes these things in the future accidentally breaking
+the labelling (e.g. by introducing a new caller of
+internal_dev_create, which sets the ifname from a different source).
 
-Rafael
+Your way would work to of course, let me know if I should redo it like that.
 
+Cheers,
+
+Tom
+
+>> diff --git a/net/openvswitch/vport.h b/net/openvswitch/vport.h
+>> index 8d721e6..a9d7480 100644
+>> --- a/net/openvswitch/vport.h
+>> +++ b/net/openvswitch/vport.h
+>> @@ -97,6 +97,7 @@ struct vport {
+>>   * struct vport_parms - parameters for creating a new vport
+>>   *
+>>   * @name: New vport's name.
+>> + * @name_assign_type: New vport's name's origin.
+>>   * @type: New vport's type.
+>>   * @options: %OVS_VPORT_ATTR_OPTIONS attribute from Netlink message, %NULL if
+>>   * none was supplied.
+>> @@ -105,6 +106,7 @@ struct vport {
+>>   */
+>>  struct vport_parms {
+>>         const char *name;
+>> +       unsigned char name_assign_type;
+>>         enum ovs_vport_type type;
+>>         struct nlattr *options;
+>>
+>> --
+>> 1.9.3
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
