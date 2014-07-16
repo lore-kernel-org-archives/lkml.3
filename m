@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934979AbaGPSXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:23:40 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39178 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755531AbaGPSXh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:23:37 -0400
-From: Arvind Kumar <arvindkumar@vmware.com>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: [PATCH v2 RESEND 23/23] vmw_pvscsi: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Thread-Topic: [PATCH v2 RESEND 23/23] vmw_pvscsi: Use
- pci_enable_msix_exact() instead of pci_enable_msix()
-Thread-Index: AQHPoSKZ7lahRUoP9UiUU1/ty2TqtZujA54J
-Date: Wed, 16 Jul 2014 18:23:23 +0000
-Message-ID: <9424d275bdc34133a03a68877ab253d0@EX13-MBX-025.vmware.com>
-References: <cover.1405533479.git.agordeev@redhat.com>,<c27a72eaa07631ca182bfdb71d0d3d7f9f280b26.1405533479.git.agordeev@redhat.com>
-In-Reply-To: <c27a72eaa07631ca182bfdb71d0d3d7f9f280b26.1405533479.git.agordeev@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.113.160.246]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934987AbaGPSZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:25:03 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:48802 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934742AbaGPSY7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:24:59 -0400
+Message-ID: <53C6C377.7020900@gmail.com>
+Date: Wed, 16 Jul 2014 14:24:55 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        fabf@skynet.be, davidshan@tencent.com, joe@perches.com,
+        keescook@chromium.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.17
+References: <20140713184237.GA30855@linux.vnet.ibm.com> <20140716115046.GC28434@gmail.com> <20140716131322.GA16396@gmail.com> <20140716141707.GU8690@linux.vnet.ibm.com> <20140716152629.GA9340@linux.vnet.ibm.com> <53C6A0E7.30006@gmail.com> <20140716172410.GV8690@linux.vnet.ibm.com> <53C6C156.5010207@gmail.com>
+In-Reply-To: <53C6C156.5010207@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+On 07/16/2014 02:15 PM, Pranith Kumar wrote:
+>
+> On 07/16/2014 01:24 PM, Paul E. McKenney wrote:
+>>>> And of course if you don't actually specify a nohz_full= mask, then
+>>>> tick_nohz_full_mask can be NULL at RCU initialization time, and if it
+>>>> is also true that CONFIG_NO_HZ_FULL_ALL=n, this condition can persist
+>>>> forever.
+>>>>
+>>> Hi Paul,
+>>>
+>>> The other location where tick_nohz_full_mask is being allocated is in
+>>> tick_nohz_init_all(), called from tick_nohz_init(). rcu_init() is called before
+>>> tick_nohz_init() in init/main.c. CONFIG_NO_HZ_FULL_ALL for allocation of the
+>>> mask does not take effect when rcu_init() runs.
+>>>
+>>> So if nohz_full command line arg is not specified, tick_nohz_full_mask will
+>>> always be NULL when rcu_init() runs. So just checking for tick_nohz_full_mask
+>>> is NULL should be enough I guess.
+>> Yep, that is indeed one of the conditions called out in the commit log
+>> below.
+>>
+>>                             Thanx, Paul
+>>
+>
+> Sorry, I was not clear.
+>
+> nohz_full= boot time parameter overrides the CONFIG_NO_HZ_FULL_ALL build time parameter.
+> The check for !CONFIG_NO_HZ_FULL_ALL will disable masking out the cpus on which NOHZ is
+> not enabled using the nohz_full boot time parameter, and hence you will enable callback
+> offloading on all CPUs as was previously being done.
+>
+> So, if I have CONFIG_NO_HZ_FULL_ALL enabled at build time but pass nohz_cpu=1 at boot
+> time, all the CPUs will have callback offloading enabled.
+>
+> I think the following looks like what is needed in our case:
+>
 
-This looks fine to me.
+The previous patch will fail if CONFIG_NO_HZ_FULL is not defined, this should work.
 
-Acked-by: Arvind Kumar <arvindkumar@vmware.com>
+Thoughts?
 
-Thanks!
-Arvind
-________________________________________
-From: Alexander Gordeev <agordeev@redhat.com>
-Sent: Wednesday, July 16, 2014 11:05 AM
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev; Arvind Kumar; pv-drivers@vmware.com; linux-scsi@vger.kernel.org; linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 23/23] vmw_pvscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
-
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Arvind Kumar <arvindkumar@vmware.com>
-Cc: pv-drivers@vmware.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
-Acked-by: Arvind Kumar <arvindkumar@vmware.com>
----
- drivers/scsi/vmw_pvscsi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/vmw_pvscsi.c b/drivers/scsi/vmw_pvscsi.c
-index c88e146..598f65e 100644
---- a/drivers/scsi/vmw_pvscsi.c
-+++ b/drivers/scsi/vmw_pvscsi.c
-@@ -1194,7 +1194,7 @@ static int pvscsi_setup_msix(const struct pvscsi_adapter *adapter,
-        struct msix_entry entry = { 0, PVSCSI_VECTOR_COMPLETION };
-        int ret;
-
--       ret = pci_enable_msix(adapter->dev, &entry, 1);
-+       ret = pci_enable_msix_exact(adapter->dev, &entry, 1);
-        if (ret)
-                return ret;
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 00dc411..83f3f58 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2479,10 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ 
+        if (rcu_nocb_mask == NULL)
+                return;
+-#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
++#if defined(CONFIG_NO_HZ_FULL)
+        if (tick_nohz_full_running)
+                cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
+-#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
++#endif /* #if defined(CONFIG_NO_HZ_FULL) */
+        if (ls == -1) {
+                ls = int_sqrt(nr_cpu_ids);
+                rcu_nocb_leader_stride = ls;
 
 --
-1.7.7.6
+Pranith
+
+
+
+
+
