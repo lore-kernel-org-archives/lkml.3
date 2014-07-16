@@ -1,34 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaGPTiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:38:51 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60555 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaGPTis (ORCPT
+	id S1751217AbaGPTmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:42:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:32817 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaGPTms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:38:48 -0400
-Date: Wed, 16 Jul 2014 12:37:04 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Rientjes <rientjes@google.com>
-cc: Vlastimil Babka <vbabka@suse.cz>, Bob Liu <bob.liu@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] mm, tmp: only collapse hugepages to nodes with affinity
- for zone_reclaim_mode
-In-Reply-To: <53C69E92.70608@suse.cz>
-Message-ID: <alpine.LSU.2.11.1407161234160.3956@eggly.anvils>
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com> <53C5D3D2.8080000@oracle.com> <53C69E92.70608@suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 16 Jul 2014 15:42:48 -0400
+Message-ID: <53C6D5B6.808@codeaurora.org>
+Date: Wed, 16 Jul 2014 12:42:46 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 1/2] cpufreq: Don't destroy/realloc policy/sysfs on
+ hotplug/suspend
+References: <1405464473-3916-1-git-send-email-skannan@codeaurora.org> <1405464473-3916-2-git-send-email-skannan@codeaurora.org> <53C68C54.3010900@gmail.com> <CAKohpokLzMbzr4kdL6wCL7MZgnVe0CQhbJHKL5wWeETH1YwEOg@mail.gmail.com>
+In-Reply-To: <CAKohpokLzMbzr4kdL6wCL7MZgnVe0CQhbJHKL5wWeETH1YwEOg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I shall worry less if you change the Subject from "mm, tmp:" to "mm, thp:"
+On 07/16/2014 08:28 AM, Viresh Kumar wrote:
+> On 16 July 2014 19:59, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+>> stop_cpu() only needs to be called during __cpufreq_remove_dev_prepare() no
+>> where else.
+>
+> Oh, thanks for reminding us..
+>
+> Look at this Saravana:
+> 367dc4a cpufreq: Add stop CPU callback to cpufreq_driver interface
+>
 
-Hugh :)
+I'll only get called at the same time as it is called today. 
+__cpufreq_remove_dev_prepare is now renamed to __cpufreq_remove_dev. And 
+this function is called from there.
+
+The only time stop does get called is when __cpufreq_remove_dev is 
+called on the last CPU of a policy. So, functionally it's identical.
+
+Btw, I already added logs to all cpufreq driver ops and checked the 
+calls come in the same order with and without my changes.
+
+-Saravana
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
