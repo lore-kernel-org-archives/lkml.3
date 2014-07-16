@@ -1,89 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934546AbaGPNyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:54:05 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40287 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933362AbaGPNyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:54:00 -0400
-Date: Wed, 16 Jul 2014 14:53:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, pramod.gurav.etc@gmail.com,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Josh Cartwright <joshc@codeaurora.org>
-Message-ID: <20140716135345.GA508@sirena.org.uk>
-References: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>
- <53C66AEB.7030906@mm-sol.com>
- <1405512867.75389776@apps.rackspace.com>
- <53C66F3B.9020507@mm-sol.com>
- <1405515375.452411340@apps.rackspace.com>
+	id S934459AbaGPNzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:55:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933772AbaGPNz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:55:27 -0400
+Date: Wed, 16 Jul 2014 15:55:23 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] ensure guest's kvmclock never goes backwards when TSC
+ jumps backward
+Message-ID: <20140716155523.174a6b0e@igors-macbook-pro.local>
+In-Reply-To: <20140716114100.GA7394@amt.cnet>
+References: <1405504368-5581-1-git-send-email-imammedo@redhat.com>
+	<53C6517D.9090600@redhat.com>
+	<20140716114100.GA7394@amt.cnet>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-In-Reply-To: <1405515375.452411340@apps.rackspace.com>
-X-Cookie: Keep on keepin' on.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Kconfig: Select SPMI when REGMAP_SPMI is selected
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 16 Jul 2014 08:41:00 -0300
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wed, Jul 16, 2014 at 12:18:37PM +0200, Paolo Bonzini wrote:
+> > Il 16/07/2014 11:52, Igor Mammedov ha scritto:
+> > >There are buggy hosts in the wild that advertise invariant
+> > >TSC and as result host uses TSC as clocksource, but TSC on
+> > >such host sometimes sporadically jumps backwards.
+> > >
+> > >This causes kvmclock to go backwards if host advertises
+> > >PVCLOCK_TSC_STABLE_BIT, which turns off aggregated clock
+> > >accumulator and returns:
+> > >  pvclock_vcpu_time_info.system_timestamp + offset
+> > >where 'offset' is calculated using TSC.
+> > >Since TSC is not virtualized in KVM, it makes guest see
+> > >TSC jumped backwards and leads to kvmclock going backwards
+> > >as well.
+> > >
+> > >This is defensive patch that keeps per CPU last clock value
+> > >and ensures that clock will never go backwards even with
+> > >using PVCLOCK_TSC_STABLE_BIT enabled path.
+> > 
+> > I'm not sure that a per-CPU value is enough; your patch can make the
+> > problem much less frequent of course, but I'm not sure neither
+> > detection nor correction are 100% reliable.  Your addition is
+> > basically a faster but less reliable version of the last_value
+> > logic.
+How is it less reliable than last_value logic?
 
-On Wed, Jul 16, 2014 at 06:26:15PM +0530, Pramod Gurav wrote:
+Alternatively, we can panic in case of backward jump here, so that guest
+won't hang in random place in case of error. There might not be OOPs
+but at least coredump will point to a right place.
 
-Fix your mailer to word wrap within paragraphs, this will make your
-mails more legible - see Documentation/email-clients.txt.
+> > 
+> > If may be okay to have detection that is faster but not 100%
+> > reliable. However, once you find that the host is buggy I think the
+> > correct thing to do is to write last_value and kill
+> > PVCLOCK_TSC_STABLE_BIT from valid_flags.
+that might be an option, but what value we need to store into
+last_value?
+To make sure that clock won't go back we need to track
+it on all CPUs and store highest value to last_value, at this point
+there is no point in switching to last_value path since we have to
+track per CPU anyway.
 
-> On Wednesday, 16 July, 2014 5:55pm, "Stanimir Varbanov" <svarbanov@mm-sol=
-=2Ecom> said:
+What this patch doesn't cover is switching from master_clock mode to
+last_value mode (it happens at CPU hotplug time), I'd need to add
+what was described above as second patch on top of this one.
 
-> The CONFIG_SPMI option is visible in menuconfig hence either it should
-> be set by default in multi_v7_defconfig(like in qcom_defconfig) or
-> driver owner should mention a 'depneds on CONFIG_SPMI' as suggested by
-> Lars-Peter Clausen.=20
+> > 
+> > Did you check that the affected host has the latest microcode?
+> > Alternatively, could we simply blacklist some CPU steppings?  I'm
+> > not sure who we could ask at AMD :( but perhaps there is an erratum.
+I haven't found anything in this direction yet. I'm still trying to
+find someone from AMD to look at the issue.
 
-> I prefer the former (defconfig).
+> > 
+> > Paolo
+> 
+> Igor,
+> 
+> Can we move detection to the host TSC clocksource driver ?
+I haven't looked much at host side solution yet,
+but to detection reliable it needs to be run constantly,
+from read_native_tsc().
 
-No, this isn't an either/or thing - the dependency is absolutely
-mandatory if the device needs SPMI.  The defconfigs are a separate
-thing, they just exist to give people a starting point for configuring
-their kernel so if the device using SPMI is important for relevant
-systems the defconfig needs to be set up to enable it but that's
-separate to the dependency since there's no need for people to ever even
-look at defconfigs.
+it's possible to put detection into check_system_tsc_reliable() but
+that would increase boot time and it's not clear for how long test
+should run to make detection reliable (in my case it takes ~5-10sec
+to detect first failure).
 
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best we could at boot time is mark TSC as unstable on affected hardware,
+but for this we need to figure out if it's specific machine or CPU issue
+to do it properly. (I'm in process of finding out who to bug with it)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> 
+> Because it is responsability of the host system to provide a non
+> backwards clock_gettime() interface as well.
+vdso_clock_gettime() is not affected since it will use last highest
+tsc value in case of jump due to usage of vread_tsc().
+PS: it appears that host runs stably. 
 
-iQIcBAEBAgAGBQJTxoPmAAoJELSic+t+oim9REIP/iQyW3RexEbX5M7oop8QXx6K
-EznBAiMBh2LXS1smxXmuGwrMPo8FZWokLhXo11sSbtU7OwzjvV0m4Mw6NaEv4h9T
-Z9dGNncAmg/uZbhdY1dA7/8wL9ZabnQ6fTSQHvSiSGq8MvOBtt1fBu4dEptrpkF2
-bRvFVGbTTuEdqylUXu/xb9O1pyHrrROKuFxNK90koUrB/7egXMFsQv9DpgeH12zH
-SgbJ4JNnmrK6B4vkfhBI+NvqOjn517y0vTKXBGpFBTw1udyEdNkSVKH73ZdXb0EM
-TrC6yqxMKtiahgIFMmu4t025bPirDiuVZEvFi/5uGzpatOFYIToB8jCQYr4/+tPe
-7ga3QY9DZwYsm+aeToDMTdB6CKUe7zEfvqPTj6ixl4rfTCUzS1CLOYRVicFqrcvM
-rMP75yo9qJV93zP0Fc3KRk51J/IE/mrLgOUWl0BLtrxISF8OnU1kRHN+A2ndwA9R
-D/xDYsgq5maxIFPkxbpmvEio0zX0ID/79JsaEH4UrsO9TWFHs1kHQTN38xPTzcuB
-wZwzQsz9KI5P2Is3Rti8TiYkQH1odXdcK/aYj2W/4J+TPS4vCCGIJE/n6qjNZ4G0
-pOuVBXbly852Wo9wfKhwMfZxUFqdrrEfu/jFB81DsCjZc19fS5hYsxl1KW0qlzPZ
-F9+Swx2dc8n2tm1KsOA5
-=Wysb
------END PGP SIGNATURE-----
+but kvm_get_time_and_clockread() is affected since it uses its own
+version of do_monotonic()->vgettsc() which will lead to cycles
+go backwards and overflow of nano secs in timespec. We should mimic
+vread_tsc() here so not to run into this kind of issues.
 
---rwEMma7ioTxnRzrJ--
+> 
+> How did you prove its the host TSC in fact going backwards?
+> Is it cross-CPU detection?
+I've checked with several methods, 
+1. patched pvclock_clocksource_read() in guest with VCPUs pinned to host
+CPUs.
+2.Ingo's tsc_wrap_test, which fails miserably on affected host.
+3 sytemtap script hooked to read_native_tsc(), for source see
+https://bugzilla.redhat.com/show_bug.cgi?id=1115795#c12
+
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
