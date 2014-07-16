@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965836AbaGPTRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:17:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44142 "EHLO
+	id S965860AbaGPTRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:17:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44148 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965804AbaGPTRI (ORCPT
+	with ESMTP id S965804AbaGPTRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:17:08 -0400
-Date: Wed, 16 Jul 2014 12:16:46 -0700
-From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
-Message-ID: <tip-f8d9ccde2be4c24bfb8787af36a59a981b00a02d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        borntraeger@de.ibm.com, jolsa@redhat.com, cornelia.huck@de.ibm.com,
-        yarygin@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com, jolsa@redhat.com,
-        yarygin@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <87ioneo7qh.wl%yarygin@linux.vnet.ibm.com>
-References: <87ioneo7qh.wl%yarygin@linux.vnet.ibm.com>
+	Wed, 16 Jul 2014 15:17:16 -0400
+Date: Wed, 16 Jul 2014 12:17:01 -0700
+From: tip-bot for Andy Shevchenko <tipbot@zytor.com>
+Message-ID: <tip-d400a68d1f1e7a1fc7c5caf9024d4e67b218558d@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, adrian.hunter@intel.com, tglx@linutronix.de,
+        andriy.shevchenko@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, adrian.hunter@intel.com, tglx@linutronix.de,
+        andriy.shevchenko@linux.intel.com
+In-Reply-To: <1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Allow to use cpuinfo on s390
-Git-Commit-ID: f8d9ccde2be4c24bfb8787af36a59a981b00a02d
+Subject: [tip:perf/core] perf tools:
+  Convert open coded equivalents to asprintf()
+Git-Commit-ID: d400a68d1f1e7a1fc7c5caf9024d4e67b218558d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,87 +34,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f8d9ccde2be4c24bfb8787af36a59a981b00a02d
-Gitweb:     http://git.kernel.org/tip/f8d9ccde2be4c24bfb8787af36a59a981b00a02d
-Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-AuthorDate: Thu, 3 Jul 2014 18:08:22 +0400
+Commit-ID:  d400a68d1f1e7a1fc7c5caf9024d4e67b218558d
+Gitweb:     http://git.kernel.org/tip/d400a68d1f1e7a1fc7c5caf9024d4e67b218558d
+Author:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+AuthorDate: Fri, 4 Jul 2014 14:43:48 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 7 Jul 2014 16:55:24 -0300
 
-perf tools: Allow to use cpuinfo on s390
+perf tools: Convert open coded equivalents to asprintf()
 
-This patch defines CPUINFO_PROC for s390 and implements get_cpuid().
+The following snippet
+	V = malloc(S);
+	if (!V) { }
+	sprintf(V, ...)
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/87ioneo7qh.wl%yarygin@linux.vnet.ibm.com
+Can be easily changed to a one line:
+
+	if (asprintf(&V, ...) < 0) { }
+
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Link: http://lkml.kernel.org/r/1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/s390/Makefile      |  1 +
- tools/perf/arch/s390/util/header.c | 28 ++++++++++++++++++++++++++++
- tools/perf/perf-sys.h              |  1 +
- 3 files changed, 30 insertions(+)
+ tools/perf/util/trace-event-info.c | 12 +++---------
+ tools/perf/util/util.c             |  9 ++-------
+ 2 files changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/arch/s390/Makefile b/tools/perf/arch/s390/Makefile
-index 15130b5..744e629 100644
---- a/tools/perf/arch/s390/Makefile
-+++ b/tools/perf/arch/s390/Makefile
-@@ -2,3 +2,4 @@ ifndef NO_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
-diff --git a/tools/perf/arch/s390/util/header.c b/tools/perf/arch/s390/util/header.c
-new file mode 100644
-index 0000000..9fa6c3e
---- /dev/null
-+++ b/tools/perf/arch/s390/util/header.c
-@@ -0,0 +1,28 @@
-+/*
-+ * Implementation of get_cpuid().
-+ *
-+ * Copyright 2014 IBM Corp.
-+ * Author(s): Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License (version 2 only)
-+ * as published by the Free Software Foundation.
-+ */
-+
-+#include <sys/types.h>
-+#include <unistd.h>
-+#include <stdio.h>
-+#include <string.h>
-+
-+#include "../../util/header.h"
-+
-+int get_cpuid(char *buffer, size_t sz)
-+{
-+	const char *cpuid = "IBM/S390";
-+
-+	if (strlen(cpuid) + 1 > sz)
-+		return -1;
-+
-+	strcpy(buffer, cpuid);
-+	return 0;
-+}
-diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-index 5268a14..937e432 100644
---- a/tools/perf/perf-sys.h
-+++ b/tools/perf/perf-sys.h
-@@ -54,6 +54,7 @@
- #define mb()		asm volatile("bcr 15,0" ::: "memory")
- #define wmb()		asm volatile("bcr 15,0" ::: "memory")
- #define rmb()		asm volatile("bcr 15,0" ::: "memory")
-+#define CPUINFO_PROC	"vendor_id"
- #endif
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 7e6fcfe..c3bba88 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -191,12 +191,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
+-		if (!format) {
++		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 		free(format);
+ 		if (ret < 0)
+@@ -217,12 +215,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
+-		if (!format) {
++		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
  
- #ifdef __sh__
+ 		if (ret >= 0) {
+@@ -317,12 +313,10 @@ static int record_event_files(struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "ftrace") == 0 ||
+ 		    !system_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
+-		if (!sys) {
++		if (asprintf(&sys, "%s/%s", path, dent->d_name) < 0) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-		sprintf(sys, "%s/%s", path, dent->d_name);
+ 		ret = stat(sys, &st);
+ 		if (ret >= 0) {
+ 			ssize_t size = strlen(dent->d_name) + 1;
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 95aefa7..e4132ae 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -333,12 +333,9 @@ const char *find_tracing_dir(void)
+ 	if (!debugfs)
+ 		return NULL;
+ 
+-	tracing = malloc(strlen(debugfs) + 9);
+-	if (!tracing)
++	if (asprintf(&tracing, "%s/tracing", debugfs) < 0)
+ 		return NULL;
+ 
+-	sprintf(tracing, "%s/tracing", debugfs);
+-
+ 	tracing_found = 1;
+ 	return tracing;
+ }
+@@ -352,11 +349,9 @@ char *get_tracing_file(const char *name)
+ 	if (!tracing)
+ 		return NULL;
+ 
+-	file = malloc(strlen(tracing) + strlen(name) + 2);
+-	if (!file)
++	if (asprintf(&file, "%s/%s", tracing, name) < 0)
+ 		return NULL;
+ 
+-	sprintf(file, "%s/%s", tracing, name);
+ 	return file;
+ }
+ 
