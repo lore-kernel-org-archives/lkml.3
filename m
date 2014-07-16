@@ -1,138 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625AbaGPL5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:57:31 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54870 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759045AbaGPL53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:57:29 -0400
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org
-Subject: SIGXCPU accounting inaccurate?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201407162057.HGC90620.OFVHLFMOQOtSFJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 16 Jul 2014 20:57:07 +0900
-Mime-Version: 1.0
+	id S1759781AbaGPL5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:57:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759324AbaGPL5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 07:57:50 -0400
+Date: Wed, 16 Jul 2014 13:57:36 +0200
+From: Miroslav Lichvar <mlichvar@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering (v2)
+Message-ID: <20140716115736.GA24374@localhost>
+References: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
+ <20140519101439.GE4060@localhost>
+ <CALAqxLUyCGJeYDwzXKN0zCBdmYuapo1iYJX4nvR7Sru+ySkesQ@mail.gmail.com>
+ <20140708110816.GB23173@localhost>
+ <53C5F95E.6010300@linaro.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C5F95E.6010300@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Jul 15, 2014 at 09:02:38PM -0700, John Stultz wrote:
+> On 07/08/2014 04:08 AM, Miroslav Lichvar wrote:
+> > It seems it may be a while before the old vsyscalls are fixed. How
+> > about including only the first two patches from this set for now?
+> 
+> Hey! Sorry for the slow response here, I was on the road the last two weeks.
+> 
+> So thanks for the ping here. If you're happy with the first two as an
+> initial step, I'd be willing to try to push those in.
 
-I have a question regarding SIGXCPU.
+Ok, thanks.
 
-I was expecting that SIGXCPU is generated when current thread's user + sys
-exceeded current thread's rlim[RLIMIT_CPU].rlim_cur . But I can observe that,
-depending on workloads, SIGXCPU is issued before user + sys exceeds
-rlim[RLIMIT_CPU].rlim_cur .
+> Thomas: Would you be ok if I push you some patches to improve ntp/ptp
+> freq steering w/ NOHZ for this merge window as well? So far the patches
+> have only shown nice improvements and no regressions, but its clearly
+> subtle code, and there's a lot going on in this merge window.
 
----------- rlimit-test.c start ----------
-#include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/resource.h>
-#include <sys/time.h>
+For the record, here are test results from the simulator. There is a
+regression in the performance with disabled nohz, it takes longer for
+the clock to converge, but I think it's acceptable. When compared on
+the same time scale, disabled nohz still seems to be significantly
+better than nohz enabled.
 
-static volatile _Bool flag = 0;
-static void sighandler(int sig) { flag = 1; }
+3.16-rc5:
+$ ./test1.sh 
+                freq10          freq100         dev             max    
+nohz on  	38.38368        2.72579         1468940.9       9846788.2
+nohz off 	3.89181         0.10436         0.2             0.6
 
-int main(int argc, char *argv[])
-{
-	const int fd = open("/dev/zero", O_RDONLY);
-	struct rlimit rlim = { 10, RLIM_INFINITY };
-	struct rusage ru = { };
-	struct timeval tv0 = { }, tv1 = { };
-	unsigned long sec = 0;
-	unsigned long microsec = 0;
-	char c;
-	/* Apply CPU usage limit. */
-	if (fd == EOF || signal(SIGXCPU, sighandler) == SIG_ERR ||
-	    setrlimit(RLIMIT_CPU, &rlim) || gettimeofday(&tv0, NULL))
-		return 1;
-	/* Consume CPU time. */
-	while (!flag)
-		c = read(fd, &c, 1);
-	/* Gheck CPU usage after exceeding CPU usage limit. */
-	if (gettimeofday(&tv1, NULL) || getrusage(RUSAGE_SELF, &ru))
-		return 1;
-	/* Print CPU usage seen from process. */
-	sec = tv1.tv_sec - tv0.tv_sec;
-	microsec = tv1.tv_usec - tv0.tv_usec;
-	while ((long) microsec < 0) { sec--; microsec += 1000000; }
-	printf("wall time: %lu.%06lu\n", sec, microsec);
-	sec = ru.ru_utime.tv_sec + ru.ru_stime.tv_sec;
-	microsec = ru.ru_utime.tv_usec + ru.ru_stime.tv_usec;
-	while (microsec >= 1000000) { sec++; microsec -= 1000000; }
-	printf("getrusage: user %lu.%06lu / sys %lu.%06lu / total %lu.%06lu\n",
-	       ru.ru_utime.tv_sec, ru.ru_utime.tv_usec, ru.ru_stime.tv_sec,
-	       ru.ru_stime.tv_usec, sec, microsec);
-	return 0;
-}
----------- rlimit-test.c end ----------
+3.16-rc5 + two patches from this set:
+$ ./test1.sh 
+                freq10          freq100         dev             max    
+nohz on		1.13791         0.05155         85.0            313.7
+nohz off	1.02364         0.05149         0.5             1.7
 
-  $ cc -Wall -O2 -o rlimit-test rlimit-test.c
+Here are results from a new script I added to linux-tktest, which
+I think shows better how the clock is converging.
 
-(1) If
+3.16-rc5:
 
-    $ taskset -c 0 ./rlimit-test
+$ ./test2.sh 
+nohz on             [1, samples/2]           [samples/2 + 1, samples]
+samples         freq       dev       max      freq       dev       max
+10          32.08360   16039.4   23435.5  39.61782   11077.4   30938.0
+30          13.84304   35033.8   80321.5   8.52682   21495.6   52639.6
+100          0.68945   31395.7   86405.6   1.26818   26426.9   98448.1
+300          0.18118   33906.1  104062.0   0.11419   21147.4  102418.1
+1000         0.02699   32254.1  120619.4   0.02234   21222.3  120107.6
+3000         0.00515   31210.4  131688.9   0.00525   23067.8  140999.4
+10000        0.00077   31904.1  149537.0   0.00079   21688.2  144957.5
+30000        0.00015   31422.9  158176.5   0.00015   21867.9  159288.5
+100000       0.00003   31301.3  170099.5   0.00003   22265.5  168985.6
 
-    is executed alone, the result is accurate.
+nohz off            [1, samples/2]           [samples/2 + 1, samples]
+samples         freq       dev       max      freq       dev       max
+10           6.64956      14.0      18.8   7.10428       2.4       5.1
+30           2.87697      13.1      33.0   0.02541       0.1       0.4
+100          0.38990       9.9      35.1   0.00502       0.2       0.5
+300          0.04733       6.5      42.9   0.00096       0.2       0.5
+1000         0.00437       3.7      46.2   0.00023       0.2       0.6
+3000         0.00049       2.2      47.1   0.00003       0.2       0.6
+10000        0.00004       1.2      47.5   0.00000       0.2       0.6
+30000        0.00001       0.8      47.6   0.00000       0.2       0.6
+100000       0.00000       0.5      47.6   0.00000       0.2       0.6
 
-      wall time: 9.998606
-      getrusage: user 1.329402 / sys 8.666107 / total 9.995509
 
-      wall time: 9.999678
-      getrusage: user 1.338283 / sys 8.656362 / total 9.994645
+3.16-rc5 + two patches from this set:
 
-      wall time: 11.033851
-      getrusage: user 1.403173 / sys 9.628063 / total 11.031236
+$ ./test2.sh          
+nohz on             [1, samples/2]           [samples/2 + 1, samples]
+samples         freq       dev       max      freq       dev       max
+10           1.47222    1341.3    2217.8   0.06322       0.2       0.5
+30           0.20799     849.5    2448.7   0.06311       0.2       0.6
+100          0.04101     492.1    2895.2   0.06311       0.2       0.5
+300          0.05660     295.5    3026.1   0.02064      28.3     108.9
+1000         0.01994     409.8    2732.1   0.00355      13.7      52.2
+3000         0.00477     469.1    3238.9   0.00070      11.0      40.9
+10000        0.00081     377.3    3791.6   0.00013       9.4      36.2
+30000        0.00016     259.9    4055.7   0.00004       8.9      34.1
+100000       0.00003     159.0    4177.2   0.00000      13.7      58.4
 
-(2) If
+nohz off            [1, samples/2]           [samples/2 + 1, samples]
+samples         freq       dev       max      freq       dev       max
+10           3.55062       6.2      10.8   0.05730       0.0       0.0
+30           0.44672       4.5      14.1   0.05724       0.2       0.5
+100          0.03649       2.7      17.4   0.05711       0.2       0.5
+300          0.05815       1.7      18.7   0.06313       0.2       0.5
+1000         0.06270       1.0      19.1   0.06315       0.2       0.5
+3000         0.05720       1.9      19.9   0.02065       1.1       4.1
+10000        0.01947      13.5      41.0   0.00339       0.5       1.7
+30000        0.00448      17.5      75.9   0.00065       0.3       1.0
+100000       0.00078      14.2     101.7   0.00012       0.2       0.7
 
-    $ taskset -c 0 ./rlimit-test
-
-    is executed in parallel with
-
-    $ taskset -c 0 sh -c 'while :; do :; done'
-
-    , the result remains accurate.
-
-      wall time: 20.465868
-      getrusage: user 1.338968 / sys 8.897792 / total 10.236760
-
-      wall time: 19.984542
-      getrusage: user 1.336148 / sys 8.657481 / total 9.993629
-
-      wall time: 19.993528
-      getrusage: user 1.461475 / sys 8.534938 / total 9.996413
-
-(3) If
-
-    $ taskset -c 0 ./rlimit-test
-
-    is executed in parallel with
-
-    $ taskset -c 0 sh -c 'while :; do /bin/true; done'
-
-    , the result becomes inaccurate (SIGXCPU is issued before
-    user + sys exceeds rlim[RLIMIT_CPU].rlim_cur ).
-
-      wall time: 10.055558
-      getrusage: user 1.265196 / sys 8.204838 / total 9.470034
-
-      wall time: 10.010175
-      getrusage: user 1.315658 / sys 8.142706 / total 9.458364
-
-      wall time: 10.010262
-      getrusage: user 1.269611 / sys 8.183938 / total 9.453549
-
-Why SIGXCPU accounting became inaccurate?
-
-Regards.
+-- 
+Miroslav Lichvar
