@@ -1,61 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694AbaGPEIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 00:08:47 -0400
-Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:34430 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933644AbaGPEIp (ORCPT
+	id S933756AbaGPEON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 00:14:13 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:47980 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaGPEOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 00:08:45 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2692:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4321:4605:5007:7514:7652:7903:8957:10004:10400:10450:10455:10848:11026:11232:11658:11914:12296:12517:12519:12555:12740:13069:13255:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dad51_694d700ccec37
-X-Filterd-Recvd-Size: 2200
-Message-ID: <1405483722.14773.12.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] scripts/get_maintainer: increase threshold for
- --follow to reduce time
-From: Joe Perches <joe@perches.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: open list <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Jul 2014 21:08:42 -0700
-In-Reply-To: <CAJhHMCC1bY5ras7-W17Qh7yZq5-_eD0C-CJfa09ZpjWNoTOZ=w@mail.gmail.com>
-References: <1405193128-6848-1-git-send-email-bobby.prani@gmail.com>
-	 <CAJhHMCC1bY5ras7-W17Qh7yZq5-_eD0C-CJfa09ZpjWNoTOZ=w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jul 2014 00:14:10 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: rth@twiddle.net
+Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] alpha: Converse all space errors into tabs in mkbb.c
+Date: Wed, 16 Jul 2014 00:13:59 -0400
+Message-Id: <1405484042-6879-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-15 at 22:23 -0400, Pranith Kumar wrote:
-> ping?
-> 
-> On Sat, Jul 12, 2014 at 3:25 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> > get_maintainer tries to follow files with a matching threshold of default 50%.
-> > This is not really necessary as we do not change a file and move it in the same
-> > commit usually. Increasing the threshold to 90% should be sufficient.
-[]
-> > diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-> > index d701627..bc4a69e 100755
-> > --- a/scripts/get_maintainer.pl
-> > +++ b/scripts/get_maintainer.pl
-> > @@ -98,7 +98,7 @@ my %VCS_cmds_git = (
-> >      "execute_cmd" => \&git_execute_cmd,
-> >      "available" => '(which("git") ne "") && (-e ".git")',
-> >      "find_signers_cmd" =>
-> > -       "git log --no-color --follow --since=\$email_git_since " .
-> > +       "git log --no-color --follow -M90 --since=\$email_git_since " .
-> >             '--numstat --no-merges ' .
-> >             '--format="GitCommit: %H%n' .
-> >                       'GitAuthor: %an <%ae>%n' .
+This patch fixes all the checkpatch errors I get when running it
+on mkbb.c for spaces at beginning of lines. I converted then all
+to tabs to fix these checkpatch warnings.
+---
+ arch/alpha/boot/tools/mkbb.c | 124 +++++++++++++++++++++----------------------
+ 1 file changed, 61 insertions(+), 63 deletions(-)
 
-While I understand the goal, I wonder if this should
-be in a .gitconfig, not in get_maintainers at all.
-
-(git doesn't seem to have a config entry for score though)
-
-If not, the % should probably be cmd-line configurable.
-
+diff --git a/arch/alpha/boot/tools/mkbb.c b/arch/alpha/boot/tools/mkbb.c
+index 1185778..6f1b957 100644
+--- a/arch/alpha/boot/tools/mkbb.c
++++ b/arch/alpha/boot/tools/mkbb.c
+@@ -34,49 +34,49 @@
+ #endif
+ 
+ struct disklabel {
+-    u32	d_magic;				/* must be DISKLABELMAGIC */
+-    u16	d_type, d_subtype;
+-    u8	d_typename[16];
+-    u8	d_packname[16];
+-    u32	d_secsize;
+-    u32	d_nsectors;
+-    u32	d_ntracks;
+-    u32	d_ncylinders;
+-    u32	d_secpercyl;
+-    u32	d_secprtunit;
+-    u16	d_sparespertrack;
+-    u16	d_sparespercyl;
+-    u32	d_acylinders;
+-    u16	d_rpm, d_interleave, d_trackskew, d_cylskew;
+-    u32	d_headswitch, d_trkseek, d_flags;
+-    u32	d_drivedata[5];
+-    u32	d_spare[5];
+-    u32	d_magic2;				/* must be DISKLABELMAGIC */
+-    u16	d_checksum;
+-    u16	d_npartitions;
+-    u32	d_bbsize, d_sbsize;
+-    struct d_partition {
++	u32	d_magic;	/* must be DISKLABELMAGIC */
++	u16	d_type, d_subtype;
++	u8	d_typename[16];
++	u8	d_packname[16];
++	u32	d_secsize;
++	u32	d_nsectors;
++	u32	d_ntracks;
++	u32	d_ncylinders;
++	u32	d_secpercyl;
++	u32	d_secprtunit;
++	u16	d_sparespertrack;
++	u16	d_sparespercyl;
++	u32	d_acylinders;
++	u16	d_rpm, d_interleave, d_trackskew, d_cylskew;
++	u32	d_headswitch, d_trkseek, d_flags;
++	u32	d_drivedata[5];
++	u32	d_spare[5];
++	u32	d_magic2;				/* must be DISKLABELMAGIC */
++	u16	d_checksum;
++	u16	d_npartitions;
++	u32	d_bbsize, d_sbsize;
++	struct d_partition {
+ 	u32	p_size;
+ 	u32	p_offset;
+ 	u32	p_fsize;
+ 	u8	p_fstype;
+ 	u8	p_frag;
+ 	u16	p_cpg;
+-    } d_partitions[MAXPARTITIONS];
++	} d_partitions[MAXPARTITIONS];
+ };
+ 
+ 
+ typedef union __bootblock {
+-    struct {
+-        char			__pad1[64];
+-        struct disklabel	__label;
+-    } __u1;
+-    struct {
++	struct {
++	char			__pad1[64];
++	struct disklabel	__label;
++	} __u1;
++	struct {
+ 	unsigned long		__pad2[63];
+ 	unsigned long		__checksum;
+-    } __u2;
+-    char		bootblock_bytes[512];
+-    unsigned long	bootblock_quadwords[64];
++	} __u2;
++	char		bootblock_bytes[512];
++	unsigned long	bootblock_quadwords[64];
+ } bootblock;
+ 
+ #define	bootblock_label		__u1.__label
+@@ -84,69 +84,67 @@ typedef union __bootblock {
+ 
+ int main(int argc, char ** argv)
+ {
+-    bootblock		bootblock_from_disk;
+-    bootblock		bootloader_image;
+-    int			dev, fd;
+-    int			i;
+-    int			nread;
++	bootblock		bootblock_from_disk;
++	bootblock		bootloader_image;
++	int			dev, fd;
++	int			i;
++	int			nread;
+ 
+     /* Make sure of the arg count */
+-    if(argc != 3) {
++	if(argc != 3) {
+ 	fprintf(stderr, "Usage: %s device lxboot\n", argv[0]);
+ 	exit(0);
+-    }
++	}
+ 
+     /* First, open the device and make sure it's accessible */
+-    dev = open(argv[1], O_RDWR);
+-    if(dev < 0) {
++	dev = open(argv[1], O_RDWR);
++	if(dev < 0) {
+ 	perror(argv[1]);
+ 	exit(0);
+-    }
++	}
+ 
+     /* Now open the lxboot and make sure it's reasonable */
+-    fd = open(argv[2], O_RDONLY);
+-    if(fd < 0) {
++	fd = open(argv[2], O_RDONLY);
++	if(fd < 0) {
+ 	perror(argv[2]);
+ 	close(dev);
+ 	exit(0);
+-    }
++	}
+ 
+     /* Read in the lxboot */
+-    nread = read(fd, &bootloader_image, sizeof(bootblock));
+-    if(nread != sizeof(bootblock)) {
++	nread = read(fd, &bootloader_image, sizeof(bootblock));
++	if(nread != sizeof(bootblock)) {
+ 	perror("lxboot read");
+ 	fprintf(stderr, "expected %zd, got %d\n", sizeof(bootblock), nread);
+ 	exit(0);
+-    }
++	}
+ 
+     /* Read in the bootblock from disk. */
+-    nread = read(dev, &bootblock_from_disk, sizeof(bootblock));
+-    if(nread != sizeof(bootblock)) {
++	nread = read(dev, &bootblock_from_disk, sizeof(bootblock));
++	if(nread != sizeof(bootblock)) {
+ 	perror("bootblock read");
+ 	fprintf(stderr, "expected %zd, got %d\n", sizeof(bootblock), nread);
+ 	exit(0);
+-    }
++	}
+ 
+     /* Swap the bootblock's disklabel into the bootloader */
+-    bootloader_image.bootblock_label = bootblock_from_disk.bootblock_label;
++	bootloader_image.bootblock_label = bootblock_from_disk.bootblock_label;
+ 
+     /* Calculate the bootblock checksum */
+-    bootloader_image.bootblock_checksum = 0;
+-    for(i = 0; i < 63; i++) {
+-	bootloader_image.bootblock_checksum += 
++	bootloader_image.bootblock_checksum = 0;
++	for(i = 0; i < 63; i++) {
++	bootloader_image.bootblock_checksum +=
+ 			bootloader_image.bootblock_quadwords[i];
+-    }
++	}
+ 
+     /* Write the whole thing out! */
+-    lseek(dev, 0L, SEEK_SET);
+-    if(write(dev, &bootloader_image, sizeof(bootblock)) != sizeof(bootblock)) {
++	lseek(dev, 0L, SEEK_SET);
++	if(write(dev, &bootloader_image, sizeof(bootblock)) != sizeof(bootblock)) {
+ 	perror("bootblock write");
+ 	exit(0);
+-    }
++	}
+ 
+-    close(fd);
+-    close(dev);
+-    exit(0);
++	close(fd);
++	close(dev);
++	exit(0);
+ }
+-
+-
+-- 
+1.9.1
 
