@@ -1,102 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563AbaGPVi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:38:28 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45493 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402AbaGPViP (ORCPT
+	id S1753685AbaGPVip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:38:45 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:9020 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaGPVil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:38:15 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: viro@zeniv.linux.org.uk, clm@fb.com, jbacik@fb.com
-Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffm@suse.com, fdmanana@suse.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [RFC v2 2/2] btrfs: use the new VFS super_block_dev
-Date: Wed, 16 Jul 2014 14:37:58 -0700
-Message-Id: <1405546678-7846-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
+	Wed, 16 Jul 2014 17:38:41 -0400
+Message-ID: <1405546127.28702.85.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
+From: Toshi Kani <toshi.kani@hp.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stefan.bader@canonical.com,
+        luto@amacapital.net, airlied@gmail.com, bp@alien8.de
+Date: Wed, 16 Jul 2014 15:28:47 -0600
+In-Reply-To: <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+	 <53C58A69.3070207@zytor.com> <1405459404.28702.17.camel@misato.fc.hp.com>
+	 <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>
+Content-Type: multipart/mixed; boundary="=-IRMYuC7+I97Sy30JB6yN"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Use the new VFS layer struct super_block_dev instead of carrying
-the anonymous bdev's on our own. This makes the VFS layer aware of
-all of our anonymous dev's on the super block.
+--=-IRMYuC7+I97Sy30JB6yN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+On Tue, 2014-07-15 at 20:40 -0400, Konrad Rzeszutek Wilk wrote:
+> On July 15, 2014 5:23:24 PM EDT, Toshi Kani <toshi.kani@hp.com> wrote:
+> >On Tue, 2014-07-15 at 13:09 -0700, H. Peter Anvin wrote:
+> >> On 07/15/2014 12:34 PM, Toshi Kani wrote:
+ :
+> >> 
+> >> I have given this piece of feedback at least three times now,
+> >possibly
+> >> to different people, and I'm getting a bit grumpy about it:
+> >> 
+> >> We already have an issue with Xen, because Xen assigned mappings
+> >> differently and it is incompatible with the use of PAT in Linux.  As
+> >a
+> >> result we get requests for hacks to work around this, which is
+> >something
+> >> I really don't want to see.  I would like to see a design involving a
+> >> "reverse PAT" table where the kernel can hold the mapping between
+> >memory
+> >> types and page table encodings (including the two different ones for
+> >> small and large pages.)
+> >
+> >Thanks for pointing this out! (And sorry for making you repeat it three
+> >time...)  I was not aware of the issue with Xen.  I will look into the
+> >email archive to see what the Xen issue is, and how it can be
+> >addressed.
+> 
+> https://lkml.org/lkml/2011/11/8/406
+
+Thanks Konrad for the pointer!
+
+Since [__]change_page_attr_set_clr() and __change_page_attr() have no
+knowledge about PAT and simply work with specified PTE flags, they do
+not seem to fit well with additional PAT abstraction table...
+
+I think the root of this issue is that the kernel ignores the PAT bit.
+Since __change_page_attr() only supports 4K pages, set_memory_<type>()
+can set the PAT bit into the clear mask.
+
+Attached is a patch with this approach (apply on top of this series -
+not tested).  The kernel still does not support the PAT bit, but it
+behaves slightly better.
+
+Thanks,
+-Toshi
+
+
+
+--=-IRMYuC7+I97Sy30JB6yN
+Content-Disposition: attachment; filename="page-ext-mask.patch"
+Content-Type: text/x-patch; name="page-ext-mask.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+From: Toshi Kani <toshi.kani@hp.com>
+
 ---
- fs/btrfs/ctree.h   | 7 ++-----
- fs/btrfs/disk-io.c | 6 ++----
- fs/btrfs/inode.c   | 2 +-
- 3 files changed, 5 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |    1 +
+ arch/x86/mm/pageattr.c               |   20 ++++++++++----------
+ 2 files changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index be91397..0ece396 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1846,11 +1846,8 @@ struct btrfs_root {
- 	 * protected by inode_lock
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 81a3859..a392b09 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -130,6 +130,7 @@
+ #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE | _PAGE_NUMA)
+ 
+ #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
++#define _PAGE_CACHE_EXT_MASK	(_PAGE_CACHE_MASK | _PAGE_PAT)
+ #define _PAGE_CACHE_WB		(0)
+ #define _PAGE_CACHE_WC		(_PAGE_PWT)
+ #define _PAGE_CACHE_WT		(_PAGE_PCD | _PAGE_PWT)
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index da597d0..348f206 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1446,7 +1446,7 @@ int _set_memory_uc(unsigned long addr, int numpages)
  	 */
- 	struct radix_tree_root delayed_nodes_tree;
--	/*
--	 * right now this just gets used so that a root has its own devid
--	 * for stat.  It may be used for more later
--	 */
--	dev_t anon_dev;
-+
-+	struct super_block_dev sbdev;
- 
- 	spinlock_t root_item_lock;
- 	atomic_t refs;
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 8bb4aa1..1a6aa8d 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1269,7 +1269,6 @@ static void __setup_root(u32 nodesize, u32 leafsize, u32 sectorsize,
- 		root->defrag_trans_start = 0;
- 	init_completion(&root->kobj_unregister);
- 	root->root_key.objectid = objectid;
--	root->anon_dev = 0;
- 
- 	spin_lock_init(&root->root_item_lock);
+ 	return change_page_attr_set_clr(&addr, numpages,
+ 					__pgprot(_PAGE_CACHE_UC_MINUS),
+-					__pgprot(_PAGE_CACHE_MASK),
++					__pgprot(_PAGE_CACHE_EXT_MASK),
+ 					0, 0, NULL);
  }
-@@ -1572,7 +1571,7 @@ int btrfs_init_fs_root(struct btrfs_root *root)
- 	spin_lock_init(&root->cache_lock);
- 	init_waitqueue_head(&root->cache_wait);
  
--	ret = get_anon_bdev(&root->anon_dev);
-+	ret = insert_anon_sbdev(root->fs_info->sb, &root->sbdev);
+@@ -1493,13 +1493,13 @@ static int _set_memory_array(unsigned long *addr, int addrinarray,
+ 
+ 	ret = change_page_attr_set_clr(addr, addrinarray,
+ 				       __pgprot(_PAGE_CACHE_UC_MINUS),
+-				       __pgprot(_PAGE_CACHE_MASK),
++				       __pgprot(_PAGE_CACHE_EXT_MASK),
+ 				       0, CPA_ARRAY, NULL);
+ 
+ 	if (!ret && new_type == _PAGE_CACHE_WC)
+ 		ret = change_page_attr_set_clr(addr, addrinarray,
+ 					       __pgprot(_PAGE_CACHE_WC),
+-					       __pgprot(_PAGE_CACHE_MASK),
++					       __pgprot(_PAGE_CACHE_EXT_MASK),
+ 					       0, CPA_ARRAY, NULL);
  	if (ret)
- 		goto free_writers;
- 	return 0;
-@@ -3529,8 +3528,7 @@ static void free_fs_root(struct btrfs_root *root)
- 	WARN_ON(!RB_EMPTY_ROOT(&root->inode_tree));
- 	btrfs_free_block_rsv(root, root->orphan_block_rsv);
- 	root->orphan_block_rsv = NULL;
--	if (root->anon_dev)
--		free_anon_bdev(root->anon_dev);
-+	remove_anon_sbdev(&root->sbdev);
- 	if (root->subv_writers)
- 		btrfs_free_subvolume_writers(root->subv_writers);
- 	free_extent_buffer(root->node);
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 3668048..0e8f604 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -8277,7 +8277,7 @@ static int btrfs_getattr(struct vfsmount *mnt,
- 	u32 blocksize = inode->i_sb->s_blocksize;
+ 		goto out_free;
+@@ -1532,12 +1532,12 @@ int _set_memory_wc(unsigned long addr, int numpages)
  
- 	generic_fillattr(inode, stat);
--	stat->dev = BTRFS_I(inode)->root->anon_dev;
-+	stat->dev = BTRFS_I(inode)->root->sbdev.anon_dev;
- 	stat->blksize = PAGE_CACHE_SIZE;
+ 	ret = change_page_attr_set_clr(&addr, numpages,
+ 				       __pgprot(_PAGE_CACHE_UC_MINUS),
+-				       __pgprot(_PAGE_CACHE_MASK),
++				       __pgprot(_PAGE_CACHE_EXT_MASK),
+ 				       0, 0, NULL);
+ 	if (!ret) {
+ 		ret = change_page_attr_set_clr(&addr_copy, numpages,
+ 					       __pgprot(_PAGE_CACHE_WC),
+-					       __pgprot(_PAGE_CACHE_MASK),
++					       __pgprot(_PAGE_CACHE_EXT_MASK),
+ 					       0, 0, NULL);
+ 	}
+ 	return ret;
+@@ -1578,7 +1578,7 @@ int _set_memory_wt(unsigned long addr, int numpages)
+ {
+ 	return change_page_attr_set_clr(&addr, numpages,
+ 					__pgprot(_PAGE_CACHE_WT),
+-					__pgprot(_PAGE_CACHE_MASK),
++					__pgprot(_PAGE_CACHE_EXT_MASK),
+ 					0, 0, NULL);
+ }
  
- 	spin_lock(&BTRFS_I(inode)->lock);
--- 
-2.0.1
+@@ -1611,7 +1611,7 @@ int _set_memory_wb(unsigned long addr, int numpages)
+ {
+ 	return change_page_attr_set_clr(&addr, numpages,
+ 					__pgprot(_PAGE_CACHE_WB),
+-					__pgprot(_PAGE_CACHE_MASK),
++					__pgprot(_PAGE_CACHE_EXT_MASK),
+ 					0, 0, NULL);
+ }
+ 
+@@ -1635,7 +1635,7 @@ int set_memory_array_wb(unsigned long *addr, int addrinarray)
+ 
+ 	ret = change_page_attr_set_clr(addr, addrinarray,
+ 				       __pgprot(_PAGE_CACHE_WB),
+-				       __pgprot(_PAGE_CACHE_MASK),
++				       __pgprot(_PAGE_CACHE_EXT_MASK),
+ 				       0, CPA_ARRAY, NULL);
+ 	if (ret)
+ 		return ret;
+@@ -1719,7 +1719,7 @@ static int _set_pages_array(struct page **pages, int addrinarray,
+ 	if (!ret && new_type == _PAGE_CACHE_WC)
+ 		ret = change_page_attr_set_clr(NULL, addrinarray,
+ 					       __pgprot(_PAGE_CACHE_WC),
+-					       __pgprot(_PAGE_CACHE_MASK),
++					       __pgprot(_PAGE_CACHE_EXT_MASK),
+ 					       0, CPA_PAGES_ARRAY, pages);
+ 	if (ret)
+ 		goto err_out;
+@@ -1770,7 +1770,7 @@ int set_pages_array_wb(struct page **pages, int addrinarray)
+ 	int i;
+ 
+ 	retval = cpa_clear_pages_array(pages, addrinarray,
+-			__pgprot(_PAGE_CACHE_MASK));
++			__pgprot(_PAGE_CACHE_EXT_MASK));
+ 	if (retval)
+ 		return retval;
+ 
+
+--=-IRMYuC7+I97Sy30JB6yN--
 
