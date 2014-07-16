@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066AbaGPKZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:25:35 -0400
+	id S933169AbaGPKZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:25:58 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:53087 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758896AbaGPKXG (ORCPT
+	with ESMTP id S1753199AbaGPKXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:23:06 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-7d-53c6528557f6
+	Wed, 16 Jul 2014 06:23:04 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-72-53c6527f4fd7
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 05/12] usb: dwc2/gadget: hide some not really needed debug
- messages
-Date: Wed, 16 Jul 2014 12:22:23 +0200
-Message-id: <1405506150-16185-6-git-send-email-r.baldyga@samsung.com>
+        andrzej.p@samsung.com, Kamil Debski <k.debski@samsung.com>,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v2 03/12] usb: dwc2/gadget: move phy bus legth initialization
+Date: Wed, 16 Jul 2014 12:22:21 +0200
+Message-id: <1405506150-16185-4-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
 References: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd3WoGPBBi/2mVjMetnOYnHwfr1F
-	8+L1bBaXd81hs1i0rJXZYu2Ru+wW26dMZ7J4cHgnuwOHx/65a9g9+rasYvTYsv8zo8fxG9uZ
-	PD5vkgtgjeKySUnNySxLLdK3S+DK+LnyFmPBHM6KPbOvszUwPmDvYuTgkBAwkZj2hquLkRPI
-	FJO4cG89WxcjF4eQwHRGiZ/7+tkhnHYmiSsLPrCAVLEJ6Ehs+T6BEcQWERCQWP/iElgRs8AJ
-	RomO/xfYQBLCAhESV7fcB2tgEVCVOHyplxnE5hVwlTi36yQjxDo5iZPHJrOC2JwCbhJrXjez
-	g9hCQDXH1y1jmsDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcHg9k9rBuLLB4hCj
-	AAejEg/vhpCjwUKsiWXFlbmHGCU4mJVEeB38jwUL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Q
-	ah0oJJCeWJKanZpakFoEk2Xi4JRqYEy68vip4dKiC669W0XqZ188q+BZXbDmcldco/ibjli7
-	PXFF1yucSnOSGD+9b/Zj2Tdlo8Gb5q+Cu0WOr1uxxf+2ZlvttNmlR7cz/VDbe+CA9vIbjyrY
-	Fxy8YTZj1pcA9zdCtzXqvfobCo81/5gXzdiUE73to3iIzI369RfC13eJfY+f9VztVKgSS3FG
-	oqEWc1FxIgARaXpNKwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHLMWRmVeSWpSXmKPExsVy+t9jQd36oGPBBq8XyFrMetnOYnHwfr1F
+	8+L1bBY/Xl9gs7i8aw6bxaJlrcwWa4/cZbfYPmU6k8WDwzvZHTg99s9dw+7Rt2UVo8eW/Z8Z
+	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGnN1L2AoO81VMPX2UsYFxP3cXIyeHhICJxL1z
+	k5khbDGJC/fWs3UxcnEICUxnlNjxeiojhNPOJHHrSzs7SBWbgI7Elu8TGEFsEQEBifUvLrGD
+	FDELvGWUmHbuGwtIQljAV6Jjx1I2EJtFQFViwZIjYDavgKvEi9evGCHWyUmcPDaZFcTmFHCT
+	WPO6GWyBEFDN8XXLmCYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERxqz6R2MK5s
+	sDjEKMDBqMTDuyHkaLAQa2JZcWXuIUYJDmYlEV4H/2PBQrwpiZVVqUX58UWlOanFhxilOViU
+	xHkPtFoHCgmkJ5akZqemFqQWwWSZODilGhjP57dc8vi1/YfFcndWlkvfJHTeBrqlLmGOUpUw
+	/n/mcm9hcPFBLsfoGHd93tBV9Y2+wdvjjdccLVVcw3zRZ9XErRpR9w81L5m0Yofs09WplY+W
+	LN5/+8XHrQd2XxK6YH5dr6kmXvtb6mH5pMXL1jDGf1mw4IeD33m+/ayMNUcnKlcqzE8Mal2r
+	xFKckWioxVxUnAgAyG8PFTECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Kamil Debski <k.debski@samsung.com>
 
-Some DWC2/s3c-hsotg debug messages are really useless for typical user,
-so hide them behind dev_dbg().
+This patch moves the part of code that initializes the PHY bus width.
+This results in simpler code and removes the need to check whether
+the Generic PHY Framework is used.
 
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/gadget.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/dwc2/gadget.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 35b4890..95b6dcb 100644
+index 70eab95..fc27b4c 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -2568,7 +2568,7 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
- 	u32 epctrl_reg;
- 	u32 ctrl;
+@@ -3395,6 +3395,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
--	dev_info(hsotg->dev, "%s(ep %p)\n", __func__, ep);
-+	dev_dbg(hsotg->dev, "%s(ep %p)\n", __func__, ep);
++	/* Set default UTMI width */
++	hsotg->phyif = GUSBCFG_PHYIF16;
++
+ 	/*
+ 	 * Attempt to find a generic PHY, then look for an old style
+ 	 * USB PHY, finally fall back to pdata
+@@ -3413,8 +3416,15 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 			hsotg->plat = plat;
+ 		} else
+ 			hsotg->uphy = uphy;
+-	} else
++	} else {
+ 		hsotg->phy = phy;
++		/*
++		 * If using the generic PHY framework, check if the PHY bus
++		 * width is 8-bit and set the phyif appropriately.
++		 */
++		if (phy_get_bus_width(phy) == 8)
++			hsotg->phyif = GUSBCFG_PHYIF8;
++	}
  
- 	if (ep == &hsotg->eps[0].ep) {
- 		dev_err(hsotg->dev, "%s: called for ep0\n", __func__);
-@@ -2626,7 +2626,7 @@ static int s3c_hsotg_ep_dequeue(struct usb_ep *ep, struct usb_request *req)
- 	struct s3c_hsotg *hs = hs_ep->parent;
- 	unsigned long flags;
+ 	hsotg->dev = dev;
  
--	dev_info(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
-+	dev_dbg(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
+@@ -3481,16 +3491,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		goto err_supplies;
+ 	}
  
- 	spin_lock_irqsave(&hs->lock, flags);
+-	/* Set default UTMI width */
+-	hsotg->phyif = GUSBCFG_PHYIF16;
+-
+-	/*
+-	 * If using the generic PHY framework, check if the PHY bus
+-	 * width is 8-bit and set the phyif appropriately.
+-	 */
+-	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
+-		hsotg->phyif = GUSBCFG_PHYIF8;
+-
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
  
 -- 
 1.9.1
