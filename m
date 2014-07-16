@@ -1,103 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761164AbaGPI6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:58:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27324 "EHLO mga03.intel.com"
+	id S1761222AbaGPI60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:58:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44398 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759732AbaGPI6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:58:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
-   d="scan'208";a="457583299"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: [PATCH v3 0/7] ACPICA: Enable ACPICA prototypes for CONFIG_ACPI=n builds.
-Date: Wed, 16 Jul 2014 16:57:38 +0800
-Message-Id: <cover.1405500886.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1387336613.git.lv.zheng@intel.com>
-References: <cover.1387336613.git.lv.zheng@intel.com>
+	id S1761189AbaGPI6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 04:58:18 -0400
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v3] ring-buffer: Race when writing and swapping cpu buffer in parallel
+Date: Wed, 16 Jul 2014 10:58:04 +0200
+Message-Id: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3:
- PATCH 3/7 updated to remove new Kconfig item.
+The trace/ring_buffer allows to swap the entire ring buffer. Everything has to
+be done lockless. I think that I have found a race when trying to understand
+the code. The problematic situation is the following:
 
-This is the last series for ACPICA header inclusion cleanups.
-The whole story can be found below:
-  1. Unsafe inclusions:
-     origin: https://lkml.org/lkml/2013/11/22/510
-     merged: https://lkml.org/lkml/2013/12/6/79
-  2. Header orders:
-     origin: https://lkml.org/lkml/2014/4/8/57
-     merged: https://lkml.org/lkml/2014/5/12/111
-  3. Header stubs:
-     origin: https://lkml.org/lkml/2014/12/18/149
-     merged: https://lkml.org/lkml/2014/4/29/716
+CPU 1 (write/reserve event)		CPU 2 (swap the cpu buffer)
+-------------------------------------------------------------------------
+ring_buffer_write()
+  if (cpu_buffer->record_disabled)
+  ^^^ test fails and write continues
 
-This patchset contains patches that are parts of the last series sent
-before, so it is marked as v2 belonging to the same thread as this series:
-  https://lkml.org/lkml/2014/12/18/149
+					ring_buffer_swap_cpu()
 
-Now we have cleaned up all mis-ordered ACPICA headers and implemented stubs
-for ACPICA prototypes (functions, global variables, macros), we finally can
-enable ACPICA headers for CONFIG_ACPI=n builds so that all ACPICA defined
-types are visible to all kernel source files.
+					  inc(&cpu_buffer_a->record_disabled);
+					  inc(&cpu_buffer_b->record_disabled);
 
-After exposing ACPICA types to all kernel sources, we can also sort the
-final wrong <acpi/acpi.h> inclusion out of <linux/sfi_acpi.h>.
+					  if (cpu_buffer_a->committing)
+					  ^^^ test fails and swap continues
+					  if (cpu_buffer_b->committing)
+					  ^^^ test fails and swap continues
 
-This patchset also includes a rule enforcement patch to avoid future
-inclusion mistakes.
+  rb_reserve_next_event()
+    rb_start_commit()
+      local_inc(&cpu_buffer->committing);
+      local_inc(&cpu_buffer->commits);
 
-The patch set has passed a build/boot test on the following machines:
-Dell Inspiron Mini 1010 (i386)
-HP Compaq 8200 Elite SFF PC (x86-64)
-With the following kernel configuration items enabled:
-  All drivers/acpi configurations
-  All platform drivers
-  All ACPI drivers
-  4 DRM drivers that implement ACPI opregion
-  All buses with ACPI bindings
-  All cpufreq configurations
-  All xen configurations
-  All ACPI table drivers
-They are tested twice with CONFIG_ACPI enabled/disabled.
+    if (unlikely(ACCESS_ONCE(cpu_buffer->buffer) != buffer)) {
+    ^^^ test fails and reserve_next continues
 
-Also allyes/allno/allmod tests are done for ARCH=i386 and ARCH=x86_64.
+					  buffer_a->buffers[cpu] = cpu_buffer_b;
+					  buffer_b->buffers[cpu] = cpu_buffer_a;
+					  cpu_buffer_b->buffer = buffer_a;
+					  cpu_buffer_a->buffer = buffer_b;
 
-A boot test has been done to ARCH=x86_64 default configuration and it is
-confirmed that the ACPI devices are successfully created under
-/sys/bus/acpi/devices when CONFIG_ACPI is enabled.
+  Pheeee, reservation continues in the removed buffer.
 
-Lv Zheng (7):
-  ACPICA: Linux: Add stub support for Linux specific variables and
-    functions.
-  ACPICA: Linux: Add stub implementation of ACPICA 64-bit mathematics.
-  ACPICA: Linux: Add support to exclude <asm/acenv.h> inclusion.
-  ACPICA: Linux: Allow ACPICA inclusion for CONFIG_ACPI=n builds.
-  ACPI/SFI: Fix wrong <acpi/acpi.h> inclusion in SFI/ACPI wrapper -
-    table definitions.
-  ACPI: Add support to force header inclusion rules for <acpi/acpi.h>.
-  ACPI: Cleanup useless ACPI inclusion.
+This patch solves the problem by swapping the CPU buffer on the same CPU. It
+helps to avoid memory barriers and keep both writing and swapping fast.
 
- arch/ia64/include/asm/acenv.h     |    4 ----
- arch/x86/include/asm/acenv.h      |    4 ----
- drivers/acpi/acpica/Makefile      |    2 +-
- drivers/acpi/bus.c                |    3 ---
- include/acpi/acpixf.h             |   28 +++++++++++++++++-----------
- include/acpi/platform/aclinux.h   |   12 ++++++++++++
- include/acpi/platform/aclinuxex.h |   22 ++++++++++++++++++++++
- include/linux/acpi.h              |    6 +++---
- include/linux/sfi_acpi.h          |    3 ---
- sound/soc/intel/sst-haswell-dsp.c |    3 ---
- 10 files changed, 55 insertions(+), 32 deletions(-)
+Also it removes the obsolete check in rb_reserve_next_event(). The swap
+operation is not allowed in NMI context, it is done on the same CPU, and
+therefore it could newer interrupt any write.
 
+Finally, it adds some comments about why the reserve and swap operations are
+safe. I hope that I have got it right :-)
+
+Changes:
+  + v3: removes the check in  rb_reserve_next_event(); idea by Steven Rostedt
+
+  + v2: does the swap on the same CPU instead of using memory barriers;
+	idea by Steven Rostedt
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ kernel/trace/ring_buffer.c | 100 ++++++++++++++++++++++++++++++---------------
+ 1 file changed, 66 insertions(+), 34 deletions(-)
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 7c56c3d06943..2d5a316b0c06 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2527,21 +2527,6 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 
+ 	rb_start_commit(cpu_buffer);
+ 
+-#ifdef CONFIG_RING_BUFFER_ALLOW_SWAP
+-	/*
+-	 * Due to the ability to swap a cpu buffer from a buffer
+-	 * it is possible it was swapped before we committed.
+-	 * (committing stops a swap). We check for it here and
+-	 * if it happened, we have to fail the write.
+-	 */
+-	barrier();
+-	if (unlikely(ACCESS_ONCE(cpu_buffer->buffer) != buffer)) {
+-		local_dec(&cpu_buffer->committing);
+-		local_dec(&cpu_buffer->commits);
+-		return NULL;
+-	}
+-#endif
+-
+ 	length = rb_calculate_event_length(length);
+  again:
+ 	add_timestamp = 0;
+@@ -4280,23 +4265,35 @@ int ring_buffer_empty_cpu(struct ring_buffer *buffer, int cpu)
+ EXPORT_SYMBOL_GPL(ring_buffer_empty_cpu);
+ 
+ #ifdef CONFIG_RING_BUFFER_ALLOW_SWAP
++struct ring_buffer_swap_info {
++	struct ring_buffer *buffer_a;	/* One buffer to swap with */
++	struct ring_buffer *buffer_b;	/* The other buffer to swap with */
++	int ret;			/* Return value from the swap op. */
++};
++
+ /**
+- * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
+- * @buffer_a: One buffer to swap with
+- * @buffer_b: The other buffer to swap with
++ * ring_buffer_swap_this_cpu - swap CPU buffer, related to this CPU,
++ *	between two ring buffers.
++ * @arg: arguments and return value is passed via struct ring_buffer_swap_info.
++ *	The function is called via smp_call_function_single()
+  *
+- * This function is useful for tracers that want to take a "snapshot"
+- * of a CPU buffer and has another back up buffer lying around.
+- * it is expected that the tracer handles the cpu buffer not being
+- * used at the moment.
++ * The swapping of a CPU buffer is done on the same CPU. It helps to avoid
++ * memory barriers and keep writing fast. We can't use synchronize_sched
++ * here because this function can be called in atomic context.
+  */
+-int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+-			 struct ring_buffer *buffer_b, int cpu)
++static void ring_buffer_swap_this_cpu(void *arg)
+ {
++	struct ring_buffer_swap_info *rb_swap_info = arg;
++	struct ring_buffer *buffer_a;
++	struct ring_buffer *buffer_b;
+ 	struct ring_buffer_per_cpu *cpu_buffer_a;
+ 	struct ring_buffer_per_cpu *cpu_buffer_b;
+-	int ret = -EINVAL;
++	int cpu = smp_processor_id();
++
++	buffer_a = rb_swap_info->buffer_a;
++	buffer_b = rb_swap_info->buffer_b;
+ 
++	rb_swap_info->ret = -EINVAL;
+ 	if (!cpumask_test_cpu(cpu, buffer_a->cpumask) ||
+ 	    !cpumask_test_cpu(cpu, buffer_b->cpumask))
+ 		goto out;
+@@ -4308,7 +4305,8 @@ int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+ 	if (cpu_buffer_a->nr_pages != cpu_buffer_b->nr_pages)
+ 		goto out;
+ 
+-	ret = -EAGAIN;
++	/* Also check if the buffers can be manipulated */
++	rb_swap_info->ret = -EAGAIN;
+ 
+ 	if (ring_buffer_flags != RB_BUFFERS_ON)
+ 		goto out;
+@@ -4326,15 +4324,19 @@ int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+ 		goto out;
+ 
+ 	/*
+-	 * We can't do a synchronize_sched here because this
+-	 * function can be called in atomic context.
+-	 * Normally this will be called from the same CPU as cpu.
+-	 * If not it's up to the caller to protect this.
++	 * Recording has to be disabled. Otherwise, ring_buffer_lock_reserve()
++	 * and ring_buffer_unlock_commit() might operate with different
++	 * cpu buffers.
++	 *
++	 * All other operations are safe. Read gets the CPU buffer only once
++	 * and then works with it. Resize does the critical operation on the
++	 * same CPU with disabled interrupts.
+ 	 */
+ 	atomic_inc(&cpu_buffer_a->record_disabled);
+ 	atomic_inc(&cpu_buffer_b->record_disabled);
+ 
+-	ret = -EBUSY;
++	/* Bail out if we interrupted some recording */
++	rb_swap_info->ret = -EBUSY;
+ 	if (local_read(&cpu_buffer_a->committing))
+ 		goto out_dec;
+ 	if (local_read(&cpu_buffer_b->committing))
+@@ -4346,13 +4348,43 @@ int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
+ 	cpu_buffer_b->buffer = buffer_a;
+ 	cpu_buffer_a->buffer = buffer_b;
+ 
+-	ret = 0;
+-
++	rb_swap_info->ret = 0;
+ out_dec:
+ 	atomic_dec(&cpu_buffer_a->record_disabled);
+ 	atomic_dec(&cpu_buffer_b->record_disabled);
+ out:
+-	return ret;
++	return;
++}
++
++/**
++ * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
++ * @buffer_a: One buffer to swap with
++ * @buffer_b: The other buffer to swap with
++ *
++ * This function is useful for tracers that want to take a "snapshot"
++ * of a CPU buffer and has another back up buffer lying around.
++ * It is expected that the tracer handles the cpu buffer not being
++ * used at the moment.
++ */
++int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
++			 struct ring_buffer *buffer_b, int cpu)
++{
++	struct ring_buffer_swap_info rb_swap_info = {
++		.buffer_a = buffer_a,
++		.buffer_b = buffer_b,
++	};
++	int ret;
++
++	/*
++	 * Swap the CPU buffer on the same CPU. Recording has to be fast
++	 * and and this helps to avoid memory barriers.
++	 */
++	ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
++				       (void *)&rb_swap_info, 1);
++	if (ret)
++		return ret;
++
++	return rb_swap_info.ret;
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
+ #endif /* CONFIG_RING_BUFFER_ALLOW_SWAP */
 -- 
-1.7.10
+1.8.4
 
