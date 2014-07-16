@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934304AbaGPNtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:49:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55868 "EHLO mx2.suse.de"
+	id S934338AbaGPNtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:49:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55909 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695AbaGPNs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:48:57 -0400
+	id S933406AbaGPNs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:48:58 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -13,12 +13,12 @@ Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
         Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH V4 03/15] mm, compaction: do not count compact_stall if all zones skipped compaction
-Date: Wed, 16 Jul 2014 15:48:11 +0200
-Message-Id: <1405518503-27687-4-git-send-email-vbabka@suse.cz>
+Subject: [PATCH V4 06/15] mm, compaction: reduce zone checking frequency in the migration scanner
+Date: Wed, 16 Jul 2014 15:48:14 +0200
+Message-Id: <1405518503-27687-7-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
 References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
@@ -26,133 +26,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compact_stall vmstat counter counts the number of allocations stalled by
-direct compaction. It does not count when all attempted zones had deferred
-compaction, but it does count when all zones skipped compaction. The skipping
-is decided based on very early check of compaction_suitable(), based on
-watermarks and memory fragmentation. Therefore it makes sense not to count
-skipped compactions as stalls. Moreover, compact_success or compact_fail is
-also already not being counted when compaction was skipped, so this patch
-changes the compact_stall counting to match the other two.
+The unification of the migrate and free scanner families of function has
+highlighted a difference in how the scanners ensure they only isolate pages
+of the intended zone. This is important for taking zone lock or lru lock of
+the correct zone. Due to nodes overlapping, it is however possible to
+encounter a different zone within the range of the zone being compacted.
 
-Additionally, restructure __alloc_pages_direct_compact() code for better
-readability.
+The free scanner, since its inception by commit 748446bb6b ("mm: compaction:
+memory compaction core"), has been checking the zone of the first valid page
+in a pageblock, and skipping the whole pageblock if the zone does not match.
 
+This checking was completely missing from the migration scanner at first, and
+later added by commit dc9086004b ("mm: compaction: check for overlapping
+nodes during isolation for migration") in a reaction to a bug report.
+But the zone comparison in migration scanner is done once per a single scanned
+page, which is more defensive and thus more costly than a check per pageblock.
+
+This patch unifies the checking done in both scanners to once per pageblock,
+through a new pageblock_within_zone() function, which also includes pfn_valid()
+checks. It is more defensive than the current free scanner checks, as it checks
+both the first and last page of the pageblock, but less defensive by the
+migration scanner per-page checks. It assumes that node overlapping may result
+(on some architecture) in a boundary between two nodes falling into the middle
+of a pageblock, but that there cannot be a node0 node1 node0 interleaving
+within a single pageblock.
+
+The result is more code being shared and a bit less per-page CPU cost in the
+migration scanner.
+
+Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: David Rientjes <rientjes@google.com>
 ---
- mm/page_alloc.c | 75 +++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 41 insertions(+), 34 deletions(-)
+ mm/compaction.c | 91 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 57 insertions(+), 34 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 963dacd..69a14b7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2251,6 +2251,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	unsigned long *did_some_progress)
- {
- 	struct zone *last_compact_zone = NULL;
-+	struct page *page;
- 
- 	if (!order)
- 		return NULL;
-@@ -2262,49 +2263,55 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 						&last_compact_zone);
- 	current->flags &= ~PF_MEMALLOC;
- 
--	if (*did_some_progress > COMPACT_DEFERRED)
--		count_vm_event(COMPACTSTALL);
--	else
-+	switch (*did_some_progress) {
-+	case COMPACT_DEFERRED:
- 		*deferred_compaction = true;
-+		/* fall-through */
-+	case COMPACT_SKIPPED:
-+		return NULL;
-+	default:
-+		break;
-+	}
- 
--	if (*did_some_progress > COMPACT_SKIPPED) {
--		struct page *page;
-+	/*
-+	 * At least in one zone compaction wasn't deferred or skipped, so let's
-+	 * count a compaction stall
-+	 */
-+	count_vm_event(COMPACTSTALL);
- 
--		/* Page migration frees to the PCP lists but we want merging */
--		drain_pages(get_cpu());
--		put_cpu();
-+	/* Page migration frees to the PCP lists but we want merging */
-+	drain_pages(get_cpu());
-+	put_cpu();
- 
--		page = get_page_from_freelist(gfp_mask, nodemask,
--				order, zonelist, high_zoneidx,
--				alloc_flags & ~ALLOC_NO_WATERMARKS,
--				preferred_zone, classzone_idx, migratetype);
-+	page = get_page_from_freelist(gfp_mask, nodemask,
-+			order, zonelist, high_zoneidx,
-+			alloc_flags & ~ALLOC_NO_WATERMARKS,
-+			preferred_zone, classzone_idx, migratetype);
- 
--		if (page) {
--			struct zone *zone = page_zone(page);
-+	if (page) {
-+		struct zone *zone = page_zone(page);
- 
--			zone->compact_blockskip_flush = false;
--			compaction_defer_reset(zone, order, true);
--			count_vm_event(COMPACTSUCCESS);
--			return page;
--		}
-+		zone->compact_blockskip_flush = false;
-+		compaction_defer_reset(zone, order, true);
-+		count_vm_event(COMPACTSUCCESS);
-+		return page;
-+	}
- 
--		/*
--		 * last_compact_zone is where try_to_compact_pages thought
--		 * allocation should succeed, so it did not defer compaction.
--		 * But now we know that it didn't succeed, so we do the defer.
--		 */
--		if (last_compact_zone && mode != MIGRATE_ASYNC)
--			defer_compaction(last_compact_zone, order);
-+	/*
-+	 * last_compact_zone is where try_to_compact_pages thought allocation
-+	 * should succeed, so it did not defer compaction. But here we know
-+	 * that it didn't succeed, so we do the defer.
-+	 */
-+	if (last_compact_zone && mode != MIGRATE_ASYNC)
-+		defer_compaction(last_compact_zone, order);
- 
--		/*
--		 * It's bad if compaction run occurs and fails.
--		 * The most likely reason is that pages exist,
--		 * but not enough to satisfy watermarks.
--		 */
--		count_vm_event(COMPACTFAIL);
-+	/*
-+	 * It's bad if compaction run occurs and fails. The most likely reason
-+	 * is that pages exist, but not enough to satisfy watermarks.
-+	 */
-+	count_vm_event(COMPACTFAIL);
- 
--		cond_resched();
--	}
-+	cond_resched();
- 
- 	return NULL;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 28e48ea..9cff804 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -67,6 +67,49 @@ static inline bool migrate_async_suitable(int migratetype)
+ 	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
  }
+ 
++/*
++ * Check that the whole (or subset of) a pageblock given by the interval of
++ * [start_pfn, end_pfn) is valid and within the same zone, before scanning it
++ * with the migration of free compaction scanner. The scanners then need to
++ * use only pfn_valid_within() check for arches that allow holes within
++ * pageblocks.
++ *
++ * Return struct page pointer of start_pfn, or NULL if checks were not passed.
++ *
++ * It's possible on some configurations to have a setup like node0 node1 node0
++ * i.e. it's possible that all pages within a zones range of pages do not
++ * belong to a single zone. We assume that a border between node0 and node1
++ * can occur within a single pageblock, but not a node0 node1 node0
++ * interleaving within a single pageblock. It is therefore sufficient to check
++ * the first and last page of a pageblock and avoid checking each individual
++ * page in a pageblock.
++ */
++static struct page * pageblock_within_zone(unsigned long start_pfn,
++				unsigned long end_pfn, struct zone *zone)
++{
++	struct page *start_page;
++	struct page *end_page;
++
++	/* end_pfn is one past the range we are checking */
++	end_pfn--;
++
++	if (!pfn_valid(start_pfn) || !pfn_valid(end_pfn))
++		return NULL;
++
++	start_page = pfn_to_page(start_pfn);
++
++	if (page_zone(start_page) != zone)
++		return NULL;
++
++	end_page = pfn_to_page(end_pfn);
++
++	/* This gives a shorter code than deriving page_zone(end_page) */
++	if (page_zone_id(start_page) != page_zone_id(end_page))
++		return NULL;
++
++	return start_page;
++}
++
+ #ifdef CONFIG_COMPACTION
+ /* Returns true if the pageblock should be scanned for pages to isolate. */
+ static inline bool isolation_suitable(struct compact_control *cc,
+@@ -368,17 +411,17 @@ isolate_freepages_range(struct compact_control *cc,
+ 	unsigned long isolated, pfn, block_end_pfn;
+ 	LIST_HEAD(freelist);
+ 
+-	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
+-		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
+-			break;
++	pfn = start_pfn;
++	block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
++
++	for (; pfn < end_pfn; pfn += isolated,
++				block_end_pfn += pageblock_nr_pages) {
+ 
+-		/*
+-		 * On subsequent iterations ALIGN() is actually not needed,
+-		 * but we keep it that we not to complicate the code.
+-		 */
+-		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+ 		block_end_pfn = min(block_end_pfn, end_pfn);
+ 
++		if (!pageblock_within_zone(pfn, block_end_pfn, cc->zone))
++			break;
++
+ 		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
+ 						   &freelist, true);
+ 
+@@ -507,15 +550,7 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+ 			continue;
+ 		nr_scanned++;
+ 
+-		/*
+-		 * Get the page and ensure the page is within the same zone.
+-		 * See the comment in isolate_freepages about overlapping
+-		 * nodes. It is deliberate that the new zone lock is not taken
+-		 * as memory compaction should not move pages between nodes.
+-		 */
+ 		page = pfn_to_page(low_pfn);
+-		if (page_zone(page) != zone)
+-			continue;
+ 
+ 		if (!valid_page)
+ 			valid_page = page;
+@@ -654,8 +689,7 @@ isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
+ 
+ 		block_end_pfn = min(block_end_pfn, end_pfn);
+ 
+-		/* Skip whole pageblock in case of a memory hole */
+-		if (!pfn_valid(pfn))
++		if (!pageblock_within_zone(pfn, block_end_pfn, cc->zone))
+ 			continue;
+ 
+ 		pfn = isolate_migratepages_block(cc, pfn, block_end_pfn,
+@@ -727,18 +761,9 @@ static void isolate_freepages(struct compact_control *cc)
+ 						&& compact_should_abort(cc))
+ 			break;
+ 
+-		if (!pfn_valid(block_start_pfn))
+-			continue;
+-
+-		/*
+-		 * Check for overlapping nodes/zones. It's possible on some
+-		 * configurations to have a setup like
+-		 * node0 node1 node0
+-		 * i.e. it's possible that all pages within a zones range of
+-		 * pages do not belong to a single zone.
+-		 */
+-		page = pfn_to_page(block_start_pfn);
+-		if (page_zone(page) != zone)
++		page = pageblock_within_zone(block_start_pfn, block_end_pfn,
++									zone);
++		if (!page)
+ 			continue;
+ 
+ 		/* Check the block is suitable for migration */
+@@ -873,12 +898,10 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 						&& compact_should_abort(cc))
+ 			break;
+ 
+-		/* Skip whole pageblock in case of a memory hole */
+-		if (!pfn_valid(low_pfn))
++		page = pageblock_within_zone(low_pfn, end_pfn, zone);
++		if (!page)
+ 			continue;
+ 
+-		page = pfn_to_page(low_pfn);
+-
+ 		/* If isolation recently failed, do not retry */
+ 		if (!isolation_suitable(cc, page))
+ 			continue;
 -- 
 1.8.4.5
 
