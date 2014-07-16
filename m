@@ -1,187 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030292AbaGPGfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 02:35:47 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:40307 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbaGPGfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 02:35:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403030217-21554-1-git-send-email-galak@codeaurora.org>
-References: <1403030217-21554-1-git-send-email-galak@codeaurora.org>
-Date: Wed, 16 Jul 2014 12:05:42 +0530
-Message-ID: <CA+neC=MRMxh_QhWr1DhjfjZYbaA+i=Ltsi37F7HKXonAsLTxDw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host
- controller driver
-From: kiran padwal <kiran.padwal21@gmail.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Content-Type: text/plain; charset=UTF-8
+	id S934785AbaGPGhA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 02:37:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15204 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932821AbaGPGg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 02:36:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,670,1400050800"; 
+   d="scan'208";a="457538755"
+From: Chen LinX <linx.z.chen@intel.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: yanmin_zhang@linux.intel.com, yanmin.zhang@intel.com,
+        "Chen LinX" <linx.z.chen@intel.com>
+Subject: [PATCH V2] perf: Don't enable the perf_event without in PERF_ATTACH_CONTEXT status
+Date: Wed, 16 Jul 2014 14:38:40 +0800
+Message-Id: <1405492720-7112-1-git-send-email-linx.z.chen@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tested-by: Kiran Padwal <kiran.padwal@smartplayin.com>
-This driver tested with APQ806x SATA PHY Driver.
+From: "Chen LinX" <linx.z.chen@intel.com>
 
-On Wed, Jun 18, 2014 at 12:06 AM, Kumar Gala <galak@codeaurora.org> wrote:
-> Add support for the Qualcomm AHCI SATA controller that exists on several
-> SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
-> requires the associated IPQ806x SATA PHY Driver to be enabled as well.
->
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> ---
-> v3:
-> * Added comment about suspend/resume not supported
-> * Fixup ahci_platform_init_host for upstream change to interface
-> * cleanup error handling of rxoob clk, moved to devm_clk_get/put
->
-> v2:
-> * Fixed MODULE_LICENSE to be GPL v2
->
->  drivers/ata/Kconfig     | 10 ++++++
->  drivers/ata/Makefile    |  1 +
->  drivers/ata/ahci_qcom.c | 90 +++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 101 insertions(+)
->  create mode 100644 drivers/ata/ahci_qcom.c
->
-> diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-> index 7671dba..aa88648 100644
-> --- a/drivers/ata/Kconfig
-> +++ b/drivers/ata/Kconfig
-> @@ -132,6 +132,16 @@ config AHCI_MVEBU
->
->           If unsure, say N.
->
-> +config AHCI_QCOM
-> +       tristate "Qualcomm AHCI SATA support"
-> +       depends on ARCH_QCOM
-> +       help
-> +         This option enables support for AHCI SATA controller
-> +         integrated into Qualcomm ARM SoC chipsets. For more
-> +         information please refer to http://www.qualcomm.com/chipsets.
-> +
-> +         If unsure, say N.
-> +
->  config AHCI_SUNXI
->         tristate "Allwinner sunxi AHCI SATA support"
->         depends on ARCH_SUNXI
-> diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-> index 5a02aee..15401e9 100644
-> --- a/drivers/ata/Makefile
-> +++ b/drivers/ata/Makefile
-> @@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)   += sata_highbank.o libahci.o
->  obj-$(CONFIG_AHCI_DA850)       += ahci_da850.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_IMX)         += ahci_imx.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_MVEBU)       += ahci_mvebu.o libahci.o libahci_platform.o
-> +obj-$(CONFIG_AHCI_QCOM)                += ahci_qcom.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_SUNXI)       += ahci_sunxi.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_ST)          += ahci_st.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_XGENE)       += ahci_xgene.o libahci.o libahci_platform.o
-> diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
-> new file mode 100644
-> index 0000000..412e878
-> --- /dev/null
-> +++ b/drivers/ata/ahci_qcom.c
-> @@ -0,0 +1,90 @@
-> +/*
-> + * Qualcomm ARM SoC AHCI SATA platform driver
-> + *
-> + * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
-> + *
-> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/pm.h>
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/libata.h>
-> +#include <linux/ahci_platform.h>
-> +#include "ahci.h"
-> +
-> +static const struct ata_port_info qcom_ahci_port_info = {
-> +       .flags          = AHCI_FLAG_COMMON,
-> +       .pio_mask       = ATA_PIO4,
-> +       .udma_mask      = ATA_UDMA6,
-> +       .port_ops       = &ahci_platform_ops,
-> +};
-> +
-> +static int qcom_ahci_probe(struct platform_device *pdev)
-> +{
-> +       struct ahci_host_priv *hpriv;
-> +       struct clk *rxoob_clk;
-> +       int rc;
-> +
-> +       hpriv = ahci_platform_get_resources(pdev);
-> +       if (IS_ERR(hpriv))
-> +               return PTR_ERR(hpriv);
-> +
-> +       /* Try and set the rxoob clk to 100Mhz */
-> +       rxoob_clk = devm_clk_get(&pdev->dev, "rxoob");
-> +       if (IS_ERR(rxoob_clk))
-> +               return PTR_ERR(rxoob_clk);
-> +
-> +       rc = clk_set_rate(rxoob_clk, 100000000);
-> +       if (rc)
-> +               return rc;
-> +
-> +       devm_clk_put(&pdev->dev, rxoob_clk);
-> +
-> +       rc = ahci_platform_enable_resources(hpriv);
-> +       if (rc)
-> +               return rc;
-> +
-> +       rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info,
-> +                                    0, 0, 0);
-> +       if (rc)
-> +               goto disable_resources;
-> +
-> +       return 0;
-> +disable_resources:
-> +       ahci_platform_disable_resources(hpriv);
-> +       return rc;
-> +}
-> +
-> +static const struct of_device_id qcom_ahci_of_match[] = {
-> +       { .compatible = "qcom,msm-ahci", },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
-> +
-> +static struct platform_driver qcom_ahci_driver = {
-> +       .probe = qcom_ahci_probe,
-> +       .remove = ata_platform_remove_one,
-> +       .driver = {
-> +               .name = "qcom_ahci_qcom",
-> +               .owner = THIS_MODULE,
-> +               .of_match_table = qcom_ahci_of_match,
-> +       },
-> +       /* suspend/resume not currently supported */
-> +};
-> +module_platform_driver(qcom_ahci_driver);
-> +
-> +MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("ahci:qcom");
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	ChangeLog V2:	1) Add more description about the race;
+			2) Format the email to use short lines.
+
+When we run cpu hotplug test and below perf test at the same time,
+kernel panic. pmu may access freed perf_event.
+
+while true;
+do
+perf record -a -g -f sleep 10
+rm perf.*
+done
+
+Basically, application(perf) starts perf by many syscalls.
+1) perf_event_open => perf_install_in_context;
+2) perf_ioctl
+     => perf_event_enable
+         => cpu_function_call(event->cpu, __perf_event_enable, event)
+             =>__perf_event_enable.
+
+After step 1), the cpu might be hot unplugged, and the event is unlinked
+from the cpu context. Then, the cpu is hot plugged back. The app runs at
+step 2) to enable the event on that cpu. Then, the cpu is hot unplugged
+again. As the event is not linked to the cpu's context
+(context->pinned_groups or context->flexible_groups list), perf_cpu_notify
+can't disable the events. However, the event is linked in
+cpuc->event_list[XXX]. At that time, application might free the event.
+The free procedure tries to delete the event on the
+pmu(in cpuc->event_list[XXX]). As the cpu is offline,
+__perf_remove_from_context doesn't unlink the event from
+cpuc->event_list[XXX].
+
+When a new perf_event is scheduled in on the cpu, old freed perf_event would
+be also activated. That causes kernel panic.
+
+The patch fixes it by adding PERF_ATTACH_CONTEXT flag check before enabling
+event to avoid this scenario.
+
+[  157.666035 ] BUG: unable to handle kernel paging request at ffffffe89af56004
+[  157.666166 ] IP: [<ffffffff8234218c>] do_raw_spin_lock+0xc/0x130
+[  157.668086 ] Call Trace:
+[  157.668122 ]  <IRQ>
+[  157.668156 ]  [<ffffffff828a69aa>] _raw_spin_lock_irqsave+0x2a/0x40
+[  157.668268 ]  [<ffffffff820168f0>] __intel_shared_reg_get_constraints.isra.9+0x70/0x150
+[  157.668350 ]  [<ffffffff8201762e>] intel_get_event_constraints+0x8e/0x150
+[  157.668424 ]  [<ffffffff82011191>] x86_schedule_events+0x81/0x200
+[  157.668495 ]  [<ffffffff8201767a>] ? intel_get_event_constraints+0xda/0x150
+[  157.668568 ]  [<ffffffff82011191>] ? x86_schedule_events+0x81/0x200
+[  157.668640 ]  [<ffffffff82028848>] ? flat_send_IPI_mask+0x88/0xa0
+[  157.668710 ]  [<ffffffff820e5628>] ? __enqueue_entity+0x78/0x80
+[  157.668777 ]  [<ffffffff820e818a>] ? enqueue_task_fair+0x90a/0xdd0
+[  157.668848 ]  [<ffffffff82145585>] ? tracer_tracing_is_on+0x15/0x30
+[  157.668918 ]  [<ffffffff820f3b91>] ? cpuacct_charge+0x61/0x70
+[  157.668984 ]  [<ffffffff82028848>] ? flat_send_IPI_mask+0x88/0xa0
+[  157.669052 ]  [<ffffffff820233c5>] ? native_smp_send_reschedule+0x45/0x60
+[  157.669126 ]  [<ffffffff820df199>] ? resched_task+0x69/0x70
+[  157.669192 ]  [<ffffffff82145585>] ? tracer_tracing_is_on+0x15/0x30
+[  157.669262 ]  [<ffffffff82161c13>] ? perf_pmu_enable+0x13/0x30
+[  157.669328 ]  [<ffffffff820102ef>] ? x86_pmu_add+0xaf/0x150
+[  157.669393 ]  [<ffffffff8200ffc0>] x86_pmu_commit_txn+0x50/0xa0
+[  157.669462 ]  [<ffffffff82008cf4>] ? native_sched_clock+0x24/0x80
+[  157.669531 ]  [<ffffffff82008cf4>] ? native_sched_clock+0x24/0x80
+[  157.669598 ]  [<ffffffff820e441d>] ? sched_clock_cpu+0xbd/0x110
+[  157.669664 ]  [<ffffffff820e44af>] ? local_clock+0x3f/0x50
+[  157.669729 ]  [<ffffffff82161fe4>] ? perf_event_update_userpage+0xe4/0x150
+[  157.669802 ]  [<ffffffff82162721>] ? event_sched_in.isra.72+0x81/0x190
+[  157.669871 ]  [<ffffffff821629ca>] group_sched_in+0x19a/0x1e0
+[  157.669937 ]  [<ffffffff82008cf4>] ? native_sched_clock+0x24/0x80
+[  157.670006 ]  [<ffffffff82162bc8>] ctx_sched_in+0x1b8/0x1e0
+[  157.670071 ]  [<ffffffff821630c2>] perf_event_sched_in+0x22/0x80
+[  157.670138 ]  [<ffffffff8216321f>] __perf_install_in_context+0xff/0x170
+[  157.670212 ]  [<ffffffff8215e8ab>] remote_function+0x4b/0x60
+[  157.670282 ]  [<ffffffff821086bd>] generic_smp_call_function_single_interrupt+0x9d/0x120
+[  157.670363 ]  [<ffffffff82339e79>] ? __const_udelay+0x29/0x30
+[  157.670429 ]  [<ffffffff820236b7>] smp_call_function_single_interrupt+0x27/0x40
+[  157.670504 ]  [<ffffffff828ad96f>] call_function_single_interrupt+0x6f/0x80
+
+Change-Id: I7265d83159b9180e9be3a370ba50e067385547bd
+Reviewed-by: Yanmin Zhang <yanmin.zhang@intel.com>
+Signed-off-by: Chen LinX <linx.z.chen@intel.com>
+---
+ kernel/events/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index e76e495..30f0095 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1783,7 +1783,7 @@ static int __perf_event_enable(void *info)
+ 	 * where the task could be killed and 'ctx' deactivated
+ 	 * by perf_event_exit_task.
+ 	 */
+-	if (!ctx->is_active)
++	if (!ctx->is_active || !(event->attach_state & PERF_ATTACH_CONTEXT))
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock(&ctx->lock);
+-- 
+1.7.9.5
+
