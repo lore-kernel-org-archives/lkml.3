@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965384AbaGPOru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 10:47:50 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46600 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965321AbaGPOrn convert rfc822-to-8bit (ORCPT
+	id S1030305AbaGPOsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 10:48:22 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:61953 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030224AbaGPOsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 10:47:43 -0400
-Date: Wed, 16 Jul 2014 15:47:37 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
+	Wed, 16 Jul 2014 10:48:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Rob Herring <robherring2@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         Sinan Kaya <okaya@codeaurora.org>,
@@ -25,27 +24,28 @@ Cc: Arnd Bergmann <arnd@arndb.de>,
         Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v8 4/9] pci: OF: Fix the conversion of IO ranges into IO
- resources.
-Message-ID: <20140716144736.GW825@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <201407072322.00990.arnd@arndb.de>
- <20140708100332.GW6501@e106497-lin.cambridge.arm.com>
- <201407091031.50402.arnd@arndb.de>
- <CAL_JsqKaR=SYtM7BKTgO_AN5Vb0GCjaiKbA=9Zr7qGB29R9-5Q@mail.gmail.com>
-MIME-Version: 1.0
+Subject: Re: [PATCH v8 4/9] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Wed, 16 Jul 2014 16:47:41 +0200
+Message-ID: <9785692.7QoVkhofSt@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <CAL_JsqKaR=SYtM7BKTgO_AN5Vb0GCjaiKbA=9Zr7qGB29R9-5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 16 Jul 2014 14:47:37.0840 (UTC) FILETIME=[E30F3700:01CFA104]
-X-MC-Unique: 114071615473802901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <201407091031.50402.arnd@arndb.de> <CAL_JsqKaR=SYtM7BKTgO_AN5Vb0GCjaiKbA=9Zr7qGB29R9-5Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:o2K9OoQvLnFLSVuWDseeThpKGRzB4XQq9rVlfqIzwz8
+ otfLBVi33/DBF5hduurDsJh3kYgD/4rjQ1iZat6+dSWSsZgU9u
+ nwzUB8/ogVNAZMSEnzMNIc+37BDlKZjarSZRhbplc9UmHhFoMr
+ TqEJ+m+OTIdSRYbGc+3YYs7h3gnTBXEE3woqKaahVq7LZMCSzT
+ pJy6ObCR9Z86LBBLfd4aYMi1ss3IQ3b5fT59ABSdourWlCfGk1
+ VgH7nTkLIrMQH7fyWpjSzP/Dd1ZndammOmR6C2oJNah2dLXlbu
+ QzvXse9SUchkEtO1u1C7QyPkhJTDtWUP3uu+krCJrifzq65sFn
+ xr+b7Rq2E9t5LUp3yuW8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 03:35:37PM +0100, Rob Herring wrote:
+On Wednesday 16 July 2014 09:35:37 Rob Herring wrote:
 > On Wed, Jul 9, 2014 at 3:31 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 > > On Tuesday 08 July 2014, Liviu Dudau wrote:
 > >> On Mon, Jul 07, 2014 at 10:22:00PM +0100, Arnd Bergmann wrote:
@@ -80,36 +80,35 @@ On Wed, Jul 16, 2014 at 03:35:37PM +0100, Rob Herring wrote:
 > 
 > What is io_offset supposed to be and be based on?
 
-io_offset is the offset that gets applied for each host bridge to the port number
-to get the offset from PCI_IOBASE. Basically, the second host bridge will have
-port numbers starting from zero like the first one in the system, but the io_offset
-will be >= largest port number in the first host bridge.
+(you probably know most of this, but I'll explain it the long way
+to avoid ambiguity).
 
+io_offset is a concept used internally to translate bus-specific I/O port
+numbers into Linux-global ports.
 
-> 
-> > Your understanding is absolutely correct, and that's great because very few
-> > people get that right. What I think we're really arguing about is what the
-> > of_pci_range_to_resource is supposed to return. As you and Bjorn both pointed
-> > out earlier, there are in fact two resources associated with the I/O window
-> > and the flaw in the current implementation is that of_pci_range_to_resource
-> > returns the numeric values for the IORESOURCE_MEM resource, but sets the
-> > type to IORESOURCE_IO, which is offset from that by PCI_IOBASE.
-> >
-> > You try to fix that by making it return the correct IORESOURCE_IO resource,
-> > which is a reasonable approach but you must not break drivers that rely
-> > on the broken resource while doing that.
-> >
-> > The approach that I would have picked is to return the IORESOURCE_MEM
-> > resource associated with the I/O window and pick a (basically random)
-> > IORESOURCE_IO resource struct based on what hasn't been used and then
-> > compute the appropriate io_offset from that. This approach of course
-> > would also have required fixing up all drivers relying on the current
-> > behavior.
-> >
-> > To be clear, I'm fine with you (and Bjorn if he cares) picking the
-> > approach you like here, either one of these works fine as long as the
-> > host drivers use the interface in the way it is defined.
-> >
+A simple example would be having two PCI host bridges each with a
+(hardware) port range from 0 to 0xffff. These numbers are programmed
+into "BARs" in PCI device config space and they are used on the physical
+address lines in PCI or in the packet header on PCIe.
+
+In Linux, we have a single logical port range that is seen by device
+drivers, in the example the first host bridge would use ports 0-0xfffff
+and the second one would use ports 0x10000-0x1ffff.
+
+The PCI core uses the io_offset to translate between the two address
+spaces when it does the resource allocation during bus probe, so a device
+that gets Linux I/O port 0x10100 has its BAR programmed with 0x100 and
+the struct resource filled as 0x10000.
+
+When a PCI host bridge driver registers its root bus with the PCI core,
+it passes the io_offset using the last argument to pci_add_resource_offset()
+along with the Linux I/O port resource, so in the example the first
+io_offset is zero, while the second one is 0x10000.
+
+Note that there is no requirement for the I/O port range on the bus to
+start at zero, and you can even have negative io_offset values to
+deal with that, but this is the exception.
+
 > >> Now, I believe Rob has switched entirely to using my series in some test that
 > >> he has run and he hasn't encountered any issues, as long as one remembers in
 > >> the host bridge driver to add the io_base offset to the .start resource. If
@@ -124,22 +123,6 @@ will be >= largest port number in the first host bridge.
 > the model has a kconfig option to use i/o accesses. However, I have
 > seen in the past this is an area where 2 wrongs can make a right.
 
-:)
+Can you point me to a git tree with your kernel and dts?
 
-Best regards,
-Liviu
-
-> 
-> Rob
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+	Arnd
