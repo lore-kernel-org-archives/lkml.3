@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166AbaGPBcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 21:32:20 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:56331 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759206AbaGPBcJ (ORCPT
+	id S1759439AbaGPBgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 21:36:17 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:63834 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaGPBgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 21:32:09 -0400
-Date: Tue, 15 Jul 2014 18:32:06 -0700
-From: Patrik Fimml <patrikf@chromium.org>
-To: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Dmitry Torokhov <dtor@google.com>, Benson Leung <bleung@google.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Power-managing devices that are not of interest at some point in time
-Message-ID: <20140716013206.GA13409@google.com>
+	Tue, 15 Jul 2014 21:36:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5671533.7yANBX1RSQ@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<6364841.e2Acy30lOs@wuerfel>
+	<20140715111237.GF7668@distanz.ch>
+	<5671533.7yANBX1RSQ@wuerfel>
+Date: Wed, 16 Jul 2014 09:36:14 +0800
+Message-ID: <CAFiDJ5-Q4eKV1kT5dsQQshQ942GCD0BwC+y9+qbSWBT2dTacPw@mail.gmail.com>
+Subject: Re: [PATCH v2 24/29] nios2: Module support
+From: "LF.Tan" <lftan.linux@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tobias Klauser <tklauser@distanz.ch>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Re-sending with correct mailing list addresses.)
+On Tue, Jul 15, 2014 at 8:21 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Hi,
+>>
+>> AFAIR this is due to relocation issues, as the FIXME comment in the
+>> "original" code [1] states. I don't know whether this still applies,
+>> though (or what would be the proper fix for this to overcome the
+>> relocation issues).
+>>
+>> [1] https://github.com/tklauser/linux-nios2/blob/nios2/arch/nios2/kernel/module.c#L45
+>>
+>
+> Ah, I see. Please at least copy over that comment then.
+Will copy over the comment.
 
-When the lid of a laptop is closed, certain devices can no longer
-provide interesting input or will even produce bogus input, such as:
+>
+> A long-term solution would be to copy what ARM does, since that
+> has the same problem. The modules are allocated with
+> __vmalloc_node_range, passing a virtual address range that
+> is just before the kernel virtual address, taken out of the
+> top 16MB of the user space addresses.
+Noted, will investigate this for long-term solution.
 
-- input devices: touchscreen, touchpad, keyboard
-- sensors: ambient light sensor, accelerometer, magnetometer
-- a video camera mounted on the lid
-- display backlight
+Thanks.
 
-Various workarounds cover some of these cases, and we have some ugly
-hacks in ChromeOS to make things work. It would be nice if a userspace
-power management daemon could listen to the lid-close event, and then
-have a way to temporarily power off these devices, potentially through
-sysfs.
-
-I've been discussing this with Dmitry and Benson (cc'd), and we've been
-wondering whether we could come up with a generic solution that could
-benefit multiple device classes.
-
-There's some overlap with runtime PM here. The action to be taken in
-such a situation would probably be similar to a runtime suspend. The
-match is not perfect though, since devices with more than two power
-states might want to enter different states depending on the situation.
-
-It's somewhat difficult to get the semantics right, since handles to
-such devices might still be open. It might be easier to implement
-behavior specific to device classes. On the other hand, it would be nice
-to have a uniform way of shutting devices down, and not introduce
-another possible path for a device to enter a power-saving state.
-
-Rafael, can you give us your opinion on this?
-
-Kind regards,
-Patrik
+Regards
+Ley Foon
