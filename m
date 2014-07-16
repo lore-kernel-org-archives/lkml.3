@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228AbaGPFbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 01:31:12 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55013 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973AbaGPFbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 01:31:08 -0400
-From: varkabhadram@gmail.com
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next] netlink: remove bool varible
-Date: Wed, 16 Jul 2014 10:59:47 +0530
-Message-Id: <1405488587-26119-1-git-send-email-varkabhadram@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S934280AbaGPFkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 01:40:19 -0400
+Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:11109
+	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934241AbaGPFkR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 01:40:17 -0400
+From: Anish Bhatt <anish@chelsio.com>
+To: Joe Perches <joe@perches.com>, Ethan Zhao <ethan.zhao@oracle.com>
+CC: "apw@canonical.com" <apw@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ethan.kernel@gmail.com" <ethan.kernel@gmail.com>,
+        "joe.jin@oracle.com" <joe.jin@oracle.com>
+Subject: RE: [Bug report] Hit false positives bug with script/checkpatch.pl
+Thread-Topic: [Bug report] Hit false positives bug with script/checkpatch.pl
+Thread-Index: AQHPoK1MeswyH/bCSE+CrbqZhqlo35uiK4zT
+Date: Wed, 16 Jul 2014 05:39:06 +0000
+Message-ID: <525DB349B3FB5444AE057A887CB2A8D8543381@nice.asicdesigners.com>
+References: <1405479036-6763-1-git-send-email-ethan.zhao@oracle.com>,<1405484432.14773.19.camel@joe-AO725>
+In-Reply-To: <1405484432.14773.19.camel@joe-AO725>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.163.158]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkab@cdac.in>
+Parantheses/do {...} while(0) would not work for direct value substituons like this obviously but fixing this false positive seems hard. An exception case that is something like "macros with complex values separated by commas but no statements terminated by semicolons" is my best but seems-very-vague guess.
+-Anish
+________________________________________
+From: Joe Perches [joe@perches.com]
+Sent: Tuesday, July 15, 2014 9:20 PM
+To: Ethan Zhao
+Cc: Anish Bhatt; apw@canonical.com; linux-kernel@vger.kernel.org; ethan.kernel@gmail.com; joe.jin@oracle.com
+Subject: Re: [Bug report] Hit false positives bug with script/checkpatch.pl
 
-This patch removes the bool variable 'pass'.
-If the swith case exist return true or return false.
+On Wed, 2014-07-16 at 10:50 +0800, Ethan Zhao wrote:
+> Hi,
+>      I hit a false positives bug when run script/checkpatch.pl to my patch,
+> It reported  errors to following macro definition, but in fact the macro is
+> correct, I couldn't change that macro according to the error message output
+> by script/checkpatch.pl. because of this bug, my patch was rejected by some
+> guy's patchwork.
 
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- net/netlink/af_netlink.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+You could tell the guy checkpatch isn't always right.
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index e8c9f97..5dd8193 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -170,7 +170,6 @@ EXPORT_SYMBOL_GPL(netlink_remove_tap);
- static bool netlink_filter_tap(const struct sk_buff *skb)
- {
- 	struct sock *sk = skb->sk;
--	bool pass = false;
- 
- 	/* We take the more conservative approach and
- 	 * whitelist socket protocols that may pass.
-@@ -184,11 +183,10 @@ static bool netlink_filter_tap(const struct sk_buff *skb)
- 	case NETLINK_FIB_LOOKUP:
- 	case NETLINK_NETFILTER:
- 	case NETLINK_GENERIC:
--		pass = true;
--		break;
-+		return true;
- 	}
- 
--	return pass;
-+	return false;
- }
- 
- static int __netlink_deliver_tap_skb(struct sk_buff *skb,
--- 
-1.7.9.5
+You could also change the macro to something like:
+
+#define NETXEN_NIC_STAT(name, m)                                \
+{                                                               \
+        .name = name,                                           \
+        .type = m,                                              \
+        .sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),  \
+        .stat_offset = offsetof(struct netxen_adapter, m)       \
+}
+
+and change the uses like:
+
+static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
+        NETXEN_NIC_STAT("xmit called", stats.xmitcalled),
+        NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
+
+etc...
+
 
