@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552AbaGPJrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:47:49 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63672 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751590AbaGPJrp (ORCPT
+	id S1756792AbaGPJr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:47:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33402 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751590AbaGPJrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:47:45 -0400
-Message-ID: <1405504062.4408.11.camel@x220>
-Subject: Re: [PATCH 18/19] ARM: SAMSUNG: Remove remaining legacy code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Date: Wed, 16 Jul 2014 11:47:42 +0200
-In-Reply-To: <1404496099-26708-19-git-send-email-t.figa@samsung.com>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-	 <1404496099-26708-19-git-send-email-t.figa@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Jul 2014 09:47:42.0538 (UTC) FILETIME=[FD060AA0:01CFA0DA]
-X-RcptDomain: vger.kernel.org
+	Wed, 16 Jul 2014 05:47:52 -0400
+Date: Wed, 16 Jul 2014 11:47:47 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
+        balbi@ti.com, p.zabel@pengutronix.de,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 05/12] phy: add the Berlin USB PHY driver
+Message-ID: <20140716094747.GD28151@kwain>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405499166-6726-6-git-send-email-antoine.tenart@free-electrons.com>
+ <53C64389.3050705@gmail.com>
+ <20140716092541.GC28151@kwain>
+ <53C646DA.3020002@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C646DA.3020002@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
-> After refactoring suspend/resume, which was last part with dependencies
-> on legacy code, all Kconfig symbols related to Samsung ATAGS support can
-> be deselected and more unused code removed. This includes most of s5p-*
-> code as well, as s5pv210 was their last user.
+On Wed, Jul 16, 2014 at 03:03:14PM +0530, Varka Bhadram wrote:
+> On 07/16/2014 02:55 PM, Antoine Ténart wrote:
+> >Hi Varka,
+> >
+> >On Wed, Jul 16, 2014 at 02:49:05PM +0530, Varka Bhadram wrote:
+> >>On 07/16/2014 01:55 PM, Antoine Ténart wrote:
+> >>>+static const struct of_device_id phy_berlin_sata_of_match[] = {
+> >>>+	{
+> >>>+		.compatible = "marvell,berlin2-usb-phy",
+> >>>+		.data = &phy_berlin_pll_dividers[0],
+> >>>+	},
+> >>>+	{
+> >>>+		.compatible = "marvell,berlin2cd-usb-phy",
+> >>>+		.data = &phy_berlin_pll_dividers[1],
+> >>>+	},
+> >>>+	{ },
+> >>>+};
+> >>>+MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
+> >>>+
+> >>It looks good if we move this after probe().. So that we can see of_match_table directly...
+> >We use the of match table in the probe, when calling of_match_device().
+> >
+> >>>+static int phy_berlin_usb_probe(struct platform_device *pdev)
+> >>>+{
+> >>>+	const struct of_device_id *match =
+> >>>+		of_match_device(phy_berlin_sata_of_match, &pdev->dev);
 > 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
+> We are updating of_match_table in platform_driver struct.
 
-This one also landed in today's linux-next (ie, next-20140716).
+Yes. This is not the same thing. of_match_device() allows to get a
+pointer to the of_device_id that matched, to retrieve its data.
 
->[...]
-> diff --git a/arch/arm/mach-s5pv210/include/mach/gpio.h b/arch/arm/mach-s5pv210/include/mach/gpio.h
-> deleted file mode 100644
-> index 6c8b903..0000000
+> 
+> Every driver follows the concept of giving the of_device_ids
+> above the platform_driver declaration...
 
-This removed the single case were CONFIG_SAMSUNG_GPIO_EXTRA was used.
+Lots of drivers using of_match_device() declare their of_device_id
+structure before the probe.
 
->[...]
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
->[...]
-> @@ -64,31 +51,6 @@ config SAMSUNG_ATAGS
->  
->  if SAMSUNG_ATAGS
->  
-> -# options for IRQ support
-> -
-> -config S5P_IRQ
-> -	def_bool ARCH_S5PV210
-> -	help
-> -	  Support common interrupt part for ARCH_S5P SoCs
-> -
-> -config S5P_EXT_INT
-> -	bool
-> -	help
-> -	  Use the external interrupts (other than GPIO interrupts.)
-> -
-> -config S5P_GPIO_INT
-> -	bool
-> -	help
-> -	  Common code for the GPIO interrupts (other than external interrupts.)
-> -
-> -# options for gpio configuration support
-> -
-> -config S5P_GPIO_DRVSTR
-> -	bool
-> -	help
-> -	  Internal configuration to get and set correct GPIO driver strength
-> -	  helper
-> -
->  config SAMSUNG_GPIO_EXTRA
->  	int "Number of additional GPIO pins"
->  	default 128 if SAMSUNG_GPIO_EXTRA128
+Antoine
 
-So a second order effect is that SAMSUNG_GPIO_EXTRA can now be removed.
-Which implies that SAMSUNG_GPIO_EXTRA64 and SAMSUNG_GPIO_EXTRA128 can
-also be removed.
-
-Should I submit the trivial patch to do that or is a patch already
-queued somewhere?
-
-
-Paul Bolle
-
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
