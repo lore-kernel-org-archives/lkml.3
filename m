@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761108AbaGPAWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:22:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44903 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758824AbaGOXNG (ORCPT
+	id S933485AbaGPAXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:23:54 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:55885 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759265AbaGPAXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 19:13:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 18/22] x86, espfix: Fix broken header guard
-Date: Tue, 15 Jul 2014 16:17:23 -0700
-Message-Id: <20140715231622.689293509@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140715231622.121816073@linuxfoundation.org>
-References: <20140715231622.121816073@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 15 Jul 2014 20:23:52 -0400
 MIME-Version: 1.0
+In-Reply-To: <1405406114.13503.40.camel@iivanov-dev>
+References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1404782785-1824-3-git-send-email-bjorn.andersson@sonymobile.com>
+	<CACRpkdZ2hekBGe1-9GV-amqi50heghWhXJ9raW7P_Nif_Ci88g@mail.gmail.com>
+	<CAJAp7OghZoTXutxw7hAsq1XA_wAhOXDNFO0tz8u9ceQ1fD9W1w@mail.gmail.com>
+	<CACRpkdai=q3nmPk5OWQWn_UMdXmqcbFXJ90rxREBG9k6gdy88Q@mail.gmail.com>
+	<53C095EA.90000@codeaurora.org>
+	<1405346335.13503.25.camel@iivanov-dev>
+	<53C449A3.2010404@codeaurora.org>
+	<1405406114.13503.40.camel@iivanov-dev>
+Date: Tue, 15 Jul 2014 17:23:51 -0700
+Message-ID: <CAJAp7OjU=FFdGKHPqovz+qrEhDCZ3E=uOSAOFbgYyLE01C9cPg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pinctrl: Device tree bindings for Qualcomm pm8xxx
+ gpio block
+From: Bjorn Andersson <bjorn@kryo.se>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jul 14, 2014 at 11:35 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> On Mon, 2014-07-14 at 14:20 -0700, Stephen Boyd wrote:
+[..]
+>> Isn't this document only for the gpios? I think you're talking about the
+>> MPPs, which also exist on these generation of pmics. We should probably
+>> avoid mixing the two (gpios and mpps) in one binding because they're
+>> really different hardware.
+>
+> I don't know. For me "gpio" looks like function of the pin hardware.
+>
+>>
+>> >  So I will like
+>> > to keep "function" property for selecting one of the above functions.
+>> > Choosing between "normal", "paired"... options in QPNP pinctrl driver
+>> > is supported trough passing values, defined in DT header file, to
+>> > "output-high" property. Please don't kill me :-).
+>>
+>> Overloading output-high to choose the MPP mode doesn't seem to follow
+>> the generic pinconfig binding. Does output-high even take a value? Why
+>> can't we use the function property?
+>
+> No, no.  using value of the output-high|low" is just to select
+> "normal", "paired"... thing. Function selection is via "function"
+> property. Currently QPNP support following functions "gpio", "mpp-ain",
+> "mpp-aout", "mpp-cs".
+>
 
-------------------
+Hi Ivan,
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+>From your comment I presume that you don't have access to the
+documentation for these blocks.
 
-commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
+The pmic sports two types of pins; gpios and mpps (multi-purpose-pin).
+These are different hardware blocks; i.e. not a configuration thing.
 
-Header guard is #ifndef, not #ifdef...
+The gpios can be input, output or both and they can be configured as
+gpio, paired, function 1 or function 2 (+ some test modes). So here it
+makes sense to have the functions "gpio", "paired" and the valid
+function combinations.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The mpps can be input, output or both; in either digital or analog
+mode. Or they can be a current sink. When configured as analog input
+you select which adc the pin should be routed to. Here it makes sense
+to have the functions "digital", "analog" and "current-sink" I think.
 
----
- arch/x86/include/asm/espfix.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/include/asm/espfix.h
-+++ b/arch/x86/include/asm/espfix.h
-@@ -1,4 +1,4 @@
--#ifdef _ASM_X86_ESPFIX_H
-+#ifndef _ASM_X86_ESPFIX_H
- #define _ASM_X86_ESPFIX_H
- 
- #ifdef CONFIG_X86_64
-
-
+Regards,
+Bjorn
