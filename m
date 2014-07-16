@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030515AbaGPHTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:19:30 -0400
-Received: from blu004-omc3s5.hotmail.com ([65.55.116.80]:63216 "EHLO
-	BLU004-OMC3S5.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759488AbaGPHT2 convert rfc822-to-8bit (ORCPT
+	id S1030534AbaGPHTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:19:42 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:38811 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030517AbaGPHTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:19:28 -0400
-X-TMN: [pxFmRATyAYlmKb3yyiDxF+E0CGJ4WgCRN7GcnrsXFb8=]
-X-Originating-Email: [beanhuo@outlook.com]
-Message-ID: <BLU185-W62B0858FCD7D3A71127B41A6F70@phx.gbl>
-From: Bean Huo <beanhuo@outlook.com>
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-CC: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "b32955@freescale.com" <b32955@freescale.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "christian.riesch@omicron.at" <christian.riesch@omicron.at>
-Subject: [PATCH v5] mtd:nor:timeout:fix do_write_buffer() timeout error
-Date: Wed, 16 Jul 2014 07:19:28 +0000
-Importance: Normal
-In-Reply-To: <BLU185-W10713E955F9530C4D53490A6F70@phx.gbl>
-References: <BLU185-W10713E955F9530C4D53490A6F70@phx.gbl>
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Jul 2014 03:19:37 -0400
+Date: Wed, 16 Jul 2014 09:19:33 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, devicetree@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/6] clk: tegra: make tegra_clocks_apply_init_table
+ arch_initcall
+Message-ID: <20140716071932.GB7978@ulmo>
+References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
+ <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 16 Jul 2014 07:19:28.0745 (UTC) FILETIME=[47E8ED90:01CFA0C6]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
+Content-Disposition: inline
+In-Reply-To: <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some Norflashes,the size of the buffer program has been
-increased from 256 bytes to 512 bytes,2ms maximum timeout can
-not adapt to all the different vendor's norflash.There maximum
-timeout information in the CFI area,so the best way is to choose
-the result calculated according to timeout field of struct cfi_ident
-that probed from norflash's CFI aera.This is also a standard defined
-by CFI.If haven't probed this information,or smaller than 2000us,then
-specify a defualt value 2000us.
 
-Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
+--wzJLGUyc3ArbnUjN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: bean huo <beanhuo@outlook.com>
----
-changes
-	v1->v2:Deleted unused parameters in this patch 
-		(word_write_time_max and erase_time_max).Using usecs_to_jiffies
-		instead of msecs_to_jiffies for convert timeout value into jiffies.
-	v2->v3:Removed unnecessary messages form comments and deleted trailing whitespace.
-	V3->v4:If haven't probed timeout information,or smaller than 2000us,specify default
-	       2000us.
-	v4->v5:add one whitespace
- drivers/mtd/chips/cfi_cmdset_0002.c |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+On Tue, Jul 15, 2014 at 06:24:32PM +0300, Peter De Schrijver wrote:
+[...]
+> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+> index d081732..65cde4e 100644
+> --- a/drivers/clk/tegra/clk.c
+> +++ b/drivers/clk/tegra/clk.c
+> @@ -290,10 +290,13 @@ struct clk ** __init tegra_lookup_dt_id(int clk_id,
+> =20
+>  tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
+> =20
+> -void __init tegra_clocks_apply_init_table(void)
+> +static int __init tegra_clocks_apply_init_table(void)
+>  {
+>  	if (!tegra_clk_apply_init_table)
+> -		return;
+> +		return 0;
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index e21fde9..c248a8c 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -628,6 +628,24 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
- 		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
- 		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
- 		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
-+		/*
-+		 * First calculate the timeout max according to timeout
-+		 * field of struct cfi_ident that probed from chip's CFI
-+		 * aera.If haven't probed this information,or smaller than
-+		 * 2000us,we will specify defualt value 2000us,and the time
-+		 * unit is us.
-+		 */
-+		if (cfi->cfiq->BufWriteTimeoutTyp &&
-+			cfi->cfiq->BufWriteTimeoutMax){
-+			cfi->chips[i].buffer_write_time_max =
-+				1<<(cfi->cfiq->BufWriteTimeoutTyp +
-+					cfi->cfiq->BufWriteTimeoutMax);
-+			} else {
-+				cfi->chips[i].buffer_write_time_max = 0;
-+				}
-+		cfi->chips[i].buffer_write_time_max =
-+			((cfi->chips[i].buffer_write_time_max>= 2000)
-+			 ? cfi->chips[i].buffer_write_time_max : 2000);
- 		cfi->chips[i].ref_point_counter = 0;
- 		init_waitqueue_head(&(cfi->chips[i].wq));
- 	}
-@@ -1462,8 +1480,14 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- {
- 	struct cfi_private *cfi = map->fldrv_priv;
- 	unsigned long timeo = jiffies + HZ;
--	/* see comments in do_write_oneword() regarding uWriteTimeo. */
--	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
-+	/*
-+	 * Use the result that calculated according to timeout field
-+	 * of struct cfi_ident that probed from norflash's CFI aera.
-+	 * See more comments in cfi_cmdset_0002().uWriteTimeout is
-+	 * used for timeout step,it must be concerted into jiffies.
-+	 */
-+	unsigned long uWriteTimeout =
-+				usecs_to_jiffies(chip->buffer_write_time_max);
- 	int ret = -EIO;
- 	unsigned long cmd_adr;
- 	int z, words;
--- 
-1.7.9.5 		 	   		  
+Shouldn't this be an error? Or perhaps WARN()? To make sure this gets
+noticed since it's obviously a mistake. I'm wondering if perhaps we
+could simply remove this check and let the kernel crash if it isn't a
+valid function pointer. Is there a case where this not being set at
+this point is even possible (or valid?). If not, perhaps it would be
+better to just call the SoC generation versions of this function from
+here directly rather than going through a function pointer?
+
+Thierry
+
+--wzJLGUyc3ArbnUjN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTxieEAAoJEN0jrNd/PrOh+GcQALJtJmOd0i1gIbvE1ycNEefG
+zLlK2YmWMEoa9DnMMAQREbx76JuOctfZKJVZILKWcAhpOhW8eU+LK5y5b+HAWbRS
+g+IlfF6KmKv32jEKTthe62jqc6i5BSxd2MrIYSOb3rXYdvTTN7CBKWWMS5rL0wNq
+DhemWu1+n5sn5BQpDRyy7yWZWsU1XZsxGz5AWVS/nXKPHbwIoWSQaOjg/CTgKcuQ
+Yt0G5eMzNild0uwnqZCleHpO6e/I19mQZWqO04zw0mV98CUVpFqsFVLOIWwuiUR7
+tgK3ZzSqHOqpYsFplcTZuOWIh4HMlRr7Qkwt3KO3gQXkyfsePZ+uweYrAGt/SRcL
+TjIq/VOkNl56JdZYunvYtkCXVk1uMhtkM1ocC6oWBnmq74zkC/mpghFTIsSR/9yu
+3oAom7gGrwB+vsxfqDH4e7YnzlUWZKflsM/tf3u8c/j43N8oBHMePlb+As02iw1s
+buCH6eORKIHCk1Z52zICEjMhrAnzC9IZCh9a+0tKV2WplA1hk0f6ZJTvBmiMOQSB
+Njfn1joB5iNDflXsbpUOk94zRVThBcXbz14bzjL0cBSqtGhT+NjbuQQ7gxsP2tm1
+3As4wnZoeUfOEIymntbtDlscGopAGtGf6UNfAlw59LuIWQcnbOylOvES0TtmJwIt
+Q3eF1fld11NaKxJer89F
+=9UKY
+-----END PGP SIGNATURE-----
+
+--wzJLGUyc3ArbnUjN--
