@@ -1,103 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965631AbaGPRVo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 13:21:44 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:52430 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934593AbaGPRVl (ORCPT
+	id S965657AbaGPRWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 13:22:01 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:35097 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965619AbaGPRV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 13:21:41 -0400
+	Wed, 16 Jul 2014 13:21:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <53C6761A.9090002@linaro.org>
-References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
-	<CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com>
-	<53C4F745.3070701@linaro.org>
-	<201407152045.06517.marex@denx.de>
-	<53C6761A.9090002@linaro.org>
-Date: Wed, 16 Jul 2014 19:21:40 +0200
-Message-ID: <CAB5oZtCWe2Z4PqUaMBzmO-W_UH3Hau4U8Yw+9ca71wTUksWs8w@mail.gmail.com>
-Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
-From: Harro Haan <hrhaan@gmail.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Marek Vasut <marex@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
-        patches@linaro.org, kgdb-bugreport@lists.sourceforge.net,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, kernel-team@android.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Martin <Dave.Martin@arm.com>, Detlev Zundel <dzu@denx.de>
+In-Reply-To: <CAK5ve-L67=q-EpWvxD5-x+cFT7dh8p0HHuoUbAWA-j5BqCO52A@mail.gmail.com>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com> <CAK5ve-L67=q-EpWvxD5-x+cFT7dh8p0HHuoUbAWA-j5BqCO52A@mail.gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 16 Jul 2014 10:21:36 -0700
+Message-ID: <CAK5ve-+xyXyjPqejTPRvz=bJ4M5v19Uq1oaVv94QKqBWf1D4dA@mail.gmail.com>
+Subject: Re: [PATCH/RFC v4 00/21] LED / flash API integration
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 July 2014 14:54, Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> On 15/07/14 19:45, Marek Vasut wrote:
->>>> I can reduce the number of occurrences (not prevent it) by adding the
->>>> following hack to irq-gic.c
->>>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
->>>> gic_handle_irq(struct pt_regs *regs
->>>>
->>>>   u32 irqstat, irqnr;
->>>>   struct gic_chip_data *gic = &gic_data[0];
->>>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
->>>>
->>>>   do {
->>>>
->>>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
->>>> & (1 << 30))
->>>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
->>>>
->>>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->>>>   irqnr = irqstat & ~0x1c00;
->>>
->>> I've made a more complete attempt to fix this. Could you test the
->>> following? (and be prepared to fuzz the line numbers)
+On Wed, Jul 16, 2014 at 10:19 AM, Bryan Wu <cooloney@gmail.com> wrote:
+> On Fri, Jul 11, 2014 at 7:04 AM, Jacek Anaszewski
+> <j.anaszewski@samsung.com> wrote:
+>> This is is the fourth version of the patch series being a follow up
+>> of the discussion on Media summit 2013-10-23, related to the
+>> LED / flash API integration (the notes from the discussion were
+>> enclosed in the message [1], paragraph 5).
+>> The series is based on linux-next-20140707
 >>
->> There's also another workaround, look at [1], but it's really a perverse hack
->> thus far (blush). What I did there is I got hinted that an L1 page table can
->> have this NS bit set. If this bit is set for a mapping, all accesses to memory
->> area via that mapping will be non-secure. And then, in turn, by doing a non-
->> secure read of the INTACK register, it will not ever happen that the FIQ number
->> will pop up in the INTACK. I only do a non-secure read of the INTACK register,
->> all other registers of the GICv1 are read via regular secure-mode accesses.
 >
-> I'll be looking into this approach.
+> I really apologize that I missed your discussion email in my Gmail
+> inbox, it was archived some where. Even in this series some of these
+> patches are archived in different tab.
 >
-> It is technically a better approach than mine since it prevents the IRQ
-> handler from ever reading a group 0 interrupt from INTACK.
+> I will start to review and help to push this.
+>
 
-Agree, preventing the problem is better than fixing it afterwards.
+In the mean time, could you please provide an git tree for me to pull?
+It's much easier for me to review in my git.
+
+-Bryan
 
 >
-> Unfortunately the tentacles of this workaround reach pretty deep in the
-> memory management code (rather than being concentrated in the GIC
-> driver) but the improved runtime behaviour might be worth it.
-
-I did some worst case measurements on the SabreSD while running:
-$ while true; do hackbench 20; done &
-
-Use banked non-secure GIC_CPU_INTACK register for regular interrupts
-(patches by Marek):
-The FIQ handler reads the TWD_TIMER_COUNTER 2570 ticks (which is x
-1000 / 498 = 5161 nsec) after FIQ interrupt ID30 is generated.
-The average is around 497 ticks.
-The minimum is around 34 ticks.
-
-Use re-trigger approach by putting it back to pending state (latest
-patch by Daniel):
-The FIQ handler reads the TWD_TIMER_COUNTER 2678 ticks (which is x
-1000 / 498 = 5378 nsec) after FIQ interrupt ID30 is generated.
-The average is around 563 ticks (note: almost everything is normal path)
-The minimum is around 34 ticks (note: this is the normal path, not the
-re-trigger path)
-
-So the results are quite similar.
+>
+>> Description of the proposed modifications according to
+>> the kernel components they are relevant to:
+>>     - LED subsystem modifications
+>>         * added led_flash module which, when enabled in the config,
+>>           registers flash specific sysfs attributes, if the driver
+>>           declares related features:
+>>             - flash_brightness
+>>             - max_flash_brightness
+>>             - indicator_brightness
+>>             - max_indicator_brightness
+>>             - flash_timeout
+>>             - max_flash_timeout
+>>             - flash_strobe
+>>             - external_strobe
+>>             - flash_fault
+>>           and exposes kernel internal API:
+>>             - led_classdev_flash_register
+>>             - led_classdev_flash_unregister
+>>             - led_set_flash_strobe
+>>             - led_get_flash_strobe
+>>             - led_set_flash_brightness
+>>             - led_update_flash_brightness
+>>             - led_set_indicator_brightness
+>>             - led_update_indicator_brightness
+>>             - led_set_flash_timeout
+>>             - led_get_flash_fault
+>>             - led_set_external_strobe
+>>             - led_sysfs_lock
+>>             - led_sysfs_unlock
+>>         * added Flash Manager functionality, available when
+>>           led_flash module is enable in the config;
+>>           if the device tree node of a flash led device contains
+>>           relevant subnodes, it registers following sysfs attributes:
+>>             - strobe_provider
+>>             - strobe_providerN
+>>             - blocking_strobe
+>>           following kernel internal API is exposed by the flash manager:
+>>             - led_flash_manager_register_flash
+>>             - led_flash_manager_unregister_flash
+>>             - led_flash_manager_setup_strobe
+>>             - led_flash_manager_bind_async_mux
+>>             - led_flash_manager_unbind_async_mux
+>>     - Addition of a V4L2 Flash sub-device registration helpers
+>>         * added v4l2-flash.c and v4l2-flash.h files with helper
+>>           functions that facilitate registration/unregistration
+>>           of a subdevice, which wrapps a LED subsystem device and
+>>           exposes V4L2 Flash control interface
+>>     - Addition of a LED Flash Class driver for the flash cell of
+>>       the MAX77693 mfd
+>>     - Addition of a LED Flash Class driver for the AAT1290 current
+>>       regulator for flash leds along with its DT binding for the
+>>       exynos4412-trats2 board, where standalone multiplexer is
+>>       used for modifying strobe signal routing - either from the SoC
+>>       GPIO or from a camera sensor. This arrangment is handled
+>>       by the newly introduced Flash Manager functionality.
+>>     - Update of the max77693.txt DT bindings documentation
+>>     - Update of the common leds DT bindings documentation
+>>
+>> ================
+>> Changes since v2
+>> ================
+>>
+>>     - refactored the code so that it is possible to build
+>>       led-core without led-flash module
+>>     - added v4l2-flash ops which slackens dependency from
+>>       the led-flash module
+>>     - implemented led_clamp_align_val function and led_ctrl
+>>       structure which allows to align led control values
+>>       in the manner compatible with V4L2 Flash controls;
+>>       the flash brightness and timeout units have been defined
+>>       as microamperes and microseconds respectively to properly
+>>       support devices which define current and time levels
+>>       as fractions of 1/1000.
+>>     - added support for the flash privacy leds
+>>     - modified LED sysfs locking mechanism - now it locks/unlocks
+>>       the interface on V4L2 Flash sub-device file open/close
+>>     - changed hw_triggered attribute name to external_strobe,
+>>       which maps on the V4L2_FLASH_STROBE_SOURCE_EXTERNAL name
+>>       more intuitively
+>>     - made external_strobe and indicator related sysfs attributes
+>>       created optionally only if related features are declared
+>>       by the led device driver
+>>     - removed from the series patches modifying exynos4-is media
+>>       controller - a proposal for "flash manager" which will take
+>>       care of flash devices registration is due to be submitted
+>>     - removed modifications to the LED class devices documentation,
+>>       it will be covered after the whole functionality is accepted
+>>
+>> ================
+>> Changes since v3
+>> ================
+>>
+>>     - added Flash Manager feature
+>>       - added generic LED Flash Class gpio mux driver
+>>       - added sample async mux driver
+>>       - added of helpers for parsing Flash Manager related
+>>         device tree data
+>>     - added V4L2_CID_FLASH_STROBE_PROVIDER control
+>>     - introduced struct led_classdev_flash, which wrapps
+>>       struct led_classdev
+>>     - made all flash ops, except strobe_set, optional; if an op
+>>       is absent the related sysfs attribute isn't created
+>>     - added LED_DEV_CAP* flags
+>>     - modified v4l2-flash helpers to create v4l2_device
+>>       for v4l2_flash subdevices to register in it
+>>     - modified max77693-flash driver and its DT bindings
+>>       to allow for registering either one or two LED Flash
+>>       Class devices, depending on the device tree settings.
+>>     - added new API for setting torch_brightness
+>>     - extended leds common DT binding documentation
+>>
+>> Issues:
+>>
+>> 1) Who should register V4L2 Flash sub-device?
+>>
+>> LED Flash Class devices, after introduction of the Flash Manager,
+>> are not tightly coupled with any media controller. They are maintained
+>> by the Flash Manager and made available for dynamic assignment to
+>> any media system they are connected to through multiplexing devices.
+>>
+>> In the proposed rough solution, when support for V4L2 Flash sub-devices
+>> is enabled, there is a v4l2_device created for them to register in.
+>> This however implies that V4L2 Flash device will not be available
+>> in any media controller, which calls its existence into question.
+>>
+>> Therefore I'd like to consult possible ways of solving this issue.
+>> The option I see is implementing a mechanism for moving V4L2 Flash
+>> sub-devices between media controllers. A V4L2 Flash sub-device
+>> would initially be assigned to one media system in the relevant
+>> device tree binding, but it could be dynamically reassigned to
+>> the other one. However I'm not sure if media controller design
+>> is prepared for dynamic modifications of its graph and how many
+>> modifications in the existing drivers this solution would require.
+>>
+>> 2) Consequences of locking the Flash Manager during flash strobe
+>>
+>> In case a LED Flash Class device depends on muxes involved in
+>> routing the other LED Flash Class device's strobe signals,
+>> the Flash Manager must be locked for the time of strobing
+>> to prevent reconfiguration of the strobe signal routing
+>> by the other device.
+>>
+>> A blocking_strobe sysfs attribute was added to indicate whether
+>> this is the case for the device.
+>>
+>> Nonetheless, this modifies behaviour of led_set_external_strobe
+>> API, which also must block the caller for the time of strobing
+>> to protect the strobe signal routing while the external strobe
+>> signal provider asserts the flash_en pin.
+>>
+>> Use case for user space application would be following in this case:
+>>   - spawn a new thread in which external strobe is activated
+>>   - in the parent thread instruct the external strobe provider
+>>     to strobe the flash
+>>
+>> As an improvement there could be an op added for notifying
+>> the application that the strobe signal routing has been
+>> set up. It would have to be called from the function
+>> led_flash_manager_setup_strobe after led_flash_manager_set_external_strobe
+>> returns.
+>>
+>> The blocking_strobe attribute would have to be also
+>> mapped to a new V4L2 Flash control. Unfortunately it poses
+>> a problem for the existing users of the V4L2 Flash API
+>> which are not aware that setting V4L2_CID_FLASH_STROBE_SOURCE
+>> may be blocking.
+>>
+>> As a solution led_set_external_strobe API could be extended
+>> by a parameter telling whether the caller is prepared for
+>> the blocking call. led_flash_manager_setup_strobe should
+>> be extended accordingly then.
+>> In V4L2 "V4L2_FLASH_STROBE_SOURCE_EXTERNAL_BLOCKING" menu item
+>> could be added to handle this.
+>> With existing V4L2_FLASH_STROBE_SOURCE_EXTERNAL the flash manager
+>> wouldn't protect muxes against reconfiguration.
+>>
+>> TODO:
+>>   - switch to using V4L2 array controls
+>>   - add s_power op to the LED Flash Class
+>>
+>>
+>> I will be off-line for three weeks from now on and will respond
+>> to any questions after getting back.
+>>
+>>
+>> Thanks,
+>> Jacek Anaszewski
+>>
+>> Jacek Anaszewski (21):
+>>   leds: make brightness type consistent across whole subsystem
+>>   leds: implement sysfs interface locking mechanism
+>>   leds: Improve and export led_update_brightness
+>>   leds: Reorder include directives
+>>   leds: avoid using deprecated DEVICE_ATTR macro
+>>   leds: add API for setting torch brightness
+>>   of: add of_node_ncmp wrapper
+>>   leds: Add sysfs and kernel internal API for flash LEDs
+>>   Documentation: leds: Add description of LED Flash Class extension
+>>   Documentation: leds: add exemplary asynchronous mux driver
+>>   DT: leds: Add flash led devices related properties
+>>   DT: Add documentation for LED Class Flash Manger
+>>   v4l2-device: add v4l2_device_register_subdev_node API
+>>   v4l2-ctrls: add control for flash strobe signal providers
+>>   media: Add registration helpers for V4L2 flash
+>>   leds: Add support for max77693 mfd flash cell
+>>   DT: Add documentation for the mfd Maxim max77693
+>>   leds: Add driver for AAT1290 current regulator
+>>   of: Add Skyworks Solutions, Inc. vendor prefix
+>>   DT: Add documentation for the Skyworks AAT1290
+>>   ARM: dts: add aat1290 current regulator device node
+>>
+>>  Documentation/DocBook/media/v4l/controls.xml       |   11 +
+>>  Documentation/devicetree/bindings/leds/common.txt  |   16 +
+>>  .../devicetree/bindings/leds/leds-aat1290.txt      |   17 +
+>>  .../bindings/leds/leds-flash-manager.txt           |  165 +++
+>>  Documentation/devicetree/bindings/mfd/max77693.txt |   62 ++
+>>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>>  Documentation/leds/leds-async-mux.c                |   65 ++
+>>  Documentation/leds/leds-class-flash.txt            |  126 +++
+>>  arch/arm/boot/dts/exynos4412-trats2.dts            |   24 +
+>>  drivers/leds/Kconfig                               |   28 +
+>>  drivers/leds/Makefile                              |    7 +
+>>  drivers/leds/led-class-flash.c                     |  715 +++++++++++++
+>>  drivers/leds/led-class.c                           |   58 +-
+>>  drivers/leds/led-core.c                            |   51 +-
+>>  drivers/leds/led-flash-gpio-mux.c                  |  102 ++
+>>  drivers/leds/led-flash-manager.c                   |  698 +++++++++++++
+>>  drivers/leds/led-triggers.c                        |   16 +-
+>>  drivers/leds/leds-aat1290.c                        |  455 +++++++++
+>>  drivers/leds/leds-max77693.c                       | 1070 ++++++++++++++++++++
+>>  drivers/leds/of_led_flash_manager.c                |  155 +++
+>>  drivers/media/v4l2-core/Kconfig                    |   11 +
+>>  drivers/media/v4l2-core/Makefile                   |    2 +
+>>  drivers/media/v4l2-core/v4l2-ctrls.c               |    2 +
+>>  drivers/media/v4l2-core/v4l2-device.c              |   63 +-
+>>  drivers/media/v4l2-core/v4l2-flash.c               |  580 +++++++++++
+>>  drivers/mfd/max77693.c                             |    5 +-
+>>  include/linux/led-class-flash.h                    |  290 ++++++
+>>  include/linux/led-flash-gpio-mux.h                 |   68 ++
+>>  include/linux/led-flash-manager.h                  |  121 +++
+>>  include/linux/leds.h                               |   73 +-
+>>  include/linux/mfd/max77693.h                       |   40 +
+>>  include/linux/of.h                                 |    1 +
+>>  include/linux/of_led_flash_manager.h               |   80 ++
+>>  include/media/v4l2-device.h                        |    7 +
+>>  include/media/v4l2-flash.h                         |  137 +++
+>>  include/uapi/linux/v4l2-controls.h                 |    2 +
+>>  36 files changed, 5272 insertions(+), 52 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/leds/leds-aat1290.txt
+>>  create mode 100644 Documentation/devicetree/bindings/leds/leds-flash-manager.txt
+>>  create mode 100644 Documentation/leds/leds-async-mux.c
+>>  create mode 100644 Documentation/leds/leds-class-flash.txt
+>>  create mode 100644 drivers/leds/led-class-flash.c
+>>  create mode 100644 drivers/leds/led-flash-gpio-mux.c
+>>  create mode 100644 drivers/leds/led-flash-manager.c
+>>  create mode 100644 drivers/leds/leds-aat1290.c
+>>  create mode 100644 drivers/leds/leds-max77693.c
+>>  create mode 100644 drivers/leds/of_led_flash_manager.c
+>>  create mode 100644 drivers/media/v4l2-core/v4l2-flash.c
+>>  create mode 100644 include/linux/led-class-flash.h
+>>  create mode 100644 include/linux/led-flash-gpio-mux.h
+>>  create mode 100644 include/linux/led-flash-manager.h
+>>  create mode 100644 include/linux/of_led_flash_manager.h
+>>  create mode 100644 include/media/v4l2-flash.h
+>>
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
