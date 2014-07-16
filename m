@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934803AbaGPGlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 02:41:20 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:61670 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933132AbaGPGlS (ORCPT
+	id S1030305AbaGPGn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 02:43:26 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:42694 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875AbaGPGnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 02:41:18 -0400
-Date: Wed, 16 Jul 2014 09:41:11 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, x86@kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
-Message-ID: <20140716064110.GV18167@minantech.com>
-References: <cover.1405477965.git.luto@amacapital.net>
+	Wed, 16 Jul 2014 02:43:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1405477965.git.luto@amacapital.net>
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Wed, 16 Jul 2014 08:43:22 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: shawn.guo@freescale.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
+In-Reply-To: <53C5398F.2000005@pengutronix.de>
+References: <cover.1405428166.git.stefan@agner.ch>
+ <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch>
+ <53C5398F.2000005@pengutronix.de>
+Message-ID: <1b8a8ca03b4a160027a79b722f697e25@agner.ch>
+User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 07:48:06PM -0700, Andy Lutomirski wrote:
-> virtio-rng is both too complicated and insufficient for initial rng
-> seeding.  It's far too complicated to use for KASLR or any other
-> early boot random number needs.  It also provides /dev/random-style
-> bits, which means that making guest boot wait for virtio-rng is
-> unacceptably slow, and doing it asynchronously means that
-> /dev/urandom might be predictable when userspace starts.
+Am 2014-07-15 16:24, schrieb Marc Kleine-Budde:
+<snip>
+>> @@ -150,18 +171,20 @@
+>>   * FLEXCAN hardware feature flags
+>>   *
+>>   * Below is some version info we got:
+>> - *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT
+>> - *                                Filter?   connected?
+>> - *   MX25  FlexCAN2  03.00.00.00     no         no
+>> - *   MX28  FlexCAN2  03.00.04.00    yes        yes
+>> - *   MX35  FlexCAN2  03.00.00.00     no         no
+>> - *   MX53  FlexCAN2  03.00.00.00    yes         no
+>> - *   MX6s  FlexCAN3  10.00.12.00    yes        yes
+>> + *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT  Memory err
+>> + *                                Filter?   connected?  detection
+>> + *   MX25  FlexCAN2  03.00.00.00     no         no         no
+>> + *   MX28  FlexCAN2  03.00.04.00    yes        yes         no
+>> + *   MX35  FlexCAN2  03.00.00.00     no         no         no
+>> + *   MX53  FlexCAN2  03.00.00.00    yes         no         no
+>> + *   MX6s  FlexCAN3  10.00.12.00    yes        yes         no
+>> + *   VF610 FlexCAN3  ?               no         no        yes
+>                                         ^^         ^^
 > 
-> This introduces a very simple synchronous mechanism to get
-> /dev/urandom-style bits.
-Why can't you use RDRAND instruction for that?
+> Can you check the datasheet if the flexcan core has a "Glitch Filter
+> Width Register (FLEXCANx_GFWR)"
 
-> 
-> This is a KVM change: am I supposed to write a unit test somewhere?
-> 
-> Andy Lutomirski (4):
->   x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
->   random,x86: Add arch_get_slow_rng_u64
->   random: Seed pools from arch_get_slow_rng_u64 at startup
->   x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
-> 
->  Documentation/virtual/kvm/cpuid.txt  |  3 +++
->  arch/x86/Kconfig                     |  4 ++++
->  arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++++++++++++++++
->  arch/x86/include/asm/archslowrng.h   | 30 ++++++++++++++++++++++++++++++
->  arch/x86/include/uapi/asm/kvm_para.h |  2 ++
->  arch/x86/kernel/kvm.c                | 22 ++++++++++++++++++++++
->  arch/x86/kvm/cpuid.c                 |  3 ++-
->  arch/x86/kvm/x86.c                   |  4 ++++
->  drivers/char/random.c                | 14 +++++++++++++-
->  include/linux/random.h               |  9 +++++++++
->  10 files changed, 116 insertions(+), 2 deletions(-)
->  create mode 100644 arch/x86/include/asm/archslowrng.h
-> 
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+There is no such register called GFWR/Glitch Filter or similar.
+
+> Can you check if the core generates a warning interrupt with the current
+> setup, if you don't switch on bus error reporting? This means internally
+> the [TR]WRN_INT is connected and works as specified.
+
+Ok, so I disabled TWRNMSK (Bit 11) in the control register and printed
+out the error and status register (ESR1), this is what I get:
+[  191.285295] flexcan_irq, esr=00040080
+[  191.288996] flexcan_irq, ctrl=17092051
+
+Bit 17 (TWRNINT) is not set while TWRNMSK is disabled. Hence [TR]WRN_INT
+is not connected?
+
 
 --
-			Gleb.
+Stefan
