@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759607AbaGPNsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:48:06 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:48187 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaGPNsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:48:03 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Wed, 16 Jul 2014 09:53:08 -0400 (EDT)
-To: Andi Kleen <ak@linux.intel.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [patch] perf: use proper dTLB-load-misses event on Ivybridge
-In-Reply-To: <20140714195259.GD5803@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.11.1407160951380.22286@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1407141528200.17214@vincent-weaver-1.umelst.maine.edu> <20140714195259.GD5803@tassilo.jf.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934260AbaGPNtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:49:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55871 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759641AbaGPNs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:48:56 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH V4 04/15] mm, compaction: do not recheck suitable_migration_target under lock
+Date: Wed, 16 Jul 2014 15:48:12 +0200
+Message-Id: <1405518503-27687-5-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Andi Kleen wrote:
+isolate_freepages_block() rechecks if the pageblock is suitable to be a target
+for migration after it has taken the zone->lock. However, the check has been
+optimized to occur only once per pageblock, and compact_checklock_irqsave()
+might be dropping and reacquiring lock, which means somebody else might have
+changed the pageblock's migratetype meanwhile.
 
-> On Mon, Jul 14, 2014 at 03:33:25PM -0400, Vince Weaver wrote:
-> > 
-> > This was discussed back in February 
-> > 	https://lkml.org/lkml/2014/2/18/956
-> > But I never saw a patch come out of it.
-> > 
-> > On Ivybridge we share the Sandybridge cache event tables, but the
-> > dTLB-load-miss event is not compatible.  Patch it up after
-> > the fact to the proper DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK
-> 
-> There is much more wrong. I've been working on revamping the whole
-> tables.
+Furthermore, nothing prevents the migratetype to change right after
+isolate_freepages_block() has finished isolating. Given how imperfect this is,
+it's simpler to just rely on the check done in isolate_freepages() without
+lock, and not pretend that the recheck under lock guarantees anything. It is
+just a heuristic after all.
 
-any ETA on that?
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-The whole concept of generic events making life easier for casual users 
-goes out the window if we're going to let them run experiments with bogus 
-events.
+diff --git a/mm/compaction.c b/mm/compaction.c
+index f3ae2ec..0a871e5 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -276,7 +276,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	struct page *cursor, *valid_page = NULL;
+ 	unsigned long flags;
+ 	bool locked = false;
+-	bool checked_pageblock = false;
+ 
+ 	cursor = pfn_to_page(blockpfn);
+ 
+@@ -307,18 +306,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		if (!locked)
+ 			break;
+ 
+-		/* Recheck this is a suitable migration target under lock */
+-		if (!strict && !checked_pageblock) {
+-			/*
+-			 * We need to check suitability of pageblock only once
+-			 * and this isolate_freepages_block() is called with
+-			 * pageblock range, so just check once is sufficient.
+-			 */
+-			checked_pageblock = true;
+-			if (!suitable_migration_target(page))
+-				break;
+-		}
+-
+ 		/* Recheck this is a buddy page under lock */
+ 		if (!PageBuddy(page))
+ 			goto isolate_fail;
+-- 
+1.8.4.5
 
-If the IVB events are wrong we should just zero them out and give ENOENT 
-for the entire lot of them rather than pretend like the kernel has useful 
-event definitions.
-
-Vince
