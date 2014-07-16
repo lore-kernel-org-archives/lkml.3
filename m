@@ -1,155 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934252AbaGPHeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:34:23 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47240 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933573AbaGPHeU (ORCPT
+	id S1759395AbaGPHgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:36:17 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54767 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755AbaGPHgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:34:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53C62AAF.7060509@jp.fujitsu.com>
-Date: Wed, 16 Jul 2014 16:33:03 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 03:36:15 -0400
+Message-ID: <53C62B68.50702@redhat.com>
+Date: Wed, 16 Jul 2014 09:36:08 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>
-CC: <x86@kernel.org>, <toshi.kani@hp.com>, <imammedo@redhat.com>,
-        <bp@alien8.de>, <huawei.libin@huawei.com>,
-        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
-        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
-        <peterz@infradead.org>
-Subject: [PATCH v2] x86,cpu-hotplug: assign same CPU number to readded CPU
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Daniel Borkmann <dborkman@redhat.com>, Gleb Natapov <gleb@kernel.org>
+CC: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        x86@kernel.org, Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/4] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+References: <cover.1405477965.git.luto@amacapital.net> <20140716064110.GV18167@minantech.com> <53C62563.6050106@redhat.com>
+In-Reply-To: <53C62563.6050106@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-llc_shared_map is not cleared even if CPU is offline or hot removed.
-So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
-the mask has wrong value. The mask is used by CSF schduler to create
-sched_domain. So it breaks CFS scheduler.
+Il 16/07/2014 09:10, Daniel Borkmann ha scritto:
+> On 07/16/2014 08:41 AM, Gleb Natapov wrote:
+>> On Tue, Jul 15, 2014 at 07:48:06PM -0700, Andy Lutomirski wrote:
+>>> virtio-rng is both too complicated and insufficient for initial rng
+>>> seeding.  It's far too complicated to use for KASLR or any other
+>>> early boot random number needs.  It also provides /dev/random-style
+>>> bits, which means that making guest boot wait for virtio-rng is
+>>> unacceptably slow, and doing it asynchronously means that
+>>> /dev/urandom might be predictable when userspace starts.
+>>>
+>>> This introduces a very simple synchronous mechanism to get
+>>> /dev/urandom-style bits.
+>>
+>> Why can't you use RDRAND instruction for that?
+>
+> You mean using it directly? I think simply for the very same reasons
+> as in c2557a303a ...
 
-Here is a example on my system.
-My system has 4 sockets and each socket has 15 cores and HT is enabled.
-In this case, each core of sockes is numbered as follows:
+No, this is very different.  This mechanism "provides no guarantee that 
+the result contains any actual entropy".  In fact, patch 3 adds a call 
+to the new arch_get_slow_rng_u64 just below a call to 
+arch_get_random_lang aka RDRAND.  I agree with Gleb that it's simpler to 
+just expect a relatively recent processor and use RDRAND.
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-44, 90-104
-Socket#3 | 45-59, 105-119
+BTW, the logic for crediting entropy to RDSEED but not RDRAND escapes 
+me.  If you trust the processor, you could use Intel's algorithm to 
+force reseeding of RDRAND.  If you don't trust the processor, the same 
+paranoia applies to RDRAND and RDSEED.
 
-Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-It means that last level cache of Socket#2 is shared with
-CPU#30-44 and 90-104.
+In a guest you must trust the hypervisor anyway to use RDRAND or RDSEED, 
+since the hypervisor can trap it.  A malicious hypervisor is no 
+different from a malicious processor.
 
-When hot-removing socket#2 and #3, each core of sockets is numbered
-as follows:
+In any case, is there a matching QEMU patch somewhere?
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-
-But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-having 0x3fff80000001fffc0000000.
-
-After that, when hot-adding socket#2 and #3, each core of sockets is
-numbered as follows:
-
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-59
-Socket#3 | 90-119
-
-Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-It means that last level cache of Socket#2 is shared with CPU#30-59
-and 90-104. So the mask has wrong value.
-
-At first, I cleared hot-removed CPU number's bit from llc_shared_map
-when hot removing CPU. But Borislav suggested that the problem will
-disappear if readded CPU is assigned same CPU number. And llc_shared_map
-must not be changed.
-
-So the patch assigns same CPU number to readded CPU by linking CPU
-number to APIC ID. And by the patch, the problem disappers.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Suggested-by: Borislav Petkov <bp@alien8.de1>
----
-v2: change cpuid to cpunum
----
-  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
-  1 file changed, 32 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index ad28db7..5dc3e50 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -220,6 +220,23 @@ static void apic_pm_activate(void);
-  static unsigned long apic_phys;
-
-  /*
-+ * Bind ACPI ID to Logical CPU number
-+ * Logical CPU number to APIC ID does not change by this array
-+ * even if CPU is hotplugged. So don't clear the array even if
-+ * CPU is hot-removed
-+ */
-+static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
-+	[0 ... MAX_LOCAL_APIC-1] = -1,
-+};
-+
-+/*
-+ * Represent Logical CPU number bound to APIC ID
-+ * Don't clear a bit even if CPU is hot-removed
-+ */
-+static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
-+static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
-+
-+/*
-   * Get the LAPIC version
-   */
-  static inline int lapic_get_version(void)
-@@ -2122,6 +2139,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
-  	apic_write(APIC_LVT1, value);
-  }
-
-+static int get_cpunum(int apicid)
-+{
-+	int cpu;
-+
-+	cpu = apicid_to_cpunum[apicid];
-+	if (cpu < 0)
-+		cpu = cpumask_next_zero(-1, cpu_used_mask);
-+
-+	return cpu;
-+}
-+
-  int generic_processor_info(int apicid, int version)
-  {
-  	int cpu, max = nr_cpu_ids;
-@@ -2199,7 +2227,9 @@ int generic_processor_info(int apicid, int version)
-  		 */
-  		cpu = 0;
-  	} else
--		cpu = cpumask_next_zero(-1, cpu_present_mask);
-+		cpu = get_cpunum(apicid);
-+
-+	apicid_to_cpunum[apicid] = cpu;
-
-  	/*
-  	 * Validate version
-@@ -2228,6 +2258,7 @@ int generic_processor_info(int apicid, int version)
-  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
-  		apic->x86_32_early_logical_apicid(cpu);
-  #endif
-+	cpumask_set_cpu(cpu, cpu_used_mask);
-  	set_cpu_possible(cpu, true);
-  	set_cpu_present(cpu, true);
-
-
+Paolo
