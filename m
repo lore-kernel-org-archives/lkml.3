@@ -1,321 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934593AbaGPP62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:58:28 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60967 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932888AbaGPP6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:58:25 -0400
-Date: Wed, 16 Jul 2014 11:58:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
-Message-ID: <20140716155814.GZ29639@cmpxchg.org>
-References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
+	id S965466AbaGPQAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:00:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40641 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932888AbaGPQAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:00:20 -0400
+Date: Wed, 16 Jul 2014 16:59:05 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 1/4] asm-generic: Add dma-contiguous.h
+Message-ID: <20140716155905.GS29414@arm.com>
+References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+ <1405525892-60383-2-git-send-email-Zubair.Kakakhel@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1405525892-60383-2-git-send-email-Zubair.Kakakhel@imgtec.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
-> Starting with 8f9ac36d2cbb (cgroup: distinguish the default and legacy
-> hierarchies when handling cftypes) memory cgroup controller doesn't
-> export any knobs because all of them are marked as legacy. The idea is
-> that only selected knobs are exported for the new cgroup API.
+On Wed, Jul 16, 2014 at 04:51:29PM +0100, Zubair Lutfullah Kakakhel wrote:
+> This header is used by arm64 and x86 individually.
 > 
-> This patch exports the core knobs for the memory controller. The
-> following knobs are not and won't be available in the default (aka
-> unified) hierarchy:
-> - use_hierarchy - was one of the biggest mistakes when memory controller
->   was introduced. It allows for creating hierarchical cgroups structure
->   which doesn't have any hierarchical accounting. This leads to really
->   strange configurations where other co-mounted controllers behave
->   hierarchically while memory controller doesn't.
->   All controllers have to be hierarchical with the new cgroups API so
->   this knob doesn't make any sense here.
-> - force_empty - has been introduced primarily to drop memory before it
->   gets reparented on the group removal.  This alone doesn't sound
->   fully justified because reparented pages which are not in use can be
->   reclaimed also later when there is a memory pressure on the parent
->   level.
->   Another use-case would be something like per-memcg /proc/sys/vm/drop_caches
->   which doesn't sound like a great idea either. We are trying to get
->   away from using it on the global level so we shouldn't allow that on
->   per-memcg level as well.
-> - soft_limit_in_bytes - has been originally introduced to help to
->   recover from the overcommit situations where the overall hard limits
->   on the system are higher than the available memory. A group which has
->   the largest excess on the soft limit is reclaimed to help to reduce
->   memory pressure during the global memory pressure.
->   The primary problem with this tunable is that every memcg is soft
->   unlimited by default which is reverse to what would be expected from
->   such a knob.
->   Another problem is that soft limit is considered only during the
->   global memory pressure rather than on an external memory pressure in
->   general (e.g. triggered by the limit hit on a parent up the
->   hierarchy).
->   There are other issues which are tight to the implementation (e.g.
->   priority-0 reclaim used for the soft limit reclaim etc.) which are
->   really hard to fix without breaking potential users.
->   There will be a replacement for the soft limit in the unified
->   hierarchy and users will be encouraged to switch their configuration
->   to the new scheme. Until this is available users are suggested to stay
->   with the legacy cgroup API.
+> Adding to asm-generic to avoid further code repetition while adding cma
+> to mips.
 > 
-> TCP kmem sub-controller is not exported at this stage because this one has
-> seen basically no traction since it was merged and it is not entirely
-> clear why kmem controller cannot be used for the same purpose. Having 2
-> controllers for tracking kernel memory allocations sounds like too much.
-> If there are use-cases and reasons for not merging it into kmem then we
-> can reconsider and allow it for the new cgroups API later.
-
-There is a reason why we start out empty on the default hierarchy: the
-old interface is a complete cesspool.  We're not blindly carrying over
-any of it.
-
-Everything that is added in .dfl_ctypes is a new interface and it
-needs to be treated as such: it needs a valid usecase to back it up,
-and it needs to be evaluated whether the exported information or
-control knob is a good way to support that usecase.
-
-> @@ -5226,7 +5226,11 @@ out_kfree:
->  	return ret;
->  }
->  
-> -static struct cftype mem_cgroup_files[] = {
-> +/*
-> + * memcg knobs for the legacy cgroup API. No new files should be
-> + * added here.
-> + */
-> +static struct cftype legacy_mem_cgroup_files[] = {
->  	{
->  		.name = "usage_in_bytes",
->  		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
-> @@ -5334,6 +5338,100 @@ static struct cftype mem_cgroup_files[] = {
->  	{ },	/* terminate */
->  };
->  
-> +/* memcg knobs for new cgroups API (default aka unified hierarchy) */
-> +static struct cftype dfl_mem_cgroup_files[] = {
-> +	{
-> +		.name = "usage_in_bytes",
-> +		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
-> +		.read_u64 = mem_cgroup_read_u64,
-> +	},
-
-The _in_bytes suffix is pointless, we just need to document that
-everything in memcg is in bytes, unless noted otherwise.
-
-How about "memory.current"?
-
-> +	{
-> +		.name = "max_usage_in_bytes",
-> +		.private = MEMFILE_PRIVATE(_MEM, RES_MAX_USAGE),
-> +		.write = mem_cgroup_reset,
-> +		.read_u64 = mem_cgroup_read_u64,
-
-What is this actually good for?  We have lazy cache shrinking, which
-means that the high watermark of most workloads depends on the group
-max limit.
-
-> +	},
-> +	{
-> +		.name = "limit_in_bytes",
-> +		.private = MEMFILE_PRIVATE(_MEM, RES_LIMIT),
-> +		.write = mem_cgroup_write,
-> +		.read_u64 = mem_cgroup_read_u64,
-> +	},
-
-We already agreed that there will be a max, a high, a min, and a low
-limit, why would you want to reintroduce the max limit as "limit"?
-
-How about "memory.max"?
-
-memory.min
-memory.low
-memory.high
-memory.max
-memory.current
-
-> +	{
-> +		.name = "failcnt",
-> +		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
-> +		.write = mem_cgroup_reset,
-> +		.read_u64 = mem_cgroup_read_u64,
-> +	},
-
-This indicates the number of times the function res_counter_charge()
-was called and didn't succeed.
-
-Let that sink in.
-
-This is way too dependent on the current implementation.  If you want
-a measure of how much pressure the group is under, look at vmpressure,
-or add scanned/reclaimed reclaim statistics.  NAK.
-
-> +	{
-> +		.name = "stat",
-> +		.seq_show = memcg_stat_show,
-> +	},
-
-This file is a complete mess.
-
-pgpgin/pgpgout originally refers to IO, here it means pages charged
-and uncharged.  It's questionable whether we even need counters for
-charges and uncharges.
-
-mapped_file vs. NR_FILE_MAPPED is another eyesore.
-
-We should generally try harder to be consistent with /proc/vmstat.
-And rename it to "memory.vmstat" while we are at it.
-
-Also, having local counters no longer makes sense as there won't be
-tasks in intermediate nodes anymore and we are getting rid of
-reparenting.  All counters should appear once, in their hierarchical
-form.  The exception is the root_mem_cgroup, which should probably
-have a separate file for the local counters.
-
-> +	{
-> +		.name = "cgroup.event_control",		/* XXX: for compat */
-> +		.write = memcg_write_event_control,
-> +		.flags = CFTYPE_NO_PREFIX,
-> +		.mode = S_IWUGO,
-
-Why?
-
-> +	},
-> +	{
-> +		.name = "swappiness",
-> +		.read_u64 = mem_cgroup_swappiness_read,
-> +		.write_u64 = mem_cgroup_swappiness_write,
-
-Do we actually need this?
-
-> +	},
-> +	{
-> +		.name = "move_charge_at_immigrate",
-> +		.read_u64 = mem_cgroup_move_charge_read,
-> +		.write_u64 = mem_cgroup_move_charge_write,
-
-This creates significant pain because pc->mem_cgroup becomes a moving
-target during the lifetime of the page.  When this feature was added,
-there was no justification - except that "some users feel [charges
-staying in the group] to be strange" - and it was lacking the
-necessary synchronization to make this work properly, so the cost of
-this feature was anything but obvious during the initial submission.
-
-I generally don't see why tasks should be moving between groups aside
-from the initial setup phase.  And then they shouldn't have consumed
-any amounts of memory that they couldn't afford to leave behind in the
-root/parent.
-
-So what is the usecase for this that would justify the immense cost in
-terms of both performance and code complexity?
-
-> +	},
-> +	{
-> +		.name = "oom_control",
-> +		.seq_show = mem_cgroup_oom_control_read,
-> +		.write_u64 = mem_cgroup_oom_control_write,
-> +		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
-
-This needs a usecase description as well.
-
-> +	},
-> +	{
-> +		.name = "pressure_level",
-
-"memory.pressure"?
-
-> +	},
-> +#ifdef CONFIG_NUMA
-> +	{
-> +		.name = "numa_stat",
-> +		.seq_show = memcg_numa_stat_show,
-> +	},
-
-This would also be a chance to clean up this file, which is suddenly
-specifying memory size in pages rather than bytes.
-
-> +#ifdef CONFIG_MEMCG_KMEM
-> +	{
-> +		.name = "kmem.limit_in_bytes",
-> +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-> +		.write = mem_cgroup_write,
-> +		.read_u64 = mem_cgroup_read_u64,
-> +	},
-
-Does it really make sense to have a separate limit for kmem only?
-IIRC, the reason we introduced this was that this memory is not
-reclaimable and so we need to limit it.
-
-But the opposite effect happened: because it's not reclaimable, the
-separate kmem limit is actually unusable for any values smaller than
-the overall memory limit: because there is no reclaim mechanism for
-that limit, once you hit it, it's over, there is nothing you can do
-anymore.  The problem isn't so much unreclaimable memory, the problem
-is unreclaimable limits.
-
-If the global case produces memory pressure through kernel memory
-allocations, we reclaim page cache, anonymous pages, inodes, dentries
-etc.  I think the same should happen for kmem: kmem should just be
-accounted and limited in the overall memory limit of a group, and when
-pressure arises, we go after anything that's reclaimable.
-
-> +	{
-> +		.name = "kmem.max_usage_in_bytes",
-> +		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
-> +		.write = mem_cgroup_reset,
-> +		.read_u64 = mem_cgroup_read_u64,
-
-As per above, I don't see that a high watermark is meaningful with
-lazy cache shrinking.
-
-> +	{
-> +		.name = "kmem.usage_in_bytes",
-> +		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
-> +		.read_u64 = mem_cgroup_read_u64,
-> +	},
-
-We could just include slab counters, kernel stack pages etc. in the
-statistics file, like /proc/vmstat does.
-
-> +	{
-> +		.name = "kmem.failcnt",
-> +		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
-> +		.write = mem_cgroup_reset,
-> +		.read_u64 = mem_cgroup_read_u64,
-
-NAK as per above.
-
-> +#ifdef CONFIG_SLABINFO
-> +	{
-> +		.name = "kmem.slabinfo",
-> +		.seq_show = mem_cgroup_slabinfo_read,
-> +	},
-> +#endif
-> +#endif
-> +	{ },	/* terminate */
-> +};
+> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+> ---
+>  include/asm-generic/dma-contiguous.h | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+>  create mode 100644 include/asm-generic/dma-contiguous.h
+> 
+> diff --git a/include/asm-generic/dma-contiguous.h b/include/asm-generic/dma-contiguous.h
+> new file mode 100644
+> index 0000000..292c571
+> --- /dev/null
+> +++ b/include/asm-generic/dma-contiguous.h
+> @@ -0,0 +1,9 @@
+> +#ifndef _ASM_GENERIC_DMA_CONTIGUOUS_H
+> +#define _ASM_GENERIC_DMA_CONTIGUOUS_H
 > +
->  #ifdef CONFIG_MEMCG_SWAP
->  static struct cftype memsw_cgroup_files[] = {
->  	{
-> @@ -6266,7 +6364,8 @@ struct cgroup_subsys memory_cgrp_subsys = {
->  	.cancel_attach = mem_cgroup_cancel_attach,
->  	.attach = mem_cgroup_move_task,
->  	.bind = mem_cgroup_bind,
-> -	.legacy_cftypes = mem_cgroup_files,
-> +	.legacy_cftypes = legacy_mem_cgroup_files,
-> +	.dfl_cftypes = dfl_mem_cgroup_files,
+> +#include <linux/types.h>
+> +
+> +static inline void
+> +dma_contiguous_early_fixup(phys_addr_t base, unsigned long size) { }
+> +
+> +#endif
+
+  Acked-by: Will Deacon <will.deacon@arm.com>
+
+Will
