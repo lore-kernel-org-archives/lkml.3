@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933485AbaGPAXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 20:23:54 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:55885 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759265AbaGPAXw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 20:23:52 -0400
+	id S933688AbaGPAYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 20:24:25 -0400
+Received: from ozlabs.org ([103.22.144.67]:47599 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933513AbaGPAYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 20:24:21 -0400
+Date: Wed, 16 Jul 2014 10:24:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [PATCH 3.15 14/84] serial: imx: Fix build breakage
+Message-ID: <20140716102414.337e58ce@canb.auug.org.au>
+In-Reply-To: <20140715231713.621762682@linuxfoundation.org>
+References: <20140715231713.193785557@linuxfoundation.org>
+	<20140715231713.621762682@linuxfoundation.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1405406114.13503.40.camel@iivanov-dev>
-References: <1404782785-1824-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1404782785-1824-3-git-send-email-bjorn.andersson@sonymobile.com>
-	<CACRpkdZ2hekBGe1-9GV-amqi50heghWhXJ9raW7P_Nif_Ci88g@mail.gmail.com>
-	<CAJAp7OghZoTXutxw7hAsq1XA_wAhOXDNFO0tz8u9ceQ1fD9W1w@mail.gmail.com>
-	<CACRpkdai=q3nmPk5OWQWn_UMdXmqcbFXJ90rxREBG9k6gdy88Q@mail.gmail.com>
-	<53C095EA.90000@codeaurora.org>
-	<1405346335.13503.25.camel@iivanov-dev>
-	<53C449A3.2010404@codeaurora.org>
-	<1405406114.13503.40.camel@iivanov-dev>
-Date: Tue, 15 Jul 2014 17:23:51 -0700
-Message-ID: <CAJAp7OjU=FFdGKHPqovz+qrEhDCZ3E=uOSAOFbgYyLE01C9cPg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pinctrl: Device tree bindings for Qualcomm pm8xxx
- gpio block
-From: Bjorn Andersson <bjorn@kryo.se>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/6td9aHF6MDioJ97cE+p4+hZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 11:35 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> On Mon, 2014-07-14 at 14:20 -0700, Stephen Boyd wrote:
-[..]
->> Isn't this document only for the gpios? I think you're talking about the
->> MPPs, which also exist on these generation of pmics. We should probably
->> avoid mixing the two (gpios and mpps) in one binding because they're
->> really different hardware.
+--Sig_/6td9aHF6MDioJ97cE+p4+hZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi Greg,
+
+On Tue, 15 Jul 2014 16:17:11 -0700 Greg Kroah-Hartman <gregkh@linuxfoundati=
+on.org> wrote:
 >
-> I don't know. For me "gpio" looks like function of the pin hardware.
->
->>
->> >  So I will like
->> > to keep "function" property for selecting one of the above functions.
->> > Choosing between "normal", "paired"... options in QPNP pinctrl driver
->> > is supported trough passing values, defined in DT header file, to
->> > "output-high" property. Please don't kill me :-).
->>
->> Overloading output-high to choose the MPP mode doesn't seem to follow
->> the generic pinconfig binding. Does output-high even take a value? Why
->> can't we use the function property?
->
-> No, no.  using value of the output-high|low" is just to select
-> "normal", "paired"... thing. Function selection is via "function"
-> property. Currently QPNP support following functions "gpio", "mpp-ain",
-> "mpp-aout", "mpp-cs".
->
+> 3.15-stable review patch.  If anyone has any objections, please let me kn=
+ow.
+>=20
+> ------------------
+>=20
+> From: Peter Hurley <peter@hurleysoftware.com>
+>=20
+> commit 8bec751bd63847b4044aab8b215db52aa6abde61 upstream.
+>=20
+> Fix breakage introduced by
+> commit c557d392fbf5badd693ea1946a4317c87a26a716,
+> 'serial: Test for no tx data on tx restart'.
 
-Hi Ivan,
+That commit only entered Linus' tree at v3.16-rc5, so this fix
+shouldn't need to go into 3.15-stable (unless the original patch was
+backported as well - in which case maybe the backport commit id should
+be mentioned as well).
 
->From your comment I presume that you don't have access to the
-documentation for these blocks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The pmic sports two types of pins; gpios and mpps (multi-purpose-pin).
-These are different hardware blocks; i.e. not a configuration thing.
+--Sig_/6td9aHF6MDioJ97cE+p4+hZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-The gpios can be input, output or both and they can be configured as
-gpio, paired, function 1 or function 2 (+ some test modes). So here it
-makes sense to have the functions "gpio", "paired" and the valid
-function combinations.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-The mpps can be input, output or both; in either digital or analog
-mode. Or they can be a current sink. When configured as analog input
-you select which adc the pin should be routed to. Here it makes sense
-to have the functions "digital", "analog" and "current-sink" I think.
+iQIcBAEBCAAGBQJTxcYyAAoJEMDTa8Ir7ZwVx0gP/R2oWgygFOkNWn127m/snVn9
+O5/32fPiwHJdlRQOZifx6vGNGRKzWkhz02bZoHb3g3rM0zdqnsKAs+2qd0OQJEXK
+Nc4dY9hx8hT4n2uGoy79GiNU4exJpJGEWjnh7eRvx8suglFGFcAEsosbisReGGHp
+8K1O7ZB2GfPnBCiR31d7zYqjDZzZ855kPlGqolaQCt3cKmzbzEwPJ7x9v1dPrVi4
+7u0KmK54VVI5CohDbfqjehM8EsRtF6psh9KRUrG7Bcsf0W1fUfVbvSxlz2DS67zE
+FAP9ylNnClPz4ZA5Xj0qPxlWQNmV+wjPPAOxaUafPPQI5BJ0eaBfxD5geQTfLuG3
+qO56EtuLDL58k96yziKd3zkYLhJx8BMzKyx33/xaAf+xCiDKbKa7GeCz2kDVPJLr
+h181kThJCgL/yk1LE+FDgmdImbdGYtOcDc/NH7sb9gGvBk+9US7h0Su4/3KyLgPk
+y+FJN+a+mSfr85gdFAFQVq8ZNHgWV8acVudOQMlEfE69Gn74fKd3iOtO5x1BuVf9
+OrgNQNx/TMswFfbCwqMqdvwRdN0yyD/msRFgx1DAm//mO1cq7at8Llj0pUcHrLjt
+qFXq/qbnziSu9wuoKQucW+Ja3g+w163JqYD1icaBwdq+LTcGXUlbP1ivcHiGp/MH
+mrQTkG3A6vQsSibm5hnt
+=vcgn
+-----END PGP SIGNATURE-----
 
-Regards,
-Bjorn
+--Sig_/6td9aHF6MDioJ97cE+p4+hZ--
