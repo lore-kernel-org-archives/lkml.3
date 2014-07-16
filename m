@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139AbaGPKbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 06:31:33 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:49159 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaGPKb3 (ORCPT
+	id S932556AbaGPKcC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 06:32:02 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:54971 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611AbaGPKb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 06:31:29 -0400
-Date: Wed, 16 Jul 2014 12:31:21 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 3/6] samples: use uapiprogs support for seccomp
-Message-ID: <20140716103120.GA4710@ravnborg.org>
-References: <1405276974-17323-1-git-send-email-sam@ravnborg.org>
- <1405276974-17323-3-git-send-email-sam@ravnborg.org>
- <20140716184351.AC2E.AA925319@jp.panasonic.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140716184351.AC2E.AA925319@jp.panasonic.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 16 Jul 2014 06:31:58 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Greg Ungerer <gerg@uclinux.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: [PATCH] arm: ks8695: Migrate debug_ll macros to shared directory
+Date: Wed, 16 Jul 2014 11:31:07 +0100
+Message-Id: <1405506667-4649-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 06:43:51PM +0900, Masahiro Yamada wrote:
-> Hi Sam,
-> 
-> 
-> On Sun, 13 Jul 2014 20:42:51 +0200
-> Sam Ravnborg <sam@ravnborg.org> wrote:
-> 
-> > Reduce complexity of seccomp Makefile by introducing use of uapiprogs support.
-> > Build testet with i686 only.
-> 
-> tested ?
-> 
-> (Ditto in 4/6)
-Thanks - will fix.
+As part of the migration a couple of uart definitions have been copied
+from of the platform specific header files.
 
-> I am interested in this series.
-> 
-> Forgive me if I am asking a stupid question..
-> 
-> 
-> How can I build hostprogs for the same host as the kernel?
-> (I mean, how can I override $(HOSTCC) for cross-compiling ?)
+Note that, in order to keep oldconfig working nicely we must defer the
+removal of arch/arm/mach-ks8695/include/mach/debug-macro.S until
+DEBUG_LL_UART_NONE has been removed.
 
-One way to do this:
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+---
 
-make ARCH=sparc CROSS_COMPILE=sparc-leon-linux-gnu- HOSTCC=sparc-leon-linux-gnu-gcc
+Notes:
+    This is a contribution towards the removal of DEBUG_LL_UART_NONE, see
+    http://thread.gmane.org/gmane.linux.kernel/1712068/focus=1746065 for
+    details.
 
-Notice that I override HOSTCC as part of the make comand line.
-This allows me to override the "=" assignment in the top-level Makefile.
+ arch/arm/Kconfig.debug          |  8 ++++++++
+ arch/arm/include/debug/ks8695.S | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+)
+ create mode 100644 arch/arm/include/debug/ks8695.S
 
-But then my build breaks as fixdep do not run on my host.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 8f90595..6f9664a 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -340,6 +340,13 @@ choice
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to UART1 serial port on KEYSTONE2 devices.
+ 
++	config DEBUG_KS8695_UART
++		bool "KS8695 Debug UART"
++		depends on ARCH_KS8695
++		help
++		  Say Y here if you want kernel low-level debugging support
++		  on KS8695.
++
+ 	config DEBUG_MMP_UART2
+ 		bool "Kernel low-level debugging message via MMP UART2"
+ 		depends on ARCH_MMP
+@@ -1006,6 +1013,7 @@ config DEBUG_LL_INCLUDE
+ 				 DEBUG_IMX6Q_UART || \
+ 				 DEBUG_IMX6SL_UART || \
+ 				 DEBUG_IMX6SX_UART
++	default "debug/ks8695.S" if DEBUG_KS8695_UART
+ 	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
+ 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
+ 	default "debug/s3c24xx.S" if DEBUG_S3C24XX_UART
+diff --git a/arch/arm/include/debug/ks8695.S b/arch/arm/include/debug/ks8695.S
+new file mode 100644
+index 0000000..961da1f
+--- /dev/null
++++ b/arch/arm/include/debug/ks8695.S
+@@ -0,0 +1,40 @@
++/*
++ * arch/arm/include/debug/ks8695.S
++ *
++ * Copyright (C) 2006 Ben Dooks <ben@simtec.co.uk>
++ * Copyright (C) 2006 Simtec Electronics
++ *
++ * KS8695 - Debug macros
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define KS8695_UART_PA	0x03ffe000
++#define KS8695_UART_VA	0xf00fe000
++#define KS8695_URTH	(0x04)
++#define KS8695_URLS	(0x14)
++#define URLS_URTE	(1 << 6)
++#define URLS_URTHRE	(1 << 5)
++
++	.macro	addruart, rp, rv, tmp
++		ldr	\rp, =KS8695_UART_PA		@ physical base address
++		ldr	\rv, =KS8695_UART_VA		@ virtual base address
++	.endm
++
++	.macro	senduart, rd, rx
++		str	\rd, [\rx, #KS8695_URTH]	@ Write to Transmit Holding Register
++	.endm
++
++	.macro	busyuart, rd, rx
++1001:		ldr	\rd, [\rx, #KS8695_URLS]	@ Read Line Status Register
++		tst	\rd, #URLS_URTE			@ Holding & Shift registers empty?
++		beq	1001b
++	.endm
++
++	.macro	waituart, rd, rx
++1001:		ldr	\rd, [\rx, #KS8695_URLS]	@ Read Line Status Register
++		tst	\rd, #URLS_URTHRE		@ Holding Register empty?
++		beq	1001b
++	.endm
+-- 
+1.9.3
 
-If you in general want to build a binary for the target then uapiprogs come in handy.
-Only caveat here is that you will be using the exported kernel headers.
-
-	Sam
