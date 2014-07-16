@@ -1,89 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965668AbaGPTWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:22:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59679 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934834AbaGPTTj (ORCPT
+	id S965708AbaGPTWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:22:47 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:33472 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932321AbaGPTWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:19:39 -0400
-Message-ID: <53C6D049.7000705@codeaurora.org>
-Date: Wed, 16 Jul 2014 12:19:37 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 16 Jul 2014 15:22:42 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v3 1/2] cpufreq: Don't destroy/realloc policy/sysfs on
- hotplug/suspend
-References: <1405464473-3916-1-git-send-email-skannan@codeaurora.org> <1405464473-3916-2-git-send-email-skannan@codeaurora.org> <53C5C738.5040705@codeaurora.org> <CAKohpomt34NcMH=H5L_fhf-6R6p27_h=aCNcpT6T12u35d=Z+w@mail.gmail.com>
-In-Reply-To: <CAKohpomt34NcMH=H5L_fhf-6R6p27_h=aCNcpT6T12u35d=Z+w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1405512783-20307-2-git-send-email-grygorii.strashko@ti.com>
+References: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com> <1405512783-20307-2-git-send-email-grygorii.strashko@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 16 Jul 2014 20:22:10 +0100
+Message-ID: <CA+V-a8sJXtXSzhSc9+6oq_yhommNnnUp=Y903hfyVcjsfe6Jcw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] net: davinci_mdio: reuse for keystone2 arch
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        netdev <netdev@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 01:30 AM, Viresh Kumar wrote:
-> On 16 July 2014 05:58, Saravana Kannan <skannan@codeaurora.org> wrote:
->>> +       if (!cpus && cpufreq_driver->stop_cpu &&
->>> cpufreq_driver->setpolicy) {
->>> +               cpufreq_driver->stop_cpu(policy);
->>> +       }
->>>
->>
->> Viresh, I tried your suggestion (and my initial thought too) to combine this
->> as an if/else with the previous if. But the indentation got nasty and made
->> it hard to read. I'm sure the compiler will optimize it. So, I would prefer
->> to leave it this way.
+On Wed, Jul 16, 2014 at 1:13 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+> The similar MDIO HW blocks is used by keystone 2 SoCs as
+> in Davinci SoCs:
+> - one in Gigabit Ethernet (GbE) Switch Subsystem
+>   See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
+> - one in 10 Gigabit Ethernet Subsystem
+>   See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
 >
-> Okay, I gave that comment again :)
+> Hence, reuse Davinci MDIO driver for Keystone 2 and
+> enable TI networking for Keystone 2 devices
 >
-> Try this:
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index f72b2b7..092a0ba 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -991,8 +991,10 @@ static int cpufreq_change_policy_cpus(struct
-> cpufreq_policy *policy,
->                                          CPUFREQ_UPDATE_POLICY_CPU, policy);
->          }
->
-> -       cpus = !cpumask_empty(policy->cpus);
-> -       if (has_target() && cpus) {
-> +       if (!cpumask_empty(policy->cpus)) {
-> +               if (!has_target())
-> +                       goto unlock;
-> +
->                  ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
->                  if (!ret)
->                          ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> @@ -1001,9 +1003,7 @@ static int cpufreq_change_policy_cpus(struct
-> cpufreq_policy *policy,
->                          pr_err("%s: Failed to start governor\n", __func__);
->                          goto unlock;
->                  }
-> -       }
-> -
-> -       if (!cpus && cpufreq_driver->stop_cpu && cpufreq_driver->setpolicy) {
-> +       } else if (cpufreq_driver->stop_cpu && cpufreq_driver->setpolicy) {
->                  cpufreq_driver->stop_cpu(policy);
->          }
->
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
-Not bad :) I'll take it.
+Reviewed-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
--Saravana
+Thanks,
+--Prabhakar Lad
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> ---
+>  .../devicetree/bindings/net/davinci-mdio.txt       |    8 ++++----
+>  drivers/net/ethernet/ti/Kconfig                    |    4 ++--
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/net/davinci-mdio.txt b/Documentation/devicetree/bindings/net/davinci-mdio.txt
+> index 72efaaf..0369e25 100644
+> --- a/Documentation/devicetree/bindings/net/davinci-mdio.txt
+> +++ b/Documentation/devicetree/bindings/net/davinci-mdio.txt
+> @@ -1,8 +1,8 @@
+> -TI SoC Davinci MDIO Controller Device Tree Bindings
+> +TI SoC Davinci/Keystone2 MDIO Controller Device Tree Bindings
+>  ---------------------------------------------------
+>
+>  Required properties:
+> -- compatible           : Should be "ti,davinci_mdio"
+> +- compatible           : Should be "ti,davinci_mdio" or "ti,keystone_mdio"
+>  - reg                  : physical base address and size of the davinci mdio
+>                           registers map
+>  - bus_freq             : Mdio Bus frequency
+> @@ -19,7 +19,7 @@ file.
+>  Examples:
+>
+>         mdio: davinci_mdio@4A101000 {
+> -               compatible = "ti,cpsw";
+> +               compatible = "ti,davinci_mdio";
+>                 reg = <0x4A101000 0x1000>;
+>                 bus_freq = <1000000>;
+>         };
+> @@ -27,7 +27,7 @@ Examples:
+>  (or)
+>
+>         mdio: davinci_mdio@4A101000 {
+> -               compatible = "ti,cpsw";
+> +               compatible = "ti,davinci_mdio";
+>                 ti,hwmods = "davinci_mdio";
+>                 bus_freq = <1000000>;
+>         };
+> diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
+> index 53150c2..1769700 100644
+> --- a/drivers/net/ethernet/ti/Kconfig
+> +++ b/drivers/net/ethernet/ti/Kconfig
+> @@ -5,7 +5,7 @@
+>  config NET_VENDOR_TI
+>         bool "Texas Instruments (TI) devices"
+>         default y
+> -       depends on PCI || EISA || AR7 || (ARM && (ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX))
+> +       depends on PCI || EISA || AR7 || (ARM && (ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX || ARCH_KEYSTONE))
+>         ---help---
+>           If you have a network (Ethernet) card belonging to this class, say Y
+>           and read the Ethernet-HOWTO, available from
+> @@ -32,7 +32,7 @@ config TI_DAVINCI_EMAC
+>
+>  config TI_DAVINCI_MDIO
+>         tristate "TI DaVinci MDIO Support"
+> -       depends on ARM && ( ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX )
+> +       depends on ARM && ( ARCH_DAVINCI || ARCH_OMAP3 || SOC_AM33XX || ARCH_KEYSTONE )
+>         select PHYLIB
+>         ---help---
+>           This driver supports TI's DaVinci MDIO module.
+> --
+> 1.7.9.5
+>
