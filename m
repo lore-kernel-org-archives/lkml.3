@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759653AbaGPLm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 07:42:29 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:45144 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaGPLm1 (ORCPT
+	id S1759734AbaGPLm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 07:42:57 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16082 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244AbaGPLmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 07:42:27 -0400
-Date: Wed, 16 Jul 2014 13:42:18 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Mikko Perttunen <mperttunen@nvidia.com>, swarren@wwwdotorg.org,
-        tj@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH v3 7/8] ata: Add support for the Tegra124 SATA controller
-Message-ID: <20140716114217.GA18977@ulmo>
-References: <1405500863-19696-1-git-send-email-mperttunen@nvidia.com>
- <1405500863-19696-8-git-send-email-mperttunen@nvidia.com>
- <53C65E96.9070508@redhat.com>
+	Wed, 16 Jul 2014 07:42:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 16 Jul 2014 04:35:27 -0700
+Message-ID: <53C6653A.7040107@nvidia.com>
+Date: Wed, 16 Jul 2014 14:42:50 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <53C65E96.9070508@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Varka Bhadram <varkabhadram@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "hdegoede@redhat.com" <hdegoede@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH v3 1/8] of: Add NVIDIA Tegra SATA controller binding
+References: <1405500863-19696-1-git-send-email-mperttunen@nvidia.com> <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <53C64553.9010704@gmail.com>
+In-Reply-To: <53C64553.9010704@gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for you comment. I decided to keep the format as is for now, 
+however, to keep a consistent style between all binding files describing 
+Tegra hardware.
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Mikko
 
-On Wed, Jul 16, 2014 at 01:14:30PM +0200, Hans de Goede wrote:
-> On 07/16/2014 10:54 AM, Mikko Perttunen wrote:
-[...]
-> > +enum sata_clks {
-> > +	AHCI_CLK_SATA		=3D 0,
-> > +	AHCI_CLK_SATA_OOB	=3D 1,
-> > +	AHCI_CLK_CML1		=3D 2,
-> > +	AHCI_CLK_PLL_E		=3D 3
-> > +};
->=20
-> You should mention that having the clocks in this order is mandatory
-> in Documentation/devicetree/bindings/ata/tegra-sata.txt / in
-> "[PATCH v3 1/8] of: Add NVIDIA Tegra SATA controller binding"
-
-This is precisely why I said that using a library for resources is a bad
-idea. Why on earth would we want to mandate a specific order? The clock
-bindings specifically have the clock-names so that the order in which
-the clocks are listed in the clocks property doesn't matter. Now because
-of these library helpers we can no longer do that, but instead need to
-fix the order.
-
-So we're now in a position where a Linux-specific driver, worse
-actually, a Linux helper library dictates what the device tree binding
-must look like. This obviously conflicts with what device tree people
-have been recommending for years.
-
-What this also means is that since the DT bindings are ABI, the libahci
-platform library code effectively becomes an ABI too.
-
-Thierry
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTxmUZAAoJEN0jrNd/PrOh5rcP/Ag4x08eeUslFD57YhoFYqXQ
-wuo7P3DkX6UnKMUo9AXQlBJg7/g3VdtRq2ayO0AFawodRLU1sKw9vmpheWfAWrbb
-ZdV23ARSBZmgE2W+X6ZinJPBCAHX9cGJKiOFJg7jtjB+5CZvkoSh0gBpFd3vTH6G
-hZnxnJEF8ZKG5k0vwFVa1Yp8vPq+2suTnfHgmtEickCogI+qN05gWTvz93z5Z9v4
-FinjmFm4I8l0HquS2/QSPPdv+aATxXO/PeA+CfAl8Zwbd5oMPi11kSEXzUc3dbRn
-ws+l/Y3uJjt/6HdUH5cyeFp1f+vsXyUmSR8zCWJBDTToyoVLUb35CJQTQjkyz1N9
-WpRHlhB8F7uU7LoHv8rBkfXljJOQeEidTEL39Ki0cNvS4IYEOam9TwvV+sSINu+w
-HnckNaQWjoK75M/g4O+/PydkTNVBTdPKM+AMFrumNOQoH/0zrWrCqZnuYnleJ1q4
-4/nObKc11XzIxswEvOXfiHmfJBMwpMXqulcVDz0XafIKrg5tilAhwV37VZDweLJu
-sXU7KbGfCIkmyDLqpfMjO5rnwAeFqL+4FPlcQqg8ZT/N/MzksNAw5yiBqJ9ls5jW
-KD3Miv6Mj8gRUbeEg5BPeRpl7jrt6ybePSV57S5UwdB6TSobH+uBd+0Sdsh2lgdC
-UAxx/frKjTw+mTsnD6FL
-=lzFM
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
+On 16/07/14 12:26, Varka Bhadram wrote:
+> On 07/16/2014 02:24 PM, Mikko Perttunen wrote:
+>> This patch adds device tree binding documentation for the SATA
+>> controller found on NVIDIA Tegra SoCs.
+>>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> ---
+>>    .../devicetree/bindings/ata/tegra-sata.txt         | 30 ++++++++++++++++++++++
+>>    1 file changed, 30 insertions(+)
+>>    create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/ata/tegra-sata.txt b/Documentation/devicetree/bindings/ata/tegra-sata.txt
+>> new file mode 100644
+>> index 0000000..946f207
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/ata/tegra-sata.txt
+>> @@ -0,0 +1,30 @@
+>> +Tegra124 SoC SATA AHCI controller
+>> +
+>> +Required properties :
+>> +- compatible : "nvidia,tegra124-ahci".
+>> +- reg : Should contain 2 entries:
+>> +  - AHCI register set (SATA BAR5)
+>> +  - SATA register set
+>> +- interrupts : Defines the interrupt used by SATA
+>> +- clocks : Must contain an entry for each entry in clock-names.
+>> +  See ../clocks/clock-bindings.txt for details.
+>> +- clock-names : Must include the following entries:
+>> +  - sata
+>> +  - sata-oob
+>> +  - cml1
+>> +  - pll_e
+>
+> It would be more readable if it like this...
+>
+> Required properties :
+> - compatible	: "nvidia,tegra124-ahci".
+> - reg		: Should contain 2 entries:
+> 		  - AHCI register set (SATA BAR5)
+> 		  - SATA register set
+> - interrupts	: Defines the interrupt used by SATA
+> - clocks	: Must contain an entry for each entry in clock-names.
+> 		  See ../clocks/clock-bindings.txt for details.
+> ....
+>
+>> +- resets : Must contain an entry for each entry in reset-names.
+>> +  See ../reset/reset.txt for details.
+>> +- reset-names : Must include the following entries:
+>> +  - sata
+>> +  - sata-oob
+>> +  - sata-cold
+>> +- phys : Must contain an entry for each entry in phy-names.
+>> +  See ../phy/phy-bindings.txt for details.
+>> +- phy-names : Must include the following entries:
+>> +  - sata-phy : XUSB PADCTL SATA PHY
+>> +- hvdd-supply : Defines the SATA HVDD regulator
+>> +- vddio-supply : Defines the SATA VDDIO regulator
+>> +- avdd-supply : Defines the SATA AVDD regulator
+>> +- target-5v-supply : Defines the SATA 5V power regulator
+>> +- target-12v-supply : Defines the SATA 12V power regulator
+>
+> Same....
+>
+>
