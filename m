@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaGPTqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:46:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44937 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaGPTqJ (ORCPT
+	id S1751399AbaGPTub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:50:31 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:49993 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751022AbaGPTu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:46:09 -0400
-Date: Wed, 16 Jul 2014 12:45:57 -0700
-From: tip-bot for Vivien Didelot <tipbot@zytor.com>
-Message-ID: <tip-832fcc899a90cce54eb5e47c7fd099eacc0130da@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vivien.didelot@savoirfairelinux.com,
-        hpa@zytor.com, mingo@kernel.org, kernel@savoirfairelinux.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, vivien.didelot@savoirfairelinux.com,
-        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com,
-        tglx@linutronix.de
-In-Reply-To: <1404860269-11837-4-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1404860269-11837-4-git-send-email-vivien.didelot@savoirfairelinux.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/platform/ts5500:
-  Add support for TS-5400 boards
-Git-Commit-ID: 832fcc899a90cce54eb5e47c7fd099eacc0130da
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 16 Jul 2014 15:50:27 -0400
+Message-ID: <1405540224.4408.55.camel@x220>
+Subject: Re: [PATCH v2 29/29] nios2: Build infrastructure
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Date: Wed, 16 Jul 2014 21:50:24 +0200
+In-Reply-To: <1405413956-2772-30-git-send-email-lftan@altera.com>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	 <1405413956-2772-30-git-send-email-lftan@altera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jul 2014 19:50:25.0082 (UTC) FILETIME=[2F9459A0:01CFA12F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  832fcc899a90cce54eb5e47c7fd099eacc0130da
-Gitweb:     http://git.kernel.org/tip/832fcc899a90cce54eb5e47c7fd099eacc0130da
-Author:     Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-AuthorDate: Tue, 8 Jul 2014 18:57:49 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Jul 2014 21:17:42 +0200
+Ley Foon,
 
-x86/platform/ts5500: Add support for TS-5400 boards
+On Tue, 2014-07-15 at 16:45 +0800, Ley Foon Tan wrote:
+> This patch adds Makefile and Kconfig files required for building a
+> nios2 kernel.
+> 
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
 
-This patch extends the TS-5500 platform driver to support the
-similar Technologic Systems TS-5400 Single Board Computer:
+For what it's worth, this v2 indeed cleans up the few things I noted in
+the related 01/28 of v1.
 
-  http://wiki.embeddedarm.com/wiki/TS-5400
+So this series doesn't introduce any new Kconfig related oddities
+anymore; ie, oddities of the obvious type that my local script spots.
+That can't qualify as a review but I do think it's nice to see.
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>
-Link: http://lkml.kernel.org/r/1404860269-11837-4-git-send-email-vivien.didelot@savoirfairelinux.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/platform/ts5500/ts5500.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+Thanks,
 
-diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-index 4eb8eea..baf16e7 100644
---- a/arch/x86/platform/ts5500/ts5500.c
-+++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -15,8 +15,8 @@
-  * state or available options. For further information about sysfs entries, see
-  * Documentation/ABI/testing/sysfs-platform-ts5500.
-  *
-- * This code actually supports the TS-5500 platform, but it may be extended to
-- * support similar Technologic Systems x86-based platforms, such as the TS-5600.
-+ * This code may be extended to support similar x86-based platforms.
-+ * Actually, the TS-5500 and TS-5400 are supported.
-  */
- 
- #include <linux/delay.h>
-@@ -32,6 +32,7 @@
- /* Product code register */
- #define TS5500_PRODUCT_CODE_ADDR	0x74
- #define TS5500_PRODUCT_CODE		0x60	/* TS-5500 product code */
-+#define TS5400_PRODUCT_CODE		0x40	/* TS-5400 product code */
- 
- /* SRAM/RS-485/ADC options, and RS-485 RTS/Automatic RS-485 flags register */
- #define TS5500_SRAM_RS485_ADC_ADDR	0x75
-@@ -127,6 +128,8 @@ static int __init ts5500_detect_config(struct ts5500_sbc *sbc)
- 	sbc->id = inb(TS5500_PRODUCT_CODE_ADDR);
- 	if (sbc->id == TS5500_PRODUCT_CODE) {
- 		sbc->name = "TS-5500";
-+	} else if (sbc->id == TS5400_PRODUCT_CODE) {
-+		sbc->name = "TS-5400";
- 	} else {
- 		pr_err("ts5500: unknown product code 0x%x\n", sbc->id);
- 		ret = -ENODEV;
-@@ -318,12 +321,14 @@ static int __init ts5500_init(void)
- 	if (err)
- 		goto error;
- 
--	ts5500_dio1_pdev.dev.parent = &pdev->dev;
--	if (platform_device_register(&ts5500_dio1_pdev))
--		dev_warn(&pdev->dev, "DIO1 block registration failed\n");
--	ts5500_dio2_pdev.dev.parent = &pdev->dev;
--	if (platform_device_register(&ts5500_dio2_pdev))
--		dev_warn(&pdev->dev, "DIO2 block registration failed\n");
-+	if (sbc->id == TS5500_PRODUCT_CODE) {
-+		ts5500_dio1_pdev.dev.parent = &pdev->dev;
-+		if (platform_device_register(&ts5500_dio1_pdev))
-+			dev_warn(&pdev->dev, "DIO1 block registration failed\n");
-+		ts5500_dio2_pdev.dev.parent = &pdev->dev;
-+		if (platform_device_register(&ts5500_dio2_pdev))
-+			dev_warn(&pdev->dev, "DIO2 block registration failed\n");
-+	}
- 
- 	if (led_classdev_register(&pdev->dev, &ts5500_led_cdev))
- 		dev_warn(&pdev->dev, "LED registration failed\n");
+
+Paul Bolle
+
