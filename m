@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760609AbaGPDEr (ORCPT <rfc822;w@1wt.eu>);
+	id S1760642AbaGPDEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 23:04:50 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:34793 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760605AbaGPDEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jul 2014 23:04:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:39398 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754981AbaGPDEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 23:04:44 -0400
-Date: Wed, 16 Jul 2014 13:04:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140716130434.6b09b2e1@canb.auug.org.au>
-In-Reply-To: <20140715190807.GA26057@roeck-us.net>
-References: <20140715132946.771def89@canb.auug.org.au>
-	<53C4BF8E.4010509@roeck-us.net>
-	<20140715155547.25959587@canb.auug.org.au>
-	<20140715150801.7f8099b1@recife.lan>
-	<20140715190807.GA26057@roeck-us.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+X-PGP-Universal: processed;
+	by shaapppus01.asia.root.pri on Wed, 16 Jul 2014 09:56:39 +0800
+From: Huayi Li <huayi.li@csr.com>
+To: Thierry Reding <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <workgroup.linux@csr.com>,
+        <rongjun.ying@csr.com>, <barry.song@csr.com>,
+        Huayi Li <huayi.li@csr.com>
+Subject: [PATCH v5 3/4] ARM: dts: sirf: fix the pwm-cells and clocks
+Date: Wed, 16 Jul 2014 09:55:13 +0800
+Message-ID: <1405475714-10006-4-git-send-email-huayi.li@csr.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405475714-10006-1-git-send-email-huayi.li@csr.com>
+References: <1405475714-10006-1-git-send-email-huayi.li@csr.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/_WqxXsCgUMqdzJKyY.7q_tm"; protocol="application/pgp-signature"
+X-Originating-IP: [10.125.12.180]
+X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_WqxXsCgUMqdzJKyY.7q_tm
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This patch adds missed pwm-cells, clock-names and signal source
+clock for PWM module.
 
-Hi Guenter,
+Signed-off-by: Huayi Li <huayi.li@csr.com>
+---
+ arch/arm/boot/dts/atlas6.dtsi | 8 ++++++--
+ arch/arm/boot/dts/prima2.dtsi | 8 ++++++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-On Tue, 15 Jul 2014 12:08:07 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
->
-> > > > Do you mean b6220ad66 (sched: Fix compiler warnings) ? I thought th=
-at was accepted
-> > > > a week or so ago.
-> > >=20
-> > > That is in the tip tree and includes the fixups to powerpc and arm.  I
-> > > don't merge the tip tree till well after the v4l-dvb tree.  The merge
-> > > in the v4l-dvb tree included only the change to include/linus/sched.h
-> > > and neither parent fo that merge was based on the tip tree ...
-> > >=20
-> > Stephen,=20
-> >=20
-> > Do you know if/when this patch will be merged upstream? It doesn't
-> > seem to be at 2.6.16-rc5. Otherwise, I'll likely cherry-pick it on
-> 	s/2.16/3.16/
-> > my trees, as the lack of this fixup is making hard for me to check
-> > if a media tree patch isn't introducing new warnings.
->=20
-> Only queued for 3.17 as far as I can see, and not scheduled for 3.16.
+diff --git a/arch/arm/boot/dts/atlas6.dtsi b/arch/arm/boot/dts/atlas6.dtsi
+index bb22842..d424a69 100644
+--- a/arch/arm/boot/dts/atlas6.dtsi
++++ b/arch/arm/boot/dts/atlas6.dtsi
+@@ -638,10 +638,14 @@
+                                 };
+ 			};
+ 
+-			pwm@b0130000 {
++			pwm: pwm@b0130000 {
+ 				compatible = "sirf,prima2-pwm";
++				#pwm-cells = <2>;
+ 				reg = <0xb0130000 0x10000>;
+-				clocks = <&clks 21>;
++				clocks = <&clks 21>, <&clks 1>, <&clks 2>,
++					<&clks 3>, <&clks 0>, <&clks 4>;
++				clock-names = "pwmc", "sigsrc0", "sigsrc1",
++					"sigsrc2", "sigsrc3", "sigsrc4";
+ 			};
+ 
+ 			efusesys@b0140000 {
+diff --git a/arch/arm/boot/dts/prima2.dtsi b/arch/arm/boot/dts/prima2.dtsi
+index 963b7e5..68bb0c4 100644
+--- a/arch/arm/boot/dts/prima2.dtsi
++++ b/arch/arm/boot/dts/prima2.dtsi
+@@ -646,10 +646,14 @@
+                                 };
+ 			};
+ 
+-			pwm@b0130000 {
++			pwm: pwm@b0130000 {
+ 				compatible = "sirf,prima2-pwm";
++				#pwm-cells = <2>;
+ 				reg = <0xb0130000 0x10000>;
+-				clocks = <&clks 21>;
++				clocks = <&clks 21>, <&clks 1>, <&clks 2>,
++					<&clks 3>, <&clks 0>, <&clks 4>;
++				clock-names = "pwmc", "sigsrc0", "sigsrc1",
++					"sigsrc2", "sigsrc3", "sigsrc4";
+ 			};
+ 
+ 			efusesys@b0140000 {
+-- 
+1.9.3
 
-Its in the sched/urgent branch of the tip tree, so hopefully it will go
-to Linus shortly.
 
-[ccing various tip tree maintainers ...]
 
-Hi guys, this commit (b6220ad66 (sched: Fix compiler warnings)) fixes
-lots of W=3D1 build warnings ... just wondering when it will progress?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/_WqxXsCgUMqdzJKyY.7q_tm
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTxevHAAoJEMDTa8Ir7ZwVVl8P/0Hg5EL5Z+RdhZSPJtYhzvLu
-XeGrvjsRRFGfDMXpPaejARfSREF5OVuFVEhjoF5JX+tVvxlBTX7M/OBjSQlLY3kl
-2ta+goJR1mA97jqHwcAoCgJY+cBhy1JJwIM9NfdctnOCgeYgig8N3YtALykTSp86
-8RRt7aQdkhZbM69hSFMIQB7rFil9xO27QAQq/W9yDeGpm2GsVcazeGuXZAyQKW2o
-U9KPpv/oNQMCvHOQpAvu6C5hgtRknJX4v6vgPt0t31wBt9PmzE9UuC4KDiPaYgRP
-HWluuRFP+Qv46rFGjfUawAV6EWUhEsj7AuOonYqbHXt8SP0s4d4lyj77c9aBtv32
-Vz8kD9vo92dAOuYK7s1098ApKDh9N6xF6qKcUTXTEq+r0uLo1RHcAUyOrxlLFQbw
-YqezNfza1jAbc2Q2vVVUYg2GnVBEVpe+NFUpB7RQx7zPs50EqF5ccv+u7YQ4pzYX
-NumE1ezld0R7pH9jsZQ5z3TQBEXCMUmbzK3hI+T7yVvR1rO550WDVrwd0PwFDqh1
-DjfDJmPGr0nLI0sAFkkpmZNfTupevEAGKlGOIuW9wFvTsvk4MTkTw9ERNSJtE4Hu
-pMAqfpuSF7S9CBQAU3mZypIu0M+BtO7vMZsgRzwV2JgF7kNh1irRkjoyb2GSSMie
-x63We/leUf/2PeH10NHG
-=uIdI
------END PGP SIGNATURE-----
-
---Sig_/_WqxXsCgUMqdzJKyY.7q_tm--
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Keep up to date with CSR on our technical blog, www.csr.com/blog, CSR people blog, www.csr.com/people, YouTube, www.youtube.com/user/CSRplc, Facebook, www.facebook.com/pages/CSR/191038434253534, or follow us on Twitter at www.twitter.com/CSR_plc.
+New for 2014, you can now access the wide range of products powered by aptX at www.aptx.com.
