@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934831AbaGPSCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:02:18 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:43316 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934606AbaGPSCQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:02:16 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "martin.petersen@oracle.com" <martin.petersen@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "kys@microsoft.com" <kys@microsoft.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Topic: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
-Thread-Index: AQHPoR4G2vh72TcerE+9u7O+On3hT5ujc0EA
-Date: Wed, 16 Jul 2014 18:02:14 +0000
-Message-ID: <1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
-References: <20140709084300.GD6012@infradead.org>
-	 <a31a45eddb544024a7538458b98c3611@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404935792.2184.5.camel@dabdike.int.hansenpartnership.com>
-	 <2f3ae589e6f149acbe4c5dd79f905971@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <1404944843.2184.8.camel@dabdike.int.hansenpartnership.com>
-	 <20140711063216.GA20660@infradead.org>
-	 <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <yq1a98d2z5x.fsf@sermon.lab.mkp.net> <20140716110111.GA7382@infradead.org>
-	 <yq14myhtijx.fsf@sermon.lab.mkp.net> <20140716173827.GB20528@infradead.org>
-	 <yq1fvi1rya0.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1fvi1rya0.fsf@sermon.lab.mkp.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <CF87AB6BF3B33C439C18C9A9D3B76DDB@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	id S965598AbaGPSEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:04:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965263AbaGPSEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 14:04:10 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, x86@kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH v2 0/5] random,x86,kvm: Add and use MSR_KVM_GET_RNG_SEED
+References: <cover.1405532533.git.luto@amacapital.net>
+Date: Wed, 16 Jul 2014 14:02:41 -0400
+In-Reply-To: <cover.1405532533.git.luto@amacapital.net> (Andy Lutomirski's
+	message of "Wed, 16 Jul 2014 10:45:55 -0700")
+Message-ID: <jpgwqbdxjum.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 13:47 -0400, Martin K. Petersen wrote:
-> >>>>> "Christoph" == hch@infradead org <hch@infradead.org> writes:
-> 
-> Christoph> Oh, we actually have devices that support WRITE SAME with
-> Christoph> unmap, but not without?  That's defintively a little strange.
-> 
-> Yep :(
-> 
-> There were several SSDs that did not want to support wearing out flash
-> by writing gobs of zeroes and only support the UNMAP case.
-> 
-> Christoph> Yes, and it did this intentionally.  I really wouldn't expect
-> Christoph> devices to support WRITE SAME with UNMAP but blow up on a
-> Christoph> WRITE SAME without it (and not just simple fail it in an
-> Christoph> orderly way).
-> 
-> *sigh*
-> 
-> Christoph> It definitively seems odd to default to trying WRITE SAME for
-> Christoph> unmap for a device that explicitly tells us that it doesn't
-> Christoph> support WRITE SAME.
-> 
-> Maybe it's just a naming thing. I was really trying to convey
-> no_req_write_same support, not no_write_same_10_or_16.
-> 
-> Christoph> Note that I'm not against your patch - I suspect forcing us
-> Christoph> to read EVPD pages even for devices that claim to be SPC-2
-> Christoph> will come in useful in various scenarios.
-> 
-> I don't have a problem with a BLIST_PREFER_UNMAP flag or something like
-> that. But BLIST_TRY_VPD_PAGES seems more generally useful and it does
-> fix the problem at hand. That's why I went that route.
+Andy Lutomirski <luto@amacapital.net> writes:
 
-Hang on ... unless we apply Christoph or my fix, we'll get the same
-issue with every raid driver (that's about 10 I think) that set
-no_write_same when they hit a >2TB RAID volume, so I think we need both
-fixes.
+> virtio-rng is both too complicated and insufficient for initial rng
+> seeding.  It's far too complicated to use for KASLR or any other
+> early boot random number needs.  It also provides /dev/random-style
+> bits, which means that making guest boot wait for virtio-rng is
+> unacceptably slow, and doing it asynchronously means that
+> /dev/urandom might be predictable when userspace starts.
+>
+> This introduces a very simple synchronous mechanism to get
+> /dev/urandom-style bits.
 
-James
+Whoa! the cover letter seems more like virtio-rng bashing rather than
+introduction to the patchset (and/or it's advantages over existing methods)
+:) That's ok though I guess, these won't be in the commit log.
 
+> I sent the corresponding kvm-unit-tests and qemu changes separately.
+>
+> There's room for bikeshedding on the same arch_get_slow_rng_u64.  I
+> considered arch_get_rng_seed_u64, but that could be confused with
+> arch_get_random_seed_long, which is not interchangeable.
+>
+> Changes from v1:
+>  - Split patches 2 and 3
+>  - Log all arch sources in init_std_data
+>  - Fix the 32-bit kaslr build
+>
+> Andy Lutomirski (5):
+>   x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
+>   random,x86: Add arch_get_slow_rng_u64
+>   random: Seed pools from arch_get_slow_rng_u64 at startup
+>   random: Log how many bits we managed to seed with in init_std_data
+>   x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+>
+>  Documentation/virtual/kvm/cpuid.txt  |  3 +++
+>  arch/x86/Kconfig                     |  4 ++++
+>  arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++++++++++++++++
+>  arch/x86/include/asm/archslowrng.h   | 30 ++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/processor.h     | 21 ++++++++++++++++++---
+>  arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+>  arch/x86/kernel/kvm.c                | 22 ++++++++++++++++++++++
+>  arch/x86/kvm/cpuid.c                 |  3 ++-
+>  arch/x86/kvm/x86.c                   |  4 ++++
+>  drivers/char/random.c                | 20 ++++++++++++++++++--
+>  include/linux/random.h               |  9 +++++++++
+>  11 files changed, 139 insertions(+), 6 deletions(-)
+>  create mode 100644 arch/x86/include/asm/archslowrng.h
