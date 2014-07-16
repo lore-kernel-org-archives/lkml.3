@@ -1,98 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934720AbaGPQoB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 12:44:01 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:21467 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933645AbaGPQn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 12:43:58 -0400
-Date: Wed, 16 Jul 2014 12:43:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu
- buffer in parallel
-Message-ID: <20140716124356.398e21f4@gandalf.local.home>
-In-Reply-To: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
-References: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1030296AbaGPQov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 12:44:51 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:48620 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933645AbaGPQos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 12:44:48 -0400
+Date: Wed, 16 Jul 2014 18:39:53 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 01/12] reset: add the Berlin reset controller driver
+Message-ID: <20140716163953.GJ9858@lunn.ch>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405499166-6726-2-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405499166-6726-2-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jul 2014 10:58:04 +0200
-Petr Mladek <pmladek@suse.cz> wrote:
-
-
-> +/**
-> + * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
-> + * @buffer_a: One buffer to swap with
-> + * @buffer_b: The other buffer to swap with
+On Wed, Jul 16, 2014 at 10:25:55AM +0200, Antoine Ténart wrote:
+> Add a reset controller for Marvell Berlin SoCs which is used by the
+> USB PHYs drivers (for now).
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  drivers/reset/Makefile       |   1 +
+>  drivers/reset/reset-berlin.c | 131 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 132 insertions(+)
+>  create mode 100644 drivers/reset/reset-berlin.c
+> 
+> diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
+> index 60fed3d7820b..157d421f755b 100644
+> --- a/drivers/reset/Makefile
+> +++ b/drivers/reset/Makefile
+> @@ -1,4 +1,5 @@
+>  obj-$(CONFIG_RESET_CONTROLLER) += core.o
+>  obj-$(CONFIG_ARCH_SOCFPGA) += reset-socfpga.o
+> +obj-$(CONFIG_ARCH_BERLIN) += reset-berlin.o
+>  obj-$(CONFIG_ARCH_SUNXI) += reset-sunxi.o
+>  obj-$(CONFIG_ARCH_STI) += sti/
+> diff --git a/drivers/reset/reset-berlin.c b/drivers/reset/reset-berlin.c
+> new file mode 100644
+> index 000000000000..7b894047a81d
+> --- /dev/null
+> +++ b/drivers/reset/reset-berlin.c
+> @@ -0,0 +1,131 @@
+> +/*
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
 > + *
-> + * This function is useful for tracers that want to take a "snapshot"
-> + * of a CPU buffer and has another back up buffer lying around.
-> + * It is expected that the tracer handles the cpu buffer not being
-> + * used at the moment.
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
 > + */
-> +int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
-> +			 struct ring_buffer *buffer_b, int cpu)
+> +
+> +#include <linux/delay.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/reset-controller.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +
+> +#define BERLIN_MAX_RESETS	32
+> +
+> +#define to_berlin_reset_priv(p)		\
+> +	container_of((p), struct berlin_reset_priv, rcdev)
+> +
+> +struct berlin_reset_priv {
+> +	void __iomem			*base;
+> +	unsigned int			size;
+> +	struct reset_controller_dev	rcdev;
+> +};
+> +
+> +static int berlin_reset_reset(struct reset_controller_dev *rcdev,
+> +			      unsigned long id)
 > +{
-> +	struct ring_buffer_swap_info rb_swap_info = {
-> +		.buffer_a = buffer_a,
-> +		.buffer_b = buffer_b,
-> +	};
-> +	int ret;
-> +
-> +	/*
-> +	 * Swap the CPU buffer on the same CPU. Recording has to be fast
-> +	 * and and this helps to avoid memory barriers.
-> +	 */
-> +	ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> +				       (void *)&rb_swap_info, 1);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return rb_swap_info.ret;
+> +	struct berlin_reset_priv *priv = to_berlin_reset_priv(rcdev);
+> +	int offset = id >> 8;
+> +	int mask = BIT(id & 0xff);
 
-We need to check if the cpu is on the current CPU and if so, just call
-the function directly. Otherwise this can't be done from interrupt
-disabled context.
+nit: 
 
-Enable IRQSOFF_TRACER and FTRACE_STARTUP_TEST to see why.
+The parameter to BIT() should be 0-31. So you want to & with 5. Given
+your xlate function, it should never happen that it is greater than
+31. Hence it is only a nit. If you need to respin, you can change
+this, but don't bother to respin just because of this.
 
-[    2.098008] Testing tracer irqsoff: 
-[    2.351020] ------------[ cut here ]------------
-[    2.352000] WARNING: CPU: 3 PID: 0 at /home/rostedt/work/git/linux-trace.git/kernel/smp.c:283 smp_call_function_single+0x66/0xad()
-[    2.352000] Modules linked in:
-[    2.352000] CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.16.0-rc3-test+ #93
-[    2.352000] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-[    2.352000]  0000000000000000 ffffffff810058cb ffffffff81503d20 0000000000000000
-[    2.352000]  ffffffff81040ca1 0000000000000000 ffffffff8109712f 0000000000000001
-[    2.352000]  0000000000000003 ffffffff810bf9db ffff88007a3c3e30 0000000000000001
-[    2.352000] Call Trace:
-[    2.352000]  [<ffffffff810058cb>] ? show_stack+0x5/0x3e
-[    2.352000]  [<ffffffff81503d20>] ? dump_stack+0x4a/0x75
-[    2.352000]  [<ffffffff81040ca1>] ? warn_slowpath_common+0x7e/0x97
-[    2.352000]  [<ffffffff8109712f>] ? smp_call_function_single+0x66/0xad
-[    2.352000]  [<ffffffff810bf9db>] ? ring_buffer_swap_cpu+0x45/0x45
-[    2.352000]  [<ffffffff8109712f>] ? smp_call_function_single+0x66/0xad
-[    2.352000]  [<ffffffff810970ce>] ? smp_call_function_single+0x5/0xad
-[    2.352000]  [<ffffffff810bf9ce>] ? ring_buffer_swap_cpu+0x38/0x45
-[    2.352000]  [<ffffffff810c6c64>] ? update_max_tr_single+0xb6/0x11f
-[    2.352000]  [<ffffffff8100ae3e>] ? default_idle+0x1d/0x30
-[    2.352000]  [<ffffffff810cd2ac>] ? stop_critical_timing+0x139/0x20d
-[    2.352000]  [<ffffffff8100ae3e>] ? default_idle+0x1d/0x30
-[    2.352000]  [<ffffffff81072d35>] ? cpu_startup_entry+0x115/0x220
-[    2.352000]  [<ffffffff81027610>] ? start_secondary+0x21c/0x222
-[    2.352000] ---[ end trace a712676a9f9a53a0 ]---
-
-
--- Steve
+    Andrew
