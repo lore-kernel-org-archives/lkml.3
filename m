@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaGPSzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 14:55:39 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:42848 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754884AbaGPSzh (ORCPT
+	id S1755217AbaGPS5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 14:57:07 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:46867 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111AbaGPS5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 14:55:37 -0400
+	Wed, 16 Jul 2014 14:57:05 -0400
+Date: Wed, 16 Jul 2014 18:57:04 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mugunthan V N <mugunthanvnm@ti.com>, Tony Lindgren <tony@atomide.com>
+cc: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Re-send PATCH 1/1] arm: dra7xx: Add hwmod data for MDIO and
+ CPSW
+In-Reply-To: <20140716070643.GC3378@breakpoint.cc>
+Message-ID: <alpine.DEB.2.02.1407161854360.23074@utopia.booyaka.com>
+References: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com> <20140709095552.GA25154@breakpoint.cc> <20140709100147.GB25154@breakpoint.cc> <alpine.DEB.2.02.1407152019020.21432@utopia.booyaka.com> <20140716070643.GC3378@breakpoint.cc>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1407161400150.1028-100000@iolanthe.rowland.org>
-References: <CAE_wzQ82xsuDQrw8Q6auoG9fowr4VZkcUgciPXe2s9PTAmJ=RA@mail.gmail.com>
- <Pine.LNX.4.44L0.1407161400150.1028-100000@iolanthe.rowland.org>
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Wed, 16 Jul 2014 11:55:16 -0700
-Message-ID: <CAJiQ=7CorBMaO80xcEx4ygYFDJxxav_yyPs2jegKo3vrX1REHA@mail.gmail.com>
-Subject: Re: Power-managing devices that are not of interest at some point in time
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dmitry Torokhov <dtor@google.com>, Patrik Fimml <patrikf@chromium.org>,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Benson Leung <bleung@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 11:08 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> I am not so much concerned about userspace, but about reusing of as
->> much of existing PM framework in the drivers. Right now it is very
->> hard to correctly track dependencies between general open/close,
->> system suspend/resume, and various runtime-PM transitions. Adding yet
->> another PM mechanism into the mix will just add more complexity.
->
-> Would it make sense to unbind the drivers for these devices when the
-> lid is closed?  With the drivers gone, there would naturally be no I/O
-> interactions with the hardware and the class devices would disappear.
+On Wed, 16 Jul 2014, Sebastian Andrzej Siewior wrote:
 
-FWIW, per your earlier recommendation[1], that is the approach that my
-group has been using to disable various host controllers when Linux is
-running (not suspended) but certain power-hungry peripherals are not
-needed.  It has mostly worked out OK; each driver typically implements
-its own special PHY init/shutdown procedure, and calls into the common
-clk_* functions to enable/disable the appropriate clocks.
+> On 2014-07-15 20:21:21 [+0000], Paul Walmsley wrote:
+> 
+> > > Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> > > 
+> > > This is basically what Tony hasked me to do: No IRQ numbers & iomem.
+> > 
+> > Sorry - I'm a bit confused - Sebastian, did you test this one?  If so, is 
+> > it okay to add a Tested-by from you?
+> 
+> Tested-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 
-Obviously the application needs to be able to cope with disappearing
-devices, and you wouldn't want to have any filesystems mounted on top
-of them when the unbind event happens.
+Thanks Sebastian.
 
-Our devices are on an SoC's internal bus, not PCI.
+Mugunthan, next step would be for you to get a Reviewed-by: by someone who 
+has access to the (non-public) DRA7xx TRM, and can review for SoC 
+integration.  Since Rajendra is no longer at TI, the right person is 
+probably Tony.
 
-[1] http://lists.linuxfoundation.org/pipermail/linux-pm/2012-April/033976.html
+Then this patch should be mergeable.
+
+
+- Paul
