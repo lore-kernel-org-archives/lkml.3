@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798AbaGPPF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 11:05:26 -0400
-Received: from mga14.intel.com ([192.55.52.115]:61384 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614AbaGPPFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 11:05:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,673,1400050800"; 
-   d="scan'208";a="562696201"
-Message-ID: <53C6948C.2080103@intel.com>
-Date: Wed, 16 Jul 2014 18:04:44 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S965332AbaGPPG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 11:06:27 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:62336 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S964926AbaGPPGY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 11:06:24 -0400
+Date: Wed, 16 Jul 2014 11:06:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [RFA][PATCH] ftrace/x86: Have function graph tracer use its own
+ trampoline
+Message-ID: <20140716110615.583d1ee9@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 20/41] perf tools: Let a user specify a PMU event without
- any config terms
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-21-git-send-email-adrian.hunter@intel.com> <20140716142510.GE9441@krava.redhat.com>
-In-Reply-To: <20140716142510.GE9441@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/2014 5:25 p.m., Jiri Olsa wrote:
-> On Mon, Jul 14, 2014 at 01:02:44PM +0300, Adrian Hunter wrote:
->> This enables a PMU event to be specified in the form:
->>
->> 	pmu//
->>
->> which is effectively the same as:
->>
->> 	pmu/config=0/
->>
->> This patch is a precursor to defining
->> default config for a PMU.
->
-> I understand the need for default config, but could you please elaborate
-> why do we want to parse 'pmu//' as an event string string?
 
-Currently the parser requires the slashes to identify a PMU event
-as opposed to a hardware or other kind of event.
+Peter,
+
+Here's a really trivial patch that touches arch/x86/include/asm/ftrace.h
+
+Can you ack it. Thanks.
+
+This is based on the patches here:
+
+  http://marc.info/?l=linux-kernel&m=140513619913439&w=2
+
+Thanks,
+
+-- Steve
+
+
+>From 32443f104c172cc368882101cd65604dc046f099 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Fri, 11 Jul 2014 23:23:53 -0400
+Subject: [PATCH] ftrace/x86: Have function graph tracer use its own trampoline
+
+The function graph trampoline is called from the function trampoline
+and both do a save and restore of registers. The save of registers
+done by the function trampoline when only the function graph tracer
+is running is a waste of CPU cycles.
+
+As the function graph tracer trampoline in x86 is dependent from
+the function trampoline, we can call it directly when a function
+is only being traced by the function graph trampoline.
+
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/ftrace.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index 0525a8b..e1f7fec 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -68,6 +68,8 @@ struct dyn_arch_ftrace {
+ 
+ int ftrace_int3_handler(struct pt_regs *regs);
+ 
++#define FTRACE_GRAPH_TRAMP_ADDR FTRACE_GRAPH_ADDR
++
+ #endif /*  CONFIG_DYNAMIC_FTRACE */
+ #endif /* __ASSEMBLY__ */
+ #endif /* CONFIG_FUNCTION_TRACER */
+-- 
+1.8.1.4
+
