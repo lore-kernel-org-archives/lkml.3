@@ -1,92 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaGPVMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 17:12:18 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49646 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753823AbaGPVML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 17:12:11 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Vidya Sagar <sagar.tv@gmail.com>, matthew.garrett@nebula.com,
-        nchumbalkar@lenovo.com, thierry.reding@gmail.com, swarren@nvidia.com,
-        linux-pci@vger.kernel.org, kthota@nvidia.com,
-        linux-kernel@vger.kernel.org, vidyas@nvidia.com
-Subject: Re: [PATCH v3] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Date: Wed, 16 Jul 2014 23:30:27 +0200
-Message-ID: <1480976.v66rlUIZnu@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140716193637.GA14366@google.com>
-References: <1405505022-7593-1-git-send-email-vidyas@nvidia.com> <20140716193637.GA14366@google.com>
+	id S1753903AbaGPVMa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 17:12:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50625 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036AbaGPVMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 17:12:25 -0400
+Message-ID: <53C6EA97.9030400@ti.com>
+Date: Wed, 16 Jul 2014 16:11:51 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Markus Mayer <markus.mayer@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Dave Gerlach <d-gerlach@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCHv2 2/5] mailbox/omap: add support for parsing dt devices
+References: <1405116252-53612-1-git-send-email-s-anna@ti.com>	<1405116252-53612-3-git-send-email-s-anna@ti.com> <CAPdLdqmA5HkRe9xLOUybOQQzpkmqX8Ot4aH9ZA7B_s3Zp90tPw@mail.gmail.com>
+In-Reply-To: <CAPdLdqmA5HkRe9xLOUybOQQzpkmqX8Ot4aH9ZA7B_s3Zp90tPw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 16, 2014 01:36:37 PM Bjorn Helgaas wrote:
-> On Wed, Jul 16, 2014 at 03:33:42PM +0530, Vidya Sagar wrote:
-> > From: Vidya Sagar <sagar.tv@gmail.com>
-> > 
-> > Commit 1a680b7c3258 ("PCI: PCIe links may not get configured for ASPM
-> >  under POWERSAVE mode") moved pcie_aspm_powersave_config_link() out of
-> > pci_raw_set_power_state() to pci_set_power_state() which would enable
-> > ASPM. But, with Commit db288c9c5f9d ("PCI / PM: restore the original
-> >  behavior of pci_set_power_state()"), which re-introduced the following check
-> > ./drivers/pci/pci.c: pci_set_power_state()
-> > 
-> > +	/* Check if we're already there */
-> > +	if (dev->current_state == state)
-> > +	   return 0;
-> > 
-> > in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
-> > made leaving ASPM broken.
-> > Fix it by configuring links for ASPM in do_pci_enable_device() instead of
-> > pci_set_power_state()
-> > 
-> > Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-> > Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
-> 
-> I applied this to pci/misc for v3.17 with the following changelog:
-> 
-> It would still make me feel better if Matthew and/or Rafael acked this.
-> 
->     PCI: Configure ASPM when enabling device
->     
->     We can't do ASPM configuration at enumeration-time because enabling it
->     makes some defective hardware unresponsive, even if ASPM is disabled later
->     (see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
->     to veto it").  Therefore, we have to do it after a driver claims the
->     device.
->     
->     We previously configured ASPM in pci_set_power_state(), but that's not a
->     very good place because it's not really related to setting the PCI device
->     power state, and doing it there means:
->     
->       - We incorrectly skipped ASPM config when setting a device that's
->         already in D0 to D0.
->     
->       - We unnecessarily configured ASPM when setting a device to a low-power
->         state (the ASPM feature only applies when the device is in D0).
->     
->       - We unnecessarily configured ASPM when called from a .resume() method
->         (ASPM configuration needs to be restored during resume, but I think
->         pci_restore_pcie_state() should already do this).
->     
->     Move ASPM configuration from pci_set_power_state() to
->     do_pci_enable_device() so we do it when a driver enables a device.
->     
->     [bhelgaas: changelog]
->     Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
-> 
-> It would still make me feel better if Matthew and/or Rafael chimed in to
-> make sure this is sane.
+Hi Markus,
 
-I like the change, but I'm not sure whether or not it will work for everyone.
+On 07/16/2014 03:50 PM, Markus Mayer wrote:
+> If I may nit-pick here for a minute...
+> 
+> On 11 July 2014 15:04, Suman Anna <s-anna@ti.com> wrote:
+>> Logic has been added to the OMAP2+ mailbox code to parse the
+>> mailbox dt nodes and construct the different sub-mailboxes
+>> associated with the instance. The DT representation of the
+>> sub-mailbox devices is different from legacy platform data
+>> representation to allow flexibility of interrupt configuration
+>> between Tx and Rx fifos (to also possibly allow simplex devices
+>> in the future). The DT representation gathers similar information
+>> that was being passed previously through the platform data, except
+>> for the number of fifos, interrupts and interrupt type information,
+>> which are gathered through driver compatible match data.
+>>
+>> The non-DT support has to be maintained for now to not break
+>> OMAP3 legacy boot, and the legacy-style code will be cleaned
+>> up once OMAP3 is also converted to DT-boot only.
+>>
+>> Cc: Jassi Brar <jassisinghbrar@gmail.com>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>> ---
+>>  drivers/mailbox/omap-mailbox.c | 156 ++++++++++++++++++++++++++++++++++-------
+>>  1 file changed, 132 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+> 
+> [...]
+> 
+>>  static int omap_mbox_probe(struct platform_device *pdev)
+>>  {
+>>         struct resource *mem;
+>>         int ret;
+>>         struct omap_mbox **list, *mbox, *mboxblk;
+>>         struct omap_mbox_pdata *pdata = pdev->dev.platform_data;
+>> -       struct omap_mbox_dev_info *info;
+>> +       struct omap_mbox_dev_info *info = NULL;
+>> +       struct omap_mbox_fifo_info *finfo, *finfoblk;
+>>         struct omap_mbox_device *mdev;
+>>         struct omap_mbox_fifo *fifo;
+>> -       u32 intr_type;
+>> +       struct device_node *node = pdev->dev.of_node;
+>> +       struct device_node *child;
+>> +       const struct of_device_id *match;
+>> +       u32 intr_type, info_count;
+>> +       u32 num_users, num_fifos;
+>> +       u32 tmp[3];
+>>         u32 l;
+>>         int i;
+>>
+>> -       if (!pdata || !pdata->info_cnt || !pdata->info) {
+>> +       if (!node && (!pdata || !pdata->info_cnt || !pdata->info)) {
+>>                 pr_err("%s: platform not supported\n", __func__);
+>>                 return -ENODEV;
+>>         }
+>>
+>> +       if (node) {
+> 
+> I noticed here you are using
+> 
+>     if (node)
+>         /* DT stuff goes here */
+>     else
+>         /* non-DT stuff goes here */
+> 
+> but below the logic is reversed.
+> 
+>> +               match = of_match_device(omap_mailbox_of_match, &pdev->dev);
+>> +               if (!match)
+>> +                       return -ENODEV;
+>> +               intr_type = (u32)match->data;
+>> +
+>> +               if (of_property_read_u32(node, "ti,mbox-num-users",
+>> +                                        &num_users))
+>> +                       return -ENODEV;
+>> +
+>> +               if (of_property_read_u32(node, "ti,mbox-num-fifos",
+>> +                                        &num_fifos))
+>> +                       return -ENODEV;
+>> +
+>> +               info_count = of_get_available_child_count(node);
+>> +               if (!info_count) {
+>> +                       dev_err(&pdev->dev, "no available mbox devices found\n");
+>> +                       return -ENODEV;
+>> +               }
+>> +       } else { /* non-DT device creation */
+>> +               info_count = pdata->info_cnt;
+>> +               info = pdata->info;
+>> +               intr_type = pdata->intr_type;
+>> +               num_users = pdata->num_users;
+>> +               num_fifos = pdata->num_fifos;
+>> +       }
+>> +
+>> +       finfoblk = devm_kzalloc(&pdev->dev, info_count * sizeof(*finfoblk),
+>> +                               GFP_KERNEL);
+>> +       if (!finfoblk)
+>> +               return -ENOMEM;
+>> +
+>> +       finfo = finfoblk;
+>> +       child = NULL;
+>> +       for (i = 0; i < info_count; i++, finfo++) {
+>> +               if (!node) {
+> 
+> Here it's
+>     if (!node)
+>         /* non-DT stuff */
+>     else
+>         /* DT stuff */
+> 
+> I think the "if (node) ..." version is a bit cleaner. Besides it's
+> nice if code is consistent. Do you mind changing the if statement here
+> so it matches the logic used above?
 
-The only way to verify that seems to be to apply it, however.
+No, not at all, I will fix this up in the next version. I have to revise
+the framework adaptation patches anyway (remove tidspbridge changes as
+that driver is getting deleted and add a missing of_node_put).
 
-Rafael
+Do you prefer that I split up this series between DT conversion and
+framework adaptation or good with posting all the patches together? If
+latter, I will refresh it once the v9 version of the framework comes out.
+
+regards
+Suman
+
+> 
+>> +                       finfo->tx_id = info->tx_id;
+>> +                       finfo->rx_id = info->rx_id;
+>> +                       finfo->tx_usr = info->usr_id;
+>> +                       finfo->tx_irq = info->irq_id;
+>> +                       finfo->rx_usr = info->usr_id;
+>> +                       finfo->rx_irq = info->irq_id;
+>> +                       finfo->name = info->name;
+>> +                       info++;
+>> +               } else {
+>> +                       child = of_get_next_available_child(node, child);
+>> +                       ret = of_property_read_u32_array(child, "ti,mbox-tx",
+>> +                                                        tmp, ARRAY_SIZE(tmp));
+>> +                       if (ret)
+>> +                               return ret;
+>> +                       finfo->tx_id = tmp[0];
+>> +                       finfo->tx_irq = tmp[1];
+>> +                       finfo->tx_usr = tmp[2];
+>> +
+>> +                       ret = of_property_read_u32_array(child, "ti,mbox-rx",
+>> +                                                        tmp, ARRAY_SIZE(tmp));
+>> +                       if (ret)
+>> +                               return ret;
+>> +                       finfo->rx_id = tmp[0];
+>> +                       finfo->rx_irq = tmp[1];
+>> +                       finfo->rx_usr = tmp[2];
+>> +
+>> +                       finfo->name = child->name;
+>> +               }
+>> +               if (finfo->tx_id >= num_fifos || finfo->rx_id >= num_fifos ||
+>> +                   finfo->tx_usr >= num_users || finfo->rx_usr >= num_users)
+>> +                       return -EINVAL;
+>> +       }
+>> +
 
