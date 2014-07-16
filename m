@@ -1,44 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938AbaGPNRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:17:52 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18836 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933044AbaGPNRu (ORCPT
+	id S1759324AbaGPNTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:19:04 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:55908 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139AbaGPNTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:17:50 -0400
-Date: Wed, 16 Jul 2014 16:17:36 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mark Hounschell <markh@compro.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Daeseok Youn <daeseok.youn@gmail.com>, devel@driverdev.osuosl.org,
-        lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8 RESEND] staging: dgap: introduce dgap_cleanup_nodes()
-Message-ID: <20140716130043.GC25880@mwanda>
-References: <20140715091425.GA19095@devel.8.8.4.4>
- <790027403.325559.1405438239093.JavaMail.root@mx2.compro.net>
- <53C67285.4010008@compro.net>
+	Wed, 16 Jul 2014 09:19:02 -0400
+Date: Wed, 16 Jul 2014 06:18:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 3/4] documentation: Add acquire/release
+ barriers to pairing rules
+Message-ID: <20140716131855.GT8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140707222345.GA6320@linux.vnet.ibm.com>
+ <1404771862-6904-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404771862-6904-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140708075902.GM19379@twins.programming.kicks-ass.net>
+ <20140708153117.GJ4603@linux.vnet.ibm.com>
+ <20140714115738.GW19379@twins.programming.kicks-ass.net>
+ <20140716121626.GM8690@linux.vnet.ibm.com>
+ <20140716130534.GB19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C67285.4010008@compro.net>
+In-Reply-To: <20140716130534.GB19379@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071613-7164-0000-0000-0000032BEE22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:39:33AM -0400, Mark Hounschell wrote:
-> We also have this "DIGI_EXPANDERS_SUPPORTED" thingy. I have none of
-> these cards. These cards interrogate the expander to find out how
-> many ports there are. Then configure accordingly. Should we just
-> remove all that code and NOT support expanders since we don't
-> currently have the hardware to test?
+On Wed, Jul 16, 2014 at 03:05:34PM +0200, Peter Zijlstra wrote:
+> On Wed, Jul 16, 2014 at 05:16:26AM -0700, Paul E. McKenney wrote:
+> > On Mon, Jul 14, 2014 at 01:57:38PM +0200, Peter Zijlstra wrote:
+> > > On Tue, Jul 08, 2014 at 08:31:17AM -0700, Paul E. McKenney wrote:
+> > > 
+> > > > Good point, how about the following?
+> > > > 
+> > > > 	General barriers pair with each other, though they also pair
+> > > > 	with most other types of barriers, albeit without transitivity.
+> > > 
+> > > > 	An acquire barrier pairs with a release barrier, but both may also
+> > > > 	pair with other barriers, including of course general barriers.
+> > > 
+> > > > 	A write barrier pairs with a data dependency barrier, an acquire
+> > > > 	barrier, a release barrier, a read barrier, or a general barrier.
+> > > 
+> > > > 	Similarly a read barrier or a data dependency barrier pairs
+> > > > 	with a write barrier, an acquire barrier, a release barrier,
+> > > > 	or a general barrier:
+> > > 
+> > > It might be clearer with the added whitespace, or as an explicit list  I
+> > > suppose, but yes.
+> > 
+> > If I get ambitious, I might try making a table out of it, but I am not
+> > yet sure how I would set that up.  Something about having to say a lot
+> > in each cell, but with only a small amount of room in which to say it.
+> 
+> 
+>       |  mb | wmb | rmb | rbd | acq | rel |
+>  -----+-----+-----+-----+-----+-----+-----+
+>    mb |  X  |  X  |  X  |  X  |  X  |  X  |
+>  -----+-----+-----+-----+-----+-----+-----+
+>   wmb |  X  |     |  X  |  X  |     |     |
+>  -----+-----+-----+-----+-----+-----+-----+
+>   rmb |  X  |  X  |     |     |     |     |
+>  -----+-----+-----+-----+-----+-----+-----+
+>   rbd |  X  |  X  |     |     |     |     |
+>  -----+-----+-----+-----+-----+-----+-----+
+>   acq |  X  |     |     |     |     |  X  |
+>  -----+-----+-----+-----+-----+-----+-----+
+>   rel |  X  |     |     |     |  X  |     |
+>  -----+-----+-----+-----+-----+-----+-----+
+> 
+> (where rbd is read_barrier_depends).
+> 
+> Which is not entirely filled out, in particular I didn't do the creative
+> acq/rel bits.
 
-Maybe eventually, but it's not like we have run out of other less
-painfull cleanups that we can do right away.
+Also needs to reflect that wmb really can pair with wmb.  See for example
+Scenario 15 of https://lwn.net/Articles/573436/.  Then again, your point
+might be that Scenario 15 is not all that useful, which is true in my
+experience -- though a good way to cause someone to find a use is to leave
+it out of such a table...
 
-regards,
-dan carpenter
+> > > Ah, I was more thinking of the fact that ACQUIRE/RELEASE are
+> > > semi-permeable while READ/WRITE are memop dependent.
+> > > 
+> > > So any combination will be a semi-permeable memop dependent thing,
+> > > which is the most narrow barrier possible.
+> > > 
+> > > So if we thing of ACQUIRE/RELEASE as being 'half' a full barrier,
+> > > separated in direction, and READ/WRITE as being 'half' a full barrier
+> > > separated on type, then the combination is a 'quarter' barrier.
+> > > 
+> > > Not arguing they're not useful, just saying we need to be extra careful.
+> > 
+> > I do agree completely about the need for extra care!
+> > 
+> > For whatever it is worth, the permeability and read-write properties
+> > are isolated to each barrier in the pair.  For example, with "a" and
+> > "b" both initially zero:
+> > 
+> > 	CPU 1				CPU 2
+> > 	-----				-----
+> > 	ACCESS_ONCE(a) = 1;		r1 = b;
+> > 	smp_store_release(&b, 1);	smp_rmb();
+> > 	ACCESS_ONCE(c) = 1;		r2 = a;
+> > 					ACCESS_ONCE(c) = 2;
+> > 
+> > The outcome r1==1&&r2==0 is prohibited, but the ordering of the stores
+> > to "c" are not ordered: CPU 1's smp_store_release() does not affect
+> > later accesses, and CPU 2's smp_rmb() does not order stores.
+> > 
+> > Not sure that it is worth adding this sort of example, though.
+> 
+> Yeah, not sure either. Maybe just a big fat caution if you pair acq/rel
+> with anything other than its opposite or a general barrier.
+> 
+> Maybe use small 'x' for acq/rel + rmb/wmb and put a caution in the
+> 'legend' for 'x'.
+
+When I expand things out, I end up wanting each cell to hold a
+scenario from the tables in https://lwn.net/Articles/573436/ and
+https://lwn.net/Articles/573497/, probably along with some cautions
+on what it does not do as well.  :-(
+
+							Thanx, Paul
 
