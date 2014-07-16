@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933959AbaGPM4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:56:18 -0400
-Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:43296 "EHLO
-	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933679AbaGPM4Q convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:56:16 -0400
-Date: Wed, 16 Jul 2014 18:26:15 +0530 (IST)
-Subject: =?utf-8?Q?Re=3A_=5BPATCH=5D_regmap=3A_Kconfig=3A_Select_SPMI_when_REGMAP?=
- =?utf-8?Q?=5FSPMI_is_selected?=
-From: "Pramod Gurav" <pramod.gurav@smartplayin.com>
-To: "Stanimir Varbanov" <svarbanov@mm-sol.com>
-Cc: pramod.gurav.etc@gmail.com, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        "Josh Cartwright" <joshc@codeaurora.org>,
-        "Mark Brown" <broonie@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Importance: Normal
-X-Priority: 3 (Normal)
-X-Type: plain
-In-Reply-To: <53C66F3B.9020507@mm-sol.com>
-References: <1405510797-755-1-git-send-email-pramod.gurav.etc@gmail.com>  
- <53C66AEB.7030906@mm-sol.com> <1405512867.75389776@apps.rackspace.com> 
- <53C66F3B.9020507@mm-sol.com>
-Message-ID: <1405515375.452411340@apps.rackspace.com>
-X-Mailer: webmail7.0
+	id S933991AbaGPM4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:56:45 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:41876 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933666AbaGPM4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:56:40 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-48-53c676853f11
+Message-id: <53C67660.8050003@samsung.com>
+Date: Wed, 16 Jul 2014 14:56:00 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH 18/19] ARM: SAMSUNG: Remove remaining legacy code
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+ <1404496099-26708-19-git-send-email-t.figa@samsung.com>
+ <1405504062.4408.11.camel@x220>
+In-reply-to: <1405504062.4408.11.camel@x220>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xa7qtZceCDY4vMLX4O+kYu8XUh0/Y
+	LP4/es1q0bvgKpvFpsfXWC0u75rDZjHj/D4mi7VH7rJbnLr+mc1i0a0zzBardv1hdOD2+P1r
+	EqPHzll32T02repk89i8pN7jyokmVo++LasYPbZfm8fssXH7EyaPz5vkAjijuGxSUnMyy1KL
+	9O0SuDJuXeIoOMZScWoVZwPjaeYuRk4OCQETie/rl0PZYhIX7q1nA7GFBJYySnxYEt7FyAVk
+	f2aUOPD6EytIgldAS+Lon+1MXYwcHCwCqhKvzzOChNkE1CQ+NzwC6+UHKlnTdJ0FpERUIELi
+	8QUhiE5BiR+T77GA2CICyhKtm++xg4xnFvjHJNG0bDfYeGEBV4kt564yQ+ydxyix/81GdpAE
+	p4CORNPbx0wgNrOAusSkeYuYIWx5ic1r3jJPYBSchWTJLCRls5CULWBkXsUomlqaXFCclJ5r
+	pFecmFtcmpeul5yfu4kREkdfdzAuPWZ1iFGAg1GJh5dh9tFgIdbEsuLK3EOMEhzMSiK8Dv7H
+	goV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwGmx59WOP9GsjUXXOvQudMg+84Cp38m3WPSsS32r/
+	97JDZuTapmcmDe1/HvQb2X5beWvzDV8FftcXHVYS1UkrHlYkzu618SlzYLmwT1dtc+Y2e60A
+	Zv/vf14/LlU/2LUjoS0m/1LE7Wv9V40nt/95O2nflFO3I2Z+OXl71dWZG8q67NsZmBoWKrEU
+	ZyQaajEXFScCAKKJNP+BAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 16.07.2014 11:47, Paul Bolle wrote:
+> On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
 
-On Wednesday, 16 July, 2014 5:55pm, "Stanimir Varbanov" <svarbanov@mm-sol.com> said:
+[snip]
 
-> <snip>
+>>  config SAMSUNG_GPIO_EXTRA
+>>  	int "Number of additional GPIO pins"
+>>  	default 128 if SAMSUNG_GPIO_EXTRA128
 > 
->>>>
->>>>  config REGMAP_SPMI
->>>> +	select SPMI
->>>
->>> NO, IMO the CONFIG_SPMI should be enabled by qcom_defconfig and
->>> multi_v7_defconfig. See CONFIG_I2C and REGMAP_I2C for example.
->>>
->>
->> I am using multi_v7_defconfig but its not enabling it. I ran qcom_defconfig which
->> does.
+> So a second order effect is that SAMSUNG_GPIO_EXTRA can now be removed.
+> Which implies that SAMSUNG_GPIO_EXTRA64 and SAMSUNG_GPIO_EXTRA128 can
+> also be removed.
 > 
-> yes, it seems reasonable to add it in multi_v7_defconfig also.
-> 
+> Should I submit the trivial patch to do that or is a patch already
+> queued somewhere?
 
-Thanks.
-I misunderstood the Kconfig documentation which says, "Reverse dependencies can only be used with boolean or tristate symbols". In the note following this statement doc says, "In general use select only for non-visible symbols".
+Please do if you don't mind. That's one more thing I missed.
 
-The CONFIG_SPMI option is visible in menuconfig hence either it should be set by default in multi_v7_defconfig(like in qcom_defconfig) or driver owner should mention a 'depneds on CONFIG_SPMI' as suggested by Lars-Peter Clausen. 
-I prefer the former (defconfig).
-
-Shall I send a new patch adding it in multi_v7_defconfig?
-
-> 
-> --
-> regards,
-> Stan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
+Best regards,
+Tomasz
