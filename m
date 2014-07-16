@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaGPWDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 18:03:32 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50387 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751327AbaGPWD3 (ORCPT
+	id S1753232AbaGPWEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 18:04:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55122 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaGPWEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 18:03:29 -0400
-X-Sasl-enc: KCLekBIWBXyYXom6Yfrp5akujTYWVJGtGFCFo/mnEPkL 1405548200
-Message-ID: <53C6F69A.5070108@fastmail.fm>
-Date: Wed, 16 Jul 2014 23:03:06 +0100
-From: Michalis Pappas <mpappas@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 18:04:20 -0400
+Date: Wed, 16 Jul 2014 15:08:54 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [patch V2 50/64] hangcheck-timer: Use ktime_get_ns()
+Message-ID: <20140716220854.GA716@kroah.com>
+References: <20140716205018.175419210@linutronix.de>
+ <20140716205056.454252756@linutronix.de>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: gdm72xx: conditionally compile debug code
-References: <1404219616-1788-1-git-send-email-mpappas@fastmail.fm> <1404219616-1788-2-git-send-email-mpappas@fastmail.fm> <20140709185142.GA13271@kroah.com> <53C6E332.2070301@fastmail.fm> <20140716205024.GA11078@kroah.com>
-In-Reply-To: <20140716205024.GA11078@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140716205056.454252756@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 09:50 PM, Greg KH wrote:
-> On Wed, Jul 16, 2014 at 09:40:18PM +0100, Michalis Pappas wrote:
->> On 07/09/2014 07:51 PM, Greg KH wrote:
->>>> diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
->>>> index 9d2de6f..914fd75 100644
->>>> --- a/drivers/staging/gdm72xx/gdm_sdio.c
->>>> +++ b/drivers/staging/gdm72xx/gdm_sdio.c
->>>> @@ -280,9 +280,11 @@ static void send_sdu(struct sdio_func *func, struct tx_cxt *tx)
->>>>  
->>>>  	spin_unlock_irqrestore(&tx->lock, flags);
->>>>  
->>>> +	#if defined(GDM72xx_DEBUG)
->>>>  	print_hex_dump_debug("sdio_send: ", DUMP_PREFIX_NONE, 16, 1,
->>>>  			     tx->sdu_buf + TYPE_A_HEADER_SIZE,
->>>>  			     aggr_len - TYPE_A_HEADER_SIZE, false);
->>>> +	#endif
->>>
->>> This should be moved to use dev_dbg(), along with the other calls to
->>> this function in this file.
->>>
->>
->> But dev_dbg() gets eventually to be printk(), which cannot print the
->> buffer, so using print_hex_dump_debug() seems to be correct for this
->> case, no?
+On Wed, Jul 16, 2014 at 09:05:03PM -0000, Thomas Gleixner wrote:
+> There is no point in having a S390 private implementation and there is
+> no point in using the raw monotonic time. The NTP freqeuency
+> adjustment of CLOCK_MONOTONIC is really not doing any harm for the
+> hang check timer.
 > 
-> No, you don't want to print the message unless debugging is enabled, and
-> dev_dbg() uses the proper in-kernel dynamic debug infrastructure.  There
-> should never be a separate config option for debugging a driver, that
-> ensures that no user will ever be able to help you out with it.
+> Use ktime_get_ns() for everything and get rid of the timespec
+> conversions.
 > 
-> So delete the ifdef stuff, and the config option, and just use the
-> proper in-kernel infrastructure for this.
+> V2: Drop the raw monotonic and the S390 special case
 > 
-> thanks,
-> 
-> greg k-h
-> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Ok, I agree on the ifdef stuff. My question was regarding your
-suggestion above to replace print_hex_debug() with dev_dbg()
-
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
