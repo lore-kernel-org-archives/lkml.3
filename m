@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760185AbaGPMOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 08:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760152AbaGPMOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 08:14:44 -0400
-Date: Wed, 16 Jul 2014 14:14:10 +0200
-From: Jiri Olsa <jolsa@redhat.com>
+	id S1759948AbaGPMQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 08:16:37 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59732 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756286AbaGPMQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 08:16:34 -0400
+Date: Wed, 16 Jul 2014 05:16:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 2/5] perf: Destroy event's children on task exit
-Message-ID: <20140716121410.GA9441@krava.redhat.com>
-References: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
- <1405079782-8139-3-git-send-email-jolsa@kernel.org>
- <20140714111833.GU19379@twins.programming.kicks-ass.net>
- <20140714114359.GA17761@krava.redhat.com>
- <20140714130237.GX9918@twins.programming.kicks-ass.net>
- <20140714132223.GC17761@krava.redhat.com>
- <20140714133542.GZ9918@twins.programming.kicks-ass.net>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 3/4] documentation: Add acquire/release
+ barriers to pairing rules
+Message-ID: <20140716121626.GM8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140707222345.GA6320@linux.vnet.ibm.com>
+ <1404771862-6904-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404771862-6904-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140708075902.GM19379@twins.programming.kicks-ass.net>
+ <20140708153117.GJ4603@linux.vnet.ibm.com>
+ <20140714115738.GW19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140714133542.GZ9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140714115738.GW19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071612-7164-0000-0000-0000032B813A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 03:35:42PM +0200, Peter Zijlstra wrote:
-> On Mon, Jul 14, 2014 at 03:22:23PM +0200, Jiri Olsa wrote:
-> > > > if we dont do it, the event stays installed without owner and
-> > > > perf fork callback will be called and fail on permission checking
-> > > > (because of owner == NULL) ... so yes, I think it's needed
-> > > 
-> > > Oh, right. Alternatively, we don't need permission checking for inherits
-> > > at all, if we're allowed to create the initial event, we should be good
-> > > for inherits.
+On Mon, Jul 14, 2014 at 01:57:38PM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 08, 2014 at 08:31:17AM -0700, Paul E. McKenney wrote:
+> 
+> > Good point, how about the following?
 > > 
-> > I could adress that in follow up patch.. or you want this instead
-> > of this one? IMO we should close those events anyway..
+> > 	General barriers pair with each other, though they also pair
+> > 	with most other types of barriers, albeit without transitivity.
 > 
-> I tend to agree that closing them all is nicer. But we need to be
-> careful while doing it so as not to make the clone/fork path block on
-> it.
+> > 	An acquire barrier pairs with a release barrier, but both may also
+> > 	pair with other barriers, including of course general barriers.
 > 
-> I _think_ it might be best to separate these two issues for the moment,
-> so cure the reported problem by avoiding the permission check for
-> inherited events -- IFF you agree with the previous argument that
-> install_exec_creds() should be sufficient.
+> > 	A write barrier pairs with a data dependency barrier, an acquire
+> > 	barrier, a release barrier, a read barrier, or a general barrier.
+> 
+> > 	Similarly a read barrier or a data dependency barrier pairs
+> > 	with a write barrier, an acquire barrier, a release barrier,
+> > 	or a general barrier:
+> 
+> It might be clearer with the added whitespace, or as an explicit list  I
+> suppose, but yes.
 
-install_exec_creds remove removes current events any time
-suid binary is executed.. so it seems ok
+If I get ambitious, I might try making a table out of it, but I am not
+yet sure how I would set that up.  Something about having to say a lot
+in each cell, but with only a small amount of room in which to say it.
 
-        /*
-         * Disable monitoring for regular users
-         * when executing setuid binaries. Must
-         * wait until new credentials are committed
-         * by commit_creds() above
-         */
-        if (get_dumpable(current->mm) != SUID_DUMP_USER)
-                perf_event_exit_task(current);
+> > > Also, it might be good to have a section on the ramifications of pairing
+> > > acquire/release with other than themselves, I have the feeling there's
+> > > subtle things there.
+> > 
+> > It can get quite subtle.  For the time being, I am dodging this subtlety
+> > by saying that only general barriers provide transitivity (see the
+> > "TRANSITIVITY" section).
+> 
+> Ah, I was more thinking of the fact that ACQUIRE/RELEASE are
+> semi-permeable while READ/WRITE are memop dependent.
+> 
+> So any combination will be a semi-permeable memop dependent thing,
+> which is the most narrow barrier possible.
+> 
+> So if we thing of ACQUIRE/RELEASE as being 'half' a full barrier,
+> separated in direction, and READ/WRITE as being 'half' a full barrier
+> separated on type, then the combination is a 'quarter' barrier.
+> 
+> Not arguing they're not useful, just saying we need to be extra careful.
 
-jirka
+I do agree completely about the need for extra care!
+
+For whatever it is worth, the permeability and read-write properties
+are isolated to each barrier in the pair.  For example, with "a" and
+"b" both initially zero:
+
+	CPU 1				CPU 2
+	-----				-----
+	ACCESS_ONCE(a) = 1;		r1 = b;
+	smp_store_release(&b, 1);	smp_rmb();
+	ACCESS_ONCE(c) = 1;		r2 = a;
+					ACCESS_ONCE(c) = 2;
+
+The outcome r1==1&&r2==0 is prohibited, but the ordering of the stores
+to "c" are not ordered: CPU 1's smp_store_release() does not affect
+later accesses, and CPU 2's smp_rmb() does not order stores.
+
+Not sure that it is worth adding this sort of example, though.
+
+							Thanx, Paul
+
+> > Maybe some day we should capture this subtlety in memory-barriers.txt,
+> > but we will first need a new generation of small children who are not
+> > scared by the current document.  ;-)
+> 
+> Lolz :-)
+
+
