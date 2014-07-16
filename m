@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934129AbaGPNJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 09:09:27 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:49468 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934107AbaGPNJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 09:09:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
-        "mporter@linaro.org" <mporter@linaro.org>,
-        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
-        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
-        "loic.pallardy@st.com" <loic.pallardy@st.com>,
-        "s-anna@ti.com" <s-anna@ti.com>,
-        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
-        "bjorn@kryo.se" <bjorn@kryo.se>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
-        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
-Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
-Date: Wed, 16 Jul 2014 15:09:11 +0200
-Message-ID: <5461658.P0nNPHkj0L@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJe_ZhfwhMBVhsOm4K69crX38rgrwYenQfySox7nGNVqQHreNQ@mail.gmail.com>
-References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org> <6436896.YqIi9fg7XW@wuerfel> <CAJe_ZhfwhMBVhsOm4K69crX38rgrwYenQfySox7nGNVqQHreNQ@mail.gmail.com>
+	id S964798AbaGPNJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 09:09:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47124 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934131AbaGPNJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 09:09:28 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [RESEND PATCH v3 1/4] usb: dwc3: dwc3-omap: Remove x_major calculation from revision register
+Date: Wed, 16 Jul 2014 18:37:05 +0530
+Message-ID: <1405516028-26500-2-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1405516028-26500-1-git-send-email-george.cherian@ti.com>
+References: <1405516028-26500-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:VbcyEkSf4cofeXyBWyBaNeUbWzqIVCW+37+PmYfXOTe
- bHKafjD9QDhJpktOsrF+TJ6Kqh5TOj/o5BkQjvoTa1iPs/1Fdw
- MWPXWsj32XvZQQDKnuabxNYMezSbJ8gRlhZGbyd9JKj0mL9gir
- vOc6NWnyf6gGtiqgpgYGxM7PAqib0vathDtJtaaqGT6i9vdgYL
- Wra9wXoNepvRPW1sr8Qlzsgczqs865FHeosHlUtCBGB1tbzR1m
- qkawjEI4FHO4ZwgXLViUEYjG+IVB3c9kfrl+1bdgIbUDbufnlV
- ZNBNl55TbJ67S62i++Al/KPMiCTHqd1pfVoRsHgJRj31zs6tta
- 7v02iE7Ic2sB1A8Koevk=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 July 2014 18:35:33 Jassi Brar wrote:
-> On 16 July 2014 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Wednesday 16 July 2014 18:07:04 Jassi Brar wrote:
-> >> On 16 July 2014 15:46, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> > On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
-> >> >> > +
-> >> >> > +Required property:
-> >> >> > +- mbox: List of phandle and mailbox channel specifier.
-> >> >> > +
-> >> >> > +- mbox-names: List of identifier strings for each mailbox channel
-> >> >> > +               required by the client.
-> >> >> > +
-> >> >>
-> >> >> IMO the mailbox names are more associated with the controller channels/
-> >> >> mailbox rather than the clients using it. Does it make sense to move
-> >> >> this under controller. It also avoid each client replicating the names.
-> >> >
-> >> > I think it would be best to just make the mbox-names property optional,
-> >> > like we have for other subsystems.
-> >> >
-> >> A very similar subsystem - DMAEngine also has 'dma-names' as a
-> >> required property.
-> >>
-> >> If a client is assigned only 1 mbox in DT, we can do without
-> >> mbox-names. But I am not sure what to do if a client needs two or more
-> >> differently capable mboxes? Simply allocating in order of mbox request
-> >> doesn't seem very robust.
-> >
-> > Traditionally, these things (regs, interrupts, ...) are just accessed
-> > by index. The reason why dmaengine requires the name is that some machines
-> > can use multiple DMA engine devices attached to the same request line,
-> > so the dmaengine subsystem can pick any of them that has a matching
-> > name.
-> And also, I think, when a client needs 2 different dma channels, say
-> for RX and TX each. The api can't assign the first channel specified
-> in 'dmas' property to the first channel request that comes to it,
-> unless we assume client driver always requests dma channels in the
-> order written in its DT node.  And this is the main reason I see for
-> having mbox-names property.
+Remove the x_major calculation logic from the wrapper revision register
+to differentiate between OMAP5 and AM437x. This was done to find the
+register offsets of wrapper register. Now that We do it using dt
+compatible, remove the whole logic.
 
-Most subsystems require passing an explicit index in this case.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/dwc3/dwc3-omap.c | 36 ++++--------------------------------
+ 1 file changed, 4 insertions(+), 32 deletions(-)
 
->   If we make mbox-names optional, do we assume client driver must
-> request mbox in the order specified in its DT node?
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 4af4c35..999bdc8 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -77,10 +77,6 @@
+ #define USBOTGSS_DEV_EBC_EN			0x0110
+ #define USBOTGSS_DEBUG_OFFSET			0x0600
+ 
+-/* REVISION REGISTER */
+-#define USBOTGSS_REVISION_XMAJOR(reg)		((reg >> 8) & 0x7)
+-#define USBOTGSS_REVISION_XMAJOR1		1
+-#define USBOTGSS_REVISION_XMAJOR2		2
+ /* SYSCONFIG REGISTER */
+ #define USBOTGSS_SYSCONFIG_DMADISABLE		(1 << 16)
+ 
+@@ -129,7 +125,6 @@ struct dwc3_omap {
+ 	u32			irq_eoi_offset;
+ 	u32			debug_offset;
+ 	u32			irq0_offset;
+-	u32			revision;
+ 
+ 	u32			dma_status:1;
+ 
+@@ -397,7 +392,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	int			irq;
+ 
+ 	int			utmi_mode = 0;
+-	int			x_major;
+ 
+ 	u32			reg;
+ 
+@@ -448,32 +442,10 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 		goto err0;
+ 	}
+ 
+-	reg = dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
+-	omap->revision = reg;
+-	x_major = USBOTGSS_REVISION_XMAJOR(reg);
+-
+-	/* Differentiate between OMAP5 and AM437x */
+-	switch (x_major) {
+-	case USBOTGSS_REVISION_XMAJOR1:
+-	case USBOTGSS_REVISION_XMAJOR2:
+-		omap->irq_eoi_offset = 0;
+-		omap->irq0_offset = 0;
+-		omap->irqmisc_offset = 0;
+-		omap->utmi_otg_offset = 0;
+-		omap->debug_offset = 0;
+-		break;
+-	default:
+-		/* Default to the latest revision */
+-		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
+-		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
+-		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
+-		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
+-		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
+-		break;
+-	}
+-
+-	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
+-	 * changes in wrapper registers, Using dt compatible for aegis
++	/* Differentiate between OMAP5 and AM437x.
++	 * For OMAP5(ES2.0) and AM437x wrapper revision is same, even
++	 * though there are changes in wrapper register offsets.
++	 * Using dt compatible to differentiate  AM437x.
+ 	 */
+ 
+ 	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
+-- 
+1.8.3.1
 
-Correct.
-
-	Arnd
