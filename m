@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534AbaGPIBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 04:01:06 -0400
-Received: from server721-han.de-nserver.de ([85.158.180.102]:33237 "EHLO
-	server721-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755500AbaGPIBD (ORCPT
+	id S1753626AbaGPIBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 04:01:50 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56541 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608AbaGPIBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 04:01:03 -0400
-X-Fcrdns: Yes
-Message-ID: <53C63139.7000608@kristov.de>
-Date: Wed, 16 Jul 2014 10:00:57 +0200
-From: Christoph Schulz <develop@kristov.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 16 Jul 2014 04:01:47 -0400
+Date: Wed, 16 Jul 2014 10:01:34 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH 01/13] clk: tegra: Add binding for the Tegra124 DFLL
+ clocksource
+Message-ID: <20140716080133.GI7978@ulmo>
+References: <CAL1qeaFF0ZpUFovxTuLXrBPRg2Lbf-754Z=ztD5HFZPbfnDsAw@mail.gmail.com>
+ <53C01558.3090607@nvidia.com>
+ <CAL1qeaHETQ7kSGNjPiwi_9WNMtr9qZp0KwjZCCxY29+_N4AcuA@mail.gmail.com>
+ <53C01D17.2050906@nvidia.com>
+ <20140714083854.GO2081@ulmo>
+ <20140714091233.GC6800@sirena.org.uk>
+ <20140714092434.GA9755@ulmo>
+ <20140714102203.GD6800@sirena.org.uk>
+ <53C58DCB.90502@nvidia.com>
+ <20140715225252.GD17528@sirena.org.uk>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-pci@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Robert Resch <fli4l@robert.reschpara.de>
-Subject: [PATCH 1/1] x86: don't exclude low BIOS area when allocating address
- space for non-PCI cards
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by mail@kristov.de through 89.182.109.101
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G3juXO9GfR42w+sw"
+Content-Disposition: inline
+In-Reply-To: <20140715225252.GD17528@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Schulz <develop@kristov.de>
 
-Commit 30919b0bf356a8ee0ef4f7d38ca8ad99b96820b2 ("x86: avoid low BIOS area when
-allocating address space") moved the test for resource allocations that fall
-within the first 1MB of address space from the PCI-specific path to a generic
-path, such that all resource allocations will avoid this area. However, this
-breaks ISA cards which need to allocate a memory region within the first 1MB.
-An example is the i82365 PCMCIA controller and derivatives like the Ricoh
-RF5C296/396 which map part of the PCMCIA socket memory address space into the
-first 1MB of system memory address space. They do not work anymore as no usable
-memory region exists due to this change:
+--G3juXO9GfR42w+sw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
-host opts [0]: none
-host opts [1]: none
-ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
-pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
-pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
-pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
-pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
-pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
-pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
-pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
-pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
-pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
+On Tue, Jul 15, 2014 at 11:52:52PM +0100, Mark Brown wrote:
+> On Tue, Jul 15, 2014 at 11:23:39PM +0300, Tuomas Tynkkynen wrote:
+>=20
+> > That sounds indeed useful for this case. How'd the following interface
+> > sound for the register offset / selector-to-register-value conversion?
+> > The I2C address would be a bit trickier to get as it would touch the
+> > regmap stuff as well, but perhaps it would be a good idea to have a
+> > phandle to the I2C device itself, and then parse the reg field for
+> > the address.
+>=20
+> This looks fine, can you submit properly please?  For the I2C address
+> why not just have an interface to get the regmap and then provide a way
+> to get the underlying device back from the regmap?
 
-If filtering out the first 1MB is reverted, everything works as expected.
+Is it mandatory for regulators to use regmap? Also I'm not sure how this
+will work with MFDs, since the device may not be the actual bus device,
+but rather a child of the MFD (and what we want access to is the MFD).
+Perhaps for regmaps that would work in most cases since MFDs seem to
+aften share the regmap with their children. However, the code in
+regulator_register() at least indicates that even then it's possible to
+have a regmap in children that's different from the top-level MFD.
 
-Signed-off-by: Christoph Schulz <develop@kristov.de>
-Tested-by: Robert Resch <fli4l@robert.reschpara.de>
----
-diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
-index 2a26819..80eab01 100644
---- a/arch/x86/kernel/resource.c
-+++ b/arch/x86/kernel/resource.c
-@@ -37,10 +37,12 @@ static void remove_e820_regions(struct resource *avail)
- 
- void arch_remove_reservations(struct resource *avail)
- {
--	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
-+	/*
-+	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
-+	 * the low 1MB unconditionally, as this area is needed for some ISA
-+	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
-+	 */
- 	if (avail->flags & IORESOURCE_MEM) {
--		if (avail->start < BIOS_END)
--			avail->start = BIOS_END;
- 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
- 
- 		remove_e820_regions(avail);
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index a19ed92..2ae525e 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const struct resource *res,
- 			return start;
- 		if (start & 0x300)
- 			start = (start + 0x3ff) & ~0x3ff;
-+	} else if (res->flags & IORESOURCE_MEM) {
-+		/* The low 1MB range is reserved for ISA cards */
-+		if (start < BIOS_END)
-+			start = BIOS_END;
- 	}
- 	return start;
- }
+Thierry
+
+--G3juXO9GfR42w+sw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTxjFdAAoJEN0jrNd/PrOh9DwP/3dzscoXYXMEY5bwISYqlh72
+OAspRRFCWc5DIrmpKCnzZQq8Z/BguxD4Qf3xWpkllLkpGJHJVa4489gPBOLQrxPa
+tR0t4fYHFxs4GT1m+LmuLH+yNArhEFcTZI+N7aWB2O+G4s8lvFJPZdVM604GZjXB
+9h8CkCyMnNZHRoOKKUt7bFNZ7xXaeV8NghmXUGIXPvqmUIjkzC5z+kNzYUsR6bPb
+cx6UJRYkf73IPyd983R57YW/E1mK9Vbz/6rCnfipqcpzHOpOB+n7aniecoe0bYOD
+KMHLtySu5IhYow1aNnJFdjKSZakVfnBqD1bgbIe+mCFGOUvlASux7TplreZkL0ST
+udY8m7cPyAATI/nL/FIR9cYcxVPJa68+oXeuu+iqTFuPEEAnUwvup+5njS9+u7cm
+0ke7hwJwIeGfDjdjkybgacCkf1HWXCkpayfubDpxdpmPf9aI8K1rmb+woHwo9sGs
+rstVQVMhg8HpYJnk2UiYGWUAg2C79RC4ZUT3LVDKUkGh69fpbvhTyyP2TqCBNIW7
+4fzCH9HBEmgrBnqcm7Z+s5MTuiZfuD5S3a5KAEM8vE0kvGnv/wJWOxfz51L/1Cd0
+4HNK5fneKpCx302+5D/ijPdgMF6zQ37wz9Rbe4nGZ2ZkR5L0zcPDe1WeYLy8sNSg
+WbSGZw8byksVNMXM2b9H
+=RhIM
+-----END PGP SIGNATURE-----
+
+--G3juXO9GfR42w+sw--
