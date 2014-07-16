@@ -1,149 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785AbaGPH5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 03:57:40 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:24233 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705AbaGPH5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 03:57:37 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-47-53c6306e29cc
-Message-id: <53C63016.6050805@samsung.com>
-Date: Wed, 16 Jul 2014 10:56:06 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-ima-devel@lists.sourceforge.net
-Subject: Re: [Linux-ima-devel] [PATCH v1 1/3] ima: provide flag to identify new
- empty files
-References: <cover.1405078844.git.d.kasatkin@samsung.com>
- <ac60392e0118902ce9b308fdae09d633da1682af.1405078844.git.d.kasatkin@samsung.com>
- <1405432827.21720.20.camel@dhcp-9-2-203-236.watson.ibm.com>
- <1405462329.2124.12.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-reply-to: <1405462329.2124.12.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xa7p5BseCDSZcZLHYs/cki8XLGfPY
-	LS7vmsNm8aHnEZvF+b/HWS0+rZjE7MDm8eDQZhaP3Qs+M3l83iTnsenJW6YAligum5TUnMyy
-	1CJ9uwSujEfzb7MWHJSrWPb4GXMDY79kFyMnh4SAicScaXfZIWwxiQv31rN1MXJxCAksZZTY
-	MuEKlNPIJHHpZC8zhDOLUeLjor0sIC28AloST949ZwOxWQRUJWb87gIbxSagJ7Gh+QeYLSoQ
-	IXGg7xkrRL2gxI/J98B6RQQ0JY61fmQEsZkFVjFKLGoOArGFBWIljnSehtrcziQx+es0sGZO
-	AXeJKzu2sUI0qEtMmreIGcKWl9i85i2YLQR0RPfatWwQ/yhKnJ58jnkCo/AsJLtnIWmfhaR9
-	ASPzKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQ+Piyg3HxMatDjAIcjEo8vAyzjwYLsSaW
-	FVfmHmKU4GBWEuEVYTkWLMSbklhZlVqUH19UmpNafIiRiYNTqoHROr8qf+Lhotrv8rbxj5s2
-	5Ps+TgnsEWcq1EurPHxCJeZqkAtfsu2mKxtfrZ5leSVoZcw2c167K3t4ulL6a844R/5b+MOo
-	bK1u9FzRa/kpAY3qdVsX3EmcXPhtBUf1rkchmYEetzVvtl9Ki83tPfaz9Ub8Wt6GBQt+Lj1e
-	KBVdsGDhkxgG/xNKLMUZiYZazEXFiQAKOl6ebQIAAA==
+	id S1755662AbaGPH6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 03:58:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540AbaGPH61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 03:58:27 -0400
+Date: Wed, 16 Jul 2014 09:58:10 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Rui Xiang <rui.xiang@huawei.com>
+cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: testing result of loop-aio patchset on ext3
+In-Reply-To: <53C5F770.9030105@huawei.com>
+Message-ID: <alpine.LFD.2.00.1407160955010.2431@localhost.localdomain>
+References: <53C3A42E.40000@huawei.com> <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain> <53C5F770.9030105@huawei.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1748687669-1405497494=:2431"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/14 01:12, Mimi Zohar wrote:
-> On Tue, 2014-07-15 at 10:00 -0400, Mimi Zohar wrote: 
->> On Fri, 2014-07-11 at 14:46 +0300, Dmitry Kasatkin wrote: 
->>> Newly created empty files do not get initial security.ima
->>> value because iversion does not change. It can be checked from
->>> the shell as:
->>>
->>>   $ (exec >foo)
->>>   $ getfattr -h -e hex -d -m security foo
-> This is a change in behavior.  Please include the commit number that
-> introduced this change in the patch description.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-This commit might caused this.
-dff6efc326a4d5f305797d4a6bba14f374fdd633 fs: fix iversion handling
+--8323328-1748687669-1405497494=:2431
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 
-- Dmitry
+On Wed, 16 Jul 2014, Rui Xiang wrote:
 
-> Mimi
->
->>> This patch defines IMA_NEW_FILE flag which is set when IMA detects that new
->>> file is created. It is checked upon ima_file_free hook to set initial
->>> security.ima value.
->> Other than rebasing on top of #next, this patch set looks good.
->>
->> thanks,
->>
->> Mimi
->>
->>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->>> ---
->>>  security/integrity/ima/ima_appraise.c |  7 +++++--
->>>  security/integrity/ima/ima_main.c     | 12 +++++++-----
->>>  security/integrity/integrity.h        |  1 +
->>>  3 files changed, 13 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
->>> index 9dd18b5..3a4beb3 100644
->>> --- a/security/integrity/ima/ima_appraise.c
->>> +++ b/security/integrity/ima/ima_appraise.c
->>> @@ -194,8 +194,11 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
->>>  			goto out;
->>>
->>>  		cause = "missing-hash";
->>> -		status =
->>> -		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
->>> +		status = INTEGRITY_NOLABEL;
->>> +		if (inode->i_size == 0) {
->>> +			iint->flags |= IMA_NEW_FILE;
->>> +			status = INTEGRITY_PASS;
->>> +		}
->>>  		goto out;
->>>  	}
->>>
->>> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
->>> index e51e0d5..5a870e7 100644
->>> --- a/security/integrity/ima/ima_main.c
->>> +++ b/security/integrity/ima/ima_main.c
->>> @@ -124,11 +124,13 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
->>>  		return;
->>>
->>>  	mutex_lock(&iint->mutex);
->>> -	if (atomic_read(&inode->i_writecount) == 1 &&
->>> -	    iint->version != inode->i_version) {
->>> -		iint->flags &= ~IMA_DONE_MASK;
->>> -		if (iint->flags & IMA_APPRAISE)
->>> -			ima_update_xattr(iint, file);
->>> +	if (atomic_read(&inode->i_writecount) == 1) {
->>> +		if ((iint->version != inode->i_version) ||
->>> +		    (iint->flags & IMA_NEW_FILE)) {
->>> +			iint->flags &= ~(IMA_DONE_MASK | IMA_NEW_FILE);
->>> +			if (iint->flags & IMA_APPRAISE)
->>> +				ima_update_xattr(iint, file);
->>> +		}
->>>  	}
->>>  	mutex_unlock(&iint->mutex);
->>>  }
->>> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
->>> index 92c1083..7656d47 100644
->>> --- a/security/integrity/integrity.h
->>> +++ b/security/integrity/integrity.h
->>> @@ -30,6 +30,7 @@
->>>  #define IMA_ACTION_FLAGS	0xff000000
->>>  #define IMA_DIGSIG_REQUIRED	0x01000000
->>>  #define IMA_PERMIT_DIRECTIO	0x02000000
->>> +#define IMA_NEW_FILE		0x04000000
->>>
->>>  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
->>>  				 IMA_APPRAISE_SUBMASK)
->>
->>
->> ------------------------------------------------------------------------------
->> Want fast and easy access to all the code in your enterprise? Index and
->> search up to 200,000 lines of code with a free copy of Black Duck
->> Code Sight - the same software that powers the world's largest code
->> search on Ohloh, the Black Duck Open Hub! Try it now.
->> http://p.sf.net/sfu/bds
->> _______________________________________________
->> Linux-ima-devel mailing list
->> Linux-ima-devel@lists.sourceforge.net
->> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
->>
->
->
+> Date: Wed, 16 Jul 2014 11:54:24 +0800
+> From: Rui Xiang <rui.xiang@huawei.com>
+> To: Lukáš Czerner <lczerner@redhat.com>
+> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>     Li Zefan <lizefan@huawei.com>
+> Subject: Re: testing result of loop-aio patchset on ext3
+> 
+> On 2014/7/14 17:51, Lukáš Czerner wrote:
+> > On Mon, 14 Jul 2014, Rui Xiang wrote:
+> > 
+> >> Date: Mon, 14 Jul 2014 17:34:38 +0800
+> >> From: Rui Xiang <rui.xiang@huawei.com>
+> >> To: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org
+> >> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> >>     Li Zefan <lizefan@huawei.com>
+> >> Subject: testing result of loop-aio patchset on ext3
+> >>
+> >> Hi Dave,
+> >>
+> >> We export a container image file as a block device via loop device, but we
+> >> found it's very easy that the container rootfs gets corrupted due to power
+> >> loss.
+> >>
+> >> Your early version of loop-aio patchset said the patchset can make loop
+> >> mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
+> >> it doesn't help.
+> >>
+> >> Both the guest fs and host fs are ext3.
+> >>
+> >> The loop-aio patchset is from:
+> >> git://github.com/kleikamp/linux-shaggy.git aio_loop
+> >>
+> >> Steps:
+> >> 1. dd a 10G image, mkfs.ext3,
+> >>   # dd if=/dev/zero of=./raw_image bs=1M count=10000
+> >>   # echo y | mkfs.ext3 raw_image
+> >>
+> >> 2. losetup a loop device, mount at ./test_dir
+> >>   # losetup /dev/loop1 raw_image
+> >>   # mount /dev/loop1 ./test_dir
+> >>
+> >> 3. copy fs_mark into test_dir and run
+> >>   # ./fs_mark -d ./tmp/ -s 102400000 -n 80
+> >>
+> >> 4. during runing fs_mark, make systerm reboot indirectly.
+> >>   # echo b > /proc/sysrq-trigger
+> >>
+> >> After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
+> >>
+> >> # fsck.ext3 -n raw_image
+> >> e2fsck 1.41.9 (22-Aug-2009)
+> >> Warning: skipping journal recovery because doing a read-only filesystem check.
+> >> raw_image contains a file system with errors, check forced.
+> >> Pass 1: Checking inodes, blocks, and sizes
+> >> Pass 2: Checking directory structure
+> >> Pass 3: Checking directory connectivity
+> >> Pass 4: Checking reference counts
+> >> Pass 5: Checking group summary information
+> >> Free blocks count wrong (2481348, counted=2480577).
+> >> Fix? no
+> >> Free inodes count wrong (640837, counted=640835).
+> >> Fix? no
+> >> raw_image: ********** WARNING: Filesystem still has errors **********
+> >> raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
+> > 
+> > It's not damaged, this is expected result if you're using old
+> > e2fsprogs which still treats this as an error.
+> > 
+> > It's not an error because we only update superblock summary at
+> > unmount time so with unclean shutdown it's likely that it does not
+> > match the reality, but e2fsck can and will easily fix that for you.
+> > 
+> > Please try e2fsprogs v1.42.3 or newer.
+> > 
+> 
+> Hi Lukas,
+> 
+> I updated e2fsprogs to v1.42.3, and user the newer fsck.ext3 to check raw_image.
+> Exactly, the result seemed normal.
 
+Now I can see that there are much more problems than before, that's
+weird. Sorry for not making this clear, but for this kind of
+reproducers please use the most recent e2fsprogs. Also , what is the
+kernel version you're using in this test ?
+
+Thanks!
+-Lukas
+
+> 
+> Then, I continue my previous test. And after testing 35 times, "fsck -n" reported image fs
+> had been damaged, too.
+> 
+>  # fsck.ext3 -n image1
+> e2fsck 1.42.3.wc1 (28-May-2012)
+> Warning: skipping journal recovery because doing a read-only filesystem check.
+> image1 has been mounted 36 times without being checked, check forced.
+> Pass 1: Checking inodes, blocks, and sizes
+> Inode 16407, i_size is 597447, should be 602112.  Fix? no
+> Inode 16407, i_blocks is 1176, should be 1184.  Fix? no
+> Inode 409941, i_blocks is 200208, should be 112.  Fix? no
+> Pass 2: Checking directory structure
+> Pass 3: Checking directory connectivity
+> Pass 4: Checking reference counts
+> Pass 5: Checking group summary information
+> Block bitmap differences:  -1506836 -1506843 -(1506859--1506860) -(1660941--1661964) -(1661966--1671167) -(1671688--1686473)
+> Fix? no
+> Free blocks count wrong for group #2 (31558, counted=31556).
+> Fix? no
+> Free blocks count wrong for group #43 (15871, counted=15867).
+> Fix? no
+> Free blocks count wrong (2204041, counted=2204035).
+> Fix? no
+> image1: ********** WARNING: Filesystem still has errors **********
+> image1: 13008/655360 files (0.3% non-contiguous), 417399/2621440 blocks
+> 
+> I backup the image to image_bk, and then mount the image to a dir, and cat all files in the image.
+> Steps:
+> # dd if=image1 of=image_bk
+> # mount image1 err_dir
+> # find -name '*' -exec cat > /dev/null {} \;
+> 
+> There are no issues during catting, and no err in dmesg too.
+> 
+> *But when I umount the image1 from err_dir, The fsck result didn't show any fs corruption info.
+> 
+> I mount image_bk to err_dir and umount it with no operation directly. The result is same to iamge1.
+> 
+> *So, is fs in the image as a block device via loop device damaged really, or does it have some others issues? 
+> Could you give me some opinions?
+> 
+> 
+> Thanks.
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+--8323328-1748687669-1405497494=:2431--
