@@ -1,279 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaGPJqW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 05:46:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49155 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755419AbaGPJqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 05:46:18 -0400
-Date: Wed, 16 Jul 2014 11:46:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Aristeu Rozanski <aris@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/6] cgroup: distinguish the default and legacy
- hierarchies when handling cftypes
-Message-ID: <20140716094616.GH7121@dhcp22.suse.cz>
-References: <1405352648-4279-1-git-send-email-tj@kernel.org>
- <1405352648-4279-5-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405352648-4279-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756552AbaGPJrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 05:47:49 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63672 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751590AbaGPJrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 05:47:45 -0400
+Message-ID: <1405504062.4408.11.camel@x220>
+Subject: Re: [PATCH 18/19] ARM: SAMSUNG: Remove remaining legacy code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Date: Wed, 16 Jul 2014 11:47:42 +0200
+In-Reply-To: <1404496099-26708-19-git-send-email-t.figa@samsung.com>
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+	 <1404496099-26708-19-git-send-email-t.figa@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jul 2014 09:47:42.0538 (UTC) FILETIME=[FD060AA0:01CFA0DA]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-07-14 11:44:06, Tejun Heo wrote:
-> Until now, cftype arrays carried files for both the default and legacy
-> hierarchies and the files which needed to be used on only one of them
-> were flagged with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE.  This
-> gets confusing very quickly and we may end up exposing interface files
-> to the default hierarchy without thinking it through.
+On Fri, 2014-07-04 at 19:48 +0200, Tomasz Figa wrote:
+> After refactoring suspend/resume, which was last part with dependencies
+> on legacy code, all Kconfig symbols related to Samsung ATAGS support can
+> be deselected and more unused code removed. This includes most of s5p-*
+> code as well, as s5pv210 was their last user.
 > 
-> This patch makes cgroup core provide separate sets of interfaces for
-> cftype handling so that the cftypes for the default and legacy
-> hierarchies are clearly distinguished.  The previous two patches
-> renamed the existing ones so that they clearly indicate that they're
-> for the legacy hierarchies.  This patch adds the interface for the
-> default hierarchy and apply them selectively depending on the
-> hierarchy type.
-> 
-> * cftypes added through cgroup_subsys->dfl_cftypes and
->   cgroup_add_dfl_cftypes() only show up on the default hierarchy.
-> 
-> * cftypes added through cgroup_subsys->legacy_cftypes and
->   cgroup_add_legacy_cftypes() only show up on the legacy hierarchies.
-> 
-> * cgroup_subsys->dfl_cftypes and ->legacy_cftypes can point to the
->   same array for the cases where the interface files are identical on
->   both types of hierarchies.
-> 
-> * This makes all the existing subsystem interface files legacy-only by
->   default and all subsystems will have no interface file created when
->   enabled on the default hierarchy.  Each subsystem should explicitly
->   review and compose the interface for the default hierarchy.
-> 
-> * A boot param "cgroup__DEVEL__legacy_files_on_dfl" is added which
->   makes subsystems which haven't decided the interface files for the
->   default hierarchy to present the legacy files on the default
->   hierarchy so that its behavior on the default hierarchy can be
->   tested.  As the awkward name suggests, this is for development only.
-> 
-> * memcg's CFTYPE_INSANE on "use_hierarchy" is noop now as the whole
->   array isn't used on the default hierarchy.  The flag is removed.
-> 
-> v2: Updated documentation for cgroup__DEVEL__legacy_files_on_dfl.
-> 
-> v3: Clear CFTYPE_ONLY_ON_DFL and CFTYPE_INSANE when cfts are removed
->     as suggested by Li.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Aristeu Rozanski <aris@redhat.com>
-> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-As mentioned on the other email I will cook up a patch to allow basic
-knobs for memcg.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 > ---
->  Documentation/cgroups/unified-hierarchy.txt | 18 ++++++---
->  include/linux/cgroup.h                      |  9 ++++-
->  kernel/cgroup.c                             | 62 +++++++++++++++++++++++++++--
->  mm/memcontrol.c                             |  1 -
->  4 files changed, 78 insertions(+), 12 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
-> index a7a2205..4f45632 100644
-> --- a/Documentation/cgroups/unified-hierarchy.txt
-> +++ b/Documentation/cgroups/unified-hierarchy.txt
-> @@ -94,12 +94,18 @@ change soon.
->  
->   mount -t cgroup -o __DEVEL__sane_behavior cgroup $MOUNT_POINT
->  
-> -All controllers which are not bound to other hierarchies are
-> -automatically bound to unified hierarchy and show up at the root of
-> -it.  Controllers which are enabled only in the root of unified
-> -hierarchy can be bound to other hierarchies.  This allows mixing
-> -unified hierarchy with the traditional multiple hierarchies in a fully
-> -backward compatible way.
-> +All controllers which support the unified hierarchy and are not bound
-> +to other hierarchies are automatically bound to unified hierarchy and
-> +show up at the root of it.  Controllers which are enabled only in the
-> +root of unified hierarchy can be bound to other hierarchies.  This
-> +allows mixing unified hierarchy with the traditional multiple
-> +hierarchies in a fully backward compatible way.
-> +
-> +For development purposes, the following boot parameter makes all
-> +controllers to appear on the unified hierarchy whether supported or
-> +not.
-> +
-> + cgroup__DEVEL__legacy_files_on_dfl
->  
->  A controller can be moved across hierarchies only after the controller
->  is no longer referenced in its current hierarchy.  Because per-cgroup
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index f5f0fee..9f76236 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -590,6 +590,7 @@ static inline void pr_cont_cgroup_path(struct cgroup *cgrp)
->  
->  char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen);
->  
-> +int cgroup_add_dfl_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
->  int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
->  int cgroup_rm_cftypes(struct cftype *cfts);
->  
-> @@ -671,8 +672,12 @@ struct cgroup_subsys {
->  	 */
->  	struct list_head cfts;
->  
-> -	/* base cftypes, automatically registered with subsys itself */
-> -	struct cftype *legacy_cftypes;	/* used on the legacy hierarchies */
-> +	/*
-> +	 * Base cftypes which are automatically registered.  The two can
-> +	 * point to the same array.
-> +	 */
-> +	struct cftype *dfl_cftypes;	/* for the default hierarchy */
-> +	struct cftype *legacy_cftypes;	/* for the legacy hierarchies */
->  
->  	/*
->  	 * A subsystem may depend on other subsystems.  When such subsystem
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index c275aa4..374ebdf 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -149,6 +149,12 @@ struct cgroup_root cgrp_dfl_root;
->   */
->  static bool cgrp_dfl_root_visible;
->  
-> +/*
-> + * Set by the boot param of the same name and makes subsystems with NULL
-> + * ->dfl_files to use ->legacy_files on the default hierarchy.
-> + */
-> +static bool cgroup_legacy_files_on_dfl;
-> +
->  /* some controllers are not supported in the default hierarchy */
->  static const unsigned int cgrp_dfl_root_inhibit_ss_mask = 0
->  #ifdef CONFIG_CGROUP_DEBUG
-> @@ -3085,6 +3091,9 @@ static void cgroup_exit_cftypes(struct cftype *cfts)
->  			kfree(cft->kf_ops);
->  		cft->kf_ops = NULL;
->  		cft->ss = NULL;
-> +
-> +		/* revert flags set by cgroup core while adding @cfts */
-> +		cft->flags &= ~(CFTYPE_ONLY_ON_DFL | CFTYPE_INSANE);
->  	}
->  }
->  
-> @@ -3195,8 +3204,37 @@ static int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
->  	return ret;
->  }
->  
-> +/**
-> + * cgroup_add_dfl_cftypes - add an array of cftypes for default hierarchy
-> + * @ss: target cgroup subsystem
-> + * @cfts: zero-length name terminated array of cftypes
-> + *
-> + * Similar to cgroup_add_cftypes() but the added files are only used for
-> + * the default hierarchy.
-> + */
-> +int cgroup_add_dfl_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
-> +{
-> +	struct cftype *cft;
-> +
-> +	for (cft = cfts; cft && cft->name[0] != '\0'; cft++)
-> +		cft->flags |= CFTYPE_ONLY_ON_DFL;
-> +	return cgroup_add_cftypes(ss, cfts);
-> +}
-> +
-> +/**
-> + * cgroup_add_legacy_cftypes - add an array of cftypes for legacy hierarchies
-> + * @ss: target cgroup subsystem
-> + * @cfts: zero-length name terminated array of cftypes
-> + *
-> + * Similar to cgroup_add_cftypes() but the added files are only used for
-> + * the legacy hierarchies.
-> + */
->  int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
->  {
-> +	struct cftype *cft;
-> +
-> +	for (cft = cfts; cft && cft->name[0] != '\0'; cft++)
-> +		cft->flags |= CFTYPE_INSANE;
->  	return cgroup_add_cftypes(ss, cfts);
->  }
->  
-> @@ -4893,9 +4931,19 @@ int __init cgroup_init(void)
->  		 * disabled flag and cftype registration needs kmalloc,
->  		 * both of which aren't available during early_init.
->  		 */
-> -		if (!ss->disabled) {
-> -			cgrp_dfl_root.subsys_mask |= 1 << ss->id;
-> -			WARN_ON(cgroup_add_cftypes(ss, ss->legacy_cftypes));
-> +		if (ss->disabled)
-> +			continue;
-> +
-> +		cgrp_dfl_root.subsys_mask |= 1 << ss->id;
-> +
-> +		if (cgroup_legacy_files_on_dfl && !ss->dfl_cftypes)
-> +			ss->dfl_cftypes = ss->legacy_cftypes;
-> +
-> +		if (ss->dfl_cftypes == ss->legacy_cftypes) {
-> +			WARN_ON(cgroup_add_cftypes(ss, ss->dfl_cftypes));
-> +		} else {
-> +			WARN_ON(cgroup_add_dfl_cftypes(ss, ss->dfl_cftypes));
-> +			WARN_ON(cgroup_add_legacy_cftypes(ss, ss->legacy_cftypes));
->  		}
->  	}
->  
-> @@ -5291,6 +5339,14 @@ static int __init cgroup_disable(char *str)
->  }
->  __setup("cgroup_disable=", cgroup_disable);
->  
-> +static int __init cgroup_set_legacy_files_on_dfl(char *str)
-> +{
-> +	printk("cgroup: using legacy files on the default hierarchy\n");
-> +	cgroup_legacy_files_on_dfl = true;
-> +	return 0;
-> +}
-> +__setup("cgroup__DEVEL__legacy_files_on_dfl", cgroup_set_legacy_files_on_dfl);
-> +
->  /**
->   * css_tryget_online_from_dir - get corresponding css from a cgroup dentry
->   * @dentry: directory dentry of interest
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b6b3c6f..45c10c6 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6003,7 +6003,6 @@ static struct cftype mem_cgroup_files[] = {
->  	},
->  	{
->  		.name = "use_hierarchy",
-> -		.flags = CFTYPE_INSANE,
->  		.write_u64 = mem_cgroup_hierarchy_write,
->  		.read_u64 = mem_cgroup_hierarchy_read,
->  	},
-> -- 
-> 1.9.3
-> 
 
--- 
-Michal Hocko
-SUSE Labs
+This one also landed in today's linux-next (ie, next-20140716).
+
+>[...]
+> diff --git a/arch/arm/mach-s5pv210/include/mach/gpio.h b/arch/arm/mach-s5pv210/include/mach/gpio.h
+> deleted file mode 100644
+> index 6c8b903..0000000
+
+This removed the single case were CONFIG_SAMSUNG_GPIO_EXTRA was used.
+
+>[...]
+> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+>[...]
+> @@ -64,31 +51,6 @@ config SAMSUNG_ATAGS
+>  
+>  if SAMSUNG_ATAGS
+>  
+> -# options for IRQ support
+> -
+> -config S5P_IRQ
+> -	def_bool ARCH_S5PV210
+> -	help
+> -	  Support common interrupt part for ARCH_S5P SoCs
+> -
+> -config S5P_EXT_INT
+> -	bool
+> -	help
+> -	  Use the external interrupts (other than GPIO interrupts.)
+> -
+> -config S5P_GPIO_INT
+> -	bool
+> -	help
+> -	  Common code for the GPIO interrupts (other than external interrupts.)
+> -
+> -# options for gpio configuration support
+> -
+> -config S5P_GPIO_DRVSTR
+> -	bool
+> -	help
+> -	  Internal configuration to get and set correct GPIO driver strength
+> -	  helper
+> -
+>  config SAMSUNG_GPIO_EXTRA
+>  	int "Number of additional GPIO pins"
+>  	default 128 if SAMSUNG_GPIO_EXTRA128
+
+So a second order effect is that SAMSUNG_GPIO_EXTRA can now be removed.
+Which implies that SAMSUNG_GPIO_EXTRA64 and SAMSUNG_GPIO_EXTRA128 can
+also be removed.
+
+Should I submit the trivial patch to do that or is a patch already
+queued somewhere?
+
+
+Paul Bolle
+
