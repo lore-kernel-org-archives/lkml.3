@@ -1,140 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965860AbaGPTRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 15:17:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44148 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965804AbaGPTRQ (ORCPT
+	id S965882AbaGPTRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 15:17:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42397 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965687AbaGPTRh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 15:17:16 -0400
-Date: Wed, 16 Jul 2014 12:17:01 -0700
-From: tip-bot for Andy Shevchenko <tipbot@zytor.com>
-Message-ID: <tip-d400a68d1f1e7a1fc7c5caf9024d4e67b218558d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, adrian.hunter@intel.com, tglx@linutronix.de,
-        andriy.shevchenko@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, adrian.hunter@intel.com, tglx@linutronix.de,
-        andriy.shevchenko@linux.intel.com
-In-Reply-To: <1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Convert open coded equivalents to asprintf()
-Git-Commit-ID: d400a68d1f1e7a1fc7c5caf9024d4e67b218558d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 16 Jul 2014 15:17:37 -0400
+Message-ID: <53C6CFCC.2050300@arm.com>
+Date: Wed, 16 Jul 2014 21:17:32 +0200
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Josh Boyer <jwboyer@redhat.com>, Bruno Wolff III <bruno@wolff.to>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Scheduler regression from caffcdd8d27ba78730d5540396ce72ad022aff2c
+References: <20140716145546.GA6922@wolff.to> <20140716151748.GC2460@hansolo.jdub.homelinux.org>
+In-Reply-To: <20140716151748.GC2460@hansolo.jdub.homelinux.org>
+X-OriginalArrivalTime: 16 Jul 2014 19:17:33.0843 (UTC) FILETIME=[98A12630:01CFA12A]
+X-MC-Unique: 114071620173501001
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d400a68d1f1e7a1fc7c5caf9024d4e67b218558d
-Gitweb:     http://git.kernel.org/tip/d400a68d1f1e7a1fc7c5caf9024d4e67b218558d
-Author:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-AuthorDate: Fri, 4 Jul 2014 14:43:48 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 7 Jul 2014 16:55:24 -0300
+Hi Bruno and Josh,
 
-perf tools: Convert open coded equivalents to asprintf()
+On 16/07/14 17:17, Josh Boyer wrote:
+> Adding Dietmar in since he is the original author.
+>
+> josh
+>
+> On Wed, Jul 16, 2014 at 09:55:46AM -0500, Bruno Wolff III wrote:
+>> caffcdd8d27ba78730d5540396ce72ad022aff2c has been causing crashes
+>> early in the boot process on one of three machines I have been
+>> testing the kernel on. On that one machine it happens every boot. It
+>> happens before netconsole is functional.
 
-The following snippet
-	V = malloc(S);
-	if (!V) { }
-	sprintf(V, ...)
+I tested this patch on two platforms (ARM TC2 and INTEL i5 M520) by 
+replacing the two lines (already with the new sg->sgc->capacity instead 
+of the old sg->sgp->power) by:
 
-Can be easily changed to a one line:
+  BUG_ON(!cpumask_empty(sched_group_cpus(sg)));
+  BUG_ON(sg->sgc->capacity);
 
-	if (asprintf(&V, ...) < 0) { }
+The memory for sg is allocated and zeroed out in __sdt_alloc() with:
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Link: http://lkml.kernel.org/r/1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/trace-event-info.c | 12 +++---------
- tools/perf/util/util.c             |  9 ++-------
- 2 files changed, 5 insertions(+), 16 deletions(-)
+sgc = kzalloc_node(sizeof(struct sched_group_capacity) + cpumask_size(),
+					GFP_KERNEL, cpu_to_node(j));
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 7e6fcfe..c3bba88 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -191,12 +191,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
--		if (!format) {
-+		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
- 			err = -ENOMEM;
- 			goto out;
- 		}
--		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 		free(format);
- 		if (ret < 0)
-@@ -217,12 +215,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
--		if (!format) {
-+		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
- 			err = -ENOMEM;
- 			goto out;
- 		}
--		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 
- 		if (ret >= 0) {
-@@ -317,12 +313,10 @@ static int record_event_files(struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "ftrace") == 0 ||
- 		    !system_in_tp_list(dent->d_name, tps))
- 			continue;
--		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
--		if (!sys) {
-+		if (asprintf(&sys, "%s/%s", path, dent->d_name) < 0) {
- 			err = -ENOMEM;
- 			goto out;
- 		}
--		sprintf(sys, "%s/%s", path, dent->d_name);
- 		ret = stat(sys, &st);
- 		if (ret >= 0) {
- 			ssize_t size = strlen(dent->d_name) + 1;
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 95aefa7..e4132ae 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -333,12 +333,9 @@ const char *find_tracing_dir(void)
- 	if (!debugfs)
- 		return NULL;
- 
--	tracing = malloc(strlen(debugfs) + 9);
--	if (!tracing)
-+	if (asprintf(&tracing, "%s/tracing", debugfs) < 0)
- 		return NULL;
- 
--	sprintf(tracing, "%s/tracing", debugfs);
--
- 	tracing_found = 1;
- 	return tracing;
- }
-@@ -352,11 +349,9 @@ char *get_tracing_file(const char *name)
- 	if (!tracing)
- 		return NULL;
- 
--	file = malloc(strlen(tracing) + strlen(name) + 2);
--	if (!file)
-+	if (asprintf(&file, "%s/%s", tracing, name) < 0)
- 		return NULL;
- 
--	sprintf(file, "%s/%s", tracing, name);
- 	return file;
- }
- 
+The related call chain:
+
+build_sched_domains()
+	__visit_domain_allocation_hell()
+		__sdt_alloc()
+	build_sched_groups()
+
+>>
+>> A partial revert of the commit fixes the problem. I do not know why
+>> the commit is broken though.
+>>
+>> I have filed https://bugzilla.kernel.org/show_bug.cgi?id=80251 for
+>> this issue.
+
+ From the issue, I see that the machine making trouble is an Xeon (2 
+processors w/ hyper-threading).
+
+Could you please share:
+
+  cat /proc/cpuinfo and
+  cat /proc/schedstat (kernel config w/ CONFIG_SCHEDSTATS=y)
+
+from this machine.
+
+I don't think it is SMT (since it's also there on my INTEL i5 M520 
+(arch/x86/configs/x86_64_defconfig).
+
+Could you also put the two BUG_ON lines into build_sched_groups() 
+[kernel/sched/core.c] wo/ the cpumask_clear() and setting 
+sg->sgc->capacity to 0 and share the possible crash output as well?
+
+>>
+>> The problem happens on both Fedora and Linus kernels.
+>>
+>> git diff caffcdd8d27ba78730d5540396ce72ad022aff2c^ caffcdd8d27ba78730d5540396ce72ad022aff2c
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 45d077ed24fb..6340c601475d 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -5794,8 +5794,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
+>>                         continue;
+>>
+>>                 group = get_group(i, sdd, &sg);
+>> -               cpumask_clear(sched_group_cpus(sg));
+>> -               sg->sgp->power = 0;
+>>                 cpumask_setall(sched_group_mask(sg));
+>>
+>>                 for_each_cpu(j, span) {
+>>
+>> By rc5 the second line can't be added back because the structure has
+>> changed. However adding back cpumask_clear(sched_group_cpus(sg)); to
+>> rc5 got things working for me again.
+
+That's because 'sched: Let 'struct sched_group_power' care about CPU 
+capacity' (commit id 63b2ca30bdb3) changes the struct sched_group member 
+from struct sched_group_power *sgp to struct sched_group_capacity *sgc .
+
+I.e. the second line becomes
+
+  sg->sgc->capacity = 0;
+
+Thanks,
+
+-- Dietmar
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
