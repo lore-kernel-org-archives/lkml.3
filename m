@@ -1,45 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaGPWEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 18:04:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55122 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaGPWEU (ORCPT
+	id S1753568AbaGPWEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 18:04:32 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:52461 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaGPWEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 18:04:20 -0400
-Date: Wed, 16 Jul 2014 15:08:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [patch V2 50/64] hangcheck-timer: Use ktime_get_ns()
-Message-ID: <20140716220854.GA716@kroah.com>
-References: <20140716205018.175419210@linutronix.de>
- <20140716205056.454252756@linutronix.de>
+	Wed, 16 Jul 2014 18:04:25 -0400
+Date: Wed, 16 Jul 2014 15:04:22 -0700
+From: Zi Shen Lim <zlim.lnx@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFCv3 08/14] arm64: introduce aarch64_insn_gen_movewide()
+Message-ID: <20140716220422.GB18109@gup76>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+ <1405405512-4423-9-git-send-email-zlim.lnx@gmail.com>
+ <20140716161715.GU29414@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716205056.454252756@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140716161715.GU29414@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 09:05:03PM -0000, Thomas Gleixner wrote:
-> There is no point in having a S390 private implementation and there is
-> no point in using the raw monotonic time. The NTP freqeuency
-> adjustment of CLOCK_MONOTONIC is really not doing any harm for the
-> hang check timer.
+On Wed, Jul 16, 2014 at 05:17:15PM +0100, Will Deacon wrote:
+> On Tue, Jul 15, 2014 at 07:25:06AM +0100, Zi Shen Lim wrote:
+> > Introduce function to generate move wide (immediate) instructions.
 > 
-> Use ktime_get_ns() for everything and get rid of the timespec
-> conversions.
+> [...]
 > 
-> V2: Drop the raw monotonic and the S390 special case
+> > +u32 aarch64_insn_gen_movewide(enum aarch64_insn_register dst,
+> > +			      int imm, int shift,
+> > +			      enum aarch64_insn_variant variant,
+> > +			      enum aarch64_insn_movewide_type type)
+> > +{
+> > +	u32 insn;
+> > +
+> > +	switch (type) {
+> > +	case AARCH64_INSN_MOVEWIDE_ZERO:
+> > +		insn = aarch64_insn_get_movz_value();
+> > +		break;
+> > +	case AARCH64_INSN_MOVEWIDE_KEEP:
+> > +		insn = aarch64_insn_get_movk_value();
+> > +		break;
+> > +	case AARCH64_INSN_MOVEWIDE_INVERSE:
+> > +		insn = aarch64_insn_get_movn_value();
+> > +		break;
+> > +	default:
+> > +		BUG_ON(1);
+> > +	}
+> > +
+> > +	BUG_ON(imm < 0 || imm > 65535);
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Do this check with masking instead?
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Ok, if you prefer, I can change it to:
+
+	BUG_ON(imm & ~GENMASK(15, 0));
+
+> 
+> > +
+> > +	switch (variant) {
+> > +	case AARCH64_INSN_VARIANT_32BIT:
+> > +		BUG_ON(shift != 0 && shift != 16);
+> > +		break;
+> > +	case AARCH64_INSN_VARIANT_64BIT:
+> > +		insn |= BIT(31);
+> > +		BUG_ON(shift != 0 && shift != 16 && shift != 32 &&
+> > +		       shift != 48);
+> 
+> Would be neater as a nested switch, perhaps? If you reorder the
+> outer-switch, you could probably fall-through too and combine the shift
+> checks.
+
+Not sure I picture what you had in mind... I couldn't come up with a
+neater version with the properties you described.
+
+The alternative I had was using masks instead of integer values, but
+one could argue that while neater, it could also be harder to read:
+
+	switch (variant) {
+	case AARCH64_INSN_VARIANT_32BIT:
+		BUG_ON(shift & ~BIT(4));
+		break;
+	case AARCH64_INSN_VARIANT_64BIT:
+		insn |= BIT(31);
+		BUG_ON(shift & ~GENMASK(5, 4));
+	...
+
+> 
+> Will
