@@ -1,104 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664AbaGQMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:20:25 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42256 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932075AbaGQMUR (ORCPT
+	id S932290AbaGQMW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:22:28 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:56456 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888AbaGQMWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:20:17 -0400
-Date: Thu, 17 Jul 2014 13:20:00 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140717122000.GV21766@n2100.arm.linux.org.uk>
-References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com> <22032517.gk8PRUMaIU@wuerfel> <93903d5fdf85427bb8a418894540c122@BN1PR0301MB0772.namprd03.prod.outlook.com> <5456516.0fVZeXjF8k@wuerfel> <20140717111912.GA16025@shlinux1.ap.freescale.net>
+	Thu, 17 Jul 2014 08:22:25 -0400
+Message-ID: <53C7C002.50008@linaro.org>
+Date: Thu, 17 Jul 2014 07:22:26 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717111912.GA16025@shlinux1.ap.freescale.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>
+CC: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] printk: correct some more typos
+References: <1405531620-9983-1-git-send-email-elder@linaro.org> <1405531620-9983-5-git-send-email-elder@linaro.org> <20140717114618.GS6774@pathway.suse.cz>
+In-Reply-To: <20140717114618.GS6774@pathway.suse.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 07:19:15PM +0800, Peter Chen wrote:
-> Currently, we are designing a generic driver, we don't know what's the
-> hardware architecture, we are trying to find a solution how to set
-> dma mask for all possible devices which will use this driver, Antoine's
-> this patch is trying to cover this feature.
+On 07/17/2014 06:46 AM, Petr Mládek wrote:
+> On Wed 2014-07-16 12:27:00, Alex Elder wrote:
+>> This patch corrects a few more typographical errors in "printk.c".
+>>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+>> ---
+>>  kernel/printk/printk.c | 12 ++++++------
+>>  1 file changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+>> index 3f15d95..0cbd060 100644
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
+>> @@ -201,7 +201,7 @@ static int console_may_schedule;
+>>   *
+>>   * The optional key/value pairs are attached as continuation lines starting
+>>   * with a space character and terminated by a newline. All possible
+>> - * non-prinatable characters are escaped in the "\xff" notation.
+>> + * non-printable characters are escaped in the "\xff" notation.
+>>   *
+>>   * Users of the export format should ignore possible additional values
+>>   * separated by ',', and find the message after the ';' character.
+>> @@ -411,7 +411,7 @@ static int log_store(int facility, int level,
+>>  		/* truncate the message if it is too long for empty buffer */
+>>  		size = truncate_msg(&text_len, &trunc_msg_len,
+>>  				    &dict_len, &pad_len);
+>> -		/* survive when the log buffer is too small for trunc_msg */
+>> +		/* survive when the log buffer is too small for truncate_msg */
 > 
-> For example, 
+> It meant the trunc_msg = "<truncated>" string. So, the original text
+> was more precise. I agree that it is a bit confusing :-)
+
+Oh, I see now.  No it's not confusing, it's just that right here
+trunc_msg[] is not mentioned--that's buried inside truncate_msg().
+
+I don't feel strongly about this one, I'll drop this hunk.
+
+					-Alex
+
+> The other changes look correct.
 > 
-> Marvell Berlin doesn't need to set dma mask specific.
-> http://marc.info/?l=linux-arm-kernel&m=140205228507045&w=2
-> http://www.spinics.net/lists/linux-usb/msg110598.html
+> Best Regards,
+> Petr
+> 
+>>  		if (log_make_free_space(size))
+>>  			return 0;
+>>  	}
+>> @@ -614,7 +614,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+>>  	/*
+>>  	 * If we couldn't merge continuation line fragments during the print,
+>>  	 * export the stored flags to allow an optional external merge of the
+>> -	 * records. Merging the records isn't always neccessarily correct, like
+>> +	 * records. Merging the records isn't always necessarily correct, like
+>>  	 * when we hit a race during printing. In most cases though, it produces
+>>  	 * better readable output. 'c' in the record flags mark the first
+>>  	 * fragment of a line, '+' the following.
+>> @@ -2881,7 +2881,7 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
+>>  		prev = msg->flags;
+>>  	}
+>>  
+>> -	/* last message in next interation */
+>> +	/* last message in next iteration */
+>>  	next_seq = seq;
+>>  	next_idx = idx;
+>>  
+>> @@ -2907,7 +2907,7 @@ out:
+>>  EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
+>>  
+>>  /**
+>> - * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
+>> + * kmsg_dump_rewind_nolock - reset the iterator (unlocked version)
+>>   * @dumper: registered kmsg dumper
+>>   *
+>>   * Reset the dumper's iterator so that kmsg_dump_get_line() and
+>> @@ -2925,7 +2925,7 @@ void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
+>>  }
+>>  
+>>  /**
+>> - * kmsg_dump_rewind - reset the interator
+>> + * kmsg_dump_rewind - reset the iterator
+>>   * @dumper: registered kmsg dumper
+>>   *
+>>   * Reset the dumper's iterator so that kmsg_dump_get_line() and
+>> -- 
+>> 1.9.1
+>>
 
-I can't make sense of those messages.
-
-What are you saying - that ci_hdrc on Berlin does not use DMA at all?
-Or that it doesn't care what the DMA mask is set to?
-
-> Xilinx zynq needs to set dma mask as 0xFFFFFFF0
-> http://marc.info/?l=linux-usb&m=140384129921706&w=2
-
-Why?  The DMA mask does /not/ convey the DMA alignment requirements of
-the transfers.  If you need it to be aligned to 16-bytes, then that's
-something which is internal to the driver.  This is no different from
-devices which require 32-bit alignment or 64-bit alignment.
-
-You can't really expect the DMA subsystem to take care of that for you.
-The DMA mask is about indicating what memory ranges are acceptable for
-DMA, and not the alignment.
-
-So, in this case, your DMA mask should be DMA_BIT_MASK(32), the same as
-iMX.
-
-However, if your driver does receive memory which is not appropriately
-aligned, it is the driver's responsibility, not the DMA API, to deal
-with that appropriately.
-
-So, it sounds to me like:
-
-- The DT code should be setting the DMA mask appropriately already.
-
-- If the driver is using streaming DMA, should call:
-
-	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-	if (err)
-		handle error;
-
-- If the driver is using coherent DMA only:
-
-	err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-	if (err)
-		handle error;
-
-- If the driver uses both coherent DMA and streaming DMA:
-
-	err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-	if (err)
-		handle error;
-
-Where the _bus_ has restrictions on the available memory (iow, the
-higher address bits), these should be dealt with inside the DMA API.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
