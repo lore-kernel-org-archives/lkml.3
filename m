@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635AbaGQXeD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:34:03 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:51120 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679AbaGQXeB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:34:01 -0400
-Date: Thu, 17 Jul 2014 16:33:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
-Message-ID: <20140717233356.GB8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com>
- <1405463509-2468-2-git-send-email-bobby.prani@gmail.com>
- <20140715225313.GB24290@cloud>
- <53C5B1F7.3000409@gmail.com>
- <20140716124729.GR8690@linux.vnet.ibm.com>
- <53C67E2E.7080402@gmail.com>
- <53C71EF3.8010901@cn.fujitsu.com>
- <53C72080.5040501@gmail.com>
- <20140717021405.GA1102@thin>
- <53C732F1.7030005@gmail.com>
+	id S1758704AbaGQXej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:34:39 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38811 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758438AbaGQXei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 19:34:38 -0400
+Date: Fri, 18 Jul 2014 01:34:33 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Jenny TC <jenny.tc@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>
+Subject: Re: [PATCH 1/4] power_supply: Add inlmt,iterm, min/max temp props
+Message-ID: <20140717233433.GB21934@earth.universe>
+References: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
+ <1404799461-26345-2-git-send-email-jenny.tc@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
 Content-Disposition: inline
-In-Reply-To: <53C732F1.7030005@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071723-0928-0000-0000-0000037A8B5B
+In-Reply-To: <1404799461-26345-2-git-send-email-jenny.tc@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 10:20:33PM -0400, Pranith Kumar wrote:
-> On 07/16/2014 10:14 PM, Josh Triplett wrote:
-> > On Wed, Jul 16, 2014 at 09:01:52PM -0400, Pranith Kumar wrote:
-> >> Sure, please find an updated patch with Josh Triplett's sign-off added:
-> > 
-> > It appears to have a reviewed-by from someone named "Joe Tripplett"
-> > instead. ;)
-> > 
-> 
-> I apologize for fat-fingering this.
-> Since I've sent one too many emails in this thread already, I suppose on more can not do much harm :)
-> 
-> This time with Reviewed-by Lai Jiangshan added and Reviewed-by Josh Triplett corrected.
-> 
-> From: Pranith Kumar <bobby.prani@gmail.com>
-> Date: Mon, 14 Jul 2014 16:01:05 -0400
-> Subject: [PATCH 2/3] rcu: Remove stale comment in tree.c
-> 
-> This commit removes a stale comment in rcu/tree.c which was left out when some
-> code was moved around previously in the commit
-> 
-> 2036d94a7b61 ("rcu:  Rework detection of use of RCU by offline CPUs")
-> 
-> For reference, the following updated comment exists a few lines below this which
-> means the same.
-> 
-> /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Queued for 3.18, thank you all!
+--tjCHc7DPkfUGtrlw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
+Hi Jenny,
 
-> ---
->  kernel/rcu/tree.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index a1abaa8..e67246e 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -2211,8 +2211,6 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
->  	/* Adjust any no-longer-needed kthreads. */
->  	rcu_boost_kthread_setaffinity(rnp, -1);
-> 
-> -	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
-> -
->  	/* Exclude any attempts to start a new grace period. */
->  	mutex_lock(&rsp->onoff_mutex);
->  	raw_spin_lock_irqsave(&rsp->orphan_lock, flags);
-> -- 
-> 1.9.1
-> 
-> 
+On Tue, Jul 08, 2014 at 11:34:18AM +0530, Jenny TC wrote:
+> Add new power supply properties for input current, charge termination
+> current, min and max temperature
+>=20
+> POWER_SUPPLY_PROP_TEMP_MIN - minimum operatable temperature
+> POWER_SUPPLY_PROP_TEMP_MAX - maximum operatable temperature
+>=20
+> POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT - input current limit programmed
+> by charger. Indicates the input current for a charging source.
+>=20
+> POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT - Charge termination current used
+> to detect the end of charge condition
+>=20
+> Signed-off-by: Jenny TC <jenny.tc@intel.com>
 
+I've added this to my queue, which will go into battery.git's
+for-next, once I have access to it:
+
+https://git.kernel.org/cgit/linux/kernel/git/sre/linux-power-supply.git/com=
+mit/?h=3Ddev&id=3D785bfcd0b23440a0c3d7eebf6ace45a56067b37f
+
+You can skip this patch in further iterations of this patchset.
+
+-- Sebastian
+
+--tjCHc7DPkfUGtrlw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTyF2JAAoJENju1/PIO/qaE9AP/2QsPrUH793+eLj+FSyD1S20
+aA9lUHaHBztmcfNvsMwFkuXzldRSMoGgLEtaYIzItSQaoZKxiJKxJK2lBdF+9TWt
+0HH2vq2Sw97AZiWfEkjuiEwST4KsoB6/3pfDLdbunm+2sqHOFGw63r8wQq4YnVzR
+WbJ6NdtOxnK9/TygLuvHrtu2o3uSIoL+UowX7gT2N/0LdBdyB/xC/jKSM785cyhz
+BcryqCaHjxdabJ8tKj0Xp65OeSgr17Egx1xPimCxecWOAJ4qtjDZruruS1bjynqi
+M9c3Q1tNtKLbKTIweZDVvcY5vcjRXFztKOBrG7mCzfoFhHA946qTbh9OWZ2KdE8z
+7iH0y6VcQ+HZjQsH51KyGUi9mIYyHNZUUEuaWfPHQqm6G5MabjhHHrWvaNGQhWih
+EPQX6Cq2My3OVqe4HqPgpGyU7k442pxcIUubEdXn5kG6giaj/8ah5vlRoqkO5wiW
+wdXln49Iui68T9WWsy/m8qZ9mVFmerq9SPM4lMMWLWcolTLbM57wbfJ5+25QKk+3
+y+KGtFA8+KJrzad9Qx62ynVKQxp03b55JB4Jl7soDx+12CA5mTwjGDwB4xOfSIKS
+zUxRZEOYI2wv2q1065zT4J1S2CCpxJot0MFD9utCtF7ELANJWjmRiP8oXN1gkdiu
+iVDvERxNOs7cw0dnFG5Y
+=5NGR
+-----END PGP SIGNATURE-----
+
+--tjCHc7DPkfUGtrlw--
