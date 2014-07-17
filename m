@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012AbaGQWmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 18:42:31 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:49260 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896AbaGQWma (ORCPT
+	id S1758100AbaGQWnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 18:43:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44235 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655AbaGQWnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 18:42:30 -0400
-Message-ID: <53C8514F.4040606@collabora.co.uk>
-Date: Fri, 18 Jul 2014 00:42:23 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 17 Jul 2014 18:43:18 -0400
+Date: Fri, 18 Jul 2014 00:43:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Joe Perches <joe@perches.com>
+cc: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
+        apw@canonical.com, tytso@mit.edu, dwalter@google.com, bp@suse.de,
+        neilb@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+In-Reply-To: <1405612283.12363.10.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.10.1407180039510.24854@nanos>
+References: <1405611268-12463-1-git-send-email-richard@nod.at> <1405612283.12363.10.camel@joe-AO725>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Doug Anderson <dianders@chromium.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        sjg@chromium.org, olof@lixom.net, ch.naveen@samsung.com,
-        swarren@wwwdotorg.org, khilman@linaro.org, ajaynumb@gmail.com,
-        rahul.sharma@samsung.com, tushar.b@samsung.com, ben-linux@fluff.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: dts: Add cros_ec to exynos5420-peach-pit and
- exynos5800-peach-pi
-References: <1403627332-4688-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1403627332-4688-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+On Thu, 17 Jul 2014, Joe Perches wrote:
 
-On 06/24/2014 06:28 PM, Doug Anderson wrote:
-> This adds cros_ec to exynos5420-peach-pit and exynos5800-peach-pi,
-> including:
-> * The keyboard
-> * The i2c tunnel
-> * The tps65090 under the i2c tunnel
-> * The battery under the i2c tunnel
+> On Thu, 2014-07-17 at 17:34 +0200, Richard Weinberger wrote:
+> > checkpatch.pl is a nice tool to find issues in patches.
 > 
-> To add extra motivation, it should be noted that tps65090 is one of
-> the things needed to get display-related FETs turned on for pit and
-> pi.
+> grep is a similar tool, just less automated.
 > 
-> Note that this relies on a few outstanding changes:
-> * Needs (spi: s3c64xx: fix broken "cs_gpios" usage in the driver) and
->   (spi: s3c64xx: for DT platofrms always get the chipselect info from
->   DT node) to work properly and match the documented bindings.  See
->   <https://patchwork.kernel.org/patch/4346701/> and
->   <https://patchwork.kernel.org/patch/4346711/>
+> > Sadly this tool gets more and more abused by various people to create
+> > style cleanups for source files within the kernel.
+> > In order to deal with that bad habit let's remove the --file option
+> > and bring checkpatch.pl back to its original purpose.
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Tested-by: Tushar Behera <tushar.b@samsung.com>
+> Any tool can be misused.
 > 
+> diff -urN /dev/null $file | ./scripts/checkpatch.pl -
+> 
+> does the same thing as --file so I don't see any real
+> fundamental difference.
 
-Mark Brown as already applied the SPI DT binding fix from Naveen [0] which was
-the dependency for this patch and he said that will try to send the whole series
-to Torvalds before the 3.16-rc cycle ends.
+There is a fundamental difference:
 
-So I think that it's safe now if you want to pick this patch.
+Coming up with the above requires actual brain involvement.
 
-Thanks a lot!
+./scripts/checkpatch.pl -f
 
-Best regards,
-Javier
+not so much.
 
-[0]:
-https://git.kernel.org/cgit/linux/kernel/git/broonie/spi.git/commit/?h=for-next&id=306972cedfdedc662dd8e32a6397d0e29f2ac90e
+So, for Richards patch:
+
+Acked-and-heartely-welcomed-by: Thomas Gleixner <tglx@linutronix.de>
+
