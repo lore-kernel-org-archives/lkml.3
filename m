@@ -1,101 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933918AbaGQPAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:00:06 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:55331 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaGQPAE (ORCPT
+	id S934007AbaGQPBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:01:08 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:50570 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908AbaGQPBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:00:04 -0400
-Date: Thu, 17 Jul 2014 16:59:59 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Bastian Hecht <hechtb@gmail.com>
-Cc: linux-i2c@vger.kernel.org, Linux-SH <linux-sh@vger.kernel.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "open list:TEGRA ARCHITECTUR..." <linux-tegra@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] i2c: tegra: Remove suspension check
-Message-ID: <20140717145958.GA32534@ulmo>
-References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
- <1405608520-5644-5-git-send-email-hechtb@gmail.com>
+	Thu, 17 Jul 2014 11:01:07 -0400
+Message-ID: <53C7E530.2010503@gmail.com>
+Date: Thu, 17 Jul 2014 18:01:04 +0300
+From: Timofey Titovets <nefelim4ag@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
-Content-Disposition: inline
-In-Reply-To: <1405608520-5644-5-git-send-email-hechtb@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: minchan@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
+Subject: [PATCH v2] zram: auto add/del devices on demand
+References: <53C7C131.1060306@gmail.com> <20140717140440.GA1275@swordfish>
+In-Reply-To: <20140717140440.GA1275@swordfish>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Kj7319i9nmIyA2yE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 17, 2014 at 04:48:40PM +0200, Bastian Hecht wrote:
-[...]
->  #ifdef CONFIG_PM_SLEEP
-> -static int tegra_i2c_suspend(struct device *dev)
-> -{
-> -	struct tegra_i2c_dev *i2c_dev =3D dev_get_drvdata(dev);
-> -
-> -	i2c_lock_adapter(&i2c_dev->adapter);
-> -	i2c_dev->is_suspended =3D true;
-> -	i2c_unlock_adapter(&i2c_dev->adapter);
-> -
-> -	return 0;
-> -}
-> -
->  static int tegra_i2c_resume(struct device *dev)
->  {
->  	struct tegra_i2c_dev *i2c_dev =3D dev_get_drvdata(dev);
-> @@ -842,14 +827,12 @@ static int tegra_i2c_resume(struct device *dev)
->  		return ret;
->  	}
-> =20
-> -	i2c_dev->is_suspended =3D false;
-> -
->  	i2c_unlock_adapter(&i2c_dev->adapter);
-> =20
->  	return 0;
->  }
-> =20
-> -static SIMPLE_DEV_PM_OPS(tegra_i2c_pm, tegra_i2c_suspend, tegra_i2c_resu=
-me);
-> +static SIMPLE_DEV_PM_OPS(tegra_i2c_pm, tegra_i2c_resume);
+On 07/17/2014 05:04 PM, Sergey Senozhatsky wrote:
+> On (07/17/14 15:27), Timofey Titovets wrote:
+>> This add supporting of autochange count of zram devices on demand, like loop
+>> devices;
+>> This working by following rules:
+>> 	- Always save minimum devices count specified by num_device (can be
+>> specified while kernel module loading)
+>> 	- if last device already using add new device;
+>> 	- if last and prelast devices is free - delete last zram device;
+>>
+>> Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
+>>
+>>  From v1 -> v2:
+>> Delete useless variable 'ret', added documentation for explain new zram
+>> behaviour
+>>
+>> Please pull from:
+>> https://github.com/Nefelim4ag/linux.git
+>> ---
+>> Tested on 3.15.5-2-ARCH, can be applied on any kernel version
+>> after this patch 'zram: add LZ4 compression support' - https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
+>> ---
+>> diff --git a/Documentation/blockdev/zram.txt
+>> b/Documentation/blockdev/zram.txt
+>> index 0595c3f..7f5c921 100644
+>> --- a/Documentation/blockdev/zram.txt
+>> +++ b/Documentation/blockdev/zram.txt
+>> @@ -18,9 +18,19 @@ Following shows a typical sequence of steps for using
+>> zram.
+>>
+>>   1) Load Module:
+>>   	modprobe zram num_devices=4
+>> -	This creates 4 devices: /dev/zram{0,1,2,3}
+>> +	This pre creates 4 devices: /dev/zram{0,1,2,3}
+>>   	(num_devices parameter is optional. Default: 1)
+>>
+>> +	Kernel dynamically changes number of zram devices by demand
+>> +	(between num_devices and 31)
+>> +	If set disk size(4) for last device
+>> +	kernel automatically adds new zram device
+>> +	If last two devices have zero disk size after reset(8),
+>> +	kernel will destroy last device
+>> +
+>> +	Summing up all features, comes one simple rule:
+>> +	"The last zram device is always free for use"
+>
+> I can't understand what is the real benefit?
+>
+>
+>>   2) Set max number of compression streams
+>>   	Compression backend may use up to max_comp_streams compression streams,
+>>   	thus allowing up to max_comp_streams concurrent compression operations.
+>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>> index 089e72c..9b2fc89 100644
+>> --- a/drivers/block/zram/zram_drv.c
+>> +++ b/drivers/block/zram/zram_drv.c
+>> @@ -42,6 +42,10 @@ static const char *default_compressor = "lzo";
+>>
+>>   /* Module params (documentation at end) */
+>>   static unsigned int num_devices = 1;
+>> +static unsigned int last_created_dev = 1;
+>> +
+>> +static void zram_add_dev(void);
+>> +static void zram_del_dev(void);
+>>   #define ZRAM_ATTR_RO(name)						\
+>>   static ssize_t zram_attr_##name##_show(struct device *d,		\
+>> @@ -168,6 +172,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
+>>   		struct device_attribute *attr, const char *buf, size_t len)
+>>   {
+>>   	struct zram *zram = dev_to_zram(dev);
+>> +
+>>   	down_write(&zram->init_lock);
+>>   	if (init_done(zram)) {
+>>   		up_write(&zram->init_lock);
+>> @@ -239,6 +244,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+>>   {
+>>   	size_t num_pages;
+>>   	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
+>> +
+>>   	if (!meta)
+>>   		goto out;
+>>
+>> @@ -374,6 +380,7 @@ static int zram_bvec_read(struct zram *zram, struct
+>> bio_vec *bvec,
+>>   	struct page *page;
+>>   	unsigned char *user_mem, *uncmem = NULL;
+>>   	struct zram_meta *meta = zram->meta;
+>> +
+>>   	page = bvec->bv_page;
+>>
+>>   	read_lock(&meta->tb_lock);
+>> @@ -607,6 +614,7 @@ static void zram_reset_device(struct zram *zram, bool
+>> reset_capacity)
+>>   	/* Free all pages that are still in this zram device */
+>>   	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+>>   		unsigned long handle = meta->table[index].handle;
+>> +
+>>   		if (!handle)
+>>   			continue;
+>>
+>> @@ -668,6 +676,7 @@ static ssize_t disksize_store(struct device *dev,
+>>   	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+>>   	revalidate_disk(zram->disk);
+>>   	up_write(&zram->init_lock);
+>> +	zram_add_dev();
+>>   	return len;
+>>
+>>   out_destroy_comp:
+>> @@ -712,6 +721,7 @@ static ssize_t reset_store(struct device *dev,
+>>   	bdput(bdev);
+>>
+>>   	zram_reset_device(zram, true);
+>> +	zram_del_dev();
+>>   	return len;
+>>
+>>   out:
+>> @@ -954,6 +964,41 @@ static void destroy_device(struct zram *zram)
+>>   	blk_cleanup_queue(zram->queue);
+>>   }
+>>
+>> +/* remove last free device, if last and prelast dev a free */
+>> +static void zram_del_dev(void)
+>> +{
+>> +	if (last_created_dev < num_devices)
+>> +		return;
+>> +
+>> +	if (zram_devices[last_created_dev].disksize == 0 &&
+>> +		zram_devices[last_created_dev-1].disksize == 0
+>> +		) {
+>
+> racy?
+>
+>> +		destroy_device(&zram_devices[last_created_dev]);
+>> +		last_created_dev--;
+>> +		pr_info("Deleted zram%u device\n", last_created_dev);
+>> +	}
+>> +}
+>> +
+>> +/* Auto add empty zram device, if last device in use */
+>> +static void zram_add_dev(void)
+>> +{
+>> +	if (last_created_dev+1 > max_num_devices) {
+>> +		pr_warn("Can't add zram%u, max device number reached\n",
+>> +			num_devices);
+>> +		return;
+>> +	}
+>
+> racy?
+>
+>> +	if (&zram_devices[last_created_dev].disksize > 0) {
+>> +		last_created_dev++;
+>> +		if (create_device(&zram_devices[last_created_dev], last_created_dev)) {
+>> +			destroy_device(&zram_devices[last_created_dev]);
+>> +			last_created_dev--;
+>
+> racy?
+>
+>
+> 	-ss
+>
+>
+>> +			return;
+>> +		}
+>> +		pr_info("Created zram%u device\n", last_created_dev);
+>> +	}
+>> +}
+>> +
+>>   static int __init zram_init(void)
+>>   {
+>>   	int ret, dev_id;
+>> @@ -972,18 +1017,20 @@ static int __init zram_init(void)
+>>   		goto out;
+>>   	}
+>>
+>> -	/* Allocate the device array and initialize each one */
+>> -	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
+>> +	/* Allocate the device array */
+>> +	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
+>>   	if (!zram_devices) {
+>>   		ret = -ENOMEM;
+>>   		goto unregister;
+>>   	}
+>>
+>> +	/* Initialise zram{0..num_devices} */
+>>   	for (dev_id = 0; dev_id < num_devices; dev_id++) {
+>>   		ret = create_device(&zram_devices[dev_id], dev_id);
+>>   		if (ret)
+>>   			goto free_devices;
+>>   	}
+>> +	last_created_dev = num_devices-1;
+>>
+>>   	pr_info("Created %u device(s) ...\n", num_devices);
+>>
+>> @@ -1004,7 +1051,7 @@ static void __exit zram_exit(void)
+>>   	int i;
+>>   	struct zram *zram;
+>>
+>> -	for (i = 0; i < num_devices; i++) {
+>> +	for (i = 0; i < last_created_dev+1; i++) {
+>>   		zram = &zram_devices[i];
+>>
+>>   		destroy_device(zram);
+>> @@ -1025,7 +1072,7 @@ module_init(zram_init);
+>>   module_exit(zram_exit);
+>>
+>>   module_param(num_devices, uint, 0);
+>> -MODULE_PARM_DESC(num_devices, "Number of zram devices");
+>> +MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
+>>
+>>   MODULE_LICENSE("Dual BSD/GPL");
+>>   MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+>>
 
-Shouldn't this be:
+I can't understand what do you mean on "racy?"
+if you mind random empty lines in code, I've just checked code by 
+checkpatch.pl and fixed warnings.
 
-	static SIMPLE_DEV_OPS(tegra_i2c_pm, NULL, tegra_i2c_resume);
+I'll try to explain, why I wrote a patch:
+zram, as a loop device, is a virtual device, not physical, and i think 
+that adding new free devices automatically (like loop) is useful and 
+expected behavior (for virtual device).
 
-instead?
+By default, zram creates only one device, and if I need to use two 
+devices (for example), my actions lead to module’s reloading:
+1. umount busy device
+2. lose my data. Yes, I can backup it, and restore, but this is also 
+useless, if I can do it more beautiful
+3. unload module
+4. load module again with new num devices parameter or make it parametre 
+"permanent" by creating file in modprobe.d
 
-Thierry
+This is handwork and such behavior is uncomfortable.
 
---Kj7319i9nmIyA2yE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTx+TuAAoJEN0jrNd/PrOhaWwP/AgRxS2d+EecHKjm411ljsiD
-JwHW+gL42M9tkTIZPTPA1KgiQr+DSAXTBh6Zke621iUDkbMzFsUv4wYYP8tZLXC4
-iEL2GaVX1bry8PhwFBe89660oSgnqjpugeM1X7hvXly+Hl89p79JqOkQvdBqa7RO
-yYPQufIyPhkJzUCu1swiGhoMJGcDjsQAu1ujzSnYhDZNRNf+Bj2Z5mKar4aQy0B6
-Y444hBKUZ6zRrnpD/URLBI2963CArwEVBvmO+Pk5xAcWqFYVKjAL1Ot0gUI0tPm1
-5RpkZ0mwAMajGbVZAIm8xN5CjP3Ed/MPvACH77dU/PHPxULF7A5Clq3Ev2A3AOnK
-yvy9fpkiSgaXBXVppxjfmMYNz1NzwdbHmTLNq9RWe9aEslHDod2/inBbsUA3kDMY
-9eTVogq27RGgZL9jmtj0FqKp81UQ7up4kRMVmco9XC5245jivBhwhRdgbDGT9LNl
-SwVh4W/zowGhz432X5uP5llujBgXVFuis9NUcYFYPy6Uw6LXAydEEQKGtlD2UamU
-sOw6J8+9bSfdwoJLoh+GaH9CGuVIGd7PUMSlxauke+hHHSwBU5BISVNr877XZouD
-5f8Qeb2+LRBcxSZigI7FSOZDfZoXIdUURHaPSDDTQEystMCqEE4/4aRNttaH/Mj3
-aVAn/fZc2RN2hYaJt/pr
-=Vn9M
------END PGP SIGNATURE-----
-
---Kj7319i9nmIyA2yE--
+if number of devices is dynamically changeable, I can skip this actions 
+and save my time and energy instead of wasting on these activities.
