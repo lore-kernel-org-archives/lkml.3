@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934224AbaGQOt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:49:57 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:54197 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933968AbaGQOtQ (ORCPT
+	id S933887AbaGQOsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:48:50 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:10874 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933370AbaGQOry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:49:16 -0400
-From: Bastian Hecht <hechtb@gmail.com>
-To: linux-i2c@vger.kernel.org
-Cc: Linux-SH <linux-sh@vger.kernel.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        Bastian Hecht <hechtb@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org (moderated list:ARM/SAMSUNG ARM A...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 4/5] i2c: sc3c2410: Remove suspension check
-Date: Thu, 17 Jul 2014 16:48:39 +0200
-Message-Id: <1405608520-5644-4-git-send-email-hechtb@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
-References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+	Thu, 17 Jul 2014 10:47:54 -0400
+Message-Id: <20140717144752.691961602@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Thu, 17 Jul 2014 10:47:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [for-next][PATCH 4/7] tracing/uprobes: Kill the dead TRACE_EVENT_FL_USE_CALL_FILTER logic
+References: <20140717144707.625978566@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0004-tracing-uprobes-Kill-the-dead-TRACE_EVENT_FL_USE_CAL.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now take care of suspension in the i2c core code. So we can remove this
-check here.
+From: Oleg Nesterov <oleg@redhat.com>
 
-Signed-off-by: Bastian Hecht <hechtb@gmail.com>
+alloc_trace_uprobe() sets TRACE_EVENT_FL_USE_CALL_FILTER for unknown
+reason and this is simply wrong. Fortunately this has no effect because
+register_uprobe_event() clears call->flags after that.
+
+Kill both. This trace_uprobe was kzalloc'ed and we rely on this fact
+anyway.
+
+Link: http://lkml.kernel.org/p/20140715184824.GA20505@redhat.com
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-same as v1
+ kernel/trace/trace_uprobe.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
- drivers/i2c/busses/i2c-s3c2410.c | 16 ----------------
- 1 file changed, 16 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index e828a1d..568b993 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -103,7 +103,6 @@ enum s3c24xx_i2c_state {
- struct s3c24xx_i2c {
- 	wait_queue_head_t	wait;
- 	kernel_ulong_t		quirks;
--	unsigned int		suspended:1;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 3c9b97e6b1f4..33ff6a24b802 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -265,7 +265,6 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+ 	if (is_ret)
+ 		tu->consumer.ret_handler = uretprobe_dispatcher;
+ 	init_trace_uprobe_filter(&tu->filter);
+-	tu->tp.call.flags |= TRACE_EVENT_FL_USE_CALL_FILTER;
+ 	return tu;
  
- 	struct i2c_msg		*msg;
- 	unsigned int		msg_num;
-@@ -714,9 +713,6 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
- 	unsigned long timeout;
- 	int ret;
- 
--	if (i2c->suspended)
--		return -EIO;
--
- 	ret = s3c24xx_i2c_set_master(i2c);
- 	if (ret != 0) {
- 		dev_err(i2c->dev, "cannot get bus (error %d)\n", ret);
-@@ -1257,16 +1253,6 @@ static int s3c24xx_i2c_remove(struct platform_device *pdev)
- }
- 
- #ifdef CONFIG_PM_SLEEP
--static int s3c24xx_i2c_suspend_noirq(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
--
--	i2c->suspended = 1;
--
--	return 0;
--}
--
- static int s3c24xx_i2c_resume(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
-@@ -1275,7 +1261,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
- 	clk_prepare_enable(i2c->clk);
- 	s3c24xx_i2c_init(i2c);
- 	clk_disable_unprepare(i2c->clk);
--	i2c->suspended = 0;
- 
- 	return 0;
- }
-@@ -1284,7 +1269,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
- #ifdef CONFIG_PM
- static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
- #ifdef CONFIG_PM_SLEEP
--	.suspend_noirq = s3c24xx_i2c_suspend_noirq,
- 	.resume = s3c24xx_i2c_resume,
- #endif
- };
+ error:
+@@ -1292,7 +1291,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
+ 		kfree(call->print_fmt);
+ 		return -ENODEV;
+ 	}
+-	call->flags = 0;
++
+ 	call->class->reg = trace_uprobe_register;
+ 	call->data = tu;
+ 	ret = trace_add_event_call(call);
 -- 
-1.9.1
+2.0.1
+
 
