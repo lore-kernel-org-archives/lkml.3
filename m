@@ -1,16 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226AbaGQKjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:39:16 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:63492 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072AbaGQKjM (ORCPT
+	id S1756687AbaGQKka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:40:30 -0400
+Received: from smtp-out-155.synserver.de ([212.40.185.155]:1116 "EHLO
+	smtp-out-155.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756009AbaGQKkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:39:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
+	Thu, 17 Jul 2014 06:40:25 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17631
+Message-ID: <53C7A819.40403@metafoo.de>
+Date: Thu, 17 Jul 2014 12:40:25 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Chen Gang <gang.chen.5i5j@gmail.com>
+CC: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
@@ -23,71 +29,60 @@ Cc: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
         knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Mischa.Jonker@synopsys.com, jic23@kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
-Date: Thu, 17 Jul 2014 12:38:47 +0200
-Message-ID: <7018119.hVYUML2rzD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53C7977B.9090903@gmail.com>
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7977B.9090903@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:iFIRNj3ddAQbqr7PPRUB2alohHah0XynX4z6sONexFn
- hr2bVo9GUY0D0iIVXusB9QGV4hm/4m1lo241MKaLZo8ajFjZSd
- 3yCs89UWqxhpCazZ9Ovw3RLj8B9ZrRHss7snKZWpR43Jy/0oi5
- olisoB45mPJfNmETaywqNtXTPFntcjcziq61qq+3G8qcfKVhQv
- Nfywzm58S8ThLQK2QHX8b2mjBd26YDIk5TIOCKlFJ/W0imX/TR
- 1omXaGXcxp+f1n2u7/Q/aNzO3zFs84pFBdhykt2dcdLRpm/4eH
- /o9wpraZkn+bzoT6pe19lMDSFb1924EFfr5ASteVhffGBw+Sek
- 4Y17ratmZjhf30Y9eHEA=
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <53C53CE1.4090803@gmail.com> <53C7269E.4010702@gmail.com> <6823014.2plXDE9VA9@wuerfel>
+In-Reply-To: <6823014.2plXDE9VA9@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 17:29:31 Chen Gang wrote:
-> > 
-> > COMPILE_TEST is a great tool in general, but it has its limits.
-> > In particular, the case for !CONFIG_IOMEM is completely obscure
-> > and we won't find any bugs by allowing more drivers to be built
-> > in those configurations, but attempting to do it would cause
-> > endless churn by changing each instance of 'depends on HAS_IOMEM'
-> > to 'depends on HAS_IOMEM || COMPILE_TEST'.
-> >
-> 
-> Architecture members and driver members really have different tastes,
-> they are different roles. It really need additional discussion.
-> 
-> For me, I only want to change devm_io*map*, not touch so much.
+On 07/17/2014 11:20 AM, Arnd Bergmann wrote:
+> On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
+>>                                           gfp_t gfp_mask, unsigned int order);
+>>   extern void devm_free_pages(struct device *dev, unsigned long addr);
+>>
+>> +#ifdef CONFIG_HAS_IOMEM
+>>   void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+>> +#elif defined(CONFIG_COMPILE_TEST)
+>> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
+>> +                                               struct resource *res)
+>> +{
+>> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
+>> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
+>> +}
+>> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
+>>
+>>   /* allows to add/remove a custom action to devres stack */
+>
+> To be honest, I think it's a bad idea to introduce wrappers functions
+> that are only available when CONFIG_COMPILE_TEST is set.
+>
+> COMPILE_TEST is a great tool in general, but it has its limits.
+> In particular, the case for !CONFIG_IOMEM is completely obscure
+> and we won't find any bugs by allowing more drivers to be built
+> in those configurations, but attempting to do it would cause
+> endless churn by changing each instance of 'depends on HAS_IOMEM'
+> to 'depends on HAS_IOMEM || COMPILE_TEST'.
 
-But what do you gain from that? All drivers that need these
-functions should already 'depends on HAS_IOMEM' and if they don't,
-we should fix /that/ instead. I don't see this dependency as any
-different from a lot of others (PCI, DMAENGINE, HAVE_CLK, ...)
-that we use to intentionally annotate drivers that need a particular
-feature to be present for compilation. Do you want to do the
-same hack to those?
+The point of this exercise is that we do not have to replace a good chunk of 
+'depends on COMPILE_TEST' with 'depends on COMPILE_TEST && HAS_IOMEM'
 
-> Welcome any other members' idea or suggestions.
+E.g. the typical Kconfig entry for your random SoC peripheral driver looks like
 
-> > Note that s390 no has gained support for IOMEM, tile has it most
-> > of the time (when PCI is enabled, so you get it in half the
-> > test builds already), score should set HAS_IOMEM and doesn't
-> > even have public compilers, and uml doesn't even compile in
-> > latest mainline. Nothing else ever sets NO_IOMEM.
-> > 
-> 
-> In latest gcc and binutils, can compile score cross compiler
-> successfully for building kernel (but I am not quite sure whether the
-> compiling result are really OK, but I guess so).
+config ARCH_FOOBAR_DRIVER
+	depends on ARCH_FOOBAR || COMPILE_TEST
+	...
 
-Ok. Would you mind sending a patch that enables HAS_IOMEM on
-score?
- 
-> And next (maybe after finish allmodconfig for microblaze), I shall try
-> to let uml pass allmodconfig for linux-next tree.
+Now when COMPILE_TEST is not set there is a implicit dependency on HAS_IOMEM 
+since the architecture will provide it. If COMPILE_TEST is selected the 
+driver will also be build-able on architectures that do no have HAS_IOMEM 
+and hence linking the driver fails. One way to fix this is of course to 
+replace the COMPILE_TEST with (COMPILE_TEST && HAS_IOMEM). But this is very 
+often overlooked and only noticed later on when somebody actually builds a 
+allyesconfig on an architecture that does not provide HAS_IOMEM. To avoid 
+these kinds of build errors and tedious fixup patches the idea is to provide 
+a stub function when HAS_IOMEM is not enabled, but COMPILE_TEST is enabled.
 
-That is a fair goal, but it seems better to do that by ensuring
-we don't build any code that tries to call the MMIO functions
-rather than trying to make them build.
-
-	Arnd
