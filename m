@@ -1,61 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964939AbaGQQKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:10:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49226 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964786AbaGQQKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:10:08 -0400
-Message-ID: <53C7F55B.8030307@suse.cz>
-Date: Thu, 17 Jul 2014 18:10:03 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Sasha Levin <sasha.levin@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
- take 3
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757393AbaGQQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:09:59 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:56651 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756978AbaGQQJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:09:58 -0400
+X-Sasl-enc: 8ssimKQmJ5pEUPeqmQNIlXCfcB7XT/JvKvcSSMS/8rqq 1405613397
+From: Michalis Pappas <mpappas@fastmail.fm>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        benchan@chromium.org
+Subject: [PATCH] staging: gdm72xx: remove debug code
+Date: Thu, 17 Jul 2014 17:09:38 +0100
+Message-Id: <1405613379-25338-1-git-send-email-mpappas@fastmail.fm>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 12:28 PM, Hugh Dickins wrote:
-> In the end I decided that we had better look at it as two problems,
-> the trinity faulting starvation, and the indefinite punching loop,
-> so 1/2 and 2/2 present both solutions: belt and braces.
+Removed dump_eth_packet() and helper functions called upon packet tx/rx.
 
-I tested that with my reproducer and it was OK, but as I already said, 
-it's not trinity so I didn't observe the new problems in the first place.
+Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+---
+ drivers/staging/gdm72xx/gdm_wimax.c | 106 ------------------------------------
+ 1 file changed, 106 deletions(-)
 
-> Which may be the best for fixing, but the worst for ease of backporting.
-> Vlastimil, I have prepared (and lightly tested) a 3.2.61-based version
-> of the combination of f00cdc6df7d7 and 1/2 and 2/2 (basically, I moved
-> vmtruncate_range from mm/truncate.c to mm/shmem.c, since nothing but
-> shmem ever implemented the truncate_range method).  It should give a
-
-I don't know how much stable kernel updates are supposed to care about 
-out-of-tree modules, but doesn't the change mean that an out-of-tree FS 
-supporting truncate_range (if such thing exists) would effectively stop 
-supporting madvise(MADV_REMOVE) after this change? But hey it's still 
-madvise so maybe we don't need to care. And I suppose kernels where 
-FALLOC_FL_PUNCH_HOLE is supported, can be backported normally.
-
-> good hint for backports earlier and later: I'll send it privately to
-> you now, but keep in mind that it may need to be revised if today's
-> patches for 3.16 get revised again (I'll send it to Ben Hutchings
-> only when that's settled).
->
-> Thanks,
-> Hugh
->
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
+index 726c943..6754463 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.c
++++ b/drivers/staging/gdm72xx/gdm_wimax.c
+@@ -52,108 +52,6 @@ static struct {
+ 
+ static u8 gdm_wimax_macaddr[6] = {0x00, 0x0a, 0x3b, 0xf0, 0x01, 0x30};
+ 
+-static const char *get_protocol_name(u16 protocol)
+-{
+-	static char buf[32];
+-	const char *name = "-";
+-
+-	switch (protocol) {
+-	case ETH_P_ARP:
+-		name = "ARP";
+-		break;
+-	case ETH_P_IP:
+-		name = "IP";
+-		break;
+-	case ETH_P_IPV6:
+-		name = "IPv6";
+-		break;
+-	}
+-
+-	sprintf(buf, "0x%04x(%s)", protocol, name);
+-	return buf;
+-}
+-
+-static const char *get_ip_protocol_name(u8 ip_protocol)
+-{
+-	static char buf[32];
+-	const char *name = "-";
+-
+-	switch (ip_protocol) {
+-	case IPPROTO_TCP:
+-		name = "TCP";
+-		break;
+-	case IPPROTO_UDP:
+-		name = "UDP";
+-		break;
+-	case IPPROTO_ICMP:
+-		name = "ICMP";
+-		break;
+-	}
+-
+-	sprintf(buf, "%u(%s)", ip_protocol, name);
+-	return buf;
+-}
+-
+-static const char *get_port_name(u16 port)
+-{
+-	static char buf[32];
+-	const char *name = "-";
+-
+-	switch (port) {
+-	case 67:
+-		name = "DHCP-Server";
+-		break;
+-	case 68:
+-		name = "DHCP-Client";
+-		break;
+-	case 69:
+-		name = "TFTP";
+-		break;
+-	}
+-
+-	sprintf(buf, "%u(%s)", port, name);
+-	return buf;
+-}
+-
+-static void dump_eth_packet(struct net_device *dev, const char *title,
+-			    u8 *data, int len)
+-{
+-	struct iphdr *ih = NULL;
+-	struct udphdr *uh = NULL;
+-	u16 protocol = 0;
+-	u8 ip_protocol = 0;
+-	u16 port = 0;
+-
+-	protocol = (data[12]<<8) | data[13];
+-	ih = (struct iphdr *)(data+ETH_HLEN);
+-
+-	if (protocol == ETH_P_IP) {
+-		uh = (struct udphdr *)((char *)ih + sizeof(struct iphdr));
+-		ip_protocol = ih->protocol;
+-		port = ntohs(uh->dest);
+-	} else if (protocol == ETH_P_IPV6) {
+-		struct ipv6hdr *i6h = (struct ipv6hdr *)data;
+-
+-		uh = (struct udphdr *)((char *)i6h + sizeof(struct ipv6hdr));
+-		ip_protocol = i6h->nexthdr;
+-		port = ntohs(uh->dest);
+-	}
+-
+-	netdev_dbg(dev, "[%s] len=%d, %s, %s, %s\n", title, len,
+-		   get_protocol_name(protocol),
+-		   get_ip_protocol_name(ip_protocol),
+-		   get_port_name(port));
+-
+-	if (!(data[0] == 0xff && data[1] == 0xff)) {
+-		if (protocol == ETH_P_IP)
+-			netdev_dbg(dev, "     src=%pI4\n", &ih->saddr);
+-		else if (protocol == ETH_P_IPV6)
+-			netdev_dbg(dev, "     src=%pI6\n", &ih->saddr);
+-	}
+-
+-	print_hex_dump_debug("", DUMP_PREFIX_NONE, 16, 1, data, len, false);
+-}
+-
+ static inline int gdm_wimax_header(struct sk_buff **pskb)
+ {
+ 	u16 buf[HCI_HEADER_SIZE / sizeof(u16)];
+@@ -361,8 +259,6 @@ static int gdm_wimax_tx(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	int ret = 0;
+ 
+-	dump_eth_packet(dev, "TX", skb->data, skb->len);
+-
+ 	ret = gdm_wimax_header(&skb);
+ 	if (ret < 0) {
+ 		skb_pull(skb, HCI_HEADER_SIZE);
+@@ -708,8 +604,6 @@ static void gdm_wimax_netif_rx(struct net_device *dev, char *buf, int len)
+ 	struct sk_buff *skb;
+ 	int ret;
+ 
+-	dump_eth_packet(dev, "RX", buf, len);
+-
+ 	skb = dev_alloc_skb(len + 2);
+ 	if (!skb) {
+ 		netdev_err(dev, "%s: dev_alloc_skb failed!\n", __func__);
+-- 
+1.8.4
 
