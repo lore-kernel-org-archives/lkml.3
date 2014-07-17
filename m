@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220AbaGQEBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 00:01:41 -0400
-Received: from mail-yk0-f181.google.com ([209.85.160.181]:33972 "EHLO
-	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaGQEBj (ORCPT
+	id S1752397AbaGQEDd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 00:03:33 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:63630 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaGQEDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 00:01:39 -0400
-Message-ID: <53C74ABB.5060006@gmail.com>
-Date: Thu, 17 Jul 2014 00:02:03 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Thu, 17 Jul 2014 00:03:31 -0400
+From: Kiran Padwal <kiran.padwal21@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: rashika.kheria@gmail.com, rusty@rustcorp.com.au,
+        valentina.manea.m@gmail.com, gulsah.1004@gmail.com, wkang77@gmail.com,
+        kiran.padwal21@gmail.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/2] rcu: Rationalize kthread spawning
-References: <20140714100604.GA9905@linux.vnet.ibm.com> <1405332404-10094-1-git-send-email-paulmck@linux.vnet.ibm.com> <53C73BA3.1070303@oracle.com>
-In-Reply-To: <53C73BA3.1070303@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] Staging: gdm724x: gdm_lte.c: fix missing blank line after variable declaration
+Date: Thu, 17 Jul 2014 09:30:38 +0530
+Message-Id: <1405569638-9435-1-git-send-email-kiran.padwal21@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 10:57 PM, Sasha Levin wrote:
-> On 07/14/2014 06:06 AM, Paul E. McKenney wrote:
->> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->>
->> Currently, RCU spawns kthreads from several different early_initcall()
->> functions.  Although this has served RCU well for quite some time,
->> as more kthreads are added a more deterministic approach is required.
->> This commit therefore causes all of RCU's early-boot kthreads to be
->> spawned from a single early_initcall() function.
->>
->> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Hey Paul,
-> 
-> I've updated to today's -next and my VM started hanging on boot. Bisect
-> pointed out this patch.
-> 
-> I don't have any further info right now, but can provide whatever you'll
-> find useful.
+Checkpatch fix - Add missing blank line after variable declaration
 
-Hi Sasha,
+Signed-off-by: Kiran Padwal <kiran.padwal21@gmail.com>
+---
+ drivers/staging/gdm724x/gdm_lte.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Could you attach the config file which is failing for a start? 
-
-Thanks,
---
-Pranith
-
-> 
-> 
-> Thanks,
-> Sasha
-> 
+diff --git a/drivers/staging/gdm724x/gdm_lte.c b/drivers/staging/gdm724x/gdm_lte.c
+index 64c55b9..bc6d574 100644
+--- a/drivers/staging/gdm724x/gdm_lte.c
++++ b/drivers/staging/gdm724x/gdm_lte.c
+@@ -447,6 +447,7 @@ static int gdm_lte_tx(struct sk_buff *skb, struct net_device *dev)
+ 	 */
+ 	if (nic_type & NIC_TYPE_F_VLAN) {
+ 		struct vlan_ethhdr *vlan_eth = (struct vlan_ethhdr *)skb->data;
++
+ 		nic->vlan_id = ntohs(vlan_eth->h_vlan_TCI) & VLAN_VID_MASK;
+ 		data_buf = skb->data + (VLAN_ETH_HLEN - ETH_HLEN);
+ 		data_len = skb->len - (VLAN_ETH_HLEN - ETH_HLEN);
+@@ -505,6 +506,7 @@ static int gdm_lte_tx(struct sk_buff *skb, struct net_device *dev)
+ static struct net_device_stats *gdm_lte_stats(struct net_device *dev)
+ {
+ 	struct nic *nic = netdev_priv(dev);
++
+ 	return &nic->stats;
+ }
+ 
+-- 
+1.7.9.5
 
