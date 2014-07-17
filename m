@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133AbaGQA2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 20:28:25 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:52124 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693AbaGQA2X (ORCPT
+	id S1754966AbaGQAgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 20:36:53 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:60963 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627AbaGQAgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 20:28:23 -0400
-X-Greylist: delayed 57813 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 20:28:23 EDT
+	Wed, 16 Jul 2014 20:36:52 -0400
+Date: Wed, 16 Jul 2014 17:36:49 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, writeback: prevent race when calculating dirty limits
+Message-ID: <alpine.DEB.2.02.1407161733200.23892@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1450785.beFNo3ByBF@vostro.rjw.lan>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<CAKohpo=Z5gEHOC5q40q8dfQfoNP5-WyhjG1arV99zJiG2c+6Xg@mail.gmail.com>
-	<CAKohpo=bUMKa752fBXZTb0WPYMfJtuR5uk7z-YaXYV63fhJWtg@mail.gmail.com>
-	<1450785.beFNo3ByBF@vostro.rjw.lan>
-Date: Thu, 17 Jul 2014 05:58:22 +0530
-Message-ID: <CAKohpomPAp74Sf_DxqzFk1WzUTx5m=G-nj+d+QHW5q=gnVphhA@mail.gmail.com>
-Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Tomasz Figa <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <rob.herring@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Simon Horman <horms@verge.net.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2014 02:48, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> I don't like that idea, but I wonder what other people think.
+Setting vm_dirty_bytes and dirty_background_bytes is not protected by any 
+serialization.
 
-Hmm, the other thread around looking at the bindings is really slow.
+Therefore, it's possible for either variable to change value after the 
+test in global_dirty_limits() to determine whether available_memory needs 
+to be initialized or not.
 
-One common thing around the platforms which want to use
-cpufreq-cpu0 is they have different clocks for ALL CPUs.
+Always ensure that available_memory is properly initialized.
 
-I was wondering if instead of a clock-matching routine, we can provide
-some temporary relief to them via some other means.
+Cc: stable@vger.kernel.org
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/page-writeback.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-I meant we can allow cpufreq-cpu0/generic to either set policy->cpus
-to ALL CPUs or just 1. So that existing and these new platforms can
-atleast get going..
-
-But don't know how should we do that. Not a binding ofcourse, a
-Kconfig option could work but multiplatform stuff would break. What
-else?
-
-Maybe platform data as we are handling cpufreq-cpu0 with a platform
-device?
-
---
-viresh
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -261,14 +261,11 @@ static unsigned long global_dirtyable_memory(void)
+  */
+ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ {
++	const unsigned long available_memory = global_dirtyable_memory();
+ 	unsigned long background;
+ 	unsigned long dirty;
+-	unsigned long uninitialized_var(available_memory);
+ 	struct task_struct *tsk;
+ 
+-	if (!vm_dirty_bytes || !dirty_background_bytes)
+-		available_memory = global_dirtyable_memory();
+-
+ 	if (vm_dirty_bytes)
+ 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+ 	else
