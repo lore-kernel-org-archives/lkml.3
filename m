@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744AbaGQLL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:11:28 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:35036 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379AbaGQLL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:11:26 -0400
-Message-ID: <53C7AF58.5030807@gmail.com>
-Date: Thu, 17 Jul 2014 14:11:20 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Christoph Hellwig <hch@infradead.org>,
-        viro@zeniv.linux.org.uk
-CC: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
-        pramod.gurav.etc@gmail.com, Jason Cooper <jason@lakedaemon.net>,
-        Markus Mayer <markus.mayer@linaro.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] direct-io: squelch maybe-uninitialized warning in do_direct_IO()
-References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>	 <20140713115022.GA6054@infradead.org> <53C6B199.2070606@gmail.com>	 <20140716175803.GA3631@infradead.org> <1405536124.4357.17.camel@x41> <53C79949.7010201@gmail.com>
-In-Reply-To: <53C79949.7010201@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756916AbaGQLL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:11:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56040 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756712AbaGQLL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 07:11:56 -0400
+Message-ID: <1405595380.25310.21.camel@pasglop>
+Subject: Re: [PATCH V3 0/3] Add new PowerPC specific ELF core notes
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>, james.hogan@imgtec.com,
+        avagin@openvz.org, Paul.Clothier@imgtec.com, davem@davemloft.net,
+        peterz@infradead.org, palves@redhat.com, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, dhowells@redhat.com, linuxppc-dev@ozlabs.org,
+        davej@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
+Date: Thu, 17 Jul 2014 21:09:40 +1000
+In-Reply-To: <53C7A4FA.4030600@linux.vnet.ibm.com>
+References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
+	 <53996E41.4070309@linux.vnet.ibm.com> <53C7A4FA.4030600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Bolle <pebolle@tiscali.nl>
+> >
+> >> Outstanding Issues
+> >> ==================
+> >> (1) Running DSCR register value inside a transaction does not seem to be saved
+> >>     at thread.dscr when the process stops for ptrace examination.
+> > 
+> > Hey Ben,
+> > 
+> > Any updates on this patch series ?
+> 
+> Ben,
+> 
+> Any updates on this patch series ?
 
-The following warnings:
+I haven't had a chance to review yet, I was hoping somebody else would..
 
-  fs/direct-io.c: In function ‘__blockdev_direct_IO’:
-  fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  fs/direct-io.c:913:16: note: ‘to’ was declared here
-  fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  fs/direct-io.c:913:10: note: ‘from’ was declared here
+Have you made any progress vs. the DSCR outstanding issue mentioned
+above ?
 
-are false positive because dio_get_page() either fails, or sets both
-'from' and 'to'.
+Cheers,
+Ben.
 
-Maybe it's better to move initializing "to" and "from" out of
-dio_get_page(). That _might_ make it easier for both the the reader and
-the compiler to understand what's going on. Something like this:
-
-Christoph Hellwig said ...
-The fix of moving the code definitively looks nicer, while I think
-uninitialized_var is horrible wart that won't get anywhere near my code.
-
-Boaz Harrosh: I agree with Christoph and Paul
-
-Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
----
- fs/direct-io.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 98040ba..194d0d1 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -198,9 +198,8 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
-  * L1 cache.
-  */
- static inline struct page *dio_get_page(struct dio *dio,
--		struct dio_submit *sdio, size_t *from, size_t *to)
-+					struct dio_submit *sdio)
- {
--	int n;
- 	if (dio_pages_present(sdio) == 0) {
- 		int ret;
- 
-@@ -209,10 +208,7 @@ static inline struct page *dio_get_page(struct dio *dio,
- 			return ERR_PTR(ret);
- 		BUG_ON(dio_pages_present(sdio) == 0);
- 	}
--	n = sdio->head++;
--	*from = n ? 0 : sdio->from;
--	*to = (n == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
--	return dio->pages[n];
-+	return dio->pages[sdio->head];
- }
- 
- /**
-@@ -911,11 +907,15 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
- 	while (sdio->block_in_file < sdio->final_block_in_request) {
- 		struct page *page;
- 		size_t from, to;
--		page = dio_get_page(dio, sdio, &from, &to);
-+
-+		page = dio_get_page(dio, sdio);
- 		if (IS_ERR(page)) {
- 			ret = PTR_ERR(page);
- 			goto out;
- 		}
-+		from = sdio->head ? 0 : sdio->from;
-+		to = (sdio->head == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
-+		sdio->head++;
- 
- 		while (from < to) {
- 			unsigned this_chunk_bytes;	/* # of bytes mapped */
--- 
-1.9.3
 
