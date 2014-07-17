@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486AbaGQJEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:04:40 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:53041 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428AbaGQJEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:04:35 -0400
-Message-ID: <1405587855.20120.0.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH net-next v9 2/9] net: nl80211 - make
- rdev_add_virtual_intf take name_assign_type
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Tom Gundersen <teg@jklm.no>
-Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
-Date: Thu, 17 Jul 2014 11:04:15 +0200
-In-Reply-To: <1405584370-30054-3-git-send-email-teg@jklm.no> (sfid-20140717_101259_938095_1A8DB91D)
-References: <1405584370-30054-1-git-send-email-teg@jklm.no>
-	 <1405584370-30054-3-git-send-email-teg@jklm.no>
-	 (sfid-20140717_101259_938095_1A8DB91D)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756534AbaGQJFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:05:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56476 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756506AbaGQJFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 05:05:04 -0400
+Date: Thu, 17 Jul 2014 11:04:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Bruno Wolff III <bruno@wolff.to>, Josh Boyer <jwboyer@redhat.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140717090452.GH19379@twins.programming.kicks-ass.net>
+References: <20140716145546.GA6922@wolff.to>
+ <20140716151748.GC2460@hansolo.jdub.homelinux.org>
+ <53C6CFCC.2050300@arm.com>
+ <20140716195414.GA16401@wolff.to>
+ <53C7084C.7090104@arm.com>
+ <20140717030947.GA17889@wolff.to>
+ <53C79013.1020808@arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gNHJk6zc+1Hn+Z/L"
+Content-Disposition: inline
+In-Reply-To: <53C79013.1020808@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-17 at 10:06 +0200, Tom Gundersen wrote:
-> Pass the value down and set it at the same place the name itself is set.
 
-Huh? What's this? Can you explain why?
+--gNHJk6zc+1Hn+Z/L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  static struct wireless_dev *ath6kl_cfg80211_add_iface(struct wiphy *wiphy,
->  						      const char *name,
-> +						      unsigned char name_assign_type,
+On Thu, Jul 17, 2014 at 10:57:55AM +0200, Dietmar Eggemann wrote:
+> There is also the possibility that the memory for sched_group sg is not
+> (completely) zeroed out:
+>=20
+>   sg =3D kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
+> 			GFP_KERNEL, cpu_to_node(j));
+>=20
+>=20
+>   struct sched_group {
+> 	...
+> 	 * NOTE: this field is variable length. (Allocated dynamically
+> 	 * by attaching extra space to the end of the structure,
+> 	 * depending on how many CPUs the kernel has booted up with)
+> 	 */
+> 	unsigned long cpumask[0];
 
-unsigned char for an enum is really odd.
+well kZalloc should Zero the entire allocated size, and the specified
+size very much includes the cpumask size as per:
+  sizeof(struct sched_group) + cpumask_size()
 
-johannes
+But yeah, I'm also a bit puzzled why this goes bang. Makes we worry we
+scribble it somewhere or so.
 
+--gNHJk6zc+1Hn+Z/L
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTx5G0AAoJEHZH4aRLwOS6niMQAJy2arvVT2ktSLCXh772JKEw
+jenDnEDggTE55SZE7qw/NXdGTHHcq+Ml/zR4BPHF9uqlREJJ5U1w/ZfE9xM+EkHy
+vuHDo5kTQEcBNQXvY7TDZSP8wM1GdOVRgZoP9eI4EjJpUYWkOvsWD4JHyVsfb3sj
+IubQui5mHvn87tquVa26hk3z8gP/1e4oDIfI2MJ6ZrK4sIEG3bk1Xgji1QOAz5TM
+r8oitDZ1ErMfUbpsFL2c2npJ59eN9U5m3QU/wkVa07lONbRw8J8xeEARoHDXehJu
+wOMLImFhkW0BP+kvhIb//J1RjT9tEYy0DUYkeAxPYDcDlTeAUIg+N73JOHeumh7b
+mgEqK4Hz12tq469G7NhiW86DO2+gdVJGSqrwc3rCAV2+QtvX0C1KASwtAbsv7OY1
+inESCHzaVEiwqJcUV3Y1SPxeozUdO0Z+v9w54jt7QWGZIQWyjL4m4+H0vswJMatP
+K/VUfRN5iS92CoTQt8G1LGP4nXxqIqSK4yKYLm2nnsCQz9dpdN7JB6PYohICuT4V
+JRNSWXwiTs4/QFouWo4iw8PfNrJ2mCkgZtHzdUg776fJ+7OxCkkbOvW5EyBOUaJ+
+QD1edXaXD9XU6fKQ/Wo7tBT2y70BYrA76rVka2HUl7UBgRz6fKKQ1eEEqRWGKJdI
+HC9jYPOW0Bhh+B+1x473
+=FvGN
+-----END PGP SIGNATURE-----
+
+--gNHJk6zc+1Hn+Z/L--
