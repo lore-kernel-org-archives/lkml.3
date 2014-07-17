@@ -1,206 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaGQGcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:32:43 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56522 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893AbaGQGcj (ORCPT
+	id S1753943AbaGQGdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:33:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57788 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaGQGds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:32:39 -0400
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: james.smart@emulex.com, JBottomley@parallels.com,
-        Mike Qiu <qiudayu@linux.vnet.ibm.com>
-Subject: [PATCH] lpfc: Avoid to disable pci_dev twice
-Date: Thu, 17 Jul 2014 02:32:31 -0400
-Message-Id: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071706-3568-0000-0000-000005E4A6D5
+	Thu, 17 Jul 2014 02:33:48 -0400
+Date: Wed, 16 Jul 2014 23:33:47 -0700 (PDT)
+Message-Id: <20140716.233347.1283806216031286454.davem@davemloft.net>
+To: grygorii.strashko@ti.com
+Cc: f.fainelli@gmail.com, santosh.shilimkar@ti.com, netdev@vger.kernel.org,
+        prabhakar.csengg@gmail.com, nsekhar@ti.com, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com, mugunthanvnm@ti.com
+Subject: Re: [PATCH v2 0/2] net: davinci_mdio: reuse for keystone2 arch
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com>
+References: <1405512783-20307-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Jul 2014 23:33:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In IBM Power servers, when hardware error occurs during probe
-state, EEH subsystem will call driver's error_detected interface,
-which will call pci_disable_device(). But driver's probe function also
-call pci_disable_device() in this situation.
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+Date: Wed, 16 Jul 2014 15:13:01 +0300
 
-So pci_dev will be disabled twice:
+> The similar MDIO HW blocks is used by keystone 2 SoCs as
+> in Davinci SoCs:
+> - one in Gigabit Ethernet (GbE) Switch Subsystem
+>   See http://www.ti.com/lit/ug/sprugv9d/sprugv9d.pdf
+> - one in 10 Gigabit Ethernet Subsystem
+>   See http://www.ti.com/lit/ug/spruhj5/spruhj5.pdf
+> 
+> Hence, reuse Davinci MDIO driver for Keystone 2 and
+> enable TI networking for Keystone 2 devices.
+> 
+> Also, as part of this series, enable PHY's creation from DT, because
+> Keystone 2 supports DT boot mode only.
+> 
+> Changes in v2:
+> - review comments applied. 
+>   Keystone 2 compatibility string changed to "ti,keystone_mdio".
 
-Device lpfc disabling already-disabled device
-------------[ cut here ]------------
-WARNING: at drivers/pci/pci.c:1407
-CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W    3.10.42-2002.pkvm2_1_1.6.ppc64 #1
-Workqueue: events .work_for_cpu_fn
-task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
-NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
-REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W     (3.10.42-2002.pkvm2_1_1.6.ppc64)
-MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 20000000
-CFAR: c000000000879ab8 SOFTE: 1
-...
-NIP .pci_disable_device+0xcc/0xe0
-LR  .pci_disable_device+0xc8/0xe0
-Call Trace:
-.pci_disable_device+0xc8/0xe0 (unreliable)
-.lpfc_disable_pci_dev+0x50/0x80 [lpfc]
-.lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
-.local_pci_probe+0x68/0xb0
-.work_for_cpu_fn+0x38/0x60
-.process_one_work+0x1a4/0x4d0
-.worker_thread+0x37c/0x490
-.kthread+0xf0/0x100
-.ret_from_kernel_thread+0x5c/0x80
-
-Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
----
- drivers/scsi/lpfc/lpfc.h      |  1 +
- drivers/scsi/lpfc/lpfc_init.c | 59 +++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 55 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
-index 434e903..0c7bad9 100644
---- a/drivers/scsi/lpfc/lpfc.h
-+++ b/drivers/scsi/lpfc/lpfc.h
-@@ -813,6 +813,7 @@ struct lpfc_hba {
- #define VPD_MASK            0xf         /* mask for any vpd data */
- 
- 	uint8_t soft_wwn_enable;
-+	uint8_t probe_done;
- 
- 	struct timer_list fcp_poll_timer;
- 	struct timer_list eratt_poll;
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 06f9a5b..c2e67ae 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, const struct pci_device_id *pid)
- 		}
- 	}
- 
-+	/* Set the probe flag */
-+	phba->probe_done = 1;
-+
- 	/* Perform post initialization setup */
- 	lpfc_post_init_setup(phba);
- 
-@@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba *phba)
- static void
- lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
- {
-+	if (phba)
-+		return;
-+
- 	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
- 			"2710 PCI channel disable preparing for reset\n");
- 
-@@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
- 
- 	/* Disable interrupt and pci device */
- 	lpfc_sli_disable_intr(phba);
--	pci_disable_device(phba->pcidev);
-+	if (phba->probe_done && phba->pcidev)
-+		pci_disable_device(phba->pcidev);
- }
- 
- /**
-@@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, const struct pci_device_id *pid)
- 		goto out_disable_intr;
- 	}
- 
-+	/* Set probe_done flag */
-+	phba->probe_done = 1;
-+
- 	/* Log the current active interrupt mode */
- 	phba->intr_mode = intr_mode;
- 	lpfc_log_intr_mode(phba, intr_mode);
-@@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct lpfc_hba *phba)
- static void
- lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
- {
-+	if (!phba)
-+		return;
-+
- 	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
- 			"2826 PCI channel disable preparing for reset\n");
- 
-@@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
- 	/* Disable interrupt and pci device */
- 	lpfc_sli4_disable_intr(phba);
- 	lpfc_sli4_queue_destroy(phba);
--	pci_disable_device(phba->pcidev);
-+
-+	if (phba->probe_done && phba->pcidev)
-+		pci_disable_device(phba->pcidev);
- }
- 
- /**
-@@ -10893,9 +10908,21 @@ static pci_ers_result_t
- lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t state)
- {
- 	struct Scsi_Host *shost = pci_get_drvdata(pdev);
--	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-+	struct lpfc_hba *phba;
- 	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
- 
-+	if (!shost)
-+		/* Run here means it may during probe state and
-+		 * Scsi_Host has not been created and We can do nothing
-+		 * in this state so call for hotplug*/
-+		return PCI_ERS_RESULT_NONE;
-+
-+	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-+
-+	if (!phba || !phba->probe_done)
-+		/* Run here means it may during probe state */
-+		return PCI_ERS_RESULT_NONE;
-+
- 	switch (phba->pci_dev_grp) {
- 	case LPFC_PCI_DEV_LP:
- 		rc = lpfc_io_error_detected_s3(pdev, state);
-@@ -10930,9 +10957,20 @@ static pci_ers_result_t
- lpfc_io_slot_reset(struct pci_dev *pdev)
- {
- 	struct Scsi_Host *shost = pci_get_drvdata(pdev);
--	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-+	struct lpfc_hba *phba;
- 	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
- 
-+	if (!shost)
-+		/* Run here means it may during probe state and
-+		 * Scsi_Host has not been created */
-+		return PCI_ERS_RESULT_NONE;
-+
-+	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-+
-+	if (!phba || !phba->probe_done)
-+		/* Run here means it may during probe state */
-+		return PCI_ERS_RESULT_NONE;
-+
- 	switch (phba->pci_dev_grp) {
- 	case LPFC_PCI_DEV_LP:
- 		rc = lpfc_io_slot_reset_s3(pdev);
-@@ -10963,7 +11001,18 @@ static void
- lpfc_io_resume(struct pci_dev *pdev)
- {
- 	struct Scsi_Host *shost = pci_get_drvdata(pdev);
--	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-+	struct lpfc_hba *phba;
-+
-+	if (!shost)
-+		/* Run here means it may during probe state and
-+		 * Scsi_Host has not been created */
-+		return;
-+
-+	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-+
-+	if (!phba || !phba->probe_done)
-+		/* Run here means it may during probe state */
-+		return;
- 
- 	switch (phba->pci_dev_grp) {
- 	case LPFC_PCI_DEV_LP:
--- 
-1.8.1.4
-
+Series applied to net-next, thanks.
