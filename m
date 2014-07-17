@@ -1,112 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934681AbaGQQFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:05:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58226 "EHLO arroyo.ext.ti.com"
+	id S934438AbaGQQHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:07:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14977 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757532AbaGQQFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:05:03 -0400
-Date: Thu, 17 Jul 2014 11:04:21 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140717160421.GJ10459@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de>
- <1405521903-5877-6-git-send-email-bigeasy@linutronix.de>
- <20140717145430.GF10459@saruman.home>
- <53C7E7BE.7030403@linutronix.de>
+	id S933701AbaGQQHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:07:20 -0400
+Date: Thu, 17 Jul 2014 12:07:05 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH] HID: rmi: check that report ids exist in the
+ report_id_hash before accessing their size
+Message-ID: <20140717160704.GA27586@mail.corp.redhat.com>
+References: <1405546717-6582-1-git-send-email-aduggan@synaptics.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j+MD90OnwjQyWNYt"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53C7E7BE.7030403@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405546717-6582-1-git-send-email-aduggan@synaptics.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---j+MD90OnwjQyWNYt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Jul 16 2014 or thereabouts, Andrew Duggan wrote:
+> It is possible that the hid-rmi driver could get loaded onto a device which does not have the
+> expected report ids. This should not happen because it would indicate that the hid-rmi driver is
+> not compatible with that device. However, if it does happen it should return an error from probe
+> instead of dereferencing a null pointer.
+> 
+> related bug:
+> https://bugzilla.kernel.org/show_bug.cgi?id=80091
+> 
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+> ---
 
-On Thu, Jul 17, 2014 at 05:11:58PM +0200, Sebastian Andrzej Siewior wrote:
-> On 07/17/2014 04:54 PM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Wed, Jul 16, 2014 at 04:45:03PM +0200, Sebastian Andrzej Siewior wro=
-te:
-> >> +static int omap_8250_startup(struct uart_port *port)
-> >> +{
-> >> +	struct uart_8250_port *up =3D
-> >> +		container_of(port, struct uart_8250_port, port);
-> >> +	struct omap8250_priv *priv =3D port->private_data;
-> >> +
-> >> +	int ret;
-> >> +
-> >> +	if (priv->wakeirq) {
-> >> +		ret =3D request_irq(priv->wakeirq, omap_wake_irq,
-> >> +				port->irqflags, "wakeup irq", port);
-> >> +		if (ret)
-> >> +			return ret;
-> >> +		disable_irq(priv->wakeirq);
-> >> +	}
-> >> +
-> >> +	ret =3D serial8250_do_startup(port);
-> >> +	if (ret)
-> >> +		goto err;
-> >> +
-> >> +	pm_runtime_get_sync(port->dev);
-> >=20
-> > should this pm_runtime_get_sync() be placed above
-> > serial8250_do_startup() call ?
->=20
-> I don't think it matters since serial8250_do_startup() has its own
-> pm_runtime_get_sync().
+Hi Andrew,
 
-oh right, saw that now.
+I think this patch is required. We can not afford having a null pointer
+in a driver. So yes, I think Jiri should take this one. I just have a
+few nitpick inlined in the code.
 
-> ->startup(), ->shutdown() are called via omap callbacks so we could
-> spare in the 8250-core if we do it in the omap code before invoking the
-> function. The same goes for serial8250_set_termios() which is not used
-> by omap but has those runtime-pm stuff, too.
-> It would be wrong if someone would use the serial8250_do_startup()
-> without his own runtime-pm get but it is omap only which does this
-> things.
-> So it is not used by anyone else (right now) and if you want to keep it
-> to a minimum I could remove them from those places.
+However, this patch will prevent the driver to fail, but the falsely
+bound device will not be driven by anybody, which means that you will
+break the keyboard/touchpad/whatever which is not using the right
+driver.
 
-I don't think it matters as long as the calls are balanced.
+So yes, we need that, but we also defintively have to fix hid-core too
+to not bind them to hid-rmi.
 
---=20
-balbi
+>  drivers/hid/hid-rmi.c | 26 ++++++++++++++++++++------
+>  1 file changed, 20 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> index 3221a95..7f0927a 100644
+> --- a/drivers/hid/hid-rmi.c
+> +++ b/drivers/hid/hid-rmi.c
+> @@ -848,6 +848,8 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	struct rmi_data *data = NULL;
+>  	int ret;
+>  	size_t alloc_size;
+> +	struct hid_report *input_report;
+> +	struct hid_report *output_report;
+>  
+>  	data = devm_kzalloc(&hdev->dev, sizeof(struct rmi_data), GFP_KERNEL);
+>  	if (!data)
+> @@ -866,12 +868,24 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  		return ret;
+>  	}
+>  
+> -	data->input_report_size = (hdev->report_enum[HID_INPUT_REPORT]
+> -		.report_id_hash[RMI_ATTN_REPORT_ID]->size >> 3)
+> -		+ 1 /* report id */;
+> -	data->output_report_size = (hdev->report_enum[HID_OUTPUT_REPORT]
+> -		.report_id_hash[RMI_WRITE_REPORT_ID]->size >> 3)
+> -		+ 1 /* report id */;
+> +	input_report = hdev->report_enum[HID_INPUT_REPORT]
+> +			.report_id_hash[RMI_ATTN_REPORT_ID];
+> +	if (!input_report) {
+> +		ret = -ENODEV;
+> +		return ret;
 
---j+MD90OnwjQyWNYt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In its current state, the driver will be silently unbound, and the user
+will never get any explanations on why nothing works. So please add an
+hid_err message telling why hid-rmi gave up.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +	}
+> +
+> +	data->input_report_size = (input_report->size >> 3) + 1 /* report id */;
+> +
+> +	output_report = hdev->report_enum[HID_OUTPUT_REPORT]
+> +			.report_id_hash[RMI_WRITE_REPORT_ID];
+> +	if (!output_report) {
+> +		ret = -ENODEV;
+> +		return ret;
 
-iQIcBAEBAgAGBQJTx/QFAAoJEIaOsuA1yqRECxgP/j5ZgCwoXVdZQl8R5uuilUlf
-bnRvlHiA9nQ8pBma2/4MDWaDNKF0QpEGVNLn6qwG+CR93o+DtjtcZcCQRnW+iDSX
-1OX2Y98UY0yecnHZ15bUCivFv7ISGBFMuL4UVnionS0KIf74jVjWpkN4ZIRWYmmM
-s//OlMjvPlhiNCXl7w/4nljw1uSYV3TWdlsad3AWsYE5rVCKux3NLoUWZFvqONjP
-86sIzmEQv5vaC4ALVtutdcJwaOth9rpWQAFlrszOL+FI1lIYJPCMUesArDkEAHbK
-4Ak70I51dAhKBZlDLj5QtCm8BdwjnesEg+sWisVEyxI18McfTEaVP4i7lQH5PNLJ
-a3n5ErUcbvv0E5ieLTVsSjb+KNJmmmP/SoF5meIc5K6a+7/dtma05ekuSakrlEuK
-Txy+Zv6rhBvUtAK3fmkneySbNRsv1hNqtZ9b3KgP2NASB3JAQQUiZySJyFSmNwu8
-n8fJaNETlpcbOwdeMZfoVkQIN8OSim5hjKNpgsEHONgooBv5iebCxozOPb2p9wvk
-vXOxiIqXuJjMclLUW33pKCxYlv7/5x9FWtb2Cuwf3SXd4BEut/Jh8jAOt3siEg0k
-FgvBRiYzwxX4Ykv9oqTpqVT2ITWsF0FXysBBCKLthTMnmb+5L59kivKCdYrBHc0e
-h1GRJ5TWWOL8d/JkKyt8
-=B4+R
------END PGP SIGNATURE-----
+ditto.
 
---j+MD90OnwjQyWNYt--
+Cheers,
+Benjamin
+
+> +	}
+> +
+> +	data->output_report_size = (output_report->size >> 3)
+> +					+ 1 /* report id */;
+>  
+>  	alloc_size = data->output_report_size + data->input_report_size;
+>  
+> -- 
+> 1.9.1
+> 
