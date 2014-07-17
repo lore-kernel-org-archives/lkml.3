@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaGQTn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:43:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604AbaGQTnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:43:55 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1405516544.1466.50.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1405516544.1466.50.camel@dhcp-9-2-203-236.watson.ibm.com> <53BEA780.5050602@samsung.com> <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com> <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com> <24144.1404919879@warthog.procyon.org.uk> <8975.1404932208@warthog.procyon.org.uk> <1404941347.14643.57.camel@dhcp-9-2-203-236.watson.ibm.com> <488.1405285619@warthog.procyon.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of trust
+	id S1757640AbaGQToK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:44:10 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:30922 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796AbaGQToH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:44:07 -0400
+X-CheckPoint: {53C82786-2-2100090A-C0000000}
+Message-ID: <53C82786.2080609@tilera.com>
+Date: Thu, 17 Jul 2014 15:44:06 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <8820.1405626206.1@warthog.procyon.org.uk>
-Date: Thu, 17 Jul 2014 20:43:26 +0100
-Message-ID: <8821.1405626206@warthog.procyon.org.uk>
+To: Sam Ravnborg <sam@ravnborg.org>, Arnd Bergmann <arnd@arndb.de>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 34/38] tile: clean-up uapi Kbuild file
+References: <20140714150609.GA28358@ravnborg.org> <1405350546-28467-1-git-send-email-sam@ravnborg.org> <1405350546-28467-34-git-send-email-sam@ravnborg.org>
+In-Reply-To: <1405350546-28467-34-git-send-email-sam@ravnborg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On 7/14/2014 11:09 AM, Sam Ravnborg wrote:
+> Remove redundant assignments.
+>
+> Signed-off-by: Sam Ravnborg<sam@ravnborg.org>
+> Cc: Chris Metcalf<cmetcalf@tilera.com>
+> ---
+>   arch/tile/include/uapi/asm/Kbuild | 14 +-------------
+>   1 file changed, 1 insertion(+), 13 deletions(-)
 
-> We're already at -rc5.  Any pull requests for the next open window need
-> to submitted soon.  If/when are you planning on sending James the pull
-> request?  (I'm kind of waiting for the KEY patches to make it in, before
-> sending the linux-integrity pull request.)
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Just merging it all together now on top of the same base as yours.  Is
-next-with-keys the branch I should be merging?
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-David
