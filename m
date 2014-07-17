@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaGQD3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 23:29:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56842 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbaGQD3s convert rfc822-to-8bit (ORCPT
+	id S1753009AbaGQDbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 23:31:44 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:59867 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751505AbaGQDbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 23:29:48 -0400
-Date: Wed, 16 Jul 2014 20:29:45 -0700 (PDT)
-Message-Id: <20140716.202945.2231269352453909430.davem@davemloft.net>
-To: michel@daenzer.net
-Cc: romieu@fr.zoreil.com, hayeswang@realtek.com, nic_swsd@realtek.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] r8169: Enable RX_MULTI_EN for RTL_GIGA_MAC_VER_40
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <53C71F1F.8040607@daenzer.net>
-References: <20140715215412.GA19363@electric-eye.fr.zoreil.com>
-	<20140716.152517.952351917803362794.davem@davemloft.net>
-	<53C71F1F.8040607@daenzer.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Jul 2014 20:29:48 -0700 (PDT)
+	Wed, 16 Jul 2014 23:31:42 -0400
+Date: Thu, 17 Jul 2014 09:00:08 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v5 1/5] PCI: designware: add rd[wr]_other_conf API
+Message-ID: <20140717033008.GG12278@pratyush-vbox>
+References: <1405528686-16539-1-git-send-email-m-karicheri2@ti.com>
+ <1405528686-16539-2-git-send-email-m-karicheri2@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1405528686-16539-2-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-17_01:2014-07-16,2014-07-17,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michel Dänzer <michel@daenzer.net>
-Date: Thu, 17 Jul 2014 09:55:59 +0900
-
-> On 17.07.2014 07:25, David Miller wrote:
->> From: Francois Romieu <romieu@fr.zoreil.com>
->> Date: Tue, 15 Jul 2014 23:54:12 +0200
->> 
->>> Hayes Wang <hayeswang@realtek.com> :
->>>>  Michel D?nzer [mailto:michel@daenzer.net] 
->>> [...]
->>>>> Without this, the ethernet port on my ASUS A88X Pro mainboard stops
->>>>> working sometimes, with messages like these in dmesg:
->>>>>
->>>>> AMD-Vi: Event logged [IO_PAGE_FAULT device=05:00.0 
->>>>> domain=0x001e address=0x0000000000003000 flags=0x0050]
->>>>
->>>> I search the information about your issue. It seems to be
->>>> relative to the IOMMU. I don't sure if your patch is the root
->>>> cause or a workaround.
->>>
->>> Btw, a few extra identifiers in rtl_init_rxcfg may improve consistency:
->>>
->>>            missing             |          included
->>> -------------------------------+-------------------------------
->>> RTL_GIGA_MAC_VER_36 (8168f)    | RTL_GIGA_MAC_VER_35 (8168f)
->>> RTL_GIGA_MAC_VER_38 (RTL8411)  | RTL_GIGA_MAC_VER_44 (RTL8411)
->>> RTL_GIGA_MAC_VER_39 (RTL8106e) | RTL_GIGA_MAC_VER_43 (RTL8106e)
->>> RTL_GIGA_MAC_VER_37 (RTL8402)  |
->> 
->> Michel please take Francois's feedback here into consideration and also
->> provide a more detailed commit message so other people reading the commit
->> can understand your reasoning for making this change, not just what the
->> result might be for making it.
+On Thu, Jul 17, 2014 at 12:38:02AM +0800, Murali Karicheri wrote:
+> v3.65 version of the designware h/w, requires application space
+> registers to be configured to access the remote EP config space.
+> To support this, add rd[wr]_other_conf API in the pcie_host_opts
 > 
-> I'm afraid I can't do that. I don't really understand any of this stuff,
-> I just googled the IOMMU event message, found similar patches for other
-> chipsets, and adapted them for my mainboard until the problem stopped.
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Acked-by: Mohit Kumar <mohit.kumar@st.com>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
 
-And if so, that's exactly what I want you to say in the commit message.
+Reviewed-by: Pratyush Anand <pratyush.anand@st.com>
