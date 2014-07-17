@@ -1,157 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965662AbaGQQUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:20:44 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:34646 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965270AbaGQQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:20:42 -0400
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-To: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>
-Subject: [PATCH v2 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI PMICs
-Date: Thu, 17 Jul 2014 19:17:32 +0300
-Message-Id: <1405613855-27572-2-git-send-email-svarbanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
-References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
+	id S965693AbaGQQVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:21:04 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:48063 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934471AbaGQQVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:21:01 -0400
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH] mm/highmem.c: make kmap cache coloring aware
+Date: Thu, 17 Jul 2014 20:20:35 +0400
+Message-Id: <1405614035-11413-1-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Cartwright <joshc@codeaurora.org>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 
-The Qualcomm SPMI PMIC chips are components used with the
-Snapdragon 800 series SoC family.  This driver exists
-largely as a glue mfd component, it exists to be an owner
-of an SPMI regmap for children devices described in
-device tree.
+Provide hooks that allow architectures with aliasing cache to align
+mapping address of high pages according to their color.
 
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+[ Max: extract architecture-independent part of the original patch, clean
+  up checkpatch and build warnings. ]
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 ---
- drivers/mfd/Kconfig       |   16 +++++++++++
- drivers/mfd/Makefile      |    1 +
- drivers/mfd/pm8xxx-spmi.c |   63 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 80 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/pm8xxx-spmi.c
+ mm/highmem.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 6cc4b6a..122e2d9 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -524,6 +524,22 @@ config MFD_PM8921_CORE
- 	  Say M here if you want to include support for PM8921 chip as a module.
- 	  This will build a module called "pm8921-core".
+diff --git a/mm/highmem.c b/mm/highmem.c
+index b32b70c..6898a8b 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -44,6 +44,14 @@ DEFINE_PER_CPU(int, __kmap_atomic_idx);
+  */
+ #ifdef CONFIG_HIGHMEM
  
-+config MFD_PM8XXX_SPMI
-+	tristate "Qualcomm PM8XXX SPMI PMICs"
-+	depends on ARCH_QCOM || COMPILE_TEST
-+	depends on OF
-+	depends on SPMI
-+	select MFD_PM8XXX
-+	select REGMAP_SPMI
-+	help
-+	  This enables support for the Qualcomm PM8XXX SPMI PMICs.
-+	  These PMICs are currently used with the Snapdragon 800 series of
-+	  SoCs.  Note, that this will only be useful paired with descriptions
-+	  of the independent functions as children nodes in the device tree.
++#ifndef ARCH_PKMAP_COLORING
++#define set_pkmap_color(pg, cl)		/* */
++#define get_last_pkmap_nr(p, cl)	(p)
++#define get_next_pkmap_nr(p, cl)	(((p) + 1) & LAST_PKMAP_MASK)
++#define is_no_more_pkmaps(p, cl)	(!(p))
++#define get_next_pkmap_counter(c, cl)	((c) - 1)
++#endif
 +
-+	  Say M here if you want to include support for the PM8XXX SPMI PMIC
-+	  series as a module.  The module will be called "pm8xxx-spmi".
+ unsigned long totalhigh_pages __read_mostly;
+ EXPORT_SYMBOL(totalhigh_pages);
+ 
+@@ -161,19 +169,24 @@ static inline unsigned long map_new_virtual(struct page *page)
+ {
+ 	unsigned long vaddr;
+ 	int count;
++	int color __maybe_unused;
 +
- config MFD_RDC321X
- 	tristate "RDC R-321x southbridge"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 8afedba..93d82cc 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -153,6 +153,7 @@ obj-$(CONFIG_MFD_SI476X_CORE)	+= si476x-core.o
- obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
- obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
-+obj-$(CONFIG_MFD_PM8XXX_SPMI)	+= pm8xxx-spmi.o
- obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
-diff --git a/drivers/mfd/pm8xxx-spmi.c b/drivers/mfd/pm8xxx-spmi.c
-new file mode 100644
-index 0000000..882da5e
---- /dev/null
-+++ b/drivers/mfd/pm8xxx-spmi.c
-@@ -0,0 +1,63 @@
-+/*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/spmi.h>
-+#include <linux/regmap.h>
-+#include <linux/of_platform.h>
-+
-+static const struct regmap_config pm8xxx_regmap_config = {
-+	.reg_bits	= 16,
-+	.val_bits	= 8,
-+	.max_register	= 0xffff,
-+};
-+
-+static int pm8xxx_probe(struct spmi_device *sdev)
-+{
-+	struct device_node *root = sdev->dev.of_node;
-+	struct regmap *regmap;
-+
-+	regmap = devm_regmap_init_spmi_ext(sdev, &pm8xxx_regmap_config);
-+	if (IS_ERR(regmap))
-+		return PTR_ERR(regmap);
-+
-+	return of_platform_populate(root, NULL, NULL, &sdev->dev);
-+}
-+
-+static void pm8xxx_remove(struct spmi_device *sdev)
-+{
-+	of_platform_depopulate(&sdev->dev);
-+}
-+
-+static const struct of_device_id pm8xxx_id_table[] = {
-+	{ .compatible = "qcom,pm8941" },
-+	{ .compatible = "qcom,pm8841" },
-+	{ .compatible = "qcom,pma8084" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, pm8xxx_id_table);
-+
-+static struct spmi_driver pm8xxx_driver = {
-+	.probe = pm8xxx_probe,
-+	.remove = pm8xxx_remove,
-+	.driver = {
-+		.name = "pm8xxx-spmi",
-+		.of_match_table = pm8xxx_id_table,
-+	},
-+};
-+module_spmi_driver(pm8xxx_driver);
-+
-+MODULE_DESCRIPTION("PM8XXX SPMI PMIC driver");
-+MODULE_ALIAS("platform:" KBUILD_MODNAME);
-+MODULE_AUTHOR("The Linux Foundation");
-+MODULE_LICENSE("GPL v2");
++	set_pkmap_color(page, color);
++	last_pkmap_nr = get_last_pkmap_nr(last_pkmap_nr, color);
+ 
+ start:
+ 	count = LAST_PKMAP;
+ 	/* Find an empty entry */
+ 	for (;;) {
+-		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
+-		if (!last_pkmap_nr) {
++		last_pkmap_nr = get_next_pkmap_nr(last_pkmap_nr, color);
++		if (is_no_more_pkmaps(last_pkmap_nr, color)) {
+ 			flush_all_zero_pkmaps();
+ 			count = LAST_PKMAP;
+ 		}
+ 		if (!pkmap_count[last_pkmap_nr])
+ 			break;	/* Found a usable entry */
+-		if (--count)
++		count = get_next_pkmap_counter(count, color);
++		if (count > 0)
+ 			continue;
+ 
+ 		/*
 -- 
-1.7.0.4
+1.8.1.4
 
