@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283AbaGQL2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:28:51 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60074 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657AbaGQL2q (ORCPT
+	id S1756864AbaGQL3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:29:07 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:45383 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756359AbaGQL3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:28:46 -0400
-Message-ID: <53C7B365.4080000@gmail.com>
-Date: Thu, 17 Jul 2014 19:28:37 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+	Thu, 17 Jul 2014 07:29:04 -0400
+Message-ID: <53C7B378.2030509@redhat.com>
+Date: Thu, 17 Jul 2014 13:28:56 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>
-CC: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, cmetcalf@tilera.com
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7A819.40403@metafoo.de> <6485666.LVFO2YCEQx@wuerfel>
-In-Reply-To: <6485666.LVFO2YCEQx@wuerfel>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] KVM: nVMX: Fix fail to get nested ack intr's vector
+ during nested vmexit
+References: <1405594981-31384-1-git-send-email-wanpeng.li@linux.intel.com> <1405594981-31384-2-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1405594981-31384-2-git-send-email-wanpeng.li@linux.intel.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 06:48 PM, Arnd Bergmann wrote:
-> On Thursday 17 July 2014 12:40:25 Lars-Peter Clausen wrote:
->> On 07/17/2014 11:20 AM, Arnd Bergmann wrote:
->>> On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
->>>>                                           gfp_t gfp_mask, unsigned int order);
->>>>   extern void devm_free_pages(struct device *dev, unsigned long addr);
->>>>
->>>> +#ifdef CONFIG_HAS_IOMEM
->>>>   void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
->>>> +#elif defined(CONFIG_COMPILE_TEST)
->>>> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
->>>> +                                               struct resource *res)
->>>> +{
->>>> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
->>>> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
->>>> +}
->>>> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
->>>>
->>>>   /* allows to add/remove a custom action to devres stack */
->>>
->>> To be honest, I think it's a bad idea to introduce wrappers functions
->>> that are only available when CONFIG_COMPILE_TEST is set.
->>>
->>> COMPILE_TEST is a great tool in general, but it has its limits.
->>> In particular, the case for !CONFIG_IOMEM is completely obscure
->>> and we won't find any bugs by allowing more drivers to be built
->>> in those configurations, but attempting to do it would cause
->>> endless churn by changing each instance of 'depends on HAS_IOMEM'
->>> to 'depends on HAS_IOMEM || COMPILE_TEST'.
->>
->> The point of this exercise is that we do not have to replace a good chunk of 
->> 'depends on COMPILE_TEST' with 'depends on COMPILE_TEST && HAS_IOMEM'
-> 
-> Ok, I see.
-> 
->> E.g. the typical Kconfig entry for your random SoC peripheral driver looks like
->>
->> config ARCH_FOOBAR_DRIVER
->>         depends on ARCH_FOOBAR || COMPILE_TEST
->>         ...
->>
->> Now when COMPILE_TEST is not set there is a implicit dependency on HAS_IOMEM 
->> since the architecture will provide it. If COMPILE_TEST is selected the 
->> driver will also be build-able on architectures that do no have HAS_IOMEM 
->> and hence linking the driver fails. One way to fix this is of course to 
->> replace the COMPILE_TEST with (COMPILE_TEST && HAS_IOMEM). But this is very 
->> often overlooked and only noticed later on when somebody actually builds a 
->> allyesconfig on an architecture that does not provide HAS_IOMEM. To avoid 
->> these kinds of build errors and tedious fixup patches the idea is to provide 
->> a stub function when HAS_IOMEM is not enabled, but COMPILE_TEST is enabled.
-> 
-> AFAICT, NO_IOMEM only has a real purpose on UML these days. Could we take
-> a shortcut here and make COMPILE_TEST depend on !UML? Getting random stuff
-> to build on UML seems pointless to me and we special-case it in a number of
-> places already.
-> 
+Il 17/07/2014 13:03, Wanpeng Li ha scritto:
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 4ae5ad8..a704f71 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -8697,6 +8697,9 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+>  	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
+>  	    && nested_exit_intr_ack_set(vcpu)) {
+>  		int irq = kvm_cpu_get_interrupt(vcpu);
+> +
+> +		if (irq < 0 && kvm_apic_vid_enabled(vcpu->kvm))
+> +			irq = kvm_lapic_find_highest_irr(vcpu);
+>  		WARN_ON(irq < 0);
+>  		vmcs12->vm_exit_intr_info = irq |
+>  			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
 
-According to current source code, tile still has chance to choose
-NO_IOMEM, for me, welcome the tile's maintainer's ideas or suggestions.
+I wonder if this should be kvm_apic_has_interrupt, so that the PPR
+register is taken into consideration?
 
+If so, the same change can also be written like this:
 
-Thanks.
--- 
-Chen Gang
+diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
+index bd0da43..a1ec6a5 100644
+--- a/arch/x86/kvm/irq.c
++++ b/arch/x86/kvm/irq.c
+@@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
+ 
+ 	vector = kvm_cpu_get_extint(v);
+ 
+-	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
++	if (vector != -1)
+ 		return vector;			/* PIC */
+ 
+ 	return kvm_get_apic_interrupt(v);	/* APIC */
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 3855103..92a0a58 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1627,10 +1627,13 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 
+-	/* Note that we never get here with APIC virtualization enabled.  */
++	/*
++	 * With APIC virtualization enabled, just pass back the
++	 * vector, the processor will take care of delivery.
++	 */
+ 
+-	if (vector == -1)
+-		return -1;
++	if (vector == -1 || kvm_apic_vid_enabled(vcpu->kvm))
++		return vector;
+ 
+ 	apic_set_isr(vector, apic);
+ 	apic_update_ppr(apic);
 
-Open, share, and attitude like air, water, and life which God blessed
+The idea is that kvm_cpu_get_interrupt always return the interrupt.  If
+you are injecting an interrupt you will test kvm_cpu_has_injectable_intr
+outside the call to kvm_cpu_get_interrupt, and kvm_get_apic_interrupt
+will never be reached anyway.  Instead, if you are reporting the interrupt,
+any interrupt will be okay.
+
+Yang, Wanpeng, what do you think?  Can you test both variants,
+that is:
+
+- you patch with kvm_apic_has_interrupt instead of
+kvm_lapic_find_highest_irr
+
+- the above untested patch of mine?
+
+Thanks,
+
+Paolo
