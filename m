@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367AbaGQNcb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:32:31 -0400
-Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:22458
+	id S1757445AbaGQNcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:32:47 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:44838
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756732AbaGQNc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:32:26 -0400
-X-WSS-ID: 0N8UYXV-07-C05-02
+	id S1757386AbaGQNco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:32:44 -0400
+X-WSS-ID: 0N8UYYF-07-C14-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Jerome Glisse <j.glisse@gmail.com>,
@@ -22,10 +22,10 @@ CC: John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
         "Oded Gabbay" <oded.gabbay@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>,
         =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
-Subject: [PATCH v2 09/25] amdkfd: Add amdkfd skeleton driver
-Date: Thu, 17 Jul 2014 16:29:16 +0300
-Message-ID: <1405603773-32688-10-git-send-email-oded.gabbay@amd.com>
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 12/25] amdkfd: Add binding/unbinding calls to amd_iommu driver
+Date: Thu, 17 Jul 2014 16:29:19 +0300
+Message-ID: <1405603773-32688-13-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
 References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
@@ -33,7 +33,7 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.20.0.84]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51234002)(189002)(199002)(93916002)(86362001)(19580395003)(19580405001)(50466002)(48376002)(229853001)(81542001)(81342001)(33646002)(107046002)(95666004)(87286001)(105586002)(77096002)(44976005)(101416001)(85306003)(31966008)(83322001)(74662001)(102836001)(68736004)(104166001)(84676001)(74502001)(76176999)(50986999)(92566001)(92726001)(99396002)(77156001)(21056001)(36756003)(88136002)(87936001)(83072002)(89996001)(85852003)(106466001)(20776003)(47776003)(64706001)(4396001)(62966002)(77982001)(76482001)(46102001)(50226001)(97736001)(80022001)(79102001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB045;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(101416001)(84676001)(92566001)(83072002)(20776003)(76176999)(104166001)(102836001)(68736004)(31966008)(76482001)(46102001)(93916002)(33646002)(106466001)(95666004)(97736001)(50986999)(80022001)(92726001)(50226001)(47776003)(62966002)(81342001)(79102001)(21056001)(86362001)(85306003)(77096002)(87286001)(64706001)(74502001)(87936001)(229853001)(36756003)(77156001)(81542001)(77982001)(85852003)(4396001)(48376002)(50466002)(107046002)(19580405001)(83322001)(44976005)(89996001)(19580395003)(105586002)(74662001)(99396002)(88136002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB041;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 027578BB13
 Authentication-Results: spf=none (sender IP is 165.204.84.221)
@@ -43,616 +43,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the amdkfd skeleton driver. The driver does nothing except
-define a /dev/kfd device.
+This patch adds the functions to bind and unbind pasid from a device through the amd_iommu driver.
 
-It returns -ENODEV on all amdkfd IOCTLs.
+The unbind function is called when the mm_struct of the process is released.
+
+The bind function is not called here because it is called only in the IOCTLs which are not yet implemented at this stage of the patchset.
 
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/radeon/Kconfig              |   2 +
- drivers/gpu/drm/radeon/Makefile             |   2 +
- drivers/gpu/drm/radeon/amdkfd/Kconfig       |  10 ++
- drivers/gpu/drm/radeon/amdkfd/Makefile      |   9 ++
- drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c | 203 ++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/amdkfd/kfd_device.c  | 129 ++++++++++++++++++
- drivers/gpu/drm/radeon/amdkfd/kfd_module.c  |  98 ++++++++++++++
- drivers/gpu/drm/radeon/amdkfd/kfd_priv.h    |  81 +++++++++++
- 8 files changed, 534 insertions(+)
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/Kconfig
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/Makefile
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device.c
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_module.c
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+ drivers/gpu/drm/radeon/amdkfd/kfd_device.c  | 80 ++++++++++++++++++++++++++++-
+ drivers/gpu/drm/radeon/amdkfd/kfd_priv.h    |  1 +
+ drivers/gpu/drm/radeon/amdkfd/kfd_process.c | 12 +++++
+ 3 files changed, 92 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/Kconfig b/drivers/gpu/drm/radeon/Kconfig
-index 970f8e9..b697321 100644
---- a/drivers/gpu/drm/radeon/Kconfig
-+++ b/drivers/gpu/drm/radeon/Kconfig
-@@ -6,3 +6,5 @@ config DRM_RADEON_UMS
- 
- 	  Userspace modesetting is deprecated for quite some time now, so
- 	  enable this only if you have ancient versions of the DDX drivers.
-+
-+source "drivers/gpu/drm/radeon/amdkfd/Kconfig"
-diff --git a/drivers/gpu/drm/radeon/Makefile b/drivers/gpu/drm/radeon/Makefile
-index a1c913d..50823a1 100644
---- a/drivers/gpu/drm/radeon/Makefile
-+++ b/drivers/gpu/drm/radeon/Makefile
-@@ -112,4 +112,6 @@ radeon-$(CONFIG_ACPI) += radeon_acpi.o
- 
- obj-$(CONFIG_DRM_RADEON)+= radeon.o
- 
-+obj-$(CONFIG_HSA_RADEON)+= amdkfd/
-+
- CFLAGS_radeon_trace_points.o := -I$(src)
-diff --git a/drivers/gpu/drm/radeon/amdkfd/Kconfig b/drivers/gpu/drm/radeon/amdkfd/Kconfig
-new file mode 100644
-index 0000000..900bb34
---- /dev/null
-+++ b/drivers/gpu/drm/radeon/amdkfd/Kconfig
-@@ -0,0 +1,10 @@
-+#
-+# Heterogenous system architecture configuration
-+#
-+
-+config HSA_RADEON
-+	tristate "HSA kernel driver for AMD Radeon devices"
-+	depends on DRM_RADEON && AMD_IOMMU_V2 && X86_64
-+	default m
-+	help
-+	  Enable this if you want to use HSA features on AMD radeon devices.
-diff --git a/drivers/gpu/drm/radeon/amdkfd/Makefile b/drivers/gpu/drm/radeon/amdkfd/Makefile
-new file mode 100644
-index 0000000..9564e75
---- /dev/null
-+++ b/drivers/gpu/drm/radeon/amdkfd/Makefile
-@@ -0,0 +1,9 @@
-+#
-+# Makefile for Heterogenous System Architecture support for AMD radeon devices
-+#
-+
-+ccflags-y := -Iinclude/drm
-+
-+amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o
-+
-+obj-$(CONFIG_HSA_RADEON)	+= amdkfd.o
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-new file mode 100644
-index 0000000..b98bcb7
---- /dev/null
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-@@ -0,0 +1,203 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/export.h>
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <linux/compat.h>
-+#include <uapi/linux/kfd_ioctl.h>
-+#include <linux/time.h>
-+#include <linux/mm.h>
-+#include <linux/uaccess.h>
-+#include <uapi/asm-generic/mman-common.h>
-+#include <asm/processor.h>
-+#include "kfd_priv.h"
-+
-+static long kfd_ioctl(struct file *, unsigned int, unsigned long);
-+static int kfd_open(struct inode *, struct file *);
-+
-+static const char kfd_dev_name[] = "kfd";
-+
-+static const struct file_operations kfd_fops = {
-+	.owner = THIS_MODULE,
-+	.unlocked_ioctl = kfd_ioctl,
-+	.compat_ioctl = kfd_ioctl,
-+	.open = kfd_open,
-+};
-+
-+static int kfd_char_dev_major = -1;
-+static struct class *kfd_class;
-+struct device *kfd_device;
-+
-+int kfd_chardev_init(void)
-+{
-+	int err = 0;
-+
-+	kfd_char_dev_major = register_chrdev(0, kfd_dev_name, &kfd_fops);
-+	err = kfd_char_dev_major;
-+	if (err < 0)
-+		goto err_register_chrdev;
-+
-+	kfd_class = class_create(THIS_MODULE, kfd_dev_name);
-+	err = PTR_ERR(kfd_class);
-+	if (IS_ERR(kfd_class))
-+		goto err_class_create;
-+
-+	kfd_device = device_create(kfd_class, NULL, MKDEV(kfd_char_dev_major, 0), NULL, kfd_dev_name);
-+	err = PTR_ERR(kfd_device);
-+	if (IS_ERR(kfd_device))
-+		goto err_device_create;
-+
-+	return 0;
-+
-+err_device_create:
-+	class_destroy(kfd_class);
-+err_class_create:
-+	unregister_chrdev(kfd_char_dev_major, kfd_dev_name);
-+err_register_chrdev:
-+	return err;
-+}
-+
-+void kfd_chardev_exit(void)
-+{
-+	device_destroy(kfd_class, MKDEV(kfd_char_dev_major, 0));
-+	class_destroy(kfd_class);
-+	unregister_chrdev(kfd_char_dev_major, kfd_dev_name);
-+}
-+
-+struct device *kfd_chardev(void)
-+{
-+	return kfd_device;
-+}
-+
-+
-+static int kfd_open(struct inode *inode, struct file *filep)
-+{
-+	if (iminor(inode) != 0)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
-+static long kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static int kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static int kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static long kfd_ioctl_set_memory_policy(struct file *filep, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static long kfd_ioctl_get_clock_counters(struct file *filep, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+
-+static int kfd_ioctl_get_process_apertures(struct file *filp, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static long kfd_ioctl_pmc_acquire_access(struct file *filp, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static long kfd_ioctl_pmc_release_access(struct file *filp, struct kfd_process *p, void __user *arg)
-+{
-+	return -ENODEV;
-+}
-+
-+static long kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
-+{
-+	struct kfd_process *process;
-+	long err = -EINVAL;
-+
-+	dev_dbg(kfd_device,
-+		"ioctl cmd 0x%x (#%d), arg 0x%lx\n",
-+		cmd, _IOC_NR(cmd), arg);
-+
-+	/* TODO: add function that retrieves process */
-+	process = NULL;
-+
-+	switch (cmd) {
-+	case KFD_IOC_CREATE_QUEUE:
-+		err = kfd_ioctl_create_queue(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_DESTROY_QUEUE:
-+		err = kfd_ioctl_destroy_queue(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_SET_MEMORY_POLICY:
-+		err = kfd_ioctl_set_memory_policy(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_GET_CLOCK_COUNTERS:
-+		err = kfd_ioctl_get_clock_counters(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_GET_PROCESS_APERTURES:
-+		err = kfd_ioctl_get_process_apertures(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_UPDATE_QUEUE:
-+		err = kfd_ioctl_update_queue(filep, process, (void __user *)arg);
-+		break;
-+
-+	case KFD_IOC_PMC_ACQUIRE_ACCESS:
-+		err = kfd_ioctl_pmc_acquire_access(filep, process, (void __user *) arg);
-+		break;
-+
-+	case KFD_IOC_PMC_RELEASE_ACCESS:
-+		err = kfd_ioctl_pmc_release_access(filep, process, (void __user *) arg);
-+		break;
-+
-+	default:
-+		dev_err(kfd_device,
-+			"unknown ioctl cmd 0x%x, arg 0x%lx)\n",
-+			cmd, arg);
-+		err = -EINVAL;
-+		break;
-+	}
-+
-+	if (err < 0)
-+		dev_err(kfd_device, "ioctl error %ld\n", err);
-+
-+	return err;
-+}
 diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-new file mode 100644
-index 0000000..dd63ce09
---- /dev/null
+index f6a7cf7..7c4c836 100644
+--- a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
 +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-@@ -0,0 +1,129 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include <linux/amd-iommu.h>
-+#include <linux/bsearch.h>
-+#include <linux/pci.h>
-+#include <linux/slab.h>
-+#include "kfd_priv.h"
-+
-+static const struct kfd_device_info kaveri_device_info = {
-+	.max_pasid_bits = 16,
-+};
-+
-+struct kfd_deviceid {
-+	unsigned short did;
-+	const struct kfd_device_info *device_info;
-+};
-+
-+/* Please keep this sorted by increasing device id. */
-+static const struct kfd_deviceid supported_devices[] = {
-+	{ 0x1304, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1305, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1306, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1307, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1309, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130A, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130B, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130C, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130D, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130E, &kaveri_device_info },	/* Kaveri */
-+	{ 0x130F, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1310, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1311, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1312, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1313, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1315, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1316, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1317, &kaveri_device_info },	/* Kaveri */
-+	{ 0x1318, &kaveri_device_info },	/* Kaveri */
-+	{ 0x131B, &kaveri_device_info },	/* Kaveri */
-+	{ 0x131C, &kaveri_device_info },	/* Kaveri */
-+	{ 0x131D, &kaveri_device_info },	/* Kaveri */
-+};
-+
-+static const struct kfd_device_info *lookup_device_info(unsigned short did)
+@@ -95,6 +95,59 @@ struct kfd_dev *kgd2kfd_probe(struct kgd_dev *kgd, struct pci_dev *pdev)
+ 	return kfd;
+ }
+ 
++static bool device_iommu_pasid_init(struct kfd_dev *kfd)
 +{
-+	size_t i;
++	const u32 required_iommu_flags = AMD_IOMMU_DEVICE_FLAG_ATS_SUP | AMD_IOMMU_DEVICE_FLAG_PRI_SUP
++					| AMD_IOMMU_DEVICE_FLAG_PASID_SUP;
 +
-+	for (i = 0; i < ARRAY_SIZE(supported_devices); i++) {
-+		if (supported_devices[i].did == did) {
-+			BUG_ON(supported_devices[i].device_info == NULL);
-+			return supported_devices[i].device_info;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+struct kfd_dev *kgd2kfd_probe(struct kgd_dev *kgd, struct pci_dev *pdev)
-+{
-+	struct kfd_dev *kfd;
-+
-+	const struct kfd_device_info *device_info = lookup_device_info(pdev->device);
-+
-+	if (!device_info)
-+		return NULL;
-+
-+	kfd = kzalloc(sizeof(*kfd), GFP_KERNEL);
-+	if (!kfd)
-+		return NULL;
-+
-+	kfd->kgd = kgd;
-+	kfd->device_info = device_info;
-+	kfd->pdev = pdev;
-+
-+	return kfd;
-+}
-+
-+bool kgd2kfd_device_init(struct kfd_dev *kfd,
-+			 const struct kgd2kfd_shared_resources *gpu_resources)
-+{
-+	kfd->shared_resources = *gpu_resources;
-+
-+	kfd->init_complete = true;
-+	dev_info(kfd_device, "added device (%x:%x)\n", kfd->pdev->vendor,
-+		 kfd->pdev->device);
-+
-+	return true;
-+}
-+
-+void kgd2kfd_device_exit(struct kfd_dev *kfd)
-+{
-+	kfree(kfd);
-+}
-+
-+void kgd2kfd_suspend(struct kfd_dev *kfd)
-+{
-+	BUG_ON(kfd == NULL);
-+}
-+
-+int kgd2kfd_resume(struct kfd_dev *kfd)
-+{
-+	BUG_ON(kfd == NULL);
-+
-+	return 0;
-+}
-+
-+void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry)
-+{
-+}
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_module.c b/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-new file mode 100644
-index 0000000..c7faac6
---- /dev/null
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-@@ -0,0 +1,98 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/notifier.h>
-+#include <linux/moduleparam.h>
-+#include <linux/device.h>
-+#include "kfd_priv.h"
-+
-+#define KFD_DRIVER_AUTHOR	"AMD Inc. and others"
-+
-+#define KFD_DRIVER_DESC		"Standalone HSA driver for AMD's GPUs"
-+#define KFD_DRIVER_DATE		"20140710"
-+#define KFD_DRIVER_MAJOR	0
-+#define KFD_DRIVER_MINOR	6
-+#define KFD_DRIVER_PATCHLEVEL	2
-+
-+const struct kfd2kgd_calls *kfd2kgd;
-+static const struct kgd2kfd_calls kgd2kfd = {
-+	.exit		= kgd2kfd_exit,
-+	.probe		= kgd2kfd_probe,
-+	.device_init	= kgd2kfd_device_init,
-+	.device_exit	= kgd2kfd_device_exit,
-+	.interrupt	= kgd2kfd_interrupt,
-+	.suspend	= kgd2kfd_suspend,
-+	.resume		= kgd2kfd_resume,
-+};
-+
-+bool kgd2kfd_init(unsigned interface_version,
-+		  const struct kfd2kgd_calls *f2g,
-+		  const struct kgd2kfd_calls **g2f)
-+{
-+	/* Only one interface version is supported, no kfd/kgd version skew allowed. */
-+	if (interface_version != KFD_INTERFACE_VERSION)
-+		return false;
-+
-+	kfd2kgd = f2g;
-+	*g2f = &kgd2kfd;
-+
-+	return true;
-+}
-+EXPORT_SYMBOL(kgd2kfd_init);
-+
-+void kgd2kfd_exit(void)
-+{
-+}
-+
-+static int __init kfd_module_init(void)
-+{
++	struct amd_iommu_device_info iommu_info;
++	pasid_t pasid_limit;
 +	int err;
 +
-+	err = kfd_chardev_init();
-+	if (err < 0)
-+		goto err_ioctl;
++	err = amd_iommu_device_info(kfd->pdev, &iommu_info);
++	if (err < 0) {
++		dev_err(kfd_device, "error getting iommu info. is the iommu enabled?\n");
++		return false;
++	}
 +
-+	dev_info(kfd_device, "Initialized module\n");
++	if ((iommu_info.flags & required_iommu_flags) != required_iommu_flags) {
++		dev_err(kfd_device, "error required iommu flags ats(%i), pri(%i), pasid(%i)\n",
++		       (iommu_info.flags & AMD_IOMMU_DEVICE_FLAG_ATS_SUP) != 0,
++		       (iommu_info.flags & AMD_IOMMU_DEVICE_FLAG_PRI_SUP) != 0,
++		       (iommu_info.flags & AMD_IOMMU_DEVICE_FLAG_PASID_SUP) != 0);
++		return false;
++	}
 +
-+	return 0;
++	pasid_limit = min_t(pasid_t, (pasid_t)1 << kfd->device_info->max_pasid_bits, iommu_info.max_pasids);
++	/*
++	 * last pasid is used for kernel queues doorbells
++	 * in the future the last pasid might be used for a kernel thread.
++	 */
++	pasid_limit = min_t(pasid_t, pasid_limit, kfd->doorbell_process_limit - 1);
 +
-+err_ioctl:
-+	return err;
++	err = amd_iommu_init_device(kfd->pdev, pasid_limit);
++	if (err < 0) {
++		dev_err(kfd_device, "error initializing iommu device\n");
++		return false;
++	}
++
++	if (!kfd_set_pasid_limit(pasid_limit)) {
++		dev_err(kfd_device, "error setting pasid limit\n");
++		amd_iommu_free_device(kfd->pdev);
++		return false;
++	}
++
++	return true;
 +}
 +
-+static void __exit kfd_module_exit(void)
++static void iommu_pasid_shutdown_callback(struct pci_dev *pdev, int pasid)
 +{
-+	kfd_chardev_exit();
-+	dev_info(kfd_device, "Removed module\n");
++	struct kfd_dev *dev = kfd_device_by_pci_dev(pdev);
++
++	if (dev)
++		kfd_unbind_process_from_device(dev, pasid);
 +}
 +
-+module_init(kfd_module_init);
-+module_exit(kfd_module_exit);
+ bool kgd2kfd_device_init(struct kfd_dev *kfd,
+ 			 const struct kgd2kfd_shared_resources *gpu_resources)
+ {
+@@ -102,8 +155,15 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
+ 
+ 	kfd_doorbell_init(kfd);
+ 
+-	if (kfd_topology_add_device(kfd) != 0)
++	if (!device_iommu_pasid_init(kfd))
++		return false;
 +
-+MODULE_AUTHOR(KFD_DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(KFD_DRIVER_DESC);
-+MODULE_LICENSE("GPL and additional rights");
-+MODULE_VERSION(__stringify(KFD_DRIVER_MAJOR) "."
-+	       __stringify(KFD_DRIVER_MINOR) "."
-+	       __stringify(KFD_DRIVER_PATCHLEVEL));
++	if (kfd_topology_add_device(kfd) != 0) {
++		amd_iommu_free_device(kfd->pdev);
+ 		return false;
++	}
++
++	amd_iommu_set_invalidate_ctx_cb(kfd->pdev, iommu_pasid_shutdown_callback);
+ 
+ 	kfd->init_complete = true;
+ 	dev_info(kfd_device, "added device (%x:%x)\n", kfd->pdev->vendor,
+@@ -118,18 +178,36 @@ void kgd2kfd_device_exit(struct kfd_dev *kfd)
+ 
+ 	BUG_ON(err != 0);
+ 
++	if (kfd->init_complete)
++		amd_iommu_free_device(kfd->pdev);
++
+ 	kfree(kfd);
+ }
+ 
+ void kgd2kfd_suspend(struct kfd_dev *kfd)
+ {
+ 	BUG_ON(kfd == NULL);
++
++	if (kfd->init_complete)
++		amd_iommu_free_device(kfd->pdev);
+ }
+ 
+ int kgd2kfd_resume(struct kfd_dev *kfd)
+ {
++	pasid_t pasid_limit;
++	int err;
++
+ 	BUG_ON(kfd == NULL);
+ 
++	pasid_limit = kfd_get_pasid_limit();
++
++	if (kfd->init_complete) {
++		err = amd_iommu_init_device(kfd->pdev, pasid_limit);
++		if (err < 0)
++			return -ENXIO;
++		amd_iommu_set_invalidate_ctx_cb(kfd->pdev, iommu_pasid_shutdown_callback);
++	}
++
+ 	return 0;
+ }
+ 
 diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-new file mode 100644
-index 0000000..05e892f
---- /dev/null
+index af5a5e4..604c317 100644
+--- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
 +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-@@ -0,0 +1,81 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ */
+@@ -195,6 +195,7 @@ struct kfd_process {
+ struct kfd_process *kfd_create_process(const struct task_struct *);
+ struct kfd_process *kfd_get_process(const struct task_struct *);
+ 
++void kfd_unbind_process_from_device(struct kfd_dev *dev, pasid_t pasid);
+ struct kfd_process_device *kfd_get_process_device_data(struct kfd_dev *dev,
+ 							struct kfd_process *p);
+ 
+diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_process.c b/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
+index 5efbce0..908b3b7 100644
+--- a/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
++++ b/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
+@@ -24,6 +24,7 @@
+ #include <linux/log2.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
++#include <linux/amd-iommu.h>
+ #include <linux/notifier.h>
+ struct mm_struct;
+ 
+@@ -97,6 +98,7 @@ static void free_process(struct kfd_process *p)
+ 	BUG_ON(p == NULL);
+ 
+ 	list_for_each_entry_safe(pdd, temp, &p->per_device_data, per_device_list) {
++		amd_iommu_unbind_pasid(pdd->dev->pdev, p->pasid);
+ 		list_del(&pdd->per_device_list);
+ 		kfree(pdd);
+ 	}
+@@ -199,6 +201,7 @@ struct kfd_process_device *kfd_bind_process_to_device(struct kfd_dev *dev,
+ 							struct kfd_process *p)
+ {
+ 	struct kfd_process_device *pdd = kfd_get_process_device_data(dev, p);
++	int err;
+ 
+ 	if (pdd == NULL)
+ 		return ERR_PTR(-ENOMEM);
+@@ -206,6 +209,15 @@ struct kfd_process_device *kfd_bind_process_to_device(struct kfd_dev *dev,
+ 	if (pdd->bound)
+ 		return pdd;
+ 
++	err = amd_iommu_bind_pasid(dev->pdev, p->pasid, p->lead_thread);
++	if (err < 0)
++		return ERR_PTR(err);
 +
-+#ifndef KFD_PRIV_H_INCLUDED
-+#define KFD_PRIV_H_INCLUDED
++	if (err < 0) {
++		amd_iommu_unbind_pasid(dev->pdev, p->pasid);
++		return ERR_PTR(err);
++	}
 +
-+#include <linux/hashtable.h>
-+#include <linux/mmu_notifier.h>
-+#include <linux/mutex.h>
-+#include <linux/types.h>
-+#include <linux/atomic.h>
-+#include <linux/workqueue.h>
-+#include <linux/spinlock.h>
-+#include "../radeon_kfd.h"
-+
-+struct kfd_device_info {
-+	const struct kfd_scheduler_class *scheduler_class;
-+	unsigned int max_pasid_bits;
-+	size_t ih_ring_entry_size;
-+};
-+
-+struct kfd_dev {
-+	struct kgd_dev *kgd;
-+
-+	const struct kfd_device_info *device_info;
-+	struct pci_dev *pdev;
-+
-+	bool init_complete;
-+
-+	unsigned int id;		/* topology stub index */
-+
-+	struct kgd2kfd_shared_resources shared_resources;
-+};
-+
-+/* KGD2KFD callbacks */
-+void kgd2kfd_exit(void);
-+struct kfd_dev *kgd2kfd_probe(struct kgd_dev *kgd, struct pci_dev *pdev);
-+bool kgd2kfd_device_init(struct kfd_dev *kfd,
-+			 const struct kgd2kfd_shared_resources *gpu_resources);
-+void kgd2kfd_device_exit(struct kfd_dev *kfd);
-+
-+extern const struct kfd2kgd_calls *kfd2kgd;
-+
-+/* Character device interface */
-+int kfd_chardev_init(void);
-+void kfd_chardev_exit(void);
-+struct device *kfd_chardev(void);
-+
-+/* Process data */
-+struct kfd_process {
-+};
-+
-+extern struct device *kfd_device;
-+
-+/* Interrupts */
-+void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
-+
-+/* Power Management */
-+void kgd2kfd_suspend(struct kfd_dev *dev);
-+int kgd2kfd_resume(struct kfd_dev *dev);
-+
-+#endif
+ 	pdd->bound = true;
+ 
+ 	return pdd;
 -- 
 1.9.1
 
