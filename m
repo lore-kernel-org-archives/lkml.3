@@ -1,112 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaGQGuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:50:54 -0400
-Received: from mail-we0-f195.google.com ([74.125.82.195]:34118 "EHLO
-	mail-we0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaGQGuv (ORCPT
+	id S1754190AbaGQGv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:51:26 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:46364 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaGQGvX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:50:51 -0400
+	Thu, 17 Jul 2014 02:51:23 -0400
+Message-ID: <53c77269.a7c8440a.7a5b.4c20@mx.google.com>
+X-Google-Original-Message-ID: <000e01cfa18b$83c5d420$8b517c60$@dulixin@gmail.com>
+From: "Dudley Du" <dudley.dulixin@gmail.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Dudley Du" <dudl@cypress.com>
+Subject: [PATCH v4 4/14] input: cyapa: add cyapa key function interfaces in sysfs system
+Date: Thu, 17 Jul 2014 14:51:04 +0800
 MIME-Version: 1.0
-Reply-To: markus@gutschke.com
-In-Reply-To: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
-From: Markus Gutschke <markus@gutschke.com>
-Date: Wed, 16 Jul 2014 23:50:28 -0700
-X-Google-Sender-Auth: bUrHwiuvNWtagGiFuEZjyu5R94M
-Message-ID: <CALGCz1oYYkKp1frPF4vExiwqW=euYY8An+Yum4U-qsBc5NyjFg@mail.gmail.com>
-Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
-To: linux-kernel@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+hi3pcScs7fo9LQ9mQLCbjc44dzg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the reviewers of the faulty change list to the cc list for this
-e-mail. I hope that is considered proper etiquette for the LKML.
+Add key basic function interfaces in cyapa driver in sysfs system,
+these interfaces are commonly used in pre- and after production, and
+for trackpad device state checking, manage and firmware image updating.
+These interfaces including firmware_version and product_id interfaces
+for reading firmware version and trackpad device product id values,
+and including update_fw interface to command firmware image update
+process. Also including baseline and calibrate interfaces, so can
+read and check the trackpad device states. If the baseline values are
+invalid, then can use calibrate interface to recover it.
+TEST=test on Chromebooks.
 
-On Tue, Jul 15, 2014 at 6:51 PM, Markus Gutschke <markus@gutschke.com> wrote:
-> My Dell M4400 has been pretty well-supported by Linux a couple of
-> years now, but recent 3.16-rcX cause hard crashes when resuming from
-> Suspend-to-RAM.
->
-> This is tricky to debug, as device drivers are not yet restored by the
-> time that the crash happens. So, I can't use Page-UP to scroll the
-> screen and see the full crash information. I also cannot use the
-> netconsole; the ethernet device is still suspended. For similar
-> reasons, crash kernels don't seem to work either.
->
-> After about a day of false starts and a lengthy bi-secting session, I
-> finally narrowed things down to this change list:
->
-> eec15edbb0e14485998635ea7c62e30911b465f0 is the first bad commit
-> commit eec15edbb0e14485998635ea7c62e30911b465f0
-> Author: Zhang Rui <rui.zhang@intel.com>
-> Date:   Fri May 30 04:23:01 2014 +0200
->
->     ACPI / PNP: use device ID list for PNPACPI device enumeration
->
->     ACPI can be used to enumerate PNP devices, but the code does not
->     handle this in the right way currently.  Namely, if an ACPI device
->     object
->      1. Has a _CRS method,
->      2. Has an identification of
->         "three capital characters followed by four hex digits",
->      3. Is not in the excluded IDs list,
->     it will be enumerated to PNP bus (that is, a PNP device object will
->     be create for it).  This means that, actually, the PNP bus type is
->     used as the default bus type for enumerating _HID devices in ACPI.
->
->     However, more and more _HID devices need to be enumerated to the
->     platform bus instead (that is, platform device objects need to be
->     created for them).  As a result, the device ID list in acpi_platform.c
->     is used to enforce creating platform device objects rather than PNP
->     device objects for matching devices.  That list has been continuously
->     growing recently, unfortunately, and it is pretty much guaranteed to
->     grow even more in the future.
->
->     To address that problem it is better to enumerate _HID devices
->     as platform devices by default.  To this end, change the way of
->     enumerating PNP devices by adding a PNP ACPI scan handler that
->     will use a device ID list to create PNP devices for the ACPI
->     device objects whose device IDs are present in that list.
->
->     The initial device ID list in the PNP ACPI scan handler contains
->     all of the pnp_device_id strings from all the existing PNP drivers,
->     so this change should be transparent to the PNP core and all of the
->     PNP drivers.  Still, in the future it should be possible to reduce
->     its size by converting PNP drivers that need not be PNP for any
->     technical reasons into platform drivers.
->
->     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
->     [rjw: Rewrote the changelog, modified the PNP ACPI scan handler code]
->     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->     Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->
-> :040000 040000 b7c07232aa46ae7b6faf9a907fb7274a02e4680fc2e05b31a61dccd087c554adecc89a43a1ed81f7
-> M drivers
-> :040000 040000 4eda970292fffbeebe167f9210502527df4e8ab421e9e6fd84c780a34bf3d48b5e7618b551da3b1a
-> M include
->
-> I took a photo of the crash. It feels silly to do, but I couldn't
-> think of a better solution. You can find it at
-> https://drive.google.com/file/d/0B8SxqKDe4hyheTlTLXY2YThkMXM
->
-> As I mentioned earlier, a bunch of information has already scrolled
-> off the screen, but hopefully what is visible is somewhat helpful.
->
-> I will have only limited internet access the next couple of weeks. But
-> I wanted to make sure I at least got the result of the bisection out
-> to LKML. I will make every best effort to collect additional data, if
-> asked to do so; but some of it might be delayed for a little bit,
-> until I can get access to reasonably powerful hardware or reasonably
-> fast internet.
->
->
-> Markus
->
-> P.S.: Please keep me cc'd on all responses, as I am not subscribed to
-> the firehose that is LKML.
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa.c |  190 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/input/mouse/cyapa.h |   27 ++++++
+ 2 files changed, 217 insertions(+)
+
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index 6a2783b..53c9d59 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -388,6 +388,78 @@ static void cyapa_detect(struct cyapa *cyapa)
+ 	}
+ }
+ 
++static int cyapa_firmware(struct cyapa *cyapa, const char *fw_name)
++{
++	struct device *dev = &cyapa->client->dev;
++	int ret;
++	const struct firmware *fw;
++
++	ret = request_firmware(&fw, fw_name, dev);
++	if (ret) {
++		dev_err(dev, "Could not load firmware from %s, %d\n",
++			fw_name, ret);
++		return ret;
++	}
++
++	if (cyapa->ops->check_fw) {
++		ret = cyapa->ops->check_fw(cyapa, fw);
++		if (ret) {
++			dev_err(dev, "Invalid CYAPA firmware image: %s\n",
++					fw_name);
++			goto done;
++		}
++	} else {
++		dev_err(dev, "Unknown status, operation forbidden, gen=%d\n",
++			cyapa->gen);
++		ret = -ENOTSUPP;
++		goto done;
++	}
++
++	/*
++	 * Resume the potentially suspended device because doing FW
++	 * update on a device not in the FULL mode has a chance to
++	 * fail.
++	 */
++	pm_runtime_get_sync(dev);
++
++	if (cyapa->ops->bl_enter) {
++		ret = cyapa->ops->bl_enter(cyapa);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->bl_activate) {
++		ret = cyapa->ops->bl_activate(cyapa);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->bl_initiate) {
++		ret = cyapa->ops->bl_initiate(cyapa, fw);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->update_fw) {
++		ret = cyapa->ops->update_fw(cyapa, fw);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->bl_verify_app_integrity) {
++		ret = cyapa->ops->bl_verify_app_integrity(cyapa);
++		if (ret)
++			goto err_detect;
++	}
++
++err_detect:
++	pm_runtime_put_noidle(dev);
++
++done:
++	release_firmware(fw);
++	return ret;
++}
++
+ /*
+  * Sysfs Interface.
+  */
+@@ -584,6 +656,120 @@ static void cyapa_start_runtime(struct cyapa *cyapa)
+ static void cyapa_start_runtime(struct cyapa *cyapa) {}
+ #endif /* CONFIG_PM_RUNTIME */
+ 
++static ssize_t cyapa_show_fm_ver(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	int ret;
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++
++	mutex_lock(&cyapa->state_sync_lock);
++	ret = scnprintf(buf, PAGE_SIZE, "%d.%d\n", cyapa->fw_maj_ver,
++			 cyapa->fw_min_ver);
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret;
++}
++
++static ssize_t cyapa_show_product_id(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	int ret;
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++
++	mutex_lock(&cyapa->state_sync_lock);
++	ret = scnprintf(buf, PAGE_SIZE, "%s\n", cyapa->product_id);
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret;
++}
++
++static ssize_t cyapa_update_fw_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	const char *fw_name;
++	int ret;
++
++	/* Do not allow paths that step out of /lib/firmware  */
++	if (strstr(buf, "../") != NULL)
++		return -EINVAL;
++
++	if (!strncmp(buf, "1", count) || !strncmp(buf, "1\n", count))
++		fw_name = CYAPA_FW_NAME;
++	else
++		fw_name = buf;
++
++	mutex_lock(&cyapa->state_sync_lock);
++
++	ret = cyapa_firmware(cyapa, fw_name);
++	if (ret)
++		dev_err(dev, "firmware update failed, %d\n", ret);
++	else
++		dev_dbg(dev, "firmware update succeeded\n");
++
++	mutex_unlock(&cyapa->state_sync_lock);
++
++	/* Redetect trackpad device states. */
++	cyapa_detect_async(cyapa, 0);
++
++	return ret ? ret : count;
++}
++
++static ssize_t cyapa_calibrate_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int ret;
++
++	mutex_lock(&cyapa->state_sync_lock);
++
++	if (!cyapa->ops->calibrate_store) {
++		dev_err(dev, "Calibrate operation not permitted.\n");
++		ret = -ENOTSUPP;
++	} else
++		ret = cyapa->ops->calibrate_store(dev, attr, buf, count);
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret < 0 ? ret : count;
++}
++
++static ssize_t cyapa_show_baseline(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	ssize_t ret;
++
++	mutex_lock(&cyapa->state_sync_lock);
++
++	if (!cyapa->ops->show_baseline) {
++		dev_err(dev, "Calibrate operation not permitted.\n");
++		ret = -ENOTSUPP;
++	} else
++		ret = cyapa->ops->show_baseline(dev, attr, buf);
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret;
++}
++
++static DEVICE_ATTR(firmware_version, S_IRUGO, cyapa_show_fm_ver, NULL);
++static DEVICE_ATTR(product_id, S_IRUGO, cyapa_show_product_id, NULL);
++static DEVICE_ATTR(update_fw, S_IWUSR, NULL, cyapa_update_fw_store);
++static DEVICE_ATTR(baseline, S_IRUGO, cyapa_show_baseline, NULL);
++static DEVICE_ATTR(calibrate, S_IWUSR, NULL, cyapa_calibrate_store);
++
++static struct attribute *cyapa_sysfs_entries[] = {
++	&dev_attr_firmware_version.attr,
++	&dev_attr_product_id.attr,
++	&dev_attr_update_fw.attr,
++	&dev_attr_baseline.attr,
++	&dev_attr_calibrate.attr,
++	NULL,
++};
++
++static const struct attribute_group cyapa_sysfs_group = {
++	.attrs = cyapa_sysfs_entries,
++};
++
+ void cyapa_detect_async(void *data, async_cookie_t cookie)
+ {
+ 	struct cyapa *cyapa = (struct cyapa *)data;
+@@ -680,6 +866,9 @@ static int cyapa_probe(struct i2c_client *client,
+ 		goto err_uninit_tp_modules;
+ 	}
+ 
++	if (sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group))
++		dev_warn(dev, "error creating sysfs entries.\n");
++
+ #ifdef CONFIG_PM_SLEEP
+ 	if (device_can_wakeup(dev) &&
+ 	    sysfs_merge_group(&client->dev.kobj, &cyapa_power_wakeup_group))
+@@ -704,6 +893,7 @@ static int cyapa_remove(struct i2c_client *client)
+ 	struct cyapa *cyapa = i2c_get_clientdata(client);
+ 
+ 	pm_runtime_disable(&client->dev);
++	sysfs_remove_group(&client->dev.kobj, &cyapa_sysfs_group);
+ 
+ #ifdef CONFIG_PM_SLEEP
+ 	sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_wakeup_group);
+diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
+index 9c1f0b91..567ab08 100644
+--- a/drivers/input/mouse/cyapa.h
++++ b/drivers/input/mouse/cyapa.h
+@@ -171,6 +171,22 @@ struct cyapa;
+ typedef bool (*cb_sort)(struct cyapa *, u8 *, int);
+ 
+ struct cyapa_dev_ops {
++	int (*check_fw)(struct cyapa *, const struct firmware *);
++	int (*bl_enter)(struct cyapa *);
++	int (*bl_activate)(struct cyapa *);
++	int (*bl_initiate)(struct cyapa *, const struct firmware *);
++	int (*update_fw)(struct cyapa *, const struct firmware *);
++	int (*bl_verify_app_integrity)(struct cyapa *);
++	int (*bl_deactivate)(struct cyapa *);
++
++	ssize_t (*show_baseline)(struct device *,
++			struct device_attribute *, char *);
++	ssize_t (*calibrate_store)(struct device *,
++			struct device_attribute *, const char *, size_t);
++
++	int (*read_fw)(struct cyapa *);
++	int (*read_raw_data)(struct cyapa *);
++
+ 	int (*initialize)(struct cyapa *cyapa);
+ 	int (*uninitialize)(struct cyapa *cyapa);
+ 
+@@ -243,6 +259,17 @@ struct cyapa {
+ 	 */
+ 	struct mutex state_sync_lock;
+ 
++	/* Per-instance debugfs root */
++	struct dentry *dentry_dev;
++
++	/* Buffer to store firmware read using debugfs */
++	struct mutex debugfs_mutex;
++	u8 *fw_image;
++	size_t fw_image_size;
++	/* Buffer to store sensors' raw data */
++	u8 *tp_raw_data;
++	size_t tp_raw_data_size;
++
+ 	const struct cyapa_dev_ops *ops;
+ };
+ 
+-- 
+1.7.9.5
+
+
