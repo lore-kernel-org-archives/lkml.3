@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432AbaGQLex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:34:53 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:58594 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882AbaGQLev (ORCPT
+	id S932251AbaGQLfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:35:23 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:4139 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123AbaGQLfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:34:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Peter Chen <peter.chen@freescale.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Antoine =?ISO-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Date: Thu, 17 Jul 2014 13:34:38 +0200
-Message-ID: <14435027.UvktXyQjy4@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140717111912.GA16025@shlinux1.ap.freescale.net>
-References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com> <5456516.0fVZeXjF8k@wuerfel> <20140717111912.GA16025@shlinux1.ap.freescale.net>
+	Thu, 17 Jul 2014 07:35:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 17 Jul 2014 04:27:49 -0700
+Message-ID: <53C7B4F3.4060307@nvidia.com>
+Date: Thu, 17 Jul 2014 14:35:15 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+axIy9ukQUHE7iAz/NNi3U9U9nQXcMDzfrB4rrq7OFx
- WoZ5OJ2OuF/6lmLNfla4zONkfiQW8rvhrCS2VGxAqwdMK9Xwof
- qS34O1tb9ETdMGGOE0h690xUJHVCUu6SME/Sjd2u12p1IDJjL3
- FudYMUFFaI7Ie946zuoSIq5dqjf9ezLt0b9rJsKW3SEtU2fmUg
- de0pM/pO3pfjXEDIRmfwrHFG7XAd5FFF1+uPwpoR1p/L4yamwz
- edIA2fZAZqsH2GMQdQSGhdoJMgIiq8Ayb8aBLNdTeat7+9Sp3Y
- nEzdWelkoolYutfqRweOx9ctcdvb1RYY+2ma1+a1BY1k1nWPjy
- kEaoOSxgcOW/nXp5doCw=
+To: Hans de Goede <hdegoede@redhat.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH v4 1/8] of: Add NVIDIA Tegra SATA controller binding
+References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <1405510814-31928-1-git-send-email-mperttunen@nvidia.com> <53C666E5.6030009@redhat.com> <20140716131306.GB23384@ulmo> <53C6908A.2050200@redhat.com> <20140716195136.GB5212@mithrandir> <53C77263.7050903@redhat.com> <20140717073956.GA18640@ulmo> <53C7A433.4070404@redhat.com>
+In-Reply-To: <53C7A433.4070404@redhat.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 19:19:15 Peter Chen wrote:
-> 
-> Currently, we are designing a generic driver, we don't know what's the
-> hardware architecture, we are trying to find a solution how to set
-> dma mask for all possible devices which will use this driver, Antoine's
-> this patch is trying to cover this feature.
-> 
-> For example, 
-> 
-> Marvell Berlin doesn't need to set dma mask specific.
-> http://marc.info/?l=linux-arm-kernel&m=140205228507045&w=2
-> http://www.spinics.net/lists/linux-usb/msg110598.html
-> 
-> Xilinx zynq needs to set dma mask as 0xFFFFFFF0
-> http://marc.info/?l=linux-usb&m=140384129921706&w=2
-> 
-> FSL i.mx needs to set dma mask as DMA_BIT_MASK(32)
-> https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/tree/drivers/usb/chipidea/ci_hdrc_imx.c?h=usb-next
+On 17/07/14 13:23, Hans de Goede wrote:
+> On 07/17/2014 09:56 AM, Mikko Perttunen wrote:
+>> Also: is there a reason to not use the devm_* variants? I note that the helper code has not been able to prevent any of the ahci_platform drivers from messing up by not calling ahci_platform_put_resources.
+>
+> The libahci_platform.c code / ahci_platform.c code is also used for
+> devices going way back who may not yet be using the new clk framework,
+> so where we need to use clk_get(dev, NULL); quoting from libahci_platform.c :
+>
+>          for (i = 0; i < AHCI_MAX_CLKS; i++) {
+>                  /*
+>                   * For now we must use clk_get(dev, NULL) for the first clock,
+>                   * because some platforms (da850, spear13xx) are not yet
+>                   * converted to use devicetree for clocks.  For new platforms
+>                   * this is equivalent to of_clk_get(dev->of_node, 0).
+>                   */
+>                  if (i == 0)
+>                          clk = clk_get(dev, NULL);
+>                  else
+>                          clk = of_clk_get(dev->of_node, i);
+>
+>                  if (IS_ERR(clk)) {
+>                          rc = PTR_ERR(clk);
+>                          if (rc == -EPROBE_DEFER)
+>                                  goto err_out;
+>                          break;
+>                  }
+>                  hpriv->clks[i] = clk;
+>          }
+>
+> And there is no devm variant of that, nor is there one to get clocks by index.
+> Note that we also need ahci_platform_put_resources for runtime pm support, so
+> that one is going to stay around anyways and thus there is not that much value
+> in fixing this.
+>
 
-Ok, I see now. I think we can safely drop it completely then:
-
-- Berlin was only recently added and doesn't need to set the
-  mask because the common code handles it just fine now.
-
-- i.mx was added earlier, at a time where it was still necessary
-
-- zynq just made a mistake, 0xFFFFFFF0 was never a valid mask
-  and just happened to work by accident.
-
-In summary, the 32-bit default mask will work on all of them,
-and we need no special code or DT properties for it.
-
-	Arnd
+Ah, and looks like devres is used to call put_resources anyway. My mistake.
