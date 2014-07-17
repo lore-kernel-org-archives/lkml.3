@@ -1,67 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaGQJTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:19:40 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51229 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046AbaGQJTf (ORCPT
+	id S1756206AbaGQJUM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:20:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53627 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750727AbaGQJUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:19:35 -0400
-Message-ID: <53C7951F.6000906@gmail.com>
-Date: Thu, 17 Jul 2014 17:19:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, msalter@redhat.com,
-        Guenter Roeck <linux@roeck-us.net>, linux-pwm@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        arnd@arndb.de, linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com,
+	Thu, 17 Jul 2014 05:20:09 -0400
+Date: Thu, 17 Jul 2014 10:19:31 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <53C3994C.1010309@metafoo.de> <53C39B66.4060500@nod.at> <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com> <53C47725.8000005@gmail.com> <53C47B76.4080306@roeck-us.net> <53C47FB7.6080304@gmail.com> <53C53CE1.4090803@gmail.com> <53C7269E.4010702@gmail.com> <20140717083756.GA19686@ulmo> <53C7905D.9090003@gmail.com> <20140717091601.GF25880@mwanda>
-In-Reply-To: <20140717091601.GF25880@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFCv3 01/14] arm64: introduce
+ aarch64_insn_gen_comp_branch_imm()
+Message-ID: <20140717091931.GC21153@arm.com>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+ <1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
+ <20140716160450.GT29414@arm.com>
+ <20140716211931.GA18109@gup76>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140716211931.GA18109@gup76>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 07/17/2014 05:16 PM, Dan Carpenter wrote:
-> On Thu, Jul 17, 2014 at 04:59:09PM +0800, Chen Gang wrote:
->>>> +	return (__force void __iomem *)ERR_PTR(-ENXIO);
->>>
->>> There's apparently an IOMEM_ERR_PTR() for this nowadays...
->>>
->>
->> IOMEM_ERR_PTR() is defined within "lib/devres.c", not in "./include".
->> But may we move it from "lib/devres.c" to "./include/linux/err.h"?
->>
->> For me, I am not quite sure, it may need additional discussion, but at
->> least, that will be another patch.
+On Wed, Jul 16, 2014 at 10:19:31PM +0100, Zi Shen Lim wrote:
+> On Wed, Jul 16, 2014 at 05:04:50PM +0100, Will Deacon wrote:
+> > On Tue, Jul 15, 2014 at 07:24:59AM +0100, Zi Shen Lim wrote:
+> [...]
+> > > +enum aarch64_insn_register {
+> > > +	AARCH64_INSN_REG_0  = 0,
+> > > +	AARCH64_INSN_REG_1  = 1,
+> > > +	AARCH64_INSN_REG_2  = 2,
+> > > +	AARCH64_INSN_REG_3  = 3,
+> > > +	AARCH64_INSN_REG_4  = 4,
+> > > +	AARCH64_INSN_REG_5  = 5,
+> > > +	AARCH64_INSN_REG_6  = 6,
+> > > +	AARCH64_INSN_REG_7  = 7,
+> > > +	AARCH64_INSN_REG_8  = 8,
+> > > +	AARCH64_INSN_REG_9  = 9,
+> > > +	AARCH64_INSN_REG_10 = 10,
+> > > +	AARCH64_INSN_REG_11 = 11,
+> > > +	AARCH64_INSN_REG_12 = 12,
+> > > +	AARCH64_INSN_REG_13 = 13,
+> > > +	AARCH64_INSN_REG_14 = 14,
+> > > +	AARCH64_INSN_REG_15 = 15,
+> > > +	AARCH64_INSN_REG_16 = 16,
+> > > +	AARCH64_INSN_REG_17 = 17,
+> > > +	AARCH64_INSN_REG_18 = 18,
+> > > +	AARCH64_INSN_REG_19 = 19,
+> > > +	AARCH64_INSN_REG_20 = 20,
+> > > +	AARCH64_INSN_REG_21 = 21,
+> > > +	AARCH64_INSN_REG_22 = 22,
+> > > +	AARCH64_INSN_REG_23 = 23,
+> > > +	AARCH64_INSN_REG_24 = 24,
+> > > +	AARCH64_INSN_REG_25 = 25,
+> > > +	AARCH64_INSN_REG_26 = 26,
+> > > +	AARCH64_INSN_REG_27 = 27,
+> > > +	AARCH64_INSN_REG_28 = 28,
+> > > +	AARCH64_INSN_REG_29 = 29,
+> > > +	AARCH64_INSN_REG_FP = 29, /* Frame pointer */
+> > > +	AARCH64_INSN_REG_30 = 30,
+> > > +	AARCH64_INSN_REG_LR = 30, /* Link register */
+> > > +	AARCH64_INSN_REG_ZR = 31, /* Zero: as source register */
+> > > +	AARCH64_INSN_REG_SP = 31  /* Stack pointer: as load/store base reg */
+> > 
+> > Can you just #define AARCH64_INSN_REG(x) instead, then have some magic
+> > values like ARM64_REG_LR which are defined as the appropriate numbers?
 > 
-> Yes.  Move it there.  That is the right place.
+> I actually had something like what you mentioned in the beginning, but
+> decided to go with the above - thinking that it's clearer to present
+> the complete set of valid register definitions.
 > 
+> The #define can still be added for convenience, though I think it's also a
+> potential source of errors - it's much easier to typo something like
+> AARCH64_INSN_REG(32) and not get caught.
 
-OK, thanks, if no another objections within 2 days, I shall send another
-related patch for it.
+Fair enough, that's a good enough reason to leave it like it is.
 
+> [...]
+> > > +	switch (variant) {
+> > > +	case AARCH64_INSN_VARIANT_32BIT:
+> > > +		break;
+> > > +	case AARCH64_INSN_VARIANT_64BIT:
+> > > +		insn |= BIT(31);
+> > 
+> > FWIW, that bit (31) is referred to as the `SF' bit in the instruction
+> > encodings (for Sixty-Four). You could have a #define for that to help people
+> > match up the bitfield, if you like.
+> 
+> Something like this?
+> 
+> 	#define AARCH64_INSN_SF_BIT  BIT(31)
+> 
+> 	...
+> 
+> 	case AARCH64_INSN_VARIANT_64BIT:
+> 		insn |= AARCH64_INSN_SF_BIT;
+> 
+> In the case of bitfield instruction, there's also an "N" bit.
+> So something like this?
+> 
+> 	#define AARCH64_INSN_N_BIT  BIT(22)
+> 
+> 	...
+> 
+> 	case AARCH64_INSN_VARIANT_64BIT:
+> 		insn |= AARCH64_INSN_SF_BIT | AARCH64_INSN_N_BIT;
 
-Thanks.
--- 
-Chen Gang
+Looks good.
 
-Open, share, and attitude like air, water, and life which God blessed
+> > 
+> > > +		break;
+> > > +	default:
+> > > +		BUG_ON(1);
+> > 
+> > Is a BUG_ON justifiable here? Is there not a nicer way to fail?
+> 
+> In general, it'd be nice if we returned something like -EINVAL and
+> have all callers handle failures. Today all code gen functions return
+> the u32 instruction and there's no error handling by callers.
+> I think following the precedence (aarch64_insn_gen_branch_imm())
+> of failing with BUG_ON is a reasonable tradeoff.
+
+Well, I don't necessarily agree with that BUG_ON, either :)
+I take it eBPF doesn't have a `trap' instruction or similar? Otherwise, we
+could generate that and avoid having to propagate errors directly to the
+caller.
+
+> In this case here, when we hit the default (failure) case, that means
+> there's a serious error of attempting to use an unsupported
+> variant. I think we're better off failing hard here than trying to
+> arbitrarily "fallback" on a default choice.
+
+It might be a serious error for BPF, but a BUG_ON brings down the entire
+machine, which I think is unfortunate.
+
+> 
+> One potential option instead of switch (variant) is:
+> 
+> 	if (variant == AARCH64_INSN_VARIANT_64BIT)
+> 		/* do something */
+> 	else
+> 		/* do something else */
+> 
+> which would be quite reasonable to do as we only have VARIANT_{32,64}BIT
+> today.
+> 
+> However, consider the case where we add VARIANT_128BIT or other flavors
+> in the future. The if/else option (basically defaulting to VARIANT_32BIT)
+> would then make much less sense.
+
+I don't think we need to worry about hypothetical extensions to the
+instruction set at this stage.
+
+Will
