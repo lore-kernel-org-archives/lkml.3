@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325AbaGQMws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:52:48 -0400
-Received: from imap.thunk.org ([74.207.234.97]:40786 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755046AbaGQMwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:52:47 -0400
-Date: Thu, 17 Jul 2014 08:52:36 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717125236.GM1491@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Tobias Klauser <tklauser@distanz.ch>, linux-kernel@vger.kernel.org,
-	linux-abi@vger.kernel.org, linux-crypto@vger.kernel.org,
-	beck@openbsd.org
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717120949.GB24362@distanz.ch>
+	id S1757370AbaGQMxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:53:22 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29804 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755046AbaGQMxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 08:53:19 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18yB0yhioHRIrZzdlWb9DUI9SNwHfW99BA=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 395505AE288
+Date: Thu, 17 Jul 2014 08:53:09 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: suravee.suthikulpanit@amd.com
+Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
+        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 4/4 V3] irqchip: gicv2m: Add support for multiple MSI
+ for ARM64 GICv2m
+Message-ID: <20140717125309.GK13108@titan.lakedaemon.net>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140717120949.GB24362@distanz.ch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 02:09:49PM +0200, Tobias Klauser wrote:
-> 
-> > +/*
-> > + * Flags for getrandom(2)
-> > + *
-> > + * GAND_BLOCK 		Allow getrandom(2) to block
-> > + * GAND_RANDOM		Use the /dev/random pool instead of /dev/urandom
-> > + */
-> 
-> Very minor nitpick: These should probably read GRND_BLOCK/GRND_RANDOM as
-> well, no?
+Suravee,
 
-Thanks, typo.  I'll get this fixed up.
+On Wed, Jul 09, 2014 at 06:05:04PM -0500, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
+> This patch extend GICv2m MSI to support multiple MSI in ARM64.
+> 
+> This requires the common arch_setup_msi_irqs() to be overwriten
+> with ARM64 version which does not return 1 for PCI_CAP_ID_MSI and
+> nvec > 1.
+> 
+> Cc: Mark Rutland <Mark.Rutland@arm.com>
+> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
+> Cc: Will Deacon <Will.Deacon@arm.com>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> ---
+>  arch/arm64/include/asm/msi.h  | 15 ++++++++
+>  arch/arm64/kernel/Makefile    |  1 +
+>  arch/arm64/kernel/msi.c       | 57 ++++++++++++++++++++++++++++++
+>  drivers/irqchip/irq-gic-v2m.c | 80 +++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 153 insertions(+)
+>  create mode 100644 arch/arm64/include/asm/msi.h
+>  create mode 100644 arch/arm64/kernel/msi.c
 
-	       	    	     	   - Ted
+With the Subject line nit fixed ("irqchip: gic-v2m: ..."),
+
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+Please route as you see fit.
+
+thx,
+
+Jason.
