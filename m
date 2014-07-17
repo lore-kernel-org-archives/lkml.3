@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221AbaGQOeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:34:14 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:56459 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaGQOeN (ORCPT
+	id S933319AbaGQOjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:39:14 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:36168
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932361AbaGQOjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:34:13 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53C7DEE3.6060107@roeck-us.net>
-Date: Thu, 17 Jul 2014 07:34:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] gpio: Add support for GPIOF_ACTIVE_LOW to gpio_request_one
-References: <1405552260-30511-1-git-send-email-linux@roeck-us.net> <CAAVeFuLtUpKKVWAvJ-bw_b36jYFhrzaWeswnJKyehbwn=6y+4Q@mail.gmail.com> <53C76F3C.6090104@roeck-us.net> <CAAVeFuKC19AK8BjM7OBm=FWm0ua5YJXoGRkpOvM1TWkz9yOZ5Q@mail.gmail.com>
-In-Reply-To: <CAAVeFuKC19AK8BjM7OBm=FWm0ua5YJXoGRkpOvM1TWkz9yOZ5Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jul 2014 10:39:12 -0400
+Date: Thu, 17 Jul 2014 09:39:10 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others to
+ this_cpu_ops.txt
+In-Reply-To: <53C7D93B.4090006@gmail.com>
+Message-ID: <alpine.DEB.2.11.1407170934220.28121@gentwo.org>
+References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 12:26 AM, Alexandre Courbot wrote:
-> On Thu, Jul 17, 2014 at 3:37 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 07/16/2014 11:09 PM, Alexandre Courbot wrote:
->>>
->>> On Thu, Jul 17, 2014 at 8:11 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>>
->>>> The gpio include file and the gpio documentation declare and document
->>>> GPIOF_ACTIVE_LOW as one of the flags to be passed to gpio_request_one
->>>> and related functions. However, the flag is not evaluated or used.
->>>>
->>>> Check the flag in gpio_request_one and set the gpio internal flag
->>>> FLAG_ACTIVE_LOW if it is set.
->>>
->>>
->>> What is the point since the integer GPIO API has no clue of the
->>> active-low status of a GPIO? It is only used by the gpiod and sysfs
->>> interfaces.
->>>
->>
->> One can use gpio_request_one() to export a gpio pin to user space from
->> the kernel. That code path does use the flag, as you point out yourself
->> above.
->
-> Ok, in that case I suppose it makes sense.
->
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
->
->> One could also argue that the integer gpio API _should_ support this as
->> well,
->> but that is a different question.
->
-> Probably not going to happen. The integer GPIO interface is deprecated
-> and users who need new features should seriously consider switching to
-> gpiod.
->
+On Thu, 17 Jul 2014, Pranith Kumar wrote:
 
-The new API is unfortunately not equivalent to the old one. For example,
-if I understand correctly, gpiod_get is expected to be used instead of
-gpio_request_one. That may work nicely in a world with full DT or ACPI
-support, but doesn't work as well otherwise unless one drops the notion
-of using platform specific drivers built as modules (gpiod_add_lookup_table
-is not exported, and there is no remove function).
+> > The use of atomic_t implies a remote write operation to a percpu area.
+> >
+> > atomic_t needs to be avoided. If data needs to be modified from multiple
+> > cpus then it usually does not belong into a percpu area.
+> >
+>
+> Yes, I think I made it pretty clear that remote accesses need to be avoided
+> unless absolutely necessary. But, there will be scenarios where mostly local
+> data will need to be have remote accesses. In such scenarios, isn't using
+> atomic_t better? FYI, that is how RCU code currently works. It uses atomic_t in
+> per cpu areas to ensure atomicity for remote accesses.
 
-Specifically, I don't see an easy way to convert mdio-gpio to use the new
-model, and that driver could really use support for an API which supports
-active-low pins. And even if gpiod_add_lookup_table was supported,
-converting a driver like this would be a major pain. Sure, it would be
-all easy if there would be a gpiod equivalent to gpio_request_one and
-gpio_request_array, but that is not the case. This makes converting
-drivers from the old to the new model challenging enough that I suspect
-that it won't really happen.
+The RCU code has .... ummmm... some issues with percpu usage and should
+not be taken as a good example. If you look at the RCU code it looks
+horrible with numerous barriers around remote percpu read/wrirte
+accesses and one wonders if that code is actually ok.
 
-Guenter
+> If data needs to be modified from multiple cpus only very rarely, doesn't it
+> make sense to use per-cpu areas?
+
+I would suggest that this should not occur. You can always "modify" remote
+percpu areas by generating an IPI on that cpu to make that processor
+update its own per cpu data.
 
