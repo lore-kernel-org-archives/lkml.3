@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964778AbaGQQKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:10:01 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43000 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757016AbaGQQJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:09:58 -0400
-X-Sasl-enc: Ayaaji9avH/1aAtOgw766LlNyIy5vCsNNaQVEsYimiNu 1405613398
-From: Michalis Pappas <mpappas@fastmail.fm>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        benchan@chromium.org
-Subject: [PATCH] staging: gdm72xx: replace print_hex_dump_debug() with dev_dbg()
-Date: Thu, 17 Jul 2014 17:09:39 +0100
-Message-Id: <1405613379-25338-2-git-send-email-mpappas@fastmail.fm>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1405613379-25338-1-git-send-email-mpappas@fastmail.fm>
-References: <1405613379-25338-1-git-send-email-mpappas@fastmail.fm>
+	id S964939AbaGQQKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:10:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49226 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964786AbaGQQKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:10:08 -0400
+Message-ID: <53C7F55B.8030307@suse.cz>
+Date: Thu, 17 Jul 2014 18:10:03 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
+ take 3
+References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
----
- drivers/staging/gdm72xx/gdm_sdio.c | 15 +++++++--------
- drivers/staging/gdm72xx/gdm_usb.c  | 10 ++++++----
- 2 files changed, 13 insertions(+), 12 deletions(-)
+On 07/15/2014 12:28 PM, Hugh Dickins wrote:
+> In the end I decided that we had better look at it as two problems,
+> the trinity faulting starvation, and the indefinite punching loop,
+> so 1/2 and 2/2 present both solutions: belt and braces.
 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index 6a23bef..a741c31 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -278,9 +278,8 @@ static void send_sdu(struct sdio_func *func, struct tx_cxt *tx)
- 
- 	spin_unlock_irqrestore(&tx->lock, flags);
- 
--	print_hex_dump_debug("sdio_send: ", DUMP_PREFIX_NONE, 16, 1,
--			     tx->sdu_buf + TYPE_A_HEADER_SIZE,
--			     aggr_len - TYPE_A_HEADER_SIZE, false);
-+	dev_dbg(func->dev, "sdio_send: %*ph\n", aggr_len - TYPE_A_HEADER_SIZE,
-+		tx->sdu_buf + TYPE_A_HEADER_SIZE);
- 
- 	for (pos = TYPE_A_HEADER_SIZE; pos < aggr_len; pos += TX_CHUNK_SIZE) {
- 		len = aggr_len - pos;
-@@ -315,9 +314,9 @@ static void send_hci(struct sdio_func *func, struct tx_cxt *tx,
- {
- 	unsigned long flags;
- 
--	print_hex_dump_debug("sdio_send: ", DUMP_PREFIX_NONE, 16, 1,
--			     t->buf + TYPE_A_HEADER_SIZE,
--			     t->len - TYPE_A_HEADER_SIZE, false);
-+	dev_dbg(func->dev, "sdio_send: %*ph\n", t->len - TYPE_A_HEADER_SIZE,
-+		t->buf + TYPE_A_HEADER_SIZE);
-+
- 	send_sdio_pkt(func, t->buf, t->len);
- 
- 	spin_lock_irqsave(&tx->lock, flags);
-@@ -549,8 +548,8 @@ static void gdm_sdio_irq(struct sdio_func *func)
- 	}
- 
- end_io:
--	print_hex_dump_debug("sdio_receive: ", DUMP_PREFIX_NONE, 16, 1,
--			     rx->rx_buf, len, false);
-+	dev_dbg(func->dev, "sdio_receive: %*ph\n", len, rx->rx_buf);
-+
- 	len = control_sdu_tx_flow(sdev, rx->rx_buf, len);
- 
- 	spin_lock_irqsave(&rx->lock, flags);
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 45b3dda..eac2f34 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -341,8 +341,8 @@ static int gdm_usb_send(void *priv_dev, void *data, int len,
- 	usb_fill_bulk_urb(t->urb, usbdev, usb_sndbulkpipe(usbdev, 1), t->buf,
- 			  len + padding, gdm_usb_send_complete, t);
- 
--	print_hex_dump_debug("usb_send: ", DUMP_PREFIX_NONE, 16, 1, t->buf,
--			     len + padding, false);
-+	dev_dbg(&usbdev->dev, "usb_send: %*ph\n", len + padding, t->buf);
-+
- #ifdef CONFIG_WIMAX_GDM72XX_USB_PM
- 	if (usbdev->state & USB_STATE_SUSPENDED) {
- 		list_add_tail(&t->p_list, &tx->pending_list);
-@@ -420,8 +420,10 @@ static void gdm_usb_rcv_complete(struct urb *urb)
- 
- 	if (!urb->status) {
- 		cmd_evt = (r->buf[0] << 8) | (r->buf[1]);
--		print_hex_dump_debug("usb_receive: ", DUMP_PREFIX_NONE, 16, 1,
--				     r->buf, urb->actual_length, false);
-+
-+		dev_dbg(&dev->dev, "usb_receive: %*ph\n", urb->actual_length,
-+			r->buf);
-+
- 		if (cmd_evt == WIMAX_SDU_TX_FLOW) {
- 			if (r->buf[4] == 0) {
- 				dev_dbg(&dev->dev, "WIMAX ==> STOP SDU TX\n");
--- 
-1.8.4
+I tested that with my reproducer and it was OK, but as I already said, 
+it's not trinity so I didn't observe the new problems in the first place.
+
+> Which may be the best for fixing, but the worst for ease of backporting.
+> Vlastimil, I have prepared (and lightly tested) a 3.2.61-based version
+> of the combination of f00cdc6df7d7 and 1/2 and 2/2 (basically, I moved
+> vmtruncate_range from mm/truncate.c to mm/shmem.c, since nothing but
+> shmem ever implemented the truncate_range method).  It should give a
+
+I don't know how much stable kernel updates are supposed to care about 
+out-of-tree modules, but doesn't the change mean that an out-of-tree FS 
+supporting truncate_range (if such thing exists) would effectively stop 
+supporting madvise(MADV_REMOVE) after this change? But hey it's still 
+madvise so maybe we don't need to care. And I suppose kernels where 
+FALLOC_FL_PUNCH_HOLE is supported, can be backported normally.
+
+> good hint for backports earlier and later: I'll send it privately to
+> you now, but keep in mind that it may need to be revised if today's
+> patches for 3.16 get revised again (I'll send it to Ben Hutchings
+> only when that's settled).
+>
+> Thanks,
+> Hugh
+>
 
