@@ -1,104 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279AbaGQX1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:27:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47712 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679AbaGQX1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:27:35 -0400
-Message-ID: <53C85BE5.6030901@codeaurora.org>
-Date: Thu, 17 Jul 2014 16:27:33 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1758565AbaGQX3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:29:19 -0400
+Received: from imap.thunk.org ([74.207.234.97]:42035 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758044AbaGQX3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 19:29:17 -0400
+Date: Thu, 17 Jul 2014 19:22:25 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: linux-crypto@vger.kernel.org, linux-api@vger.kernel.org, beck@openbsd.org
+Subject: Re: [PATCH, RFC -v2] random: introduce getrandom(2) system call
+Message-ID: <20140717232225.GB1491@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	linux-crypto@vger.kernel.org, linux-api@vger.kernel.org,
+	beck@openbsd.org
+References: <1405633100-4889-1-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>, Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH] PM / OPP: cpufreq: Avoid sleeping while atomic
-References: <1405553740-5067-1-git-send-email-sboyd@codeaurora.org> <CAKohpond9aNvX+x--G7AADkRhAu1iZ5mFW8pDvAXJ6yp_CCH_A@mail.gmail.com>
-In-Reply-To: <CAKohpond9aNvX+x--G7AADkRhAu1iZ5mFW8pDvAXJ6yp_CCH_A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405633100-4889-1-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/14 22:26, Viresh Kumar wrote:
-> On 17 July 2014 05:05, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> We allocate the cpufreq table after calling rcu_read_lock(),
->> which disables preemption. This causes scheduling while atomic
->> warnings. Use GFP_ATOMIC instead of GFP_KERNEL and update for
->> kcalloc while we're here.
-> I am surprised to see that this isn't reported by anybody since the time
-> it came into existence? Some special config option required to observe
-> this?
+This is just an update to the commit description (and so I've only
+included it_.  A few more minor typos fixedup, and it includes Zach's
+reviewed-by.
 
-First you need to enable sleeping while atomic checking, but in reality,
-I assume nobody has tried inserting a cpufreq driver as a module. The
-might_sleep() code has a check to see if the system_state is
-SYSTEM_RUNNING. If it isn't running then there isn't a warning and
-might_sleep() doesn't flag any problem. I wonder if that is actually the
-right thing to do though? Perhaps the intention of that code is to skip
-warning early on in the boot path when the scheduler isn't up and
-running yet. But once the scheduler is running (which is fairly early
-nowadays) I would think we want might_sleep() to trigger warnings. Maybe
-that check in might_sleep() needs to be updated to check for "scheduler
-running" instead of "system running"?
+						- Ted
 
->
->> BUG: sleeping function called from invalid context at mm/slub.c:1246
->> in_atomic(): 0, irqs_disabled(): 0, pid: 80, name: modprobe
->> 5 locks held by modprobe/80:
->>  #0:  (&dev->mutex){......}, at: [<c050d484>] __driver_attach+0x48/0x98
->>  #1:  (&dev->mutex){......}, at: [<c050d494>] __driver_attach+0x58/0x98
->>  #2:  (subsys mutex#5){+.+.+.}, at: [<c050c114>] subsys_interface_register+0x38/0xc8
->>  #3:  (cpufreq_rwsem){.+.+.+}, at: [<c05a9c8c>] __cpufreq_add_dev.isra.22+0x84/0x92c
->>  #4:  (rcu_read_lock){......}, at: [<c05ab24c>] dev_pm_opp_init_cpufreq_table+0x18/0x10c
->> Preemption disabled at:[<  (null)>]   (null)
->>
->> CPU: 2 PID: 80 Comm: modprobe Not tainted 3.16.0-rc3-next-20140701-00035-g286857f216aa-dirty #217
->> [<c0214da8>] (unwind_backtrace) from [<c02123f8>] (show_stack+0x10/0x14)
->> [<c02123f8>] (show_stack) from [<c070141c>] (dump_stack+0x70/0xbc)
->> [<c070141c>] (dump_stack) from [<c02f4cb0>] (__kmalloc+0x124/0x250)
->> [<c02f4cb0>] (__kmalloc) from [<c05ab270>] (dev_pm_opp_init_cpufreq_table+0x3c/0x10c)
->> [<c05ab270>] (dev_pm_opp_init_cpufreq_table) from [<bf000508>] (cpufreq_init+0x48/0x378 [cpufreq_generic])
->> [<bf000508>] (cpufreq_init [cpufreq_generic]) from [<c05a9e08>] (__cpufreq_add_dev.isra.22+0x200/0x92c)
->> [<c05a9e08>] (__cpufreq_add_dev.isra.22) from [<c050c160>] (subsys_interface_register+0x84/0xc8)
->> [<c050c160>] (subsys_interface_register) from [<c05a9494>] (cpufreq_register_driver+0x108/0x2d8)
->> [<c05a9494>] (cpufreq_register_driver) from [<bf000888>] (generic_cpufreq_probe+0x50/0x74 [cpufreq_generic])
->> [<bf000888>] (generic_cpufreq_probe [cpufreq_generic]) from [<c050e994>] (platform_drv_probe+0x18/0x48)
->> [<c050e994>] (platform_drv_probe) from [<c050d1f4>] (driver_probe_device+0x128/0x370)
->> [<c050d1f4>] (driver_probe_device) from [<c050d4d0>] (__driver_attach+0x94/0x98)
->> [<c050d4d0>] (__driver_attach) from [<c050b778>] (bus_for_each_dev+0x54/0x88)
->> [<c050b778>] (bus_for_each_dev) from [<c050c894>] (bus_add_driver+0xe8/0x204)
->> [<c050c894>] (bus_add_driver) from [<c050dd48>] (driver_register+0x78/0xf4)
->> [<c050dd48>] (driver_register) from [<c0208870>] (do_one_initcall+0xac/0x1d8)
->> [<c0208870>] (do_one_initcall) from [<c028b6b4>] (load_module+0x190c/0x21e8)
->> [<c028b6b4>] (load_module) from [<c028c034>] (SyS_init_module+0xa4/0x110)
->> [<c028c034>] (SyS_init_module) from [<c020f0c0>] (ret_fast_syscall+0x0/0x48)
->>
->> Fixes: a0dd7b79657b "PM / OPP: Move cpufreq specific OPP functions out of generic OPP library"
-> That looks to be wrong. This commit just moved things around and I can still
-> see rcu_read_lock() before this commit.
->
+random: introduce getrandom(2) system call
 
-Right. It seems that we moved to RCU in commit
-0f5c890e9b9754d9aa5bf6ae2fc00cae65780d23 so the real Fixes line should be:
+The getrandom(2) system call was requested by the LibreSSL Portable
+developers.  It is analoguous to the getentropy(2) system call in
+OpenBSD.
 
-Fixes: 0f5c890e9b97 "PM / OPP: Remove cpufreq wrapper dependency on
-internal data organization"
+The rationale of this system call is to provide resiliance against
+file descriptor exhaustion attacks, where the attacker consumes all
+available file descriptors, forcing the use of the fallback code where
+/dev/[u]random is not available.  Since the fallback code is often not
+well-tested, it is better to eliminate this potential failure mode
+entirely.
 
-One way to avoid this problem is to put things back the way they were
-before that change. Is there any real benefit to having this code live
-in drivers/cpufreq/ instead of just under some config option in
-drivers/base/power/opp.c?
+The other feature provided by this new system call is the ability to
+request randomness from the /dev/urandom entropy pool, but to block
+until at least 128 bits of entropy has been accumulated in the
+/dev/urandom entropy pool.  Historically, the emphasis in the
+/dev/urandom development has been to ensure that urandom pool is
+initialized as quickly as possible after system boot, and preferably
+before the init scripts start execution.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+This is because changing /dev/urandom reads to block represents an
+interface change that could potentially break userspace which is not
+acceptable.  In practice, on most x86 desktop and server systems, in
+general the entropy pool can be initialized before it is needed (and
+in modern kernels, we will printk a warning message if not).  However,
+on an embedded system, this may not be the case.  And so with this new
+interface, we can provide the functionality of blocking until the
+urandom pool has been initialized.  Any userspace program which uses
+this new functionality must take care to assure that if it is used
+during the boot process, that it will not cause the init scripts or
+other portions of the system startup to hang indefinitely.
 
+SYNOPSIS
+	#include <linux/random.h>
+
+	int getrandom(void *buf, size_t buflen, unsigned int flags);
+
+DESCRIPTION
+	The system call getrandom() fills the buffer pointed to by buf
+	with up to buflen random bytes which can be used to seed user
+	space random number generators (i.e., DRBG's) or for other
+	cryptographic processes.  It should not be used Monte Carlo
+	simulations or for other probabilistic sampling applications.
+
+	If the GRND_RANDOM flags bit is set, then draw from the
+	/dev/random pool instead of the /dev/urandom pool.  The
+	/dev/random pool is limited based on the entropy that can be
+	obtained from environmental noise, so if there is insufficient
+	entropy, the requested number of bytes may not be returned.
+	If there is no entropy available at all, getrandom(2) will
+	either block, or return an error with errno set to EAGAIN if
+	the GRND_NONBLOCK bit is set in flags.
+
+	If the GRND_RANDOM bit is not set, then the /dev/urandom pool
+	will be used.  Unlike using read(2) to fetch data from
+	/dev/urandom, if the urandom pool has not been sufficiently
+	initialized, getrandom(2) will block or return -1 with the
+	errno set to EGAIN if the GRND_NONBLOCK bit is set in flags.
+
+	The getentropy(2) system call in OpenBSD can be emulated using
+	the following function:
+
+	    int getentropy(void *buf, size_t buflen)
+	    {
+	            int     ret;
+
+		    ret = getentropy(buf, buflen, 0);
+		    return (ret > 0) ? 0 : ret;
+	    }
+
+RETURN VALUE
+       On success, the number of bytes that was filled in the buf is
+       returned.  This may not be all the bytes requested by the
+       caller via buflen if insufficient entropy was present in the
+       /dev/random pool, or if the system call was interrupted by a
+       signal.
+
+       On error, -1 is returned, and errno is set appropriately.
+
+ERRORS
+	EINVAL		An invalid flag was passed to getrandom(2)
+
+	EFAULT		buf is outside the accessible address space.
+
+	EAGAIN		The requested entropy was not available, and the
+			getentropy(2) would have blocked if GRND_BLOCK flag
+			was set.
+
+	EINTR		While blocked waiting for entropy, the call was
+			interrupted by a signal handler; see the description
+			of how interrupted read(2) calls on "slow" devices
+			are handled with and without the SA_RESTART flag
+			in the signal(7) man page.
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Zach Brown <zab@zabbo.net>
