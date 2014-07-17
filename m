@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaGQUhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 16:37:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35211 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926AbaGQUho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 16:37:44 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1405627647.7084.59.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1405627647.7084.59.camel@dhcp-9-2-203-236.watson.ibm.com> <1405516544.1466.50.camel@dhcp-9-2-203-236.watson.ibm.com> <53BEA780.5050602@samsung.com> <1404924054.14643.36.camel@dhcp-9-2-203-236.watson.ibm.com> <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com> <24144.1404919879@warthog.procyon.org.uk> <8975.1404932208@warthog.procyon.org.uk> <1404941347.14643.57.camel@dhcp-9-2-203-236.watson.ibm.com> <488.1405285619@warthog.procyon.org.uk> <8821.1405626206@warthog.procyon.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Subject: Re: [PATCH v6 0/6] ima: extending secure boot certificate chain of trust
+	id S1756144AbaGQUku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 16:40:50 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58857 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaGQUkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 16:40:49 -0400
+Date: Fri, 18 Jul 2014 02:10:40 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] staging: iio: adis16203: Use devm_iio_device_register
+Message-ID: <20140717204040.GA22788@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <16356.1405629441.1@warthog.procyon.org.uk>
-Date: Thu, 17 Jul 2014 21:37:21 +0100
-Message-ID: <16357.1405629441@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+This patch introduces the use of iio_device_register and does away with
+the call to the corressponding unregister function in the probe and
+remove functions of the driver respectively.
 
-> Yes, but you should be rebasing on top of James' #next. He just pulled
-> the #next-without-keys.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/staging/iio/accel/adis16203_core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-If I merge your branch in, GIT should just take care of that.
+diff --git a/drivers/staging/iio/accel/adis16203_core.c b/drivers/staging/iio/accel/adis16203_core.c
+index 409a28e..5077779 100644
+--- a/drivers/staging/iio/accel/adis16203_core.c
++++ b/drivers/staging/iio/accel/adis16203_core.c
+@@ -175,7 +175,7 @@ static int adis16203_probe(struct spi_device *spi)
+ 	if (ret)
+ 		goto error_cleanup_buffer_trigger;
+ 
+-	ret = iio_device_register(indio_dev);
++	ret = devm_iio_device_register(&spi->dev, indio_dev);
+ 	if (ret)
+ 		goto error_cleanup_buffer_trigger;
+ 
+@@ -191,7 +191,6 @@ static int adis16203_remove(struct spi_device *spi)
+ 	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+ 	struct adis *st = iio_priv(indio_dev);
+ 
+-	iio_device_unregister(indio_dev);
+ 	adis_cleanup_buffer_and_trigger(st, indio_dev);
+ 
+ 	return 0;
+-- 
+1.9.1
 
-David
