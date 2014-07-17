@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071AbaGQWaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 18:30:39 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41956 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752829AbaGQWah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 18:30:37 -0400
-Date: Thu, 17 Jul 2014 18:30:29 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Bob Beck <beck@openbsd.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-api <linux-abi@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717223029.GY1491@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Bob Beck <beck@openbsd.org>, Christoph Hellwig <hch@infradead.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-api <linux-abi@vger.kernel.org>,
-	linux-crypto <linux-crypto@vger.kernel.org>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717161215.GA14951@infradead.org>
- <20140717170115.GO1491@thunk.org>
- <CAComcpM9-sUwzT9BPFT7BJjk97V0kj996D=AaivDpeTZUNbiew@mail.gmail.com>
- <20140717173433.GQ1491@thunk.org>
- <CAComcpPkOM9oy9tYcDqVfF3siKT_RLe54qskhUJRPLWm-MukEA@mail.gmail.com>
+	id S1758111AbaGQWci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 18:32:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44200 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaGQWch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 18:32:37 -0400
+Date: Fri, 18 Jul 2014 00:32:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch V2 00/64] timekeeping: 2038, optimizations, NMI safe
+ accessors
+In-Reply-To: <20140716205018.175419210@linutronix.de>
+Message-ID: <alpine.DEB.2.10.1407180018530.24854@nanos>
+References: <20140716205018.175419210@linutronix.de>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAComcpPkOM9oy9tYcDqVfF3siKT_RLe54qskhUJRPLWm-MukEA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 11:45:56AM -0600, Bob Beck wrote:
-> we have diffs pending that will do the syscall method until we start
-> to see it in libc :)
+On Wed, 16 Jul 2014, Thomas Gleixner wrote:
+> The series is against tip/timers/core. It's also available in git at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tglx/timers/core
 
-One warning --- please don't check in the syscall number until it
-actually hits mainline.  Kees has another patch outstanding for
-seccomp(2) that is using the same syscall numbers I have in my patch.
-Please treat the numbers in my patch as placeholders until it has been
-accepted and we see what numbers we actually get assigned.
+Anyone, who pulled from there, please do again. I just got aware that
+the branch was stale.
+
+I could swear that I updated it and according to my bash history I
+really did a force push on that branch and a verify that
+origin/tglx/timers/core is the same as tglx/timers/core, that's the
+same procedure I use before sending out a pull request to Linus - got
+burned once not doing that :)
+
+The same thing happened about half a year ago, and looking at the mail
+thread it was also a forced update, i.e. git push -f
+
+I'm not blaming anyone except me as long as I can't be sure that my
+scripting around git is not to blame.
+
+Sorry for the inconveniance!
 
 Thanks,
 
-						- Ted
+	tglx
+
