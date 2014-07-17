@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909AbaGQVfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 17:35:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1314 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118AbaGQVfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 17:35:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,680,1400050800"; 
-   d="scan'208";a="545016485"
-Date: Thu, 17 Jul 2014 14:34:34 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] x86: fix kernel crash on boot due to NULL dereference
-Message-ID: <20140717213434.GA14162@psi-dev26.jf.intel.com>
-References: <1405609181-12831-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1757731AbaGQVh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 17:37:58 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:39480 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaGQVh4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 17:37:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405609181-12831-1-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140717212806.GV1491@thunk.org>
+References: <201407171848.s6HImBb4027900@glazunov.sibelius.xs4all.nl>
+ <53C83383.4040507@amacapital.net> <20140717212806.GV1491@thunk.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 17 Jul 2014 14:37:34 -0700
+Message-ID: <CALCETrV3pAFk-a+RrLzwQ0ct0dWoBsVdSVrHCMRD1n564YpUmA@mail.gmail.com>
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        Mark Kettenis <mark.kettenis@xs4all.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, beck@openbsd.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Thu, Jul 17, 2014 at 2:28 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jul 17, 2014 at 01:35:15PM -0700, Andy Lutomirski wrote:
+>>
+>> Can we please have a mode in which getrandom(2) can neither block nor
+>> fail?  If that gets added, then this can replace things like AT_RANDOM.
+>
+> AT_RANDOM has been around for a long time; it's not something we can
+> remove.
 
-Thanks for the patch.
+I'm not suggesting removing AT_RANDOM.  To the contrary, I'm
+suggesting that libraries that need to seed some kind of
+non-cryptographic, non-security-related RNG could use getrandom(2)
+with appropriate flags rather than screwing around with getpid,
+clock_gettime, etc.
 
-On Thu, Jul 17, 2014 at 05:59:41PM +0300, Andy Shevchenko wrote:
-> The patch "x86, irq: Count legacy IRQs by legacy_pic->nr_legacy_irqs instead of
-> NR_IRQS_LEGACY" (linux-next commit 95d76acc7518d566df18d67c1343bb375b78d1f3)
-> removed reserved interrupts for the platforms that do not have a legacy IOAPIC.
-> Meanwhile it breks a boot on Intel MID platforms such as Medfield.
+For example:
 
-Have you tested it against Merrifield?
+unsigned int seed;
+getrandom(&seed, sizeof(seed), GRND_BEST_EFFORT); /* Never fails on
+new enough kernels */
+srand(seed);
 
-Br, David
+No error checking, no weird cases, and if the RNG isn't well seeded,
+then I tried my best.
 
-> 
-> [    0.000000] BUG: unable to handle kernel NULL pointer dereference at 0000003a
-> [    0.000000] IP: [<c107079a>] setup_irq+0xf/0x4d
-> [    0.000000] *pdpt = 0000000000000000 *pde = 9bbf32453167e510
-> [    0.000000] Oops: 0000 [#1] PREEMPT SMP
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc5-next-20140717-00043-g6ab7e8d-dirty #497
-> [    0.000000] task: c184bc80 ti: c183e000 task.ti: c183e000
-> [    0.000000] EIP: 0060:[<c107079a>] EFLAGS: 00210046 CPU: 0
-> [    0.000000] EIP is at setup_irq+0xf/0x4d
-> [    0.000000] EAX: 00000000 EBX: 00000002 ECX: 00000000 EDX: 00000002
-> [    0.000000] ESI: 000000d5 EDI: c184e280 EBP: c183ffc0 ESP: c183ffb4
-> [    0.000000]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> [    0.000000] CR0: 8005003b CR2: 0000003a CR3: 0195b000 CR4: 000006b0
-> [    0.000000] Stack:
-> [    0.000000]  00000100 000000d5 c195c800 c183ffd0 c18eff07 c1935100 00010800 c183ffd8
-> [    0.000000]  c18efca0 c183ffe8 c18ec92e c1935100 00020800 c183fff8 c18ec2b4 00020800
-> [    0.000000]  c195c800 025e5003 00000000
-> [    0.000000] Call Trace:
-> [    0.000000]  [<c18eff07>] native_init_IRQ+0x265/0x273
-> [    0.000000]  [<c18efca0>] init_IRQ+0x2c/0x2e
-> [    0.000000]  [<c18ec92e>] start_kernel+0x1e4/0x32a
-> [    0.000000]  [<c18ec2b4>] i386_start_kernel+0x82/0x86
-> [    0.000000] Code: eb 05 bf ea ff ff ff 8b 83 c4 00 00 00 e8 f6 a3 01 00 8d 65 f4 89 f8 5b 5e 5f 5d c3 55 89 e5 57 89 d7 56 53 89 c3 e8 4b e4 ff ff <f6> 40 3a 02 89 c6 74 16 b8 2b 3e 77 c1 ba 0a 05 00 00 e8 83 60
-> [    0.000000] EIP: [<c107079a>] setup_irq+0xf/0x4d SS:ESP 0068:c183ffb4
-> [    0.000000] CR2: 000000000000003a
-> [    0.000000] ---[ end trace cb88537fdc8fa200 ]---
-> [    0.000000] Kernel panic - not syncing: Attempted to kill the idle task!
-> [    0.000000] ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
-> 
-> The culprit is an uncoditional setting of the IRQ2 which is used as cascade IRQ
-> on legacy platforms. It seems we have to check if we have enough legacy IRQs
-> reserved before we can call setup_irq().
-> 
-> The proposed patch adds such check.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  arch/x86/kernel/irqinit.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
-> index 1e6cff5..44f1ed4 100644
-> --- a/arch/x86/kernel/irqinit.c
-> +++ b/arch/x86/kernel/irqinit.c
-> @@ -203,7 +203,7 @@ void __init native_init_IRQ(void)
->  		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
->  	}
->  
-> -	if (!acpi_ioapic && !of_ioapic)
-> +	if (!acpi_ioapic && !of_ioapic && nr_legacy_irqs())
->  		setup_irq(2, &irq2);
->  
->  #ifdef CONFIG_X86_32
-> -- 
-> 2.0.1
-> 
+--Andy
