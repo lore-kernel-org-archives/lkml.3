@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaGQSbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:31:15 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33221 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaGQSbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 14:31:13 -0400
-Date: Thu, 17 Jul 2014 13:31:10 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flags
-Message-ID: <20140717183110.GB17951@qualcomm.com>
-References: <1401482990-26486-1-git-send-email-agross@codeaurora.org>
- <20140714163616.GA4387@intel.com>
+	id S1752983AbaGQScF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:32:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13456 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752407AbaGQScD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 14:32:03 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] block_dev: implement readpages() to optimize sequential read
+References: <1405606659-3802-1-git-send-email-akinobu.mita@gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 17 Jul 2014 14:31:56 -0400
+In-Reply-To: <1405606659-3802-1-git-send-email-akinobu.mita@gmail.com>
+	(Akinobu Mita's message of "Thu, 17 Jul 2014 23:17:39 +0900")
+Message-ID: <x49pph325wj.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140714163616.GA4387@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:06:16PM +0530, Vinod Koul wrote:
-> On Fri, May 30, 2014 at 03:49:50PM -0500, Andy Gross wrote:
-> > This patch adds support for end of transaction (EOT) and notify when done (NWD)
-> > hardware descriptor flags.
-> > 
-> > The EOT flag requests that the peripheral assert an end of transaction interrupt
-> > when that descriptor is complete.  It also results in special signaling protocol
-> > that is used between the attached peripheral and the core using the DMA
-> > controller.  Clients will specify DMA_PREP_INTERRUPT to enable this flag.
-> > 
-> > The NWD flag requests that the peripheral wait until the data has been fully
-> > processed by the peripheral before moving on to the next descriptor.  Clients
-> > will specify DMA_PREP_FENCE to enable this flag.
-> 
-> I am going to apply this, but pls send a follow up patch to add comments on the
-> flags and their behaviour. I think it is required!
+Akinobu Mita <akinobu.mita@gmail.com> writes:
 
-Will do.
+> Sequential read from a block device is expected to be equal or faster
+> than from the file on a filesystem.  But it is not correct due to the
+> lack of effective readpages() in the address space operations for
+> block device.
 
-<snip>
+Ah, a trip down memory lane.  ;-)  Here's a thread showing issues with
+the last time this was proposed (by me, incidentally):
 
-> >  #define DESC_FLAG_EOT BIT(14)
-> >  #define DESC_FLAG_EOB BIT(13)
-> > +#define DESC_FLAG_NWD BIT(12)
-> explaining behvaiour will help..
+https://lkml.org/lkml/2009/6/2/480
 
-In the followup, I'll put in a lengthy description of the INT/EOT/NWD and how
-they are used in the signaling to/from the attached peripheral.
+At the very least, we need to see numbers on a real device, and see it
+booted on something with >4k page size before taking this back in.
 
-
-Thanks!
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Cheers,
+Jeff
