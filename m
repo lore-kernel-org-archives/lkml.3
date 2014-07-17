@@ -1,121 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965711AbaGQQWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:22:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41498 "EHLO bear.ext.ti.com"
+	id S934810AbaGQQWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:22:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52201 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933966AbaGQQWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:22:12 -0400
-Date: Thu, 17 Jul 2014 11:21:47 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB fixes for v3.16-rc4
-Message-ID: <20140717162146.GL10459@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404153635-10868-1-git-send-email-balbi@ti.com>
- <20140701045957.GA17105@kroah.com>
- <20140717150856.GH10459@saruman.home>
- <20140717152657.GA26348@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f54savKjS/tSNRaU"
-Content-Disposition: inline
-In-Reply-To: <20140717152657.GA26348@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S964952AbaGQQNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:13:31 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/33] perf machine: Fix the value used for unknown pids
+Date: Thu, 17 Jul 2014 13:12:10 -0300
+Message-Id: <1405613555-23380-9-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405613555-23380-1-git-send-email-acme@kernel.org>
+References: <1405613555-23380-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f54savKjS/tSNRaU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-On Thu, Jul 17, 2014 at 08:26:57AM -0700, Greg KH wrote:
-> On Thu, Jul 17, 2014 at 10:08:56AM -0500, Felipe Balbi wrote:
-> > On Mon, Jun 30, 2014 at 09:59:57PM -0700, Greg KH wrote:
-> > > On Mon, Jun 30, 2014 at 01:40:35PM -0500, Felipe Balbi wrote:
-> > > > Hi Greg,
-> > > >=20
-> > > > Here's my second set of fixes. Note the revert of the patch Michal
-> > > > asked to revert.
-> > > >=20
-> > > > Please consider merging to your usb-linus branch. Let me know if you
-> > > > want any changes to this pull request.
-> > > >=20
-> > > > cheers
-> > > >=20
-> > > >=20
-> > > > The following changes since commit 5d881802c407d83c169c875dad88fe2b=
-ba066c33:
-> > > >=20
-> > > >   usb: musb: core: Handle Babble condition only in HOST mode (2014-=
-06-19 15:43:07 -0500)
-> > > >=20
-> > > > are available in the git repository at:
-> > > >=20
-> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/=
-fixes-for-v3.16-rc4
-> > >=20
-> > > Pulled and pushed out, thanks.
-> >=20
-> > looks like this is still pending and I can't find them either in
-> > mainline nor in any of your branches.
->=20
-> Really?  I just did a pull and they all seem to be in Linus's tree for
-> 3.16-rc5 for me:
->=20
-> ~/linux/work/usb $ git b
->   master     1795cd9b3a91 Linux 3.16-rc5
->   usb-linus  1795cd9b3a91 Linux 3.16-rc5
->   usb-next   46865bf3d6b4 Merge tag 'usb-serial-3.17-rc1' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/johan/usb-serial into usb-next
-> * work-linus 1795cd9b3a91 Linux 3.16-rc5
->   work-next  46865bf3d6b4 Merge tag 'usb-serial-3.17-rc1' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/johan/usb-serial into usb-next
-> ~/linux/work/usb $ git pull git://git.kernel.org/pub/scm/linux/kernel/git=
-/balbi/usb.git tags/fixes-for-v3.16-rc4=20
-> remote: Counting objects: 1, done.
-> remote: Total 1 (delta 0), reused 1 (delta 0)
-> Unpacking objects: 100% (1/1), done.
-> From git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb
->  * tag                         fixes-for-v3.16-rc4 -> FETCH_HEAD
-> Already up-to-date.
->=20
->=20
-> So even if I wanted to pull these again, I couldn't :)
->=20
-> Take another look...
+The value used for unknown pids cannot be zero because that is used by
+the "idle" task.
 
-heh, I need to sleep more. Wonderful how many problems a git fetch
-solves.
+Use -1 instead.  Also handle the unknown pid case when creating map
+groups.
 
---=20
-balbi
+Note that, threads with an unknown pid should not occur because fork (or
+synthesized) events precede the thread's existence.
 
---f54savKjS/tSNRaU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1405332185-4050-2-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-sched.c | 12 ++++++------
+ tools/perf/util/machine.c  |  6 +++---
+ tools/perf/util/session.c  |  5 +++--
+ tools/perf/util/thread.c   |  2 +-
+ 4 files changed, 13 insertions(+), 12 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index c38d06c04775..b7f555add0c8 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -935,8 +935,8 @@ static int latency_switch_event(struct perf_sched *sched,
+ 		return -1;
+ 	}
+ 
+-	sched_out = machine__findnew_thread(machine, 0, prev_pid);
+-	sched_in = machine__findnew_thread(machine, 0, next_pid);
++	sched_out = machine__findnew_thread(machine, -1, prev_pid);
++	sched_in = machine__findnew_thread(machine, -1, next_pid);
+ 
+ 	out_events = thread_atoms_search(&sched->atom_root, sched_out, &sched->cmp_pid);
+ 	if (!out_events) {
+@@ -979,7 +979,7 @@ static int latency_runtime_event(struct perf_sched *sched,
+ {
+ 	const u32 pid	   = perf_evsel__intval(evsel, sample, "pid");
+ 	const u64 runtime  = perf_evsel__intval(evsel, sample, "runtime");
+-	struct thread *thread = machine__findnew_thread(machine, 0, pid);
++	struct thread *thread = machine__findnew_thread(machine, -1, pid);
+ 	struct work_atoms *atoms = thread_atoms_search(&sched->atom_root, thread, &sched->cmp_pid);
+ 	u64 timestamp = sample->time;
+ 	int cpu = sample->cpu;
+@@ -1012,7 +1012,7 @@ static int latency_wakeup_event(struct perf_sched *sched,
+ 	struct thread *wakee;
+ 	u64 timestamp = sample->time;
+ 
+-	wakee = machine__findnew_thread(machine, 0, pid);
++	wakee = machine__findnew_thread(machine, -1, pid);
+ 	atoms = thread_atoms_search(&sched->atom_root, wakee, &sched->cmp_pid);
+ 	if (!atoms) {
+ 		if (thread_atoms_insert(sched, wakee))
+@@ -1072,7 +1072,7 @@ static int latency_migrate_task_event(struct perf_sched *sched,
+ 	if (sched->profile_cpu == -1)
+ 		return 0;
+ 
+-	migrant = machine__findnew_thread(machine, 0, pid);
++	migrant = machine__findnew_thread(machine, -1, pid);
+ 	atoms = thread_atoms_search(&sched->atom_root, migrant, &sched->cmp_pid);
+ 	if (!atoms) {
+ 		if (thread_atoms_insert(sched, migrant))
+@@ -1290,7 +1290,7 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+ 		return -1;
+ 	}
+ 
+-	sched_in = machine__findnew_thread(machine, 0, next_pid);
++	sched_in = machine__findnew_thread(machine, -1, next_pid);
+ 
+ 	sched->curr_thread[this_cpu] = sched_in;
+ 
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index e9b943acaa5e..5b8087728f28 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -34,7 +34,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 		return -ENOMEM;
+ 
+ 	if (pid != HOST_KERNEL_ID) {
+-		struct thread *thread = machine__findnew_thread(machine, 0,
++		struct thread *thread = machine__findnew_thread(machine, -1,
+ 								pid);
+ 		char comm[64];
+ 
+@@ -286,7 +286,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 	 * the full rbtree:
+ 	 */
+ 	if (machine->last_match && machine->last_match->tid == tid) {
+-		if (pid && pid != machine->last_match->pid_)
++		if (pid != -1 && pid != machine->last_match->pid_)
+ 			machine->last_match->pid_ = pid;
+ 		return machine->last_match;
+ 	}
+@@ -297,7 +297,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 
+ 		if (th->tid == tid) {
+ 			machine->last_match = th;
+-			if (pid && pid != th->pid_)
++			if (pid != -1 && pid != th->pid_)
+ 				th->pid_ = pid;
+ 			return th;
+ 		}
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 64a186edc7be..c2f4ca917469 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1083,13 +1083,14 @@ void perf_event_header__bswap(struct perf_event_header *hdr)
+ 
+ struct thread *perf_session__findnew(struct perf_session *session, pid_t pid)
+ {
+-	return machine__findnew_thread(&session->machines.host, 0, pid);
++	return machine__findnew_thread(&session->machines.host, -1, pid);
+ }
+ 
+ static struct thread *perf_session__register_idle_thread(struct perf_session *session)
+ {
+-	struct thread *thread = perf_session__findnew(session, 0);
++	struct thread *thread;
+ 
++	thread = machine__findnew_thread(&session->machines.host, 0, 0);
+ 	if (thread == NULL || thread__set_comm(thread, "swapper", 0)) {
+ 		pr_err("problem inserting idle task.\n");
+ 		thread = NULL;
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 2fde0d5e40b5..7a32f447a8e7 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -13,7 +13,7 @@ int thread__init_map_groups(struct thread *thread, struct machine *machine)
+ 	struct thread *leader;
+ 	pid_t pid = thread->pid_;
+ 
+-	if (pid == thread->tid) {
++	if (pid == thread->tid || pid == -1) {
+ 		thread->mg = map_groups__new();
+ 	} else {
+ 		leader = machine__findnew_thread(machine, pid, pid);
+-- 
+1.9.3
 
-iQIcBAEBAgAGBQJTx/gaAAoJEIaOsuA1yqREa6cQALJW5of13vVbvxyy9rv/gRSB
-WlGg0fDSXM4BLN0KnYg41TmOfeZBgOLDawG+8s7P+c0qlWpsfnG6JLfK9Aydipyb
-rFVqbBg0E/jAgmPrVgk5HCDBnWZHpCR19gOSZgsIeKbr/dhAPyaR6hFjtGu9DXGB
-vGVrbv9GtmKqzesVKcm4eCJBv1EblgxYVqYuIDYsJh0Zp3rT/KYv9DNqHtueFvsj
-Dei+GM+jmqLeeGoYGxlJHrfp8UOz4UYGNTWgNBmrzjgchjqENgOY5cYSjIdbya+r
-gr/XugHJkG3Swm4GgV6zbr720u+RrsHRCqRt/e8t0x/5tlKtAKkuGY6UdG3yzxso
-bMSUt19MeC0+ST9o2Te/3lOVBLsb2mWjk4qMw0UgPeAy9FtQ2tEkJ2J//s/C+FUh
-yRSMvXn4BI0lIvkdaVDUieZk2DJBJg0f0idufqgz0Nk0fuXOMbREtCPYZMIhXXlV
-v4CjBb6rH2dY5BrNg21OtqUDsDuvpOLt1QA0+PneZqGb5At8Ts7Nfr4La65SZ62B
-O3wygYO8zQGsvBAkWTNtVFnto7R56MyI1hpDkTy7xcSuGf/pCveEqmRaSh1ncs84
-ICjcYAGFCTmrZtcN7SG7Gfy/ViIf0WffFE+EXNumjkDfkDPx7c36mqfoyQmWe1cE
-2xU+K3FsijoRBWAp0XzH
-=MgIT
------END PGP SIGNATURE-----
-
---f54savKjS/tSNRaU--
