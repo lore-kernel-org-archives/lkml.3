@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934234AbaGQPN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:13:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22643 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933147AbaGQPN5 (ORCPT
+	id S933638AbaGQPTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:19:07 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:57751
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932908AbaGQPTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:13:57 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: hpa@zytor.com
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] x86-64, espfix: consider IRQs are off when initializing
-Date: Thu, 17 Jul 2014 11:13:35 -0400
-Message-Id: <1405610015-27464-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 17 Jul 2014 11:19:05 -0400
+Date: Thu, 17 Jul 2014 10:19:03 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others to
+ this_cpu_ops.txt
+In-Reply-To: <53C7E234.3020503@gmail.com>
+Message-ID: <alpine.DEB.2.11.1407171005450.28248@gentwo.org>
+References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com> <alpine.DEB.2.11.1407170934220.28121@gentwo.org> <53C7E234.3020503@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When going through our initialization code (init_espfix_ap() ) we need to
-keep in mind IRQs are off, and we need to handle it appropriately:
+Regarding atomic_t in per cpu areas: I am uncomfortable especially
+because both locked and unlocked RMW write operations could be acting on
+values in the same cacheline. I am concerned that the unlocked operation
+could have an unpredictable result.
 
- - Do not allocate with __GFP_FS.
- - No point in using a mutex.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- arch/x86/kernel/espfix_64.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+f.e. the following per cpu data structure
 
-diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
-index 6afbb16..3ef78ce 100644
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -64,7 +64,7 @@ DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
- DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
- 
- /* Initialization mutex - should this be a spinlock? */
--static DEFINE_MUTEX(espfix_init_mutex);
-+static DEFINE_SPINLOCK(espfix_init_mutex);
- 
- /* Page allocation bitmap - each page serves ESPFIX_STACKS_PER_PAGE CPUs */
- #define ESPFIX_MAX_PAGES  DIV_ROUND_UP(CONFIG_NR_CPUS, ESPFIX_STACKS_PER_PAGE)
-@@ -161,7 +161,7 @@ void init_espfix_ap(void)
- 	if (likely(stack_page))
- 		goto done;
- 
--	mutex_lock(&espfix_init_mutex);
-+	spin_lock(&espfix_init_mutex);
- 
- 	/* Did we race on the lock? */
- 	stack_page = ACCESS_ONCE(espfix_pages[page]);
-@@ -191,7 +191,7 @@ void init_espfix_ap(void)
- 	}
- 
- 	pte_p = pte_offset_kernel(&pmd, addr);
--	stack_page = (void *)__get_free_page(GFP_KERNEL);
-+	stack_page = (void *)__get_free_page(GFP_ATOMIC);
- 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
- 	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
- 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
-@@ -201,7 +201,7 @@ void init_espfix_ap(void)
- 	ACCESS_ONCE(espfix_pages[page]) = stack_page;
- 
- unlock_done:
--	mutex_unlock(&espfix_init_mutex);
-+	spin_unlock(&espfix_init_mutex);
- done:
- 	this_cpu_write(espfix_stack, addr);
- 	this_cpu_write(espfix_waddr, (unsigned long)stack_page
--- 
-1.7.10.4
+struct test {
+	atomic_t a;
+	int b;
+} onecacheline;
+
+
+Local cpu does
+
+	this_cpu_inc(onecacheline.b);
+
+If this is racing with a remote cpus:
+
+	atomic_inc(percpu(&a, cpu))
+
+then we have on x86 a increment operation with locked semantics racing
+with an unlocked one on the same cacheline.
 
