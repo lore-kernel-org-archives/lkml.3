@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537AbaGQIjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:39:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45203 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755030AbaGQIjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:39:20 -0400
-Date: Thu, 17 Jul 2014 10:39:18 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org
-Subject: Re: [PATCH 1/4] printk: LOG_CONT and LOG_NEWLINE are separate
-Message-ID: <20140717083918.GP6774@pathway.suse.cz>
-References: <1405531620-9983-1-git-send-email-elder@linaro.org>
- <1405531620-9983-2-git-send-email-elder@linaro.org>
+	id S1755546AbaGQIk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:40:26 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41982 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755030AbaGQIkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 04:40:23 -0400
+Date: Thu, 17 Jul 2014 10:40:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH] perf stat: Pass PERF_STAT_RUN environment variable for
+ each run
+Message-ID: <20140717084011.GG19379@twins.programming.kicks-ass.net>
+References: <1405585266-28268-1-git-send-email-namhyung@kernel.org>
+ <20140717082613.GF19379@twins.programming.kicks-ass.net>
+ <CAM9d7ciELhfJwdNBSJPCJcrVr43+hs+80m-FK7bE1mkuBcv0yQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MyoNyhmGqzMI/8rd"
 Content-Disposition: inline
-In-Reply-To: <1405531620-9983-2-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAM9d7ciELhfJwdNBSJPCJcrVr43+hs+80m-FK7bE1mkuBcv0yQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-07-16 12:26:57, Alex Elder wrote:
-> Two log record flags--LOG_CONT and LOG_NEWLINE--are never both set
-> at the same time in a log record flags field.  What follows is a
-> great deal of explanation that aims to prove this assertion.
 
-It makes perfect sense. If you found a situation where both flags were
-set together, it would mean a bug. If a record ends with new line, it
-is not continuous and vice versa.
+--MyoNyhmGqzMI/8rd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+On Thu, Jul 17, 2014 at 05:31:14PM +0900, Namhyung Kim wrote:
+> Hi Peter,
+>=20
+> On Thu, Jul 17, 2014 at 5:26 PM, Peter Zijlstra <peterz@infradead.org> wr=
+ote:
+> > On Thu, Jul 17, 2014 at 05:21:06PM +0900, Namhyung Kim wrote:
+> >> When perf stat runs multiple times via -r option, it's sometimes
+> >> useful for a workload to know which run it executing.  So pass new
+> >> PERF_STAT_RUN environment variable to the workload for each run
+> >> (starting from 1).
+> >
+> > This seems counter intuitive, runs should be _identical_ otherwise
+> > there's no point. That means the workload should very much _not_ know
+> > these things.
+>=20
+> But I think it can be useful if a workload wants to save logfiles
+> based on the iteration number for example.  If it doesn't want, it can
+> just ignore. :)
 
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> ---
->  kernel/printk/printk.c | 12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index 13e839d..301ade3 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1006,11 +1006,9 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
->  		prefix = false;
->  
->  	if (msg->flags & LOG_CONT) {
-> -		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
-> +		if (prev & LOG_CONT)
->  			prefix = false;
-> -
-> -		if (!(msg->flags & LOG_NEWLINE))
-> -			newline = false;
-> +		newline = false;
->  	}
+That's the wrong way around. Also, there's --pre and --post hooks to
+preserve logfiles if you really have to do that kind of thing.
 
-Makes sense. I like it.
 
->  	do {
-> @@ -1642,7 +1640,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	/* mark and strip a trailing newline */
->  	if (text_len && text[text_len-1] == '\n') {
->  		text_len--;
-> -		lflags |= LOG_NEWLINE;
-> +		lflags = LOG_NEWLINE;
->  	}
->  
->  	/* strip kernel syslog prefix and extract log level or control flags */
-> @@ -1672,7 +1670,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->  		level = default_message_loglevel;
->  
->  	if (dict)
-> -		lflags |= LOG_PREFIX|LOG_NEWLINE;
-> +		lflags = LOG_PREFIX|LOG_NEWLINE;
->  
->  	if (!(lflags & LOG_NEWLINE)) {
->  		/*
-> @@ -1688,7 +1686,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->  		else
->  			printed_len += log_store(facility, level,
->  						 lflags | LOG_CONT, 0,
-> -						 dict, dictlen, text, text_len);
-> +						 NULL, 0, text, text_len);
->  	} else {
->  		bool stored = false;
->  
 
-I am not sure that I like the last three changes. The logic is
-correct. But I think that these micro-optimizations makes the code less
-readable and prone to errors with reordering and other changes.
+--MyoNyhmGqzMI/8rd
+Content-Type: application/pgp-signature
 
-The original code does not harm. The new code is less obvious and will
-force many people to think why it is correct. Even you might be in
-doubts if you see it after few months :-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Well, I do not have strong opinion here. Other people might see it
-different. Forcing people to think is not a bad idea after all :-)
+iQIcBAEBAgAGBQJTx4vrAAoJEHZH4aRLwOS6AUUP/0SuqzaaQaS5MC+Ewwuu2SCr
+yQjzZHRYVVSfghzGyQjlYhluDcMI0d4RTB+jmrMwR3sQsX6+0LjSlNjlSSt60g4+
+ois2IDZzaFs86yA3OPl6V4M3zwu0of86kaVaJBvQAaJnDKp98dfciz1WFnGkbLab
+jBIvCxtDNHYxX0JouhobPuKxmIlxBkWSHJzdLQ+cHIozfopNtEaTtkWdPw9+NuIk
+vty2fhtbjLHEhrjTplWaScxg5GupAOMtbUeU/vMOjS7obNuOldfOU9Aitaw3+4Nl
+IE0xdME9TXcOPjDkH7MfnlaeV598WkMHgf31hr1kLVkgyJVWtmv4ZBXa6V8z4bnL
+jh2YPDm2uxcIW/8WwWICSfIcIfMKmYiUJhQ8mWcWIVaZCwNy0MhGMeJhuOTwxMYY
+HqwZNrEWcCbwxDXAq4tdB3fg4F0whxHr61tze60dJzRTQibWV8M/Q9ngQLwdeWOk
+CxzuoMnfL0kKw6uizhZStO2qjImVg84oi6/e/jPpw0E1raom3AouzwH1gcGAR+Cu
+hp8DCXtUcJcn9CXC/pjxU371qnxzo1R4Tj9Otk8hc7QrdAGvX8mWqq4hDDP1Sy4A
+k8YhMUrajCkKDAbqGFUzORj7zdNhbXNDlud7gn+l0TNUrzymQGczGpe0GSSjuHkf
+Le9fIdlQuXMUsiOVVFgj
+=svHK
+-----END PGP SIGNATURE-----
 
-Best Regards,
-Petr
+--MyoNyhmGqzMI/8rd--
