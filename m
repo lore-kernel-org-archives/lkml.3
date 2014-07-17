@@ -1,136 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933817AbaGQPTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:19:23 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:48727 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaGQPTU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:19:20 -0400
-Message-ID: <53C7E974.7080001@gmail.com>
-Date: Thu, 17 Jul 2014 18:19:16 +0300
-From: Timofey Titovets <nefelim4ag@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933829AbaGQPWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:22:51 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:20479
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932908AbaGQPWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 11:22:49 -0400
+X-WSS-ID: 0N8V41T-08-FL2-02
+X-M-MSG: 
+Message-ID: <53C7EA41.8030907@amd.com>
+Date: Thu, 17 Jul 2014 10:22:41 -0500
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: minchan@kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH v2] zram: auto add/del devices on demand
-References: <53C7C131.1060306@gmail.com> <20140717140440.GA1275@swordfish> <53C7DADC.3060508@redhat.com>
-In-Reply-To: <53C7DADC.3060508@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>, Clemens Ladisch <clemens@ladisch.de>
+CC: Borislav Petkov <bp@alien8.de>, <jdelvare@suse.de>,
+        <rdunlap@infradead.org>, <bhelgaas@google.com>,
+        <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F15h M60h processor
+References: <1405369388-12729-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20140714195128.GA25124@pd.tnic> <53C43BDF.2070403@ladisch.de>
+ <20140714203336.GA30926@roeck-us.net> <53C4DB2D.80406@ladisch.de>
+ <53C4EE5C.5020407@roeck-us.net>
+In-Reply-To: <53C4EE5C.5020407@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(479174003)(377454003)(51704005)(199002)(189002)(24454002)(51694002)(164054003)(33656002)(99396002)(83322001)(97736001)(87936001)(65816999)(84676001)(83072002)(50466002)(68736004)(83506001)(87266999)(44976005)(76176999)(54356999)(86362001)(50986999)(93886003)(76482001)(4396001)(46102001)(102836001)(101416001)(64126003)(36756003)(79102001)(23756003)(77982001)(59896001)(64706001)(74502001)(107046002)(92726001)(81542001)(106466001)(20776003)(47776003)(95666004)(80022001)(65956001)(31966008)(74662001)(85852003)(105586002)(81342001)(85306003)(92566001)(21056001)(65806001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB046;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027578BB13
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7/15/2014 4:03 AM, Guenter Roeck wrote:
+> On 07/15/2014 12:41 AM, Clemens Ladisch wrote:
+>> Guenter Roeck wrote:
+>>> On Mon, Jul 14, 2014 at 10:21:51PM +0200, Clemens Ladisch wrote:
+>>>> Borislav Petkov wrote:
+>>>>> On Mon, Jul 14, 2014 at 03:23:08PM -0500, Aravind Gopalakrishnan 
+>>>>> wrote:
+>>>>>> +    if (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model == 
+>>>>>> 0x60) {
+>>>>>> +        pci_bus_write_config_dword(pdev->bus, PCI_DEVFN(0, 0),
+>>>>>> +                       NB_SMU_IND_ADDR, IND_ADDR_OFFSET);
+>>>>>> +        pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0),
+>>>>>> +                      NB_SMU_IND_DATA, &regval);
+>>>>
+>>>> How do you prevent races with any other code that accesses some 
+>>>> indirect
+>>>> register?
+>>>>
+>>> I just wanted to ask exactly the same question. I think this will need
+>>> locking.
+>>
+>> If there actually is any other code; these indirect SMU registers appear
+>> to be mostly undocumented and to be intended to be used by the BIOS.
+>> (Which makes me wonder why the temperature sensor was moved there.)
+>>
+> Scary. Does that mean there is a chance they may get used through ACPI ?
 
-On 07/17/2014 05:17 PM, Jerome Marchand wrote:
-> Looks like it:
->
-> $ cat conctest.sh
-> #! /bin/sh
->
-> modprobe zram
->
-> while true; do
->      for i in `seq 1 10`; do
-> 	echo 10485760 > /sys/block/zram0/disksize&
-> 	echo 1 > /sys/block/zram0/reset&
->      done
-> done
-> $ sudo ./conctest.sh
->
-> [   51.535387] ------------[ cut here ]------------
-> [   51.536305] WARNING: CPU: 0 PID: 840 at fs/kernfs/dir.c:1209
-> kernfs_remove_by_name_ns+0x95/0xa0()
-> [   51.537908] kernfs: can not remove 'max_comp_streams', no directory
-> [   51.539089] Modules linked in: zram lz4_compress xt_conntrack
-> cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc
-> ebtable_filter ebtables ip6_tables iptable_nat nf_conntrack_ipv4
-> nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle
-> iptable_security iptable_raw ppdev crct10dif_pclmul crc32_pclmul
-> crc32c_intel joydev ghash_clmulni_intel microcode serio_raw pcspkr
-> virtio_balloon virtio_console parport_pc pvpanic virtio_net parport
-> floppy i2c_piix4 nfsd auth_rpcgss nfs_acl lockd sunrpc qxl
-> drm_kms_helper ttm virtio_blk drm virtio_pci virtio_ring virtio
-> ata_generic pata_acpi
-> [   51.550844] CPU: 0 PID: 840 Comm: conc_init.sh Tainted: G      D W
->       3.16.0-rc5-memacct-next-20140715+ #146
-> [   51.552606] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [   51.553691]  0000000000000009 ffff880078343d20 ffffffff8172d344
-> ffff880078343d68
-> [   51.555412]  ffff880078343d58 ffffffff8108ad1d 0000000000000000
-> ffffffffa0320242
-> [   51.557811]  ffffffffa0321058 0000000000000002 ffff880078343f50
-> ffff880078343db8
-> [   51.559580] Call Trace:
-> [   51.560139]  [<ffffffff8172d344>] dump_stack+0x45/0x56
-> [   51.561161]  [<ffffffff8108ad1d>] warn_slowpath_common+0x7d/0xa0
-> [   51.562333]  [<ffffffff8108ad8c>] warn_slowpath_fmt+0x4c/0x50
-> [   51.563445]  [<ffffffff81218196>] ? evict+0x106/0x170
-> [   51.564432]  [<ffffffff81275695>] kernfs_remove_by_name_ns+0x95/0xa0
-> [   51.565627]  [<ffffffff81277ee9>] remove_files.isra.1+0x39/0x70
-> [   51.566753]  [<ffffffff812781f4>] sysfs_remove_group+0x44/0xa0
-> [   51.567870]  [<ffffffffa031e058>] destroy_device.isra.17+0x28/0x50
-> [zram]
-> [   51.569089]  [<ffffffffa031e5d0>] reset_store+0x100/0x140 [zram]
-> [   51.570197]  [<ffffffff8146c3e8>] dev_attr_store+0x18/0x30
-> [   51.571247]  [<ffffffff81276fd4>] sysfs_kf_write+0x44/0x60
-> [   51.572201]  [<ffffffff812768d7>] kernfs_fop_write+0xe7/0x170
-> [   51.573283]  [<ffffffff811fbcf7>] vfs_write+0xb7/0x1f0
-> [   51.574143]  [<ffffffff811fc8a9>] SyS_write+0x49/0xb0
-> [   51.574976]  [<ffffffff8112e724>] ? __audit_syscall_entry+0xb4/0x110
-> [   51.576213]  [<ffffffff817362a9>] system_call_fastpath+0x16/0x1b
-> [   51.577422] ---[ end trace cdb79035dad379f3 ]---
-> [   51.578401] ------------[ cut here ]------------
-> [   51.579354] WARNING: CPU: 0 PID: 840 at fs/kernfs/dir.c:1209
-> kernfs_remove_by_name_ns+0x95/0xa0()
-> [   51.580966] kernfs: can not remove 'comp_algorithm', no directory
-> [   51.582108] Modules linked in: zram lz4_compress xt_conntrack
-> cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc
-> ebtable_filter ebtables ip6_tables iptable_nat nf_conntrack_ipv4
-> nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle
-> iptable_security iptable_raw ppdev crct10dif_pclmul crc32_pclmul
-> crc32c_intel joydev ghash_clmulni_intel microcode serio_raw pcspkr
-> virtio_balloon virtio_console parport_pc pvpanic virtio_net parport
-> floppy i2c_piix4 nfsd auth_rpcgss nfs_acl lockd sunrpc qxl
-> drm_kms_helper ttm virtio_blk drm virtio_pci virtio_ring virtio
-> ata_generic pata_acpi
-> [   51.597177] CPU: 0 PID: 840 Comm: conc_init.sh Tainted: G      D W
->       3.16.0-rc5-memacct-next-20140715+ #146
-> [   51.598549] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [   51.599661]  0000000000000009 ffff880078343d20 ffffffff8172d344
-> ffff880078343d68
-> [   51.601519]  ffff880078343d58 ffffffff8108ad1d 0000000000000000
-> ffffffffa0320233
-> [   51.603362]  ffffffffa0321058 0000000000000002 ffff880078343f50
-> ffff880078343db8
-> [   51.604913] Call Trace:
-> [   51.605444]  [<ffffffff8172d344>] dump_stack+0x45/0x56
-> [   51.606537]  [<ffffffff8108ad1d>] warn_slowpath_common+0x7d/0xa0
-> [   51.607507]  [<ffffffff8108ad8c>] warn_slowpath_fmt+0x4c/0x50
-> [   51.608582]  [<ffffffff81218196>] ? evict+0x106/0x170
-> [   51.609423]  [<ffffffff81275695>] kernfs_remove_by_name_ns+0x95/0xa0
-> [   51.610436]  [<ffffffff81277ee9>] remove_files.isra.1+0x39/0x70
-> [   51.611408]  [<ffffffff812781f4>] sysfs_remove_group+0x44/0xa0
-> [   51.612431]  [<ffffffffa031e058>] destroy_device.isra.17+0x28/0x50
-> [zram]
-> [   51.613214]  [<ffffffffa031e5d0>] reset_store+0x100/0x140 [zram]
-> [   51.613928]  [<ffffffff8146c3e8>] dev_attr_store+0x18/0x30
-> [   51.614634]  [<ffffffff81276fd4>] sysfs_kf_write+0x44/0x60
-> [   51.615387]  [<ffffffff812768d7>] kernfs_fop_write+0xe7/0x170
-> [   51.616246]  [<ffffffff811fbcf7>] vfs_write+0xb7/0x1f0
-> [   51.619107]  [<ffffffff811fc8a9>] SyS_write+0x49/0xb0
-> [   51.620063]  [<ffffffff8112e724>] ? __audit_syscall_entry+0xb4/0x110
-> [   51.622071]  [<ffffffff817362a9>] system_call_fastpath+0x16/0x1b
-> [   51.623256] ---[ end trace cdb79035dad379f4 ]---
->
-> And lots more of similar messages.
->
-> Jerome
->
+I have been asking internally about this, and looks like it's just a 
+register address change.
+So we probably don't have to worry about this being used elsewhere..
 
-Thanks for catching, i try fix it and resend patch.
+>
+>> Anyway, if a lock is needed, it looks as if it could go into a helper
+>> function such as "amd_nb_smu_ind_read()" in arch/x86/kernel/amd_nb.c.
+>>
+> Yes, something like that.
+>
+>
+Okay, I shall add the locking mechanism and re-send.
+
+Thanks,
+-Aravind.
+
