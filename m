@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaGQSSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:18:51 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64341 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaGQSSn (ORCPT
+	id S1752669AbaGQSSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:18:41 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:46103 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbaGQSSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 14:18:43 -0400
+	Thu, 17 Jul 2014 14:18:37 -0400
 From: Reyad Attiyat <reyad.attiyat@gmail.com>
 To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@kernel.org,
         srinivas.pandruvada@linux.intel.com
 Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
-Subject: [PATCH v6 4/4] iio: hid-sensor-magn-3d: Add support for rotation from north
-Date: Thu, 17 Jul 2014 13:18:29 -0500
-Message-Id: <1405621109-21147-5-git-send-email-reyad.attiyat@gmail.com>
+Subject: [PATCH v6 1/4] iio: Documentation: Add documentation for rotation from north sensor usage attributes
+Date: Thu, 17 Jul 2014 13:18:26 -0500
+Message-Id: <1405621109-21147-2-git-send-email-reyad.attiyat@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405621109-21147-1-git-send-email-reyad.attiyat@gmail.com>
 References: <1405621109-21147-1-git-send-email-reyad.attiyat@gmail.com>
@@ -21,99 +21,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the HID usage attribute ID's and IIO channel info for rotation
-from north support.
+Added documentation for the sysfs attributes supported by the rotation from north
+sensor.
 
 Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
 ---
- drivers/iio/magnetometer/hid-sensor-magn-3d.c | 53 ++++++++++++++++++++++++++-
- 1 file changed, 52 insertions(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-bus-iio | 82 +++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
 
-diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-index d3b9114..3ec777a 100644
---- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-+++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-@@ -35,6 +35,10 @@ enum magn_3d_channel {
- 	CHANNEL_SCAN_INDEX_X,
- 	CHANNEL_SCAN_INDEX_Y,
- 	CHANNEL_SCAN_INDEX_Z,
-+	CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP,
-+	CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP,
-+	CHANNEL_SCAN_INDEX_NORTH_MAGN,
-+	CHANNEL_SCAN_INDEX_NORTH_TRUE,
- 	MAGN_3D_CHANNEL_MAX,
- };
- 
-@@ -57,7 +61,11 @@ struct magn_3d_state {
- static const u32 magn_3d_addresses[MAGN_3D_CHANNEL_MAX] = {
- 	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
- 	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS,
--	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS
-+	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS,
-+	HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH,
-+	HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH,
-+	HID_USAGE_SENSOR_ORIENT_MAGN_NORTH,
-+	HID_USAGE_SENSOR_ORIENT_TRUE_NORTH,
- };
- 
- /* Channel definitions */
-@@ -89,6 +97,42 @@ static const struct iio_chan_spec magn_3d_channels[] = {
- 		BIT(IIO_CHAN_INFO_SCALE) |
- 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
- 		BIT(IIO_CHAN_INFO_HYSTERESIS),
-+	}, {
-+		.type = IIO_ROT,
-+		.modified = 1,
-+		.channel2 = IIO_MOD_NORTH_MAGN_TILT_COMP,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-+		BIT(IIO_CHAN_INFO_SCALE) |
-+		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-+		BIT(IIO_CHAN_INFO_HYSTERESIS),
-+	}, {
-+		.type = IIO_ROT,
-+		.modified = 1,
-+		.channel2 = IIO_MOD_NORTH_TRUE_TILT_COMP,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-+		BIT(IIO_CHAN_INFO_SCALE) |
-+		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-+		BIT(IIO_CHAN_INFO_HYSTERESIS),
-+	}, {
-+		.type = IIO_ROT,
-+		.modified = 1,
-+		.channel2 = IIO_MOD_NORTH_MAGN,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-+		BIT(IIO_CHAN_INFO_SCALE) |
-+		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-+		BIT(IIO_CHAN_INFO_HYSTERESIS),
-+	}, {
-+		.type = IIO_ROT,
-+		.modified = 1,
-+		.channel2 = IIO_MOD_NORTH_TRUE,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-+		BIT(IIO_CHAN_INFO_SCALE) |
-+		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-+		BIT(IIO_CHAN_INFO_HYSTERESIS),
- 	}
- };
- 
-@@ -245,6 +289,13 @@ static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
- 		offset = (usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS)
- 				+ CHANNEL_SCAN_INDEX_X;
- 	break;
-+	case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
-+	case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
-+	case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
-+	case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
-+		offset = (usage_id - HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH)
-+				+ CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP;
-+	break;
- 	default:
- 		return -EINVAL;
- 	}
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+index a9757dc..995642f 100644
+--- a/Documentation/ABI/testing/sysfs-bus-iio
++++ b/Documentation/ABI/testing/sysfs-bus-iio
+@@ -260,6 +260,10 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
+ KernelVersion:	2.6.35
+@@ -447,6 +451,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_falling_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_rising_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_thresh_rising_en
+@@ -492,6 +504,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_falling_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_roc_rising_en
+ What:		/sys/.../iio:deviceX/events/in_magn_z_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_falling_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_rising_en
++What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_rising_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_falling_en
+ What:		/sys/.../iio:deviceX/events/in_voltageY_roc_rising_en
+@@ -538,6 +558,14 @@ What:		/sys/.../events/in_magn_y_raw_thresh_rising_value
+ What:		/sys/.../events/in_magn_y_raw_thresh_falling_value
+ What:		/sys/.../events/in_magn_z_raw_thresh_rising_value
+ What:		/sys/.../events/in_magn_z_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_true_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_true_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_falling_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_rising_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_falling_value
+ What:		/sys/.../events/in_voltageY_supply_raw_thresh_rising_value
+ What:		/sys/.../events/in_voltageY_supply_raw_thresh_falling_value
+ What:		/sys/.../events/in_voltageY_raw_thresh_rising_value
+@@ -588,6 +616,18 @@ What:		/sys/.../events/in_magn_y_thresh_either_hysteresis
+ What:		/sys/.../events/in_magn_z_thresh_rising_hysteresis
+ What:		/sys/.../events/in_magn_z_thresh_falling_hysteresis
+ What:		/sys/.../events/in_magn_z_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_either_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_hysteresis
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_either_hysteresis
+ What:		/sys/.../events/in_voltageY_thresh_rising_hysteresis
+ What:		/sys/.../events/in_voltageY_thresh_falling_hysteresis
+ What:		/sys/.../events/in_voltageY_thresh_either_hysteresis
+@@ -635,6 +675,14 @@ What:		/sys/.../events/in_magn_y_raw_roc_rising_value
+ What:		/sys/.../events/in_magn_y_raw_roc_falling_value
+ What:		/sys/.../events/in_magn_z_raw_roc_rising_value
+ What:		/sys/.../events/in_magn_z_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_true_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_true_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_falling_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_rising_value
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_falling_value
+ What:		/sys/.../events/in_voltageY_supply_raw_roc_rising_value
+ What:		/sys/.../events/in_voltageY_supply_raw_roc_falling_value
+ What:		/sys/.../events/in_voltageY_raw_roc_rising_value
+@@ -690,6 +738,22 @@ What:		/sys/.../events/in_magn_z_thresh_rising_period
+ What:		/sys/.../events/in_magn_z_thresh_falling_period
+ What:		/sys/.../events/in_magn_z_roc_rising_period
+ What:		/sys/.../events/in_magn_z_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_true_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_true_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_true_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_true_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_falling_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_rising_period
++What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_falling_period
+ What:		/sys/.../events/in_voltageY_supply_thresh_rising_period
+ What:		/sys/.../events/in_voltageY_supply_thresh_falling_period
+ What:		/sys/.../events/in_voltageY_supply_roc_rising_period
+@@ -787,6 +851,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_en
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_en
+@@ -853,6 +921,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_index
++What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
+@@ -933,3 +1005,13 @@ Description:
+ 		x y z w. Here x, y, and z component represents the axis about
+ 		which a rotation will occur and w component represents the
+ 		amount of rotation.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_raw
++KernelVersion:	3.15
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw value of rotation from true/magnetic north measured with
++		or without compensation from tilt sensors.
 -- 
 1.9.3
 
