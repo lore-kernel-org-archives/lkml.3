@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667AbaGQOMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:12:31 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:25829 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139AbaGQOM3 (ORCPT
+	id S933730AbaGQOMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:12:53 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34566 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932139AbaGQOMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:12:29 -0400
-Message-ID: <53C7D9CA.20405@imgtec.com>
-Date: Thu, 17 Jul 2014 15:12:26 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 10:12:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18u92+U5Uz8WyqEUJW1yb9f2IUiL79hyoU=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 87D965AE49F
+Date: Thu, 17 Jul 2014 10:12:35 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X)
+ support
+Message-ID: <20140717141235.GR13108@titan.lakedaemon.net>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140717131854.GN13108@titan.lakedaemon.net>
+ <20140717135534.GM30313@leverpostej>
 MIME-Version: 1.0
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <dborkman@redhat.com>, <ralf@linux-mips.org>
-Subject: Re: [PATCH 2/3] arch/mips/net/bpf_jit.c: fix failure check
-References: <1405603655-12571-1-git-send-email-andrey.krieger.utkin@gmail.com>	<53C7D52E.5020205@imgtec.com> <CANZNk81DOOxYYFSKZMCh=uABd3ONB8wToTFc3_L_9TfyQDS1yQ@mail.gmail.com>
-In-Reply-To: <CANZNk81DOOxYYFSKZMCh=uABd3ONB8wToTFc3_L_9TfyQDS1yQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.67]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140717135534.GM30313@leverpostej>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 02:58 PM, Andrey Utkin wrote:
-> 2014-07-17 16:52 GMT+03:00 Markos Chandras <Markos.Chandras@imgtec.com>:
->> Thanks for the patch. I would personally prefer to use a new signed int
->> variable, but I am fine either way.
+On Thu, Jul 17, 2014 at 02:55:34PM +0100, Mark Rutland wrote:
+> Hi Jason,
 > 
-> If that's not a problem for performance etc., then i'll resubmit with
-> new temporary signed variable, because i believe it would be simpler
-> to comprehend.
+> On Thu, Jul 17, 2014 at 02:18:54PM +0100, Jason Cooper wrote:
+> > On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
+> > > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > > 
+> > > This patch set introduces support for MSI(-X) in GICv2m specification,
+> > > which is implemented in some variation of GIC400.
+> > > 
+> > > This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+> > > (https://lkml.org/lkml/2014/3/14/320).
+> > > 
+> > > Changes in V3:
+> > >     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+> > >       (per Jason Cooper request)
+> > >     * Misc fix/clean up per Mark Rutland comments
+> > >     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+> > >     * Patch 4 is new to the series:
+> > >         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+> > >           for Multiple MSI.
+> > >         * Add support for Multiple MSI for GICv2m.
+> > > 
+> > > Suravee Suthikulpanit (4):
+> > >   irqchip: gic: Add binding probe for ARM GIC400
+> > >   irqchip: gic: Restructuring ARM GIC code
+> > >   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+> > >   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+> > 
+> > Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
+> > irqchip/gic with irqchip/urgent merged in.  To facilitate
+> > testing/merging, I've prepared an unsigned tag for you on the
+> > irqchip/gic branch:
 > 
-Hi Andrey,
+> I'm a little concerned that this is all going through for v3.17 without
+> a {Reviewed,Acked}-by from Marc or anyone working with GIC{,v2m}.
 
-Well, this function is executed during the filter compilation so it's
-only executed once (or maybe a few times) per filter (assuming the
-filter uses the SKF_AD_PKTTYPE opcode at all) so performance is not
-really critical at this point. The performance become a critical factor
-for the execution of the jitted filter. But yes, avoiding passing the
-argument and doing the pointer operation later on could save some
-instructions which is both good for compilation performance and also
-makes the function simpler as you said.
+Well, that's why it's not in irqchip/core yet. ;-)  It can be undone if
+needed.
 
--- 
-markos
+> While his comments on v1 have been addressed, he has not had a chance to
+> acknowledge the solutions. I appreciate Marc's holiday is unfortunately
+> timed.
+> 
+> I also have an open concern with the binding with regard to the
+> orthogonality of GICV GICH and the MSI registers.
+> 
+> Suravee, do you need this urgently for v3.17? I was under the impression
+> that we wouldn't have full PCIe support by then.
+
+If Suravee is ok with it, I can drop them for now and he can resend for
+v3.18.  Since we've worked out a way to merge it all in one window, I
+don't think it would hurt anything to wait.
+
+I'll leave these in irqchip/for-next until I hear from Suravee, then
+I'll drop the lot till we hear from Marc and look at the timing.
+
+thx,
+
+Jason.
