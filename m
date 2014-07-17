@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaGQEaR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 00:30:17 -0400
-Received: from wolff.to ([98.103.208.27]:38459 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750740AbaGQEaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 00:30:14 -0400
-Date: Wed, 16 Jul 2014 23:28:42 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140717042842.GA1714@wolff.to>
-References: <20140716145546.GA6922@wolff.to>
- <20140716151748.GC2460@hansolo.jdub.homelinux.org>
- <53C6CFCC.2050300@arm.com>
+	id S1752661AbaGQEeq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 00:34:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41668 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748AbaGQEep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 00:34:45 -0400
+Date: Thu, 17 Jul 2014 14:34:35 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ian Kent <raven@themaw.net>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6 v2] autofs4: factor should_expire() out of
+ autofs4_expire_indirect.
+Message-ID: <20140717143435.2fc69837@notabene.brown>
+In-Reply-To: <1405497017.2527.89.camel@perseus.fritz.box>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	<20140709234114.4525.25725.stgit@notabene.brown>
+	<20140714105359.4415aab4@notabene.brown>
+	<1405497017.2527.89.camel@perseus.fritz.box>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <53C6CFCC.2050300@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/=PE+AHc+SOMeN=N=c=zw6lS"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/=PE+AHc+SOMeN=N=c=zw6lS
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+On Wed, 16 Jul 2014 15:50:17 +0800 Ian Kent <raven@themaw.net> wrote:
 
-On Wed, Jul 16, 2014 at 21:17:32 +0200,
-  Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->Could you please share:
->
-> cat /proc/cpuinfo and
-> cat /proc/schedstat (kernel config w/ CONFIG_SCHEDSTATS=y)
 
-/proc/schedstat output is attached.
+> > +	if (simple_empty(dentry))
+> > +		return NULL;
+> > +
+> > +	/* Case 2: tree mount, expire iff entire tree is not busy */
+> > +	if (!exp_leaves) {
+> > +		/* Path walk currently on this dentry? */
+> > +		ino_count =3D atomic_read(&ino->count) + 1;
+> > +		if (d_count(dentry) > ino_count)
+> > +			return NULL;
+> > +
+> > +		if (!autofs4_tree_busy(mnt, dentry, timeout, do_now))
+> > +			return dentry;
+> > +		/*
+> > +		 * Case 3: pseudo direct mount, expire individual leaves
+> > +		 *	   (autofs-4.1).
+> > +		 */
+>=20
+> I recommend removing one of the tab stops on this since it relates to
+> the else case but feels like it's "attached" to the code above the else.
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="schedstat.out"
+The auto-reindent feature of emacs put it there and I didn't double check.
+I've fix it.
 
-version 15
-timestamp 4294858660
-cpu0 12 0 85767 30027 61826 37767 15709950719 5620241067 53904
-domain0 00000005 5408 5285 91 16777 39 2 1 5284 107 88 9 3926 11 0 0 88 23792 23076 349 87051 391 19 11 23065 3 0 3 0 0 0 0 0 0 18607 338 0
-domain1 0000000f 4365 3913 399 64817 59 0 486 3427 59 50 3 1948 6 0 3 47 23422 21879 1368 206776 197 1 11697 10182 0 0 0 0 0 0 0 0 0 5434 164 0
-cpu1 0 0 56596 21903 29921 13292 19364110947 8836735986 34640
-domain0 0000000a 3239 3163 56 24775 27 6 0 3163 181 166 6 4460 9 1 0 166 20452 19845 272 90788 374 8 17 19828 4 0 4 0 0 0 0 0 0 10132 501 0
-domain1 0000000f 2540 2279 207 69991 57 2 258 2021 99 90 2 2757 7 0 13 77 20103 19160 744 193572 228 4 5770 13390 1 1 0 0 0 0 0 0 0 6497 141 0
-cpu2 120 0 58755 24874 18071 6797 16937128548 3947587861 33681
-domain0 00000005 2940 2811 105 39819 35 13 0 2811 158 141 4 8878 13 0 0 141 18795 18156 336 189651 339 7 10 18146 8 0 8 0 0 0 0 0 0 5062 206 0
-domain1 0000000f 2376 1903 437 82849 40 1 216 1687 35 32 1 6881 2 0 6 26 18491 17419 885 260774 216 6 2076 15343 0 0 0 0 0 0 0 0 0 6212 130 0
-cpu3 0 0 54095 22291 28164 13979 19759585558 3515338364 31766
-domain0 0000000a 4642 4135 495 61645 15 4 0 4135 157 147 7 1546 3 0 0 147 20473 19444 670 114383 394 7 15 19429 3 0 3 0 0 0 0 0 0 9962 468 0
-domain1 0000000f 3104 2629 431 71143 49 2 326 2303 82 76 4 495 2 0 9 67 20105 18739 1168 207093 223 4 5545 13194 0 0 0 0 0 0 0 0 0 4223 157 0
 
---ZGiS0Q5IWpPtfppv--
+>=20
+> > +	} else {
+> > +		/* Path walk currently on this dentry? */
+> > +		struct dentry *expired;
+> > +		ino_count =3D atomic_read(&ino->count) + 1;
+> > +		if (d_count(dentry) > ino_count)
+> > +			return NULL;
+> > +
+> > +		expired =3D autofs4_check_leaves(mnt, dentry, timeout, do_now);
+> > +		if (expired) {
+> > +			if (expired =3D=3D dentry)
+> > +				dput(dentry);
+> > +			return dentry;
+>=20
+> Umm .. I think this should be "return expired".
+
+Yes, of course it should.  Fixed.
+
+>=20
+> Otherwise this looks like a straight refactor.
+
+Thanks,
+NeilBrown
+
+--Sig_/=PE+AHc+SOMeN=N=c=zw6lS
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU8dSWznsnt1WYoG5AQLlYBAApd5Yf+k/kyaTcqXxFmaeBqxeChQzOK9X
+jNqttzEIDAapShyePQg6XNbBLCJV2+4Cm9OhVXcVO48z35daIvB5lZUlMCWjTpH9
+pOTutQB40Uk1pWaj+D0EzbY+JEVRFkl/cmQVtLLp7+Qs2pKDQJtXZrD22mL3p3ab
+6sK9xjlE9fWTjFjhyhjUn7BRAtHkzrtpeTzF7Z8JKIEpSaIoSEG3wLgvu5lGZZLu
+jmNzcwgW5mjUPxO/Qu37V8/cRXFOvd+hNj7z23xMYzk9FnoP9Helz94I5RiJe3Gb
+bBVcCDAZ+LdJMckK/c7xW2C55TtlX3bgdA/17slcm4xPLA4I6Q+Z3I5xgrXztUq0
+5EWPLuxjcYkVViDDIrQ9QhoufbYdj5VOe+rAfitm9fBNzFT8pMBsjq+yay+MK3bI
+Y62UrInmBjYRu2qfEBP/sylNO1WJMSJ+U3pH/sy2jUonr0sLXsTu66E/Rl2Ch9CE
+mUpCi6cd7g9xIh4jN7ypqJu4/nUgGAkxiel+wuNmd7UQNyEbA7kOudbPEbAYNv+r
+mfAW98KmyIL52KSQKT922E8va9Zez81vgllJ9rsVPE2L7f38VSZ6pCpWci3+hGyv
+k11aCIyQ6lCnmaKL7kdo+nTJ8by3pbyw9OqS4EnrcokS/y+293HEfE54TmM63Hi3
+P5BNwWbWHQQ=
+=LC1B
+-----END PGP SIGNATURE-----
+
+--Sig_/=PE+AHc+SOMeN=N=c=zw6lS--
