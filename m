@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaGQTBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:01:55 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:39720 "EHLO tetsuo.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607AbaGQTBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:01:53 -0400
-Date: Thu, 17 Jul 2014 12:01:52 -0700
-From: Zach Brown <zab@zabbo.net>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Josef Bacik <jbacik@fb.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, Chris Mason <clm@fb.com>
-Subject: Re: [PATCH 1/1] Btrfs: fix sparse warning
-Message-ID: <20140717190152.GB24196@lenny.home.zabbo.net>
-References: <1405451837-8235-1-git-send-email-fabf@skynet.be>
- <20140716172021.GA10833@lenny.home.zabbo.net>
- <1762701571.679094.1405622254558.open-xchange@webmail.nmp.skynet.be>
+	id S1752793AbaGQTKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:10:04 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:10094 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaGQTKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:10:02 -0400
+X-IronPort-AV: E=Sophos;i="5.01,679,1400025600"; 
+   d="scan'208";a="153867298"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH net 0/4] xen-netback: Fixing up xenvif_tx_check_gop
+Date: Thu, 17 Jul 2014 20:09:48 +0100
+Message-ID: <1405624192-21722-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1762701571.679094.1405622254558.open-xchange@webmail.nmp.skynet.be>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > @@ -515,7 +515,8 @@ static int write_buf(struct file *filp, const void *buf,
-> > > u32 len, loff_t *off)
-> >
-> > Though this probably wants to be rewritten in terms of kernel_write().
-> > That'd give an opportunity to get rid of the sctx->send_off and have it
-> > use f_pos in the filp.
-> 
-> Do you mean directly call kernel_write from send_cmd/send_header ?
-> I guess that loop around vfs_write in write_buf is there for something ...
+This series fixes a lot of bugs on the error path around this function, which
+were introduced with my grant mapping series in 3.15. They apply to the latest
+net tree, but probably to net-next as well without any modification.
+I'll post an another series which applies to 3.15 stable, as the problem was
+first discovered there. The only difference is that the "queue" variable name is
+replaced to "vif".
 
-write_buf() could still exist to iterate over the buffer in the case of
-partial writes but it doesn't need to muck around with set_fs() and
-forcing casts.
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Reported-by: Armin Zentai <armin.zentai@ezit.hu>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
 
-- z
