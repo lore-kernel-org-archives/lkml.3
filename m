@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532AbaGQQiD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:38:03 -0400
-Received: from wolff.to ([98.103.208.27]:53367 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756898AbaGQQiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:38:01 -0400
-Date: Thu, 17 Jul 2014 11:36:27 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140717163627.GA2489@wolff.to>
-References: <20140716145546.GA6922@wolff.to>
- <20140716151748.GC2460@hansolo.jdub.homelinux.org>
- <53C6CFCC.2050300@arm.com>
- <20140716195414.GA16401@wolff.to>
- <53C7084C.7090104@arm.com>
- <20140717030947.GA17889@wolff.to>
- <53C79013.1020808@arm.com>
+	id S1757592AbaGQQjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:39:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56040 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756898AbaGQQjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:39:35 -0400
+Message-ID: <53C7FC32.7030704@zytor.com>
+Date: Thu, 17 Jul 2014 09:39:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <53C79013.1020808@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
+References: <cover.1405546879.git.luto@amacapital.net> <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net> <53C6F5A9.80400@zytor.com> <CALCETrVwT1g-S1hLyyB_uAVwffYCnFacTfUhJeD8Bb5j3X0mkg@mail.gmail.com> <CALCETrVCrJEwYokasRoqQTKJWKtzq9XUMNqHoT4-ZjgyZ-mBow@mail.gmail.com> <53C703ED.2010605@zytor.com> <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com> <53C75733.8060507@zytor.com> <20140717103324.GJ1491@thunk.org>
+In-Reply-To: <20140717103324.GJ1491@thunk.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did a few quick boots this morning while taking a bunch of pictures. I have 
-gone through some of them this morning and found one that shows bug on 
-was triggered at 5850 which is from:
-BUG_ON(!cpumask_empty(sched_group_cpus(sg)));
+On 07/17/2014 03:33 AM, Theodore Ts'o wrote:
+> On Wed, Jul 16, 2014 at 09:55:15PM -0700, H. Peter Anvin wrote:
+>> On 07/16/2014 05:03 PM, Andy Lutomirski wrote:
+>>>>
+>>> I meant that prandom isn't using rdrand for early seeding.
+>>>
+>>
+>> We should probably fix that.
+> 
+> It wouldn't hurt to explicitly use arch_get_random_long() in prandom,
+> but it does use get_random_bytes() in early seed, and for CPU's with
+> RDRAND present, we do use it in init_std_data() in
+> drivers/char/random.c, so prandom is already getting initialized via
+> an RNG (which is effectively a DRBG even if it doesn't pass all of
+> NIST's rules) which is derived from RDRAND.
+> 
 
-You can see the JPEG at:
-https://bugzilla.kernel.org/attachment.cgi?id=143331
+I assumed he was referring to before alternatives.  Not sure if we use
+prandom before that point, though.
+
+	-hpa
+
+
