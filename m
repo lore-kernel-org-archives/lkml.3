@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755AbaGQRBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:01:34 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41371 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757713AbaGQRBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:01:31 -0400
-Date: Thu, 17 Jul 2014 13:01:16 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717170115.GO1491@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-	linux-abi@vger.kernel.org, linux-crypto@vger.kernel.org,
-	beck@openbsd.org
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717161215.GA14951@infradead.org>
+	id S1757842AbaGQRCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:02:30 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:59658 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647AbaGQRC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 13:02:27 -0400
+X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 13:02:27 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717161215.GA14951@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1405608520-5644-3-git-send-email-hechtb@gmail.com>
+References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+	<1405608520-5644-3-git-send-email-hechtb@gmail.com>
+Date: Thu, 17 Jul 2014 18:54:10 +0200
+Message-ID: <CABYn4swJfYhTbXA0zYG4Mncm2xSGjL8CQPyeEB_piQWE+wUyTA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] i2c: exynos5: Remove suspension check
+From: Bastian Hecht <hechtb@gmail.com>
+To: linux-i2c@vger.kernel.org
+Cc: Linux-SH <linux-sh@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Bastian Hecht <hechtb@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Naveen Krishna Ch <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 09:12:15AM -0700, Christoph Hellwig wrote:
-> On Thu, Jul 17, 2014 at 05:18:15AM -0400, Theodore Ts'o wrote:
-> > The getrandom(2) system call was requested by the LibreSSL Portable
-> > developers.  It is analoguous to the getentropy(2) system call in
-> > OpenBSD.
-> 
-> What's the reason to not implement exactly the same system call OpenBSD
-> does?  Having slightly different names and semantics for the same
-> functionality is highly annoying.
+2014-07-17 16:48 GMT+02:00 Bastian Hecht <hechtb@gmail.com>:
+> We now take care of suspension in the i2c core code. So we can remove this
+> check here.
+>
+> Signed-off-by: Bastian Hecht <hechtb@gmail.com>
+> ---
+> same as v1
+>
+>  drivers/i2c/busses/i2c-exynos5.c | 20 +-------------------
+>  1 file changed, 1 insertion(+), 19 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+> index 63d2292..a80cf28 100644
+> --- a/drivers/i2c/busses/i2c-exynos5.c
+> +++ b/drivers/i2c/busses/i2c-exynos5.c
+> @@ -145,7 +145,6 @@
+>
+>  struct exynos5_i2c {
+>         struct i2c_adapter      adap;
+> -       unsigned int            suspended:1;
+>
+>         struct i2c_msg          *msg;
+>         struct completion       msg_complete;
+> @@ -610,11 +609,6 @@ static int exynos5_i2c_xfer(struct i2c_adapter *adap,
+>         struct exynos5_i2c *i2c = adap->algo_data;
+>         int i = 0, ret = 0, stop = 0;
+>
+> -       if (i2c->suspended) {
+> -               dev_err(i2c->dev, "HS-I2C is not initialized.\n");
+> -               return -EIO;
+> -       }
+> -
+>         clk_prepare_enable(i2c->clk);
+>
+>         for (i = 0; i < num; i++, msgs++) {
+> @@ -757,16 +751,6 @@ static int exynos5_i2c_remove(struct platform_device *pdev)
+>  }
+>
+>  #ifdef CONFIG_PM_SLEEP
+> -static int exynos5_i2c_suspend_noirq(struct device *dev)
+> -{
+> -       struct platform_device *pdev = to_platform_device(dev);
+> -       struct exynos5_i2c *i2c = platform_get_drvdata(pdev);
+> -
+> -       i2c->suspended = 1;
+> -
+> -       return 0;
+> -}
+> -
+>  static int exynos5_i2c_resume_noirq(struct device *dev)
+>  {
+>         struct platform_device *pdev = to_platform_device(dev);
+> @@ -783,14 +767,12 @@ static int exynos5_i2c_resume_noirq(struct device *dev)
+>
+>         exynos5_i2c_init(i2c);
+>         clk_disable_unprepare(i2c->clk);
+> -       i2c->suspended = 0;
+>
+>         return 0;
+>  }
+>  #endif
+>
+> -static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_suspend_noirq,
+> -                        exynos5_i2c_resume_noirq);
+> +static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_resume_noirq);
 
-The getrandom(2) system call is a superset of getentropy(2).  When we
-add the support for this into glibc, it won't be terribly difficult
-nor annoying to drop the following in alongside the standard support
-needed for any new system call:
+This should be
 
-int getentropy(void *buf, size_t buflen)
-{
-	int	ret;
++static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, NULL,
+exynos5_i2c_resume_noirq);
 
-	ret = getentropy(buf, buflen, 0);
-	return (ret > 0) ? 0 : ret;
-}
+And this is v2, not v3.
 
-The reason for the additional flags is that I'm trying to solve more
-problems than just getentropy()'s raison d'etre.  The discussion of
-this is in the commit description; let me know if there bits that I
-could make clearer.
-
-Cheers,
-
-					- Ted
+>  static struct platform_driver exynos5_i2c_driver = {
+>         .probe          = exynos5_i2c_probe,
+> --
+> 1.9.1
+>
