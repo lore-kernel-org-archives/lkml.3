@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933394AbaGQNww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:52:52 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:56398 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139AbaGQNwu (ORCPT
+	id S933147AbaGQNyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:54:08 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33754 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139AbaGQNyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:52:50 -0400
-Message-ID: <53C7D52E.5020205@imgtec.com>
-Date: Thu, 17 Jul 2014 14:52:46 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
-        <linux-mips@linux-mips.org>
-CC: <dborkman@redhat.com>, <ralf@linux-mips.org>
-Subject: Re: [PATCH 2/3] arch/mips/net/bpf_jit.c: fix failure check
-References: <1405603655-12571-1-git-send-email-andrey.krieger.utkin@gmail.com>
-In-Reply-To: <1405603655-12571-1-git-send-email-andrey.krieger.utkin@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.67]
+	Thu, 17 Jul 2014 09:54:06 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Cc: arnd@arndb.de, carlos.chinea@nokia.com, sre@kernel.org,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH 1/4] drivers/hsi/controllers/omap_ssi{,_port}.c: fix failure checks
+Date: Thu, 17 Jul 2014 16:53:54 +0300
+Message-Id: <1405605234-13559-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 02:27 PM, Andrey Utkin wrote:
-> static int pkt_type_offset(void) returned -1 in case of failure, and
-> actual (positive) offset value in case of success. In the only instance
-> of its usage, the result was saved to local "unsigned int off" variable,
->    which is used in a lot of places in the same (large) function, so
->    changing its type could cause many warnings.
-> There was no signed int variable which could be just used for this case.
-> There are two possibilities to resolve that: to declare temporary signed
-> int variable to get the return value from pkt_type_offset(), or to
-> separate return status from returned offset value. The latter approach
-> was chosen, however, I am not sure which would be practically optimal.
-> 
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80371
-> Reported-by: David Binderman <dcb314@hotmail.com>
-> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-> ---
->  arch/mips/net/bpf_jit.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
-> index b87390a..47f65d5 100644
-> --- a/arch/mips/net/bpf_jit.c
-> +++ b/arch/mips/net/bpf_jit.c
-> @@ -770,7 +770,7 @@ static u64 jit_get_skb_w(struct sk_buff *skb, unsigned offset)
->  #else
->  #define PKT_TYPE_MAX	7
->  #endif
-> -static int pkt_type_offset(void)
-> +static int pkt_type_offset(unsigned int *off_arg)
->  {
->  	struct sk_buff skb_probe = {
->  		.pkt_type = ~0,
-> @@ -779,8 +779,10 @@ static int pkt_type_offset(void)
->  	unsigned int off;
->  
->  	for (off = 0; off < sizeof(struct sk_buff); off++) {
-> -		if (ct[off] == PKT_TYPE_MAX)
-> -			return off;
-> +		if (ct[off] == PKT_TYPE_MAX) {
-> +			*off_arg = off;
-> +			return 0;
-> +		}
->  	}
->  	pr_err_once("Please fix pkt_type_offset(), as pkt_type couldn't be found\n");
->  	return -1;
-> @@ -1332,9 +1334,7 @@ jmp_cmp:
->  		case BPF_ANC | SKF_AD_PKTTYPE:
->  			ctx->flags |= SEEN_SKB;
->  
-> -			off = pkt_type_offset();
-> -
-> -			if (off < 0)
-> +			if (pkt_type_offset(&off))
->  				return -1;
->  			emit_load_byte(r_tmp, r_skb, off, ctx);
->  			/* Keep only the last 3 bits */
-> 
-Hi,
+1.
 
-Thanks for the patch. I would personally prefer to use a new signed int
-variable, but I am fine either way.
+[linux-3.16-rc5/drivers/hsi/controllers/omap_ssi.c:357]: (style) Checking if
+unsigned variable 'gdd_irq' is less than zero.
 
+Source code is
+
+    omap_ssi->gdd_irq = platform_get_irq_byname(pd, "gdd_mpu");
+    if (omap_ssi->gdd_irq < 0) {
+
+2.
+
+[linux-3.16-rc5/drivers/hsi/controllers/omap_ssi_port.c:1017]: (style) Checking
+if unsigned variable 'irq' is less than zero.
+
+Source code is
+
+    omap_port->irq = platform_get_irq(pd, 0);
+    if (omap_port->irq < 0) {
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80441
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ drivers/hsi/controllers/omap_ssi.c      | 6 +++---
+ drivers/hsi/controllers/omap_ssi_port.c | 7 ++++---
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/hsi/controllers/omap_ssi.c b/drivers/hsi/controllers/omap_ssi.c
+index 0fc7a7f..232ab73 100644
+--- a/drivers/hsi/controllers/omap_ssi.c
++++ b/drivers/hsi/controllers/omap_ssi.c
+@@ -353,12 +353,12 @@ static int __init ssi_add_controller(struct hsi_controller *ssi,
+ 	err = ssi_get_iomem(pd, "gdd", &omap_ssi->gdd, NULL);
+ 	if (err < 0)
+ 		goto out_err;
+-	omap_ssi->gdd_irq = platform_get_irq_byname(pd, "gdd_mpu");
+-	if (omap_ssi->gdd_irq < 0) {
++	err = platform_get_irq_byname(pd, "gdd_mpu");
++	if (err < 0) {
+ 		dev_err(&pd->dev, "GDD IRQ resource missing\n");
+-		err = omap_ssi->gdd_irq;
+ 		goto out_err;
+ 	}
++	omap_ssi->gdd_irq = err;
+ 	tasklet_init(&omap_ssi->gdd_tasklet, ssi_gdd_tasklet,
+ 							(unsigned long)ssi);
+ 	err = devm_request_irq(&ssi->device, omap_ssi->gdd_irq, ssi_gdd_isr,
+diff --git a/drivers/hsi/controllers/omap_ssi_port.c b/drivers/hsi/controllers/omap_ssi_port.c
+index 29aea0b..001b868 100644
+--- a/drivers/hsi/controllers/omap_ssi_port.c
++++ b/drivers/hsi/controllers/omap_ssi_port.c
+@@ -1013,11 +1013,12 @@ static int __init ssi_port_irq(struct hsi_port *port,
+ 	struct omap_ssi_port *omap_port = hsi_port_drvdata(port);
+ 	int err;
+ 
+-	omap_port->irq = platform_get_irq(pd, 0);
+-	if (omap_port->irq < 0) {
++	err = platform_get_irq(pd, 0);
++	if (err < 0) {
+ 		dev_err(&port->device, "Port IRQ resource missing\n");
+-		return omap_port->irq;
++		return err;
+ 	}
++	omap_port->irq = err;
+ 	tasklet_init(&omap_port->pio_tasklet, ssi_pio_tasklet,
+ 							(unsigned long)port);
+ 	err = devm_request_irq(&port->device, omap_port->irq, ssi_pio_isr,
 -- 
-markos
+1.8.5.5
+
