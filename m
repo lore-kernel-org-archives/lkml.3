@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934403AbaGQP0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:26:23 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:60067 "EHLO extserv.mm-sol.com"
+	id S934356AbaGQP0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:26:21 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60062 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934224AbaGQP0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934216AbaGQP0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jul 2014 11:26:15 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
+        Kumar Gala <galak@codeaurora.org>
 Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH v2 4/4] ARM: dts: qcom: Add PM8941 and PM8841 pinctrl nodes
-Date: Thu, 17 Jul 2014 18:25:48 +0300
-Message-Id: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH v2 3/4] pinctrl: qcom: Add documentation for pinctrl-qpnp driver bindings
+Date: Thu, 17 Jul 2014 18:25:47 +0300
+Message-Id: <1405610748-7583-4-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
 References: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
@@ -28,99 +27,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Add nodes for PM8941 and PM8841 GPIO and MPP sub-functions.
+DT binding documentation for qcom,pm8xxx-mpp pinctrl drivers.
 
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- arch/arm/boot/dts/qcom-msm8974.dtsi | 61 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 61 insertions(+)
+ .../bindings/pinctrl/qcom,pm8xxx-mpp.txt           | 199 +++++++++++++++++++++
+ 1 file changed, 199 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-mpp.txt
 
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-index c7ae7ba..b0164f9 100644
---- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -6,6 +6,8 @@
- #include <dt-bindings/interrupt-controller/irq.h>
- #include <dt-bindings/reset/qcom,gcc-msm8974.h>
- #include <dt-bindings/spmi/spmi.h>
-+#include <dt-bindings/pinctrl/qcom,pm8xxx-mpp.h>
-+#include <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>
- 
- / {
- 	model = "Qualcomm MSM8974";
-@@ -267,6 +269,33 @@
- 					reg-names = "rtc", "alarm";
- 					interrupts = <0x0 0x61 0x1 IRQ_TYPE_EDGE_RISING>;
- 				};
+diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-mpp.txt b/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-mpp.txt
+new file mode 100644
+index 0000000..a797d41
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-mpp.txt
+@@ -0,0 +1,199 @@
++Qualcomm PM8XXX Multi-Purpose Pin (MPP) block
 +
-+				gpios@c000 {
-+					compatible = "qcom,pm8941-gpio";
-+					reg = <0xc000>;
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					label = "pm8941-gpio";
-+					interrupts = <0 0xc0 0 0>, <0 0xc1 0 0>, <0 0xc2 0 0>, <0 0xc3 0 0>,
-+						     <0 0xc4 0 0>, <0 0xc5 0 0>, <0 0xc6 0 0>, <0 0xc7 0 0>,
-+						     <0 0xc8 0 0>, <0 0xc9 0 0>, <0 0xca 0 0>, <0 0xcb 0 0>,
-+						     <0 0xcc 0 0>, <0 0xcd 0 0>, <0 0xce 0 0>, <0 0xcf 0 0>,
-+						     <0 0xd0 0 0>, <0 0xd1 0 0>, <0 0xd2 0 0>, <0 0xd3 0 0>,
-+						     <0 0xd4 0 0>, <0 0xd5 0 0>, <0 0xd6 0 0>, <0 0xd7 0 0>,
-+						     <0 0xd8 0 0>, <0 0xd9 0 0>, <0 0xda 0 0>, <0 0xdb 0 0>,
-+						     <0 0xdc 0 0>, <0 0xdd 0 0>, <0 0xde 0 0>, <0 0xdf 0 0>,
-+						     <0 0xe0 0 0>, <0 0xe1 0 0>, <0 0xe2 0 0>, <0 0xe3 0 0>;
-+				};
++This binding describes the MPP block(s) found in the 8xxx series of pmics from
++Qualcomm.
 +
-+				mpps@a000 {
-+					compatible = "qcom,pm8941-mpp";
-+					reg = <0xa000>;
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					label = "pm8941-mpp";
-+					interrupts = <0 0xa0 0 0>, <0 0xa1 0 0>, <0 0xa2 0 0>, <0 0xa3 0 0>,
-+						     <0 0xa4 0 0>, <0 0xa5 0 0>, <0 0xa6 0 0>, <0 0xa7 0 0>;
-+				};
- 			};
- 
- 			usid1: pm8941@1 {
-@@ -281,6 +310,38 @@
- 				reg = <0x4 SPMI_USID>;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,pm8841-mpp"
++		    "qcom,pm8941-mpp"
++		    "qcom,pma8084-mpp"
 +
-+				mpps@a000 {
-+					compatible = "qcom,pm8841-mpp";
-+					reg = <0xa000>;
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					interrupts = <4 0xa0 0 0>, <4 0xa1 0 0>, <4 0xa2 0 0>, <4 0xa3 0 0>;
++- reg:
++	Usage: required
++	Value type: <u32>
++	Definition: Register base of the gpio block
 +
-+					pinctrl-names = "default", "sleep";
-+					pinctrl-0 = <&pm8841_default>;
-+					pinctrl-1 = <&pm8841_sleep>;
++- interrupts:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: Must contain an array of encoded interrupt specifiers for
++		    each available gpio
 +
-+					pm8841_sleep: sleep {
-+						gpio {
-+							pins = "mpp1", "mpp2", "mpp3", "mpp4";
-+							function = "gpio";
++- gpio-controller:
++	Usage: required
++	Value type: <none>
++	Definition: Mark the device node as a GPIO controller
 +
-+							input-enable;
++- #gpio-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: Must be 2;
++		    the first cell will be used to define gpio number and the
++		    second denotes the flags for this gpio
 +
-+							power-source = <PM8XXX_GPIO_VIN0>;
-+							qcom,pull-up = <PM8XXX_GPIO_STRENGTH_NO>;
-+							qcom,strength = <PM8XXX_GPIO_PULL_UP_30>;
-+						};
-+					};
++Please refer to ../gpio/gpio.txt and ../interrupt-controller/interrupts.txt for
++a general description of GPIO and interrupt bindings.
 +
-+					pm8841_default: default {
-+						ain {
-+							pins = "mpp1", "mpp2", "mpp3", "mpp4";
-+							function = "ain";
-+						};
-+					};
-+				};
- 			};
- 
- 			usid5: pm8841@5 {
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++The pin configuration nodes act as a container for an abitrary number of
++subnodes. Each of these subnodes represents some desired configuration for a
++pin or a list of pins. This configuration can include the
++mux function to select on those pin(s), and various pin configuration
++parameters, s listed below.
++
++
++SUBNODES:
++
++The name of each subnode is not important; all subnodes should be enumerated
++and processed purely based on their content.
++
++Each subnode only affects those parameters that are explicitly listed. In
++other words, a subnode that lists a mux function but no pin configuration
++parameters implies no information about any pin configuration parameters.
++Similarly, a pin subnode that describes a pullup parameter implies no
++information about e.g. the mux function.
++
++The following generic properties as defined in pinctrl-bindings.txt are valid
++to specify in a pin configuration subnode:
++
++- pins:
++	Usage: required
++	Value type: <string-array>
++	Definition: List of gpio pins affected by the properties specified in
++		    this subnode.  Valid pins are:
++			mpp1-mpp4 for pm8841
++			mpp1-mpp8 for pm8941
++			mpp1-mpp4 for pma8084
++
++- function:
++	Usage: mandatory
++	Value type: <string>
++	Definition: Specify the alternative function to be configured for the
++		    specified pins.  Valid values are:
++		    "gpio"  - digital input, output
++		    "ain"   - analog input
++		    "aout"  - analog output
++		    "cs"    - current sink
++
++- bias-disable:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins should be configued as no pull.
++
++- bias-pull-up:
++	Usage: optional
++	Value type:  <u32>
++	Definition: The specified pins should be configued as pull up.
++			Valid values are 600, 10000 and 30000.
++
++- bias-high-impedance:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins will put in high-Z mode and disabled.
++
++- input-enable:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins are put in input mode.
++
++- output-high:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins are configured in output mode, driven
++		    high.
++
++- output-low:
++	Usage: optional
++	Value type: <none>
++	Definition: The specified pins are configured in output mode, driven
++		    low.
++
++- power-source:
++	Usage: optional
++	Value type: <u32>
++	Definition: Selects the power source for the specified pins. Valid only
++			when pin operate in Digital I/O mode ("gpio"). Valid
++		    power sources are, as defined in
++		    <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
++			0: (PM8XXX_GPIO_VIN0)
++			1: (PM8XXX_GPIO_VIN1)
++			2: (PM8XXX_GPIO_VIN2)
++			3: (PM8XXX_GPIO_VIN3)
++			4: (PM8XXX_GPIO_VIN4)
++			5: (PM8XXX_GPIO_VIN5)
++			6: (PM8XXX_GPIO_VIN6)
++			7: (PM8XXX_GPIO_VIN7)
++
++- drive-strength:
++	Usage: optional
++	Value type: <u32>
++	Definition: Selects the drive strength for the specified pins. Value
++		    drive strengths are: 5-40mA with 5mA step
++
++- qcom,ain:
++	Usage: optional
++	Value type: <u32>
++	Definition: Selects the source for analog input. Valid values as
++			defined in <dt-bindings/pinctrl/qcom,pm8xxx-mpp.h>:
++			0: (PM8XXX_MPP_AIN_CH5)
++			1: (PM8XXX_MPP_AIN_CH6)
++			2: (PM8XXX_MPP_AIN_CH7)
++			3: (PM8XXX_MPP_AIN_CH8)
++			4: (PM8XXX_MPP_AIN_ABUS1)
++			5: (PM8XXX_MPP_AIN_ABUS2)
++			6: (PM8XXX_MPP_AIN_ABUS3)
++			7: (PM8XXX_MPP_AIN_ABUS4)
++
++- qcom,aout:
++	Usage: optional
++	Value type: <u32>
++	Definition: Selects the analog output reference. Valid values as
++			defined in <dt-bindings/pinctrl/qcom,pm8xxx-mpp.h>:
++			0: (PM8XXX_MPP_AOUT_1V25)
++			1: (PM8XXX_MPP_AOUT_0V625)
++			2: (PM8XXX_MPP_AOUT_0V3125)
++			3: (PM8XXX_MPP_AOUT_MPP)
++			4: (PM8XXX_MPP_AOUT_ABUS1)
++			5: (PM8XXX_MPP_AOUT_ABUS2)
++			6: (PM8XXX_MPP_AOUT_ABUS3)
++			7: (PM8XXX_MPP_AOUT_ABUS4)
++
++Example:
++
++	mpps@a000 {
++		compatible = "qcom,pm8841-mpp";
++		reg = <0xa000>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupts = <4 0xa0 0 0>, <4 0xa1 0 0>, <4 0xa2 0 0>, <4 0xa3 0 0>;
++
++		pinctrl-names = "default", "sleep";
++		pinctrl-0 = <&pm8841_default>;
++		pinctrl-1 = <&pm8841_sleep>;
++
++		pm8841_sleep: sleep {
++			gpio {
++				pins = "mpp1", "mpp2", "mpp3", "mpp4";
++				function = "gpio";
++
++				input-enable;
++
++				power-source = <PM8XXX_GPIO_VIN0>;
++				qcom,pull-up = <PM8XXX_GPIO_STRENGTH_NO>;
++				qcom,strength = <PM8XXX_GPIO_PULL_UP_30>;
++			};
++		};
++
++		pm8841_default: default {
++			ain {
++				pins = "mpp1", "mpp2", "mpp3", "mpp4";
++				function = "ain";
++			};
++		};
++	};
 -- 
 1.8.3.2
 
