@@ -1,117 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449AbaGQJlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:41:05 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:64347 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101AbaGQJk6 (ORCPT
+	id S1756407AbaGQJlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:41:03 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54450 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756050AbaGQJk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:40:58 -0400
-Message-ID: <53C79A1C.5060402@gmail.com>
-Date: Thu, 17 Jul 2014 12:40:44 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 05:40:56 -0400
+Date: Thu, 17 Jul 2014 11:40:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-tip-commits@vger.kernel.org, akataria@vmware.com,
+        anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find
+ blacklist" error on ia64 and ppc64
+Message-ID: <20140717094045.GC4232@gmail.com>
+References: <1404276081.7254.1.camel@concordia>
+ <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
+ <1405394370.17767.7.camel@concordia>
+ <1405408602.9343.75.camel@pasglop>
+ <53C4FDC8.9050801@hitachi.com>
+ <20140716132838.GA18597@gmail.com>
+ <53C776ED.3050001@hitachi.com>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Christoph Hellwig <hch@infradead.org>,
-        viro@zeniv.linux.org.uk
-CC: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
-        pramod.gurav.etc@gmail.com, Jason Cooper <jason@lakedaemon.net>,
-        Markus Mayer <markus.mayer@linaro.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: direct-io: squelch maybe-uninitialized warning in do_direct_IO()
-References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>	 <20140713115022.GA6054@infradead.org> <53C6B199.2070606@gmail.com>	 <20140716175803.GA3631@infradead.org> <1405536124.4357.17.camel@x41> <53C79949.7010201@gmail.com>
-In-Reply-To: <53C79949.7010201@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C776ED.3050001@hitachi.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 12:37 PM, Boaz Harrosh wrote:
-> From: Paul Bolle <pebolle@tiscali.nl>
-> 
-> The following warnings:
-> 
->   fs/direct-io.c: In function ‘__blockdev_direct_IO’:
->   fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->   fs/direct-io.c:913:16: note: ‘to’ was declared here
->   fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->   fs/direct-io.c:913:10: note: ‘from’ was declared here
-> 
-> are false positive because dio_get_page() either fails, or sets both
-> 'from' and 'to'.
-> 
-> Maybe it's better to move initializing "to" and "from" out of
-> dio_get_page(). That _might_ make it easier for both the the reader and
-> the compiler to understand what's going on. Something like this:
-> 
-> Christoph Hellwig said ...
-> The fix of moving the code defintively looks nicer, while I think
-> uninitialized_var is horrible wart that won't get anywhere near my code.
-> 
-> Boaz Harrosh I agree with Christoph and Paul
-> 
 
-So Here, everyone likes this one (I think) please ACK/Review and let us merge
-it.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-
-Paul this is your patch I put you as Signed-off-by please acknowledge
-
-> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
-
-
-Thanks
-Boaz
-
-> ---
->  fs/direct-io.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
+> (2014/07/16 22:28), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >> (2014/07/15 16:16), Benjamin Herrenschmidt wrote:
+> >>> On Tue, 2014-07-15 at 13:19 +1000, Michael Ellerman wrote:
+> >>>
+> >>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >>>>> Reported-by: Tony Luck <tony.luck@gmail.com>
+> >>>>> Tested-by: Tony Luck <tony.luck@intel.com>
+> >>>>> Cc: Michael Ellerman <mpe@ellerman.id.au>
+> >>>>
+> >>>> Tested-by: Michael Ellerman <mpe@ellerman.id.au>
+> >>>> Acked-by: Michael Ellerman <mpe@ellerman.id.au> (for powerpc)
+> >>>>
+> >>>> Ben, can you take this in your tree?
+> >>>
+> >>> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >>>
+> >>> That looks more like generic material. Do we have a kprobes maintainer ?
+> >>> Andrew, do you want to take this ?
+> >>
+> >> Yeah, I usually use Ingo's tip tree for kprobes maintenance.
+> >> Ingo, could you pull this as urgent-for-linus patch?
+> > 
+> > Mind resending it in a separate thread with all acks added, etc?
 > 
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 98040ba..2f024fc 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -198,9 +198,8 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
->   * L1 cache.
->   */
->  static inline struct page *dio_get_page(struct dio *dio,
-> -		struct dio_submit *sdio, size_t *from, size_t *to)
-> +		struct dio_submit *sdio)
->  {
-> -	int n;
->  	if (dio_pages_present(sdio) == 0) {
->  		int ret;
->  
-> @@ -209,10 +208,7 @@ static inline struct page *dio_get_page(struct dio *dio,
->  			return ERR_PTR(ret);
->  		BUG_ON(dio_pages_present(sdio) == 0);
->  	}
-> -	n = sdio->head++;
-> -	*from = n ? 0 : sdio->from;
-> -	*to = (n == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
-> -	return dio->pages[n];
-> +	return dio->pages[sdio->head];
->  }
->  
->  /**
-> @@ -911,11 +907,15 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
->  	while (sdio->block_in_file < sdio->final_block_in_request) {
->  		struct page *page;
->  		size_t from, to;
-> -		page = dio_get_page(dio, sdio, &from, &to);
-> +
-> +		page = dio_get_page(dio, sdio);
->  		if (IS_ERR(page)) {
->  			ret = PTR_ERR(page);
->  			goto out;
->  		}
-> +		from = sdio->head ? 0 : sdio->from;
-> +		to = (sdio->head == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
-> +		sdio->head++;
->  
->  		while (from < to) {
->  			unsigned this_chunk_bytes;	/* # of bytes mapped */
-> 
+> OK, I'll resend that soon.
+> BTW, I missed Suzuki's Signed-off-by in this version,
+> I'd like to recover that since he made a big bugfix on this.
 
+That kind of credit can be added as:
+
+  Fixed-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+
+and by also adding a sentence to the log message (outside of the 
+version changelogs which get stripped ususally).
+
+Thanks,
+
+	Ingo
