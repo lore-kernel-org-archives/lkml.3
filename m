@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802AbaGQI4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:56:25 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63897 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590AbaGQI4W (ORCPT
+	id S1755373AbaGQI6G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:58:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:52625 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540AbaGQI57 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:56:22 -0400
-Message-ID: <53C78FA9.5000303@redhat.com>
-Date: Thu, 17 Jul 2014 10:56:09 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	Thu, 17 Jul 2014 04:57:59 -0400
+Message-ID: <53C79013.1020808@arm.com>
+Date: Thu, 17 Jul 2014 10:57:55 +0200
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] KVM: nVMX: Fix vmptrld fail and vmwrite error when
- L1 goes down
-References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com> <1405573011-41330-3-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1405573011-41330-3-git-send-email-wanpeng.li@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Bruno Wolff III <bruno@wolff.to>
+CC: Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Scheduler regression from caffcdd8d27ba78730d5540396ce72ad022aff2c
+References: <20140716145546.GA6922@wolff.to> <20140716151748.GC2460@hansolo.jdub.homelinux.org> <53C6CFCC.2050300@arm.com> <20140716195414.GA16401@wolff.to> <53C7084C.7090104@arm.com> <20140717030947.GA17889@wolff.to>
+In-Reply-To: <20140717030947.GA17889@wolff.to>
+X-OriginalArrivalTime: 17 Jul 2014 08:57:55.0930 (UTC) FILETIME=[334793A0:01CFA19D]
+X-MC-Unique: 114071709575700501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/07/2014 06:56, Wanpeng Li ha scritto:
-> This bug can be trigger by L1 goes down directly w/ enable_shadow_vmcs.
+On 17/07/14 05:09, Bruno Wolff III wrote:
+> On Thu, Jul 17, 2014 at 01:18:36 +0200,
+>    Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>> So the output of
+>>
+>> $ cat /proc/sys/kernel/sched_domain/cpu*/domain*/*
+>>
+>> would be handy too.
+
+Thanks, this was helpful.
+I see from the sched domain layout that you have SMT (domain0) and DIE 
+(domain1) level. So on this system, the MC level gets degenerated 
+(sd_degenerate() in kernel/sched/core.c).
+I fail so far to see how this can have an effect on the memory of the 
+sched groups. But I can try to fake this situation on one of my platforms.
+
+There is also the possibility that the memory for sched_group sg is not 
+(completely) zeroed out:
+
+   sg = kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
+			GFP_KERNEL, cpu_to_node(j));
+
+
+   struct sched_group {
+	...
+	 * NOTE: this field is variable length. (Allocated dynamically
+	 * by attaching extra space to the end of the structure,
+	 * depending on how many CPUs the kernel has booted up with)
+	 */
+	unsigned long cpumask[0];
+};
+
+so that the cpumask of a sched group is not 0 and can only be cured by 
+an explicit cpumask_clear(sched_group_cpus(sg)) in build_sched_groups() 
+on this kind of machine.
+
 >
-> [ 6413.158950] kvm: vmptrld           (null)/780000000000 failed
-> [ 6413.158954] vmwrite error: reg 401e value 4 (err 1)
-> [ 6413.158957] CPU: 0 PID: 4840 Comm: qemu-system-x86 Tainted: G           OE 3.16.0kvm+ #2
-> [ 6413.158958] Hardware name: Dell Inc. OptiPlex 9020/0DNKMN, BIOS A05 12/05/2013
-> [ 6413.158959]  0000000000000003 ffff880210c9fb58 ffffffff81741de9 ffff8800d7433f80
-> [ 6413.158960]  ffff880210c9fb68 ffffffffa059fa08 ffff880210c9fb78 ffffffffa05938bf
-> [ 6413.158962]  ffff880210c9fba8 ffffffffa059a97f ffff8800d7433f80 0000000000000003
-> [ 6413.158963] Call Trace:
-> [ 6413.158968]  [<ffffffff81741de9>] dump_stack+0x45/0x56
-> [ 6413.158972]  [<ffffffffa059fa08>] vmwrite_error+0x2c/0x2e [kvm_intel]
-> [ 6413.158974]  [<ffffffffa05938bf>] vmcs_writel+0x1f/0x30 [kvm_intel]
-> [ 6413.158976]  [<ffffffffa059a97f>] free_nested.part.73+0x5f/0x170 [kvm_intel]
-> [ 6413.158978]  [<ffffffffa059ab13>] vmx_free_vcpu+0x33/0x70 [kvm_intel]
-> [ 6413.158991]  [<ffffffffa0360324>] kvm_arch_vcpu_free+0x44/0x50 [kvm]
-> [ 6413.158998]  [<ffffffffa0360f92>] kvm_arch_destroy_vm+0xf2/0x1f0 [kvm]
+> Attached and added to the bug.
 >
-> Commit 26a865 (KVM: VMX: fix use after free of vmx->loaded_vmcs) fix the use
-> after free bug by move free_loaded_vmcs() before free_nested(), however, this
-> lead to free loaded_vmcs->vmcs premature and vmptrld load a NULL pointer during
-> sync shadow vmcs to vmcs12. In addition, vmwrite which used to disable shadow
-> vmcs and reset VMCS_LINK_POINTER failed since there is no valid current-VMCS.
-> This patch fix it by skipping sync shadow vmcs and reset vmcs field for L1
-> destroy since they will be reinitialized after L1 recreate.
+>> Just to make sure, you do have 'CONFIG_X86_32=y' and '# CONFIG_NUMA is
+>> not set' in your build?
 >
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  arch/x86/kvm/vmx.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Yes.
 >
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index fbce89e..2b28da7 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -6113,9 +6113,9 @@ static void free_nested(struct vcpu_vmx *vmx)
->  		return;
->  	vmx->nested.vmxon = false;
->  	if (vmx->nested.current_vmptr != -1ull) {
-> -		nested_release_vmcs12(vmx);
->  		vmx->nested.current_vmptr = -1ull;
->  		vmx->nested.current_vmcs12 = NULL;
-> +		nested_release_vmcs12(vmx);
->  	}
->  	if (enable_shadow_vmcs)
->  		free_vmcs(vmx->nested.current_shadow_vmcs);
+> I probably won't be able to get /proc/schedstat on my next test since the
+> system will probably crash right away. However, I probably will have a
+> much faster rebuild and might still be able to get the info for you
+> before I leave tomorrow.
 >
 
-This looks good, I'll apply it to kvm/master.
 
-Paolo
