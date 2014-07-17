@@ -1,139 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaGQJkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:40:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46909 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755226AbaGQJko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:40:44 -0400
-Date: Thu, 17 Jul 2014 11:40:42 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] printk: honor LOG_PREFIX in msg_print_text()
-Message-ID: <20140717094031.GQ6774@pathway.suse.cz>
-References: <1405531620-9983-1-git-send-email-elder@linaro.org>
- <1405531620-9983-4-git-send-email-elder@linaro.org>
+	id S1756449AbaGQJlF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:41:05 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:64347 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101AbaGQJk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 05:40:58 -0400
+Message-ID: <53C79A1C.5060402@gmail.com>
+Date: Thu, 17 Jul 2014 12:40:44 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405531620-9983-4-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Bolle <pebolle@tiscali.nl>, Christoph Hellwig <hch@infradead.org>,
+        viro@zeniv.linux.org.uk
+CC: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
+        pramod.gurav.etc@gmail.com, Jason Cooper <jason@lakedaemon.net>,
+        Markus Mayer <markus.mayer@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: direct-io: squelch maybe-uninitialized warning in do_direct_IO()
+References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>	 <20140713115022.GA6054@infradead.org> <53C6B199.2070606@gmail.com>	 <20140716175803.GA3631@infradead.org> <1405536124.4357.17.camel@x41> <53C79949.7010201@gmail.com>
+In-Reply-To: <53C79949.7010201@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-07-16 12:26:59, Alex Elder wrote:
-> This patch fixes a problem similar to what was addressed in the
-> previous patch.
+On 07/17/2014 12:37 PM, Boaz Harrosh wrote:
+> From: Paul Bolle <pebolle@tiscali.nl>
 > 
-> All paths that read and format log records (for consoles, and for
-> reading via syslog and /dev/kmsg) go through msg_print_text().  That
-> function starts with some logic to determine whether the given log
-> record when formatted should begin with a "prefix" string, and
-> whether it should end with a newline.  That logic has a bug.
+> The following warnings:
 > 
-> The LOG_PREFIX flag in a log record indicates that when it's
-> formatted, a log record should include a prefix.  This is used to
-> force a record to begin a new line--even if its preceding log record
-> contained LOG_CONT (indicating its content should be combined with
-> the next record).
+>   fs/direct-io.c: In function ‘__blockdev_direct_IO’:
+>   fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>   fs/direct-io.c:913:16: note: ‘to’ was declared here
+>   fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>   fs/direct-io.c:913:10: note: ‘from’ was declared here
 > 
-> Like the previous patch, the problem occurs when these flags are
-> all set:
->     prev & LOG_CONT
->     msg->flags & LOG_PREFIX
->     msg->flags & LOG_CONT
-> In that case, "prefix" should be true but it is not.
+> are false positive because dio_get_page() either fails, or sets both
+> 'from' and 'to'.
+> 
+> Maybe it's better to move initializing "to" and "from" out of
+> dio_get_page(). That _might_ make it easier for both the the reader and
+> the compiler to understand what's going on. Something like this:
+> 
+> Christoph Hellwig said ...
+> The fix of moving the code defintively looks nicer, while I think
+> uninitialized_var is horrible wart that won't get anywhere near my code.
+> 
+> Boaz Harrosh I agree with Christoph and Paul
+> 
 
-You are right.
+So Here, everyone likes this one (I think) please ACK/Review and let us merge
+it.
 
-> The fix involves checking LOG_PREFIX when a message has its LOG_CONT
-> flag set, and in that case allowing "prefix" to become false only
-> if LOG_PREFIX is not set.  I.e., the logic for "prefix" would become:
-> 
->     if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
->         prefix = false;
->     if (msg->flags & LOG_CONT)
->         if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
->             prefix = false;
-> 
-> However, note that this makes the (msg->flags & LOG_CONT) block
-> redunant--it's handled by the test just above it.  The result
-> becomes quite a bit simpler than before.
-> 
-> The following table concisely defines the problem:
-> 
->      prev | msg  | msg  ||
->      CONT |PREFIX| CONT ||prefix
->     ------+------+------++------
->      clear| clear| clear|| true
->      clear| clear|  set || true
->      clear|  set | clear|| true
->      clear|  set |  set || true
->       set | clear| clear||false
->       set |  set |  set ||false
->       set |  set | clear|| true
->       set |  set |  set ||false      <-- should be true
-> 
-> Signed-off-by: Alex Elder <elder@linaro.org>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+
+Paul this is your patch I put you as Signed-off-by please acknowledge
+
+> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+
+
+Thanks
+Boaz
+
 > ---
->  kernel/printk/printk.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
+>  fs/direct-io.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
 > 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index 9e9cf93..3f15d95 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1003,14 +1003,11 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
->  	bool newline = true;
->  	size_t len = 0;
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index 98040ba..2f024fc 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -198,9 +198,8 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
+>   * L1 cache.
+>   */
+>  static inline struct page *dio_get_page(struct dio *dio,
+> -		struct dio_submit *sdio, size_t *from, size_t *to)
+> +		struct dio_submit *sdio)
+>  {
+> -	int n;
+>  	if (dio_pages_present(sdio) == 0) {
+>  		int ret;
 >  
-> -	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
-> +	if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
->  		prefix = false;
-
-I would personaly keep the brackets there. For me.
-
-  ( & ) && !( & )
-
-is easier to parse than
-
-  & && !( & )
-
-> -	if (msg->flags & LOG_CONT) {
-> -		if (prev & LOG_CONT)
-> -			prefix = false;
-> +	if (msg->flags & LOG_CONT)
->  		newline = false;
-> -	}
-
-You are right. The check before "prefix = false" did not make much
-sense. We should not remove prefix just because the previous line was
-continuous. Also it does not make sense to do this only when the new line
-is continuous.
-
-But I think that the fix is not complete. IMHO, we should finish the
-previous continuous line with '\n' before we print the prefix. I mean something
-like:
-
-if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && (len < size)) {
-	/* finish the incomplete continuous line */
-	if (buf) {
-		buf[len++] = '\n';
-	} else {
-		len++;
-	}
-}
-
-Best Regards,
-Petr
-
-
+> @@ -209,10 +208,7 @@ static inline struct page *dio_get_page(struct dio *dio,
+>  			return ERR_PTR(ret);
+>  		BUG_ON(dio_pages_present(sdio) == 0);
+>  	}
+> -	n = sdio->head++;
+> -	*from = n ? 0 : sdio->from;
+> -	*to = (n == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
+> -	return dio->pages[n];
+> +	return dio->pages[sdio->head];
+>  }
 >  
->  	do {
->  		const char *next = memchr(text, '\n', text_size);
-> -- 
-> 1.9.1
+>  /**
+> @@ -911,11 +907,15 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
+>  	while (sdio->block_in_file < sdio->final_block_in_request) {
+>  		struct page *page;
+>  		size_t from, to;
+> -		page = dio_get_page(dio, sdio, &from, &to);
+> +
+> +		page = dio_get_page(dio, sdio);
+>  		if (IS_ERR(page)) {
+>  			ret = PTR_ERR(page);
+>  			goto out;
+>  		}
+> +		from = sdio->head ? 0 : sdio->from;
+> +		to = (sdio->head == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
+> +		sdio->head++;
+>  
+>  		while (from < to) {
+>  			unsigned this_chunk_bytes;	/* # of bytes mapped */
 > 
+
