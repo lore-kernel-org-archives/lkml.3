@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964829AbaGQQEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:04:42 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:50167 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019AbaGQQEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:04:39 -0400
+	id S934681AbaGQQFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:05:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58226 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757532AbaGQQFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:05:03 -0400
+Date: Thu, 17 Jul 2014 11:04:21 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140717160421.GJ10459@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de>
+ <1405521903-5877-6-git-send-email-bigeasy@linutronix.de>
+ <20140717145430.GF10459@saruman.home>
+ <53C7E7BE.7030403@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <CAJAp7OggtuxPSc0yXzMCs10aQ2R6E+m4Bu8sdLJopvrZ3+5Rmg@mail.gmail.com>
-References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1405465241-28684-2-git-send-email-bjorn.andersson@sonymobile.com>
-	<CAMf-jS=tkBYQ7mXp71F2_rPo6DE3e4C=sFHqg3Q26a08m6NxJQ@mail.gmail.com>
-	<CAJAp7OggtuxPSc0yXzMCs10aQ2R6E+m4Bu8sdLJopvrZ3+5Rmg@mail.gmail.com>
-Date: Thu, 17 Jul 2014 21:34:37 +0530
-Message-ID: <CAMf-jSkvC4P8-06XbmMH2i0xHvaYwH_VbfG6Ypp3F+ct5ZxM+A@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] soc: devicetree: bindings: Add Qualcomm RPM DT binding
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="j+MD90OnwjQyWNYt"
+Content-Disposition: inline
+In-Reply-To: <53C7E7BE.7030403@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 3:50 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
->> On Wed, Jul 16, 2014 at 4:30 AM, Bjorn Andersson
->> <bjorn.andersson@sonymobile.com> wrote:
-> [...]
->>> +       rpm@108000 {
->>> +               compatible = "qcom,rpm-msm8960";
->>> +               reg = <0x108000 0x1000>;
->>> +               qcom,ipc = <&apcs 0x8 2>;
->>
->> Tried adding this but there is no reference to 'apcs' registers itself
->> in any dts.
->>
->> Without these changes rpm breaks hence not able to test SATA which needs rpm.
->>
->
-> Hi Pramod,
->
-> Unfortunately the ipc bits resides in a block that needs to be
-> accesses by various device drivers so I had to extract the access; so
-> you now need to reference it via a syscon handle and offset instead -
-> as described above.
->
-> The apcs node I used for testing this with looks like this:
->
-> apcs: syscon@2011000 {
->     compatible = "syscon";
->     reg = <0x2011000 0x1000>;
-> };
->
-> Enable CONFIG_MFD_SYSCON and put the dt snippet somewhere under soc
-> and you should be good.
->
+--j+MD90OnwjQyWNYt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Bjorn. Did this and seen things working (sata atleast).
+On Thu, Jul 17, 2014 at 05:11:58PM +0200, Sebastian Andrzej Siewior wrote:
+> On 07/17/2014 04:54 PM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Wed, Jul 16, 2014 at 04:45:03PM +0200, Sebastian Andrzej Siewior wro=
+te:
+> >> +static int omap_8250_startup(struct uart_port *port)
+> >> +{
+> >> +	struct uart_8250_port *up =3D
+> >> +		container_of(port, struct uart_8250_port, port);
+> >> +	struct omap8250_priv *priv =3D port->private_data;
+> >> +
+> >> +	int ret;
+> >> +
+> >> +	if (priv->wakeirq) {
+> >> +		ret =3D request_irq(priv->wakeirq, omap_wake_irq,
+> >> +				port->irqflags, "wakeup irq", port);
+> >> +		if (ret)
+> >> +			return ret;
+> >> +		disable_irq(priv->wakeirq);
+> >> +	}
+> >> +
+> >> +	ret =3D serial8250_do_startup(port);
+> >> +	if (ret)
+> >> +		goto err;
+> >> +
+> >> +	pm_runtime_get_sync(port->dev);
+> >=20
+> > should this pm_runtime_get_sync() be placed above
+> > serial8250_do_startup() call ?
+>=20
+> I don't think it matters since serial8250_do_startup() has its own
+> pm_runtime_get_sync().
 
-> Regards,
-> Bjorn
+oh right, saw that now.
 
+> ->startup(), ->shutdown() are called via omap callbacks so we could
+> spare in the 8250-core if we do it in the omap code before invoking the
+> function. The same goes for serial8250_set_termios() which is not used
+> by omap but has those runtime-pm stuff, too.
+> It would be wrong if someone would use the serial8250_do_startup()
+> without his own runtime-pm get but it is omap only which does this
+> things.
+> So it is not used by anyone else (right now) and if you want to keep it
+> to a minimum I could remove them from those places.
 
+I don't think it matters as long as the calls are balanced.
 
--- 
-Thanks and Regards
-Pramod
+--=20
+balbi
+
+--j+MD90OnwjQyWNYt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTx/QFAAoJEIaOsuA1yqRECxgP/j5ZgCwoXVdZQl8R5uuilUlf
+bnRvlHiA9nQ8pBma2/4MDWaDNKF0QpEGVNLn6qwG+CR93o+DtjtcZcCQRnW+iDSX
+1OX2Y98UY0yecnHZ15bUCivFv7ISGBFMuL4UVnionS0KIf74jVjWpkN4ZIRWYmmM
+s//OlMjvPlhiNCXl7w/4nljw1uSYV3TWdlsad3AWsYE5rVCKux3NLoUWZFvqONjP
+86sIzmEQv5vaC4ALVtutdcJwaOth9rpWQAFlrszOL+FI1lIYJPCMUesArDkEAHbK
+4Ak70I51dAhKBZlDLj5QtCm8BdwjnesEg+sWisVEyxI18McfTEaVP4i7lQH5PNLJ
+a3n5ErUcbvv0E5ieLTVsSjb+KNJmmmP/SoF5meIc5K6a+7/dtma05ekuSakrlEuK
+Txy+Zv6rhBvUtAK3fmkneySbNRsv1hNqtZ9b3KgP2NASB3JAQQUiZySJyFSmNwu8
+n8fJaNETlpcbOwdeMZfoVkQIN8OSim5hjKNpgsEHONgooBv5iebCxozOPb2p9wvk
+vXOxiIqXuJjMclLUW33pKCxYlv7/5x9FWtb2Cuwf3SXd4BEut/Jh8jAOt3siEg0k
+FgvBRiYzwxX4Ykv9oqTpqVT2ITWsF0FXysBBCKLthTMnmb+5L59kivKCdYrBHc0e
+h1GRJ5TWWOL8d/JkKyt8
+=B4+R
+-----END PGP SIGNATURE-----
+
+--j+MD90OnwjQyWNYt--
