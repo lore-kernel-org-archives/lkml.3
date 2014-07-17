@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaGQHls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 03:41:48 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:38534 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaGQHlq (ORCPT
+	id S1754989AbaGQHm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 03:42:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33776 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397AbaGQHmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 03:41:46 -0400
+	Thu, 17 Jul 2014 03:42:25 -0400
+Date: Thu, 17 Jul 2014 09:42:19 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140717074219.GA29193@linutronix.de>
+References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de>
+ <1405521903-5877-6-git-send-email-bigeasy@linutronix.de>
+ <20140717070859.GD18374@atomide.com>
 MIME-Version: 1.0
-In-Reply-To: <20140717093518.486ac244@free-electrons.com>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<CAKohpo=Z5gEHOC5q40q8dfQfoNP5-WyhjG1arV99zJiG2c+6Xg@mail.gmail.com>
-	<CAKohpo=bUMKa752fBXZTb0WPYMfJtuR5uk7z-YaXYV63fhJWtg@mail.gmail.com>
-	<1450785.beFNo3ByBF@vostro.rjw.lan>
-	<CAKohpomPAp74Sf_DxqzFk1WzUTx5m=G-nj+d+QHW5q=gnVphhA@mail.gmail.com>
-	<20140717093518.486ac244@free-electrons.com>
-Date: Thu, 17 Jul 2014 13:11:45 +0530
-Message-ID: <CAKohpokZXUzXKRWBje7QF_jrvOd5dmfmWQ2Csf3xiMuvT_vPYA@mail.gmail.com>
-Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Nishanth Menon <nm@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Simon Horman <horms@verge.net.au>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        Rob Herring <rob.herring@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140717070859.GD18374@atomide.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2014 13:05, Thomas Petazzoni
-<thomas.petazzoni@free-electrons.com> wrote:
-> Could you summarize what is the issue with the binding?
+* Tony Lindgren | 2014-07-17 00:09:00 [-0700]:
+
+>Seems to boot a bit further now with output from serial console
+>initially, then I'm getting the following error again that's probably
+>related to clocks not enabled when the registers are accessed:
+
+It is (mostly) the same thing as before. We have additionally 
+omap_8250_startup() in the backtrace but it is the same thing.
+So you  say I miss a clock? Looking through serial8250_do_startup() I see:
+- pm_runtime_get_sync(port->dev); which should get the clocks up
+- serial8250_clear_fifos() which does a write at address + 8. Seems to 
+  work. 
+- serial_port_in(port, UART_LSR); does a read at address + 0x14, seems 
+  to work.
+- serial_port_in(port, UART_RX); does a read at address + 0. This is 
+  probably the bad one.
+
+Now comparing with omap-serial I noticed that I do a 32bit access
+instead a 16bit.
+Could you please try the following hack:
+
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 2e4a93b..94af5a3 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -420,13 +420,13 @@ static void mem_serial_out(struct uart_port *p, int offset, int value)
+ static void mem32_serial_out(struct uart_port *p, int offset, int value)
+ {
+ 	offset = offset << p->regshift;
+-	writel(value, p->membase + offset);
++	writew(value, p->membase + offset);
+ }
+ 
+ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
+ {
+ 	offset = offset << p->regshift;
+-	return readl(p->membase + offset);
++	return readw(p->membase + offset);
+ }
+ 
+ static unsigned int io_serial_in(struct uart_port *p, int offset)
+
+
+besides that, I don't see what could be different.
+
+>Regards,
 >
-> At least for the case where we have one clock per CPU, the DT binding
-> is really dead simple: each CPU node can carry a "clocks" property, and
-> a "clock-latency" property. I really don't see why a long discussion is
-> needed to agree on such a binding.
->
-> Now, if the DT binding problem is related to those cases where you have
-> siblings, i.e one clock controlling *some* of the CPUs, but not all
-> CPUs or just one CPU, then maybe we could leave this aside for now,
+>Tony
 
-Yeah, we are stuck on that for now.
-
-> only support the following cases:
->
->  * One clock for all CPUs
->  * One clock for each CPU
-
-Yeah, so I also proposed this yesterday that we stick to only these
-two implementations for now. And was looking at how would the
-cpufreq-generic driver come to know about this.
-
-So, one way out now is to see if "clocks" property is defined in
-multiple cpu nodes, if yes don't compare them and consider separate
-clocks for each cpu. We don't have to try matching that to any other
-node, as that's a very bad idea. Mike was already very upset with that :)
-
-@Stephen/Rafael: Does that sound any better? Ofcourse the final thing
-is to get bindings to figure out relations between CPUs..
+Sebastian
