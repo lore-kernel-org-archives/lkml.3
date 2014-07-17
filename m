@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789AbaGQLCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:02:47 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:46538 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755488AbaGQLCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:02:44 -0400
-Date: Thu, 17 Jul 2014 12:55:50 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
-        Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-Message-ID: <20140717105549.GH17877@ulmo>
-References: <201407130545.23004.marex@denx.de>
- <6823014.2plXDE9VA9@wuerfel>
- <20140717095657.GC17877@ulmo>
- <6350114.L77bTv76Ul@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrvsYIebpInmECXG"
-Content-Disposition: inline
-In-Reply-To: <6350114.L77bTv76Ul@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756864AbaGQLDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:03:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11984 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756711AbaGQLDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 07:03:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="362444040"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v2 2/2] KVM: nVMX: Fix fail to get nested ack intr's vector during nested vmexit
+Date: Thu, 17 Jul 2014 19:03:01 +0800
+Message-Id: <1405594981-31384-2-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1405594981-31384-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1405594981-31384-1-git-send-email-wanpeng.li@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+WARNING: CPU: 9 PID: 7251 at arch/x86/kvm/vmx.c:8719 nested_vmx_vmexit+0xa4/0x233 [kvm_intel]()
+Modules linked in: tun nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4 dns_resolver nfs fscache lockd
+sunrpc pci_stub netconsole kvm_intel kvm bridge stp llc autofs4 8021q ipv6 uinput joydev microcode
+pcspkr igb i2c_algo_bit ehci_pci ehci_hcd e1000e ixgbe ptp pps_core hwmon mdio i2c_i801 i2c_core
+tpm_tis tpm ipmi_si ipmi_msghandler isci libsas scsi_transport_sas button dm_mirror dm_region_hash
+dm_log dm_mod
+CPU: 9 PID: 7251 Comm: qemu-system-x86 Tainted: G        W     3.16.0-rc1 #2
+Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
+ 000000000000220f ffff880ffd107bf8 ffffffff81493563 000000000000220f
+ 0000000000000000 ffff880ffd107c38 ffffffff8103f0eb ffff880ffd107c48
+ ffffffffa059709a ffff881ffc9e0040 ffff8800b74b8000 00000000ffffffff
+Call Trace:
+ [<ffffffff81493563>] dump_stack+0x49/0x5e
+ [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
+ [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+ [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
+ [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+ [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
+ [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
+ [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
+ [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
+ [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
 
---lrvsYIebpInmECXG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info if L1
+asks us to), "Acknowledge interrupt on exit" behavior can be emulated. Current
+logic will ask for intr vector if it is nested vmexit and VM_EXIT_ACK_INTR_ON_EXIT
+is set by L1. However, intr vector for posted intr can't be got by generic read
+pending interrupt vector and intack routine, there is a requirement to sync from
+pir to irr. This patch fix it by ask the intr vector after sync pir to irr.
 
-On Thu, Jul 17, 2014 at 12:33:32PM +0200, Arnd Bergmann wrote:
-> On Thursday 17 July 2014 11:56:58 Thierry Reding wrote:
-> > On Thu, Jul 17, 2014 at 11:20:36AM +0200, Arnd Bergmann wrote:
-> > [...]
-> > >                       score should set HAS_IOMEM and doesn't
-> > > even have public compilers
-> >=20
-> > This begs an interesting question. Should it be made a requirement to
-> > have publicly available compilers for new architectures so that they can
-> > at least be compile-tested? Preferably this would of course be in source
-> > form so that there aren't any dependencies on the distribution.
->=20
-> The question has come up a few times. I wouldn't mandate that the port
-> has an upstream gcc (you've got to start mainlining one of them first
-> after all), but having compilers available for download should probably be
-> required. It's hard to ask for a particular quality of that gcc port
-> though, or to expect it to stay available online.
->=20
-> Where did you find the gcc port for score?
+Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v1 -> v2:
+ * replace kvm_get_apic_interrupt() by kvm_lapic_find_highest_irr()
 
-It's upstream, though marked obsolete and to be removed in the next
-release... =3D)
+ arch/x86/kvm/lapic.c | 1 +
+ arch/x86/kvm/vmx.c   | 3 +++
+ 2 files changed, 4 insertions(+)
 
-Thierry
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 0069118..b7d45dc 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1637,6 +1637,7 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	apic_clear_irr(vector, apic);
+ 	return vector;
+ }
++EXPORT_SYMBOL_GPL(kvm_get_apic_interrupt);
+ 
+ void kvm_apic_post_state_restore(struct kvm_vcpu *vcpu,
+ 		struct kvm_lapic_state *s)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4ae5ad8..a704f71 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -8697,6 +8697,9 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+ 	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
+ 	    && nested_exit_intr_ack_set(vcpu)) {
+ 		int irq = kvm_cpu_get_interrupt(vcpu);
++
++		if (irq < 0 && kvm_apic_vid_enabled(vcpu->kvm))
++			irq = kvm_lapic_find_highest_irr(vcpu);
+ 		WARN_ON(irq < 0);
+ 		vmcs12->vm_exit_intr_info = irq |
+ 			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
+-- 
+1.9.1
 
---lrvsYIebpInmECXG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTx6u1AAoJEN0jrNd/PrOhEuwQALeTCrfkgfo5Tb0gskGOiJ2A
-l5c9TdliuCOUNYpwW+4phztgN81QDg941PPecfB96ARNKGewq4tDbSt1QQ28/d1S
-XC+bPi89pXVSzh+tt2VM9sWMXpkpfrY4Cv7F5HdlpsbAvXhU2q/Q89oJBDhOLLJ+
-F7ledfllgqfF50oamHY4J+xJv4lDjKfve9U8MomM/r91IQ7rZAI2Zq//LwkFD3WF
-6L8/FX1NbTOmGv85v19YDY3+PvDFbPpt4wG128p038hTIZ/k8RICic8N8smgh7r+
-Ik/Bt3Ew4aXIgAtNXAyKzG9GIPuofKd6WkhaIB4vvrUoXan9kLqCY5CKrLuksG/p
-Fj0B+4VGHoOevMwDVyqgn33pQPErm6rlTRdp0ddmI0SQph4GcKg0IBUIqD0XS0ma
-WcUVlA6S3GLmXl7LrfCXl0xRvn/pa03v+Gzj7VcjmYNAxyDbtPrbzoSR8Lp0JC5j
-t8Q03pOtQhXgI363OYll/S8j32qcreLtghi/xpi6MhAXSZJeonp0CxNi4Z/lWED+
-aDr8rHEbve2orQ0ouyInSlV9mabI/03MdePZrHy/cJ94GPgpieHy1BLBc1N4JsEc
-IPZWwWKj5LS3zG4wrutDweoN1Twh7nrQaPzlvJRSrtaGCEyKdHuHZMuhUjMXCcWH
-ArZr57GeXOop6SEf41I5
-=UHHF
------END PGP SIGNATURE-----
-
---lrvsYIebpInmECXG--
