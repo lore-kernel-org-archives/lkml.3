@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531AbaGQSWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:22:53 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60947 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053AbaGQSWs (ORCPT
+	id S1755969AbaGQSXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:23:14 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63258 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052AbaGQSWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 14:22:48 -0400
+	Thu, 17 Jul 2014 14:22:44 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         bsd@redhat.com, Andrew Honig <ahonig@google.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v4 5/5] x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
-Date: Thu, 17 Jul 2014 11:22:20 -0700
-Message-Id: <4454941956362c58e676610d3bf489f58c689d46.1405620944.git.luto@amacapital.net>
+Subject: [PATCH v4 4/5] x86,random,kvm: Use KVM_GET_RNG_SEED in arch_get_rng_seed
+Date: Thu, 17 Jul 2014 11:22:19 -0700
+Message-Id: <10d52b136b02e8c43daa225423106e6989060728.1405620944.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1405620944.git.luto@amacapital.net>
 References: <cover.1405620944.git.luto@amacapital.net>
@@ -29,106 +29,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's considerably better than any of the alternatives on KVM.
-
-Rather than reinventing all of the cpu feature query code, this fixes
-native_cpuid to work in PIC objects.
-
-I haven't combined it with boot/cpuflags.c's cpuid implementation:
-including asm/processor.h from boot/cpuflags.c results in a flood of
-unrelated errors, and fixing it might be messy.
+This is a straightforward implementation: for each bit of internal
+RNG state, request one bit from KVM_GET_RNG_SEED.  This is done even
+if RDSEED/RDRAND worked, since KVM_GET_RNG_SEED is likely to provide
+cryptographically secure output even if the CPU's RNG is weak or
+compromised.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/boot/compressed/aslr.c  | 27 +++++++++++++++++++++++++++
- arch/x86/include/asm/processor.h | 21 ++++++++++++++++++---
- 2 files changed, 45 insertions(+), 3 deletions(-)
+ arch/x86/Kconfig                 |  4 ++++
+ arch/x86/include/asm/kvm_guest.h |  9 +++++++++
+ arch/x86/kernel/archrandom.c     | 22 +++++++++++++++++++++-
+ arch/x86/kernel/kvm.c            | 10 ++++++++++
+ 4 files changed, 44 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index fc6091a..8583f0e 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -5,6 +5,8 @@
- #include <asm/archrandom.h>
- #include <asm/e820.h>
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a8f749e..adfa09c 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -593,6 +593,7 @@ config KVM_GUEST
+ 	bool "KVM Guest support (including kvmclock)"
+ 	depends on PARAVIRT
+ 	select PARAVIRT_CLOCK
++	select ARCH_RANDOM
+ 	default y
+ 	---help---
+ 	  This option enables various optimizations for running under the KVM
+@@ -1507,6 +1508,9 @@ config ARCH_RANDOM
+ 	  If supported, this is a high bandwidth, cryptographically
+ 	  secure hardware random number generator.
  
-+#include <uapi/asm/kvm_para.h>
++	  This also enables paravirt RNGs such as KVM's if the relevant
++	  PV guest support is enabled.
 +
- #include <generated/compile.h>
- #include <linux/module.h>
- #include <linux/uts.h>
-@@ -15,6 +17,22 @@
- static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
- 		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
+ config X86_SMAP
+ 	def_bool y
+ 	prompt "Supervisor Mode Access Prevention" if EXPERT
+diff --git a/arch/x86/include/asm/kvm_guest.h b/arch/x86/include/asm/kvm_guest.h
+index a92b176..8c4dbd5 100644
+--- a/arch/x86/include/asm/kvm_guest.h
++++ b/arch/x86/include/asm/kvm_guest.h
+@@ -3,4 +3,13 @@
  
-+static bool kvm_para_has_feature(unsigned int feature)
+ int kvm_setup_vsyscall_timeinfo(void);
+ 
++#if defined(CONFIG_KVM_GUEST) && defined(CONFIG_ARCH_RANDOM)
++extern bool kvm_get_rng_seed(u64 *rv);
++#else
++static inline bool kvm_get_rng_seed(u64 *rv)
 +{
-+	u32 kvm_base;
-+	u32 features;
++	return false;
++}
++#endif
 +
-+	if (!has_cpuflag(X86_FEATURE_HYPERVISOR))
-+		return false;
+ #endif /* _ASM_X86_KVM_GUEST_H */
+diff --git a/arch/x86/kernel/archrandom.c b/arch/x86/kernel/archrandom.c
+index 5515fc8..3bcfa58 100644
+--- a/arch/x86/kernel/archrandom.c
++++ b/arch/x86/kernel/archrandom.c
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include <asm/archrandom.h>
++#include <asm/kvm_guest.h>
+ 
+ void arch_get_rng_seed(void *ctx,
+ 		       void (*seed)(void *ctx, u32 data),
+@@ -22,7 +23,7 @@ void arch_get_rng_seed(void *ctx,
+ 		       const char *log_prefix)
+ {
+ 	int i, longs = (bits_per_source + BITS_PER_LONG - 1) / BITS_PER_LONG;
+-	int rdseed_bits = 0, rdrand_bits = 0;
++	int rdseed_bits = 0, rdrand_bits = 0, kvm_bits = 0;
+ 	int rdrand_longs_wanted = 0;
+ 	char buf[128] = "";
+ 	char *msgptr = buf;
+@@ -74,6 +75,25 @@ void arch_get_rng_seed(void *ctx,
+ 	if (rdrand_bits)
+ 		msgptr += sprintf(msgptr, ", %d bits from RDRAND", rdrand_bits);
+ 
++	/*
++	 * Use KVM_GET_RNG_SEED regardless of whether the CPU RNG worked,
++	 * since it incorporates entropy unavailable to the CPU.  We
++	 * request enough bits for the entire internal RNG state, because
++	 * there's no good reason not to.
++	 */
++	for (i = 0; i < (bits_per_source + 63) / 64; i++) {
++		u64 rv;
 +
-+	kvm_base = hypervisor_cpuid_base("KVMKVMKVM\0\0\0", KVM_CPUID_FEATURES);
-+	if (!kvm_base)
-+		return false;
++		if (kvm_get_rng_seed(&rv)) {
++			seed(ctx, (u32)rv);
++			seed(ctx, (u32)(rv >> 32));
++			kvm_bits += 8 * sizeof(rv);
++		}
++	}
++	if (kvm_bits)
++		msgptr += sprintf(msgptr, ", %d bits from KVM_GET_RNG_BITS",
++				  kvm_bits);
 +
-+	features = cpuid_eax(kvm_base | KVM_CPUID_FEATURES);
-+	return features & (1UL << feature);
+ 	if (buf[0])
+ 		pr_info("%s with %s\n", log_prefix, buf + 2);
+ }
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 3dd8e2c..bd8783a 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -416,6 +416,16 @@ void kvm_disable_steal_time(void)
+ 	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
+ }
+ 
++bool kvm_get_rng_seed(u64 *v)
++{
++	/*
++	 * Allow migration from a hypervisor with the GET_RNG_SEED
++	 * feature to a hypervisor without it.
++	 */
++	return (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED) &&
++		rdmsrl_safe(MSR_KVM_GET_RNG_SEED, v) == 0);
 +}
 +
- #define I8254_PORT_CONTROL	0x43
- #define I8254_PORT_COUNTER0	0x40
- #define I8254_CMD_READBACK	0xC0
-@@ -81,6 +99,15 @@ static unsigned long get_random_long(void)
- 		}
- 	}
- 
-+	if (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED)) {
-+		u64 seed;
-+
-+		debug_putstr(" MSR_KVM_GET_RNG_SEED");
-+		rdmsrl(MSR_KVM_GET_RNG_SEED, seed);
-+		random ^= (unsigned long)seed;
-+		use_i8254 = false;
-+	}
-+
- 	if (has_cpuflag(X86_FEATURE_TSC)) {
- 		debug_putstr(" RDTSC");
- 		rdtscll(raw);
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index a4ea023..6096f3c 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -189,10 +189,25 @@ static inline int have_cpuid_p(void)
- static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
- 				unsigned int *ecx, unsigned int *edx)
+ #ifdef CONFIG_SMP
+ static void __init kvm_smp_prepare_boot_cpu(void)
  {
--	/* ecx is often an input as well as an output. */
--	asm volatile("cpuid"
-+	/*
-+	 * This function can be used from the boot code, so it needs
-+	 * to avoid using EBX in constraints in PIC mode.
-+	 *
-+	 * ecx is often an input as well as an output.
-+	 */
-+	asm volatile(".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
-+		     "movl  %%ebx,%1                            \n\t"
-+		     ".endif ; .endif                           \n\t"
-+		     "cpuid					\n\t"
-+		     ".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
-+		     "xchgl %%ebx,%1                            \n\t"
-+		     ".endif ; .endif"
- 	    : "=a" (*eax),
--	      "=b" (*ebx),
-+#if defined(__i386__) && defined(__PIC__)
-+	      "=r" (*ebx),	/* gcc won't let us use ebx */
-+#else
-+	      "=b" (*ebx),	/* ebx is okay */
-+#endif
- 	      "=c" (*ecx),
- 	      "=d" (*edx)
- 	    : "0" (*eax), "2" (*ecx)
 -- 
 1.9.3
 
