@@ -1,151 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761357AbaGRKRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:17:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44239 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760968AbaGRKLH (ORCPT
+	id S1761388AbaGRKSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:18:01 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46859 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761055AbaGRKR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:11:07 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 03/14] scsi: centralize command re-queueing in scsi_dispatch_fn
-Date: Fri, 18 Jul 2014 12:13:02 +0200
-Message-Id: <1405678393-11497-4-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405678393-11497-1-git-send-email-hch@lst.de>
-References: <1405678393-11497-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 18 Jul 2014 06:17:58 -0400
+Subject: [PATCH v2 0/3] perf/sdt : Support for SDT markers
+To: linux-kernel@vger.kernel.org
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, namhyung@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Date: Thu, 17 Jul 2014 11:23:36 +0530
+Message-ID: <20140717054826.19995.61782.stgit@hemant-fedora>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071810-4790-0000-0000-000002BE3ACF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure we only have the logic for requeing commands in one place.
+This patchset helps in listing dtrace style markers(SDT) present in user space
+applications through perf.
+Notes/markers are placed at important places by the
+developers. They have a negligible overhead when not enabled.
+We can enable them and probe at these places and find some important information
+like the arguments' values, etc.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Reviewed-by: Webb Scales <webbnh@hp.com>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Tested-by: Bart Van Assche <bvanassche@acm.org>
-Tested-by: Robert Elliott <elliott@hp.com>
+We have lots of applications which use SDT markers today, like:
+Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
+
+To add SDT markers into user applications:
+We need to have this header sys/sdt.h present.
+sys/sdt.h used is version 3.
+If not present, install systemtap-sdt-devel package (for fedora-18).
+
+Please refer to the Documentation patch to see how the SDT markers are added into
+a program.
+
+With this patchset,
+- Use perf to list the markers in the app:
+# perf list sdt ./user_app
+
+./user_app :
+%user_app:foo_start
+%user_app:fun_start
+
+- Also, we can see the SDT markers present in our system in the usual binaries.
+These usual binaries are libraries (dsos) listed by ldconfig --print-cache and some
+binaries present in PATH environment variable.
+
+First, scan the binaries using :
+# perf list sdt --scan
+
+Creating a cache of SDT markers...
+perf sdt cache created!
+ Use : "perf list sdt"
+ to see the SDT markers
+
+After the sdt cache file is created, use perf list to view the markers :
+# perf list sdt
+
+%rtld : init_start
+%rtld : init_complete
+%rtld : map_failed
+%rtld : map_start
+%rtld : lll_futex_wake
+...
+...
+%libgcc : unwind
+%libvirt : rpc_server_client_auth_allow
+%libvirt : rpc_server_client_auth_fail
+%libvirt : rpc_server_client_auth_deny
+
+Also, by using "perf list", we can view all the SDT markers as events along with all
+the other events present in the system.
+Alternatively, one can view the /var/cache/perf/perf-sdt.cache directly.
+
+This link shows an example of marker probing with Systemtap:
+https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+
+Also, this link provides important info regarding SDT notes:
+http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+
+- Markers in binaries :
+These SDT markers are present in the ELF in the section named
+".note.stapsdt".
+Here, the name of the marker, its provider, type, location, base
+address, semaphore address.
+We can retrieve these values using the members name_off and desc_off in
+Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+
+Changes since last series :
+- Made the changes as discussed with Masami and Namhyung.
+- Now, "perf list" will also display the SDT markers as events along with other events.
+- Made some optimazations.
+
+TODO:
+- Add support to probe these SDT markers as if they are events.
+- Recognizing arguments and support to probe on them.
 ---
- drivers/scsi/scsi.c     | 35 ++++++++++++-----------------------
- drivers/scsi/scsi_lib.c |  9 ++++++---
- 2 files changed, 18 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 321f854..2396e89 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -645,9 +645,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 		 * returns an immediate error upwards, and signals
- 		 * that the device is no longer present */
- 		cmd->result = DID_NO_CONNECT << 16;
--		scsi_done(cmd);
--		/* return 0 (because the command has been processed) */
--		goto out;
-+		goto done;
- 	}
- 
- 	/* Check to see if the scsi lld made this device blocked. */
-@@ -659,17 +657,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 		 * occur until the device transitions out of the
- 		 * suspend state.
- 		 */
--
--		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
--
- 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
- 			"queuecommand : device blocked\n"));
--
--		/*
--		 * NOTE: rtn is still zero here because we don't need the
--		 * queue to be plugged on return (it's already stopped)
--		 */
--		goto out;
-+		return SCSI_MLQUEUE_DEVICE_BUSY;
- 	}
- 
- 	/*
-@@ -693,20 +683,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 			       "cdb_size=%d host->max_cmd_len=%d\n",
- 			       cmd->cmd_len, cmd->device->host->max_cmd_len));
- 		cmd->result = (DID_ABORT << 16);
--
--		scsi_done(cmd);
--		goto out;
-+		goto done;
- 	}
- 
- 	if (unlikely(host->shost_state == SHOST_DEL)) {
- 		cmd->result = (DID_NO_CONNECT << 16);
--		scsi_done(cmd);
--	} else {
--		trace_scsi_dispatch_cmd_start(cmd);
--		cmd->scsi_done = scsi_done;
--		rtn = host->hostt->queuecommand(host, cmd);
-+		goto done;
-+
- 	}
- 
-+	trace_scsi_dispatch_cmd_start(cmd);
-+
-+	cmd->scsi_done = scsi_done;
-+	rtn = host->hostt->queuecommand(host, cmd);
- 	if (rtn) {
- 		trace_scsi_dispatch_cmd_error(cmd, rtn);
- 		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
-@@ -715,12 +704,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 
- 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
- 			"queuecommand : request rejected\n"));
--
--		scsi_queue_insert(cmd, rtn);
- 	}
- 
-- out:
- 	return rtn;
-+ done:
-+	scsi_done(cmd);
-+	return 0;
- }
- 
- /**
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 3ac677c..bf73427 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1557,9 +1557,12 @@ static void scsi_request_fn(struct request_queue *q)
- 		 * Dispatch the command to the low-level driver.
- 		 */
- 		rtn = scsi_dispatch_cmd(cmd);
--		spin_lock_irq(q->queue_lock);
--		if (rtn)
-+		if (rtn) {
-+			scsi_queue_insert(cmd, rtn);
-+			spin_lock_irq(q->queue_lock);
- 			goto out_delay;
-+		}
-+		spin_lock_irq(q->queue_lock);
- 	}
- 
- 	return;
-@@ -1579,7 +1582,7 @@ static void scsi_request_fn(struct request_queue *q)
- 	blk_requeue_request(q, req);
- 	sdev->device_busy--;
- out_delay:
--	if (sdev->device_busy == 0)
-+	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
- 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
- }
- 
+Hemant Kumar (3):
+      This patch enables perf to list the SDT markers present in a system. It looks
+      This patch enables perf to look for SDT markers in a single file.
+      This patch adds the required documentation for perf support to SDT markers.
+
+
+ tools/perf/Documentation/SDT-markers.txt |  123 +++++
+ tools/perf/Documentation/perf-list.txt   |    7 
+ tools/perf/Makefile.perf                 |    1 
+ tools/perf/builtin-list.c                |    6 
+ tools/perf/util/parse-events.h           |    3 
+ tools/perf/util/sdt.c                    |  778 ++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-elf.c             |  229 +++++++++
+ tools/perf/util/symbol.h                 |   19 +
+ 8 files changed, 1164 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/Documentation/SDT-markers.txt
+ create mode 100644 tools/perf/util/sdt.c
+
 -- 
-1.9.1
 
