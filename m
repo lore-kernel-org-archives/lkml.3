@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009AbaGQVjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 17:39:09 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:39737 "EHLO tetsuo.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757955AbaGQVjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 17:39:07 -0400
-Date: Thu, 17 Jul 2014 14:39:06 -0700
-From: Zach Brown <zab@zabbo.net>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-crypto@vger.kernel.org,
-        beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717213906.GD24196@lenny.home.zabbo.net>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717194812.GC24196@lenny.home.zabbo.net>
- <20140717205417.GT1491@thunk.org>
+	id S1758071AbaGQVj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 17:39:26 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:36809 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574AbaGQVjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 17:39:24 -0400
+Date: Thu, 17 Jul 2014 14:39:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Lennox Wu <lennox.wu@gmail.com>
+cc: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the
+ macros which not be used currently
+In-Reply-To: <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1407171437270.5185@chino.kir.corp.google.com>
+References: <53AC10CB.3000007@gmail.com> <alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com> <alpine.DEB.2.02.1407161849090.19429@chino.kir.corp.google.com> <CAF0htA5eVTPQC0c1XfzU=RHnNWLtRgtYbN+se5HPLYkJ9_E=5w@mail.gmail.com> <53C73534.1090502@roeck-us.net>
+ <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717205417.GT1491@thunk.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 04:54:17PM -0400, Theodore Ts'o wrote:
-> On Thu, Jul 17, 2014 at 12:48:12PM -0700, Zach Brown wrote:
-> > 
-> > > +	return urandom_read(NULL, buf, count, NULL);
-> > 
-> > I wonder if we want to refactor the entry points a bit more instead of
-> > directly calling the device read functions.
+On Thu, 17 Jul 2014, Lennox Wu wrote:
+
+> Yes, you might miss something. Some patches were merged once I
+> acknowledged them,and some were missed.
+> So I am not sure the rule, if someone will merge these patches once
+> them are acknowledged, it is redundant that I issue a
+> PULL request again.
 > 
-> I could refactor the entropy point, but it probably wouldn't add any
-> extra bloat, since the compiler would hopefully compile it away, but
-> adding the extra static function would seem to make things less
-> readable at least in my opinion.
 
-Fair enough, I don't have a strong preference either way.  It was just
-something I noticed when leafing through the (unfamiliar) code.
-
-- z
+You and Liqin Chen are the listed maintainers for this architecture and 
+you do not list a git tree, nobody else is a maintainer for score.  Who 
+are you expecting to pick up patches to your architecture?  As maintainer, 
+you need to ensure that patches arrive at Linus's tree in one way or 
+another, so what is your mechanism for doing so?
