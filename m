@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaGQU4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 16:56:08 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:54341 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010AbaGQU4F (ORCPT
+	id S1757619AbaGQU5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 16:57:09 -0400
+Received: from exprod5og121.obsmtp.com ([64.18.0.139]:43177 "HELO
+	exprod5og121.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756546AbaGQU5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 16:56:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
-References: <1405626731-12220-1-git-send-email-adityakali@google.com>
- <1405626731-12220-6-git-send-email-adityakali@google.com> <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
-From: Aditya Kali <adityakali@google.com>
-Date: Thu, 17 Jul 2014 13:55:43 -0700
-Message-ID: <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] cgroup: introduce cgroup namespaces
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jul 2014 16:57:05 -0400
+From: Feng Kan <fkan@apm.com>
+To: patches@apm.com, jaswinder.singh@linaro.org, =devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH 2/3] Documentation: mailbox: Add APM X-Gene SlimPro mailbox dts documentation
+Date: Thu, 17 Jul 2014 13:57:24 -0700
+Message-Id: <1405630645-15337-3-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405630645-15337-1-git-send-email-fkan@apm.com>
+References: <1405630645-15337-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 12:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Jul 17, 2014 at 12:52 PM, Aditya Kali <adityakali@google.com> wrote:
->> Introduce the ability to create new cgroup namespace. The newly created
->> cgroup namespace remembers the 'struct cgroup *root_cgrp' at the point
->> of creation of the cgroup namespace. The task that creates the new
->> cgroup namespace and all its future children will now be restricted only
->> to the cgroup hierarchy under this root_cgrp. In the first version,
->> setns() is not supported for cgroup namespaces.
->> The main purpose of cgroup namespace is to virtualize the contents
->> of /proc/self/cgroup file. Processes inside a cgroup namespace
->> are only able to see paths relative to their namespace root.
->> This allows container-tools (like libcontainer, lxc, lmctfy, etc.)
->> to create completely virtualized containers without leaking system
->> level cgroup hierarchy to the task.
->
-> What happens if someone moves a task in a cgroup namespace outside of
-> the namespace root cgroup?
->
+This adds the APM X-Gene Slimpro mailbox device tree node documentation.
 
-Attempt to move a task outside of cgroupns root will fail with EPERM.
-This is true irrespective of the privileges of the process attempting
-this. Once cgroupns is created, the task will be confined to the
-cgroup hierarchy under its cgroupns root until it dies.
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ .../bindings/mailbox/xgene-slimpro-mailbox.txt     | 41 ++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/xgene-slimpro-mailbox.txt
 
-> --Andy
-
+diff --git a/Documentation/devicetree/bindings/mailbox/xgene-slimpro-mailbox.txt b/Documentation/devicetree/bindings/mailbox/xgene-slimpro-mailbox.txt
+new file mode 100644
+index 0000000..43e14393
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mailbox/xgene-slimpro-mailbox.txt
+@@ -0,0 +1,41 @@
++The APM X-Gene SLIMpro mailbox driver is used to communicate messages between
++the ARM64 processors and the Cortex M3 (dubbed SLIMpro). It uses a simple
++interrupt based door bell mechanism and can exchange simple messages using the
++internal registers.
++
++There are total of 8 interrupts in this mailbox. Each used for an individual
++door bell (or mailbox channel).
++
++Required properties:
++- compatible:	Should be as "apm, xgene-slimpro-mbox".
++
++- reg:		Contain the mailbox register address range.
++
++- interrupts:	Contain interrupt information for the mailbox device.
++
++- #mbox-cells:	Specify the number of parameters used by the mailbox client.
++		Currently only one to specify the mailbox channel number.
++
++Example:
++
++Mailbox Node:
++		mailbox: slimpro-mailbox@10540000 {
++			compatible = "apm,xgene-slimpro-mbox";
++			reg = <0x0 0x10540000 0x0 0xa000>;
++			#mbox-cells = <1>;
++			interrupts =  	<0x0 0x0 0x4>,
++					<0x0 0x1 0x4>,
++					<0x0 0x2 0x4>,
++					<0x0 0x3 0x4>,
++					<0x0 0x4 0x4>,
++					<0x0 0x5 0x4>,
++					<0x0 0x6 0x4>,
++					<0x0 0x7 0x4>;
++		};
++
++Client Node:
++		i2cslimpro {
++			compatible = "apm,xgene-slimpro-i2c";
++			mbox = <&mailbox 0>;
++			mbox-names = "i2c-slimpro";
++		};
 -- 
-Aditya
+1.9.1
+
