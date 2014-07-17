@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934196AbaGQPJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:09:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58483 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaGQPJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:09:06 -0400
-Date: Thu, 17 Jul 2014 10:08:56 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB fixes for v3.16-rc4
-Message-ID: <20140717150856.GH10459@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404153635-10868-1-git-send-email-balbi@ti.com>
- <20140701045957.GA17105@kroah.com>
+	id S934202AbaGQPKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:10:06 -0400
+Received: from sauhun.de ([89.238.76.85]:38504 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932975AbaGQPKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 11:10:04 -0400
+Date: Thu, 17 Jul 2014 17:09:59 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Bastian Hecht <hechtb@gmail.com>
+Cc: linux-i2c@vger.kernel.org, Linux-SH <linux-sh@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] i2c: Don't start transfers when suspended
+Message-ID: <20140717150958.GA2901@katana>
+References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+ <CABYn4swJ5NHyUd5+zCK6jhHex4v9DCMe5Qo-BZqxjPf90JfusQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ewQ5hdP4CtoTt3oD"
+	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
 Content-Disposition: inline
-In-Reply-To: <20140701045957.GA17105@kroah.com>
+In-Reply-To: <CABYn4swJ5NHyUd5+zCK6jhHex4v9DCMe5Qo-BZqxjPf90JfusQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ewQ5hdP4CtoTt3oD
+
+--T4sUOijqQbZv57TR
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jun 30, 2014 at 09:59:57PM -0700, Greg KH wrote:
-> On Mon, Jun 30, 2014 at 01:40:35PM -0500, Felipe Balbi wrote:
-> > Hi Greg,
-> >=20
-> > Here's my second set of fixes. Note the revert of the patch Michal
-> > asked to revert.
-> >=20
-> > Please consider merging to your usb-linus branch. Let me know if you
-> > want any changes to this pull request.
-> >=20
-> > cheers
-> >=20
-> >=20
-> > The following changes since commit 5d881802c407d83c169c875dad88fe2bba06=
-6c33:
-> >=20
-> >   usb: musb: core: Handle Babble condition only in HOST mode (2014-06-1=
-9 15:43:07 -0500)
-> >=20
-> > are available in the git repository at:
-> >=20
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixe=
-s-for-v3.16-rc4
->=20
-> Pulled and pushed out, thanks.
+On Thu, Jul 17, 2014 at 04:58:17PM +0200, Bastian Hecht wrote:
+> I want to add the remark that I can't help further on the patch series
+> in the next month about. So this is free to be taken/ignored/modified
+> without any approval by my side.
 
-looks like this is still pending and I can't find them either in
-mainline nor in any of your branches.
+Good to know. I'd like to get some Tested-by tags before applying to
+make sure we have no regressions. So, with you being away, let's just
+schedule this for 3.18 and we have all the time we need. Thanks for
+finishing this code before you left. Have a great month!
 
-cheers
+   Wolfram
 
---=20
-balbi
 
---ewQ5hdP4CtoTt3oD
+--T4sUOijqQbZv57TR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTx+cIAAoJEIaOsuA1yqREvicP/0I53QDO7LM8fkOg/wvcmns3
-sqCWDHlbwiSzUT7vx8i5J9fNU130J1ZpWYxDG7epEFnFTkgWKvEgmGkeX0Gf9QkN
-6hhvDOxp9P2ffj6n1IekNoxZ2NCLdInD9PJbgqLZVSl43H04BU+DNkuSYg44rNfM
-9ZivCQD9UzO73bLbeWEUZRE4D04/aSzWjZFOfmzzgx+EjolEIJ15PYzrsWyXycx6
-qfkMYbWlIg3hU594Z/TO/47h0B7DOMamH/8IfkZ1TxTFc31WwxkLan8zF1YuJUzA
-648eW57nKRFWp1/uRuHunloESNRHaNsntbVtH0/aJi/KYi2c7ME+kgw4aQYLDsDm
-F69o3ATe9YGy7HPen2zUu3xtVBA2uGbIzxosO1W9+d+My87dGzBfOSxvxoeJ+8CG
-OtAp3aZ3Nn3X1RuLeQ17030UUuezm4nwn3yIfvnSikEETvOjW3WAmieVVF6lewUx
-3K3GG6LnR7eHVIGUFhikZyNyiYHUHiFQJndx8kSQF0YTcir/SemEN9/NMSYGv3WO
-Vhmnk3mLy1APGry848pdCAIQBRJwENJzuVOu9W/Zm5YwBjade3151SUciK3N0t4I
-ulW4MZSo4x7qxHpr2FXF47j38q8VHG4yl6DFp4M56nc9vT3NZ019NWVjg3L1ARqo
-u2bjqf7whYUALcIrlxVK
-=tgZm
+iQIcBAEBAgAGBQJTx+dGAAoJEBQN5MwUoCm2kTAQAILjCU9YgdSrBzIrZlErvV7j
+RCjYBuvlZObzxxkWsCmqkhWT0erU+UsBHzkVITCctnDYdgYJdE2fdJMiogOcxzHw
+jjrj2P/+OWFuWtjaUnsCw5WaYWx5g8xnlirSmslEgw0M4iefKolRPnxYzvnSj2SN
+6ldW/xomnMKtfUmq6havxHieGkC7LOwoIw9r3oEUmP6hyLfsAFOvHUrrL3Zw3XSh
+0RG6hGEUYoX9CJUBQXPVoyntnHD7ehoYafrakXuiiBpOgIkXF/W54E5a6XFNViGd
+XT6zQnmxK7kJ27qMGvEsGQGfKmNy5yLCCuwFnjIxpEu/FnODT+ZhHbNc1YPDkSf8
+iU4HSymPE8Sfr5JOU2FACpFImOFqjXOWrhY0lLv0aA5xh2uyE2xmo62sI6jIl/5R
+KUhJNnRClqCKLzZPz+z3KzCBLnJlSs5L9qiqo6tjsdemy0Sk1FJ+Zhu9GsOc85Xa
+9M6KaANDmRRtUC2A0PRHRlUYLr7uBWCf148oX9RPDtxWOCp5xihbGtZ320uHtyOR
+nj63qouwnwa/FHJDem97Dc+ujJViSBWC+FxiZoBgGtLhKdjzhZI7xlNBJ5S0zvJn
+YTVdU2BPqddqFurC3Mc9l3Ub0w88+ZpposbRKVqxusxU8BIbTA1CEYkdctUoQkiX
+Va2fWKGUdV3IcImsAwbA
+=8ugv
 -----END PGP SIGNATURE-----
 
---ewQ5hdP4CtoTt3oD--
+--T4sUOijqQbZv57TR--
