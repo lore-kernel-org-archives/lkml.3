@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaGQEIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 00:08:19 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:48096 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaGQEIQ (ORCPT
+	id S1753223AbaGQERt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 00:17:49 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:62412 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaGQERq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 00:08:16 -0400
-From: Kiran Padwal <kiran.padwal21@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: wkang77@gmail.com, kiran.padwal21@gmail.com, fengguang.wu@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: gdm724x: gdm_tty.c: fix missing blank line after variable declaration
-Date: Thu, 17 Jul 2014 09:35:18 +0530
-Message-Id: <1405569918-9559-1-git-send-email-kiran.padwal21@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 17 Jul 2014 00:17:46 -0400
+Message-ID: <53C74E67.9050401@converseincode.com>
+Date: Wed, 16 Jul 2014 21:17:43 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: anurag19aggarwal@gmail.com, catalin.marinas@arm.com, charlebm@gmail.com,
+        dave.long@linaro.org, k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
+        linyongting@gmail.com, Nikolay.Borisov@arm.com, tglx@linutronix.de,
+        u.kleine-koenig@pengutronix.de, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rabin@rab.in, rostedt@goodmis.org, dwmw2@infradead.org
+Subject: Re: [PATCH 0/6] LLVMLinux: Patches to enable the kernel to be compiled
+ with clang/LLVM
+References: <1404850576-2006-1-git-send-email-behanw@converseincode.com> <alpine.LFD.2.11.1407130508580.3647@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1407130508580.3647@knanqh.ubzr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch fix - Add missing blank line after variable declaration
+On 07/13/14 02:10, Nicolas Pitre wrote:
+> On Tue, 8 Jul 2014, behanw@converseincode.com wrote:
+>
+>> From: Behan Webster <behanw@converseincode.com>
+>>
+>> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+>> clang (the C front end for the LLVM compiler infrastructure project).
+>>
+>> Clang only supports global named registers for non-allocatable registers like
+>> the stack pointer. By centralizing the definition of current_stack_pointer, the
+>> use of named registers for ARM remains largely unchanged while working for both
+>> gcc and clang.
+> You verified that the compiled code is identical on gcc?
+Yes. Identical.
 
-Signed-off-by: Kiran Padwal <kiran.padwal21@gmail.com>
----
- drivers/staging/gdm724x/gdm_tty.c |    5 +++++
- 1 file changed, 5 insertions(+)
+>    If so:
+>
+> Acked-by: Nicolas Pitre <nico@linaro.org>
+Thanks,
 
-diff --git a/drivers/staging/gdm724x/gdm_tty.c b/drivers/staging/gdm724x/gdm_tty.c
-index fe47cd3..001348c 100644
---- a/drivers/staging/gdm724x/gdm_tty.c
-+++ b/drivers/staging/gdm724x/gdm_tty.c
-@@ -111,24 +111,28 @@ static int gdm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
- static int gdm_tty_open(struct tty_struct *tty, struct file *filp)
- {
- 	struct gdm *gdm = tty->driver_data;
-+
- 	return tty_port_open(&gdm->port, tty, filp);
- }
- 
- static void gdm_tty_cleanup(struct tty_struct *tty)
- {
- 	struct gdm *gdm = tty->driver_data;
-+
- 	tty_port_put(&gdm->port);
- }
- 
- static void gdm_tty_hangup(struct tty_struct *tty)
- {
- 	struct gdm *gdm = tty->driver_data;
-+
- 	tty_port_hangup(&gdm->port);
- }
- 
- static void gdm_tty_close(struct tty_struct *tty, struct file *filp)
- {
- 	struct gdm *gdm = tty->driver_data;
-+
- 	tty_port_close(&gdm->port, tty, filp);
- }
- 
-@@ -139,6 +143,7 @@ static int gdm_tty_recv_complete(void *data,
- 				 int complete)
- {
- 	struct gdm *gdm = tty_dev->gdm[index];
-+
- 	if (!GDM_TTY_READY(gdm)) {
- 		if (complete == RECV_PACKET_PROCESS_COMPLETE)
- 			gdm_tty_recv(gdm, gdm_tty_recv_complete);
+Behan
+
 -- 
-1.7.9.5
+Behan Webster
+behanw@converseincode.com
 
