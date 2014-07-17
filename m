@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916AbaGQLDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:03:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12051 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756556AbaGQLDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:03:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,677,1400050800"; 
-   d="scan'208";a="571225786"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v2 1/2] KVM: nVMX: Fix virtual interrupt delivery injection 
-Date: Thu, 17 Jul 2014 19:03:00 +0800
-Message-Id: <1405594981-31384-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756962AbaGQLF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:05:29 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:56254 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431AbaGQLF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 07:05:27 -0400
+Message-ID: <53C7AC51.9020208@redhat.com>
+Date: Thu, 17 Jul 2014 12:58:25 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+CC: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org
+Subject: Re: [patch V2 43/64] x86: kvm: Use ktime_get_boot_ns()
+References: <20140716205018.175419210@linutronix.de> <20140716205055.838565297@linutronix.de>
+In-Reply-To: <20140716205055.838565297@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+Il 16/07/2014 23:04, Thomas Gleixner ha scritto:
+> Use the new nanoseconds based interface and get rid of the timespec
+> conversion dance.
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Gleb Natapov <gleb@kernel.org>
+> Cc: kvm@vger.kernel.org
+> ---
+>  arch/x86/kvm/x86.c |    6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+>
+> Index: tip/arch/x86/kvm/x86.c
+> ===================================================================
+> --- tip.orig/arch/x86/kvm/x86.c
+> +++ tip/arch/x86/kvm/x86.c
+> @@ -1109,11 +1109,7 @@ static void kvm_get_time_scale(uint32_t
+>
+>  static inline u64 get_kernel_ns(void)
+>  {
+> -	struct timespec ts;
+> -
+> -	ktime_get_ts(&ts);
+> -	monotonic_to_bootbased(&ts);
+> -	return timespec_to_ns(&ts);
+> +	return ktime_get_boot_ns();
+>  }
+>
+>  #ifdef CONFIG_X86_64
+>
+>
 
-This patch fix bug reported in https://bugzilla.kernel.org/show_bug.cgi?id=73331, 
-after the patch http://www.spinics.net/lists/kvm/msg105230.html applied, there is
-some progress and the L2 can boot up, however, slowly. The original idea of this 
-fix vid injection patch is from "Zhang, Yang Z" <yang.z.zhang@intel.com>.
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Interrupt which delivered by vid should be injected to L1 by L0 if current is in 
-L1, or should be injected to L2 by L0 through the old injection way if L1 doesn't 
-have set External-interrupt exiting bit. The current logic doen't consider these 
-cases. This patch fix it by vid intr to L1 if current is L1 or L2 through old 
-injection way if L1 doen't have External-interrupt exiting bit set.
+I will remove get_kernel_ns if you don't do that for me...
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Signed-off-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
----
-v1 -> v2:
- * fix the typo in patch description
-
- arch/x86/kvm/vmx.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 021d84a..ad36646 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -7112,8 +7112,22 @@ static void vmx_hwapic_irr_update(struct kvm_vcpu *vcpu, int max_irr)
- {
- 	if (max_irr == -1)
- 		return;
--
--	vmx_set_rvi(max_irr);
-+	if (!is_guest_mode(vcpu)) {
-+		vmx_set_rvi(max_irr);
-+	} else if (is_guest_mode(vcpu) && !nested_exit_on_intr(vcpu)) {
-+		/*
-+		 * Fall back to old way to inject the interrupt since there
-+		 * is no vAPIC-v for L2.
-+		 */
-+		if (vcpu->arch.exception.pending ||
-+				vcpu->arch.nmi_injected ||
-+				vcpu->arch.interrupt.pending)
-+			return;
-+		else if (vmx_interrupt_allowed(vcpu)) {
-+			kvm_queue_interrupt(vcpu, max_irr, false);
-+			vmx_inject_irq(vcpu);
-+		}
-+	}
- }
- 
- static void vmx_load_eoi_exitmap(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap)
--- 
-1.9.1
-
+Paolo
