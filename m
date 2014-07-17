@@ -1,143 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaGQSWh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:22:37 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:44809 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478AbaGQSWf (ORCPT
+	id S1752400AbaGQSZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:25:30 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:60541 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaGQSZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 14:22:35 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, x86@kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        bsd@redhat.com, Andrew Honig <ahonig@google.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v4 2/5] random: Add and use arch_get_rng_seed
-Date: Thu, 17 Jul 2014 11:22:17 -0700
-Message-Id: <9c2a0549519b4eb5eee2d5d480f8e83a574273df.1405620944.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1405620944.git.luto@amacapital.net>
-References: <cover.1405620944.git.luto@amacapital.net>
-In-Reply-To: <cover.1405620944.git.luto@amacapital.net>
-References: <cover.1405620944.git.luto@amacapital.net>
+	Thu, 17 Jul 2014 14:25:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1404846104-4959-1-git-send-email-jwerner@chromium.org>
+References: <CACH_MLWEYRaT8RPHw-tdBBJoey283w1ED_QY6yXMiqYO5pjROg@mail.gmail.com>
+	<CAODwPW-x3RmQ95Zs0HKYkqOUN9G+r-mueW4d9G+x7qZGhctwRw@mail.gmail.com>
+	<CACH_MLVpnfJjQSEf3xqF_KQzsi=E=M=Fz2khEqajg7FdNR0x_g@mail.gmail.com>
+	<CAODwPW9UUGYzK3-83+PNXWKP4M5H=8GmYBjrgvW2Kg6nA6ssrw@mail.gmail.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1726E25E@AcuExch.aculab.com>
+	<1404846104-4959-1-git-send-email-jwerner@chromium.org>
+Date: Thu, 17 Jul 2014 13:25:28 -0500
+Message-ID: <CACH_MLUEKbFtrN2vMHdVEpJFJ=e9adEyU=OwPMh5TcrUuRQPHw@mail.gmail.com>
+Subject: Re: [PATCH] usb: xhci: Fix Set TR Dequeue Pointer cycle state for
+ quirky xHCs
+From: Maciej Puzio <mx34567@gmail.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Mathias Nyman <mathias.nyman@intel.com>,
+        David Laight <David.Laight@aculab.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, init_std_data contains its own logic for using arch
-random sources.  This logic is a bit strange: it reads one long of
-arch random data per byte of internal state.
+Tested-by: Maciej Puzio <mx34567@gmail.com>
 
-This replaces that logic with a generic function arch_get_rng_seed
-that allows arch code to supply its own logic.  The default
-implementation tries arch_get_random_seed_long and
-arch_get_random_long individually, requesting one bit per bit of
-internal state being seeded.
-
-Assuming the arch sources are perfect, this is the right thing to
-do.  They're not, though, so the followup patch attempts to
-implement the correct logic on x86.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- drivers/char/random.c  | 14 +++++++++++---
- include/linux/random.h | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 0a7ac0a..be7a94e 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1236,6 +1236,10 @@ void get_random_bytes_arch(void *buf, int nbytes)
- }
- EXPORT_SYMBOL(get_random_bytes_arch);
- 
-+static void seed_entropy_store(void *ctx, u32 data)
-+{
-+	mix_pool_bytes((struct entropy_store *)ctx, &data, sizeof(data), NULL);
-+}
- 
- /*
-  * init_std_data - initialize pool with system data
-@@ -1251,15 +1255,19 @@ static void init_std_data(struct entropy_store *r)
- 	int i;
- 	ktime_t now = ktime_get_real();
- 	unsigned long rv;
-+	char log_prefix[128];
- 
- 	r->last_pulled = jiffies;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
- 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
--		if (!arch_get_random_seed_long(&rv) &&
--		    !arch_get_random_long(&rv))
--			rv = random_get_entropy();
-+		rv = random_get_entropy();
- 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
- 	}
-+
-+	sprintf(log_prefix, "random: seeded %s pool", r->name);
-+	arch_get_rng_seed(r, seed_entropy_store, 8 * r->poolinfo->poolbytes,
-+			  log_prefix);
-+
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
- }
- 
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 57fbbff..a17065e 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -106,6 +106,46 @@ static inline int arch_has_random_seed(void)
- }
- #endif
- 
-+#ifndef __HAVE_ARCH_GET_RNG_SEED
-+
-+/**
-+ * arch_get_rng_seed() - get architectural rng seed data
-+ * @ctx: context for the seed function
-+ * @seed: function to call for each u32 obtained
-+ * @bits_per_source: number of bits from each source to try to use
-+ * @log_prefix: beginning of log output (may be NULL)
-+ *
-+ * Synchronously load some architectural entropy or other best-effort
-+ * random seed data.  An arch-specific implementation should be no worse
-+ * than this generic implementation.  If the arch code does something
-+ * interesting, it may log something of the form "log_prefix with
-+ * 8 bits of stuff".
-+ *
-+ * No arch-specific implementation should be any worse than the generic
-+ * implementation.
-+ */
-+static inline void arch_get_rng_seed(void *ctx,
-+				     void (*seed)(void *ctx, u32 data),
-+				     int bits_per_source,
-+				     const char *log_prefix)
-+{
-+	int i, longs = (bits_per_source + BITS_PER_LONG - 1) / BITS_PER_LONG;
-+
-+	for (i = 0; i < longs; i++) {
-+		unsigned long rv;
-+
-+		if (arch_get_random_seed_long(&rv) ||
-+		    arch_get_random_long(&rv)) {
-+			seed(ctx, (u32)rv);
-+#if BITS_PER_LONG > 32
-+			seed(ctx, (u32)(rv >> 32));
-+#endif
-+		}
-+	}
-+}
-+
-+#endif /* __HAVE_ARCH_GET_RNG_SEED */
-+
- /* Pseudo random number generator from numerical recipes. */
- static inline u32 next_pseudo_random32(u32 seed)
- {
--- 
-1.9.3
-
+On Tue, Jul 8, 2014 at 2:01 PM, Julius Werner <jwerner@chromium.org> wrote:
+> Commit 1f81b6d22 "usb: xhci: Prefer endpoint context dequeue pointer
+> over stopped_trb" changed the logic in xhci_find_new_dequeue_state() to
+> only use the Endpoint Context's TR Dequeue Pointer instead of the last
+> Event TRB's TRB Pointer as a basis from which to infer the host
+> controller state. This has uncovered a bug with certain Asmedia xHCs
+> which seem to advance their TR Dequeue Pointer one TRB behind the one
+> that caused a Stall Error.
+>
+> This confuses the cycle state calculation since cur_td->last_trb is now
+> behind hw_dequeue (which the algorithm interprets as a single huge TD
+> that wraps around the whole transfer ring). This patch counteracts that
+> by explicitly looking for last_trb when searching for hw_dequeue from
+> the old software dequeue pointer. If it is found, we toggle the cycle
+> state once more to balance out the incorrect toggle that will happen
+> later.
+>
+> In order to make this work for both single and multi segment rings, this
+> patch also expands the detection of wrap-around TDs to work on the
+> latter ones (which cannot normally happen because the kernel prevents
+> that case to allow for ring expansion, but it's how things appear to be
+> in the quirky case and allowing the code to handle it makes it easier to
+> generalize this fix across all kernels). The code will now toggle the
+> cycle state whenever last_trb is before hw_dequeue on the same segment,
+> regardless of how many segments there are in the ring.
+>
+> This patch should be backported to kernels as old as 2.6.31 that contain
+> the commit ae636747146ea97efa18e04576acd3416e2514f5 "USB: xhci: URB
+> cancellation support."
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> ---
+>  drivers/usb/host/xhci-ring.c | 18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+> index 749fc68..50abc68 100644
+> --- a/drivers/usb/host/xhci-ring.c
+> +++ b/drivers/usb/host/xhci-ring.c
+> @@ -489,8 +489,17 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
+>         /* Find virtual address and segment of hardware dequeue pointer */
+>         state->new_deq_seg = ep_ring->deq_seg;
+>         state->new_deq_ptr = ep_ring->dequeue;
+> +       state->new_cycle_state = hw_dequeue & 0x1;
+>         while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
+>                         != (dma_addr_t)(hw_dequeue & ~0xf)) {
+> +               /*
+> +                * Quirky HCs can advance hw_dequeue behind cur_td->last_trb.
+> +                * That violates the assumptions of the TD wrap around check
+> +                * below, so toggle the cycle state once more to cancel it out.
+> +                */
+> +               if (state->new_deq_ptr == cur_td->last_trb)
+> +                       state->new_cycle_state ^= 1;
+> +
+>                 next_trb(xhci, ep_ring, &state->new_deq_seg,
+>                                         &state->new_deq_ptr);
+>                 if (state->new_deq_ptr == ep_ring->dequeue) {
+> @@ -500,12 +509,11 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
+>         }
+>         /*
+>          * Find cycle state for last_trb, starting at old cycle state of
+> -        * hw_dequeue. If there is only one segment ring, find_trb_seg() will
+> -        * return immediately and cannot toggle the cycle state if this search
+> -        * wraps around, so add one more toggle manually in that case.
+> +        * hw_dequeue. If last_trb is on the current segment before hw_dequeue,
+> +        * that means we wrap around the whole ring, but find_trb_seq() will
+> +        * return immediately. Toggle the cycle state manually in that case.
+>          */
+> -       state->new_cycle_state = hw_dequeue & 0x1;
+> -       if (ep_ring->first_seg == ep_ring->first_seg->next &&
+> +       if (state->new_deq_seg->trbs < cur_td->last_trb &&
+>                         cur_td->last_trb < state->new_deq_ptr)
+>                 state->new_cycle_state ^= 0x1;
+>
+> --
+> 1.8.3.2
+>
