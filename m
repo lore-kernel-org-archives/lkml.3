@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319AbaGQOjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:39:14 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:36168
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932361AbaGQOjM (ORCPT
+	id S933426AbaGQOjU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:39:20 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54750 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932880AbaGQOjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:39:12 -0400
-Date: Thu, 17 Jul 2014 09:39:10 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others to
- this_cpu_ops.txt
-In-Reply-To: <53C7D93B.4090006@gmail.com>
-Message-ID: <alpine.DEB.2.11.1407170934220.28121@gentwo.org>
-References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com>
+	Thu, 17 Jul 2014 10:39:17 -0400
+Date: Thu, 17 Jul 2014 10:39:16 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dmitry Torokhov <dtor@google.com>
+cc: Bastien Nocera <hadess@hadess.net>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Patrik Fimml <patrikf@chromium.org>, <linux-pm@vger.kernel.org>,
+        Benson Leung <bleung@google.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Power-managing devices that are not of interest at some point
+ in time
+In-Reply-To: <CAE_wzQ8HERY+EX_5kjfHML-eu2cxv5ihhYt2nCn34Zws4mgS-A@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1407171029210.1517-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Pranith Kumar wrote:
+On Wed, 16 Jul 2014, Dmitry Torokhov wrote:
 
-> > The use of atomic_t implies a remote write operation to a percpu area.
-> >
-> > atomic_t needs to be avoided. If data needs to be modified from multiple
-> > cpus then it usually does not belong into a percpu area.
-> >
->
-> Yes, I think I made it pretty clear that remote accesses need to be avoided
-> unless absolutely necessary. But, there will be scenarios where mostly local
-> data will need to be have remote accesses. In such scenarios, isn't using
-> atomic_t better? FYI, that is how RCU code currently works. It uses atomic_t in
-> per cpu areas to ensure atomicity for remote accesses.
+> We are not planning on implementing the policy in kernel, that's
+> indeed task for userspace; but unless we bring in the heavy hammer of
+> forcibly unbinding drivers, we do not currently have universal
+> mechanism of quiescing devices.
 
-The RCU code has .... ummmm... some issues with percpu usage and should
-not be taken as a good example. If you look at the RCU code it looks
-horrible with numerous barriers around remote percpu read/wrirte
-accesses and one wonders if that code is actually ok.
+We sort of do: the ->freeze() callback.  But it wasn't intended for
+this kind of use; drivers may very well expect that userspace will
+already be frozen when the callback runs.  Besides, ->freeze() is
+supposed to quiesce devices without powering them down, whereas you
+want to do both.
 
-> If data needs to be modified from multiple cpus only very rarely, doesn't it
-> make sense to use per-cpu areas?
+What you're asking for is different from anything the PM subsystem has
+done before.  Given this fact, I don't see any alternatives to adding a
+new API or repurposing an existing API.  Either one would be somewhat
+painful.
 
-I would suggest that this should not occur. You can always "modify" remote
-percpu areas by generating an IPI on that cpu to make that processor
-update its own per cpu data.
+For example, we could arrange to invoke ->suspend().  However, since
+the circumstances would be unusual (userspace is still running,
+->prepare() was not called beforehand, ->suspend_irq() won't be called
+afterward), subsystems and drivers may very well react inappropriately.
+
+Alan Stern
 
