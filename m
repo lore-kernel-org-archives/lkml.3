@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928AbaGQKuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:50:17 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:54004 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaGQKuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:50:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 38/38] asm-generic: introduc Kbuild.generic
-Date: Thu, 17 Jul 2014 12:50:07 +0200
-Message-ID: <5003088.VRbrHdWpA3@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140717103815.GA16291@ravnborg.org>
-References: <20140714150609.GA28358@ravnborg.org> <4667634.oiTEQ4v5vj@wuerfel> <20140717103815.GA16291@ravnborg.org>
+	id S1756971AbaGQKue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:50:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33383 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756941AbaGQKua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:50:30 -0400
+Date: Thu, 17 Jul 2014 12:50:25 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>
+Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
+ CMCI reports.
+Message-ID: <20140717105025.GA22549@pd.tnic>
+References: <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
+ <20140710164151.GA5603@pd.tnic>
+ <CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
+ <20140710184416.GE5603@pd.tnic>
+ <CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
+ <20140710191224.GF5603@pd.tnic>
+ <20140711092454.GA17083@pd.tnic>
+ <CA+8MBbKYo_Tmb3Zk4W9gBZmZqBpCu4uLUu9M5C2MZAYZEb16Vg@mail.gmail.com>
+ <20140711195200.GA18246@pd.tnic>
+ <CAFQmdRZ7d6Mgxob2A0nuJP09oAWW=BykL_bH7DeWo_8CM3YywA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LeGgmsiQ8UR0mGr0Utd6WFgxKIs1u676nB+t3DKjXg7
- gLA9aXhPepYx2CQSGaL7UJvap15jDCWxA0TAMgN72ZUDMgSm11
- gob+Z31rvUMTzoEDTRKFo2dMKWXNEsHO0TixIOauE76jC+QY6h
- Mkq2Ab6bQkoy2iRuiH8Fy0UCPAX9Clexzxu4a2N9ckpCu+/h6T
- 7tbhu4IBWY90GOfrEWMx68MkP5OPTw6NQr0l1Yooz7tspA1YXL
- BYQW0bDBEDkKAWrISjttAqaj8YvcXNKgwnhM5UXHwEiNkWnkJ/
- wKXu45ZVQ1nbeOQzse4Lg5dTiDU4sOT7kx1FJPCdyNeFgZms6t
- 4T+PBqw5TT6ShDNQZTDo=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAFQmdRZ7d6Mgxob2A0nuJP09oAWW=BykL_bH7DeWo_8CM3YywA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 12:38:15 Sam Ravnborg wrote:
-> > * We could improve the situation if the definition of this list is
-> >   changed so we only generate the generic header files that are not
-> >   already provided by an architecture. If we do this, we can consolidate
-> >   a lot more here, which is nice, but the cost would be equivalent to
-> >   another level of indirection and a potential for subtle bugs if it's
-> >   not done very careful.
-> I think this is the way to go - and will try to give it a spin.
-> 
-> Something along these lines:
-> include/asm-generic/Kbuild.asm will include a list of all header files
-> that shall be present for any architecture and may come from asm-generic.
-> If the architecture provide there own file - good.
-> If the architecture do not provide their own file => create wrapper.
-> 
-> The arch provided header file comes first in the search path,
-> so if a wrapper was generated and later a dedicated file is added
-> then we will use the dedicated file and not the wrapper that points
-> back to asm-generic.
-> 
-> The same logic applies for uapi/asm-generic as well.
-> 
-> I will try to come up with an implementation of this,
-> then we can see if this flys.
+On Fri, Jul 11, 2014 at 02:15:49PM -0700, Havard Skinnemoen wrote:
+> But the problem with shared banks is that multiple CPUs read them,
+> and we can't tell if the errors are duplicate unless we make sure
+> that only one CPU gets to read and clear it at a time. Any cpu-local
+> synchronization mechanism isn't going to work.
 
-Ok, sounds good. Thanks!
+Well, maybe it is about time we tracked shared banks.
 
-	Arnd
+> If you're worried about disabling interrupts, it's possible we don't
+> really need to make the spinlocks irqsafe. I'm not sure if we had any
+> reason for that other than "just to be safe".
+
+Hmm, so machine_check_poll gets called mostly in irqs off context except
+in the timer callback which runs in softirq context.
+
+I hear hrtimer callbacks will be made to run *always* in interrupt
+context so we could switch cmci to use an hrtimer at some point...
+
+> Or we could keep the (irqsafe) spinlocks but move the clearing much
+> earlier. There may have been a reason why the current code clears the
+> bank status last though -- perhaps we also need to read out all the
+> state while we hold the lock, before we clear the status bit.
+
+... or, yeah, do what you do currently and disable IRQs but do all the
+MSR accesses in there, after you've detected MCI_STATUS_VAL set. That
+would make the critical section at least shorter even if we disable
+interrupts for non-shared banks too.
+
+The clearing of the MCI_STATUS_VAL bit is unrelated to the rest of the
+MSRs in the MCA bank so you can read them all in one go in the critical
+section.
+
+We can evaluate later if the IRQs disabling is too heavy after all.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
