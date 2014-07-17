@@ -1,91 +1,906 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561AbaGQItY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:49:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754154AbaGQItV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:49:21 -0400
-From: Maurizio Lombardi <mlombard@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: ming.lei@canonical.com, jet.chen@intel.com, axboe@kernel.dk,
-        akpm@linux-foundation.org, Valdis.Kletnieks@vt.edu
-Subject: [PATCH] bio: merge_bvec_fn() must be called with the old bi_iter.bi_size value
-Date: Thu, 17 Jul 2014 10:49:10 +0200
-Message-Id: <1405586950-4023-1-git-send-email-mlombard@redhat.com>
+	id S932075AbaGQIwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:52:47 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:40119 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842AbaGQIwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 04:52:42 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-fd-53c78ed6d455
+Message-id: <53C78ED7.7030002@samsung.com>
+Date: Thu, 17 Jul 2014 10:52:39 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v3 -next 5/9] CMA: generalize CMA reserved area management
+ functionality
+References: <1402897251-23639-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1402897251-23639-6-git-send-email-iamjoonsoo.kim@lge.com>
+In-reply-to: <1402897251-23639-6-git-send-email-iamjoonsoo.kim@lge.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t/xK7rX+44HG9wosThx5R+jxZz1a9gs
+	Hr+ex2LxoamV2eLLz+uMFs2L17NZrOxuZrN480nbYs7UQotNj6+xWlzeNYfN4t6a/6wWty/z
+	Wvz+/o/VYsHxFlaLZV/fs1usObKY3WL/NqDYpeMzmR2EPVqae9g8/h+cxOzR86aF1WPTqk42
+	j02fJrF7dL29wuRxYsZvFo8HhzazeOyfu4bdY/OSeo/zMxYyeqz784rJ4/2+q2wec3f1MXps
+	Pl3t8XmTXIBAFJdNSmpOZllqkb5dAlfG+6+nWQpmnWes2HX7NlsD45JFjF2MHBwSAiYSDx/x
+	dzFyApliEhfurWfrYuTiEBJYyijxfPJaKOcTo8TlCW9ZQap4BbQk7n7cxwxiswioSny8PZ8F
+	xGYTMJToetvFBmKLCsRInOn9zAxRLyjxY/I9FpBBIgLbGCVe3pjLBOIwCyxlkVh84itYh7BA
+	nMT9nz+YINY1M0ocnbYCrJ1TwF3i1uaDYCuYBcwkHrWsY4aw5SU2r3nLPIFRYBaSLbOQlM1C
+	UraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgkf93BuPSY1SFGAQ5GJR7eH1zHg4VY
+	E8uKK3MPMUpwMCuJ8G7rAgrxpiRWVqUW5ccXleakFh9iZOLglGpgXJR0ijFfn2t7wkuboovT
+	8rPVXGe1blvb3aT3jfmGFn+z/h6tbkb+Xxt1l7F7tM9ZfTGI7bPs3z2fQsrOMCdG/ZKfvEJA
+	b+IH9Ur1sp/Han6dK90WLJrnVyau9HJpM6Ms/9XysKW7nvQwT3l66v2R/rLX2nf1T3hJX71i
+	fXeFXZP351mh7ir/lViKMxINtZiLihMBGLwUpMICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch "bio: modify __bio_add_page() to accept pages that
-don't start a new segment" updates bio->bi_iter.bi_size before
-calling merge_bvec_fn().
+Hello,
 
-This panics the kernel because merge_bvec_fn() expects bi_size to have
-the old value.
+On 2014-06-16 07:40, Joonsoo Kim wrote:
+> Currently, there are two users on CMA functionality, one is the DMA
+> subsystem and the other is the KVM on powerpc. They have their own code
+> to manage CMA reserved area even if they looks really similar.
+> >From my guess, it is caused by some needs on bitmap management. KVM side
+> wants to maintain bitmap not for 1 page, but for more size. Eventually it
+> use bitmap where one bit represents 64 pages.
+>
+> When I implement CMA related patches, I should change those two places
+> to apply my change and it seem to be painful to me. I want to change
+> this situation and reduce future code management overhead through
+> this patch.
+>
+> This change could also help developer who want to use CMA in their
+> new feature development, since they can use CMA easily without
+> copying & pasting this reserved area management code.
+>
+> In previous patches, we have prepared some features to generalize
+> CMA reserved area management and now it's time to do it. This patch
+> moves core functions to mm/cma.c and change DMA APIs to use
+> these functions.
+>
+> There is no functional change in DMA APIs.
+>
+> v2: There is no big change from v1 in mm/cma.c. Mostly renaming.
+> v3: remove log2.h in dma-contiguous.c (Minchan)
+>      add some accessor functions to pass aligned base and size to
+>      dma_contiguous_early_fixup() function
+>      move MAX_CMA_AREAS to cma.h
 
-This can be reproduced by trying to create a crypto device with cryptsetup.
+I've just noticed that MAX_CMA_AREAS is used also by 
+arch/arm/mm/dma-mapping.c,
+so we need to provide correct definition if CMA is disabled in kconfig. 
+I will
+send a fixup patch in a few minutes.
 
-[   25.929846] ------------[ cut here ]------------
-[   25.929873] kernel BUG at fs/direct-io.c:747!
-[   25.929893] invalid opcode: 0000 [#1] PREEMPT SMP
-[   25.929922] Modules linked in:
-[   25.929940] CPU: 3 PID: 308 Comm: systemd-cryptse Not tainted 3.16.0-rc4-next-20140707 #247
-[   25.929974] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A14 01/13/2014
-[   25.930004] task: ffff880222609e50 ti: ffff8802225b4000 task.ti: ffff8802225b4000
-[   25.930034] RIP: 0010:[<ffffffff8116bee5>]  [<ffffffff8116bee5>] dio_send_cur_page+0xd7/0xe3
-[   25.930074] RSP: 0018:ffff8802225b7aa0  EFLAGS: 00010202
-[   25.930096] RAX: 0000000000000001 RBX: ffff8802225b7c01 RCX: 0000000000000000
-[   25.930126] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffff81d13cf0
-[   25.930155] RBP: ffff8802225b7ac8 R08: 0000000000000000 R09: 0000000000000001
-[   25.930184] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800c6e8dc00
-[   25.930213] R13: ffff8802225b7bc0 R14: 000000000000007a R15: 000000000000007c
-[   25.930243] FS:  00007f5908c49840(0000) GS:ffff88022dd80000(0000) knlGS:0000000000000000
-[   25.930276] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   25.930300] CR2: 00000000006ecf18 CR3: 0000000222bb1000 CR4: 00000000001407e0
-[   25.930329] Stack:
-[   25.930339]  0000000100000000 ffff8800c6e8dc00 ffffea0002ba9d68 0000000000000800
-[   25.930380]  ffff8802225b7c28 ffff8802225b7b08 ffffffff8116bfa2 0000000022110780
-[   25.930419]  ffff8800c6e8dc00 ffffea0002ba9d68 0000000000000800 0000000000000001
-[   25.930458] Call Trace:
-[   25.930473]  [<ffffffff8116bfa2>] submit_page_section+0xb1/0x114
-[   25.930499]  [<ffffffff8116cad6>] do_blockdev_direct_IO+0xa28/0xd1f
-[   25.930527]  [<ffffffff81169558>] ? I_BDEV+0xd/0xd
-[   25.930549]  [<ffffffff8116cdfc>] __blockdev_direct_IO+0x2f/0x31
-[   25.930575]  [<ffffffff8116cdfc>] ? __blockdev_direct_IO+0x2f/0x31
-[   25.930601]  [<ffffffff81169558>] ? I_BDEV+0xd/0xd
-[   25.930622]  [<ffffffff811698e2>] blkdev_direct_IO+0x2e/0x30
-[   25.930647]  [<ffffffff81169558>] ? I_BDEV+0xd/0xd
-[   25.930669]  [<ffffffff810f314c>] generic_file_read_iter+0x93/0x5c8
-[   25.930697]  [<ffffffff81169c8a>] blkdev_read_iter+0x35/0x37
-[   25.930722]  [<ffffffff81139725>] new_sync_read+0x74/0x98
-[   25.930746]  [<ffffffff81139e0c>] vfs_read+0xce/0x124
-[   25.930768]  [<ffffffff8113a665>] SyS_read+0x4b/0x79
-[   25.930791]  [<ffffffff8167ea92>] system_call_fastpath+0x16/0x1b
-[   25.930816] Code: fe ff ff 48 89 df e8 40 fe ff ff 48 c7 c7 f0 3c d1 81 85 c0 89 45 dc 0f 95 c3 31 d2 0f b6 f3 e8 4f ad f6 ff 84 db 8b 45 dc 74 02 <0f> 0b 5a 5b 41 5c 41 5d 41 5e 5d c3 55 48 89 e5 41 57 4d 89 cf
-[   25.931060] RIP  [<ffffffff8116bee5>] dio_send_cur_page+0xd7/0xe3
-[   25.931088]  RSP <ffff8802225b7aa0>
-[   25.931132] ---[ end trace 5bdcfa6254e32464 ]---
+> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 4c88935..3116880 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -26,6 +26,7 @@
+>   #include <linux/io.h>
+>   #include <linux/vmalloc.h>
+>   #include <linux/sizes.h>
+> +#include <linux/cma.h>
+>   
+>   #include <asm/memory.h>
+>   #include <asm/highmem.h>
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index 00e13ce..4eac559 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -283,16 +283,6 @@ config CMA_ALIGNMENT
+>   
+>   	  If unsure, leave the default value "8".
+>   
+> -config CMA_AREAS
+> -	int "Maximum count of the CMA device-private areas"
+> -	default 7
+> -	help
+> -	  CMA allows to create CMA areas for particular devices. This parameter
+> -	  sets the maximum number of such device private CMA areas in the
+> -	  system.
+> -
+> -	  If unsure, leave the default value "7".
+> -
+>   endif
+>   
+>   endmenu
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index c6eeb2c..0411c1c 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -24,25 +24,9 @@
+>   
+>   #include <linux/memblock.h>
+>   #include <linux/err.h>
+> -#include <linux/mm.h>
+> -#include <linux/mutex.h>
+> -#include <linux/page-isolation.h>
+>   #include <linux/sizes.h>
+> -#include <linux/slab.h>
+> -#include <linux/swap.h>
+> -#include <linux/mm_types.h>
+>   #include <linux/dma-contiguous.h>
+> -#include <linux/log2.h>
+> -
+> -struct cma {
+> -	unsigned long	base_pfn;
+> -	unsigned long	count;
+> -	unsigned long	*bitmap;
+> -	unsigned int order_per_bit; /* Order of pages represented by one bit */
+> -	struct mutex	lock;
+> -};
+> -
+> -struct cma *dma_contiguous_default_area;
+> +#include <linux/cma.h>
+>   
+>   #ifdef CONFIG_CMA_SIZE_MBYTES
+>   #define CMA_SIZE_MBYTES CONFIG_CMA_SIZE_MBYTES
+> @@ -50,6 +34,8 @@ struct cma *dma_contiguous_default_area;
+>   #define CMA_SIZE_MBYTES 0
+>   #endif
+>   
+> +struct cma *dma_contiguous_default_area;
+> +
+>   /*
+>    * Default global CMA area size can be defined in kernel's .config.
+>    * This is useful mainly for distro maintainers to create a kernel
+> @@ -156,169 +142,6 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
+>   	}
+>   }
+>   
+> -static DEFINE_MUTEX(cma_mutex);
+> -
+> -static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
+> -{
+> -	return (1 << (align_order >> cma->order_per_bit)) - 1;
+> -}
+> -
+> -static unsigned long cma_bitmap_maxno(struct cma *cma)
+> -{
+> -	return cma->count >> cma->order_per_bit;
+> -}
+> -
+> -static unsigned long cma_bitmap_pages_to_bits(struct cma *cma,
+> -						unsigned long pages)
+> -{
+> -	return ALIGN(pages, 1 << cma->order_per_bit) >> cma->order_per_bit;
+> -}
+> -
+> -static void cma_clear_bitmap(struct cma *cma, unsigned long pfn, int count)
+> -{
+> -	unsigned long bitmap_no, bitmap_count;
+> -
+> -	bitmap_no = (pfn - cma->base_pfn) >> cma->order_per_bit;
+> -	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+> -
+> -	mutex_lock(&cma->lock);
+> -	bitmap_clear(cma->bitmap, bitmap_no, bitmap_count);
+> -	mutex_unlock(&cma->lock);
+> -}
+> -
+> -static int __init cma_activate_area(struct cma *cma)
+> -{
+> -	int bitmap_size = BITS_TO_LONGS(cma_bitmap_maxno(cma)) * sizeof(long);
+> -	unsigned long base_pfn = cma->base_pfn, pfn = base_pfn;
+> -	unsigned i = cma->count >> pageblock_order;
+> -	struct zone *zone;
+> -
+> -	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+> -
+> -	if (!cma->bitmap)
+> -		return -ENOMEM;
+> -
+> -	WARN_ON_ONCE(!pfn_valid(pfn));
+> -	zone = page_zone(pfn_to_page(pfn));
+> -
+> -	do {
+> -		unsigned j;
+> -		base_pfn = pfn;
+> -		for (j = pageblock_nr_pages; j; --j, pfn++) {
+> -			WARN_ON_ONCE(!pfn_valid(pfn));
+> -			/*
+> -			 * alloc_contig_range requires the pfn range
+> -			 * specified to be in the same zone. Make this
+> -			 * simple by forcing the entire CMA resv range
+> -			 * to be in the same zone.
+> -			 */
+> -			if (page_zone(pfn_to_page(pfn)) != zone)
+> -				goto err;
+> -		}
+> -		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
+> -	} while (--i);
+> -
+> -	mutex_init(&cma->lock);
+> -	return 0;
+> -
+> -err:
+> -	kfree(cma->bitmap);
+> -	return -EINVAL;
+> -}
+> -
+> -static struct cma cma_areas[MAX_CMA_AREAS];
+> -static unsigned cma_area_count;
+> -
+> -static int __init cma_init_reserved_areas(void)
+> -{
+> -	int i;
+> -
+> -	for (i = 0; i < cma_area_count; i++) {
+> -		int ret = cma_activate_area(&cma_areas[i]);
+> -		if (ret)
+> -			return ret;
+> -	}
+> -
+> -	return 0;
+> -}
+> -core_initcall(cma_init_reserved_areas);
+> -
+> -static int __init __dma_contiguous_reserve_area(phys_addr_t size,
+> -			phys_addr_t base, phys_addr_t limit,
+> -			phys_addr_t alignment, unsigned int order_per_bit,
+> -			struct cma **res_cma, bool fixed)
+> -{
+> -	struct cma *cma = &cma_areas[cma_area_count];
+> -	int ret = 0;
+> -
+> -	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
+> -		__func__, (unsigned long)size, (unsigned long)base,
+> -		(unsigned long)limit, (unsigned long)alignment);
+> -
+> -	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
+> -		pr_err("Not enough slots for CMA reserved regions!\n");
+> -		return -ENOSPC;
+> -	}
+> -
+> -	if (!size)
+> -		return -EINVAL;
+> -
+> -	if (alignment && !is_power_of_2(alignment))
+> -		return -EINVAL;
+> -
+> -	/*
+> -	 * Sanitise input arguments.
+> -	 * Pages both ends in CMA area could be merged into adjacent unmovable
+> -	 * migratetype page by page allocator's buddy algorithm. In the case,
+> -	 * you couldn't get a contiguous memory, which is not what we want.
+> -	 */
+> -	alignment = max(alignment,
+> -		(phys_addr_t)PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order));
+> -	base = ALIGN(base, alignment);
+> -	size = ALIGN(size, alignment);
+> -	limit &= ~(alignment - 1);
+> -
+> -	/* size should be aligned with order_per_bit */
+> -	if (!IS_ALIGNED(size >> PAGE_SHIFT, 1 << order_per_bit))
+> -		return -EINVAL;
+> -
+> -	/* Reserve memory */
+> -	if (base && fixed) {
+> -		if (memblock_is_region_reserved(base, size) ||
+> -		    memblock_reserve(base, size) < 0) {
+> -			ret = -EBUSY;
+> -			goto err;
+> -		}
+> -	} else {
+> -		phys_addr_t addr = memblock_alloc_range(size, alignment, base,
+> -							limit);
+> -		if (!addr) {
+> -			ret = -ENOMEM;
+> -			goto err;
+> -		} else {
+> -			base = addr;
+> -		}
+> -	}
+> -
+> -	/*
+> -	 * Each reserved area must be initialised later, when more kernel
+> -	 * subsystems (like slab allocator) are available.
+> -	 */
+> -	cma->base_pfn = PFN_DOWN(base);
+> -	cma->count = size >> PAGE_SHIFT;
+> -	cma->order_per_bit = order_per_bit;
+> -	*res_cma = cma;
+> -	cma_area_count++;
+> -
+> -	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
+> -		(unsigned long)base);
+> -	return 0;
+> -
+> -err:
+> -	pr_err("CMA: failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
+> -	return ret;
+> -}
+> -
+>   /**
+>    * dma_contiguous_reserve_area() - reserve custom contiguous area
+>    * @size: Size of the reserved area (in bytes),
+> @@ -342,77 +165,17 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>   {
+>   	int ret;
+>   
+> -	ret = __dma_contiguous_reserve_area(size, base, limit, 0, 0,
+> -						res_cma, fixed);
+> +	ret = cma_declare_contiguous(size, base, limit, 0, 0, res_cma, fixed);
+>   	if (ret)
+>   		return ret;
+>   
+>   	/* Architecture specific contiguous memory fixup. */
+> -	dma_contiguous_early_fixup(PFN_PHYS((*res_cma)->base_pfn),
+> -				(*res_cma)->count << PAGE_SHIFT);
+> +	dma_contiguous_early_fixup(cma_get_base(*res_cma),
+> +				cma_get_size(*res_cma));
+>   
+>   	return 0;
+>   }
+>   
+> -static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+> -				       unsigned int align)
+> -{
+> -	unsigned long mask, pfn, start = 0;
+> -	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+> -	struct page *page = NULL;
+> -	int ret;
+> -
+> -	if (!cma || !cma->count)
+> -		return NULL;
+> -
+> -	pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+> -		 count, align);
+> -
+> -	if (!count)
+> -		return NULL;
+> -
+> -	mask = cma_bitmap_aligned_mask(cma, align);
+> -	bitmap_maxno = cma_bitmap_maxno(cma);
+> -	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+> -
+> -	for (;;) {
+> -		mutex_lock(&cma->lock);
+> -		bitmap_no = bitmap_find_next_zero_area(cma->bitmap,
+> -				bitmap_maxno, start, bitmap_count, mask);
+> -		if (bitmap_no >= bitmap_maxno) {
+> -			mutex_unlock(&cma->lock);
+> -			break;
+> -		}
+> -		bitmap_set(cma->bitmap, bitmap_no, bitmap_count);
+> -		/*
+> -		 * It's safe to drop the lock here. We've marked this region for
+> -		 * our exclusive use. If the migration fails we will take the
+> -		 * lock again and unmark it.
+> -		 */
+> -		mutex_unlock(&cma->lock);
+> -
+> -		pfn = cma->base_pfn + (bitmap_no << cma->order_per_bit);
+> -		mutex_lock(&cma_mutex);
+> -		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
+> -		mutex_unlock(&cma_mutex);
+> -		if (ret == 0) {
+> -			page = pfn_to_page(pfn);
+> -			break;
+> -		} else if (ret != -EBUSY) {
+> -			cma_clear_bitmap(cma, pfn, count);
+> -			break;
+> -		}
+> -		cma_clear_bitmap(cma, pfn, count);
+> -		pr_debug("%s(): memory range at %p is busy, retrying\n",
+> -			 __func__, pfn_to_page(pfn));
+> -		/* try again with a bit different memory target */
+> -		start = bitmap_no + mask + 1;
+> -	}
+> -
+> -	pr_debug("%s(): returned %p\n", __func__, page);
+> -	return page;
+> -}
+> -
+>   /**
+>    * dma_alloc_from_contiguous() - allocate pages from contiguous area
+>    * @dev:   Pointer to device for which the allocation is performed.
+> @@ -427,35 +190,10 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+>   struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+>   				       unsigned int align)
+>   {
+> -	struct cma *cma = dev_get_cma_area(dev);
+> -
+>   	if (align > CONFIG_CMA_ALIGNMENT)
+>   		align = CONFIG_CMA_ALIGNMENT;
+>   
+> -	return __dma_alloc_from_contiguous(cma, count, align);
+> -}
+> -
+> -static bool __dma_release_from_contiguous(struct cma *cma, struct page *pages,
+> -				 int count)
+> -{
+> -	unsigned long pfn;
+> -
+> -	if (!cma || !pages)
+> -		return false;
+> -
+> -	pr_debug("%s(page %p)\n", __func__, (void *)pages);
+> -
+> -	pfn = page_to_pfn(pages);
+> -
+> -	if (pfn < cma->base_pfn || pfn >= cma->base_pfn + cma->count)
+> -		return false;
+> -
+> -	VM_BUG_ON(pfn + count > cma->base_pfn + cma->count);
+> -
+> -	free_contig_range(pfn, count);
+> -	cma_clear_bitmap(cma, pfn, count);
+> -
+> -	return true;
+> +	return cma_alloc(dev_get_cma_area(dev), count, align);
+>   }
+>   
+>   /**
+> @@ -471,7 +209,5 @@ static bool __dma_release_from_contiguous(struct cma *cma, struct page *pages,
+>   bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+>   				 int count)
+>   {
+> -	struct cma *cma = dev_get_cma_area(dev);
+> -
+> -	return __dma_release_from_contiguous(cma, pages, count);
+> +	return cma_release(dev_get_cma_area(dev), pages, count);
+>   }
+> diff --git a/include/linux/cma.h b/include/linux/cma.h
+> new file mode 100644
+> index 0000000..69d3726
+> --- /dev/null
+> +++ b/include/linux/cma.h
+> @@ -0,0 +1,21 @@
+> +#ifndef __CMA_H__
+> +#define __CMA_H__
+> +
+> +/*
+> + * There is always at least global CMA area and a few optional
+> + * areas configured in kernel .config.
+> + */
+> +#define MAX_CMA_AREAS	(1 + CONFIG_CMA_AREAS)
+> +
+> +struct cma;
+> +
+> +extern phys_addr_t cma_get_base(struct cma *cma);
+> +extern unsigned long cma_get_size(struct cma *cma);
+> +
+> +extern int __init cma_declare_contiguous(phys_addr_t size,
+> +			phys_addr_t base, phys_addr_t limit,
+> +			phys_addr_t alignment, unsigned int order_per_bit,
+> +			struct cma **res_cma, bool fixed);
+> +extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
+> +extern bool cma_release(struct cma *cma, struct page *pages, int count);
+> +#endif
+> diff --git a/include/linux/dma-contiguous.h b/include/linux/dma-contiguous.h
+> index 772eab5..569bbd0 100644
+> --- a/include/linux/dma-contiguous.h
+> +++ b/include/linux/dma-contiguous.h
+> @@ -53,18 +53,13 @@
+>   
+>   #ifdef __KERNEL__
+>   
+> +#include <linux/device.h>
+> +
+>   struct cma;
+>   struct page;
+> -struct device;
+>   
+>   #ifdef CONFIG_DMA_CMA
+>   
+> -/*
+> - * There is always at least global CMA area and a few optional device
+> - * private areas configured in kernel .config.
+> - */
+> -#define MAX_CMA_AREAS	(1 + CONFIG_CMA_AREAS)
+> -
+>   extern struct cma *dma_contiguous_default_area;
+>   
+>   static inline struct cma *dev_get_cma_area(struct device *dev)
+> @@ -123,8 +118,6 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+>   
+>   #else
+>   
+> -#define MAX_CMA_AREAS	(0)
+> -
+>   static inline struct cma *dev_get_cma_area(struct device *dev)
+>   {
+>   	return NULL;
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 3e9977a..f4899ec 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -508,6 +508,17 @@ config CMA_DEBUG
+>   	  processing calls such as dma_alloc_from_contiguous().
+>   	  This option does not affect warning and error messages.
+>   
+> +config CMA_AREAS
+> +	int "Maximum count of the CMA areas"
+> +	depends on CMA
+> +	default 7
+> +	help
+> +	  CMA allows to create CMA areas for particular purpose, mainly,
+> +	  used as device private area. This parameter sets the maximum
+> +	  number of CMA area in the system.
+> +
+> +	  If unsure, leave the default value "7".
+> +
+>   config ZBUD
+>   	tristate
+>   	default n
+> diff --git a/mm/Makefile b/mm/Makefile
+> index 1eaa70b..bc0422b 100644
+> --- a/mm/Makefile
+> +++ b/mm/Makefile
+> @@ -62,3 +62,4 @@ obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
+>   obj-$(CONFIG_ZBUD)	+= zbud.o
+>   obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
+>   obj-$(CONFIG_GENERIC_EARLY_IOREMAP) += early_ioremap.o
+> +obj-$(CONFIG_CMA)	+= cma.o
+> diff --git a/mm/cma.c b/mm/cma.c
+> new file mode 100644
+> index 0000000..0cf50da
+> --- /dev/null
+> +++ b/mm/cma.c
+> @@ -0,0 +1,333 @@
+> +/*
+> + * Contiguous Memory Allocator
+> + *
+> + * Copyright (c) 2010-2011 by Samsung Electronics.
+> + * Copyright IBM Corporation, 2013
+> + * Copyright LG Electronics Inc., 2014
+> + * Written by:
+> + *	Marek Szyprowski <m.szyprowski@samsung.com>
+> + *	Michal Nazarewicz <mina86@mina86.com>
+> + *	Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> + *	Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of the
+> + * License or (at your optional) any later version of the license.
+> + */
+> +
+> +#define pr_fmt(fmt) "cma: " fmt
+> +
+> +#ifdef CONFIG_CMA_DEBUG
+> +#ifndef DEBUG
+> +#  define DEBUG
+> +#endif
+> +#endif
+> +
+> +#include <linux/memblock.h>
+> +#include <linux/err.h>
+> +#include <linux/mm.h>
+> +#include <linux/mutex.h>
+> +#include <linux/sizes.h>
+> +#include <linux/slab.h>
+> +#include <linux/log2.h>
+> +#include <linux/cma.h>
+> +
+> +struct cma {
+> +	unsigned long	base_pfn;
+> +	unsigned long	count;
+> +	unsigned long	*bitmap;
+> +	unsigned int order_per_bit; /* Order of pages represented by one bit */
+> +	struct mutex	lock;
+> +};
+> +
+> +static struct cma cma_areas[MAX_CMA_AREAS];
+> +static unsigned cma_area_count;
+> +static DEFINE_MUTEX(cma_mutex);
+> +
+> +phys_addr_t cma_get_base(struct cma *cma)
+> +{
+> +	return PFN_PHYS(cma->base_pfn);
+> +}
+> +
+> +unsigned long cma_get_size(struct cma *cma)
+> +{
+> +	return cma->count << PAGE_SHIFT;
+> +}
+> +
+> +static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
+> +{
+> +	return (1 << (align_order >> cma->order_per_bit)) - 1;
+> +}
+> +
+> +static unsigned long cma_bitmap_maxno(struct cma *cma)
+> +{
+> +	return cma->count >> cma->order_per_bit;
+> +}
+> +
+> +static unsigned long cma_bitmap_pages_to_bits(struct cma *cma,
+> +						unsigned long pages)
+> +{
+> +	return ALIGN(pages, 1 << cma->order_per_bit) >> cma->order_per_bit;
+> +}
+> +
+> +static void cma_clear_bitmap(struct cma *cma, unsigned long pfn, int count)
+> +{
+> +	unsigned long bitmap_no, bitmap_count;
+> +
+> +	bitmap_no = (pfn - cma->base_pfn) >> cma->order_per_bit;
+> +	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+> +
+> +	mutex_lock(&cma->lock);
+> +	bitmap_clear(cma->bitmap, bitmap_no, bitmap_count);
+> +	mutex_unlock(&cma->lock);
+> +}
+> +
+> +static int __init cma_activate_area(struct cma *cma)
+> +{
+> +	int bitmap_size = BITS_TO_LONGS(cma_bitmap_maxno(cma)) * sizeof(long);
+> +	unsigned long base_pfn = cma->base_pfn, pfn = base_pfn;
+> +	unsigned i = cma->count >> pageblock_order;
+> +	struct zone *zone;
+> +
+> +	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+> +
+> +	if (!cma->bitmap)
+> +		return -ENOMEM;
+> +
+> +	WARN_ON_ONCE(!pfn_valid(pfn));
+> +	zone = page_zone(pfn_to_page(pfn));
+> +
+> +	do {
+> +		unsigned j;
+> +
+> +		base_pfn = pfn;
+> +		for (j = pageblock_nr_pages; j; --j, pfn++) {
+> +			WARN_ON_ONCE(!pfn_valid(pfn));
+> +			/*
+> +			 * alloc_contig_range requires the pfn range
+> +			 * specified to be in the same zone. Make this
+> +			 * simple by forcing the entire CMA resv range
+> +			 * to be in the same zone.
+> +			 */
+> +			if (page_zone(pfn_to_page(pfn)) != zone)
+> +				goto err;
+> +		}
+> +		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
+> +	} while (--i);
+> +
+> +	mutex_init(&cma->lock);
+> +	return 0;
+> +
+> +err:
+> +	kfree(cma->bitmap);
+> +	return -EINVAL;
+> +}
+> +
+> +static int __init cma_init_reserved_areas(void)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < cma_area_count; i++) {
+> +		int ret = cma_activate_area(&cma_areas[i]);
+> +
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +core_initcall(cma_init_reserved_areas);
+> +
+> +/**
+> + * cma_declare_contiguous() - reserve custom contiguous area
+> + * @size: Size of the reserved area (in bytes),
+> + * @base: Base address of the reserved area optional, use 0 for any
+> + * @limit: End address of the reserved memory (optional, 0 for any).
+> + * @alignment: Alignment for the CMA area, should be power of 2 or zero
+> + * @order_per_bit: Order of pages represented by one bit on bitmap.
+> + * @res_cma: Pointer to store the created cma region.
+> + * @fixed: hint about where to place the reserved area
+> + *
+> + * This function reserves memory from early allocator. It should be
+> + * called by arch specific code once the early allocator (memblock or bootmem)
+> + * has been activated and all other subsystems have already allocated/reserved
+> + * memory. This function allows to create custom reserved areas.
+> + *
+> + * If @fixed is true, reserve contiguous area at exactly @base.  If false,
+> + * reserve in range from @base to @limit.
+> + */
+> +int __init cma_declare_contiguous(phys_addr_t size,
+> +			phys_addr_t base, phys_addr_t limit,
+> +			phys_addr_t alignment, unsigned int order_per_bit,
+> +			struct cma **res_cma, bool fixed)
+> +{
+> +	struct cma *cma = &cma_areas[cma_area_count];
+> +	int ret = 0;
+> +
+> +	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
+> +		__func__, (unsigned long)size, (unsigned long)base,
+> +		(unsigned long)limit, (unsigned long)alignment);
+> +
+> +	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
+> +		pr_err("Not enough slots for CMA reserved regions!\n");
+> +		return -ENOSPC;
+> +	}
+> +
+> +	if (!size)
+> +		return -EINVAL;
+> +
+> +	if (alignment && !is_power_of_2(alignment))
+> +		return -EINVAL;
+> +
+> +	/*
+> +	 * Sanitise input arguments.
+> +	 * Pages both ends in CMA area could be merged into adjacent unmovable
+> +	 * migratetype page by page allocator's buddy algorithm. In the case,
+> +	 * you couldn't get a contiguous memory, which is not what we want.
+> +	 */
+> +	alignment = max(alignment,
+> +		(phys_addr_t)PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order));
+> +	base = ALIGN(base, alignment);
+> +	size = ALIGN(size, alignment);
+> +	limit &= ~(alignment - 1);
+> +
+> +	/* size should be aligned with order_per_bit */
+> +	if (!IS_ALIGNED(size >> PAGE_SHIFT, 1 << order_per_bit))
+> +		return -EINVAL;
+> +
+> +	/* Reserve memory */
+> +	if (base && fixed) {
+> +		if (memblock_is_region_reserved(base, size) ||
+> +		    memblock_reserve(base, size) < 0) {
+> +			ret = -EBUSY;
+> +			goto err;
+> +		}
+> +	} else {
+> +		phys_addr_t addr = memblock_alloc_range(size, alignment, base,
+> +							limit);
+> +		if (!addr) {
+> +			ret = -ENOMEM;
+> +			goto err;
+> +		} else {
+> +			base = addr;
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * Each reserved area must be initialised later, when more kernel
+> +	 * subsystems (like slab allocator) are available.
+> +	 */
+> +	cma->base_pfn = PFN_DOWN(base);
+> +	cma->count = size >> PAGE_SHIFT;
+> +	cma->order_per_bit = order_per_bit;
+> +	*res_cma = cma;
+> +	cma_area_count++;
+> +
+> +	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
+> +		(unsigned long)base);
+> +	return 0;
+> +
+> +err:
+> +	pr_err("CMA: failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * cma_alloc() - allocate pages from contiguous area
+> + * @cma:   Contiguous memory region for which the allocation is performed.
+> + * @count: Requested number of pages.
+> + * @align: Requested alignment of pages (in PAGE_SIZE order).
+> + *
+> + * This function allocates part of contiguous memory on specific
+> + * contiguous memory area.
+> + */
+> +struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
+> +{
+> +	unsigned long mask, pfn, start = 0;
+> +	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+> +	struct page *page = NULL;
+> +	int ret;
+> +
+> +	if (!cma || !cma->count)
+> +		return NULL;
+> +
+> +	pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+> +		 count, align);
+> +
+> +	if (!count)
+> +		return NULL;
+> +
+> +	mask = cma_bitmap_aligned_mask(cma, align);
+> +	bitmap_maxno = cma_bitmap_maxno(cma);
+> +	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+> +
+> +	for (;;) {
+> +		mutex_lock(&cma->lock);
+> +		bitmap_no = bitmap_find_next_zero_area(cma->bitmap,
+> +				bitmap_maxno, start, bitmap_count, mask);
+> +		if (bitmap_no >= bitmap_maxno) {
+> +			mutex_unlock(&cma->lock);
+> +			break;
+> +		}
+> +		bitmap_set(cma->bitmap, bitmap_no, bitmap_count);
+> +		/*
+> +		 * It's safe to drop the lock here. We've marked this region for
+> +		 * our exclusive use. If the migration fails we will take the
+> +		 * lock again and unmark it.
+> +		 */
+> +		mutex_unlock(&cma->lock);
+> +
+> +		pfn = cma->base_pfn + (bitmap_no << cma->order_per_bit);
+> +		mutex_lock(&cma_mutex);
+> +		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
+> +		mutex_unlock(&cma_mutex);
+> +		if (ret == 0) {
+> +			page = pfn_to_page(pfn);
+> +			break;
+> +		} else if (ret != -EBUSY) {
+> +			cma_clear_bitmap(cma, pfn, count);
+> +			break;
+> +		}
+> +		cma_clear_bitmap(cma, pfn, count);
+> +		pr_debug("%s(): memory range at %p is busy, retrying\n",
+> +			 __func__, pfn_to_page(pfn));
+> +		/* try again with a bit different memory target */
+> +		start = bitmap_no + mask + 1;
+> +	}
+> +
+> +	pr_debug("%s(): returned %p\n", __func__, page);
+> +	return page;
+> +}
+> +
+> +/**
+> + * cma_release() - release allocated pages
+> + * @cma:   Contiguous memory region for which the allocation is performed.
+> + * @pages: Allocated pages.
+> + * @count: Number of allocated pages.
+> + *
+> + * This function releases memory allocated by alloc_cma().
+> + * It returns false when provided pages do not belong to contiguous area and
+> + * true otherwise.
+> + */
+> +bool cma_release(struct cma *cma, struct page *pages, int count)
+> +{
+> +	unsigned long pfn;
+> +
+> +	if (!cma || !pages)
+> +		return false;
+> +
+> +	pr_debug("%s(page %p)\n", __func__, (void *)pages);
+> +
+> +	pfn = page_to_pfn(pages);
+> +
+> +	if (pfn < cma->base_pfn || pfn >= cma->base_pfn + cma->count)
+> +		return false;
+> +
+> +	VM_BUG_ON(pfn + count > cma->base_pfn + cma->count);
+> +
+> +	free_contig_range(pfn, count);
+> +	cma_clear_bitmap(cma, pfn, count);
+> +
+> +	return true;
+> +}
 
-Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
----
- block/bio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/block/bio.c b/block/bio.c
-index fb12df9..40c5b12 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -795,7 +795,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		struct bvec_merge_data bvm = {
- 			.bi_bdev = bio->bi_bdev,
- 			.bi_sector = bio->bi_iter.bi_sector,
--			.bi_size = bio->bi_iter.bi_size,
-+			.bi_size = bio->bi_iter.bi_size - len,
- 			.bi_rw = bio->bi_rw,
- 		};
- 
+Best regards
 -- 
-Maurizio Lombardi
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
