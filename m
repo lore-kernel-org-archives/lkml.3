@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934609AbaGQP7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:59:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51638 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933807AbaGQP67 (ORCPT
+	id S1757238AbaGQP7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:59:17 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37297 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaGQP7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:58:59 -0400
-Message-ID: <53C7F2B2.2000803@oracle.com>
-Date: Thu, 17 Jul 2014 11:58:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 17 Jul 2014 11:59:12 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-64, espfix: consider IRQs are off when initializing
-References: <1405610015-27464-1-git-send-email-sasha.levin@oracle.com> <53C7F063.7030007@zytor.com>
-In-Reply-To: <53C7F063.7030007@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20140717091931.GC21153@arm.com>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+	<1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
+	<20140716160450.GT29414@arm.com>
+	<20140716211931.GA18109@gup76>
+	<20140717091931.GC21153@arm.com>
+Date: Thu, 17 Jul 2014 08:59:10 -0700
+Message-ID: <CAMEtUux1NRqz-Bqi_H8kJe8x9u+1Q12Sg4a-92cE6OsePEBLxg@mail.gmail.com>
+Subject: Re: [PATCH RFCv3 01/14] arm64: introduce aarch64_insn_gen_comp_branch_imm()
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 11:48 AM, H. Peter Anvin wrote:
-> On 07/17/2014 08:13 AM, Sasha Levin wrote:
->> > When going through our initialization code (init_espfix_ap() ) we need to
->> > keep in mind IRQs are off, and we need to handle it appropriately:
->> > 
->> >  - Do not allocate with __GFP_FS.
->> >  - No point in using a mutex.
->> > 
->> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> I don't think this is safe.  The whole point was that if we do
-> GFP_ATOMIC we have to accept failure, and if we have a spin lock then
-> sleeping is not permitted.  It is unclear to me is sleeping is safe in
-> this context even so, so we may still have a problem, but calling
-> __get_free_page(GFP_ATOMIC) and then unconditionally use the results is
-> not right.
+On Thu, Jul 17, 2014 at 2:19 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Wed, Jul 16, 2014 at 10:19:31PM +0100, Zi Shen Lim wrote:
+>> >
+>> > Is a BUG_ON justifiable here? Is there not a nicer way to fail?
+>>
+>> In general, it'd be nice if we returned something like -EINVAL and
+>> have all callers handle failures. Today all code gen functions return
+>> the u32 instruction and there's no error handling by callers.
+>> I think following the precedence (aarch64_insn_gen_branch_imm())
+>> of failing with BUG_ON is a reasonable tradeoff.
+>
+> Well, I don't necessarily agree with that BUG_ON, either :)
+> I take it eBPF doesn't have a `trap' instruction or similar? Otherwise, we
+> could generate that and avoid having to propagate errors directly to the
+> caller.
+>
+>> In this case here, when we hit the default (failure) case, that means
+>> there's a serious error of attempting to use an unsupported
+>> variant. I think we're better off failing hard here than trying to
+>> arbitrarily "fallback" on a default choice.
+>
+> It might be a serious error for BPF, but a BUG_ON brings down the entire
+> machine, which I think is unfortunate.
 
-This is the result of getting an error message for allocating with GFP_KERNEL
-saying that we can't do that with IRQs off.
+There is some misunderstanding here. Here BUG_ON will trigger
+only on actual bug in JIT implementation, it cannot be triggered by user.
+eBPF program is verified before it reaches JIT, so all instructions are
+valid and input to JIT is proper. Two instruction are not yet
+implemented in this JIT and they trigger pr_.._once().
+So I don't see any issue with this usage of BUG_ON
+imo living with silent bugs in JIT is more dangerous.
 
-My assumption after that was that we're not going to be sleeping at all, which
-is why spinlock/GFP_ATOMIC would be correct here.
-
-
-Thanks,
-Sasha
+For the same reason there is no 'trap' instruction in eBPF.
+Static verifier checks that program is valid. If there was a 'trap'
+insn the program would be rejected. Like programs with
+'div by zero' are rejected. There is normal 'bpf_exit' insn to
+return from the program.
