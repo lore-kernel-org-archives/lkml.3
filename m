@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058AbaGQPvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:51:24 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:17012 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaGQPvW (ORCPT
+	id S1757320AbaGQPvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:51:31 -0400
+Received: from smtprelay0114.hostedemail.com ([216.40.44.114]:56339 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757179AbaGQPv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:51:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+/btqsoICQbAZruqFnJyjVeUz0pGn91GE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan EF2995AE60C
-Date: Thu, 17 Jul 2014 11:51:05 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH] irqchip: gic: Fix core ID calculation when topology is
- read from DT
-Message-ID: <20140717155105.GT13108@titan.lakedaemon.net>
-References: <1405610624-18722-1-git-send-email-t.figa@samsung.com>
- <20140717153236.GS13108@titan.lakedaemon.net>
- <53C7EE82.6040803@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C7EE82.6040803@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 17 Jul 2014 11:51:28 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2736:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13184:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: land69_2974d0b679d04
+X-Filterd-Recvd-Size: 1850
+Message-ID: <1405612283.12363.10.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+From: Joe Perches <joe@perches.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org, apw@canonical.com, tytso@mit.edu,
+        dwalter@google.com, bp@suse.de, neilb@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 17 Jul 2014 08:51:23 -0700
+In-Reply-To: <1405611268-12463-1-git-send-email-richard@nod.at>
+References: <1405611268-12463-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 05:40:50PM +0200, Tomasz Figa wrote:
-> Hi Jason,
-> 
-> On 17.07.2014 17:32, Jason Cooper wrote:
-> > On Thu, Jul 17, 2014 at 05:23:44PM +0200, Tomasz Figa wrote:
-> >> Certain GIC implementation, namely those found on earlier, single
-> >> cluster, Exynos SoCs, have registers mapped without per-CPU banking,
-> >> which means that the driver needs to use different offset for each CPU.
-> >>
-> >> Currently the driver calculates the offset by multiplying value returned
-> >> by cpu_logical_map() by CPU offset parsed from DT. This is correct when
-> >> CPU topology is not specified in DT and aforementioned function returns
-> >> core ID alone. However when DT contains CPU topology, the function
-> >> changes to return cluster ID as well, which is non-zero on mentioned
-> >> SoCs and so breaks the calculation in GIC driver.
-> >>
-> >> This patch fixes this by masking out cluster ID in CPU offset
-> >> calculation so that only core ID is considered. Multi-cluster Exynos
-> >> SoCs already have banked GIC implementations, so this simple fix should
-> >> be enough.
-> >>
-> >> Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> >> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> >> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> >> ---
-> >>  drivers/irqchip/irq-gic.c | 5 ++++-
-> >>  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > iiuc, this was introduced by:
-> > 
-> >   db0d4db22a78d ARM: gic: allow GIC to support non-banked setups
-> > 
-> > and so should be for v3.3 and up, correct?
-> 
-> Could be, although there was and still is no topology data specified in
-> DT for affected Exynos SoCs. The need for it showed up just recently, so
-> I'm not sure this is a regression to fix in older kernels.
+On Thu, 2014-07-17 at 17:34 +0200, Richard Weinberger wrote:
+> checkpatch.pl is a nice tool to find issues in patches.
 
-In my "the kernel and the dtb aren't tied together" quest, these are the
-kinds of things I like to see fixed in stable kernels.
+grep is a similar tool, just less automated.
 
-If a user needs to update a dtb, say to fix a bug, it's reasonable to
-use the newest one for a given board.  After all, any new nodes won't
-change anything, since the driver in the kernel won't match the node.
+> Sadly this tool gets more and more abused by various people to create
+> style cleanups for source files within the kernel.
+> In order to deal with that bad habit let's remove the --file option
+> and bring checkpatch.pl back to its original purpose.
 
-However, in this case, without this fix, a user upgrading to the newest
-dtb would get a broken system.  So, this fix should be backported to
-prevent the breakage.  Or, have I missed something in my analysis?
+Any tool can be misused.
 
-thx,
+diff -urN /dev/null $file | ./scripts/checkpatch.pl -
 
-Jason.
+does the same thing as --file so I don't see any real
+fundamental difference.
+
+I think it should really only be used in --file mode
+on drivers/staging/.
+
+I wouldn't mind adding some additional "yes, I really
+mean to do this" cmd-line flag when it's used on any
+file outside of staging with some additional warning
+that "--file" is discouraged outside of staging when
+it's not there.
+
+But additional documentation only goes so far.
+
+
