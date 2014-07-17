@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720AbaGQIJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:09:44 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:57051 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382AbaGQIGc (ORCPT
+	id S1755767AbaGQIJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:09:50 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:41574 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755391AbaGQIGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:06:32 -0400
+	Thu, 17 Jul 2014 04:06:33 -0400
 From: Tom Gundersen <teg@jklm.no>
 To: netdev@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net
-Subject: [PATCH net-next v9 3/9] net: nl802154 - make add_iface take name assign type
-Date: Thu, 17 Jul 2014 10:06:04 +0200
-Message-Id: <1405584370-30054-4-git-send-email-teg@jklm.no>
+        Tom Gundersen <teg@jklm.no>
+Subject: [PATCH net-next v9 4/9] net: set name_assign_type when setting names via ioctls
+Date: Thu, 17 Jul 2014 10:06:05 +0200
+Message-Id: <1405584370-30054-5-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405584370-30054-1-git-send-email-teg@jklm.no>
 References: <1405584370-30054-1-git-send-email-teg@jklm.no>
@@ -23,92 +21,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Acked-by: Alexander Aring <alex.aring@gmail.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-zigbee-devel@lists.sourceforge.net
----
- include/net/wpan-phy.h         | 4 +++-
- net/ieee802154/nl-phy.c        | 5 ++++-
- net/mac802154/ieee802154_dev.c | 7 ++++---
- 3 files changed, 11 insertions(+), 5 deletions(-)
+When the user provides a name, set NET_NAME_USER, otherwise an enumerated
+name is used, so set NET_NAME_ENUM.
 
-diff --git a/include/net/wpan-phy.h b/include/net/wpan-phy.h
-index 10ab0fc..bb07a1b 100644
---- a/include/net/wpan-phy.h
-+++ b/include/net/wpan-phy.h
-@@ -58,7 +58,9 @@ struct wpan_phy {
- 	int idx;
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+---
+ drivers/net/tun.c         |  9 ++++++---
+ drivers/tty/n_gsm.c       | 10 +++++++---
+ net/atm/br2684.c          |  5 +++--
+ net/bluetooth/bnep/core.c |  2 +-
+ net/bridge/br_if.c        |  7 ++++---
+ net/bridge/br_ioctl.c     |  4 ++--
+ net/bridge/br_private.h   |  2 +-
+ 7 files changed, 24 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index acaaf67..eac34f5 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1607,6 +1607,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 	}
+ 	else {
+ 		char *name;
++		unsigned char name_assign_type = NET_NAME_ENUM;
+ 		unsigned long flags = 0;
+ 		int queues = ifr->ifr_flags & IFF_MULTI_QUEUE ?
+ 			     MAX_TAP_QUEUES : 1;
+@@ -1629,12 +1630,14 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		} else
+ 			return -EINVAL;
  
- 	struct net_device *(*add_iface)(struct wpan_phy *phy,
--					const char *name, int type);
-+					const char *name,
-+					unsigned char name_assign_type,
-+					int type);
- 	void (*del_iface)(struct wpan_phy *phy, struct net_device *dev);
+-		if (*ifr->ifr_name)
++		if (*ifr->ifr_name) {
+ 			name = ifr->ifr_name;
++			name_assign_type = NET_NAME_USER;
++		}
  
- 	int (*set_txpower)(struct wpan_phy *phy, int db);
-diff --git a/net/ieee802154/nl-phy.c b/net/ieee802154/nl-phy.c
-index 972baf8..5e1a28e 100644
---- a/net/ieee802154/nl-phy.c
-+++ b/net/ieee802154/nl-phy.c
-@@ -174,6 +174,7 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
- 	struct wpan_phy *phy;
- 	const char *name;
- 	const char *devname;
-+	unsigned char name_assign_type;
- 	int rc = -ENOBUFS;
- 	struct net_device *dev;
- 	int type = __IEEE802154_DEV_INVALID;
-@@ -192,8 +193,10 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
- 		if (devname[nla_len(info->attrs[IEEE802154_ATTR_DEV_NAME]) - 1]
- 				!= '\0')
- 			return -EINVAL; /* phy name should be null-terminated */
+ 		dev = alloc_netdev_mqs(sizeof(struct tun_struct), name,
+-				       NET_NAME_UNKNOWN, tun_setup, queues,
+-				       queues);
++				       name_assign_type, tun_setup,
++				       queues, queues);
+ 
+ 		if (!dev)
+ 			return -ENOMEM;
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index cde3ab9..d0262d9 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -2767,6 +2767,7 @@ static void gsm_destroy_network(struct gsm_dlci *dlci)
+ static int gsm_create_network(struct gsm_dlci *dlci, struct gsm_netconfig *nc)
+ {
+ 	char *netname;
++	unsigned char name_assign_type = NET_NAME_ENUM;
+ 	int retval = 0;
+ 	struct net_device *net;
+ 	struct gsm_mux_net *mux_net;
+@@ -2787,10 +2788,13 @@ static int gsm_create_network(struct gsm_dlci *dlci, struct gsm_netconfig *nc)
+ 	pr_debug("create network interface");
+ 
+ 	netname = "gsm%d";
+-	if (nc->if_name[0] != '\0')
++	if (nc->if_name[0] != '\0') {
+ 		netname = nc->if_name;
+-	net = alloc_netdev(sizeof(struct gsm_mux_net), netname,
+-			   NET_NAME_UNKNOWN, gsm_mux_net_init);
 +		name_assign_type = NET_NAME_USER;
- 	} else  {
- 		devname = "wpan%d";
-+		name_assign_type = NET_NAME_ENUM;
- 	}
++	}
++	net = alloc_netdev(sizeof(struct gsm_mux_net),
++			netname, name_assign_type,
++			gsm_mux_net_init);
+ 	if (!net) {
+ 		pr_err("alloc_netdev failed");
+ 		return -ENOMEM;
+diff --git a/net/atm/br2684.c b/net/atm/br2684.c
+index cc78538..cb8d122 100644
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -682,8 +682,9 @@ static int br2684_create(void __user *arg)
  
- 	if (strlen(devname) >= IFNAMSIZ)
-@@ -227,7 +230,7 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
- 		}
- 	}
+ 	netdev = alloc_netdev(sizeof(struct br2684_dev),
+ 			      ni.ifname[0] ? ni.ifname : "nas%d",
+-			      NET_NAME_UNKNOWN,
+-			      (payload == p_routed) ? br2684_setup_routed : br2684_setup);
++			      ni.ifname[0] ? NET_NAME_USER : NET_NAME_ENUM,
++			      (payload == p_routed) ?
++			      br2684_setup_routed : br2684_setup);
+ 	if (!netdev)
+ 		return -ENOMEM;
  
--	dev = phy->add_iface(phy, devname, type);
-+	dev = phy->add_iface(phy, devname, name_assign_type, type);
- 	if (IS_ERR(dev)) {
- 		rc = PTR_ERR(dev);
- 		goto nla_put_failure;
-diff --git a/net/mac802154/ieee802154_dev.c b/net/mac802154/ieee802154_dev.c
-index b36b2b9..cee12b2 100644
---- a/net/mac802154/ieee802154_dev.c
-+++ b/net/mac802154/ieee802154_dev.c
-@@ -159,7 +159,8 @@ mac802154_del_iface(struct wpan_phy *phy, struct net_device *dev)
+diff --git a/net/bluetooth/bnep/core.c b/net/bluetooth/bnep/core.c
+index 85bcc21..6bed7b3 100644
+--- a/net/bluetooth/bnep/core.c
++++ b/net/bluetooth/bnep/core.c
+@@ -539,7 +539,7 @@ int bnep_add_connection(struct bnep_connadd_req *req, struct socket *sock)
+ 	/* session struct allocated as private part of net_device */
+ 	dev = alloc_netdev(sizeof(struct bnep_session),
+ 			   (*req->device) ? req->device : "bnep%d",
+-			   NET_NAME_UNKNOWN,
++			   (*req->device) ? NET_NAME_USER : NET_NAME_ENUM,
+ 			   bnep_net_setup);
+ 	if (!dev)
+ 		return -ENOMEM;
+diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+index 078d336..f9c6766 100644
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -339,13 +339,14 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
+ 	return p;
  }
  
- static struct net_device *
--mac802154_add_iface(struct wpan_phy *phy, const char *name, int type)
-+mac802154_add_iface(struct wpan_phy *phy, const char *name,
-+		    unsigned char name_assign_type, int type)
+-int br_add_bridge(struct net *net, const char *name)
++int br_add_bridge(struct net *net, const char *name,
++		  unsigned char name_assign_type)
  {
  	struct net_device *dev;
- 	int err = -ENOMEM;
-@@ -167,12 +168,12 @@ mac802154_add_iface(struct wpan_phy *phy, const char *name, int type)
- 	switch (type) {
- 	case IEEE802154_DEV_MONITOR:
- 		dev = alloc_netdev(sizeof(struct mac802154_sub_if_data),
--				   name, NET_NAME_UNKNOWN,
-+				   name, name_assign_type,
- 				   mac802154_monitor_setup);
- 		break;
- 	case IEEE802154_DEV_WPAN:
- 		dev = alloc_netdev(sizeof(struct mac802154_sub_if_data),
--				   name, NET_NAME_UNKNOWN,
-+				   name, name_assign_type,
- 				   mac802154_wpan_setup);
- 		break;
- 	default:
+ 	int res;
+ 
+-	dev = alloc_netdev(sizeof(struct net_bridge), name, NET_NAME_UNKNOWN,
+-			   br_dev_setup);
++	dev = alloc_netdev(sizeof(struct net_bridge), name,
++			   name_assign_type, br_dev_setup);
+ 
+ 	if (!dev)
+ 		return -ENOMEM;
+diff --git a/net/bridge/br_ioctl.c b/net/bridge/br_ioctl.c
+index a9a4a1b..bdc79a1 100644
+--- a/net/bridge/br_ioctl.c
++++ b/net/bridge/br_ioctl.c
+@@ -340,7 +340,7 @@ static int old_deviceless(struct net *net, void __user *uarg)
+ 		buf[IFNAMSIZ-1] = 0;
+ 
+ 		if (args[0] == BRCTL_ADD_BRIDGE)
+-			return br_add_bridge(net, buf);
++			return br_add_bridge(net, buf, NET_NAME_USER);
+ 
+ 		return br_del_bridge(net, buf);
+ 	}
+@@ -369,7 +369,7 @@ int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd, void __user *uar
+ 
+ 		buf[IFNAMSIZ-1] = 0;
+ 		if (cmd == SIOCBRADDBR)
+-			return br_add_bridge(net, buf);
++			return br_add_bridge(net, buf, NET_NAME_USER);
+ 
+ 		return br_del_bridge(net, buf);
+ 	}
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 62a7fa2..5adc136 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -415,7 +415,7 @@ void br_flood_forward(struct net_bridge *br, struct sk_buff *skb,
+ 
+ /* br_if.c */
+ void br_port_carrier_check(struct net_bridge_port *p);
+-int br_add_bridge(struct net *net, const char *name);
++int br_add_bridge(struct net *net, const char *name, unsigned char name_assign_type);
+ int br_del_bridge(struct net *net, const char *name);
+ int br_add_if(struct net_bridge *br, struct net_device *dev);
+ int br_del_if(struct net_bridge *br, struct net_device *dev);
 -- 
 1.9.3
 
