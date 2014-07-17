@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534AbaGQJFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:05:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56476 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506AbaGQJFE (ORCPT
+	id S1755374AbaGQJI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:08:57 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:60493 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605AbaGQJIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:05:04 -0400
-Date: Thu, 17 Jul 2014 11:04:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Bruno Wolff III <bruno@wolff.to>, Josh Boyer <jwboyer@redhat.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140717090452.GH19379@twins.programming.kicks-ass.net>
-References: <20140716145546.GA6922@wolff.to>
- <20140716151748.GC2460@hansolo.jdub.homelinux.org>
- <53C6CFCC.2050300@arm.com>
- <20140716195414.GA16401@wolff.to>
- <53C7084C.7090104@arm.com>
- <20140717030947.GA17889@wolff.to>
- <53C79013.1020808@arm.com>
+	Thu, 17 Jul 2014 05:08:53 -0400
+Message-ID: <53C792A2.300@gmail.com>
+Date: Thu, 17 Jul 2014 17:08:50 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gNHJk6zc+1Hn+Z/L"
-Content-Disposition: inline
-In-Reply-To: <53C79013.1020808@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Lennox Wu <lennox.wu@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+CC: David Rientjes <rientjes@google.com>, Liqin Chen <liqin.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the macros
+ which not be used currently
+References: <53AC10CB.3000007@gmail.com>	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>	<alpine.DEB.2.02.1407161849090.19429@chino.kir.corp.google.com>	<CAF0htA5eVTPQC0c1XfzU=RHnNWLtRgtYbN+se5HPLYkJ9_E=5w@mail.gmail.com>	<53C73534.1090502@roeck-us.net> <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
+In-Reply-To: <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/17/2014 10:52 AM, Lennox Wu wrote:
+> Yes, you might miss something. Some patches were merged once I
+> acknowledged them,and some were missed.
+> So I am not sure the rule, if someone will merge these patches once
+> them are acknowledged, it is redundant that I issue a
+> PULL request again.
+> 
 
---gNHJk6zc+1Hn+Z/L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I guess, we need consult another version merging members (e.g Stephen
+Rothwell), they may provide more useful suggestions or ideas.
 
-On Thu, Jul 17, 2014 at 10:57:55AM +0200, Dietmar Eggemann wrote:
-> There is also the possibility that the memory for sched_group sg is not
-> (completely) zeroed out:
->=20
->   sg =3D kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
-> 			GFP_KERNEL, cpu_to_node(j));
->=20
->=20
->   struct sched_group {
-> 	...
-> 	 * NOTE: this field is variable length. (Allocated dynamically
-> 	 * by attaching extra space to the end of the structure,
-> 	 * depending on how many CPUs the kernel has booted up with)
-> 	 */
-> 	unsigned long cpumask[0];
+For me, if the patch is mainly under "arch/*/*", it need be applied by
+related architecture members. And these architecture related patches can
+be merged into linux-next tree firstly, then to upstream main line.
 
-well kZalloc should Zero the entire allocated size, and the specified
-size very much includes the cpumask size as per:
-  sizeof(struct sched_group) + cpumask_size()
 
-But yeah, I'm also a bit puzzled why this goes bang. Makes we worry we
-scribble it somewhere or so.
+Thanks.
 
---gNHJk6zc+1Hn+Z/L
-Content-Type: application/pgp-signature
+> 
+> 
+> 2014-07-17 10:30 GMT+08:00 Guenter Roeck <linux@roeck-us.net>:
+>> On 07/16/2014 07:14 PM, Lennox Wu wrote:
+>>>
+>>> Actually, I don't know the rule for merging patches. Some patches will
+>>> be merge,and some will be miss. If the patch is missed, we will merge
+>>> it into our git.
+>>>
+>> Unless I am missing something, this patch is in arch/score, so the
+>> expectation would be for you to pick it up and send it to Linus.
+>>
+>> Guenter
+>>
+>>
+>>> Best,
+>>> Lennox
+>>>
+>>> 2014-07-17 9:49 GMT+08:00 David Rientjes <rientjes@google.com>:
+>>>>
+>>>> On Thu, 26 Jun 2014, David Rientjes wrote:
+>>>>
+>>>>> On Thu, 26 Jun 2014, Chen Gang wrote:
+>>>>>
+>>>>>> 'COUNTER' and other same kind macros are too common to use, and easy to
+>>>>>> get conflict with other modules.
+>>>>>>
+>>>>>> At present, they are not used, so it is OK to simply remove them. And
+>>>>>> the
+>>>>>> related warning (allmodconfig with score):
+>>>>>>
+>>>>>>      CC [M]  drivers/md/raid1.o
+>>>>>>    In file included from drivers/md/raid1.c:42:0:
+>>>>>>    drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
+>>>>>>     #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
+>>>>>>     ^
+>>>>>>    In file included from ./arch/score/include/asm/ptrace.h:4:0,
+>>>>>>                     from include/linux/sched.h:31,
+>>>>>>                     from include/linux/blkdev.h:4,
+>>>>>>                     from drivers/md/raid1.c:36:
+>>>>>>    ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the
+>>>>>> location of the previous definition
+>>>>>>     #define COUNTER  38
+>>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>>
+>>>>>
+>>>>> Acked-by: David Rientjes <rientjes@google.com>
+>>>>>
+>>>>
+>>>> Lennox or Liqin, could you please queue this patch for 3.17?
+>>>
+>>>
+>>>
+>>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+Chen Gang
 
-iQIcBAEBAgAGBQJTx5G0AAoJEHZH4aRLwOS6niMQAJy2arvVT2ktSLCXh772JKEw
-jenDnEDggTE55SZE7qw/NXdGTHHcq+Ml/zR4BPHF9uqlREJJ5U1w/ZfE9xM+EkHy
-vuHDo5kTQEcBNQXvY7TDZSP8wM1GdOVRgZoP9eI4EjJpUYWkOvsWD4JHyVsfb3sj
-IubQui5mHvn87tquVa26hk3z8gP/1e4oDIfI2MJ6ZrK4sIEG3bk1Xgji1QOAz5TM
-r8oitDZ1ErMfUbpsFL2c2npJ59eN9U5m3QU/wkVa07lONbRw8J8xeEARoHDXehJu
-wOMLImFhkW0BP+kvhIb//J1RjT9tEYy0DUYkeAxPYDcDlTeAUIg+N73JOHeumh7b
-mgEqK4Hz12tq469G7NhiW86DO2+gdVJGSqrwc3rCAV2+QtvX0C1KASwtAbsv7OY1
-inESCHzaVEiwqJcUV3Y1SPxeozUdO0Z+v9w54jt7QWGZIQWyjL4m4+H0vswJMatP
-K/VUfRN5iS92CoTQt8G1LGP4nXxqIqSK4yKYLm2nnsCQz9dpdN7JB6PYohICuT4V
-JRNSWXwiTs4/QFouWo4iw8PfNrJ2mCkgZtHzdUg776fJ+7OxCkkbOvW5EyBOUaJ+
-QD1edXaXD9XU6fKQ/Wo7tBT2y70BYrA76rVka2HUl7UBgRz6fKKQ1eEEqRWGKJdI
-HC9jYPOW0Bhh+B+1x473
-=FvGN
------END PGP SIGNATURE-----
-
---gNHJk6zc+1Hn+Z/L--
+Open, share, and attitude like air, water, and life which God blessed
