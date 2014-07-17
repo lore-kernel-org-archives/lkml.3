@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426AbaGQMyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:54:45 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:45656 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756598AbaGQMyn convert rfc822-to-8bit (ORCPT
+	id S1757101AbaGQMzp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:55:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:52958 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755188AbaGQMzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:54:43 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Mugunthan V N'" <mugunthanvnm@ti.com>,
-        David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via
- Ethtool Coalesce
-Thread-Topic: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via
- Ethtool Coalesce
-Thread-Index: AQHPoYY9UvFwPwDojUudrRwQY6wBHpuj9NlQ
-Date: Thu, 17 Jul 2014 12:53:41 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D172768B0@AcuExch.aculab.com>
-References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
- <20140709.164420.157865201153845876.davem@davemloft.net>
- <53C76990.3000304@ti.com>
-In-Reply-To: <53C76990.3000304@ti.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Jul 2014 08:55:44 -0400
+Date: Thu, 17 Jul 2014 08:55:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [patch V2 64/64] ftrace: Provide trace clocks monotonic
+Message-ID: <20140717085535.782e1fc1@gandalf.local.home>
+In-Reply-To: <20140716205057.643948282@linutronix.de>
+References: <20140716205018.175419210@linutronix.de>
+	<20140716205057.643948282@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Mugunthan V N
-> On Thursday 10 July 2014 05:14 AM, David Miller wrote:
-> > From: Mugunthan V N <mugunthanvnm@ti.com>
-> > Date: Wed, 9 Jul 2014 12:44:07 +0530
-> >
-> >> A system/cpu can be loaded by a hacker with flooding of broadcast or
-> >> multicast packets, to prevent this some Ethernet controllers like CPSW
-> >> provide a mechanism to limit the broadcast/multicast packet rate via
-> >> hardware limiters. This patch series enables this feature via
-> >> Ethtool Coalesce.
-> > This is pretty bogus if you ask me.
-> >
-> > What is the difference from accepting a high rate of unicast packets?
-> > I say it is no different.
-> >
-> > Therefore, this feature makes no sense to me at all.
+On Wed, 16 Jul 2014 21:05:25 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> Expose the new NMI safe accessor to clock monotonic to the tracer.
 > 
-> Any packet storm can cause an endpoint some issues. Typically packet
-> storms will cause the system CPU to thrash resulting is very low system
-> performance.
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> ---
+>  kernel/trace/trace.c |   11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
 > 
-> Unicast storms only target a single destination end station, it can be
-> easily mitigated by the host adding a blocking entry in the LUT for each
-> aggressor.
+> Index: tip/kernel/trace/trace.c
+> ===================================================================
+> --- tip.orig/kernel/trace/trace.c
+> +++ tip/kernel/trace/trace.c
+> @@ -806,11 +806,12 @@ static struct {
+>  	const char *name;
+>  	int in_ns;		/* is this clock in nanoseconds? */
+>  } trace_clocks[] = {
+> -	{ trace_clock_local,	"local",	1 },
+> -	{ trace_clock_global,	"global",	1 },
+> -	{ trace_clock_counter,	"counter",	0 },
+> -	{ trace_clock_jiffies,	"uptime",	1 },
+> -	{ trace_clock,		"perf",		1 },
+> +	{ trace_clock_local,		"local",	1 },
+> +	{ trace_clock_global,		"global",	1 },
+> +	{ trace_clock_counter,		"counter",	0 },
+> +	{ trace_clock_jiffies,		"uptime",	1 },
+> +	{ trace_clock,			"perf",		1 },
+> +	{ ktime_get_mono_fast_ns,	"mono",		1 },
+
+I'm not sure I like the name "mono" because all the clocks listed are
+considered monolithic (with the view of tracing). What about calling it
+"user" as I believe this clock is the one that will be used to
+synchronize userspace times with the kernel. Right?
+
+-- Steve
+
+>  	ARCH_TRACE_CLOCKS
+>  };
+>  
 > 
-> Broadcast and multicast target multiple end stations, or an entire
-> network, not only can it cause CPU thrashing, it can result in loss of
-> other broadcast and multicast services. The rate limiting feature allow
-> the broadcast and or multicast traffic to be dropped if the rates are
-> too high. This eliminates the CPU thrashing issue. It also allows the
-> system to analyze the aggressors and block them for future transgressions.
-
-Rate limiting multicast traffic will definitely cause the loss of multicast
-services.
-
-My experience of broadcast storms is that many of the ethernet switches
-(probably especially the cheap ones) end up using a much slower software?
-path for broadcasts. In a broadcast storm they start discarding normal
-traffic - to point where a single ssh session becomes unusable.
-This is true even when isolated from the storm by a 10M hub.
-
-Broadcast storms are probably mostly caused by network topology issues.
-Especially is switches are sending traffic to 'all ports' while resetting
-the spanning tree tables.
-
-	David
-
-
-
 
