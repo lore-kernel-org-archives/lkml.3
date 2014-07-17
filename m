@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297AbaGQJVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:21:04 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:57974 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353AbaGQJU6 (ORCPT
+	id S1756362AbaGQJVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:21:12 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:10448 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755844AbaGQJVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:20:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
-Date: Thu, 17 Jul 2014 11:20:36 +0200
-Message-ID: <6823014.2plXDE9VA9@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53C7269E.4010702@gmail.com>
-References: <201407130545.23004.marex@denx.de> <53C53CE1.4090803@gmail.com> <53C7269E.4010702@gmail.com>
+	Thu, 17 Jul 2014 05:21:08 -0400
+X-IronPort-AV: E=Sophos;i="5.00,907,1396972800"; 
+   d="scan'208";a="33401497"
+Message-ID: <53C795BE.1070105@cn.fujitsu.com>
+Date: Thu, 17 Jul 2014 17:22:06 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+I0K/LYzfxNYkX5fe3vQAWJGKtR9xDmv/IURg1Uwk4+
- RqCN82F8KMaBUyRKXeGn8cJ24x3GDy6UgjC1e7AFGvrjbhpP1R
- xlWlUE5vlFVMgiYz5rn8a9Uo+9njiwUGfjV1HUNyC8n7d8k0EQ
- gr4Q+SUPVOETqzIQNUtWIA4/GS2AZrzr/n5ntfQ9kR4zCQEYD1
- +wozDh1ycOmrPlwD0cNmlsEvcgKqVliX3z7rXVC2ZI1cRCXoOR
- ulsVWSCdRoXlmwbRJDnNly+T6XyTwGFNRDveEqs4FIpPQVcIZE
- 76Zf4ZYiWBQYYonH5kLE0WjVwG1xAmRdUNd2zGmbZxzf1d75lA
- VN2y4n8MrmQP8zS9wDjk=
+To: Gleb Natapov <gleb@kernel.org>
+CC: Jan Kiszka <jan.kiszka@web.de>, <mtosatti@redhat.com>,
+        <nadav.amit@gmail.com>, <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page
+ in memory.
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com> <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com> <20140712080442.GH4399@minantech.com> <53C38D55.2040307@cn.fujitsu.com> <20140714145822.GK4399@minantech.com> <53C51608.4080109@web.de> <20140715120921.GT18167@minantech.com> <53C51E66.7030208@cn.fujitsu.com> <20140715124048.GU18167@minantech.com> <53C52469.3060607@cn.fujitsu.com> <20140715144030.GN4399@minantech.com>
+In-Reply-To: <20140715144030.GN4399@minantech.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
->                                          gfp_t gfp_mask, unsigned int order);
->  extern void devm_free_pages(struct device *dev, unsigned long addr);
->  
-> +#ifdef CONFIG_HAS_IOMEM
->  void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
-> +#elif defined(CONFIG_COMPILE_TEST)
-> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
-> +                                               struct resource *res)
-> +{
-> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
-> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
-> +}
-> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
->  
->  /* allows to add/remove a custom action to devres stack */
+Hi Gleb,
 
-To be honest, I think it's a bad idea to introduce wrappers functions
-that are only available when CONFIG_COMPILE_TEST is set.
+Sorry for the delay. Please see below.
 
-COMPILE_TEST is a great tool in general, but it has its limits.
-In particular, the case for !CONFIG_IOMEM is completely obscure
-and we won't find any bugs by allowing more drivers to be built
-in those configurations, but attempting to do it would cause
-endless churn by changing each instance of 'depends on HAS_IOMEM'
-to 'depends on HAS_IOMEM || COMPILE_TEST'.
+On 07/15/2014 10:40 PM, Gleb Natapov wrote:
+......
+>>>>
+>>> We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, so
+>>> if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for L1 too.
+>>>
+>>
+>> apic pages for L2 and L1 are not the same page, right ?
+>>
+> If L2 guest enable apic access page then they are different, otherwise
+> they are the same.
+>
+>> I think, just like we are doing in patch 5/5, we cannot wait for the next
+>> L2->L1 vmexit.
+>> We should enforce a L2->L1 vmexit in mmu_notifier, just like
+>> make_all_cpus_request() does.
+>>
+>> Am I right ?
+>>
+> I do not see why forcing APIC_ACCESS_ADDR reload during L2->L1 exit is not enough.
 
-Note that s390 no has gained support for IOMEM, tile has it most
-of the time (when PCI is enabled, so you get it in half the
-test builds already), score should set HAS_IOMEM and doesn't
-even have public compilers, and uml doesn't even compile in
-latest mainline. Nothing else ever sets NO_IOMEM.
+Yes, you are right. APIC_ACCESS_ADDR reload should be done during L2->L1 
+vmexit.
 
-	Arnd
+I mean, before the page is moved to other place, we have to enforce a 
+L2->L1 vmexit,
+but not wait for the next L2->L1 vmexit. Since when the page is being 
+moved, if the
+L2 vm is still running, it could access apic page directly. And the vm 
+may corrupt.
+
+In the mmu_notifier called before the page is moved, we have to enforce 
+a L2->L1
+vmexit, and ask vcpus to reload APIC_ACCESS_ADDR for L2 vm. The process 
+will wait
+till the page migration is completed, and update the APIC_ACCESS_ADDR, 
+and re-enter
+guest mode.
+
+Thanks.
