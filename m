@@ -1,185 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767AbaGQIJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:09:50 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:41574 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391AbaGQIGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:06:33 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: netdev@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>
-Subject: [PATCH net-next v9 4/9] net: set name_assign_type when setting names via ioctls
-Date: Thu, 17 Jul 2014 10:06:05 +0200
-Message-Id: <1405584370-30054-5-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405584370-30054-1-git-send-email-teg@jklm.no>
-References: <1405584370-30054-1-git-send-email-teg@jklm.no>
+	id S1755320AbaGQIMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:12:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754154AbaGQIMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 04:12:21 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: stefano.stabellini@eu.citrix.com, xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 4/4] xen/pvhvm: Make MSI IRQs work after kexec
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+	<1405431640-649-5-git-send-email-vkuznets@redhat.com>
+	<20140715152105.GP3403@laptop.dumpdata.com>
+	<87fvi1u16k.fsf@vitty.brq.redhat.com>
+	<20140716134050.GH19585@laptop.dumpdata.com>
+	<87egxljk48.fsf@vitty.brq.redhat.com>
+	<20140716173038.GD30483@laptop.dumpdata.com>
+Date: Thu, 17 Jul 2014 10:12:07 +0200
+In-Reply-To: <20140716173038.GD30483@laptop.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Wed, 16 Jul 2014 13:30:38 -0400")
+Message-ID: <87a988jtew.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the user provides a name, set NET_NAME_USER, otherwise an enumerated
-name is used, so set NET_NAME_ENUM.
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
----
- drivers/net/tun.c         |  9 ++++++---
- drivers/tty/n_gsm.c       | 10 +++++++---
- net/atm/br2684.c          |  5 +++--
- net/bluetooth/bnep/core.c |  2 +-
- net/bridge/br_if.c        |  7 ++++---
- net/bridge/br_ioctl.c     |  4 ++--
- net/bridge/br_private.h   |  2 +-
- 7 files changed, 24 insertions(+), 15 deletions(-)
+> On Wed, Jul 16, 2014 at 07:20:39PM +0200, Vitaly Kuznetsov wrote:
+>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+>> 
+>> > On Wed, Jul 16, 2014 at 11:01:55AM +0200, Vitaly Kuznetsov wrote:
+>> >> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+>> >> 
+>> >> > On Tue, Jul 15, 2014 at 03:40:40PM +0200, Vitaly Kuznetsov wrote:
+>> >> >> When kexec was peformed MSI IRQs for passthrough-ed devices were already
+>> >> >> mapped and we see non-zero pirq extracted from MSI msg. xen_irq_from_pirq()
+>> >> >> fails as we have no IRQ mapping information for that. Requesting for new
+>> >> >> mapping with __write_msi_msg() does not result in MSI IRQ being remapped so
+>> >> >> we don't recieve these IRQs.
+>> >> >
+>> >> > receive
+>> >> >
+>> >> 
+>> >> Thanks for your comments!
+>> >
+>> > Thank you for quick turnaround with the answers!
+>> >> 
+>> >> > How come '__write_msi_msg' does not result in new MSI IRQs?
+>> >> >
+>> >> 
+>> >> Actually that was the hidden question in my RFC :-)
+>> >> 
+>> >> Let me describe what I see. When normal boot is performed we have the
+>> >> following in xen_hvm_setup_msi_irqs():
+>> >> 
+>> >> __read_msi_msg()
+>> >>  pirq -> 0
+>> >> 
+>> >> then we allocate new pirq with
+>> >>  pirq = xen_allocate_pirq_msi()
+>> >>  pirq -> 54
+>> >> 
+>> >> and we have the following mapping:
+>> >> xen: msi --> pirq=54 --> irq=72
+>> >> 
+>> >> in 'xl debug-keys i':
+>> >> (XEN)    IRQ:  29 affinity:04 vec:b9 type=PCI-MSI status=00000030 in-flight=0 domain-list=7: 54(----),
+>> >> 
+>> >> After kexec we see the following:
+>> >> __read_msi_msg()
+>> >>  pirq -> 54
+>> >> 
+>> >> but as xen_irq_from_pirq() fails we follow the same path allocating new pirq:
+>> >>  pirq = xen_allocate_pirq_msi()
+>> >>  pirq -> 55
+>> >> 
+>> >> and we have the following mapping:
+>> >> xen: msi --> pirq=55 --> irq=75
+>> >> 
+>> >> However (afaict) mapping in xen wasn't updated:
+>> >> 
+>> >> in 'xl debug-keys i':
+>> >> (XEN)    IRQ:  29 affinity:02 vec:b9 type=PCI-MSI status=00000030 in-flight=0 domain-list=7: 54(--M-),
+>> >
+>> > I am wondering if that is related to in QEMU traditional:
+>> >
+>> >     qemu-xen-trad: free all the pirqs for msi/msix when driver unloads
+>> >
+>> > (which in the upstream QEMU is 1d4fd4f0e2fc5dcae0c60e00cc9af95f52988050)
+>> >
+>> > If you have that patch in, is the PIRQ value correctly updated?
+>> >
+>> 
+>> Thanks, that really works! I tested both kexec -e / kdump cases. I'm
+>> wondering if we although need my commit to workaround non-fixed qemus?
+>
+> Without your patch on older QEMU's with PCI passthrough we won't get
+> any more interrupts after we kexec in the guest right?
+>
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index acaaf67..eac34f5 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1607,6 +1607,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 	}
- 	else {
- 		char *name;
-+		unsigned char name_assign_type = NET_NAME_ENUM;
- 		unsigned long flags = 0;
- 		int queues = ifr->ifr_flags & IFF_MULTI_QUEUE ?
- 			     MAX_TAP_QUEUES : 1;
-@@ -1629,12 +1630,14 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		} else
- 			return -EINVAL;
- 
--		if (*ifr->ifr_name)
-+		if (*ifr->ifr_name) {
- 			name = ifr->ifr_name;
-+			name_assign_type = NET_NAME_USER;
-+		}
- 
- 		dev = alloc_netdev_mqs(sizeof(struct tun_struct), name,
--				       NET_NAME_UNKNOWN, tun_setup, queues,
--				       queues);
-+				       name_assign_type, tun_setup,
-+				       queues, queues);
- 
- 		if (!dev)
- 			return -ENOMEM;
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index cde3ab9..d0262d9 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2767,6 +2767,7 @@ static void gsm_destroy_network(struct gsm_dlci *dlci)
- static int gsm_create_network(struct gsm_dlci *dlci, struct gsm_netconfig *nc)
- {
- 	char *netname;
-+	unsigned char name_assign_type = NET_NAME_ENUM;
- 	int retval = 0;
- 	struct net_device *net;
- 	struct gsm_mux_net *mux_net;
-@@ -2787,10 +2788,13 @@ static int gsm_create_network(struct gsm_dlci *dlci, struct gsm_netconfig *nc)
- 	pr_debug("create network interface");
- 
- 	netname = "gsm%d";
--	if (nc->if_name[0] != '\0')
-+	if (nc->if_name[0] != '\0') {
- 		netname = nc->if_name;
--	net = alloc_netdev(sizeof(struct gsm_mux_net), netname,
--			   NET_NAME_UNKNOWN, gsm_mux_net_init);
-+		name_assign_type = NET_NAME_USER;
-+	}
-+	net = alloc_netdev(sizeof(struct gsm_mux_net),
-+			netname, name_assign_type,
-+			gsm_mux_net_init);
- 	if (!net) {
- 		pr_err("alloc_netdev failed");
- 		return -ENOMEM;
-diff --git a/net/atm/br2684.c b/net/atm/br2684.c
-index cc78538..cb8d122 100644
---- a/net/atm/br2684.c
-+++ b/net/atm/br2684.c
-@@ -682,8 +682,9 @@ static int br2684_create(void __user *arg)
- 
- 	netdev = alloc_netdev(sizeof(struct br2684_dev),
- 			      ni.ifname[0] ? ni.ifname : "nas%d",
--			      NET_NAME_UNKNOWN,
--			      (payload == p_routed) ? br2684_setup_routed : br2684_setup);
-+			      ni.ifname[0] ? NET_NAME_USER : NET_NAME_ENUM,
-+			      (payload == p_routed) ?
-+			      br2684_setup_routed : br2684_setup);
- 	if (!netdev)
- 		return -ENOMEM;
- 
-diff --git a/net/bluetooth/bnep/core.c b/net/bluetooth/bnep/core.c
-index 85bcc21..6bed7b3 100644
---- a/net/bluetooth/bnep/core.c
-+++ b/net/bluetooth/bnep/core.c
-@@ -539,7 +539,7 @@ int bnep_add_connection(struct bnep_connadd_req *req, struct socket *sock)
- 	/* session struct allocated as private part of net_device */
- 	dev = alloc_netdev(sizeof(struct bnep_session),
- 			   (*req->device) ? req->device : "bnep%d",
--			   NET_NAME_UNKNOWN,
-+			   (*req->device) ? NET_NAME_USER : NET_NAME_ENUM,
- 			   bnep_net_setup);
- 	if (!dev)
- 		return -ENOMEM;
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index 078d336..f9c6766 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -339,13 +339,14 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
- 	return p;
- }
- 
--int br_add_bridge(struct net *net, const char *name)
-+int br_add_bridge(struct net *net, const char *name,
-+		  unsigned char name_assign_type)
- {
- 	struct net_device *dev;
- 	int res;
- 
--	dev = alloc_netdev(sizeof(struct net_bridge), name, NET_NAME_UNKNOWN,
--			   br_dev_setup);
-+	dev = alloc_netdev(sizeof(struct net_bridge), name,
-+			   name_assign_type, br_dev_setup);
- 
- 	if (!dev)
- 		return -ENOMEM;
-diff --git a/net/bridge/br_ioctl.c b/net/bridge/br_ioctl.c
-index a9a4a1b..bdc79a1 100644
---- a/net/bridge/br_ioctl.c
-+++ b/net/bridge/br_ioctl.c
-@@ -340,7 +340,7 @@ static int old_deviceless(struct net *net, void __user *uarg)
- 		buf[IFNAMSIZ-1] = 0;
- 
- 		if (args[0] == BRCTL_ADD_BRIDGE)
--			return br_add_bridge(net, buf);
-+			return br_add_bridge(net, buf, NET_NAME_USER);
- 
- 		return br_del_bridge(net, buf);
- 	}
-@@ -369,7 +369,7 @@ int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd, void __user *uar
- 
- 		buf[IFNAMSIZ-1] = 0;
- 		if (cmd == SIOCBRADDBR)
--			return br_add_bridge(net, buf);
-+			return br_add_bridge(net, buf, NET_NAME_USER);
- 
- 		return br_del_bridge(net, buf);
- 	}
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index 62a7fa2..5adc136 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -415,7 +415,7 @@ void br_flood_forward(struct net_bridge *br, struct sk_buff *skb,
- 
- /* br_if.c */
- void br_port_carrier_check(struct net_bridge_port *p);
--int br_add_bridge(struct net *net, const char *name);
-+int br_add_bridge(struct net *net, const char *name, unsigned char name_assign_type);
- int br_del_bridge(struct net *net, const char *name);
- int br_add_if(struct net_bridge *br, struct net_device *dev);
- int br_del_if(struct net_bridge *br, struct net_device *dev);
+Correct.
+
+> As in, this issue happens _only_ with PCI passthrough devices that use
+> MSI or MSI-X?
+
+I haven't tested MSI-X but in theory yes, only MSI and MSI-X
+passthrough-ed devices are affected.
+
+>
+> Still need to get Stefano's view on this.
+>
+
+Sure, thanks!
+
+>> 
+>> >> 
+>> >> > Is it fair to state that your code ends up reading the MSI IRQ (PIRQ)
+>> >> > from the device and updating the internal PIRQ<->IRQ code to match
+>> >> > with the reality?
+>> >> >
+>> >> 
+>> >> Yea, 'always trust the device'.
+>> >> 
+>> >> >> 
+>> >> >> RFC: I wasn't able to understand why commit af42b8d1 which introduced
+>> >> >> xen_irq_from_pirq() check in xen_hvm_setup_msi_irqs() is checking that instead
+>> >> >> of checking pirq > 0 as if the mapping was already done (and we have pirq>0 here)
+>> >> >> we don't need to request for a new pirq. We're loosing existing PIRQ and I'm also
+>> >> >> not sure when __write_msi_msg() with new PIRQ will result in new mapping.
+>> >> >
+>> >> > We don't request a new pirq. We end up returning before we call xen_allocate_pirq_msi.
+>> >> > At least that is how the commit you mentioned worked.
+>> >> >
+>> >> 
+>> >> I meant to say that in case we have pirq > 0 from __read_msi_msg() but
+>> >> xen_irq_from_pirq(pirq) fails (kexec-only case?) we always do
+>> >> xen_allocate_pirq_msi() which brings us new pirq.
+>> >> 
+>> >> > In regards to why using 'xen_irq_from_pirq' instead of just checking the PIRQ - is
+>> >> > that we might be called twice by a buggy driver. As such we want to check
+>> >> > our PIRQ<->IRQ to figure this out.
+>> >> 
+>> >> But if we're called twice we'll see the same pirq, right? Or there are
+>> >
+>> > Good point.
+>> >> some cases when we see 'crap' instead of pirq here?
+>> >
+>> > For PCI passthrough devices they will be zero until they are enabled.
+>> > But I am not sure about the emulated devices, such as e1000 or such, which
+>> > would also go through this path (I think - do we have MSI devices that
+>> > we emulate in QEMU?)
+>> 
+>> AFAICT emulated e1000 doesn't use MSI (at least with qemu-tradidtional)
+>> and with my patch series it works after kexec.
+>> 
+>> >
+>> >> 
+>> >> I think it would be nice to use the same pirq after kexec instead of
+>> >> allocating a new one even in case we can make remapping work.
+>> >
+>> > I concur.
+>> >
+>> > Stefano, do you recall why you used xen_irq_from_pirq instead of just
+>> > trusting the 'pirq' value? Was it to workaround broken QEMU?
+>> >
+>> >> 
+>> >> Thanks for your comments again!
+>> >> 
+>> >> >> 
+>> >> >> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>> >> >> ---
+>> >> >>  arch/x86/pci/xen.c | 3 +--
+>> >> >>  1 file changed, 1 insertion(+), 2 deletions(-)
+>> >> >> 
+>> >> >> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+>> >> >> index 905956f..685e8f1 100644
+>> >> >> --- a/arch/x86/pci/xen.c
+>> >> >> +++ b/arch/x86/pci/xen.c
+>> >> >> @@ -231,8 +231,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>> >> >>  		__read_msi_msg(msidesc, &msg);
+>> >> >>  		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
+>> >> >>  			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
+>> >> >> -		if (msg.data != XEN_PIRQ_MSI_DATA ||
+>> >> >> -		    xen_irq_from_pirq(pirq) < 0) {
+>> >> >> +		if (msg.data != XEN_PIRQ_MSI_DATA || pirq <= 0) {
+>> >> >>  			pirq = xen_allocate_pirq_msi(dev, msidesc);
+>> >> >>  			if (pirq < 0) {
+>> >> >>  				irq = -ENODEV;
+>> >> >> -- 
+>> >> >> 1.9.3
+>> >> >> 
+>> >> 
+>> >> -- 
+>> >>   Vitaly
+>> 
+>> -- 
+>>   Vitaly
+
 -- 
-1.9.3
-
+  Vitaly
