@@ -1,125 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397AbaGQGvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:51:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19019 "EHLO mx1.redhat.com"
+	id S1754507AbaGQGws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:52:48 -0400
+Received: from ozlabs.org ([103.22.144.67]:38522 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754259AbaGQGvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:51:45 -0400
-Message-ID: <53C77263.7050903@redhat.com>
-Date: Thu, 17 Jul 2014 08:51:15 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752504AbaGQGwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 02:52:45 -0400
+Date: Thu, 17 Jul 2014 16:52:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: linux-next: manual merge of the usb-gadget tree with Linus' tree
+Message-ID: <20140717165238.2e056cba@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Mikko Perttunen <mperttunen@nvidia.com>, swarren@wwwdotorg.org,
-        tj@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH v4 1/8] of: Add NVIDIA Tegra SATA controller binding
-References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <1405510814-31928-1-git-send-email-mperttunen@nvidia.com> <53C666E5.6030009@redhat.com> <20140716131306.GB23384@ulmo> <53C6908A.2050200@redhat.com> <20140716195136.GB5212@mithrandir>
-In-Reply-To: <20140716195136.GB5212@mithrandir>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/AcrTNHBEI669Ml7DJOT7IdL"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/AcrTNHBEI669Ml7DJOT7IdL
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 07/16/2014 09:51 PM, Thierry Reding wrote:
-> On Wed, Jul 16, 2014 at 04:47:38PM +0200, Hans de Goede wrote:
->> Hi,
->>
->> On 07/16/2014 03:13 PM, Thierry Reding wrote:
->>> On Wed, Jul 16, 2014 at 01:49:57PM +0200, Hans de Goede wrote:
->>>> Hi,
->>>>
->>>> On 07/16/2014 01:40 PM, Mikko Perttunen wrote:
->>>>> This patch adds device tree binding documentation for the SATA
->>>>> controller found on NVIDIA Tegra SoCs.
->>>>>
->>>>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
->>>>> ---
->>>>> v4: clarify mandatory clock order
->>>>
->>>> Thanks this and the new v4 of "ata: Add support for the Tegra124 SATA controller"
->>>> both look good to me. So these 2 + v3 for the rest of the series are:
->>>>
->>>> Acked-by: Hans de Goede <hdegoede@redhat.com>
->>>
->>> Like I said in my reply to PATCH v3 7/8, I think this mandatory clock
->>> order is a mistake.
->>
->> We've plenty of other dt bindings where things need to be specified in
->> a certain order, e.g. registers. So I don't really see what the problem
->> is here.
-> 
-> Like I said, the clock-names exists so that drivers can request a clock
-> by name. Therefore the order in which they are listed doesn't matter.
-> The only thing that matters is that the entries in clocks and
-> clock-names match up.
+Hi Felipe,
 
-Ok so I've been think about this, and about the unbalance I've noticed
-between tegra_ahci_power_on which does everything DIY and tegra_ahci_power_off
-which uses ahci_platform_disable_resources() in v3 and later.
+Today's linux-next merge of the usb-gadget tree got a conflict in
+include/uapi/linux/usb/functionfs.h between commit 091221417853 ("usb:
+gadget: f_fs: resurect usb_functionfs_descs_head structure") from
+Linus' tree and commit f0175ab51993 ("usb: gadget: f_fs: OS descriptors
+support") from the usb-gadget tree.
 
-Really only the "sata" clock needs special handling, so I think the following
-solution is best:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-1) Drop the clock ordering requirement and the clk enum
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-2) Make ahci_tegra.c do a devm_clk_get(dev, "sata"), so that it gets its
-own handle to the sata-clk (store this in tegra_ahci_priv). no need to
-get all the other clks which need no special handling
+diff --cc include/uapi/linux/usb/functionfs.h
+index 24b68c59dcf8,b66fae77c08c..000000000000
+--- a/include/uapi/linux/usb/functionfs.h
++++ b/include/uapi/linux/usb/functionfs.h
+@@@ -33,14 -32,37 +32,45 @@@ struct usb_endpoint_descriptor_no_audi
+  	__u8  bInterval;
+  } __attribute__((packed));
+ =20
++ /* MS OS Descriptor header */
++ struct usb_os_desc_header {
++ 	__u8	interface;
++ 	__le32	dwLength;
++ 	__le16	bcdVersion;
++ 	__le16	wIndex;
++ 	union {
++ 		struct {
++ 			__u8	bCount;
++ 			__u8	Reserved;
++ 		};
++ 		__le16	wCount;
++ 	};
++ } __attribute__((packed));
++=20
++ struct usb_ext_compat_desc {
++ 	__u8	bFirstInterfaceNumber;
++ 	__u8	Reserved1;
++ 	__u8	CompatibleID[8];
++ 	__u8	SubCompatibleID[8];
++ 	__u8	Reserved2[6];
++ };
++=20
++ struct usb_ext_prop_desc {
++ 	__le32	dwSize;
++ 	__le32	dwPropertyDataType;
++ 	__le16	wPropertyNameLength;
++ } __attribute__((packed));
++=20
++ #ifndef __KERNEL__
++=20
+ +/* Legacy format, deprecated as of 3.14. */
+ +struct usb_functionfs_descs_head {
+ +	__le32 magic;
+ +	__le32 length;
+ +	__le32 fs_count;
+ +	__le32 hs_count;
+ +} __attribute__((packed, deprecated));
+ +
+  /*
+   * Descriptors format:
+   *
 
-3) Start using ahci_platform_enable_resources() in tegra_ahci_power_on,
-so it would look something like this:
+--Sig_/AcrTNHBEI669Ml7DJOT7IdL
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-static int tegra_ahci_power_on(struct ahci_host_priv *hpriv)
-{
-	struct tegra_ahci_priv *tegra = hpriv->plat_data;
-	int ret;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(tegra->supplies),
-				    tegra->supplies);
-	if (ret)
-		return ret;
+iQIcBAEBCAAGBQJTx3K7AAoJEMDTa8Ir7ZwVTH0P/Av+mD7TttaVFeRSf3oR53Uo
+OqjCeBcN8dbZDnlyHVRpEwd8CqvPmtfRWDOTJmhsCstHswswci60bq2U6NTDwUAk
+ByUc/Nv+GmFybt//X5A8/amB7VVOTopIZdhrknXbJffBpLxW0t3FxAMcBFgw4WKm
+zrHsncWVwvI30EwvQ9PUAVUbpDTzzcK0BdC/D++BcIAe3brJDP/83gwXNVxCx0OU
+oCZW26lHWKenkuV84LEV2TT4/SThuxHd6UEldV8bnoWSkxBWIxvI/E+Ehm9Rpxus
+pkSBO1nMYuYv6Q3Ti7ITkYWiwSmN6Zo18a98uaxXSaNDEkTaVcmf3ocO5MtF9STj
+Y0Dpt5jnTo1wIBenwNrKo0OLU4iydH5QNYRYmpEIH9SftOOFX80+5fOWAtU8tjSS
+KOaFlhA5PUiOmR9AOLp7fZKS8WkTvHg/UvYd8tdM7uS7SeVf5e2df4wzf56UGMep
+copyh98Bywc4F3/ryp9Krq96AV0G53Drk7tW+6yQduAogGPx/VT8ZRA5F8eJ3D6w
+PH6jn5eA4AKYwQK0lSOTHXfwhtlsuqGEidn6g2VVU3x58TQkUSEM27/egSXjG1NV
+12KMqLAplN1/J5EN1HUVWXZ3tDti4SWRhXXCWE6RYFcyv2xRF8FPtK/hwbTlfroQ
+Nvq9zJ+TszdOxKzZMJUr
+=kmV/
+-----END PGP SIGNATURE-----
 
-	ret = tegra_powergate_sequence_power_up(TEGRA_POWERGATE_SATA,
-						tegra->sata_clk,
-						tegra->sata_rst);
-	if (ret)
-		goto disable_regulators;
-
-	reset_control_deassert(tegra->sata_cold_rst);
-	reset_control_deassert(tegra->sata_oob_rst);
-
-	ret = ahci_platform_enable_resources(hpriv);
-	if (ret)
-		goto powergate_sequence_power_off;
-
-	return 0;
-...
-
-This will make tegra_ahci_power_on and tegra_ahci_power_off symmetrical
-which is something I always like to see in functions like this.
-
-I realize that this changes the reset-deassert vs clock enabling ordering,
-if this is an issue please add reset support to libahci-platform.c I believe
-that is something which we will need to do soonish anyways (reset controllers
-are popping up everywhere in newer SoCs).
-
-This will nicely reduce the amount of code and also greatly simplify the error
-return path of tegra_ahci_power_on.
-
-This means that the sata_clk will get enabled twice, but that is harmless
-as long as we disable it twice too. This means that we need to add an
-extra disable to tegra_ahci_power_off because tegra_powergate_power_off
-seems to not do this (unlike power-on, which is rather unsymmetrical
-it would be nice to fix this).
-
-Regards,
-
-Hans
+--Sig_/AcrTNHBEI669Ml7DJOT7IdL--
