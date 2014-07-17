@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519AbaGQK1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:27:19 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49528 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370AbaGQK1Q (ORCPT
+	id S1756665AbaGQKaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:30:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:55028 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218AbaGQK34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:27:16 -0400
-Message-ID: <53C7A4FA.4030600@linux.vnet.ibm.com>
-Date: Thu, 17 Jul 2014 15:57:06 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 06:29:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
+Date: Thu, 17 Jul 2014 12:28:28 +0200
+Message-ID: <8453588.VVyODXRso0@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53C796E1.8080708@nod.at>
+References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C796E1.8080708@nod.at>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Michael Neuling <mikey@neuling.org>, james.hogan@imgtec.com,
-        avagin@openvz.org, Paul.Clothier@imgtec.com, davem@davemloft.net,
-        peterz@infradead.org, palves@redhat.com, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, dhowells@redhat.com, linuxppc-dev@ozlabs.org,
-        davej@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
-Subject: Re: [PATCH V3 0/3] Add new PowerPC specific ELF core notes
-References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com> <53996E41.4070309@linux.vnet.ibm.com>
-In-Reply-To: <53996E41.4070309@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071710-5564-0000-0000-0000001317DE
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:1QxsB48fFTZpOtYHtjz/VO38iynGA3crZSbJKSF2Ge3
+ esueXIjUbSLGxu5NnA3g06bCeR0s8fJiBwVihyx2H56oG7i5Jv
+ 7bv8Epp38Y+28NHM8m/uhYg7W6AhHMrvkSzerbFFE6L4g3eSKU
+ 3++raySTxCIH650VEOJcoj4RzLwDLRFHsxI+Io17RtAXTbFLmS
+ ogxMOc2yg5/rqDXJYeH354fmSpVXlEMBqkPksXGPKm5W53Rvbk
+ kF+IXsiMOXKSzW4lNROyWT0jBKpITPN865rQV7UKoN8Z6Ct1eb
+ XJI2aylqKKYqB9W70zyLuACoFHGTqjUw7W4ts5Dy8P4RQ/u9Fq
+ tcMukNIDk3OSj32n0l98=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 02:39 PM, Anshuman Khandual wrote:
-> On 05/23/2014 08:45 PM, Anshuman Khandual wrote:
->> 	This patch series adds five new ELF core note sections which can be
->> used with existing ptrace request PTRACE_GETREGSET/SETREGSET for accessing
->> various transactional memory and miscellaneous register sets on PowerPC
->> platform. Please find a test program exploiting these new ELF core note
->> types on a POWER8 system.
->>
->> RFC: https://lkml.org/lkml/2014/4/1/292
->> V1:  https://lkml.org/lkml/2014/4/2/43
->> V2:  https://lkml.org/lkml/2014/5/5/88
->>
->> Changes in V3
->> =============
->> (1) Added two new error paths in every TM related get/set functions when regset
->>     support is not present on the system (ENODEV) or when the process does not
->>     have any transaction active (ENODATA) in the context
->>
->> (2) Installed the active hooks for all the newly added regset core note types
->>
->> Changes in V2
->> =============
->> (1) Removed all the power specific ptrace requests corresponding to new NT_PPC_*
->>     elf core note types. Now all the register sets can be accessed from ptrace
->>     through PTRACE_GETREGSET/PTRACE_SETREGSET using the individual NT_PPC* core
->>     note type instead
->> (2) Fixed couple of attribute values for REGSET_TM_CGPR register set
->> (3) Renamed flush_tmreg_to_thread as flush_tmregs_to_thread
->> (4) Fixed 32 bit checkpointed GPR support
->> (5) Changed commit messages accordingly
->>
->> Outstanding Issues
->> ==================
->> (1) Running DSCR register value inside a transaction does not seem to be saved
->>     at thread.dscr when the process stops for ptrace examination.
+On Thursday 17 July 2014 11:26:57 Richard Weinberger wrote:
+> Am 17.07.2014 11:20, schrieb Arnd Bergmann:
+> > On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
+> >>                                          gfp_t gfp_mask, unsigned int order);
+> >>  extern void devm_free_pages(struct device *dev, unsigned long addr);
+> >>  
+> >> +#ifdef CONFIG_HAS_IOMEM
+> >>  void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+> >> +#elif defined(CONFIG_COMPILE_TEST)
+> >> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
+> >> +                                               struct resource *res)
+> >> +{
+> >> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
+> >> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
+> >> +}
+> >> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
+> >>  
+> >>  /* allows to add/remove a custom action to devres stack */
+> > 
+> > To be honest, I think it's a bad idea to introduce wrappers functions
+> > that are only available when CONFIG_COMPILE_TEST is set.
+> > 
+> > COMPILE_TEST is a great tool in general, but it has its limits.
+> > In particular, the case for !CONFIG_IOMEM is completely obscure
+> > and we won't find any bugs by allowing more drivers to be built
+> > in those configurations, but attempting to do it would cause
+> > endless churn by changing each instance of 'depends on HAS_IOMEM'
+> > to 'depends on HAS_IOMEM || COMPILE_TEST'.
+> > 
+> > Note that s390 no has gained support for IOMEM, tile has it most
+> > of the time (when PCI is enabled, so you get it in half the
+> > test builds already), score should set HAS_IOMEM and doesn't
+> > even have public compilers, and uml doesn't even compile in
+> > latest mainline. Nothing else ever sets NO_IOMEM.
 > 
-> Hey Ben,
-> 
-> Any updates on this patch series ?
+> Huh? UML (v3.16-rc5-143-gb6603fe) builds fine here. What build issue are you facing?
 
-Ben,
+This is what I got upon trying earlier. I have not attempted to look into
+why this is happening. Note this is on linux-next from yesterday,
+not mainline as I incorrectly stated above.
 
-Any updates on this patch series ?
+In file included from ../arch/um/include/asm/fixmap.h:58:0,
+                 from ../arch/um/include/asm/pgtable.h:11,
+                 from ../include/linux/mm.h:51,
+                 from ../kernel/uid16.c:6:
+../include/asm-generic/fixmap.h: In function 'fix_to_virt':
+../include/asm-generic/fixmap.h:31:2: error: size of unnamed array is negative
+  BUILD_BUG_ON(idx >= __end_of_fixed_addresses);
 
+
+	Arnd
