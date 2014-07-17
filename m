@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaGQGJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:09:01 -0400
-Received: from regular2.263xmail.com ([211.157.152.3]:34716 "EHLO
-	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbaGQGI5 (ORCPT
+	id S1754004AbaGQGJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:09:53 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:57297 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227AbaGQGJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:08:57 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: thierry.reding@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <e0d148f19b24f1be5209f496890b1b73>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: caesar <caesar.wang@rock-chips.com>
-To: thierry.reding@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org
-Cc: linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cf@rock-chips.com, addy.ke@rock-chips.com, xjq@rock-chips.com,
-        huangtao@rock-chips.com, hj@rock-chips.com,
-        caesar <caesar.wang@rock-chips.com>
-Subject: [PATCH 0/2] This series adds support for Rockchip SoCs integrated PWM.
-Date: Thu, 17 Jul 2014 14:08:12 +0800
-Message-Id: <1405577294-19336-1-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 17 Jul 2014 02:09:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1405552260-30511-1-git-send-email-linux@roeck-us.net>
+References: <1405552260-30511-1-git-send-email-linux@roeck-us.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 17 Jul 2014 15:09:28 +0900
+Message-ID: <CAAVeFuLtUpKKVWAvJ-bw_b36jYFhrzaWeswnJKyehbwn=6y+4Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Add support for GPIOF_ACTIVE_LOW to gpio_request_one
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch would be make applying on the top of Beniamino's submission,
-the Beniamino's submission come from [1].
-[1]:
-https://git.kernel.org/cgit/linux/kernel/git/thierry.reding/linux-pwm.git/log/?h=for-next
+On Thu, Jul 17, 2014 at 8:11 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> The gpio include file and the gpio documentation declare and document
+> GPIOF_ACTIVE_LOW as one of the flags to be passed to gpio_request_one
+> and related functions. However, the flag is not evaluated or used.
+>
+> Check the flag in gpio_request_one and set the gpio internal flag
+> FLAG_ACTIVE_LOW if it is set.
 
-Beniamino's submission won't be used from next genenation RK SoCs.
-So we have to add support to the new pwm version and VOP_PWM for next genenation RK SoCs.
+What is the point since the integer GPIO API has no clue of the
+active-low status of a GPIO? It is only used by the gpiod and sysfs
+interfaces.
 
-Tested on RK3288 SDK board.
-
-caesar (2):
- [PATCH 1/2] pwm: add this series patch to introduce for rk-pwm and vop-pwm
- [PATCH 2/2] pwm: add this series patch to support for rk-pwm and vop-pwm.
-
- .../devicetree/bindings/pwm/pwm-rockchip.txt       |  13 ++-
- drivers/pwm/pwm-rockchip.c                         | 108 +++++++++++++++++----
- 2 files changed, 96 insertions(+), 25 deletions(-)
-
--- 
-1.9.1
-mZ
-
+>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/gpio/gpiolib.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 2ebc907..43d9e34 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1842,6 +1842,9 @@ int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
+>         if (flags & GPIOF_OPEN_SOURCE)
+>                 set_bit(FLAG_OPEN_SOURCE, &desc->flags);
+>
+> +       if (flags & GPIOF_ACTIVE_LOW)
+> +               set_bit(FLAG_ACTIVE_LOW, &desc->flags);
+> +
+>         if (flags & GPIOF_DIR_IN)
+>                 err = gpiod_direction_input(desc);
+>         else
+> --
+> 1.9.1
+>
