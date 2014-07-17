@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369AbaGQJEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:04:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51487 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756015AbaGQJCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:02:23 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
-        <bhelgaas@google.com>, <mohit.kumar@st.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>, <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v3 3/4] Documentation: pci: ti: Add dt binding documentation for PCIe in DRA7xx
-Date: Thu, 17 Jul 2014 14:30:42 +0530
-Message-ID: <1405587643-13808-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405587643-13808-1-git-send-email-kishon@ti.com>
-References: <1405587643-13808-1-git-send-email-kishon@ti.com>
+	id S1756423AbaGQJE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:04:28 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:49441 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755737AbaGQJEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 05:04:23 -0400
+Message-ID: <53C79182.1040408@redhat.com>
+Date: Thu, 17 Jul 2014 11:04:02 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] KVM: nVMX: Fix vmptrld fail and vmwrite error when
+ L1 goes down
+References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com> <1405573011-41330-3-git-send-email-wanpeng.li@linux.intel.com> <53C78FA9.5000303@redhat.com>
+In-Reply-To: <53C78FA9.5000303@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added dt binding documentation of PCIe in DRA7xx.
+Il 17/07/2014 10:56, Paolo Bonzini ha scritto:
+> Il 17/07/2014 06:56, Wanpeng Li ha scritto:
+>> This bug can be trigger by L1 goes down directly w/ enable_shadow_vmcs.
+>>
+>> [ 6413.158950] kvm: vmptrld           (null)/780000000000 failed
+>> [ 6413.158954] vmwrite error: reg 401e value 4 (err 1)
+>> [ 6413.158957] CPU: 0 PID: 4840 Comm: qemu-system-x86 Tainted:
+>> G           OE 3.16.0kvm+ #2
+>> [ 6413.158958] Hardware name: Dell Inc. OptiPlex 9020/0DNKMN, BIOS A05
+>> 12/05/2013
+>> [ 6413.158959]  0000000000000003 ffff880210c9fb58 ffffffff81741de9
+>> ffff8800d7433f80
+>> [ 6413.158960]  ffff880210c9fb68 ffffffffa059fa08 ffff880210c9fb78
+>> ffffffffa05938bf
+>> [ 6413.158962]  ffff880210c9fba8 ffffffffa059a97f ffff8800d7433f80
+>> 0000000000000003
+>> [ 6413.158963] Call Trace:
+>> [ 6413.158968]  [<ffffffff81741de9>] dump_stack+0x45/0x56
+>> [ 6413.158972]  [<ffffffffa059fa08>] vmwrite_error+0x2c/0x2e [kvm_intel]
+>> [ 6413.158974]  [<ffffffffa05938bf>] vmcs_writel+0x1f/0x30 [kvm_intel]
+>> [ 6413.158976]  [<ffffffffa059a97f>] free_nested.part.73+0x5f/0x170
+>> [kvm_intel]
+>> [ 6413.158978]  [<ffffffffa059ab13>] vmx_free_vcpu+0x33/0x70 [kvm_intel]
+>> [ 6413.158991]  [<ffffffffa0360324>] kvm_arch_vcpu_free+0x44/0x50 [kvm]
+>> [ 6413.158998]  [<ffffffffa0360f92>] kvm_arch_destroy_vm+0xf2/0x1f0 [kvm]
+>>
+>> Commit 26a865 (KVM: VMX: fix use after free of vmx->loaded_vmcs) fix
+>> the use
+>> after free bug by move free_loaded_vmcs() before free_nested(),
+>> however, this
+>> lead to free loaded_vmcs->vmcs premature and vmptrld load a NULL
+>> pointer during
+>> sync shadow vmcs to vmcs12. In addition, vmwrite which used to disable
+>> shadow
+>> vmcs and reset VMCS_LINK_POINTER failed since there is no valid
+>> current-VMCS.
+>> This patch fix it by skipping sync shadow vmcs and reset vmcs field
+>> for L1
+>> destroy since they will be reinitialized after L1 recreate.
+>>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>  arch/x86/kvm/vmx.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index fbce89e..2b28da7 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -6113,9 +6113,9 @@ static void free_nested(struct vcpu_vmx *vmx)
+>>          return;
+>>      vmx->nested.vmxon = false;
+>>      if (vmx->nested.current_vmptr != -1ull) {
+>> -        nested_release_vmcs12(vmx);
+>>          vmx->nested.current_vmptr = -1ull;
+>>          vmx->nested.current_vmcs12 = NULL;
+>> +        nested_release_vmcs12(vmx);
+>>      }
+>>      if (enable_shadow_vmcs)
+>>          free_vmcs(vmx->nested.current_shadow_vmcs);
+>>
+>
+> This looks good, I'll apply it to kvm/master.
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/pci/ti-pci.txt |   59 ++++++++++++++++++++++
- 1 file changed, 59 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+Hmm, on second thought the lifetimes of the VMCSes are a total mess. 
+Let me look more at this.
 
-diff --git a/Documentation/devicetree/bindings/pci/ti-pci.txt b/Documentation/devicetree/bindings/pci/ti-pci.txt
-new file mode 100644
-index 0000000..3d21791
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pci/ti-pci.txt
-@@ -0,0 +1,59 @@
-+TI PCI Controllers
-+
-+PCIe Designware Controller
-+ - compatible: Should be "ti,dra7-pcie""
-+ - reg : Two register ranges as listed in the reg-names property
-+ - reg-names : The first entry must be "ti-conf" for the TI specific registers
-+	       The second entry must be "rc-dbics" for the designware pcie
-+	       registers
-+	       The third entry must be "config" for the PCIe configuration space
-+ - phys : list of PHY specifiers (used by generic PHY framework)
-+ - phy-names : must be "pcie-phy0", "pcie-phy1", "pcie-phyN".. based on the
-+	       number of PHYs as specified in *phys* property.
-+ - ti,hwmods : Name of the hwmod associated to the pcie, "pcie<X>",
-+	       where <X> is the instance number of the pcie from the HW spec.
-+ - interrupts : Two interrupt entries must be specified. The first one is for
-+		main interrupt line and the second for MSI interrupt line.
-+ - #address-cells,
-+   #size-cells,
-+   #interrupt-cells,
-+   device_type,
-+   ranges,
-+   num-lanes,
-+   interrupt-map-mask,
-+   interrupt-map : as specified in ../designware-pcie.txt
-+
-+Example:
-+axi {
-+	compatible = "simple-bus";
-+	#size-cells = <1>;
-+	#address-cells = <1>;
-+	ranges = <0x51000000 0x51000000 0x3000
-+		  0x0	     0x20000000 0x10000000>;
-+	pcie@51000000 {
-+		compatible = "ti,dra7-pcie";
-+		reg = <0x51000000 0x2000>, <0x51002000 0x14c>, <0x1000 0x2000>;
-+		reg-names = "rc_dbics", "ti_conf", "config";
-+		interrupts = <0 232 0x4>, <0 233 0x4>;
-+		#address-cells = <3>;
-+		#size-cells = <2>;
-+		device_type = "pci";
-+		ranges = <0x81000000 0 0          0x03000 0 0x00010000
-+			  0x82000000 0 0x20013000 0x13000 0 0xffed000>;
-+		#interrupt-cells = <1>;
-+		num-lanes = <1>;
-+		ti,hwmods = "pcie1";
-+		phys = <&pcie1_phy>;
-+		phy-names = "pcie-phy0";
-+		interrupt-map-mask = <0 0 0 7>;
-+		interrupt-map = <0 0 0 1 &pcie_intc 1>,
-+				<0 0 0 2 &pcie_intc 2>,
-+				<0 0 0 3 &pcie_intc 3>,
-+				<0 0 0 4 &pcie_intc 4>;
-+		pcie_intc: interrupt-controller {
-+			interrupt-controller;
-+			#address-cells = <0>;
-+			#interrupt-cells = <1>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
+Paolo
 
