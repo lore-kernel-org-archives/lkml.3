@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933742AbaGQNef (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:34:35 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:63471 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400AbaGQNeb (ORCPT
+	id S933269AbaGQNfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:35:13 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10037 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932400AbaGQNfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:34:31 -0400
-From: Gavin Guo <gavin.guo@canonical.com>
-To: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
-        mathias.nyman@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: yk@canonical.com, anthony.wong@canonical.com, gerald.yang@canonical.com
-Subject: [PATCH v2 1/1] usb: Check if port status is equal to RxDetect
-Date: Thu, 17 Jul 2014 21:34:16 +0800
-Message-Id: <1405604056-18987-2-git-send-email-gavin.guo@canonical.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1405604056-18987-1-git-send-email-gavin.guo@canonical.com>
-References: <1405604056-18987-1-git-send-email-gavin.guo@canonical.com>
+	Thu, 17 Jul 2014 09:35:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/wI2NvI4SPNFREyQMjJDfHLuU3XF4gMrY=
+X-DKIM: OpenDKIM Filter v2.0.1 titan C86455AE37C
+Date: Thu, 17 Jul 2014 09:34:49 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/7] ARM: at91: move aic driver to drivers/irqchips
+Message-ID: <20140717133449.GP13108@titan.lakedaemon.net>
+References: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405012462-766-1-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
-[1022:7814], the second hotplugging will experience the USB 3.0 pen
-drive is recognized as high-speed device. After bisecting the kernel,
-I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
-(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
-some experiments, the bug can be fixed by avoiding executing the function
-hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
-XHCI Controlleris [1022:7814] is already in RxDetect
-(I tried printing out the port status before setting to Disabled state),
-it's reasonable to check the port status before really executing
-hub_usb3_port_disable().
+On Thu, Jul 10, 2014 at 07:14:15PM +0200, Boris BREZILLON wrote:
+> Hello,
+> 
+> This series moves the AIC driver to the irqchip directory and make use of
+> the generic chip framework whenever possible.
+> 
+> This driver only support DT boards (all legacy board files should be soon
+> replaced by their DT versions).
+> 
+> Since the last version AIC and AIC5 code have been split and common
+> functions have been moved to irq-atmel-aic-common.c.
+> I know there is not much code in this file and it could have been
+> duplicated in AIC and AIC5 drivers, but I'm planning to add more common
+> stuff soon (AIC irq fixups previously done in
+> arch/arm/mach-at91/sysirq_mask.c).
+> 
+> Jason, if everybody is fine with this version could you share a topic
+> branch  containing patch 1 to 3 with Nicolas ?
 
-Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
-Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: <stable@vger.kernel.org>
----
- drivers/usb/core/hub.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+I've now applied patches 1-3 to irqchip/atmel-aic.  You can find the
+branch here:
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 21b99b4..0e950ad 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -889,6 +889,25 @@ static int hub_usb3_port_disable(struct usb_hub *hub, int port1)
- 	if (!hub_is_superspeed(hub->hdev))
- 		return -EINVAL;
- 
-+	ret = hub_port_status(hub, port1, &portstatus, &portchange);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
-+	 * Controller [1022:7814] will have spurious result making the following
-+	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
-+	 * as high-speed device if we set the usb 3.0 port link state to
-+	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
-+	 * check the state here to avoid the bug.
-+	 */
-+	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+				USB_SS_PORT_LS_RX_DETECT) {
-+		dev_dbg(&hub->ports[port1 - 1]->dev,
-+			 "Not disabling port; link state is RxDetect\n");
-+		return ret;
-+	}
-+
- 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
- 	if (ret)
- 		return ret;
--- 
-2.0.0
+  git://git.infradead.org/users/jcooper/linux.git irqchip/atmel-aic
 
+It will be merged into -next today, and I'll merge it into irqchip/core
+after a few days.
+
+thx,
+
+Jason.
