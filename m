@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918AbaGQHf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 03:35:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40645 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753461AbaGQHfX (ORCPT
+	id S1755005AbaGQHhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 03:37:03 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:37918 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996AbaGQHhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 03:35:23 -0400
-Date: Thu, 17 Jul 2014 09:35:18 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Tomasz Figa <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <rob.herring@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
-Message-ID: <20140717093518.486ac244@free-electrons.com>
-In-Reply-To: <CAKohpomPAp74Sf_DxqzFk1WzUTx5m=G-nj+d+QHW5q=gnVphhA@mail.gmail.com>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<CAKohpo=Z5gEHOC5q40q8dfQfoNP5-WyhjG1arV99zJiG2c+6Xg@mail.gmail.com>
-	<CAKohpo=bUMKa752fBXZTb0WPYMfJtuR5uk7z-YaXYV63fhJWtg@mail.gmail.com>
-	<1450785.beFNo3ByBF@vostro.rjw.lan>
-	<CAKohpomPAp74Sf_DxqzFk1WzUTx5m=G-nj+d+QHW5q=gnVphhA@mail.gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 17 Jul 2014 03:37:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <20140717072649.GA3620@redhat.com>
+References: <1405550594-11786-1-git-send-email-teg@jklm.no>
+ <20140716.235609.2266614502105510844.davem@davemloft.net> <CAG-2HqU=+DU3G-kxmf6rLGdKdN2ybUPiwsRN-HBYyu-ViZ8x0A@mail.gmail.com>
+ <20140717072649.GA3620@redhat.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 17 Jul 2014 09:36:40 +0200
+Message-ID: <CAG-2HqWMw5iFuzDEXb-1V2dw7tKD3yKeUqwO-ZdjPfwCVwX0MQ@mail.gmail.com>
+Subject: Re: [PATCH v8] net: set name assign type for names assigned using a
+ static string
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Viresh Kumar,
+On Thu, Jul 17, 2014 at 9:26 AM, Veaceslav Falico <vfalico@redhat.com> wrote:
+> On Thu, Jul 17, 2014 at 09:17:07AM +0200, Tom Gundersen wrote:
+>>
+>> On Thu, Jul 17, 2014 at 8:56 AM, David Miller <davem@davemloft.net> wrote:
+>>>
+>>> Tom, even if the patches are sort of independent, they logically
+>>> belong together.
+>>>
+>>> So please number them, and provide an appropriate "[PATCH 0/N] ..."
+>>> cover letter.
+>>>
+>>> Please resubmit these patches with that done properly, thank you.
+>>
+>>
+>> Ok. Will do.
+>
+>
+> Also, it would be really nice if you could send patches as
+> Doc/net/netdev-FAQ.txt suggests, as lots of us have scripts that parse the
+> subject to find out which tree to apply/test the patches.
+>
+> It's also easier than using git notes edit/git send-email --notes :).
+>
+> Q: How do I indicate which tree (net vs. net-next) my patch should be in?
+>
+> A: Firstly, think whether you have a bug fix or new "next-like" content.
+>   Then once decided, assuming that you use git, use the prefix flag, i.e.
+>
+>        git format-patch --subject-prefix='PATCH net-next' start..finish
+>
+>   Use "net" instead of "net-next" (always lower case) in the above for
+>   bug-fix net content.  If you don't use git, then note the only magic in
+>   the above is just the subject text of the outgoing e-mail, and you can
+>   manually change it yourself with whatever MUA you are comfortable with.
 
-On Thu, 17 Jul 2014 05:58:22 +0530, Viresh Kumar wrote:
-> On 17 July 2014 02:48, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > I don't like that idea, but I wonder what other people think.
-> 
-> Hmm, the other thread around looking at the bindings is really slow.
+Ok. Will do.
 
-Could you summarize what is the issue with the binding?
+Thanks.
 
-At least for the case where we have one clock per CPU, the DT binding
-is really dead simple: each CPU node can carry a "clocks" property, and
-a "clock-latency" property. I really don't see why a long discussion is
-needed to agree on such a binding.
-
-Now, if the DT binding problem is related to those cases where you have
-siblings, i.e one clock controlling *some* of the CPUs, but not all
-CPUs or just one CPU, then maybe we could leave this aside for now,
-only support the following cases:
-
- * One clock for all CPUs
- * One clock for each CPU
-
-Thanks,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Tom
