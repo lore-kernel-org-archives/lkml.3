@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965336AbaGQQQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:16:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55712 "EHLO mail.zytor.com"
+	id S965369AbaGQQRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:17:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52599 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934286AbaGQQQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:16:27 -0400
-Message-ID: <53C7F6CB.4070606@zytor.com>
-Date: Thu, 17 Jul 2014 09:16:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-64, espfix: consider IRQs are off when initializing
-References: <1405610015-27464-1-git-send-email-sasha.levin@oracle.com> <53C7F063.7030007@zytor.com> <53C7F2B2.2000803@oracle.com>
-In-Reply-To: <53C7F2B2.2000803@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S934915AbaGQQOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:14:49 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 26/33] perf thread: Allow deletion of a thread with no map groups
+Date: Thu, 17 Jul 2014 13:12:28 -0300
+Message-Id: <1405613555-23380-27-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405613555-23380-1-git-send-email-acme@kernel.org>
+References: <1405613555-23380-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 08:58 AM, Sasha Levin wrote:
-> 
-> This is the result of getting an error message for allocating with GFP_KERNEL
-> saying that we can't do that with IRQs off.
-> 
-> My assumption after that was that we're not going to be sleeping at all, which
-> is why spinlock/GFP_ATOMIC would be correct here.
-> 
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-So we have a problem, but the proposed solution is wrong.  This is
-messy... we need this code to be successfully executed before we can
-safely schedule *user space* on that processor, but there is no
-requirement that we execute it before we enable *interrupts* on that
-processor, so maybe there is a way we can fulfill those requirements.
+It needs to be possible to call thread__delete() on a thread with no map
+groups.
 
-The alternative would be to fail to enable the processor or going into a
-spin loop, but either of those would been rather toxic to me.
+This is needed for a subsequent patch which deletes a thread on the
+error path before map groups have been attached.
 
-	-hpa
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1405495184-20441-2-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/thread.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 7a32f447a8e7..b9c36ef42d2f 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -60,8 +60,10 @@ void thread__delete(struct thread *thread)
+ {
+ 	struct comm *comm, *tmp;
+ 
+-	map_groups__put(thread->mg);
+-	thread->mg = NULL;
++	if (thread->mg) {
++		map_groups__put(thread->mg);
++		thread->mg = NULL;
++	}
+ 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
+ 		list_del(&comm->list);
+ 		comm__free(comm);
+-- 
+1.9.3
 
