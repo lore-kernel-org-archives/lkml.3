@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaGQTMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:12:19 -0400
+	id S1754897AbaGQTMW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:12:22 -0400
 Received: from smtp.citrix.com ([66.165.176.89]:55360 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260AbaGQTMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:12:14 -0400
+	id S1754260AbaGQTMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:12:20 -0400
 X-IronPort-AV: E=Sophos;i="5.01,679,1400025600"; 
-   d="scan'208";a="153463684"
+   d="scan'208";a="153463779"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH for stable 3.15 1/4] xen-netback: Fix handling frag_list on grant op error path
-Date: Thu, 17 Jul 2014 20:10:26 +0100
-Message-ID: <1405624229-21817-1-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH for stable 3.15 3/4] xen-netback: Fix releasing header slot on error path
+Date: Thu, 17 Jul 2014 20:10:28 +0100
+Message-ID: <1405624229-21817-3-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405624229-21817-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1405624229-21817-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error handling for skb's with frag_list was completely wrong, it caused
-double unmap attempts to happen if the error was on the first skb. Move it to
-the right place in the loop.
+This patch makes this function aware that the first frag and the header might
+share the same ring slot. That could happen if the first slot is bigger than
+MAX_SKB_LEN. Due to this the error path might release that slot twice or never,
+depending on the error scenario.
+xenvif_idx_release is also removed from xenvif_idx_unmap, and called separately.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 Reported-by: Armin Zentai <armin.zentai@ezit.hu>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xenproject.org
-
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 7367208..d7ae93d 100644
+index 7b3e806..efc836e 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -1007,10 +1007,16 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- {
- 	struct gnttab_map_grant_ref *gop_map = *gopp_map;
- 	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
-+	/* This points to the shinfo of the actually checked skb, which could be
-+	 * either the first or the one on the frag_list
-+	 */
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
-+	/* If this is non-NULL, we are currently checking the frag_list skb, and
-+	 * this points to the shinfo of the first one
-+	 */
-+	struct skb_shared_info *first_shinfo = NULL;
+@@ -1016,6 +1016,8 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 	 */
+ 	struct skb_shared_info *first_shinfo = NULL;
  	int nr_frags = shinfo->nr_frags;
++	const bool sharedslot = nr_frags &&
++				frag_get_pending_idx(&shinfo->frags[0]) == pending_idx;
  	int i, err;
--	struct sk_buff *first_skb = NULL;
  
  	/* Check status of header. */
- 	err = (*gopp_copy)->status;
-@@ -1063,31 +1069,28 @@ check_frags:
- 			xenvif_idx_unmap(vif, pending_idx);
+@@ -1028,7 +1030,10 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 				   (*gopp_copy)->status,
+ 				   pending_idx,
+ 				   (*gopp_copy)->source.u.ref);
+-		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
++		/* The first frag might still have this slot mapped */
++		if (!sharedslot)
++			xenvif_idx_release(vif, pending_idx,
++					   XEN_NETIF_RSP_ERROR);
+ 	}
+ 
+ check_frags:
+@@ -1045,8 +1050,19 @@ check_frags:
+ 						pending_idx,
+ 						gop_map->handle);
+ 			/* Had a previous error? Invalidate this fragment. */
+-			if (unlikely(err))
++			if (unlikely(err)) {
+ 				xenvif_idx_unmap(vif, pending_idx);
++				/* If the mapping of the first frag was OK, but
++				 * the header's copy failed, and they are
++				 * sharing a slot, send an error
++				 */
++				if (i == 0 && sharedslot)
++					xenvif_idx_release(vif, pending_idx,
++							   XEN_NETIF_RSP_ERROR);
++				else
++					xenvif_idx_release(vif, pending_idx,
++							   XEN_NETIF_RSP_OKAY);
++			}
+ 			continue;
  		}
  
-+		/* And if we found the error while checking the frag_list, unmap
-+		 * the first skb's frags
-+		 */
-+		if (first_shinfo) {
-+			for (j = 0; j < first_shinfo->nr_frags; j++) {
-+				pending_idx = frag_get_pending_idx(&first_shinfo->frags[j]);
-+				xenvif_idx_unmap(vif, pending_idx);
-+			}
-+		}
+@@ -1058,15 +1074,26 @@ check_frags:
+ 				   gop_map->status,
+ 				   pending_idx,
+ 				   gop_map->ref);
 +
- 		/* Remember the error: invalidate all subsequent fragments. */
- 		err = newerr;
+ 		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
+ 
+ 		/* Not the first error? Preceding frags already invalidated. */
+ 		if (err)
+ 			continue;
+-		/* First error: invalidate preceding fragments. */
++
++		/* First error: if the header haven't shared a slot with the
++		 * first frag, release it as well.
++		 */
++		if (!sharedslot)
++			xenvif_idx_release(vif, XENVIF_TX_CB(skb)->pending_idx,
++					   XEN_NETIF_RSP_OKAY);
++
++		/* Invalidate preceding fragments of this skb. */
+ 		for (j = 0; j < i; j++) {
+ 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
+ 			xenvif_idx_unmap(vif, pending_idx);
++			xenvif_idx_release(vif, pending_idx,
++					   XEN_NETIF_RSP_OKAY);
+ 		}
+ 
+ 		/* And if we found the error while checking the frag_list, unmap
+@@ -1076,6 +1103,8 @@ check_frags:
+ 			for (j = 0; j < first_shinfo->nr_frags; j++) {
+ 				pending_idx = frag_get_pending_idx(&first_shinfo->frags[j]);
+ 				xenvif_idx_unmap(vif, pending_idx);
++				xenvif_idx_release(vif, pending_idx,
++						   XEN_NETIF_RSP_OKAY);
+ 			}
+ 		}
+ 
+@@ -1807,8 +1836,6 @@ void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+ 			   tx_unmap_op.status);
+ 		BUG();
  	}
- 
--	if (skb_has_frag_list(skb)) {
--		first_skb = skb;
--		skb = shinfo->frag_list;
--		shinfo = skb_shinfo(skb);
-+	if (skb_has_frag_list(skb) && !first_shinfo) {
-+		first_shinfo = skb_shinfo(skb);
-+		shinfo = skb_shinfo(skb_shinfo(skb)->frag_list);
- 		nr_frags = shinfo->nr_frags;
- 
- 		goto check_frags;
- 	}
- 
--	/* There was a mapping error in the frag_list skb. We have to unmap
--	 * the first skb's frags
--	 */
--	if (first_skb && err) {
--		int j;
--		shinfo = skb_shinfo(first_skb);
--		for (j = 0; j < shinfo->nr_frags; j++) {
--			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
--			xenvif_idx_unmap(vif, pending_idx);
--		}
--	}
 -
- 	*gopp_map = gop_map;
- 	return err;
+-	xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
  }
+ 
+ static inline int rx_work_todo(struct xenvif *vif)
