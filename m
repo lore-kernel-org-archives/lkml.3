@@ -1,80 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189AbaGQTln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:41:43 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:30903 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640AbaGQTlk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:41:40 -0400
-X-CheckPoint: {53C826F3-A-2100090A-C0000000}
-Message-ID: <53C826F3.4030302@tilera.com>
-Date: Thu, 17 Jul 2014 15:41:39 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>, Arnd Bergmann <arnd@arndb.de>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 05/38] tile: clean up Kbuild files
-References: <20140714150609.GA28358@ravnborg.org> <1405350546-28467-1-git-send-email-sam@ravnborg.org> <1405350546-28467-5-git-send-email-sam@ravnborg.org>
-In-Reply-To: <1405350546-28467-5-git-send-email-sam@ravnborg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+	id S1757515AbaGQTl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:41:57 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:43777 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757312AbaGQTlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:41:55 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH RESEND v2 1/4] pinctrl: Update Qualcomm pm8xxx GPIO parameters definitions
+Date: Thu, 17 Jul 2014 22:41:25 +0300
+Message-Id: <1405626085-14069-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
+References: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/14/2014 11:08 AM, Sam Ravnborg wrote:
-> Drop an unused Kbuild file - it was anyway empty
-> Drop an irrelevent assignment to header-y
->
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: David Howells <dhowells@redhat.com>
-> ---
->   arch/tile/include/arch/Kbuild | 1 -
->   arch/tile/include/asm/Kbuild  | 3 ---
->   2 files changed, 4 deletions(-)
->   delete mode 100644 arch/tile/include/arch/Kbuild
->
-> diff --git a/arch/tile/include/arch/Kbuild b/arch/tile/include/arch/Kbuild
-> deleted file mode 100644
-> index 3751c9f..0000000
-> --- a/arch/tile/include/arch/Kbuild
-> +++ /dev/null
-> @@ -1 +0,0 @@
-> -# Tile arch headers
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Available 'power-source' labels differ between chips.
+Use just VIN0-VIN14 in the input source names.
 
-for this piece.  David Howells left these with just comments originally,
-but removing the file entirely seems fine too.
+PM8018, PM8038, PM8058, PM8917, PM8921 pin controller hardware
+support only one function 'gpio'. Currently GPIO's will
+support only 'normal' mode. Rest of the modes will be added
+later, if needed.
 
-> diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
-> index 0aa5675..3013a07 100644
-> --- a/arch/tile/include/asm/Kbuild
-> +++ b/arch/tile/include/asm/Kbuild
-> @@ -1,6 +1,3 @@
-> -
-> -header-y += ../arch/
-> -
->   generic-y += bug.h
->   generic-y += bugs.h
->   generic-y += clkdev.h
+We can not use generic drive-strength because Qualcomm hardware
+define those values as low, medium and high. Use qcom,strength
+for this.
 
-Nack for this patch.  The arch/ headers are all intended to be shared by the
-kernel and userspace, so we install them from the kernel.  This one header-y
-line installs the 16 header files in usr/include/arch/*.h.  If there's a
-better way to make that happen, that would be fine too, of course.
+We can not use generic bias-pull-up because Qualcomm hardware
+define those values in uA's. Use qcom,pull-up for this.
 
-Arguably we could provide them separately (a tarball from tilera.com or
-something) but frankly, this just makes the standard build flows for kernel,
-gcc, and glibc more non-standard for tile, which seems like a bad thing.
+Add qcom,pm8941-gpio and qcom,pma8084-gpio to chips, which
+support these DT bindings.
 
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ .../bindings/pinctrl/qcom,pm8xxx-gpio.txt          | 97 +++++++++++-----------
+ drivers/pinctrl/pinctrl-pm8xxx-gpio.c              | 34 ++++----
+ include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h     | 33 ++++----
+ 3 files changed, 81 insertions(+), 83 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-gpio.txt b/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-gpio.txt
+index 0035dd8..f17580a 100644
+--- a/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-gpio.txt
++++ b/Documentation/devicetree/bindings/pinctrl/qcom,pm8xxx-gpio.txt
+@@ -12,6 +12,8 @@ Qualcomm.
+ 			"qcom,pm8058-gpio"
+ 			"qcom,pm8917-gpio"
+ 			"qcom,pm8921-gpio"
++			"qcom,pm8941-gpio"
++			"qcom,pma8084-gpio"
+ 
+ - reg:
+ 	Usage: required
+@@ -74,20 +76,14 @@ to specify in a pin configuration subnode:
+ 			gpio1-gpio40 for pm8058
+ 			gpio1-gpio38 for pm8917
+ 			gpio1-gpio44 for pm8921
++			gpio1-gpio36 for pm8941
++			gpio1-gpio22 for pma8084
+ 
+ - function:
+-	Usage: optional
++	Usage: mandatory
+ 	Value type: <string>
+ 	Definition: Specify the alternative function to be configured for the
+-		    specified pins.  Valid values are:
+-			"normal",
+-			"paired",
+-			"func1",
+-			"func2",
+-			"dtest1",
+-			"dtest2",
+-			"dtest3",
+-			"dtest4"
++		    specified pins.  Valid values is: "gpio"
+ 
+ - bias-disable:
+ 	Usage: optional
+@@ -99,18 +95,6 @@ to specify in a pin configuration subnode:
+ 	Value type: <none>
+ 	Definition: The specified pins should be configued as pull down.
+ 
+-- bias-pull-up:
+-	Usage: optional
+-	Value type: <u32> (optional)
+-	Definition: The specified pins should be configued as pull up. An
+-		    optional argument can be used to configure the strength.
+-		    Valid values are; as defined in
+-		    <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
+-		    1: 30uA			(PM8XXX_GPIO_PULL_UP_30)
+-		    2: 1.5uA			(PM8XXX_GPIO_PULL_UP_1P5)
+-		    3: 31.5uA			(PM8XXX_GPIO_PULL_UP_31P5)
+-		    4: 1.5uA + 30uA boost	(PM8XXX_GPIO_PULL_UP_1P5_30)
+-
+ - bias-high-impedance:
+ 	Usage: optional
+ 	Value type: <none>
+@@ -139,47 +123,37 @@ to specify in a pin configuration subnode:
+ 	Definition: Selects the power source for the specified pins. Valid
+ 		    power sources are, as defined in
+ 		    <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
+-			0: bb (PM8XXX_GPIO_VIN_BB)
++			0: bb (PM8XXX_GPIO_VIN0)
+ 				valid for pm8038, pm8058, pm8917, pm8921
+-			1: ldo2 (PM8XXX_GPIO_VIN_L2)
++			1: ldo2 (PM8XXX_GPIO_VIN1)
+ 				valid for pm8018, pm8038, pm8917,pm8921
+-			2: ldo3 (PM8XXX_GPIO_VIN_L3)
++			2: ldo3 (PM8XXX_GPIO_VIN2)
+ 				valid for pm8038, pm8058, pm8917, pm8921
+-			3: ldo4 (PM8XXX_GPIO_VIN_L4)
++			3: ldo4 (PM8XXX_GPIO_VIN3)
+ 				valid for pm8018, pm8917, pm8921
+-			4: ldo5 (PM8XXX_GPIO_VIN_L5)
++			4: ldo5 (PM8XXX_GPIO_VIN4)
+ 				valid for pm8018, pm8058
+-			5: ldo6 (PM8XXX_GPIO_VIN_L6)
++			5: ldo6 (PM8XXX_GPIO_VIN5)
+ 				valid for pm8018, pm8058
+-			6: ldo7 (PM8XXX_GPIO_VIN_L7)
++			6: ldo7 (PM8XXX_GPIO_VIN6)
+ 				valid for pm8058
+-			7: ldo8 (PM8XXX_GPIO_VIN_L8)
++			7: ldo8 (PM8XXX_GPIO_VIN7)
+ 				valid for pm8018
+-			8: ldo11 (PM8XXX_GPIO_VIN_L11)
++			8: ldo11 (PM8XXX_GPIO_VIN8)
+ 				valid for pm8038
+-			9: ldo14 (PM8XXX_GPIO_VIN_L14)
++			9: ldo14 (PM8XXX_GPIO_VIN9)
+ 				valid for pm8018
+-			10: ldo15 (PM8XXX_GPIO_VIN_L15)
++			10: ldo15 (PM8XXX_GPIO_VIN10)
+ 				valid for pm8038, pm8917, pm8921
+-			11: ldo17 (PM8XXX_GPIO_VIN_L17)
++			11: ldo17 (PM8XXX_GPIO_VIN11)
+ 				valid for pm8038, pm8917, pm8921
+-			12: smps3 (PM8XXX_GPIO_VIN_S3)
++			12: smps3 (PM8XXX_GPIO_VIN12)
+ 				valid for pm8018, pm8058
+-			13: smps4 (PM8XXX_GPIO_VIN_S4)
++			13: smps4 (PM8XXX_GPIO_VIN13)
+ 				valid for pm8921
+-			14: vph (PM8XXX_GPIO_VIN_VPH)
++			14: vph (PM8XXX_GPIO_VIN14)
+ 				valid for pm8018, pm8038, pm8058, pm8917 pm8921
+ 
+-- drive-strength:
+-	Usage: optional
+-	Value type: <u32>
+-	Definition: Selects the drive strength for the specified pins. Value
+-		    drive strengths are:
+-			0: no	(PM8XXX_GPIO_STRENGTH_NO)
+-			1: high	(PM8XXX_GPIO_STRENGTH_HIGH)
+-			2: medium	(PM8XXX_GPIO_STRENGTH_MED)
+-			3: low	(PM8XXX_GPIO_STRENGTH_LOW)
+-
+ - drive-push-pull:
+ 	Usage: optional
+ 	Value type: <none>
+@@ -190,6 +164,28 @@ to specify in a pin configuration subnode:
+ 	Value type: <none>
+ 	Definition: The specified pins are configured in open-drain mode.
+ 
++- qcom,pull-up:
++	Usage: optional
++	Value type: <u32>
++	Definition: The specified pins should be configued as pull up. An
++		    optional argument can be used to configure the strength.
++		    Valid values are as defined in
++		    <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
++		    1: 30uA			(PM8XXX_GPIO_PULL_UP_30)
++		    2: 1.5uA			(PM8XXX_GPIO_PULL_UP_1P5)
++		    3: 31.5uA			(PM8XXX_GPIO_PULL_UP_31P5)
++		    4: 1.5uA + 30uA boost	(PM8XXX_GPIO_PULL_UP_1P5_30)
++
++- qcom,strength:
++	Usage: optional
++	Value type: <u32>
++	Definition: Selects the drive strength for the specified pins.
++		    Valid values are as defined in
++		    <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
++			0: no	(PM8XXX_GPIO_STRENGTH_NO)
++			1: high	(PM8XXX_GPIO_STRENGTH_HIGH)
++			2: medium	(PM8XXX_GPIO_STRENGTH_MED)
++			3: low	(PM8XXX_GPIO_STRENGTH_LOW)
+ 
+ Example:
+ 
+@@ -218,13 +214,14 @@ Example:
+ 		pm8921_gpio_keys: gpio-keys {
+ 			volume-keys {
+ 				pins = "gpio20", "gpio21";
+-				function = "normal";
++				function = "gpio";
+ 
+ 				input-enable;
+ 				bias-pull-up;
+ 				drive-push-pull;
+-				drive-strength = <PM8XXX_GPIO_STRENGTH_NO>;
+-				power-source = <PM8XXX_GPIO_VIN_S4>;
++
++				power-source = <PM8XXX_GPIO_VIN13>;
++				qcom,strength = <PM8XXX_GPIO_STRENGTH_NO>;
+ 			};
+ 		};
+ 	};
+diff --git a/drivers/pinctrl/pinctrl-pm8xxx-gpio.c b/drivers/pinctrl/pinctrl-pm8xxx-gpio.c
+index 5aaf914..68feb2f 100644
+--- a/drivers/pinctrl/pinctrl-pm8xxx-gpio.c
++++ b/drivers/pinctrl/pinctrl-pm8xxx-gpio.c
+@@ -95,9 +95,7 @@ static const char * const pm8xxx_gpio_groups[PM8XXX_MAX_GPIOS] = {
+ };
+ 
+ static const char * const pm8xxx_gpio_functions[] = {
+-	"normal", "paired",
+-	"func1", "func2",
+-	"dtest1", "dtest2", "dtest3", "dtest4",
++	"gpio",
+ };
+ 
+ static int pm8xxx_gpio_read(struct pm8xxx_gpio *pctrl, int pin, int bank)
+@@ -622,9 +620,9 @@ static int pm8xxx_gpio_populate(struct pm8xxx_gpio *pctrl)
+ static const struct pm8xxx_gpio_data pm8018_gpio_data = {
+ 	.ngpio = 6,
+ 	.power_sources = (int[]) {
+-		PM8XXX_GPIO_VIN_L4, PM8XXX_GPIO_VIN_L14, PM8XXX_GPIO_VIN_S3,
+-		PM8XXX_GPIO_VIN_L6, PM8XXX_GPIO_VIN_L2, PM8XXX_GPIO_VIN_L5,
+-		PM8XXX_GPIO_VIN_L8, PM8XXX_GPIO_VIN_VPH
++		PM8XXX_GPIO_VIN3, PM8XXX_GPIO_VIN9, PM8XXX_GPIO_VIN12,
++		PM8XXX_GPIO_VIN5, PM8XXX_GPIO_VIN1, PM8XXX_GPIO_VIN4,
++		PM8XXX_GPIO_VIN7, PM8XXX_GPIO_VIN14
+ 	},
+ 	.npower_sources = 8,
+ };
+@@ -632,9 +630,9 @@ static const struct pm8xxx_gpio_data pm8018_gpio_data = {
+ static const struct pm8xxx_gpio_data pm8038_gpio_data = {
+ 	.ngpio = 12,
+ 	.power_sources = (int[]) {
+-		PM8XXX_GPIO_VIN_VPH, PM8XXX_GPIO_VIN_BB, PM8XXX_GPIO_VIN_L11,
+-		PM8XXX_GPIO_VIN_L15, PM8XXX_GPIO_VIN_L4, PM8XXX_GPIO_VIN_L3,
+-		PM8XXX_GPIO_VIN_L17
++		PM8XXX_GPIO_VIN14, PM8XXX_GPIO_VIN0, PM8XXX_GPIO_VIN8,
++		PM8XXX_GPIO_VIN10, PM8XXX_GPIO_VIN3, PM8XXX_GPIO_VIN2,
++		PM8XXX_GPIO_VIN11
+ 	},
+ 	.npower_sources = 7,
+ };
+@@ -642,18 +640,18 @@ static const struct pm8xxx_gpio_data pm8038_gpio_data = {
+ static const struct pm8xxx_gpio_data pm8058_gpio_data = {
+ 	.ngpio = 40,
+ 	.power_sources = (int[]) {
+-		PM8XXX_GPIO_VIN_VPH, PM8XXX_GPIO_VIN_BB, PM8XXX_GPIO_VIN_S3,
+-		PM8XXX_GPIO_VIN_L3, PM8XXX_GPIO_VIN_L7, PM8XXX_GPIO_VIN_L6,
+-		PM8XXX_GPIO_VIN_L5, PM8XXX_GPIO_VIN_L2
++		PM8XXX_GPIO_VIN14, PM8XXX_GPIO_VIN0, PM8XXX_GPIO_VIN12,
++		PM8XXX_GPIO_VIN2, PM8XXX_GPIO_VIN6, PM8XXX_GPIO_VIN5,
++		PM8XXX_GPIO_VIN4, PM8XXX_GPIO_VIN1
+ 	},
+ 	.npower_sources = 8,
+ };
+ static const struct pm8xxx_gpio_data pm8917_gpio_data = {
+ 	.ngpio = 38,
+ 	.power_sources = (int[]) {
+-		PM8XXX_GPIO_VIN_VPH, PM8XXX_GPIO_VIN_BB, PM8XXX_GPIO_VIN_S4,
+-		PM8XXX_GPIO_VIN_L15, PM8XXX_GPIO_VIN_L4, PM8XXX_GPIO_VIN_L3,
+-		PM8XXX_GPIO_VIN_L17
++		PM8XXX_GPIO_VIN14, PM8XXX_GPIO_VIN0, PM8XXX_GPIO_VIN13,
++		PM8XXX_GPIO_VIN10, PM8XXX_GPIO_VIN3, PM8XXX_GPIO_VIN2,
++		PM8XXX_GPIO_VIN11
+ 	},
+ 	.npower_sources = 7,
+ };
+@@ -661,9 +659,9 @@ static const struct pm8xxx_gpio_data pm8917_gpio_data = {
+ static const struct pm8xxx_gpio_data pm8921_gpio_data = {
+ 	.ngpio = 44,
+ 	.power_sources = (int[]) {
+-		PM8XXX_GPIO_VIN_VPH, PM8XXX_GPIO_VIN_BB, PM8XXX_GPIO_VIN_S4,
+-		PM8XXX_GPIO_VIN_L15, PM8XXX_GPIO_VIN_L4, PM8XXX_GPIO_VIN_L3,
+-		PM8XXX_GPIO_VIN_L17
++		PM8XXX_GPIO_VIN14, PM8XXX_GPIO_VIN0, PM8XXX_GPIO_VIN13,
++		PM8XXX_GPIO_VIN10, PM8XXX_GPIO_VIN3, PM8XXX_GPIO_VIN2,
++		PM8XXX_GPIO_VIN11
+ 	},
+ 	.npower_sources = 7,
+ };
+diff --git a/include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h b/include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h
+index 6b66fff..564fd05 100644
+--- a/include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h
++++ b/include/dt-bindings/pinctrl/qcom,pm8xxx-gpio.h
+@@ -5,27 +5,30 @@
+ #ifndef _DT_BINDINGS_PINCTRL_QCOM_PM8XXX_GPIO_H
+ #define _DT_BINDINGS_PINCTRL_QCOM_PM8XXX_GPIO_H
+ 
++/* To be used with "qcom,pull-up = <>" */
+ #define PM8XXX_GPIO_PULL_UP_30		1
+ #define PM8XXX_GPIO_PULL_UP_1P5		2
+ #define PM8XXX_GPIO_PULL_UP_31P5	3
+ #define PM8XXX_GPIO_PULL_UP_1P5_30	4
+ 
+-#define PM8XXX_GPIO_VIN_BB		0
+-#define PM8XXX_GPIO_VIN_L2		1
+-#define PM8XXX_GPIO_VIN_L3		2
+-#define PM8XXX_GPIO_VIN_L4		3
+-#define PM8XXX_GPIO_VIN_L5		4
+-#define PM8XXX_GPIO_VIN_L6		5
+-#define PM8XXX_GPIO_VIN_L7		6
+-#define PM8XXX_GPIO_VIN_L8		7
+-#define PM8XXX_GPIO_VIN_L11		8
+-#define PM8XXX_GPIO_VIN_L14		9
+-#define PM8XXX_GPIO_VIN_L15		10
+-#define PM8XXX_GPIO_VIN_L17		11
+-#define PM8XXX_GPIO_VIN_S3		12
+-#define PM8XXX_GPIO_VIN_S4		13
+-#define PM8XXX_GPIO_VIN_VPH		14
++/* power-source */
++#define PM8XXX_GPIO_VIN0		0
++#define PM8XXX_GPIO_VIN1		1
++#define PM8XXX_GPIO_VIN2		2
++#define PM8XXX_GPIO_VIN3		3
++#define PM8XXX_GPIO_VIN4		4
++#define PM8XXX_GPIO_VIN5		5
++#define PM8XXX_GPIO_VIN6		6
++#define PM8XXX_GPIO_VIN7		7
++#define PM8XXX_GPIO_VIN8		8
++#define PM8XXX_GPIO_VIN9		9
++#define PM8XXX_GPIO_VIN10		10
++#define PM8XXX_GPIO_VIN11		11
++#define PM8XXX_GPIO_VIN12		12
++#define PM8XXX_GPIO_VIN13		13
++#define PM8XXX_GPIO_VIN14		14
+ 
++/* To be used with "qcom,strength = <>" */
+ #define	PM8XXX_GPIO_STRENGTH_NO		0
+ #define	PM8XXX_GPIO_STRENGTH_HIGH	1
+ #define	PM8XXX_GPIO_STRENGTH_MED	2
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.8.3.2
 
