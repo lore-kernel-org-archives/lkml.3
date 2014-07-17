@@ -1,207 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218AbaGQJch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:32:37 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:40122 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969AbaGQJcf (ORCPT
+	id S1756137AbaGQJfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:35:25 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:34351 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849AbaGQJfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:32:35 -0400
-Message-ID: <53C7982F.8020205@gmail.com>
-Date: Thu, 17 Jul 2014 12:32:31 +0300
-From: Timofey Titovets <nefelim4ag@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 05:35:19 -0400
+Date: Thu, 17 Jul 2014 11:35:14 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH v2 29/29] nios2: Build infrastructure
+Message-ID: <20140717093514.GA15755@ravnborg.org>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+ <1405413956-2772-30-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-To: minchan@kernel.org
-CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: [PATCH] zram: auto add/del devices on demand
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405413956-2772-30-git-send-email-lftan@altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Timofey Titovets <nefelim4ag@gmail.com>
+Hi Ley.
 
-This add supporting of autochange count of zram devices on demand, like 
-loop devices;
-This working by following rules:
-	- Always save minimum devices count specified by num_device (can be 
-specified while kernel module loading)
-	- if last device already using add new device;
-	- if last and prelast devices is free - delete last zram device;
+Looks much better than last time I reviewed this.
+A bunch of small comments follows.
 
-Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
+	Sam
 
-Please pull from:
-https://github.com/Nefelim4ag/linux.git
----
-Tested on 3.15.5-2-ARCH, can be applied on any kernel version
-after this patch 'zram: add LZ4 compression support' -
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
----
-drivers/block/zram/zram_drv.c | 65 
-++++++++++++++++++++++++++++++++++++++++---
-1 file changed, 61 insertions(+), 4 deletions(-)
+> diff --git a/arch/nios2/Makefile b/arch/nios2/Makefile
+> new file mode 100644
+> index 0000000..62b789a
+> --- /dev/null
+> +++ b/arch/nios2/Makefile
+> @@ -0,0 +1,78 @@
+> +#
+> +# This file is subject to the terms and conditions of the GNU General Public
+> +# License.  See the file "COPYING" in the main directory of this archive
+> +# for more details.
+> +#
+> +# Copyright (C) 2013 Altera Corporation
+> +# Copyright (C) 1994, 95, 96, 2003 by Wind River Systems
+> +# Written by Fredrik Markstrom
+> +#
+> +# This file is included by the global makefile so that you can add your own
+> +# architecture-specific flags and dependencies. Remember to do have actions
+> +# for "archclean" cleaning up for this architecture.
+> +#
+> +# Nios2 port by Wind River Systems Inc trough:
+> +#   fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
+> +
+> +UTS_SYSNAME = Linux
+> +
+> +export MMU
+> +
+> +cflags-y :=
+> +LDFLAGS		:=
+> +LDFLAGS_vmlinux	:=
+These assignments are not needed.
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 089e72c..d0a3055 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -42,6 +42,10 @@ static const char *default_compressor = "lzo";
 
-  /* Module params (documentation at end) */
-  static unsigned int num_devices = 1;
-+static unsigned int last_created_dev = 1;
-+
-+static void zram_add_dev(void);
-+static void zram_del_dev(void);
+> +
+> +LIBGCC		:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+> +
+> +KBUILD_AFLAGS += $(cflags-y)
+This is nop since $(cflags-y) is empty.
 
-  #define ZRAM_ATTR_RO(name)						\
-  static ssize_t zram_attr_##name##_show(struct device *d,		\
-@@ -168,6 +172,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
-  		struct device_attribute *attr, const char *buf, size_t len)
-  {
-  	struct zram *zram = dev_to_zram(dev);
-+
-  	down_write(&zram->init_lock);
-  	if (init_done(zram)) {
-  		up_write(&zram->init_lock);
-@@ -239,6 +244,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
-  {
-  	size_t num_pages;
-  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-+
-  	if (!meta)
-  		goto out;
+> +KBUILD_CFLAGS += -pipe -D__linux__ -D__ELF__ $(cflags-y)
+Here the $(cflags-y) can be dropped too.
 
-@@ -374,6 +380,7 @@ static int zram_bvec_read(struct zram *zram, struct 
-bio_vec *bvec,
-  	struct page *page;
-  	unsigned char *user_mem, *uncmem = NULL;
-  	struct zram_meta *meta = zram->meta;
-+
-  	page = bvec->bv_page;
+> +INSTALL_PATH ?= /tftpboot
+> +boot := arch/$(ARCH)/boot
+In all other places you spell out nios2 - so do it here too.
 
-  	read_lock(&meta->tb_lock);
-@@ -607,6 +614,7 @@ static void zram_reset_device(struct zram *zram, 
-bool reset_capacity)
-  	/* Free all pages that are still in this zram device */
-  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-  		unsigned long handle = meta->table[index].handle;
-+
-  		if (!handle)
-  			continue;
 
-@@ -668,6 +676,7 @@ static ssize_t disksize_store(struct device *dev,
-  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-  	revalidate_disk(zram->disk);
-  	up_write(&zram->init_lock);
-+	zram_add_dev();
-  	return len;
+> +BOOT_TARGETS = vmImage zImage
+> +PHONY += $(BOOT_TARGETS) install
+> +KBUILD_IMAGE := $(boot)/vmImage
+> +
+> +ifneq ($(CONFIG_NIOS2_DTB_SOURCE),"")
+> +	core-y	+= $(boot)/
+> +endif
+> +
+> +all: vmImage
+> +
+> +archclean:
+> +	$(Q)$(MAKE) $(clean)=$(boot)
+> +
+> +%.dtb:
+> +	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+> +
+> +dtbs:
+> +	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+> +
+> +$(BOOT_TARGETS): vmlinux
+> +	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+> +
+> +install:
+> +	$(Q)$(MAKE) $(build)=$(boot) BOOTIMAGE=$(KBUILD_IMAGE) install
+> +
+> +define archhelp
+> +  echo  '* vmImage         - Kernel-only image for U-Boot (arch/$(ARCH)/boot/vmImage)'
 
-  out_destroy_comp:
-@@ -712,6 +721,7 @@ static ssize_t reset_store(struct device *dev,
-  	bdput(bdev);
 
-  	zram_reset_device(zram, true);
-+	zram_del_dev();
-  	return len;
+> +  echo  '  install         - Install kernel using'
+> +  echo  '                     (your) ~/bin/$(CROSS_COMPILE)installkernel or'
+> +  echo  '                     (distribution) PATH: $(CROSS_COMPILE)installkernel or'
+> +  echo  '                     install to $$(INSTALL_PATH)'
+Is this explanation true for nios2?
+I could not check because the install.sh script was not included.
 
-  out:
-@@ -954,6 +964,51 @@ static void destroy_device(struct zram *zram)
-  	blk_cleanup_queue(zram->queue);
-  }
+> +  echo  '  dtbs            - Build device tree blobs for enabled boards'
+> +endef
 
-+/* remove last free device, if last and prelast dev a free */
-+static void zram_del_dev(void)
-+{
-+	if (last_created_dev < num_devices)
-+		return;
-+
-+	if (zram_devices[last_created_dev].disksize == 0 &&
-+		zram_devices[last_created_dev-1].disksize == 0
-+		) {
-+		destroy_device(&zram_devices[last_created_dev]);
-+		last_created_dev--;
-+		pr_info("Deleted zram%u device\n", last_created_dev);
-+	}
-+}
-+
-+/* Auto add empty zram device, if last device in use */
-+static void zram_add_dev(void)
-+{
-+	int ret;
-+
-+	if (last_created_dev+1 > max_num_devices) {
-+		pr_warn("Can't add zram%u, max device number reached\n",
-+			num_devices);
-+		last_created_dev--;
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (&zram_devices[last_created_dev].disksize > 0) {
-+		last_created_dev++;
-+		ret = create_device(&zram_devices[last_created_dev],
-+							last_created_dev);
-+		if (ret)
-+			goto free;
-+		pr_info("Created zram%u device\n", last_created_dev);
-+	}
-+
-+	return;
-+
-+free:
-+	destroy_device(&zram_devices[last_created_dev]);
-+	last_created_dev--;
-+out:;
-+}
-+
-  static int __init zram_init(void)
-  {
-  	int ret, dev_id;
-@@ -972,18 +1027,20 @@ static int __init zram_init(void)
-  		goto out;
-  	}
+> diff --git a/arch/nios2/boot/Makefile b/arch/nios2/boot/Makefile
+> new file mode 100644
+> index 0000000..35c80e8
+> --- /dev/null
+> +++ b/arch/nios2/boot/Makefile
+> @@ -0,0 +1,52 @@
+> +#
+> +# arch/nios2/boot/Makefile
+> +#
+> +# This file is subject to the terms and conditions of the GNU General Public
+> +# License.  See the file "COPYING" in the main directory of this archive
+> +# for more details.
+> +#
+> +
+> +UIMAGE_LOADADDR = $(shell $(NM) vmlinux | awk '$$NF == "_stext" {print $$1}')
+> +UIMAGE_ENTRYADDR = $(shell $(NM) vmlinux | awk '$$NF == "_start" {print $$1}')
+> +UIMAGE_COMPRESSION = gzip
+> +
+> +OBJCOPYFLAGS_vmlinux.bin := -O binary
+> +
+> +targets += vmlinux.bin vmlinux.gz vmImage
+> +
+> +$(obj)/vmlinux.bin: vmlinux FORCE
+> +	$(call if_changed,objcopy)
+> +
+> +$(obj)/vmlinux.gz: $(obj)/vmlinux.bin FORCE
+> +	$(call if_changed,gzip)
+> +
+> +$(obj)/vmImage: $(obj)/vmlinux.gz
+> +	$(call if_changed,uimage)
+> +	@$(kecho) 'Kernel: $@ is ready'
+> +
+> +# Rule to build device tree blobs
+> +DTB_SRC := $(subst ",,$(CONFIG_NIOS2_DTB_SOURCE))
+If you use: 
+   $(patsubst "%"
 
--	/* Allocate the device array and initialize each one */
--	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
-+	/* Allocate the device array */
-+	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
-  	if (!zram_devices) {
-  		ret = -ENOMEM;
-  		goto unregister;
-  	}
+Then my editor get less confused. This is also what is used
+for similar purposes for other architectures.
 
-+	/* Initialise zram{0..num_devices} */
-  	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-  		ret = create_device(&zram_devices[dev_id], dev_id);
-  		if (ret)
-  			goto free_devices;
-  	}
-+	last_created_dev = num_devices-1;
+> +
+> +# Make sure the generated dtb gets removed during clean
+> +extra-$(CONFIG_NIOS2_DTB_SOURCE_BOOL) += system.dtb
+This is not needed as you cover this with the assignmnet to clean-files later in this file.
 
-  	pr_info("Created %u device(s) ...\n", num_devices);
+> +
+> +$(obj)/system.dtb: $(DTB_SRC) FORCE
+> +	$(call cmd,dtc)
+> +
+> +# Ensure system.dtb exists
+> +$(obj)/linked_dtb.o: $(obj)/system.dtb
+> +
+> +obj-$(CONFIG_NIOS2_DTB_SOURCE_BOOL) += linked_dtb.o
+> +
+> +targets += $(dtb-y)
+> +
+> +# Rule to build device tree blobs with make command
+> +$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+> +	$(call if_changed_dep,dtc)
+> +
+> +$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
+> +
+> +clean-files := *.dtb
+> +
+> +install:
+> +	sh $(srctree)/$(src)/install.sh $(KERNELRELEASE) $(BOOTIMAGE) System.map "$(INSTALL_PATH)"
 
-@@ -1004,7 +1061,7 @@ static void __exit zram_exit(void)
-  	int i;
-  	struct zram *zram;
+The install.sh script is not included (or I did not find it).
 
--	for (i = 0; i < num_devices; i++) {
-+	for (i = 0; i < last_created_dev+1; i++) {
-  		zram = &zram_devices[i];
 
-  		destroy_device(zram);
-@@ -1025,7 +1082,7 @@ module_init(zram_init);
-  module_exit(zram_exit);
+> diff --git a/arch/nios2/include/asm/Kbuild b/arch/nios2/include/asm/Kbuild
+> new file mode 100644
+> index 0000000..dfe7a79
+> --- /dev/null
+> +++ b/arch/nios2/include/asm/Kbuild
+> @@ -0,0 +1,67 @@
+> +include include/asm-generic/Kbuild.asm
+The above include is wrong - please drop it.
 
-  module_param(num_devices, uint, 0);
--MODULE_PARM_DESC(num_devices, "Number of zram devices");
-+MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
 
-  MODULE_LICENSE("Dual BSD/GPL");
-  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+> +header-y += ucontext.h
+> +header-y += traps.h
+We no longer visit include/asm for exported hedaders.
+So the two assignments above are not used.
+
+You will likely move them to arch/nios2/include/uapi/asm/Kbuild to
+let them be exported.
+
