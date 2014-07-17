@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833AbaGQNka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:40:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45460 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932366AbaGQNkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:40:24 -0400
-Date: Thu, 17 Jul 2014 15:40:20 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Guenter Roeck <linux@roeck-us.net>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
-Message-ID: <20140717154020.650ad59c@endymion.delvare>
-In-Reply-To: <20140717132135.GI2740@katana>
-References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
-	<20140717132135.GI2740@katana>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S932947AbaGQNmg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:42:36 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:56950 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932179AbaGQNmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:42:35 -0400
+Message-ID: <53C7D2CB.7040001@linaro.org>
+Date: Thu, 17 Jul 2014 08:42:35 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>
+CC: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] printk: honor LOG_PREFIX in msg_print_text()
+References: <1405531620-9983-1-git-send-email-elder@linaro.org> <1405531620-9983-4-git-send-email-elder@linaro.org> <20140717094031.GQ6774@pathway.suse.cz> <53C7BF2E.4070705@linaro.org>
+In-Reply-To: <53C7BF2E.4070705@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014 15:21:35 +0200, Wolfram Sang wrote:
-> On Mon, Jul 07, 2014 at 07:23:03AM -0700, Guenter Roeck wrote:
-> > SMBus block commands are different to I2C block commands since
-> > the returned data is not normally accessible with byte or word
-> > commands on other command offsets. Add linked list of 'block'
-> > commands to support those commands.
-> > 
-> > Access mechanism is quite simple: Block commands must be written
-> > before they can be read. The first write selects the block length.
-> > Subsequent writes can be partial. Block read commands always return
-> > the number of bytes selected with the first write.
-> > 
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> > v2: Make new functionality only available on request via functionality
-> >     module parameter
-> >     Add more details about SMBus block mode support to documentation
-> >     Use correct sizeof() variable in devm_kzalloc
-> >     Use stub_find_block() only in SMBus block command itself.
-> >     Store first word of block data in chip->words[].
-> >     When writing block data and the written data is longer than
-> >     the first write, bail out with debug message indicating the reason
-> >     for the error.
-> 
-> Thanks for doing this and thanks to Jean for the thorough review.
+On 07/17/2014 07:18 AM, Alex Elder wrote:
+>> But I think that the fix is not complete. IMHO, we should finish the
+>> > previous continuous line with '\n' before we print the prefix. I mean something
+>> > like:
+> I will re-post a new version of this patch.  When I do so
+> I will look at this and--unless I find I disagree--will
+> implement your suggestion.
 
-You're welcome.
+I concur with this, but it's a different bug that changes
+externally-visible behavior, so I'm going to add this as
+a separate patch.
 
-> The thing I miss is the documentation that SMBUS_BLOCK must explicitly
-> be activated and the description how to do it. A comment in the driver,
-> above STUB_FUNC_* defines might not hurt as well.
-
-Good point.
-
-> Also, I'd prefer to squash Jean's "increasing block length" patch into
-> this one if both of you are fine with that?
-
-Yes, I would be perfectly fine with that.
-
-Guenter, can you please send an updated patch?
-
--- 
-Jean Delvare
-SUSE L3 Support
+					-Alex
