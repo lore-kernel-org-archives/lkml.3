@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671AbaGQXL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:11:58 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:48286 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755200AbaGQXL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:11:56 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] NFS: add checks for returned value of try_module_get()
-Date: Fri, 18 Jul 2014 03:11:45 +0400
-Message-Id: <1405638705-320-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1758296AbaGQXOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:14:08 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:39837 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757870AbaGQXOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 19:14:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <x49pph325wj.fsf@segfault.boston.devel.redhat.com>
+References: <1405606659-3802-1-git-send-email-akinobu.mita@gmail.com>
+	<x49pph325wj.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 18 Jul 2014 08:14:03 +0900
+Message-ID: <CAC5umygiEpKBsHQ+OvKvw8pRD1DO0fCPA29qs=kNRho35xkt_g@mail.gmail.com>
+Subject: Re: [PATCH] block_dev: implement readpages() to optimize sequential read
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a couple of places in client code where returned value
-of try_module_get() is ignored. As a result there is a small chance
-to premature unload module because of unbalanced refcounting.
+2014-07-18 3:31 GMT+09:00 Jeff Moyer <jmoyer@redhat.com>:
+> Akinobu Mita <akinobu.mita@gmail.com> writes:
+>
+>> Sequential read from a block device is expected to be equal or faster
+>> than from the file on a filesystem.  But it is not correct due to the
+>> lack of effective readpages() in the address space operations for
+>> block device.
+>
+> Ah, a trip down memory lane.  ;-)  Here's a thread showing issues with
+> the last time this was proposed (by me, incidentally):
+>
+> https://lkml.org/lkml/2009/6/2/480
+>
+> At the very least, we need to see numbers on a real device, and see it
+> booted on something with >4k page size before taking this back in.
 
-The patch adds error handling in that places.
-
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/nfs/client.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 1d09289c8f0e..a3531fcdc58a 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -110,8 +110,8 @@ struct nfs_subversion *get_nfs_version(unsigned int version)
- 		mutex_unlock(&nfs_version_mutex);
- 	}
- 
--	if (!IS_ERR(nfs))
--		try_module_get(nfs->owner);
-+	if (!IS_ERR(nfs) && !try_module_get(nfs->owner))
-+		return ERR_PTR(-EAGAIN);
- 	return nfs;
- }
- 
-@@ -158,7 +158,8 @@ struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_init)
- 		goto error_0;
- 
- 	clp->cl_nfs_mod = cl_init->nfs_mod;
--	try_module_get(clp->cl_nfs_mod->owner);
-+	if (!try_module_get(clp->cl_nfs_mod->owner))
-+		goto error_dealloc;
- 
- 	clp->rpc_ops = clp->cl_nfs_mod->rpc_ops;
- 
-@@ -190,6 +191,7 @@ struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_init)
- 
- error_cleanup:
- 	put_nfs_version(clp->cl_nfs_mod);
-+error_dealloc:
- 	kfree(clp);
- error_0:
- 	return ERR_PTR(err);
--- 
-1.9.1
-
+Thanks for the information.  First, I'll try to reproduce the >4k page
+size issue with qemu with the architecture which can support 64k page.
