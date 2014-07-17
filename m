@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816AbaGQXhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:37:55 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40635 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753858AbaGQXhy (ORCPT
+	id S1758665AbaGQXkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:40:33 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:49228 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758233AbaGQXkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:37:54 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlULALRdyFN5LHOdPGdsb2JhbABZgw5SV4InhQilagEBAQYFlmCHS4EJFwQBAQEBODaERBwjGCQ0BSUDBy2IQcVbGIVjiQNNHYMYgRgFhXKVLJgDKy+BBA
-Date: Fri, 18 Jul 2014 09:37:50 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [GIT PULL] xfs: fixes for 3.16-rc5
-Message-ID: <20140717233750.GE20518@dastard>
+	Thu, 17 Jul 2014 19:40:32 -0400
+Date: Thu, 17 Jul 2014 16:40:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] rcu: Remove redundant checks for
+ rcu_scheduler_fully_active
+Message-ID: <20140717234027.GC8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1405475402-7181-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1405475402-7181-1-git-send-email-bobby.prani@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071723-3532-0000-0000-0000033AF44C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Jul 15, 2014 at 09:50:02PM -0400, Pranith Kumar wrote:
+> rcu_scheduler_fully_active is set to true early in the boot process.
+> 
+> rcu_prepare_kthreads() is called in two locations. Once after setting the above
+> flag and the other while hotplugging a CPU from rcu_cpu_notify(). CPU hotplug is
+> enabled much later by which time the above flag is already set. Hence checking
+> for this flag is redundant in this function.
+> 
+> The checks in rcu_spawn_one_boost_kthread() and rcu_spawn_all_nocb_kthreads()
+> are similarly redundant.
+> 
+> This commit removes the redundant checks for this flag from the above
+> locations.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-Can you please pull the updates listed below? These are regression
-fixes for issues recently introduced - the change in the stack
-switch location is fairly important, so I've held off sending this
-update until I was sure that it still addresses the stack usage
-problem the original solved. So while the commits in the xfs tree
-are recent, it has been under tested for several weeks now.
+Good catch!  Queued for 3.18.
 
--Dave.
+							Thanx, Paul
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+> ---
+>  kernel/rcu/tree_plugin.h | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 17ccb62..a2113f6 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -1341,7 +1341,7 @@ static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+>  	if (&rcu_preempt_state != rsp)
+>  		return 0;
+> 
+> -	if (!rcu_scheduler_fully_active || rnp->qsmaskinit == 0)
+> +	if (rnp->qsmaskinit == 0)
+>  		return 0;
+> 
+>  	rsp->boost = 1;
+> @@ -1489,8 +1489,7 @@ static void rcu_prepare_kthreads(int cpu)
+>  	struct rcu_node *rnp = rdp->mynode;
+> 
+>  	/* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
+> -	if (rcu_scheduler_fully_active)
+> -		(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+> +	(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+>  }
+> 
+>  #else /* #ifdef CONFIG_RCU_BOOST */
+> @@ -2509,9 +2508,8 @@ static void rcu_spawn_all_nocb_kthreads(int cpu)
+>  {
+>  	struct rcu_state *rsp;
+> 
+> -	if (rcu_scheduler_fully_active)
+> -		for_each_rcu_flavor(rsp)
+> -			rcu_spawn_one_nocb_kthread(rsp, cpu);
+> +	for_each_rcu_flavor(rsp)
+> +		rcu_spawn_one_nocb_kthread(rsp, cpu);
+>  }
+> 
+>  /*
+> -- 
+> 1.9.1
+> 
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-3.16-rc5
-
-for you to fetch changes up to 03e01349c654fbdea80d3d9b4ab599244eb55bb7:
-
-  xfs: null unused quota inodes when quota is on (2014-07-15 07:28:41 +1000)
-
-----------------------------------------------------------------
-xfs: fixes for 3.15-rc5
-
-Fixes for low memory perforamnce regressions and a quota inode handling
-regression.
-
-----------------------------------------------------------------
-Dave Chinner (3):
-      Revert "xfs: block allocation work needs to be kswapd aware"
-      xfs: refine the allocation stack switch
-      xfs: null unused quota inodes when quota is on
-
- fs/xfs/xfs_bmap.c      |    7 ++-----
- fs/xfs/xfs_bmap.h      |    4 +---
- fs/xfs/xfs_bmap_util.c |   53 -----------------------------------------------------
- fs/xfs/xfs_bmap_util.h |    4 ----
- fs/xfs/xfs_btree.c     |   82 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/xfs/xfs_iomap.c     |    3 +--
- fs/xfs/xfs_sb.c        |   25 +++++++++++++++++++++----
- 7 files changed, 106 insertions(+), 72 deletions(-)
-
-
--- 
-Dave Chinner
-david@fromorbit.com
