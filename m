@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329AbaGQRHQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:07:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60763 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaGQRHN convert rfc822-to-8bit (ORCPT
+	id S1755296AbaGQRMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:12:23 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54479 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaGQRMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:07:13 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v7] ASoC: tas2552: Support TI TAS2552 Amplifier
-Thread-Topic: [PATCH v7] ASoC: tas2552: Support TI TAS2552 Amplifier
-Thread-Index: AQHPn5+zOIrOvAJDbUuqECPNOC5yFQ==
-Date: Thu, 17 Jul 2014 17:07:07 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49D84EBF@DFLE09.ent.ti.com>
-References: <1405368645-4168-1-git-send-email-dmurphy@ti.com>
- <20140717165816.GA17528@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 17 Jul 2014 13:12:21 -0400
+From: Gavin Guo <gavin.guo@canonical.com>
+To: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
+        mathias.nyman@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: yk@canonical.com, anthony.wong@canonical.com, gerald.yang@canonical.com
+Subject: [PATCH v2 0/1][RESEND] Fixes to the USB 3.0 detection as 2.0 on AMD platform
+Date: Fri, 18 Jul 2014 01:12:12 +0800
+Message-Id: <1405617133-4596-1-git-send-email-gavin.guo@canonical.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark
+As the discussion in http://comments.gmane.org/gmane.linux.usb.general/107011, 
+I found that [AMD] FCH USB XHCI Controller [1022:7814] the USB 3.0 disk 
+can't work in SuperSpeed after several times of hotplug. After doing some 
+experiments and bisection, I found the bug is caused by 
+41e7e056cdc662f704fa9262e5c6e213b4ab45dd (USB: Allow USB 3.0 ports to be 
+disabled.). And the bug can be fixed by not executing the 
+hub_usb3_port_disable() function. I also found that the port status is 
+already in RxDetect before setting the port to Disabled in 
+hub_usb3_port_disable() function. So, there are 2 ways to fix the bug:
 
+1) Check if the Vendor/Device id is [1022:7814] at the beginning of 
+hub_usb3_port_disable() function. If yes, return without executing the 
+remaining code.
 
-On 07/17/2014 11:58 AM, Mark Brown wrote:
-> On Mon, Jul 14, 2014 at 03:10:45PM -0500, Dan Murphy wrote:
->
-> There's a few smallish issues below but this is basically good so I've
-> applied it, please send incremental fixed for the things below.
->
->> +	/* Turn on Class D amplifier */
->> +	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
->> +						TAS2552_CLASSD_EN);
->> +
-> Why is this being done in hw_params() and not using DAPM?
->
->> +static int tas2552_runtime_suspend(struct device *dev)
->> +{
->> +	struct tas2552_data *tas2552 = dev_get_drvdata(dev);
->> +
->> +	tas2552_sw_shutdown(tas2552, 0);
->> +
->> +	if (tas2552->enable_gpio)
->> +		gpiod_set_value(tas2552->enable_gpio, 0);
->> +
->> +	regcache_cache_only(tas2552->regmap, true);
->> +	regcache_mark_dirty(tas2552->regmap);
-> It's better to do the GPIO set after making the device cache only in
-> order to be sure nothing can come in and try to use the register map
-> between the two.
->
->> +static void tas2552_shutdown(struct snd_pcm_substream *substream,
->> +			   struct snd_soc_dai *dai)
->> +{
->> +	struct snd_soc_codec *codec = dai->codec;
->> +
->> +	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE, 0);
->> +}
-> I'd also expect the PLL power to be managed via DAPM.
->
->> +	ret = pm_runtime_get_sync(codec->dev);
->> +	if (ret < 0) {
->> +		dev_err(codec->dev, "Enabling device failed: %d\n",
->> +			ret);
->> +		goto probe_fail;
->> +	}
-> There's no matching put for this in remove().
->
->> +	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
->> +				  TAS2552_BOOST_EN | TAS2552_APT_EN |
->> +				  TAS2552_LIM_EN);
->> +	return 0;
-> The class D is still being enabled here.
+2) Check if the port status is already in RxDetect, if yes, return without 
+executing the remaining code.
 
-Thanks will send updates in a day or two.
+The second method seems more reasonable, so the patch is the implementation
+of the second one. But it will affect more platforms and I don't know if 
+there'll be any negative result. Otherwise, if the first one is correct, 
+I can reimplement a new one.
+
+I'm appreciated if you can give me some advice, or if there is any thing I
+ missed.
+
+The v2 version has been tested on the 2 platforms which all use the same AMD
+controller [1022:7814]. There are totally 3 ports. And each port has been
+tested for 30 times of hot-plugging. All of the results showed the USB 3.0 pen
+drive is Superspeed device.
+
+Changes from v1 -> v2:
+According to Alan's advice in: https://lkml.org/lkml/2014/7/15/315
+- Fixes the coding style.
+- Modify the debug messages to "Not disabling port; link state is RxDetect"
+  to make it more expressive.
+
+Mistakenly add Alan to the Signed-off-by list, it's not correct. Using
+Acked-by instead. So, I resent the v2 patch again.
+
+Gavin Guo (1):
+  usb: Check if port status is equal to RxDetect
+
+ drivers/usb/core/hub.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
 -- 
-------------------
-Dan Murphy
+2.0.0
 
