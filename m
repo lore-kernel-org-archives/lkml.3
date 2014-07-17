@@ -1,77 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933765AbaGQON6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:13:58 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:59052
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933228AbaGQONz convert rfc822-to-8bit (ORCPT
+	id S933831AbaGQOPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:15:47 -0400
+Received: from p01c11o147.mxlogic.net ([208.65.144.70]:45575 "EHLO
+	p01c11o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139AbaGQOPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:13:55 -0400
-X-WSS-ID: 0N8V0V0-07-FHP-02
-X-M-MSG: 
-Message-ID: <53C7DA11.2000105@amd.com>
-Date: Thu, 17 Jul 2014 09:13:37 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 10:15:45 -0400
+X-MXL-Hash: 53c7da9031676d47-c61e5b50bffdc5a96907f8599483cc9c2c485012
+Date: Thu, 17 Jul 2014 10:15:37 -0400
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <james.smart@emulex.com>, <JBottomley@parallels.com>,
+        <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] lpfc: Avoid to disable pci_dev twice
+Message-ID: <20140717101537.7ac4d677@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+References: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <marc.zyngier@arm.com>,
-        <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        <pawel.moll@arm.com>, <linux-doc@vger.kernel.org>,
-        <Catalin.Marinas@arm.com>, <Harish.Kasiviswanathan@amd.com>,
-        <linux-kernel@vger.kernel.org>, <Will.Deacon@arm.com>,
-        <linux-pci@vger.kernel.org>, <tglx@linutronix.de>
-Subject: Re: [PATCH] irqchip: gic: Add binding probe for ARM GIC400
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1404947104-21345-2-git-send-email-suravee.suthikulpanit@amd.com>
- <2932284.F1eaAf8ArJ@diego> <2621565.f5eISveXXJ@diego>
- <20140717124804.GI13108@titan.lakedaemon.net>
-In-Reply-To: <20140717124804.GI13108@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(377454003)(479174003)(189002)(199002)(51704005)(24454002)(36756003)(87936001)(65816999)(76176999)(87266999)(54356999)(92566001)(92726001)(50986999)(33656002)(83506001)(21056001)(99396002)(76482001)(46102001)(77982001)(65806001)(79102001)(97736001)(80022001)(83072002)(85852003)(65956001)(59896001)(4396001)(64706001)(20776003)(47776003)(106466001)(107046002)(74662001)(81542001)(81342001)(64126003)(23756003)(50466002)(86362001)(19580395003)(19580405001)(83322001)(102836001)(101416001)(85306003)(44976005)(31966008)(84676001)(74502001)(68736004)(95666004)(93886003)(105586002);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB045;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 027578BB13
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-AnalysisOut: [v=2.1 cv=N5mnFgNB c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
+X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=G9kzoaN0y0oA:10 a=_KQ]
+X-AnalysisOut: [qW7t0BisA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=uelBKuK]
+X-AnalysisOut: [pAAAA:8 a=YlVTAMxIAAAA:8 a=VnNF1IyMAAAA:8 a=0akXLtVnitZt8J]
+X-AnalysisOut: [x-LHMA:9 a=CjuIK1q_8ugA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014071706); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/17/2014 7:48 AM, Jason Cooper wrote:
-> On Tue, Jul 15, 2014 at 12:03:03AM +0200, Heiko Stübner wrote:
->> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>
->> Commit 3ab72f9156bb "dt-bindings: add GIC-400 binding" added the
->> "arm,gic-400" compatible string, but the corresponding IRQCHIP_DECLARE
->> was never added to the gic driver.
->>
->> Therefore add the missing irqchip declaration for it.
->>
->> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>
->> Removed additional empty line and adapted commit message to mark it
->> as fixing an issue.
->> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
->> ---
->> As I really need this, I took the liberty of adapting the patch accordingly
->> to make it apply on top of the current irqchip/for-next (or urgent) and
->> explicitly state the fixed issue. Hope that is ok
->>
->>   drivers/irqchip/irq-gic.c | 1 +
->>   1 file changed, 1 insertion(+)
->
-> Applied to irqchip/urgent with Will's Ack and Cc'd to stable for v3.14+
->
-> thx,
->
-> Jason.
->
-Thank you,
+[ +cc linux-pci and Bjorn, comments inline/below ... ]
 
-Suravee
+On Thu, 17 Jul 2014 02:32:31 -0400
+Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
 
+> In IBM Power servers, when hardware error occurs during probe
+> state, EEH subsystem will call driver's error_detected interface,
+> which will call pci_disable_device(). But driver's probe function also
+> call pci_disable_device() in this situation.
+> 
+> So pci_dev will be disabled twice:
+> 
+> Device lpfc disabling already-disabled device
+> ------------[ cut here ]------------
+> WARNING: at drivers/pci/pci.c:1407
+> CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W    3.10.42-2002.pkvm2_1_1.6.ppc64 #1
+> Workqueue: events .work_for_cpu_fn
+> task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
+> NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
+> REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W     (3.10.42-2002.pkvm2_1_1.6.ppc64)
+> MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 20000000
+> CFAR: c000000000879ab8 SOFTE: 1
+> ...
+> NIP .pci_disable_device+0xcc/0xe0
+> LR  .pci_disable_device+0xc8/0xe0
+> Call Trace:
+> .pci_disable_device+0xc8/0xe0 (unreliable)
+> .lpfc_disable_pci_dev+0x50/0x80 [lpfc]
+> .lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
+> .local_pci_probe+0x68/0xb0
+> .work_for_cpu_fn+0x38/0x60
+> .process_one_work+0x1a4/0x4d0
+> .worker_thread+0x37c/0x490
+> .kthread+0xf0/0x100
+> .ret_from_kernel_thread+0x5c/0x80
+> 
+> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+> ---
+>  drivers/scsi/lpfc/lpfc.h      |  1 +
+>  drivers/scsi/lpfc/lpfc_init.c | 59 +++++++++++++++++++++++++++++++++++++++----
+>  2 files changed, 55 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
+> index 434e903..0c7bad9 100644
+> --- a/drivers/scsi/lpfc/lpfc.h
+> +++ b/drivers/scsi/lpfc/lpfc.h
+> @@ -813,6 +813,7 @@ struct lpfc_hba {
+>  #define VPD_MASK            0xf         /* mask for any vpd data */
+>  
+>  	uint8_t soft_wwn_enable;
+> +	uint8_t probe_done;
+>  
+>  	struct timer_list fcp_poll_timer;
+>  	struct timer_list eratt_poll;
+> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+> index 06f9a5b..c2e67ae 100644
+> --- a/drivers/scsi/lpfc/lpfc_init.c
+> +++ b/drivers/scsi/lpfc/lpfc_init.c
+> @@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, const struct pci_device_id *pid)
+>  		}
+>  	}
+>  
+> +	/* Set the probe flag */
+> +	phba->probe_done = 1;
+> +
+>  	/* Perform post initialization setup */
+>  	lpfc_post_init_setup(phba);
+>  
+> @@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba *phba)
+>  static void
+>  lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
+>  {
+> +	if (phba)
+> +		return;
+> +
+
+Should that be "if *not* phba" like the others below?
+
+>  	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
+>  			"2710 PCI channel disable preparing for reset\n");
+>  
+> @@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
+>  
+>  	/* Disable interrupt and pci device */
+>  	lpfc_sli_disable_intr(phba);
+> -	pci_disable_device(phba->pcidev);
+> +	if (phba->probe_done && phba->pcidev)
+> +		pci_disable_device(phba->pcidev);
+>  }
+>  
+>  /**
+> @@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, const struct pci_device_id *pid)
+>  		goto out_disable_intr;
+>  	}
+>  
+> +	/* Set probe_done flag */
+> +	phba->probe_done = 1;
+> +
+>  	/* Log the current active interrupt mode */
+>  	phba->intr_mode = intr_mode;
+>  	lpfc_log_intr_mode(phba, intr_mode);
+> @@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct lpfc_hba *phba)
+>  static void
+>  lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
+>  {
+> +	if (!phba)
+> +		return;
+> +
+>  	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
+>  			"2826 PCI channel disable preparing for reset\n");
+>  
+> @@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
+>  	/* Disable interrupt and pci device */
+>  	lpfc_sli4_disable_intr(phba);
+>  	lpfc_sli4_queue_destroy(phba);
+> -	pci_disable_device(phba->pcidev);
+> +
+> +	if (phba->probe_done && phba->pcidev)
+> +		pci_disable_device(phba->pcidev);
+>  }
+>  
+>  /**
+> @@ -10893,9 +10908,21 @@ static pci_ers_result_t
+>  lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t state)
+>  {
+>  	struct Scsi_Host *shost = pci_get_drvdata(pdev);
+> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+> +	struct lpfc_hba *phba;
+>  	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
+>  
+> +	if (!shost)
+> +		/* Run here means it may during probe state and
+> +		 * Scsi_Host has not been created and We can do nothing
+> +		 * in this state so call for hotplug*/
+> +		return PCI_ERS_RESULT_NONE;
+
+Is it possible to get here during device removal, ie
+lpfc_pci_remove_one?  If so, we may have shost in hand now, but can
+these routines race?  Same for similar instances below...
+
+> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+> +
+> +	if (!phba || !phba->probe_done)
+> +		/* Run here means it may during probe state */
+> +		return PCI_ERS_RESULT_NONE;
+> +
+>  	switch (phba->pci_dev_grp) {
+>  	case LPFC_PCI_DEV_LP:
+>  		rc = lpfc_io_error_detected_s3(pdev, state);
+> @@ -10930,9 +10957,20 @@ static pci_ers_result_t
+>  lpfc_io_slot_reset(struct pci_dev *pdev)
+>  {
+>  	struct Scsi_Host *shost = pci_get_drvdata(pdev);
+> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+> +	struct lpfc_hba *phba;
+>  	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
+>  
+> +	if (!shost)
+> +		/* Run here means it may during probe state and
+> +		 * Scsi_Host has not been created */
+> +		return PCI_ERS_RESULT_NONE;
+> +
+> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+> +
+> +	if (!phba || !phba->probe_done)
+> +		/* Run here means it may during probe state */
+> +		return PCI_ERS_RESULT_NONE;
+> +
+>  	switch (phba->pci_dev_grp) {
+>  	case LPFC_PCI_DEV_LP:
+>  		rc = lpfc_io_slot_reset_s3(pdev);
+> @@ -10963,7 +11001,18 @@ static void
+>  lpfc_io_resume(struct pci_dev *pdev)
+>  {
+>  	struct Scsi_Host *shost = pci_get_drvdata(pdev);
+> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+> +	struct lpfc_hba *phba;
+> +
+> +	if (!shost)
+> +		/* Run here means it may during probe state and
+> +		 * Scsi_Host has not been created */
+> +		return;
+> +
+> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+> +
+> +	if (!phba || !phba->probe_done)
+> +		/* Run here means it may during probe state */
+> +		return;
+>  
+>  	switch (phba->pci_dev_grp) {
+>  	case LPFC_PCI_DEV_LP:
+
+Hi Mike and Bjorn,
+
+We don't support Power here at Stratus, but we do a lot of hotplug
+testing, so this change is similar to some of the things we do here to
+harden various device drivers against surprise device removal.
+
+I've been curious about the AER/EEH pci_error_handler callbacks and
+what protections device drivers need to take against double device
+removal.  In my experience, not many driver .probe routines take
+precaution against hotplug (or in this case, EEH) running concurrently
+-- in general they were written with the assumption that device
+resources (data structures at least) will be stable during their
+execution.
+
+The introduction of the pci_error_handler callbacks makes this tougher,
+as apparently they may be invoked even during driver .probe.
+
+In the hotplug area, I've encountered code from various device drivers
+that attempt to handle PCI removal on their own, verifying PCI reads
+against ~0:
+
+  22a8b291 "igb: add register rd/wr for surprise removal"
+  2a1a091c "ixgbe: Check register reads for adapter removal"
+  845a0e40 "mpt2sas: Better handling DEAD IOC (PCI-E LInk down) error condition"
+  f3ddac19 "qla2xxx: Disable adapter when we encounter a PCI disconnect"
+
+and in some cases, these routines race PCI device removal.  Previous
+Stratus products went as far as introducing a workqueue dedicated to
+single threading and protecting against double and racing PCI removal
+instances.
+
+I don't mean to hijack Mike's patch review, but I'm curious if Bjorn has
+any input on how AER/EEH, hotplug, and ordinary device removal should
+co-exist and what drivers should do to safely operate in this space.
+
+Regards,
+
+-- Joe
