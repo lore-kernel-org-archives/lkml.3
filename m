@@ -1,245 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaGQGuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:50:14 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54372 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaGQGuL convert rfc822-to-8bit (ORCPT
+	id S1754074AbaGQGuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:50:54 -0400
+Received: from mail-we0-f195.google.com ([74.125.82.195]:34118 "EHLO
+	mail-we0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaGQGuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:50:11 -0400
-Message-ID: <53c77222.0168440a.6be4.4860@mx.google.com>
-X-Google-Original-Message-ID: <000d01cfa18b$5962b180$0c281480$@dulixin@gmail.com>
-From: "Dudley Du" <dudley.dulixin@gmail.com>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Dudley Du" <dudl@cypress.com>
-Subject: [PATCH v4 3/14] input: cyapa: add cyapa driver runtime power management interfaces support
-Date: Thu, 17 Jul 2014 14:49:56 +0800
+	Thu, 17 Jul 2014 02:50:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+hi1Iew21miMXnQZu+ZUaGYaM8eQ==
-Content-Language: zh-cn
+Reply-To: markus@gutschke.com
+In-Reply-To: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+From: Markus Gutschke <markus@gutschke.com>
+Date: Wed, 16 Jul 2014 23:50:28 -0700
+X-Google-Sender-Auth: bUrHwiuvNWtagGiFuEZjyu5R94M
+Message-ID: <CALGCz1oYYkKp1frPF4vExiwqW=euYY8An+Yum4U-qsBc5NyjFg@mail.gmail.com>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+To: linux-kernel@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add runtime_suspend_scanrate_ms power management interfaces in device's
-power group, so users or applications can control the runtime power
-management strategy of trackpad device as their requirements.
-TEST=test on Chromebooks.
+Adding the reviewers of the faulty change list to the cc list for this
+e-mail. I hope that is considered proper etiquette for the LKML.
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cyapa.c |  142 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 142 insertions(+)
-
-diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index 2e0ead5..6a2783b 100644
---- a/drivers/input/mouse/cyapa.c
-+++ b/drivers/input/mouse/cyapa.c
-@@ -268,9 +268,16 @@ static int cyapa_check_is_operational(struct cyapa *cyapa)
- static irqreturn_t cyapa_irq(int irq, void *dev_id)
- {
- 	struct cyapa *cyapa = dev_id;
-+	struct device *dev = &cyapa->client->dev;
- 	struct input_dev *input = cyapa->input;
- 	bool cont;
- 
-+	pm_runtime_get_sync(dev);
-+	pm_runtime_mark_last_busy(dev);
-+
-+	if (device_may_wakeup(dev))
-+		pm_wakeup_event(dev, 0);
-+
- 	/* Interrupt event maybe cuased by host command to trackpad device. */
- 	cont = true;
- 	if (cyapa->ops->irq_cmd_handler)
-@@ -294,6 +301,8 @@ static irqreturn_t cyapa_irq(int irq, void *dev_id)
- 
- 		mutex_unlock(&cyapa->state_sync_lock);
- 	}
-+
-+	pm_runtime_put_sync_autosuspend(dev);
- out:
- 	return IRQ_HANDLED;
- }
-@@ -494,6 +503,87 @@ static const struct attribute_group cyapa_power_wakeup_group = {
- };
- #endif /* CONFIG_PM_SLEEP */
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static ssize_t cyapa_show_rt_suspend_scanrate(struct device *dev,
-+					      struct device_attribute *attr,
-+					      char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u8 pwr_cmd;
-+	u16 sleep_time;
-+
-+	mutex_lock(&cyapa->state_sync_lock);
-+	pwr_cmd = cyapa->runtime_suspend_power_mode;
-+	sleep_time = cyapa->runtime_suspend_sleep_time;
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	if (cyapa->gen == CYAPA_GEN3)
-+		return scnprintf(buf, PAGE_SIZE, "%u\n",
-+			cyapa_pwr_cmd_to_sleep_time(pwr_cmd));
-+	else
-+		return scnprintf(buf, PAGE_SIZE, "%u\n", sleep_time);
-+}
-+
-+static ssize_t cyapa_update_rt_suspend_scanrate(struct device *dev,
-+						struct device_attribute *attr,
-+						const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u16 time;
-+
-+	if (buf == NULL || count == 0 || kstrtou16(buf, 10, &time)) {
-+		dev_err(dev, "invalid runtime suspend scanrate ms parameter\n");
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * When the suspend scanrate is changed, pm_runtime_get to resume
-+	 * a potentially suspended device, update to the new pwr_cmd
-+	 * and then pm_runtime_put to suspend into the new power mode.
-+	 */
-+	pm_runtime_get_sync(dev);
-+	mutex_lock(&cyapa->state_sync_lock);
-+	cyapa->runtime_suspend_sleep_time = cyapa_clamp_sleep_time(time);
-+	cyapa->runtime_suspend_power_mode =
-+		cyapa_sleep_time_to_pwr_cmd(cyapa->runtime_suspend_sleep_time);
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	pm_runtime_put_sync_autosuspend(dev);
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(runtime_suspend_scanrate_ms, S_IRUGO|S_IWUSR,
-+		   cyapa_show_rt_suspend_scanrate,
-+		   cyapa_update_rt_suspend_scanrate);
-+
-+static struct attribute *cyapa_power_runtime_entries[] = {
-+	&dev_attr_runtime_suspend_scanrate_ms.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group cyapa_power_runtime_group = {
-+	.name = power_group_name,
-+	.attrs = cyapa_power_runtime_entries,
-+};
-+
-+static void cyapa_start_runtime(struct cyapa *cyapa)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+
-+	cyapa->runtime_suspend_power_mode = PWR_MODE_IDLE;
-+	cyapa->runtime_suspend_sleep_time =
-+		cyapa_pwr_cmd_to_sleep_time(cyapa->runtime_suspend_power_mode);
-+	if (sysfs_merge_group(&dev->kobj, &cyapa_power_runtime_group))
-+		dev_warn(dev, "error creating wakeup runtime entries.\n");
-+	pm_runtime_set_active(dev);
-+	pm_runtime_use_autosuspend(dev);
-+	pm_runtime_set_autosuspend_delay(dev, AUTOSUSPEND_DELAY);
-+	pm_runtime_enable(dev);
-+}
-+#else
-+static void cyapa_start_runtime(struct cyapa *cyapa) {}
-+#endif /* CONFIG_PM_RUNTIME */
-+
- void cyapa_detect_async(void *data, async_cookie_t cookie)
- {
- 	struct cyapa *cyapa = (struct cyapa *)data;
-@@ -508,7 +598,11 @@ void cyapa_detect_async(void *data, async_cookie_t cookie)
- 
- static void cyapa_detect_and_start(void *data, async_cookie_t cookie)
- {
-+	struct cyapa *cyapa = data;
-+
- 	cyapa_detect_async(data, cookie);
-+
-+	cyapa_start_runtime(cyapa);
- }
- 
- static int cyapa_tp_modules_init(struct cyapa *cyapa)
-@@ -609,9 +703,15 @@ static int cyapa_remove(struct i2c_client *client)
- {
- 	struct cyapa *cyapa = i2c_get_clientdata(client);
- 
-+	pm_runtime_disable(&client->dev);
-+
- #ifdef CONFIG_PM_SLEEP
- 	sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_wakeup_group);
- #endif
-+
-+#ifdef CONFIG_PM_RUNTIME
-+	sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_runtime_group);
-+#endif
- 	free_irq(cyapa->irq, cyapa);
- 
- 	input_unregister_device(cyapa->input);
-@@ -678,12 +778,54 @@ static int cyapa_resume(struct device *dev)
- 
- 	async_schedule(cyapa_detect_async, cyapa);
- 
-+	/* Update runtime power management to reflect active state. */
-+	pm_runtime_disable(dev);
-+	pm_runtime_set_active(dev);
-+	pm_runtime_enable(dev);
- 	return 0;
- }
- #endif /* CONFIG_PM_SLEEP */
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int cyapa_runtime_suspend(struct device *dev)
-+{
-+	int ret;
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+
-+	if (cyapa->ops->set_power_mode) {
-+		/* Set trackpad device to idle mode. */
-+		ret = cyapa->ops->set_power_mode(cyapa,
-+				cyapa->runtime_suspend_power_mode,
-+				cyapa->runtime_suspend_sleep_time);
-+		if (ret)
-+			dev_err(dev, "runtime suspend failed, %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int cyapa_runtime_resume(struct device *dev)
-+{
-+	int ret;
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+
-+	if (cyapa->ops->set_power_mode) {
-+		/* Resume to full active mode. */
-+		ret = cyapa->ops->set_power_mode(cyapa,
-+				PWR_MODE_FULL_ACTIVE, 0);
-+		if (ret)
-+			dev_err(dev, "runtime resume failed, %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+#endif /* CONFIG_PM_RUNTIME */
-+
- static const struct dev_pm_ops cyapa_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(cyapa_suspend, cyapa_resume)
-+	SET_RUNTIME_PM_OPS(cyapa_runtime_suspend, cyapa_runtime_resume, NULL)
- };
- 
- static const struct i2c_device_id cyapa_id_table[] = {
--- 
-1.7.9.5
-
-
+On Tue, Jul 15, 2014 at 6:51 PM, Markus Gutschke <markus@gutschke.com> wrote:
+> My Dell M4400 has been pretty well-supported by Linux a couple of
+> years now, but recent 3.16-rcX cause hard crashes when resuming from
+> Suspend-to-RAM.
+>
+> This is tricky to debug, as device drivers are not yet restored by the
+> time that the crash happens. So, I can't use Page-UP to scroll the
+> screen and see the full crash information. I also cannot use the
+> netconsole; the ethernet device is still suspended. For similar
+> reasons, crash kernels don't seem to work either.
+>
+> After about a day of false starts and a lengthy bi-secting session, I
+> finally narrowed things down to this change list:
+>
+> eec15edbb0e14485998635ea7c62e30911b465f0 is the first bad commit
+> commit eec15edbb0e14485998635ea7c62e30911b465f0
+> Author: Zhang Rui <rui.zhang@intel.com>
+> Date:   Fri May 30 04:23:01 2014 +0200
+>
+>     ACPI / PNP: use device ID list for PNPACPI device enumeration
+>
+>     ACPI can be used to enumerate PNP devices, but the code does not
+>     handle this in the right way currently.  Namely, if an ACPI device
+>     object
+>      1. Has a _CRS method,
+>      2. Has an identification of
+>         "three capital characters followed by four hex digits",
+>      3. Is not in the excluded IDs list,
+>     it will be enumerated to PNP bus (that is, a PNP device object will
+>     be create for it).  This means that, actually, the PNP bus type is
+>     used as the default bus type for enumerating _HID devices in ACPI.
+>
+>     However, more and more _HID devices need to be enumerated to the
+>     platform bus instead (that is, platform device objects need to be
+>     created for them).  As a result, the device ID list in acpi_platform.c
+>     is used to enforce creating platform device objects rather than PNP
+>     device objects for matching devices.  That list has been continuously
+>     growing recently, unfortunately, and it is pretty much guaranteed to
+>     grow even more in the future.
+>
+>     To address that problem it is better to enumerate _HID devices
+>     as platform devices by default.  To this end, change the way of
+>     enumerating PNP devices by adding a PNP ACPI scan handler that
+>     will use a device ID list to create PNP devices for the ACPI
+>     device objects whose device IDs are present in that list.
+>
+>     The initial device ID list in the PNP ACPI scan handler contains
+>     all of the pnp_device_id strings from all the existing PNP drivers,
+>     so this change should be transparent to the PNP core and all of the
+>     PNP drivers.  Still, in the future it should be possible to reduce
+>     its size by converting PNP drivers that need not be PNP for any
+>     technical reasons into platform drivers.
+>
+>     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>     [rjw: Rewrote the changelog, modified the PNP ACPI scan handler code]
+>     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>     Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>
+> :040000 040000 b7c07232aa46ae7b6faf9a907fb7274a02e4680fc2e05b31a61dccd087c554adecc89a43a1ed81f7
+> M drivers
+> :040000 040000 4eda970292fffbeebe167f9210502527df4e8ab421e9e6fd84c780a34bf3d48b5e7618b551da3b1a
+> M include
+>
+> I took a photo of the crash. It feels silly to do, but I couldn't
+> think of a better solution. You can find it at
+> https://drive.google.com/file/d/0B8SxqKDe4hyheTlTLXY2YThkMXM
+>
+> As I mentioned earlier, a bunch of information has already scrolled
+> off the screen, but hopefully what is visible is somewhat helpful.
+>
+> I will have only limited internet access the next couple of weeks. But
+> I wanted to make sure I at least got the result of the bisection out
+> to LKML. I will make every best effort to collect additional data, if
+> asked to do so; but some of it might be delayed for a little bit,
+> until I can get access to reasonably powerful hardware or reasonably
+> fast internet.
+>
+>
+> Markus
+>
+> P.S.: Please keep me cc'd on all responses, as I am not subscribed to
+> the firehose that is LKML.
