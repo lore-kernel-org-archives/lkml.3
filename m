@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaGQSJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:09:29 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38462 "EHLO smtp.outflux.net"
+	id S1752477AbaGQSJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:09:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40715 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693AbaGQSJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751328AbaGQSJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jul 2014 14:09:22 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -17,134 +17,75 @@ Cc: Kees Cook <keescook@chromium.org>,
         linux-api@vger.kernel.org, x86@kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
         linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v12 03/11] seccomp: split mode setting routines
-Date: Thu, 17 Jul 2014 11:08:30 -0700
-Message-Id: <1405620518-18495-4-git-send-email-keescook@chromium.org>
+Subject: [PATCH v12 11/11] seccomp: add thread sync ability
+Date: Thu, 17 Jul 2014 11:08:27 -0700
+Message-Id: <1405620518-18495-1-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405620518-18495-1-git-send-email-keescook@chromium.org>
-References: <1405620518-18495-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separates the two mode setting paths to make things more readable with
-fewer #ifdefs within function bodies.
+Twelfth time's the charm! :)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
----
- kernel/seccomp.c |   71 ++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 48 insertions(+), 23 deletions(-)
+This adds the ability for threads to request seccomp filter
+synchronization across their thread group (at filter attach time).
+For example, for Chrome to make sure graphic driver threads are fully
+confined after seccomp filters have been attached.
 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 9df7def86c3b..05cac2c2eca1 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -489,48 +489,66 @@ long prctl_get_seccomp(void)
- }
- 
- /**
-- * seccomp_set_mode: internal function for setting seccomp mode
-- * @seccomp_mode: requested mode to use
-- * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
-- *
-- * This function may be called repeatedly with a @seccomp_mode of
-- * SECCOMP_MODE_FILTER to install additional filters.  Every filter
-- * successfully installed will be evaluated (in reverse order) for each system
-- * call the task makes.
-+ * seccomp_set_mode_strict: internal function for setting strict seccomp
-  *
-  * Once current->seccomp.mode is non-zero, it may not be changed.
-  *
-  * Returns 0 on success or -EINVAL on failure.
-  */
--static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
-+static long seccomp_set_mode_strict(void)
- {
-+	const unsigned long seccomp_mode = SECCOMP_MODE_STRICT;
- 	long ret = -EINVAL;
- 
- 	if (!seccomp_may_assign_mode(seccomp_mode))
- 		goto out;
- 
--	switch (seccomp_mode) {
--	case SECCOMP_MODE_STRICT:
--		ret = 0;
- #ifdef TIF_NOTSC
--		disable_TSC();
-+	disable_TSC();
- #endif
--		break;
-+	seccomp_assign_mode(seccomp_mode);
-+	ret = 0;
-+
-+out:
-+
-+	return ret;
-+}
-+
- #ifdef CONFIG_SECCOMP_FILTER
--	case SECCOMP_MODE_FILTER:
--		ret = seccomp_attach_user_filter(filter);
--		if (ret)
--			goto out;
--		break;
--#endif
--	default:
-+/**
-+ * seccomp_set_mode_filter: internal function for setting seccomp filter
-+ * @filter: struct sock_fprog containing filter
-+ *
-+ * This function may be called repeatedly to install additional filters.
-+ * Every filter successfully installed will be evaluated (in reverse order)
-+ * for each system call the task makes.
-+ *
-+ * Once current->seccomp.mode is non-zero, it may not be changed.
-+ *
-+ * Returns 0 on success or -EINVAL on failure.
-+ */
-+static long seccomp_set_mode_filter(char __user *filter)
-+{
-+	const unsigned long seccomp_mode = SECCOMP_MODE_FILTER;
-+	long ret = -EINVAL;
-+
-+	if (!seccomp_may_assign_mode(seccomp_mode))
-+		goto out;
-+
-+	ret = seccomp_attach_user_filter(filter);
-+	if (ret)
- 		goto out;
--	}
- 
- 	seccomp_assign_mode(seccomp_mode);
- out:
- 	return ret;
- }
-+#else
-+static inline long seccomp_set_mode_filter(char __user *filter)
-+{
-+	return -EINVAL;
-+}
-+#endif
- 
- /**
-  * prctl_set_seccomp: configures current->seccomp.mode
-@@ -541,5 +559,12 @@ out:
-  */
- long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
- {
--	return seccomp_set_mode(seccomp_mode, filter);
-+	switch (seccomp_mode) {
-+	case SECCOMP_MODE_STRICT:
-+		return seccomp_set_mode_strict();
-+	case SECCOMP_MODE_FILTER:
-+		return seccomp_set_mode_filter(filter);
-+	default:
-+		return -EINVAL;
-+	}
- }
--- 
-1.7.9.5
+To support this, locking on seccomp changes via thread-group-shared
+sighand lock is introduced, along with refactoring of no_new_privs. Races
+with thread creation are handled via delayed duplication of the seccomp
+task struct field and cred_guard_mutex.
+
+This includes a new syscall (instead of adding a new prctl option),
+as suggested by Andy Lutomirski and Michael Kerrisk.
+
+Thanks!
+
+-Kees
+
+v12:
+ - fixed bug where initial filter wouldn't allow TSYNC flag (drysdale)
+ - optimized thread loops (drysdale)
+v11:
+ - updated writer locking commit log for clarity (luto)
+ - clarified writer lock thread flag setting comment (luto)
+ - inverted SECCOMP_FILTER_FLAG_MASK (luto)
+ - renamed is_acestor parameter (luto)
+ - added BUG_ON to catch currently impossible integer overflow (luto)
+v10:
+ - dropped pending-kill checks (oleg)
+ - tweaked memory barriers (oleg)
+v9:
+ - rearranged/split patches to make things more reviewable
+ - added use of cred_guard_mutex to solve exec race (oleg, luto)
+ - added barriers for TIF_SECCOMP vs seccomp.mode race (oleg, luto)
+ - fixed missed copying of nnp state after v8 refactor (oleg)
+v8:
+ - drop use of tasklist_lock, appears redundant against sighand (oleg)
+ - reduced use of smp_load_acquire to logical minimum (oleg)
+ - change nnp to a task struct held atomic flags field (oleg, luto)
+ - drop needless irqflags changes in fork.c for holding sighand lock (oleg)
+ - cleaned up use of thread for-each loop (oleg)
+ - rearranged patch order to keep syscall changes adjacent
+ - added example code to manpage (mtk)
+v7:
+ - rebase on Linus's tree (merged with network bpf changes)
+ - wrote manpage text documenting API (follows this series)
+v6:
+ - switch from seccomp-specific lock to thread-group lock to gain atomicity
+ - implement seccomp syscall across all architectures with seccomp filter
+ - clean up sparse warnings around locking
+v5:
+ - move includes around (drysdale)
+ - drop set_nnp return value (luto)
+ - use smp_load_acquire/store_release (luto)
+ - merge nnp changes to seccomp always, fewer ifdef (luto)
+v4:
+ - cleaned up locking further, as noticed by David Drysdale
+v3:
+ - added SECCOMP_EXT_ACT_FILTER for new filter install options
+v2:
+ - reworked to avoid clone races
 
