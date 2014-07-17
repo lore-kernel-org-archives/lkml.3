@@ -1,180 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681AbaGQXP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:15:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45087 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758438AbaGQXPY (ORCPT
+	id S1758279AbaGQXTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:19:33 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41434 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043AbaGQXTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:15:24 -0400
-Date: Thu, 17 Jul 2014 16:15:12 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC 2/2] powerpc: reorder per-cpu NUMA information's initialization
-Message-ID: <20140717231512.GC32660@linux.vnet.ibm.com>
-References: <20140717230923.GA32660@linux.vnet.ibm.com>
- <20140717230958.GB32660@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717230958.GB32660@linux.vnet.ibm.com>
-X-Operating-System: Linux 3.13.0-30-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071723-9332-0000-0000-0000016B9602
+	Thu, 17 Jul 2014 19:19:32 -0400
+Date: Thu, 17 Jul 2014 16:19:31 -0700 (PDT)
+Message-Id: <20140717.161931.283488873926282207.davem@davemloft.net>
+To: teg@jklm.no
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net
+Subject: Re: [PATCH net-next v9 3/9] net: nl802154 - make add_iface take
+ name assign type
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1405584370-30054-4-git-send-email-teg@jklm.no>
+References: <1405584370-30054-1-git-send-email-teg@jklm.no>
+	<1405584370-30054-4-git-send-email-teg@jklm.no>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 17 Jul 2014 16:19:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is an issue currently where NUMA information is used on powerpc
-(and possibly ia64) before it has been read from the device-tree, which
-leads to large slab consumption with CONFIG_SLUB and memoryless nodes.
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 17 Jul 2014 10:06:04 +0200
 
-NUMA powerpc non-boot CPU's cpu_to_node/cpu_to_mem is only accurate
-after start_secondary(), similar to ia64, which is invoked via
-smp_init().
+> @@ -192,8 +193,10 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
+>  		if (devname[nla_len(info->attrs[IEEE802154_ATTR_DEV_NAME]) - 1]
+>  				!= '\0')
+>  			return -EINVAL; /* phy name should be null-terminated */
+> +		name_assign_type = NET_NAME_USER;
+>  	} else  {
+>  		devname = "wpan%d";
+> +		name_assign_type = NET_NAME_ENUM;
+>  	}
+>  
+>  	if (strlen(devname) >= IFNAMSIZ)
 
-Commit 6ee0578b4daae ("workqueue: mark init_workqueues() as
-early_initcall()") made init_workqueues() be invoked via
-do_pre_smp_initcalls(), which is obviously before the secondary
-processors are online.
+Just wondering what should happen if "%d" appears in a user provided name.
 
-Additionally, the following commits changed init_workqueues() to use
-cpu_to_node to determine the node to use for kthread_create_on_node:
-
-bce903809ab3f ("workqueue: add wq_numa_tbl_len and
-wq_numa_possible_cpumask[]")
-f3f90ad469342 ("workqueue: determine NUMA node of workers accourding to
-the allowed cpumask")
-
-Therefore, when init_workqueues() runs, it sees all CPUs as being on
-Node 0. On LPARs or KVM guests where Node 0 is memoryless, this leads to
-a high number of slab deactivations
-(http://www.spinics.net/lists/linux-mm/msg67489.html).
-
-Fix this by initializing the powerpc-specific CPU<->node/local memory
-node mapping as early as possible, which on powerpc is
-do_init_bootmem(). Currently that function initializes the mapping for
-the boot CPU, but we extend it to setup the mapping for all possible
-CPUs. Then, in smp_prepare_cpus(), we can correspondingly set the
-per-cpu values for all possible CPUs. That ensures that before the
-early_initcalls run (and really as early as possible), the per-cpu NUMA
-mapping is accurate.
-
-While testing memoryless nodes on PowerKVM guests with a fix to the
-workqueue logic to use cpu_to_mem() instead of cpu_to_node(), with a
-guest topology of:
-
-available: 2 nodes (0-1)
-node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49
-node 0 size: 0 MB
-node 0 free: 0 MB
-node 1 cpus: 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99
-node 1 size: 16336 MB
-node 1 free: 15329 MB
-node distances:
-node   0   1
-  0:  10  40
-  1:  40  10
-
-the slab consumption decreases from
-
-Slab:             932416 kB
-SUnreclaim:       902336 kB
-
-to
-
-Slab:             395264 kB
-SUnreclaim:       359424 kB
-
-And we a corresponding increase in the slab efficiency from
-
-slab                                   mem     objs    slabs
-                                      used   active   active
-------------------------------------------------------------
-kmalloc-16384                       337 MB   11.28%  100.00%
-task_struct                         288 MB    9.93%  100.00%
-
-to
-
-slab                                   mem     objs    slabs
-                                      used   active   active
-------------------------------------------------------------
-kmalloc-16384                        37 MB  100.00%  100.00%
-task_struct                          31 MB  100.00%  100.00%
-
-Powerpc didn't support memoryless nodes until recently (64bb80d87f01
-"powerpc/numa: Enable CONFIG_HAVE_MEMORYLESS_NODES" and 8c272261194d
-"powerpc/numa: Enable USE_PERCPU_NUMA_NODE_ID"). Those commits also
-helped improve memory consumption with these kind of environments.
-
-Signed-off-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 51a3ff7..91ff531 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -376,6 +376,11 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 					GFP_KERNEL, cpu_to_node(cpu));
- 		zalloc_cpumask_var_node(&per_cpu(cpu_core_map, cpu),
- 					GFP_KERNEL, cpu_to_node(cpu));
-+		/*
-+		 * numa_node_id() works after this.
-+		 */
-+		set_cpu_numa_node(cpu, numa_cpu_lookup_table[cpu]);
-+		set_cpu_numa_mem(cpu, local_memory_node(numa_cpu_lookup_table[cpu]));
- 	}
- 
- 	cpumask_set_cpu(boot_cpuid, cpu_sibling_mask(boot_cpuid));
-@@ -723,12 +728,6 @@ void start_secondary(void *unused)
- 	}
- 	traverse_core_siblings(cpu, true);
- 
--	/*
--	 * numa_node_id() works after this.
--	 */
--	set_numa_node(numa_cpu_lookup_table[cpu]);
--	set_numa_mem(local_memory_node(numa_cpu_lookup_table[cpu]));
--
- 	smp_wmb();
- 	notify_cpu_starting(cpu);
- 	set_cpu_online(cpu, true);
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index 3b181b2..b1f0b86 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -1049,7 +1049,7 @@ static void __init mark_reserved_regions_for_nid(int nid)
- 
- void __init do_init_bootmem(void)
- {
--	int nid;
-+	int nid, cpu;
- 
- 	min_low_pfn = 0;
- 	max_low_pfn = memblock_end_of_DRAM() >> PAGE_SHIFT;
-@@ -1122,8 +1122,15 @@ void __init do_init_bootmem(void)
- 
- 	reset_numa_cpu_lookup_table();
- 	register_cpu_notifier(&ppc64_numa_nb);
--	cpu_numa_callback(&ppc64_numa_nb, CPU_UP_PREPARE,
--			  (void *)(unsigned long)boot_cpuid);
-+	/*
-+	 * We need the numa_cpu_lookup_table to be accurate for all CPUs,
-+	 * even before we online them, so that we can use cpu_to_{node,mem}
-+	 * early in boot, cf. smp_prepare_cpus().
-+	 */
-+	for_each_possible_cpu(cpu) {
-+		cpu_numa_callback(&ppc64_numa_nb, CPU_UP_PREPARE,
-+				  (void *)(unsigned long)cpu);
-+	}
- }
- 
- void __init paging_init(void)
-
+That would seem to be both USER and ENUM.
