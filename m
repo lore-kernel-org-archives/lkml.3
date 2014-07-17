@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344AbaGQMJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:09:58 -0400
-Received: from sym2.noone.org ([178.63.92.236]:37044 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776AbaGQMJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:09:54 -0400
-Date: Thu, 17 Jul 2014 14:09:49 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717120949.GB24362@distanz.ch>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+	id S1756695AbaGQMLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:11:41 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:56024 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763AbaGQMLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 08:11:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK5sBcFR0nwmL97CYxhHHhwHREdNOMYZnc2DF+O=WdQLBHQbLA@mail.gmail.com>
+References: <1405595993-16661-1-git-send-email-ch.naveen@samsung.com>
+ <1405595993-16661-2-git-send-email-ch.naveen@samsung.com> <CAK5sBcFR0nwmL97CYxhHHhwHREdNOMYZnc2DF+O=WdQLBHQbLA@mail.gmail.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Thu, 17 Jul 2014 17:41:16 +0530
+Message-ID: <CAHfPSqDBfdmt2R4yB1AUG9U8UvsYtmVtL03-OMuozKGXYGdMgw@mail.gmail.com>
+Subject: Re: [PATCH 1/4 v2] iio: exyno-adc: use syscon for PMU register access
+To: Sachin Kamat <spk.linux@gmail.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, cpgs@samsung.com,
+        Grant Grundler <grundler@chromium.org>, jic23@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-17 at 11:18:15 +0200, Theodore Ts'o <tytso@mit.edu> wrote:
+Hello Sachin,
 
-[...]
+On 17 July 2014 17:24, Sachin Kamat <spk.linux@gmail.com> wrote:
+> Hi Naveen,
+>
+> On Thu, Jul 17, 2014 at 4:49 PM, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> This patch updates the IIO based ADC driver to use syscon and regmap
+>> APIs to access and use PMU registers instead of remapping the PMU
+>> registers in the driver.
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> To: linux-iio@vger.kernel.org
+>
+> With only this patch applied, I believe the ADC functionality would be broken.
+> Perhaps the DT changes should be merged along with this patch?
 
-> +/*
-> + * Flags for getrandom(2)
-> + *
-> + * GAND_BLOCK 		Allow getrandom(2) to block
-> + * GAND_RANDOM		Use the /dev/random pool instead of /dev/urandom
-> + */
+Jonathan already mentioned that, he would wait for Ack from Kukjin.
+With out the dts changes ADC driver will fail to probe but it wont
+crash the system.
+git bisect should still work.
 
-Very minor nitpick: These should probably read GRND_BLOCK/GRND_RANDOM as
-well, no?
-
-> +#define GRND_BLOCK	0x0001
-> +#define GRND_RANDOM	0x0002
-> +
->  #endif /* _UAPI_LINUX_RANDOM_H */
-> -- 
-> 2.0.0
-> 
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Regards,
+> Sachin.
+
+
+
+-- 
+Shine bright,
+(: Nav :)
