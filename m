@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaGQTsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:48:14 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:39723 "EHLO tetsuo.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752510AbaGQTsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:48:13 -0400
-Date: Thu, 17 Jul 2014 12:48:12 -0700
-From: Zach Brown <zab@zabbo.net>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717194812.GC24196@lenny.home.zabbo.net>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754102AbaGQTuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:50:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46105 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753434AbaGQTuE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:50:04 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, Arnd Bergmann <arnd@arndb.de>,
+        andriy.shevchenko@intel.com, dmaengine@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v11 0/2] Add support for the Allwinner A31 DMA Controller
+Date: Thu, 17 Jul 2014 21:46:14 +0200
+Message-Id: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> SYNOPSIS
-> 	#include <linux/random.h>
-> 
-> 	int getrandom(void *buf, size_t buflen, unsigned int flags);
+Hi,
 
-I certainly like the idea of getting entropy without having to worry
-about fds.
+This patchset adds support for the DMA controller found in the
+Allwinner A31 and A23 SoCs.
 
-> 	If the GRND_RANDOM flags bit is not set, then the /dev/raundom
+This has been tested using the newly introduced SPI driver on an A31
+EVK. Support for DMA-driven SPI transfers will be the subject of
+another patch serie.
 
-(raundom typo)
+This has been around for around 5 monthes now, and didn't get any
+review but nitpicks for three versions, so I feel like it could be
+merged quite quickly.
 
-> RETURN VALUE
->        On success, the number of bytes that was returned is returned.
+Thanks,
+Maxime
 
-The description talks about filling the buffer, maybe say 'the number of
-bytes filled is returned'?  
+Changes from v10:
+  - Added in 
 
-> +DECLARE_COMPLETION(urandom_initialized);
+Changes from v9:
+  - Rebased on top of 3.16-rc1
+  - Fixed the whitespace error in the documentation
 
-static?
+Changes from v8:
+  - Drop the select on DMA_OF
+  - Depend on COMPILE_TEST to get more build tests coverage
 
-> +SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
-> +		unsigned int, flags)
-> +{
-> +	int r;
-> +
+Changes from v7:
+  - select DMA_OF, since we're only relying on DT
+  - Properly kill the tasklet as suggested in
+    https://lwn.net/Articles/588457/
+  - Split up the dt bindings documentation into a separate patch
 
-Michael Kerrisk wants you to return -EINVAL on unknown flags :)
+Changes from v6:
+  - Dropped the merged patches and the clock patches that are pretty
+    orthogonal to this driver
 
-http://lwn.net/Articles/588444/
+Changes from v5:
+  - Rebased on top of 3.15-rc1
 
-> +	if (count > 256)
-> +		return -EINVAL;
+Changes from v4:
+  - Removed the packed attribute on the LLI
+  - Switched to using a NULL device pointer in clk_get on PLL6 and
+    AHB1 mux to make explicit that we are getting global clocks
+  - Switched from spin_lock_irqsave to spin_lock in the interrupt
+    handler
+  - Various nitpicks from Andy Shevchenko:
+    + Switched to using %p printk formats for pointers
+    + Inverted some tests to lose a level of indentation
+    + Dropped ifdef DEBUG protecting calls to dev_dbg
 
-I'd vote for not having the limit.  It seems easy enough to iterate over
-the buffer.  We'd need to clamp the count to ssize_t, though.
+Changes from v3:
+  - A few other comments made by Andy Shevchenko were fixed:
+    + Used references in %pa* printk formats
+    + Used is_slave_direction in prep_slave_sg to make sure we were
+      actually called for something, and to avoid making assumptions
+      that we were actually called with the expected directions
+    + A few others minor fixes: s/pr_err/dev_err/, etc.
 
-> +	if (flags & GRND_RANDOM) {
-> +		return _random_read(!(flags & GRND_BLOCK), buf, count);
-> +	}
+Changes from v2:
+  - Removed the clk_put calls in the clock protection functions
+  - Splitted out the sunxi machines into several files
+  - Moved the clock protection code into these new machine files
+  - Moved the PLL6 reparenting to the DMA driver
+  - Addressed various comments from Andy Shevchenko: switched to using
+    devm_kcalloc, used correct printk formats for physical and DMA
+    addresses, etc.
 
-Do we want it to block by default and have the flag be _NONBLOCK?  Feels
-more.. familiar.
+Changes from v1:
+  - Removed the clk_put call in the clocks protecting patches
+  - Minor fixes here and there as suggested by Andy Shevchenko: switch
+    to dmam_pool_create, switch to dev_dbg instead of pr_debug, etc.
 
-> +	if (flags & GRND_BLOCK) {
-> +		r = wait_for_completion_interruptible(&urandom_initialized);
-> +		if (r)
-> +			return r;
+Maxime Ripard (2):
+  Documentation: dt: Add Allwinner A31 DMA controller bindings
+  dmaengine: sun6i: Add driver for the Allwinner A31 DMA controller
 
-I can *never* remember the rules for -ERESTARTSYS.  The syscall callers
-take care of this?
+ .../devicetree/bindings/dma/sun6i-dma.txt          |   45 +
+ drivers/dma/Kconfig                                |    8 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/sun6i-dma.c                            | 1059 ++++++++++++++++++++
+ 4 files changed, 1113 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/sun6i-dma.txt
+ create mode 100644 drivers/dma/sun6i-dma.c
 
-> +	return urandom_read(NULL, buf, count, NULL);
+-- 
+2.0.1
 
-I wonder if we want to refactor the entry points a bit more instead of
-directly calling the device read functions.  get_random_bytes() and
-urandom_read() both have their own uninitialied use warning message and
-tracing.  Does the syscall want its own little extraction function as
-well?
-
-- z
