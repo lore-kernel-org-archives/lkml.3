@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaGQRrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:47:10 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:45512 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaGQRrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:47:07 -0400
+	id S1751756AbaGQRto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:49:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50989 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100AbaGQRtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 13:49:43 -0400
+Date: Thu, 17 Jul 2014 19:49:40 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, viro@zeniv.linux.org.uk,
+        clm@fb.com, jbacik@fb.com, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeffm@suse.com, fdmanana@suse.com
+Subject: Re: [RFC v2 0/2] vfs / btrfs: add support for ustat()
+Message-ID: <20140717174940.GR10393@wotan.suse.de>
+References: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com> <20140717080301.GA14263@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <CAComcpPkOM9oy9tYcDqVfF3siKT_RLe54qskhUJRPLWm-MukEA@mail.gmail.com>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717161215.GA14951@infradead.org> <20140717170115.GO1491@thunk.org>
- <CAComcpM9-sUwzT9BPFT7BJjk97V0kj996D=AaivDpeTZUNbiew@mail.gmail.com>
- <20140717173433.GQ1491@thunk.org> <CAComcpPkOM9oy9tYcDqVfF3siKT_RLe54qskhUJRPLWm-MukEA@mail.gmail.com>
-From: Bob Beck <beck@openbsd.org>
-Date: Thu, 17 Jul 2014 11:46:45 -0600
-X-Google-Sender-Auth: XFbXZkKl8LVEMFgynakNtDdO9IA
-Message-ID: <CAComcpOkWLPJGDXWuYrC4Gtk02H_81qwSUzzM87qkx-tf6PUhQ@mail.gmail.com>
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-To: "Theodore Ts'o" <tytso@mit.edu>, Bob Beck <beck@openbsd.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-abi <linux-abi@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140717080301.GA14263@infradead.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And thanks btw.
+On Thu, Jul 17, 2014 at 01:03:01AM -0700, Christoph Hellwig wrote:
+> On Wed, Jul 16, 2014 at 02:37:56PM -0700, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > 
+> > This makes the implementation simpler by stuffing the struct on
+> > the driver and just letting the driver iinsert it and remove it
+> > onto the sb list. This avoids the kzalloc() completely.
+> 
+> Again, NAK.  Make btrfs report the proper anon dev_t in stat and
+> everything will just work.
 
-I don't suppose you guys know who we should talk to about possibly
-getting MAP_INHERIT_ZERO minherit() support?
+Let's consider this userspace case:
 
-On Thu, Jul 17, 2014 at 11:45 AM, Bob Beck <beck@openbsd.org> wrote:
-> we have diffs pending that will do the syscall method until we start
-> to see it in libc :)
->
-> So basically we're going to put that in right away :)
->
-> On Thu, Jul 17, 2014 at 11:34 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Thu, Jul 17, 2014 at 11:05:01AM -0600, Bob Beck wrote:
->>> Hi Ted, yeah I understand the reasoning, it would be good if there was
->>> a way to influence the various libc people to
->>> ensure they manage to provide a getentropy().
->>
->> I don't anticipate that to be a problem.  And before they do, and/or
->> if you are dealing with a system where the kernel has been upgraded,
->> but not libc, you have your choice of either sticking with the
->> binary_sysctl approach, or calling getrandom directly using the
->> syscall method; and in that case, whether we use getrandom() or
->> provide an exact getentropy() replacement system call isn't that much
->> difference, since you'd have to have Linux-specific workaround code
->> anyway....
->>
->>                                 - Ted
+        struct stat buf;                                                        
+        struct ustat ubuf;                                                      
+                                                                                
+        /* Find a valid device number */                                        
+        if (stat("/", &buf)) {
+                fprintf(stderr, "Stat failed: %s\n", strerror(errno));          
+                return 1;                                                       
+        }                                                                       
+                                                                                
+        /* Call ustat on it */                                                  
+        if (ustat(buf.st_dev, &ubuf)) {                                         
+                fprintf(stderr, "Ustat failed: %s\n", strerror(errno));         
+                return 1;                                                       
+        } 
+
+In the btrfs case it has an inode op for getattr, that is used and we set
+the dev to anonymous dev_t. Later ustat will use user_get_super() which
+will only be able to work with a userblock if the super block's only
+dev_t is assigned to it. Since we have many anonymous to dev_t mapping
+to super block though we can't complete the search for btfs and ustat()
+fails with -EINVAL. The series expands the number of dev_t's that a super
+block can have and allows this search to complete.
+
+  Luis
