@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658AbaGQKgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:36:37 -0400
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:43701 "EHLO
-	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756055AbaGQKgf convert rfc822-to-8bit
+	id S1756737AbaGQKgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:36:52 -0400
+Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:42015 "EHLO
+	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755535AbaGQKgt convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:36:35 -0400
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 06:36:35 EDT
-Date: Thu, 17 Jul 2014 06:26:39 -0400 (EDT)
-Subject: RE: Fwd: [PATCH v6 04/12] mmc: mmci: Add Qcom datactrl register variant
-From: prakash.burla@smartplayin.com
-To: srinivas.kandagatla@linaro.org
-Cc: linux@arm.linux.org.uk, ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+	Thu, 17 Jul 2014 06:36:49 -0400
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 06:36:49 EDT
+Date: Thu, 17 Jul 2014 06:30:24 -0400 (EDT)
+Subject: RE: [Patch v7 2/3] usb: phy: Add Qualcomm DWC3 HS/SS PHY drivers
+From: kiran.padwal@smartplayin.com
+To: "Andy Gross" <agross@codeaurora.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "Kumar Gala" <galak@codeaurora.org>, jackp@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, "Andy Gross" <agross@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain;charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Importance: Normal
 X-Priority: 3 (Normal)
 X-Type: plain
-In-Reply-To: <CA+neC=Of9Ua5OxUiezmTHfzq9zkXVRCFei3xKMbXi3OGV84EHw@mail.gmail.com>
-References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org> 
- <1401700146-11588-1-git-send-email-srinivas.kandagatla@linaro.org> 
- <CA+neC=Of9Ua5OxUiezmTHfzq9zkXVRCFei3xKMbXi3OGV84EHw@mail.gmail.com>
-Message-ID: <1405592799.65820182@apps.rackspace.com>
+In-Reply-To: <CA+neC=McWS8=iSi2XShJyvc85Aw4PSmF-osNpVgJv42d9or1WQ@mail.gmail.com>
+References: <1404144233-17222-1-git-send-email-agross@codeaurora.org> 
+ <1404144233-17222-3-git-send-email-agross@codeaurora.org> 
+ <CA+neC=McWS8=iSi2XShJyvc85Aw4PSmF-osNpVgJv42d9or1WQ@mail.gmail.com>
+Message-ID: <1405593024.423213197@apps.rackspace.com>
 X-Mailer: webmail7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tested-by: Prakash Burla <prakash.burla@smartplayin.com>
-This driver tested on AP806X with mmc Driver.
+Hi,
 
-----------------------------------------------------------------------------------
-From:  <srinivas.kandagatla@linaro.org>
-Date: Mon, Jun 2, 2014 at 2:39 PM
-Subject: [PATCH v6 04/12] mmc: mmci: Add Qcom datactrl register variant
-To: Russell King <linux@arm.linux.org.uk>, Ulf Hansson
-<ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org, Srinivas
+On Mon, Jun 30, 2014 at 9:33 PM, Andy Gross <agross@codeaurora.org> wrote: 
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> 
+> These drivers handles control and configuration of the HS
+> and SS USB PHY transceivers. They are part of the driver
+.
+[snip]
+.
+> +#include <linux/usb/phy.h>
+> +
+> +/**
+> + *  USB QSCRATCH Hardware registers
+> + */
 
+unused define, can you please remove it
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> +#define QSCRATCH_CTRL_REG              (0x04)
+> +#define QSCRATCH_GENERAL_CFG           (0x08)
+> +#define PHY_CTRL_REG                   (0x10)
+> +#define PARAMETER_OVERRIDE_X_REG       (0x14)
 
-Instance of this IP on Qualcomm's SOCs has bit different layout for datactrl
-register. Bit position datactrl[16:4] hold the true block size instead of power
-of 2.
+ditto
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mmc/host/mmci.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> +#define CHARGING_DET_CTRL_REG          (0x18)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index ed20bf5..72981f6 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -60,6 +60,8 @@ static unsigned int fmax = 515633;
-  * @sdio: variant supports SDIO
-  * @st_clkdiv: true if using a ST-specific clock divider algorithm
-  * @blksz_datactrl16: true if Block size is at b16..b30 position in
-datactrl register
-+ * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
-+ *                  register
-  * @pwrreg_powerup: power up value for MMCIPOWER register
-  * @signal_direction: input/out direction of bus signals can be indicated
-  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
-@@ -75,6 +77,7 @@ struct variant_data {
-        bool                    sdio;
-        bool                    st_clkdiv;
-        bool                    blksz_datactrl16;
-+       bool                    blksz_datactrl4;
-        u32                     pwrreg_powerup;
-        bool                    signal_direction;
-        bool                    pwrreg_clkgate;
-@@ -731,6 +734,8 @@ static void mmci_start_data(struct mmci_host
-*host, struct mmc_data *data)
+ditto
 
-        if (variant->blksz_datactrl16)
-                datactrl = MCI_DPSM_ENABLE | (data->blksz << 16);
-+       else if (variant->blksz_datactrl4)
-+               datactrl = MCI_DPSM_ENABLE | (data->blksz << 4);
-        else
-                datactrl = MCI_DPSM_ENABLE | blksz_bits << 4;
+> +#define CHARGING_DET_OUTPUT_REG                (0x1c)
 
---
-1.9.1
+ditto
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +#define ALT_INTERRUPT_EN_REG           (0x20)
+
+ditto
+
+> +#define PHY_IRQ_STAT_REG               (0x24)
+
+ditto
+
+> +#define CGCTL_REG                      (0x28)
+> +
+> +#define PHY_3P3_VOL_MIN                        3050000 /* uV */
+> +#define PHY_3P3_VOL_MAX                        3300000 /* uV */
+> +#define PHY_3P3_HPM_LOAD               16000   /* uA */
+> +
+.
+[snip]
+.
+> +MODULE_ALIAS("platform:qcom-dwc3-ssphy");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("DesignWare USB3 QCOM SSPHY driver");
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+Regards,
+Kiran Padwal
 
 
