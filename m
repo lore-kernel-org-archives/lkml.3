@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934893AbaGQQOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:14:34 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52474 "EHLO mail.kernel.org"
+	id S1030309AbaGQQOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:14:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52557 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030223AbaGQQOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:14:30 -0400
+	id S1030222AbaGQQOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:14:37 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/33] perf tools: Add feature test for __sync_val_compare_and_swap
-Date: Thu, 17 Jul 2014 13:12:23 -0300
-Message-Id: <1405613555-23380-22-git-send-email-acme@kernel.org>
+Subject: [PATCH 23/33] perf evsel: Add 'no_aux_samples' option
+Date: Thu, 17 Jul 2014 13:12:25 -0300
+Message-Id: <1405613555-23380-24-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405613555-23380-1-git-send-email-acme@kernel.org>
 References: <1405613555-23380-1-git-send-email-acme@kernel.org>
@@ -27,8 +27,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Add a feature test for __sync_val_compare_and_swap() and
-__sync_bool_compare_and_swap()
+Add an option to prevent additional samples being added to a selected
+event by perf_evsel__config().
+
+This is needed when using the sched_switch tracepoint to follow object
+code execution.  Since sched_switch will be used only for switch
+information, additional sampling is wasteful.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -38,112 +42,56 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1405332185-4050-30-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1405332185-4050-33-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile                                 |  6 ++++++
- tools/perf/config/feature-checks/Makefile                  |  4 ++++
- tools/perf/config/feature-checks/test-all.c                |  5 +++++
- .../config/feature-checks/test-sync-compare-and-swap.c     | 14 ++++++++++++++
- 4 files changed, 29 insertions(+)
- create mode 100644 tools/perf/config/feature-checks/test-sync-compare-and-swap.c
+ tools/perf/util/evsel.c | 6 +++---
+ tools/perf/util/evsel.h | 1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index b7f42d577c4e..1f67aa02d240 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -164,6 +164,7 @@ CORE_FEATURE_TESTS =			\
- 	backtrace			\
- 	dwarf				\
- 	fortify-source			\
-+	sync-compare-and-swap		\
- 	glibc				\
- 	gtk2				\
- 	gtk2-infobar			\
-@@ -199,6 +200,7 @@ LIB_FEATURE_TESTS =			\
- VF_FEATURE_TESTS =			\
- 	backtrace			\
- 	fortify-source			\
-+	sync-compare-and-swap		\
- 	gtk2-infobar			\
- 	libelf-getphdrnum		\
- 	libelf-mmap			\
-@@ -272,6 +274,10 @@ CFLAGS += -I$(LIB_INCLUDE)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index b760d32aae06..40626e5fc1c0 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -623,7 +623,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		attr->mmap_data = track;
+ 	}
  
- CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-	if (opts->call_graph_enabled)
++	if (opts->call_graph_enabled && !evsel->no_aux_samples)
+ 		perf_evsel__config_callgraph(evsel, opts);
  
-+ifeq ($(feature-sync-compare-and-swap), 1)
-+  CFLAGS += -DHAVE_SYNC_COMPARE_AND_SWAP_SUPPORT
-+endif
-+
- ifndef NO_BIONIC
-   $(call feature_check,bionic)
-   ifeq ($(feature-bionic), 1)
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 64c84e5f0514..6088f8d8a434 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -5,6 +5,7 @@ FILES=					\
- 	test-bionic.bin			\
- 	test-dwarf.bin			\
- 	test-fortify-source.bin		\
-+	test-sync-compare-and-swap.bin	\
- 	test-glibc.bin			\
- 	test-gtk2.bin			\
- 	test-gtk2-infobar.bin		\
-@@ -141,6 +142,9 @@ test-timerfd.bin:
- test-libdw-dwarf-unwind.bin:
- 	$(BUILD)
+ 	if (target__has_cpu(&opts->target))
+@@ -637,7 +637,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	     target__has_cpu(&opts->target) || per_cpu))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
  
-+test-sync-compare-and-swap.bin:
-+	$(BUILD) -Werror
-+
- -include *.d
- 
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index fe5c1e5c952f..a7d022e161c0 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -89,6 +89,10 @@
- # include "test-libdw-dwarf-unwind.c"
- #undef main
- 
-+#define main main_test_sync_compare_and_swap
-+# include "test-sync-compare-and-swap.c"
-+#undef main
-+
- int main(int argc, char *argv[])
- {
- 	main_test_libpython();
-@@ -111,6 +115,7 @@ int main(int argc, char *argv[])
- 	main_test_timerfd();
- 	main_test_stackprotector_all();
- 	main_test_libdw_dwarf_unwind();
-+	main_test_sync_compare_and_swap(argc, argv);
- 
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-sync-compare-and-swap.c b/tools/perf/config/feature-checks/test-sync-compare-and-swap.c
-new file mode 100644
-index 000000000000..c34d4ca4af56
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-sync-compare-and-swap.c
-@@ -0,0 +1,14 @@
-+#include <stdint.h>
-+
-+volatile uint64_t x;
-+
-+int main(int argc, char *argv[])
-+{
-+	uint64_t old, new = argc;
-+
-+	argv = argv;
-+	do {
-+		old = __sync_val_compare_and_swap(&x, 0, 0);
-+	} while (!__sync_bool_compare_and_swap(&x, old, new));
-+	return old == new;
-+}
+-	if (opts->raw_samples) {
++	if (opts->raw_samples && !evsel->no_aux_samples) {
+ 		perf_evsel__set_sample_bit(evsel, TIME);
+ 		perf_evsel__set_sample_bit(evsel, RAW);
+ 		perf_evsel__set_sample_bit(evsel, CPU);
+@@ -650,7 +650,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		attr->watermark = 0;
+ 		attr->wakeup_events = 1;
+ 	}
+-	if (opts->branch_stack) {
++	if (opts->branch_stack && !evsel->no_aux_samples) {
+ 		perf_evsel__set_sample_bit(evsel, BRANCH_STACK);
+ 		attr->branch_sample_type = opts->branch_stack;
+ 	}
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index a52e9a5bb2d0..8dfec05bcec2 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -83,6 +83,7 @@ struct perf_evsel {
+ 	int			is_pos;
+ 	bool 			supported;
+ 	bool 			needs_swap;
++	bool			no_aux_samples;
+ 	/* parse modifier helper */
+ 	int			exclude_GH;
+ 	int			nr_members;
 -- 
 1.9.3
 
