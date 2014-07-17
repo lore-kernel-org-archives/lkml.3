@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730AbaGQOzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:55:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54773 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932865AbaGQOzd (ORCPT
+	id S933607AbaGQO6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:58:15 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17234 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139AbaGQO6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:55:33 -0400
-Date: Thu, 17 Jul 2014 10:55:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Amit Virdi <amit.virdi@st.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rdunlap@infradead.org>,
-        <ming.lei@canonical.com>, <hdegoede@redhat.com>,
-        <hsi-ss-sw-devel@lists.codex.cro.st.com>
-Subject: Re: [PATCH] usb: core: allow zero packet flag for interrupt urbs
-In-Reply-To: <5255a576a562f60c185e89b5937357290242fe1e.1405586653.git.amit.virdi@st.com>
-Message-ID: <Pine.LNX.4.44L0.1407171053330.1517-100000@iolanthe.rowland.org>
+	Thu, 17 Jul 2014 10:58:13 -0400
+Date: Thu, 17 Jul 2014 17:58:11 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-metag@vger.kernel.org, james.hogan@imgtec.com
+Subject: Re: [PATCH 1/3] arch/metag/kernel/cachepart.c: fix failure check
+Message-ID: <20140717145811.GI25880@mwanda>
+References: <1405603586-12515-1-git-send-email-andrey.krieger.utkin@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405603586-12515-1-git-send-email-andrey.krieger.utkin@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Amit Virdi wrote:
-
-> Section 4.4.7.2 of the USB3.0 spec says:
-> 	A zero-length data payload is a valid transfer and may be useful for
-> 	some implementations.
+On Thu, Jul 17, 2014 at 04:26:26PM +0300, Andrey Utkin wrote:
+> [linux-3.16-rc5/arch/metag/kernel/cachepart.c:102]: (style) Checking if unsigned variable 'thread_cache_size' is less than zero.
 > 
-> So, extend the logic of allowing URB_ZERO_PACKET to interrupt urbs too.
-> Otherwise, the kernel throws error of BOGUS transfer flags.
+> Source code is
 > 
-> Signed-off-by: Amit Virdi <amit.virdi@st.com>
+>         if (thread_cache_size < 0)
+>             pr_emerg("Can't read %s cache size\n",
+>                  cache_type ? "DCACHE" : "ICACHE");
+> 
+> but
+> 
+>     unsigned int thread_cache_size;
+> 
+> Function get_thread_cache_size returns an error code
+> as (unsigned int) -1.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80361
+> Reported-by: David Binderman <dcb314@hotmail.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 > ---
->  drivers/usb/core/urb.c | 4 ++++
->  1 file changed, 4 insertions(+)
+>  arch/metag/kernel/cachepart.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
-> index 991386c..a136246 100644
-> --- a/drivers/usb/core/urb.c
-> +++ b/drivers/usb/core/urb.c
-> @@ -460,6 +460,10 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
->  	case USB_ENDPOINT_XFER_CONTROL:
->  		allowed |= URB_NO_FSBR;	/* only affects UHCI */
->  		/* FALLTHROUGH */
-> +	case USB_ENDPOINT_XFER_INT:
-> +		if (is_out)
-> +			allowed |= URB_ZERO_PACKET;
-> +		/* FALLTHROUGH */
->  	default:			/* all non-iso endpoints */
->  		if (!is_out)
->  			allowed |= URB_SHORT_NOT_OK;
+> diff --git a/arch/metag/kernel/cachepart.c b/arch/metag/kernel/cachepart.c
+> index 0a2385f..b137034 100644
+> --- a/arch/metag/kernel/cachepart.c
+> +++ b/arch/metag/kernel/cachepart.c
+> @@ -99,7 +99,7 @@ void check_for_cache_aliasing(int thread_id)
+>  	for (cache_type = ICACHE; cache_type <= DCACHE; cache_type++) {
+>  		thread_cache_size =
+>  				get_thread_cache_size(cache_type, thread_id);
+> -		if (thread_cache_size < 0)
+> +		if (thread_cache_size == (unsigned int)-1)
 
-I can't say this is actually wrong, but have you ever encountered a 
-situation where this would be needed?  How often does anyone need to do 
-a multi-packet transfer over an interrupt endpoint?
+Oh, wow.  Every single variable in this file is an unsigned int.  :P
 
-Alan Stern
+We should just make this int.  The values of thread_cache_size do not
+go that high.
+
+regards,
+dan carpenter
 
