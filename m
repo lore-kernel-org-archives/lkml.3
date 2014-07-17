@@ -1,133 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703AbaGQI6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:58:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33152 "EHLO mga09.intel.com"
+	id S1755783AbaGQI7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:59:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25352 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755428AbaGQI6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:58:10 -0400
+	id S1753605AbaGQI7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 04:59:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,676,1400050800"; 
-   d="scan'208";a="574558985"
-Message-ID: <1405587482.28592.64.camel@rzhang1-toshiba>
-Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
-From: Zhang Rui <rui.zhang@intel.com>
-To: markus@gutschke.com
-Cc: linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Thu, 17 Jul 2014 16:58:02 +0800
-In-Reply-To: <CALGCz1oYYkKp1frPF4vExiwqW=euYY8An+Yum4U-qsBc5NyjFg@mail.gmail.com>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
-	 <CALGCz1oYYkKp1frPF4vExiwqW=euYY8An+Yum4U-qsBc5NyjFg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="571179525"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH V3] perf tools: Record whether a dso has data
+Date: Thu, 17 Jul 2014 11:58:30 +0300
+Message-Id: <1405587510-15037-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405586590-13657-3-git-send-email-adrian.hunter@intel.com>
+References: <1405586590-13657-3-git-send-email-adrian.hunter@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Markus,
+Add 'data_status' to record whether a dso has data
+(i.e. an object file)
 
-Can you please attach
-1. the acpidump output
-2. dmesg output after boot in 3.16-rc
-3. the output of 
-   a) "grep . /sys/bus/pnp/devices/*/firmware_node/*"
-   b) "grep . /sys/bus/pnp/devices/*/*"
-   c) "grep . /sys/bus/platform/devices/*/firmware_node/*"
-   d) "grep . /sys/bus/platform/devices/*/*"
-   BOTH before and after this commit?
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/dso.c | 20 ++++++++++++--------
+ tools/perf/util/dso.h |  7 +++++++
+ 2 files changed, 19 insertions(+), 8 deletions(-)
 
-thanks,
-rui
-
-On Wed, 2014-07-16 at 23:50 -0700, Markus Gutschke wrote:
-> Adding the reviewers of the faulty change list to the cc list for this
-> e-mail. I hope that is considered proper etiquette for the LKML.
-> 
-> On Tue, Jul 15, 2014 at 6:51 PM, Markus Gutschke <markus@gutschke.com> wrote:
-> > My Dell M4400 has been pretty well-supported by Linux a couple of
-> > years now, but recent 3.16-rcX cause hard crashes when resuming from
-> > Suspend-to-RAM.
-> >
-> > This is tricky to debug, as device drivers are not yet restored by the
-> > time that the crash happens. So, I can't use Page-UP to scroll the
-> > screen and see the full crash information. I also cannot use the
-> > netconsole; the ethernet device is still suspended. For similar
-> > reasons, crash kernels don't seem to work either.
-> >
-> > After about a day of false starts and a lengthy bi-secting session, I
-> > finally narrowed things down to this change list:
-> >
-> > eec15edbb0e14485998635ea7c62e30911b465f0 is the first bad commit
-> > commit eec15edbb0e14485998635ea7c62e30911b465f0
-> > Author: Zhang Rui <rui.zhang@intel.com>
-> > Date:   Fri May 30 04:23:01 2014 +0200
-> >
-> >     ACPI / PNP: use device ID list for PNPACPI device enumeration
-> >
-> >     ACPI can be used to enumerate PNP devices, but the code does not
-> >     handle this in the right way currently.  Namely, if an ACPI device
-> >     object
-> >      1. Has a _CRS method,
-> >      2. Has an identification of
-> >         "three capital characters followed by four hex digits",
-> >      3. Is not in the excluded IDs list,
-> >     it will be enumerated to PNP bus (that is, a PNP device object will
-> >     be create for it).  This means that, actually, the PNP bus type is
-> >     used as the default bus type for enumerating _HID devices in ACPI.
-> >
-> >     However, more and more _HID devices need to be enumerated to the
-> >     platform bus instead (that is, platform device objects need to be
-> >     created for them).  As a result, the device ID list in acpi_platform.c
-> >     is used to enforce creating platform device objects rather than PNP
-> >     device objects for matching devices.  That list has been continuously
-> >     growing recently, unfortunately, and it is pretty much guaranteed to
-> >     grow even more in the future.
-> >
-> >     To address that problem it is better to enumerate _HID devices
-> >     as platform devices by default.  To this end, change the way of
-> >     enumerating PNP devices by adding a PNP ACPI scan handler that
-> >     will use a device ID list to create PNP devices for the ACPI
-> >     device objects whose device IDs are present in that list.
-> >
-> >     The initial device ID list in the PNP ACPI scan handler contains
-> >     all of the pnp_device_id strings from all the existing PNP drivers,
-> >     so this change should be transparent to the PNP core and all of the
-> >     PNP drivers.  Still, in the future it should be possible to reduce
-> >     its size by converting PNP drivers that need not be PNP for any
-> >     technical reasons into platform drivers.
-> >
-> >     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> >     [rjw: Rewrote the changelog, modified the PNP ACPI scan handler code]
-> >     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >     Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >
-> > :040000 040000 b7c07232aa46ae7b6faf9a907fb7274a02e4680fc2e05b31a61dccd087c554adecc89a43a1ed81f7
-> > M drivers
-> > :040000 040000 4eda970292fffbeebe167f9210502527df4e8ab421e9e6fd84c780a34bf3d48b5e7618b551da3b1a
-> > M include
-> >
-> > I took a photo of the crash. It feels silly to do, but I couldn't
-> > think of a better solution. You can find it at
-> > https://drive.google.com/file/d/0B8SxqKDe4hyheTlTLXY2YThkMXM
-> >
-> > As I mentioned earlier, a bunch of information has already scrolled
-> > off the screen, but hopefully what is visible is somewhat helpful.
-> >
-> > I will have only limited internet access the next couple of weeks. But
-> > I wanted to make sure I at least got the result of the bisection out
-> > to LKML. I will make every best effort to collect additional data, if
-> > asked to do so; but some of it might be delayed for a little bit,
-> > until I can get access to reasonably powerful hardware or reasonably
-> > fast internet.
-> >
-> >
-> > Markus
-> >
-> > P.S.: Please keep me cc'd on all responses, as I am not subscribed to
-> > the firehose that is LKML.
-
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 28cf747..08eb028 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -332,25 +332,28 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	int i = 0;
+ 
+ 	if (dso->data.fd >= 0)
+-		return dso->data.fd;
++		goto out;
+ 
+ 	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND) {
+ 		dso->data.fd = open_dso(dso, machine);
+-		return dso->data.fd;
++		goto out;
+ 	}
+ 
+ 	do {
+-		int fd;
+-
+ 		dso->binary_type = binary_type_data[i++];
+ 
+-		fd = open_dso(dso, machine);
+-		if (fd >= 0)
+-			return dso->data.fd = fd;
++		dso->data.fd = open_dso(dso, machine);
++		if (dso->data.fd >= 0)
++			goto out;
+ 
+ 	} while (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND);
++out:
++	if (dso->data.fd >= 0)
++		dso->data.data_status = DSO_DATA_STATUS_OK;
++	else
++		dso->data.data_status = DSO_DATA_STATUS_ERROR;
+ 
+-	return -EINVAL;
++	return dso->data.fd;
+ }
+ 
+ static void
+@@ -701,6 +704,7 @@ struct dso *dso__new(const char *name)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+ 		dso->data.cache = RB_ROOT;
+ 		dso->data.fd = -1;
++		dso->data.data_status = DSO_DATA_STATUS_UNKNOWN;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->is_64_bit = (sizeof(void *) == 8);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index c239e86..07d0a58 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -40,6 +40,12 @@ enum dso_swap_type {
+ 	DSO_SWAP__YES,
+ };
+ 
++enum dso_data_status {
++	DSO_DATA_STATUS_ERROR	= -1,
++	DSO_DATA_STATUS_UNKNOWN	= 0,
++	DSO_DATA_STATUS_OK	= 1,
++};
++
+ #define DSO__SWAP(dso, type, val)			\
+ ({							\
+ 	type ____r = val;				\
+@@ -104,6 +110,7 @@ struct dso {
+ 	struct {
+ 		struct rb_root	 cache;
+ 		int		 fd;
++		int		 data_status;
+ 		size_t		 file_size;
+ 		struct list_head open_entry;
+ 	} data;
+-- 
+1.8.3.2
 
