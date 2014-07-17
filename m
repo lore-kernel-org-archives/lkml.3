@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901AbaGQP3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:29:42 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:41837 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933145AbaGQP3l (ORCPT
+	id S934026AbaGQPcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:32:12 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58277 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933006AbaGQPcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:29:41 -0400
-Date: Thu, 17 Jul 2014 17:29:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: use page lists for uncharge batching
-Message-ID: <20140717152936.GF8011@dhcp22.suse.cz>
-References: <1404759358-29331-1-git-send-email-hannes@cmpxchg.org>
+	Thu, 17 Jul 2014 11:32:09 -0400
+Message-ID: <53C7EC6F.6060902@hurleysoftware.com>
+Date: Thu, 17 Jul 2014 11:31:59 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404759358-29331-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: balbi@ti.com, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        mika.westerberg@linux.intel.com
+Subject: Re: [PATCH 4/5] tty: serial: 8250 core: add runtime pm
+References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de> <1405521903-5877-5-git-send-email-bigeasy@linutronix.de> <20140716151604.GG1365@saruman.home> <53C6A050.2050409@linutronix.de> <20140716160614.GI1365@saruman.home>
+In-Reply-To: <20140716160614.GI1365@saruman.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 07-07-14 14:55:58, Johannes Weiner wrote:
-> Pages are now uncharged at release time, and all sources of batched
-> uncharges operate on lists of pages.  Directly use those lists, and
-> get rid of the per-task batching state.
-> 
-> This also batches statistics accounting, in addition to the res
-> counter charges, to reduce IRQ-disabling and re-enabling.
+On 07/16/2014 12:06 PM, Felipe Balbi wrote:
+> On Wed, Jul 16, 2014 at 05:54:56PM +0200, Sebastian Andrzej Siewior wrote:
+>> On 07/16/2014 05:16 PM, Felipe Balbi wrote:
 
-It is probably worth noticing that there is a higher chance of missing
-threshold events now when we can accumulate huge number of uncharges
-during munmaps. I do not think this is earth shattering and the overall
-improvement is worth it but changelog should mention it.
+>>> I wonder if you should get_sync() on start_tx() and only
+>>> put_autosuspend() at stop_tx(). I guess the outcome would be
+>>> largely the same, no ?
+>>
+>> I just opened minicom on ttyS0 and gave a try. start_tx() was invoked
+>> each time I pressed a key (sent a character). I haven't seen stop_tx()
+>> even after after I closed minicom. I guess stop_tx() is invoked if you
+>> switch half-duplex communication.
+>
+> that's bad, I expected stop to be called also after each character.
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+The 8250 core auto-stops tx when the tx ring buffer is empty (except
+in the case of dma, where stopping tx isn't necessary).
 
-With the follow up fix from
-http://marc.info/?l=linux-mm&m=140552814228135&w=2
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-one nit below.
-
-[...]
-> +static void uncharge_list(struct list_head *page_list)
-> +{
-> +	struct mem_cgroup *memcg = NULL;
-> +	unsigned long nr_memsw = 0;
-> +	unsigned long nr_anon = 0;
-> +	unsigned long nr_file = 0;
-> +	unsigned long nr_huge = 0;
-> +	unsigned long pgpgout = 0;
-> +	unsigned long nr_mem = 0;
-> +	struct list_head *next;
-> +	struct page *page;
-> +
-> +	next = page_list->next;
-> +	do {
-
-I would use list_for_each_entry here which would also save list_empty
-check in mem_cgroup_uncharge_list
-
-> +		unsigned int nr_pages = 1;
-> +		struct page_cgroup *pc;
-> +
-> +		page = list_entry(next, struct page, lru);
-> +		next = page->lru.next;
-> +
-> +		VM_BUG_ON_PAGE(PageLRU(page), page);
-> +		VM_BUG_ON_PAGE(page_count(page), page);
-> +
-> +		pc = lookup_page_cgroup(page);
-> +		if (!PageCgroupUsed(pc))
-> +			continue;
-> +
-> +		/*
-> +		 * Nobody should be changing or seriously looking at
-> +		 * pc->mem_cgroup and pc->flags at this point, we have
-> +		 * fully exclusive access to the page.
-> +		 */
-> +
-> +		if (memcg != pc->mem_cgroup) {
-> +			if (memcg) {
-> +				uncharge_batch(memcg, pgpgout, nr_mem, nr_memsw,
-> +					       nr_anon, nr_file, nr_huge, page);
-> +				pgpgout = nr_mem = nr_memsw = 0;
-> +				nr_anon = nr_file = nr_huge = 0;
-> +			}
-> +			memcg = pc->mem_cgroup;
-> +		}
-> +
-> +		if (PageTransHuge(page)) {
-> +			nr_pages <<= compound_order(page);
-> +			VM_BUG_ON_PAGE(!PageTransHuge(page), page);
-> +			nr_huge += nr_pages;
-> +		}
-> +
-> +		if (PageAnon(page))
-> +			nr_anon += nr_pages;
-> +		else
-> +			nr_file += nr_pages;
-> +
-> +		if (pc->flags & PCG_MEM)
-> +			nr_mem += nr_pages;
-> +		if (pc->flags & PCG_MEMSW)
-> +			nr_memsw += nr_pages;
-> +		pc->flags = 0;
-> +
-> +		pgpgout++;
-> +	} while (next != page_list);
-> +
-> +	if (memcg)
-> +		uncharge_batch(memcg, pgpgout, nr_mem, nr_memsw,
-> +			       nr_anon, nr_file, nr_huge, page);
-> +}
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+Peter Hurley
