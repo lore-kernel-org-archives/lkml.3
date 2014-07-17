@@ -1,172 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168AbaGQXKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:10:47 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:39947 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621AbaGQXKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:10:45 -0400
-Date: Fri, 18 Jul 2014 07:10:37 +0800
-From: Real Name <enjoymindful@gmail.com>
-To: richard@nod.at
-Cc: uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] delete unnecessary bootmem struct page array
-Message-ID: <20140717231037.GA27382@name>
-References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
- <539C1964.4050504@nod.at>
- <20140616032852.GA1763@name>
- <539E93B9.5070407@nod.at>
- <20140616081238.GA1840@name>
- <20140616082855.GB1840@name>
- <CAMuHMdV9SA0zZz0u=VKWWXNRL186hunrMYuZ=RUcAjqRes8r8A@mail.gmail.com>
- <20140616103036.GA3999@name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616103036.GA3999@name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758671AbaGQXL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:11:58 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:48286 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755200AbaGQXL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 19:11:56 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] NFS: add checks for returned value of try_module_get()
+Date: Fri, 18 Jul 2014 03:11:45 +0400
+Message-Id: <1405638705-320-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 06:30:36PM +0800, Real Name wrote:
-> On Mon, Jun 16, 2014 at 11:15:23AM +0200, Geert Uytterhoeven wrote:
-> > On Mon, Jun 16, 2014 at 10:28 AM, Real Name <enjoymindful@gmail.com> wrote:
-> > >> > >> Can you please include in the changelog the commit sha1 which made the old init_maps() obsolete?
-> 
-> hi,
-> 
-> The commit sha1 had been included as required. Please review the attached patch. 
-> I only update the changlog of the patch.
->
+There is a couple of places in client code where returned value
+of try_module_get() is ignored. As a result there is a small chance
+to premature unload module because of unbalanced refcounting.
 
-hi, Rechard
-ping?
+The patch adds error handling in that places.
 
-> thanks
-> > >
-> > > I think we need find out which commit deleted the line "mem_map = map;" in init_maps function.
-> > 
-> > 
-> > v2.6.12-rc1
-> > 
-> > commit 5678d7fc97ac75f7401ce77897773cc0bb3afee5
-> 
-> Geert, thank you.
-> 
-> > Author: Dave Hansen <haveblue@us.ibm.com>
-> > Date:   Sun Mar 13 00:22:56 2005 -0800
-> > 
-> >     [PATCH] no arch-specific mem_map init
-> > 
+Found by Linux Driver Verification project (linuxtesting.org).
 
-> From 29e5e83f8f3988ea1396d61b4d5764e7904f82c5 Mon Sep 17 00:00:00 2001
-> From: Honggang Li <enjoymindful@gmail.com>
-> Date: Mon, 16 Jun 2014 18:05:47 +0800
-> Subject: [PATCH] UML delete unnecessary bootmem struct page array
-> 
-> 1) uml kernel bootmem managed through bootmem_data->node_bootmem_map,
-> not the struct page array, so the array is unnecessary.
-> 
-> 2) the bootmem struct page array has been pointed by a *local* pointer,
-> struct page *map, in init_maps function. The array can be accessed only
-> in init_maps's scope. As a result, uml kernel wastes about 1% of total
-> memory.
-> 
-> 3) commit 5678d7fc97ac75f7401ce77897773cc0bb3afee5 obsoleted
-> the init_maps function.
-> 
-> Signed-off-by: Honggang Li <enjoymindful@gmail.com>
-> ---
->  arch/um/include/shared/mem_user.h |  2 +-
->  arch/um/kernel/physmem.c          | 32 ++++++--------------------------
->  arch/um/kernel/um_arch.c          |  7 +------
->  3 files changed, 8 insertions(+), 33 deletions(-)
-> 
-> diff --git a/arch/um/include/shared/mem_user.h b/arch/um/include/shared/mem_user.h
-> index 46384ac..cb84414 100644
-> --- a/arch/um/include/shared/mem_user.h
-> +++ b/arch/um/include/shared/mem_user.h
-> @@ -49,7 +49,7 @@ extern int iomem_size;
->  extern int init_mem_user(void);
->  extern void setup_memory(void *entry);
->  extern unsigned long find_iomem(char *driver, unsigned long *len_out);
-> -extern int init_maps(unsigned long physmem, unsigned long iomem,
-> +extern void mem_total_pages(unsigned long physmem, unsigned long iomem,
->  		     unsigned long highmem);
->  extern unsigned long get_vm(unsigned long len);
->  extern void setup_physmem(unsigned long start, unsigned long usable,
-> diff --git a/arch/um/kernel/physmem.c b/arch/um/kernel/physmem.c
-> index 30fdd5d..549ecf3 100644
-> --- a/arch/um/kernel/physmem.c
-> +++ b/arch/um/kernel/physmem.c
-> @@ -22,39 +22,19 @@ EXPORT_SYMBOL(high_physmem);
->  
->  extern unsigned long long physmem_size;
->  
-> -int __init init_maps(unsigned long physmem, unsigned long iomem,
-> +void __init mem_total_pages(unsigned long physmem, unsigned long iomem,
->  		     unsigned long highmem)
->  {
-> -	struct page *p, *map;
-> -	unsigned long phys_len, phys_pages, highmem_len, highmem_pages;
-> -	unsigned long iomem_len, iomem_pages, total_len, total_pages;
-> -	int i;
-> -
-> -	phys_pages = physmem >> PAGE_SHIFT;
-> -	phys_len = phys_pages * sizeof(struct page);
-> -
-> -	iomem_pages = iomem >> PAGE_SHIFT;
-> -	iomem_len = iomem_pages * sizeof(struct page);
-> +	unsigned long phys_pages, highmem_pages;
-> +	unsigned long iomem_pages, total_pages;
->  
-> +	phys_pages    = physmem >> PAGE_SHIFT;
-> +	iomem_pages   = iomem   >> PAGE_SHIFT;
->  	highmem_pages = highmem >> PAGE_SHIFT;
-> -	highmem_len = highmem_pages * sizeof(struct page);
-> -
-> -	total_pages = phys_pages + iomem_pages + highmem_pages;
-> -	total_len = phys_len + iomem_len + highmem_len;
->  
-> -	map = alloc_bootmem_low_pages(total_len);
-> -	if (map == NULL)
-> -		return -ENOMEM;
-> -
-> -	for (i = 0; i < total_pages; i++) {
-> -		p = &map[i];
-> -		memset(p, 0, sizeof(struct page));
-> -		SetPageReserved(p);
-> -		INIT_LIST_HEAD(&p->lru);
-> -	}
-> +	total_pages   = phys_pages + iomem_pages + highmem_pages;
->  
->  	max_mapnr = total_pages;
-> -	return 0;
->  }
->  
->  void map_memory(unsigned long virt, unsigned long phys, unsigned long len,
-> diff --git a/arch/um/kernel/um_arch.c b/arch/um/kernel/um_arch.c
-> index 6043c76..dbd5bda 100644
-> --- a/arch/um/kernel/um_arch.c
-> +++ b/arch/um/kernel/um_arch.c
-> @@ -338,12 +338,7 @@ int __init linux_main(int argc, char **argv)
->  	start_vm = VMALLOC_START;
->  
->  	setup_physmem(uml_physmem, uml_reserved, physmem_size, highmem);
-> -	if (init_maps(physmem_size, iomem_size, highmem)) {
-> -		printf("Failed to allocate mem_map for %Lu bytes of physical "
-> -		       "memory and %Lu bytes of highmem\n", physmem_size,
-> -		       highmem);
-> -		exit(1);
-> -	}
-> +	mem_total_pages(physmem_size, iomem_size, highmem);
->  
->  	virtmem_size = physmem_size;
->  	stack = (unsigned long) argv;
-> -- 
-> 1.8.3.1
-> 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ fs/nfs/client.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index 1d09289c8f0e..a3531fcdc58a 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -110,8 +110,8 @@ struct nfs_subversion *get_nfs_version(unsigned int version)
+ 		mutex_unlock(&nfs_version_mutex);
+ 	}
+ 
+-	if (!IS_ERR(nfs))
+-		try_module_get(nfs->owner);
++	if (!IS_ERR(nfs) && !try_module_get(nfs->owner))
++		return ERR_PTR(-EAGAIN);
+ 	return nfs;
+ }
+ 
+@@ -158,7 +158,8 @@ struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_init)
+ 		goto error_0;
+ 
+ 	clp->cl_nfs_mod = cl_init->nfs_mod;
+-	try_module_get(clp->cl_nfs_mod->owner);
++	if (!try_module_get(clp->cl_nfs_mod->owner))
++		goto error_dealloc;
+ 
+ 	clp->rpc_ops = clp->cl_nfs_mod->rpc_ops;
+ 
+@@ -190,6 +191,7 @@ struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_init)
+ 
+ error_cleanup:
+ 	put_nfs_version(clp->cl_nfs_mod);
++error_dealloc:
+ 	kfree(clp);
+ error_0:
+ 	return ERR_PTR(err);
+-- 
+1.9.1
 
