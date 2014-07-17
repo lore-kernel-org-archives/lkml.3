@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012AbaGQPFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:05:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55434 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932975AbaGQPFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:05:42 -0400
-Date: Thu, 17 Jul 2014 10:05:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Michal Nazarewicz <mina86@mina86.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with Linus' tree
-Message-ID: <20140717150514.GG10459@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140717165238.2e056cba@canb.auug.org.au>
+	id S934067AbaGQPGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:06:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54799 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933357AbaGQPGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 11:06:08 -0400
+Date: Thu, 17 Jul 2014 11:06:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Gavin Guo <gavin.guo@canonical.com>
+cc: sarah.a.sharp@linux.intel.com, <mathias.nyman@intel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <yk@canonical.com>, <anthony.wong@canonical.com>,
+        <gerald.yang@canonical.com>
+Subject: Re: [PATCH v2 1/1] usb: Check if port status is equal to RxDetect
+In-Reply-To: <1405604056-18987-2-git-send-email-gavin.guo@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1407171059560.1517-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cyV/sMl4KAhiehtf"
-Content-Disposition: inline
-In-Reply-To: <20140717165238.2e056cba@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cyV/sMl4KAhiehtf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 17 Jul 2014, Gavin Guo wrote:
 
-On Thu, Jul 17, 2014 at 04:52:38PM +1000, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> include/uapi/linux/usb/functionfs.h between commit 091221417853 ("usb:
-> gadget: f_fs: resurect usb_functionfs_descs_head structure") from
-> Linus' tree and commit f0175ab51993 ("usb: gadget: f_fs: OS descriptors
-> support") from the usb-gadget tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
+> [1022:7814], the second hotplugging will experience the USB 3.0 pen
+> drive is recognized as high-speed device. After bisecting the kernel,
+> I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
+> (USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
+> some experiments, the bug can be fixed by avoiding executing the function
+> hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
+> XHCI Controlleris [1022:7814] is already in RxDetect
+> (I tried printing out the port status before setting to Disabled state),
+> it's reasonable to check the port status before really executing
+> hub_usb3_port_disable().
+> 
+> Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
+> Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
+> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 
-Thanks that is the correct fix :-)
+I did not give you permission to add my Signed-off-by: line to this 
+patch.  It wouldn't make any sense anyway, because I haven't merged the 
+patch.
 
---=20
-balbi
+However, you can add
 
---cyV/sMl4KAhiehtf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Alan Stern
 
-iQIcBAEBAgAGBQJTx+YqAAoJEIaOsuA1yqREtW0P/RAEUff6sYFgRqhTxIJQOxPn
-tt+xpv+bhs/nZ3C/blB+bvIaMECnNDfIbvv8PSKaTI3u2LqSW7KAuAXHcO+WrRMp
-KVv424pFF50sVlHniYwVKYIu8IqpqvzU/D25B9tkTwfn7GNxlz7/nixRTOVEfFpC
-TvjCogzCqXlbwvie6qd4ujD1vfKvbKtZl5tzkiO3IdJSPWDiBavaTRD1AyRexn5C
-tZwuIn9/NZ3Mdf5mlU61mS8OwBcpg/ULpb+WKSPMGlI29Fwk7+my4r7J7rHMpW53
-u2SCRpTGKMkURjQqls4EVAXkJriXOLgJ8nEdnap2iVvmKTgcE7T9Fjw0G4Aw0zmV
-09Kr8Z6lB7Q7jCoS1nP/3PwT3oPZd2ieUJwkseYfnez3iNgWORFuBt9oUWjYo3rY
-QHXLamPmMg4Zy2bGKQCgDLQvn+VNYp0IazW9qJ+x8nBfcTeOZ3zi3ZyrF6XqsL/7
-UerwkVToxhg9M/C3XqJPt9z9PsW/RyQZkjCCxRtc1Gts7IYaW+KT3mwlYunVixjP
-4JuwLWjScXJWuN2b1IAlYiiJittDeJOGFuBlmVb8Wwq0faxXxbmdKKDA6/92hikv
-h8mjABnpZedXPghCS0nLolAH+Di+DHiHJQm2iiyQKpDvdVZ6tm8XvezSdj1sMd9/
-bjKRJBfcvHSqjATEIUem
-=yPBl
------END PGP SIGNATURE-----
-
---cyV/sMl4KAhiehtf--
