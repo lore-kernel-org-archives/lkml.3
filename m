@@ -1,35 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaGQG4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:56:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58074 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840AbaGQG4K (ORCPT
+	id S1754832AbaGQG4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:56:13 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46050 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590AbaGQG4K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jul 2014 02:56:10 -0400
-Date: Wed, 16 Jul 2014 23:56:09 -0700 (PDT)
-Message-Id: <20140716.235609.2266614502105510844.davem@davemloft.net>
-To: teg@jklm.no
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8] net: set name assign type for names assigned using
- a static string
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1405550594-11786-1-git-send-email-teg@jklm.no>
-References: <1405550594-11786-1-git-send-email-teg@jklm.no>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Jul 2014 23:56:10 -0700 (PDT)
+Message-ID: <53c77388.e9fb420a.2550.46b7@mx.google.com>
+X-Google-Original-Message-ID: <001201cfa18c$2f263440$8d729cc0$@dulixin@gmail.com>
+From: "Dudley Du" <dudley.dulixin@gmail.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Dudley Du" <dudl@cypress.com>
+Subject: [PATCH v4 8/14] input: cyapa: add gen3 trackpad device baseline and calibrate functions support
+Date: Thu, 17 Jul 2014 14:55:52 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+hjCZjr2tA+cvtRLywvjZVZPnmlg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add report baseline and force calibrate functions supported for gen3
+trackpad device, which these functions are supplied through
+cyapa core baseline and calibrate interfaces.
+TEST=test on Chromebooks.
 
-Tom, even if the patches are sort of independent, they logically
-belong together.
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa_gen3.c |  135 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 135 insertions(+)
 
-So please number them, and provide an appropriate "[PATCH 0/N] ..."
-cover letter.
+diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
+index 886b2d7..801e8fd 100644
+--- a/drivers/input/mouse/cyapa_gen3.c
++++ b/drivers/input/mouse/cyapa_gen3.c
+@@ -757,6 +757,138 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
+ 	return 0;
+ }
+ 
++static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int tries = 20;  /* max recalibration timeout 2s. */
++	int ret;
++
++	data_reporting_started = false;
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++	if (ret < 0) {
++		dev_err(dev, "Error reading dev status. err = %d\n", ret);
++		goto out;
++	}
++	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
++		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
++			 ret);
++		ret = -EAGAIN;
++		goto out;
++	}
++
++	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++			       OP_RECALIBRATION_MASK);
++	if (ret < 0) {
++		dev_err(dev, "Failed to send calibrate command. ret = %d\n",
++			ret);
++		goto out;
++	}
++
++	do {
++		/*
++		 * For this recalibration, the max time will not exceed 2s.
++		 * The average time is approximately 500 - 700 ms, and we
++		 * will check the status every 100 - 200ms.
++		 */
++		usleep_range(100000, 200000);
++
++		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++		if (ret < 0) {
++			dev_err(dev, "Error reading dev status. err = %d\n",
++				ret);
++			goto out;
++		}
++		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
++			break;
++	} while (--tries);
++
++	if (tries == 0) {
++		dev_err(dev, "Failed to calibrate. Timeout.\n");
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++	dev_dbg(dev, "Calibration successful.\n");
++
++out:
++	data_reporting_started = true;
++	return ret < 0 ? ret : count;
++}
++
++static ssize_t cyapa_gen3_show_baseline(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int max_baseline, min_baseline;
++	int tries = 3;
++	int ret;
++
++	data_reporting_started = false;
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++	if (ret < 0) {
++		dev_err(dev, "Error reading dev status. err = %d\n", ret);
++		goto out;
++	}
++	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
++		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
++			 ret);
++		ret = -EAGAIN;
++		goto out;
++	}
++
++	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++			       OP_REPORT_BASELINE_MASK);
++	if (ret < 0) {
++		dev_err(dev, "Failed to send report baseline command. %d\n",
++			ret);
++		goto out;
++	}
++
++	do {
++		usleep_range(10000, 20000);
++
++		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++		if (ret < 0) {
++			dev_err(dev, "Error reading dev status. err = %d\n",
++				ret);
++			goto out;
++		}
++		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
++			break;
++	} while (--tries);
++
++	if (tries == 0) {
++		dev_err(dev, "Device timed out going to Normal state.\n");
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MAX_BASELINE);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read max baseline. err = %d\n", ret);
++		goto out;
++	}
++	max_baseline = ret;
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MIN_BASELINE);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read min baseline. err = %d\n", ret);
++		goto out;
++	}
++	min_baseline = ret;
++
++	dev_dbg(dev, "Baseline report successful. Max: %d Min: %d\n",
++		max_baseline, min_baseline);
++	ret = scnprintf(buf, PAGE_SIZE, "%d %d\n", max_baseline, min_baseline);
++
++out:
++	data_reporting_started = true;
++	return ret;
++}
++
+ /*
+  * cyapa_get_wait_time_for_pwr_cmd
+  *
+@@ -1064,6 +1196,9 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
+ 	.update_fw = cyapa_gen3_do_fw_update,
+ 	.bl_deactivate = cyapa_gen3_bl_deactivate,
+ 
++	.show_baseline = cyapa_gen3_show_baseline,
++	.calibrate_store = cyapa_gen3_do_calibrate,
++
+ 	.state_parse = cyapa_gen3_state_parse,
+ 	.operational_check = cyapa_gen3_do_operational_check,
+ 
+-- 
+1.7.9.5
 
-Please resubmit these patches with that done properly, thank you.
+
