@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078AbaGQOJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:09:14 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:47489 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932334AbaGQOJM (ORCPT
+	id S933375AbaGQOJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:09:21 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45870 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933296AbaGQOJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:09:12 -0400
+	Thu, 17 Jul 2014 10:09:19 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org, jack@suse.cz,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/6] printk: start simplifying some flags
-Date: Thu, 17 Jul 2014 09:09:05 -0500
-Message-Id: <1405606151-19875-1-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 3/6] printk: honor LOG_PREFIX in devkmsg_read()
+Date: Thu, 17 Jul 2014 09:09:08 -0500
+Message-Id: <1405606151-19875-4-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405606151-19875-1-git-send-email-elder@linaro.org>
+References: <1405606151-19875-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each log record has a "flags" field.  The flags keep track of, for
-instance, whether the record was saved in its entirety (as opposed
-to being one of multiple records that should be merged as a single
-unit).  A log record's flags field alone is not currently sufficient
-to know how the record should be formatted; you need to know the
-previous record's flags field as well.  I found understanding the
-real effect of various combinations of these flags to be very
-difficult, and was moved to try to do something about that.
+In devkmsg_read(), a variable "cont" holds a character that's used
+to indicate whether a given log line is a "continuation", that is,
+whether a log record should be merged with the one before or after
+it.  If a record should be merged with its successor (but not its
+predecessor) that character is 'c'.  And the line following such a
+'c' log record is normally marked with a '+' to show it is continues
+its predecessor.  Any other cases are marked '-', indicating the
+log record stands on its own.
 
-This series includes three patches that begin the process of
-simplifying how these flags are used and interpreted.  They include
-very long, detailed explanations (as small patches often do) because
-I want my reasoning to be very clear and examined very closely.  I
-really don't want to break printk()...
+There is an exception.  If a log record is marked LOG_PREFIX, it
+indicates that this record represents a new log entry, implicitly
+terminating the predecessor--even if the predecessor would otherwise
+have been continued.  So a record marked LOG_PREFIX (that is not
+also marked LOG_CONT) should have '-' for its "cont" variable.
 
-The first patch changes how two global variables are initialized,
-allowing the second patch to assume they always hold certain values.
+The logic that determines this "continuation" character has a bug
+that gets that exceptional case wrong.
 
-The second patch simplifies some code based on the observation that
-the LOG_CONT and LOG_NEWLINE flags are mutually exclusive.
+The specific case that produces the wrong result is when all of
+these conditions are non-zero:
+    user->prev & LOG_CONT
+    msg->flags & LOG_PREFIX
+    msg->flags & LOG_CONT
+The bug is that despite the message's LOG_PREFIX flag, the
+"cont" character is getting set to '+' rather than 'c'.
 
-The third and fourth patch fix a bug in two places.  The bug is
-that a LOG_PREFIX in a record should implicitly terminate its
-predecessor, even if the predecessor was marked LOG_CONT.
+The problem is that the message's LOG_PREFIX flag is getting
+ignored if its LOG_CONT flag is also set.  Rearrange the logic
+here to produce the correct result.
 
-The fifth patch inserts a newline in /dev/kmsg output in the
-event a LOG_PREFIX record follows a LOG_CONT record.
+The following table concisely defines the problem:
 
-One trivial final patch is included at the end of the series.
+     prev | msg  | msg  ||"cont"
+     CONT |PREFIX| CONT || char
+    ------+------+------++------
+     clear| clear| clear||  '-'
+     clear| clear|  set ||  'c'
+     clear|  set | clear||  '-'
+     clear|  set |  set ||  'c'
+      set | clear| clear||  '+'
+      set | clear|  set ||  '+'
+      set |  set | clear||  '-'
+      set |  set |  set ||  '+'     <-- should be 'c'
 
-					-Alex
+Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+---
+ kernel/printk/printk.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-History:
-v2: - Added a patch to initialize two globals with LOG_NEWLINE.
-    - Changed the (now) second patch to argue that LOG_CONT and
-      LOG_NEWLINES are mutally exclusive.
-    - Added a patch to insert a newline in one case in devkmsg_read().
-    - Added some extra parentheses in some conditions, as requested.
-    - Fixed and updated some header commentary.
-    - Deleted a hunk in the typo patch, as requested.
-
-This series, based on v3.16-rc5, is available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/printk-flags-v2
-
-Alex Elder (6):
-  printk: initialize syslog_prev and console_prev
-  printk: LOG_CONT and LOG_NEWLINE are opposites
-  printk: honor LOG_PREFIX in devkmsg_read()
-  printk: honor LOG_PREFIX in msg_print_text()
-  printk: insert newline in devkmsg_read()
-  printk: correct some more typos
-
- kernel/printk/printk.c | 63 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 34 insertions(+), 29 deletions(-)
-
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ee1862..5d719bf 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -572,7 +572,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	struct printk_log *msg;
+ 	u64 ts_usec;
+ 	size_t i;
+-	char cont = '-';
++	char cont;
+ 	size_t len;
+ 	ssize_t ret;
+ 
+@@ -619,11 +619,12 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	 * better readable output. 'c' in the record flags mark the first
+ 	 * fragment of a line, '+' the following.
+ 	 */
+-	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
+-		cont = 'c';
+-	else if ((msg->flags & LOG_CONT) ||
+-		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
++	if ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
+ 		cont = '+';
++	else if (msg->flags & LOG_CONT)
++		cont = 'c';
++	else
++		cont = '-';
+ 
+ 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+ 		      (msg->facility << 3) | msg->level,
 -- 
 1.9.1
 
