@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaGQRX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:23:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44017 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389AbaGQRX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:23:56 -0400
-Date: Thu, 17 Jul 2014 12:23:35 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <Peter.Chen@freescale.com>, <kishon@ti.com>,
-        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
-        <yoshihiro.shimoda.uh@renesas.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/8] usb: add support for the generic PHY framework
-Message-ID: <20140717172335.GN10459@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
- <20140716174513.GF3016@saruman.home>
- <20140717080302.GA3090@kwain>
+	id S1751275AbaGQR0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:26:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60945 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750805AbaGQR0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 13:26:09 -0400
+Date: Thu, 17 Jul 2014 18:25:26 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFCv3 01/14] arm64: introduce
+ aarch64_insn_gen_comp_branch_imm()
+Message-ID: <20140717172526.GC4844@arm.com>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+ <1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
+ <20140716160450.GT29414@arm.com>
+ <20140716211931.GA18109@gup76>
+ <20140717091931.GC21153@arm.com>
+ <CAMEtUux1NRqz-Bqi_H8kJe8x9u+1Q12Sg4a-92cE6OsePEBLxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GEn4szYucjS2InE7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140717080302.GA3090@kwain>
+In-Reply-To: <CAMEtUux1NRqz-Bqi_H8kJe8x9u+1Q12Sg4a-92cE6OsePEBLxg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GEn4szYucjS2InE7
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 17, 2014 at 04:59:10PM +0100, Alexei Starovoitov wrote:
+> On Thu, Jul 17, 2014 at 2:19 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Wed, Jul 16, 2014 at 10:19:31PM +0100, Zi Shen Lim wrote:
+> >> >
+> >> > Is a BUG_ON justifiable here? Is there not a nicer way to fail?
+> >>
+> >> In general, it'd be nice if we returned something like -EINVAL and
+> >> have all callers handle failures. Today all code gen functions return
+> >> the u32 instruction and there's no error handling by callers.
+> >> I think following the precedence (aarch64_insn_gen_branch_imm())
+> >> of failing with BUG_ON is a reasonable tradeoff.
+> >
+> > Well, I don't necessarily agree with that BUG_ON, either :)
+> > I take it eBPF doesn't have a `trap' instruction or similar? Otherwise, we
+> > could generate that and avoid having to propagate errors directly to the
+> > caller.
+> >
+> >> In this case here, when we hit the default (failure) case, that means
+> >> there's a serious error of attempting to use an unsupported
+> >> variant. I think we're better off failing hard here than trying to
+> >> arbitrarily "fallback" on a default choice.
+> >
+> > It might be a serious error for BPF, but a BUG_ON brings down the entire
+> > machine, which I think is unfortunate.
+> 
+> There is some misunderstanding here. Here BUG_ON will trigger
+> only on actual bug in JIT implementation, it cannot be triggered by user.
+> eBPF program is verified before it reaches JIT, so all instructions are
+> valid and input to JIT is proper. Two instruction are not yet
+> implemented in this JIT and they trigger pr_.._once().
+> So I don't see any issue with this usage of BUG_ON
+> imo living with silent bugs in JIT is more dangerous.
+> 
+> For the same reason there is no 'trap' instruction in eBPF.
+> Static verifier checks that program is valid. If there was a 'trap'
+> insn the program would be rejected. Like programs with
+> 'div by zero' are rejected. There is normal 'bpf_exit' insn to
+> return from the program.
 
-Hi,
+Ok, so assuming that BPF doesn't have any issues, I take your point.
+However, we could very easily re-use these functions for things like SMP
+alternatives and kprobes, where simply failing the instruction generation
+might be acceptable.
 
-On Thu, Jul 17, 2014 at 10:03:02AM +0200, Antoine T=E9nart wrote:
-> Hi Felipe,
->=20
-> On Wed, Jul 16, 2014 at 12:45:13PM -0500, Felipe Balbi wrote:
-> > On Tue, Jul 15, 2014 at 04:39:08PM +0200, Antoine T=E9nart wrote:
-> > >=20
-> > > [1] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.h=
-tml
-> >=20
-> > Since this has a dependency on the other series which hasn't showed up
-> > with enough Acks, I can't take this one either. Let's get this ready
-> > early into v3.18-rc cycle so we don't miss this and the other series
-> > again.
->=20
-> Since this patch does not differ a lot from what I proposed, and is not
-> that big, can't we try to have acks in the next days so that we can take
-> this series as well? That would help my Berlin USB series[1] which
-> depends on this one :)
->=20
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/27284=
-0.html
+It just feels like a bit hammer to me, when the machine is probably happily
+scheduling user tasks, responding to interrupts, writing data to disk etc.
 
-my tree is already closed for v3.17 unless it's an important fix for
-what's already in my 'next' branch. Moreover, I never got acks from
-everybody necessary. Sorry, it has to wait until v3.18.
-
---=20
-balbi
-
---GEn4szYucjS2InE7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTyAaXAAoJEIaOsuA1yqREqawQAJrwp3KJ6t7ARiDAgFr++aaj
-MKQ//irw169Itk3b795WMQ4Z9LeAOxb5FU506FF1FzOsICJxxRIoazqLbriPRrUp
-2MMNf399w6bYhSMIjGr0Ep/OjKqYZOQUgruxZCPxdU4pHjFSgL/lhzUZmeCyv+7v
-dm/IjvHVHjmc39vHMU7DJFVcHdU6NK82kKi8VVy14HhUwsHVbQz4QQuxs1ObEyl8
-rVkaxs8eDl+EK6YOpXX5/VgXNDqTeyCYxt4nWW2hO3pCMnZKQNHFinvuXIEHzyto
-RwhFittPG0888QHR22uCSXU4+wLq5bhYNNJjuw57GcEatrJmcBKu6l7lrRPWj2R9
-3k361pzj45U3lSfVuhZ1QypmKmjUg8zT8U4iRAWy0P02hcyGUKQoduvxD40OPERF
-qTgA4LYqngPuDvquF91r+gqpz77RgEZlq0MhMzwWIpevBalVRhbFfOT7KdzuoIGi
-uqhGdyeUIsAWj4qAcxvleThCqFMZZ8di/vn2MkxuLataP4QArK13+ugUGt4+1kkq
-Kf1uROkW07CrO4vSgNs4njZBIJjrqE1CoYsCVbor0SR2FLkYdxQdMlsua9J40myN
-oEh+7kVdcnPQcxW8ba72u2LFM4Q/gI3DPaD+ChIOtMxg7BQA3/zPjn5zkfNxo+VA
-7omByZoVoWWw3SapAyrx
-=n/sk
------END PGP SIGNATURE-----
-
---GEn4szYucjS2InE7--
+Will
