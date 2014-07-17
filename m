@@ -1,590 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaGQCon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 22:44:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18997 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaGQCok (ORCPT
+	id S1752591AbaGQCwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 22:52:35 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:61198 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaGQCwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 22:44:40 -0400
-X-AuditID: cbfee690-b7fb56d000003439-4d-53c73895b93e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-pci@vger.kernel.org, "'Mohit Kumar'" <mohit.kumar@st.com>,
-        linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Marek Vasut'" <marex@denx.de>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1405349705-31400-1-git-send-email-kishon@ti.com>
- <1405349705-31400-5-git-send-email-kishon@ti.com>
-In-reply-to: <1405349705-31400-5-git-send-email-kishon@ti.com>
-Subject: Re: [PATCH v2 4/4] PCI: host: pcie-dra7xx: add support for pcie-dra7xx
- controller
-Date: Thu, 17 Jul 2014 11:44:37 +0900
-Message-id: <008c01cfa169$0ca6cdd0$25f46970$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+fc7cowM4XAHlAT3SPKyWsgG86FQB9OnTQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t8zI92pFseDDe7+0bX4O+kYu8WSpgyL
-	l4c0LeYfOcdqceDPDkaLywsvsVp8v2FqceFpD5vFwrYlLBaXd81hszg77zibxZu2RkaLjVN/
-	MTrwevz+NYnRY96sEyweCzaVety5tofN4/uOXkaPvi2rGD2e/tjL7HH8xnYmj8+b5AI4o7hs
-	UlJzMstSi/TtErgyrh29wlbQV1ax4etb1gbGr7FdjJwcEgImEpO+z2CFsMUkLtxbz9bFyMUh
-	JLCMUWL/mw9MMEXPZi1jhEgsYpRo2vESquo3o8T3L00sIFVsAmoSX74cZgexRQRCJXr+zASz
-	mQUeM0nc71ACsYUECiVutM5hA7E5BewkFt1dANYrLBAjcbJzK1icRUBVYtXjq2A2r4CtxLNf
-	e1kgbEGJH5PvsUDM1JJYv/M4E4QtL7F5zVvmLkYOoEvVJR791YU4wUjiftMvZogSEYl9L96B
-	PSAhsJJD4vXHHVC7BCS+TT7EAtErK7HpADPEw5ISB1fcYJnAKDELyeZZSDbPQrJ5FpIVCxhZ
-	VjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmKEpIYJOxjvHbA+xJgMtH4is5Rocj4wteSVxBsa
-	mxlZmJqYGhuZW5qRJqwkzqv2KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6OSMH8JR+RD
-	YXsb/mMLLP4V7LCJvBaVkjYpQ+mMeGSCTFBotu8qv82frR58bjj7g30Pa/Vh52APk5NX3x1+
-	VFU0U+0RC5P8qsCfxicuBqvIf3/NmfZ2fvOa/TtOuUUJ5TqJWa7+qeo4+d6uKx4mYWmHwzva
-	La4+LU569Yp9rafV9s3dU9QFm5RYijMSDbWYi4oTAYkIx/8jAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd2pFseDDc7PUbf4O+kYu8WSpgyL
-	l4c0LeYfOcdqceDPDkaLywsvsVp8v2FqceFpD5vFwrYlLBaXd81hszg77zibxZu2RkaLjVN/
-	MTrwevz+NYnRY96sEyweCzaVety5tofN4/uOXkaPvi2rGD2e/tjL7HH8xnYmj8+b5AI4oxoY
-	bTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOArlZSKEvM
-	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZlw7eoWtoK+sYsPXt6wNjF9juxg5
-	OSQETCSezVrGCGGLSVy4t56ti5GLQ0hgEaNE046XUM5vRonvX5pYQKrYBNQkvnw5zA5iiwiE
-	SvT8mQlmMws8ZpK436EEYgsJFErcaJ3DBmJzCthJLLq7AKxXWCBG4mTnVrA4i4CqxKrHV8Fs
-	XgFbiWe/9rJA2IISPybfY4GYqSWxfudxJghbXmLzmrfMXYwcQJeqSzz6qwtxgpHE/aZfzBAl
-	IhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYIT
-	zzPpHYyrGiwOMQpwMCrx8Ca0HgsWYk0sK67MPcQowcGsJMLrynQ8WIg3JbGyKrUoP76oNCe1
-	+BCjKdCjE5mlRJPzgUkxryTe0NjEzMjSyMzCyMTcXEmc92CrdaCQQHpiSWp2ampBahFMHxMH
-	p1QDI3vDuZrTG38vWHzYh+f9E/HrbsILOa87P/4SvZSrLVWvSlZYTmnlcW7r670v8h8xWrRW
-	xvTdOXF89oJdVa/8rk8yOv0soNVK88lhT7FnGm7GjpUGDMZb7R3kqs33RfeveefS+Lbf79dq
-	zUjdh30O/RPmtNtIP59gXmeettFZ7m+V9p1nZfFCSizFGYmGWsxFxYkAJM4AaVIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 16 Jul 2014 22:52:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <53C73534.1090502@roeck-us.net>
+References: <53AC10CB.3000007@gmail.com>
+	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>
+	<alpine.DEB.2.02.1407161849090.19429@chino.kir.corp.google.com>
+	<CAF0htA5eVTPQC0c1XfzU=RHnNWLtRgtYbN+se5HPLYkJ9_E=5w@mail.gmail.com>
+	<53C73534.1090502@roeck-us.net>
+Date: Thu, 17 Jul 2014 10:52:32 +0800
+Message-ID: <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
+Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the
+ macros which not be used currently
+From: Lennox Wu <lennox.wu@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: David Rientjes <rientjes@google.com>, Liqin Chen <liqin.linux@gmail.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 14, 2014 11:55 PM, Kishon Vijay Abraham I wrote:
-> 
-> Added support for pcie controller in dra7xx. This driver re-uses
-> the designware core code that is already present in kernel.
-> 
-> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Mohit Kumar <mohit.kumar@st.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
+Yes, you might miss something. Some patches were merged once I
+acknowledged them,and some were missed.
+So I am not sure the rule, if someone will merge these patches once
+them are acknowledged, it is redundant that I issue a
+PULL request again.
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-Best regards,
-Jingoo Han
 
-> Cc: Marek Vasut <marex@denx.de>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/pci/host/Kconfig      |   10 +
->  drivers/pci/host/Makefile     |    1 +
->  drivers/pci/host/pci-dra7xx.c |  458 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 469 insertions(+)
->  create mode 100644 drivers/pci/host/pci-dra7xx.c
-> 
-> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-> index 21df477..22117b0 100644
-> --- a/drivers/pci/host/Kconfig
-> +++ b/drivers/pci/host/Kconfig
-> @@ -1,6 +1,16 @@
->  menu "PCI host controller drivers"
->  	depends on PCI
-> 
-> +config PCI_DRA7XX
-> +	bool "TI DRA7xx PCIe controller"
-> +	select PCIE_DW
-> +	depends on OF && HAS_IOMEM && TI_PIPE3
-> +	help
-> +	 Enables support for the PCIE controller present in DRA7xx SoC. There
-> +	 are two instances of PCIE controller in DRA7xx. This controller can
-> +	 act both as EP and RC. This reuses the same Designware core as used
-> +	 by other SoCs.
-> +
->  config PCI_MVEBU
->  	bool "Marvell EBU PCIe controller"
->  	depends on ARCH_MVEBU || ARCH_DOVE || ARCH_KIRKWOOD
-> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
-> index 611ba4b..c42844d 100644
-> --- a/drivers/pci/host/Makefile
-> +++ b/drivers/pci/host/Makefile
-> @@ -1,4 +1,5 @@
->  obj-$(CONFIG_PCIE_DW) += pcie-designware.o
-> +obj-$(CONFIG_PCI_DRA7XX) += pci-dra7xx.o
->  obj-$(CONFIG_PCI_EXYNOS) += pci-exynos.o
->  obj-$(CONFIG_PCI_IMX6) += pci-imx6.o
->  obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
-> diff --git a/drivers/pci/host/pci-dra7xx.c b/drivers/pci/host/pci-dra7xx.c
-> new file mode 100644
-> index 0000000..52b34fe
-> --- /dev/null
-> +++ b/drivers/pci/host/pci-dra7xx.c
-> @@ -0,0 +1,458 @@
-> +/*
-> + * pcie-dra7xx - PCIe controller driver for TI DRA7xx SoCs
-> + *
-> + * Copyright (C) 2013-2014 Texas Instruments Incorporated - http://www.ti.com
-> + *
-> + * Authors: Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/delay.h>
-> +#include <linux/err.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/resource.h>
-> +#include <linux/types.h>
-> +
-> +#include "pcie-designware.h"
-> +
-> +/* PCIe controller wrapper DRA7XX configuration registers */
-> +
-> +#define	PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN		0x0024
-> +#define	PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MAIN		0x0028
-> +#define	ERR_SYS						BIT(0)
-> +#define	ERR_FATAL					BIT(1)
-> +#define	ERR_NONFATAL					BIT(2)
-> +#define	ERR_COR						BIT(3)
-> +#define	ERR_AXI						BIT(4)
-> +#define	ERR_ECRC					BIT(5)
-> +#define	PME_TURN_OFF					BIT(8)
-> +#define	PME_TO_ACK					BIT(9)
-> +#define	PM_PME						BIT(10)
-> +#define	LINK_REQ_RST					BIT(11)
-> +#define	LINK_UP_EVT					BIT(12)
-> +#define	CFG_BME_EVT					BIT(13)
-> +#define	CFG_MSE_EVT					BIT(14)
-> +#define	INTERRUPTS (ERR_SYS | ERR_FATAL | ERR_NONFATAL | ERR_COR | ERR_AXI | \
-> +			ERR_ECRC | PME_TURN_OFF | PME_TO_ACK | PM_PME | \
-> +			LINK_REQ_RST | LINK_UP_EVT | CFG_BME_EVT | CFG_MSE_EVT)
-> +
-> +#define	PCIECTRL_DRA7XX_CONF_IRQSTATUS_MSI		0x0034
-> +#define	PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MSI		0x0038
-> +#define	INTA						BIT(0)
-> +#define	INTB						BIT(1)
-> +#define	INTC						BIT(2)
-> +#define	INTD						BIT(3)
-> +#define	MSI						BIT(4)
-> +#define	LEG_EP_INTERRUPTS (INTA | INTB | INTC | INTD)
-> +
-> +#define	PCIECTRL_DRA7XX_CONF_DEVICE_CMD			0x0104
-> +#define	LTSSM_EN					0x1
-> +
-> +#define	PCIECTRL_DRA7XX_CONF_PHY_CS			0x010C
-> +#define	LINK_UP						BIT(16)
-> +
-> +struct dra7xx_pcie {
-> +	void __iomem		*base;
-> +	struct phy		**phy;
-> +	int			phy_count;
-> +	struct device		*dev;
-> +	struct pcie_port	pp;
-> +};
-> +
-> +#define to_dra7xx_pcie(x)	container_of((x), struct dra7xx_pcie, pp)
-> +
-> +static inline u32 dra7xx_pcie_readl(struct dra7xx_pcie *pcie, u32 offset)
-> +{
-> +	return readl(pcie->base + offset);
-> +}
-> +
-> +static inline void dra7xx_pcie_writel(struct dra7xx_pcie *pcie, u32 offset,
-> +				      u32 value)
-> +{
-> +	writel(value, pcie->base + offset);
-> +}
-> +
-> +static int dra7xx_pcie_link_up(struct pcie_port *pp)
-> +{
-> +	struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
-> +	u32 reg = dra7xx_pcie_readl(dra7xx, PCIECTRL_DRA7XX_CONF_PHY_CS);
-> +
-> +	return !!(reg & LINK_UP);
-> +}
-> +
-> +static int dra7xx_pcie_establish_link(struct pcie_port *pp)
-> +{
-> +	u32 reg;
-> +	unsigned int retries = 1000;
-> +	struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
-> +
-> +	if (dw_pcie_link_up(pp)) {
-> +		dev_err(pp->dev, "link is already up\n");
-> +		return 0;
-> +	}
-> +
-> +	reg = dra7xx_pcie_readl(dra7xx, PCIECTRL_DRA7XX_CONF_DEVICE_CMD);
-> +	reg |= LTSSM_EN;
-> +	dra7xx_pcie_writel(dra7xx, PCIECTRL_DRA7XX_CONF_DEVICE_CMD, reg);
-> +
-> +	while (retries--) {
-> +		reg = dra7xx_pcie_readl(dra7xx,	PCIECTRL_DRA7XX_CONF_PHY_CS);
-> +		if (reg & LINK_UP)
-> +			break;
-> +		usleep_range(10, 20);
-> +	}
-> +
-> +	if (retries == 0) {
-> +		dev_err(pp->dev, "link is not up\n");
-> +		return -ETIMEDOUT;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void dra7xx_pcie_enable_interrupts(struct pcie_port *pp)
-> +{
-> +	struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
-> +
-> +	dra7xx_pcie_writel(dra7xx, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN,
-> +			   ~INTERRUPTS);
-> +	dra7xx_pcie_writel(dra7xx,
-> +			   PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MAIN, INTERRUPTS);
-> +	dra7xx_pcie_writel(dra7xx, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MSI,
-> +			   ~LEG_EP_INTERRUPTS & ~MSI);
-> +
-> +	if (IS_ENABLED(CONFIG_PCI_MSI))
-> +		dra7xx_pcie_writel(dra7xx,
-> +				   PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MSI, MSI);
-> +	else
-> +		dra7xx_pcie_writel(dra7xx,
-> +				   PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MSI,
-> +				   LEG_EP_INTERRUPTS);
-> +}
-> +
-> +static void dra7xx_pcie_host_init(struct pcie_port *pp)
-> +{
-> +	dw_pcie_setup_rc(pp);
-> +	dra7xx_pcie_establish_link(pp);
-> +	if (IS_ENABLED(CONFIG_PCI_MSI))
-> +		dw_pcie_msi_init(pp);
-> +	dra7xx_pcie_enable_interrupts(pp);
-> +}
-> +
-> +static struct pcie_host_ops dra7xx_pcie_host_ops = {
-> +	.link_up = dra7xx_pcie_link_up,
-> +	.host_init = dra7xx_pcie_host_init,
-> +};
-> +
-> +static int dra7xx_pcie_intx_map(struct irq_domain *domain, unsigned int irq,
-> +				irq_hw_number_t hwirq)
-> +{
-> +	irq_set_chip_and_handler(irq, &dummy_irq_chip, handle_simple_irq);
-> +	irq_set_chip_data(irq, domain->host_data);
-> +	set_irq_flags(irq, IRQF_VALID);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct irq_domain_ops intx_domain_ops = {
-> +	.map = dra7xx_pcie_intx_map,
-> +};
-> +
-> +static int dra7xx_pcie_init_irq_domain(struct pcie_port *pp)
-> +{
-> +	struct device *dev = pp->dev;
-> +	struct device_node *node = dev->of_node;
-> +	struct device_node *pcie_intc_node =  of_get_next_child(node, NULL);
-> +
-> +	if (!pcie_intc_node) {
-> +		dev_err(dev, "No PCIe Intc node found\n");
-> +		return PTR_ERR(pcie_intc_node);
-> +	}
-> +
-> +	pp->irq_domain = irq_domain_add_linear(pcie_intc_node, 4,
-> +					       &intx_domain_ops, pp);
-> +	if (!pp->irq_domain) {
-> +		dev_err(dev, "Failed to get a INTx IRQ domain\n");
-> +		return PTR_ERR(pp->irq_domain);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t dra7xx_pcie_msi_irq_handler(int irq, void *arg)
-> +{
-> +	struct pcie_port *pp = arg;
-> +	struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
-> +	u32 reg;
-> +
-> +	reg = dra7xx_pcie_readl(dra7xx, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MSI);
-> +
-> +	switch (reg) {
-> +	case MSI:
-> +		dw_handle_msi_irq(pp);
-> +		break;
-> +	case INTA:
-> +	case INTB:
-> +	case INTC:
-> +	case INTD:
-> +		generic_handle_irq(irq_find_mapping(pp->irq_domain, ffs(reg)));
-> +		break;
-> +	}
-> +
-> +	dra7xx_pcie_writel(dra7xx, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MSI, reg);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +
-> +static irqreturn_t dra7xx_pcie_irq_handler(int irq, void *arg)
-> +{
-> +	struct dra7xx_pcie *dra7xx = arg;
-> +	u32 reg;
-> +
-> +	reg = dra7xx_pcie_readl(dra7xx, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN);
-> +
-> +	if (reg & ERR_SYS)
-> +		dev_dbg(dra7xx->dev, "System Error\n");
-> +
-> +	if (reg & ERR_FATAL)
-> +		dev_dbg(dra7xx->dev, "Fatal Error\n");
-> +
-> +	if (reg & ERR_NONFATAL)
-> +		dev_dbg(dra7xx->dev, "Non Fatal Error\n");
-> +
-> +	if (reg & ERR_COR)
-> +		dev_dbg(dra7xx->dev, "Correctable Error\n");
-> +
-> +	if (reg & ERR_AXI)
-> +		dev_dbg(dra7xx->dev, "AXI tag lookup fatal Error\n");
-> +
-> +	if (reg & ERR_ECRC)
-> +		dev_dbg(dra7xx->dev, "ECRC Error\n");
-> +
-> +	if (reg & PME_TURN_OFF)
-> +		dev_dbg(dra7xx->dev,
-> +			"Power Management Event Turn-Off message received\n");
-> +
-> +	if (reg & PME_TO_ACK)
-> +		dev_dbg(dra7xx->dev,
-> +			"Power Management Turn-Off Ack message received\n");
-> +
-> +	if (reg & PM_PME)
-> +		dev_dbg(dra7xx->dev,
-> +			"PM Power Management Event message received\n");
-> +
-> +	if (reg & LINK_REQ_RST)
-> +		dev_dbg(dra7xx->dev, "Link Request Reset\n");
-> +
-> +	if (reg & LINK_UP_EVT)
-> +		dev_dbg(dra7xx->dev, "Link-up state change\n");
-> +
-> +	if (reg & CFG_BME_EVT)
-> +		dev_dbg(dra7xx->dev, "CFG 'Bus Master Enable' change\n");
-> +
-> +	if (reg & CFG_MSE_EVT)
-> +		dev_dbg(dra7xx->dev, "CFG 'Memory Space Enable' change\n");
-> +
-> +	dra7xx_pcie_writel(dra7xx, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN, reg);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int add_pcie_port(struct dra7xx_pcie *dra7xx,
-> +			  struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct pcie_port *pp;
-> +	struct resource *res;
-> +	struct device *dev = &pdev->dev;
-> +
-> +	pp = &dra7xx->pp;
-> +	pp->dev = dev;
-> +	pp->ops = &dra7xx_pcie_host_ops;
-> +
-> +	pp->irq = platform_get_irq(pdev, 1);
-> +	if (pp->irq < 0) {
-> +		dev_err(dev, "missing IRQ resource\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	ret = devm_request_irq(&pdev->dev, pp->irq,
-> +			       dra7xx_pcie_msi_irq_handler, IRQF_SHARED,
-> +			       "dra7-pcie-msi",	pp);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to request irq\n");
-> +		return ret;
-> +	}
-> +
-> +	if (!IS_ENABLED(CONFIG_PCI_MSI)) {
-> +		ret = dra7xx_pcie_init_irq_domain(pp);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "rc_dbics");
-> +	pp->dbi_base = devm_ioremap(dev, res->start, resource_size(res));
-> +	if (!pp->dbi_base)
-> +		return -ENOMEM;
-> +
-> +	ret = dw_pcie_host_init(pp);
-> +	if (ret) {
-> +		dev_err(dra7xx->dev, "failed to initialize host\n");
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __init dra7xx_pcie_probe(struct platform_device *pdev)
-> +{
-> +	u32 reg;
-> +	int ret;
-> +	int irq;
-> +	int i;
-> +	int phy_count;
-> +	struct phy **phy;
-> +	void __iomem *base;
-> +	struct resource *res;
-> +	struct dra7xx_pcie *dra7xx;
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	char name[10];
-> +
-> +	dra7xx = devm_kzalloc(dev, sizeof(*dra7xx), GFP_KERNEL);
-> +	if (!dra7xx)
-> +		return -ENOMEM;
-> +
-> +	irq = platform_get_irq(pdev, 0);
-> +	if (irq < 0) {
-> +		dev_err(dev, "missing IRQ resource\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	ret = devm_request_irq(dev, irq, dra7xx_pcie_irq_handler,
-> +			       IRQF_SHARED, "dra7xx-pcie-main", dra7xx);
-> +	if (ret) {
-> +		dev_err(dev, "failed to request irq\n");
-> +		return ret;
-> +	}
-> +
-> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ti_conf");
-> +	base = devm_ioremap_nocache(dev, res->start, resource_size(res));
-> +	if (!base)
-> +		return -ENOMEM;
-> +
-> +	phy_count = of_property_count_strings(np, "phy-names");
-> +	if (phy_count < 0) {
-> +		dev_err(dev, "unable to find the strings\n");
-> +		return phy_count;
-> +	}
-> +
-> +	phy = devm_kzalloc(dev, sizeof(*phy) * phy_count, GFP_KERNEL);
-> +	if (!phy)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < phy_count; i++) {
-> +		snprintf(name, sizeof(name), "pcie-phy%d", i);
-> +		phy[i] = devm_phy_get(dev, name);
-> +		if (IS_ERR(phy[i]))
-> +			return PTR_ERR(phy[i]);
-> +
-> +		ret = phy_init(phy[i]);
-> +		if (ret < 0)
-> +			goto err_phy;
-> +
-> +		ret = phy_power_on(phy[i]);
-> +		if (ret < 0) {
-> +			phy_exit(phy[i]);
-> +			goto err_phy;
-> +		}
-> +	}
-> +
-> +	dra7xx->base = base;
-> +	dra7xx->phy = phy;
-> +	dra7xx->dev = dev;
-> +	dra7xx->phy_count = phy_count;
-> +
-> +	pm_runtime_enable(dev);
-> +	ret = pm_runtime_get_sync(dev);
-> +	if (IS_ERR_VALUE(ret)) {
-> +		dev_err(dev, "pm_runtime_get_sync failed\n");
-> +		goto err_phy;
-> +	}
-> +
-> +	reg = dra7xx_pcie_readl(dra7xx, PCIECTRL_DRA7XX_CONF_DEVICE_CMD);
-> +	reg &= ~LTSSM_EN;
-> +	dra7xx_pcie_writel(dra7xx, PCIECTRL_DRA7XX_CONF_DEVICE_CMD, reg);
-> +
-> +	platform_set_drvdata(pdev, dra7xx);
-> +
-> +	ret = add_pcie_port(dra7xx, pdev);
-> +	if (ret < 0)
-> +		goto err_add_port;
-> +
-> +	return 0;
-> +
-> +err_add_port:
-> +	pm_runtime_put(dev);
-> +	pm_runtime_disable(dev);
-> +
-> +err_phy:
-> +	while (--i >= 0) {
-> +		phy_power_off(phy[i]);
-> +		phy_exit(phy[i]);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int __exit dra7xx_pcie_remove(struct platform_device *pdev)
-> +{
-> +	struct dra7xx_pcie *dra7xx = platform_get_drvdata(pdev);
-> +	struct pcie_port *pp = &dra7xx->pp;
-> +	struct device *dev = &pdev->dev;
-> +	int count = dra7xx->phy_count;
-> +
-> +	if (pp->irq_domain)
-> +		irq_domain_remove(pp->irq_domain);
-> +	pm_runtime_put(dev);
-> +	pm_runtime_disable(dev);
-> +	while (count--) {
-> +		phy_power_off(dra7xx->phy[count]);
-> +		phy_exit(dra7xx->phy[count]);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id of_dra7xx_pcie_match[] = {
-> +	{ .compatible = "ti,dra7-pcie", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, of_dra7xx_pcie_match);
-> +
-> +static struct platform_driver dra7xx_pcie_driver = {
-> +	.remove		= __exit_p(dra7xx_pcie_remove),
-> +	.driver = {
-> +		.name	= "dra7-pcie",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = of_dra7xx_pcie_match,
-> +	},
-> +};
-> +
-> +module_platform_driver_probe(dra7xx_pcie_driver, dra7xx_pcie_probe);
-> +
-> +MODULE_AUTHOR("Kishon Vijay Abraham I <kishon@ti.com>");
-> +MODULE_DESCRIPTION("TI PCIe controller driver");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.7.9.5
-
+2014-07-17 10:30 GMT+08:00 Guenter Roeck <linux@roeck-us.net>:
+> On 07/16/2014 07:14 PM, Lennox Wu wrote:
+>>
+>> Actually, I don't know the rule for merging patches. Some patches will
+>> be merge,and some will be miss. If the patch is missed, we will merge
+>> it into our git.
+>>
+> Unless I am missing something, this patch is in arch/score, so the
+> expectation would be for you to pick it up and send it to Linus.
+>
+> Guenter
+>
+>
+>> Best,
+>> Lennox
+>>
+>> 2014-07-17 9:49 GMT+08:00 David Rientjes <rientjes@google.com>:
+>>>
+>>> On Thu, 26 Jun 2014, David Rientjes wrote:
+>>>
+>>>> On Thu, 26 Jun 2014, Chen Gang wrote:
+>>>>
+>>>>> 'COUNTER' and other same kind macros are too common to use, and easy to
+>>>>> get conflict with other modules.
+>>>>>
+>>>>> At present, they are not used, so it is OK to simply remove them. And
+>>>>> the
+>>>>> related warning (allmodconfig with score):
+>>>>>
+>>>>>      CC [M]  drivers/md/raid1.o
+>>>>>    In file included from drivers/md/raid1.c:42:0:
+>>>>>    drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
+>>>>>     #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
+>>>>>     ^
+>>>>>    In file included from ./arch/score/include/asm/ptrace.h:4:0,
+>>>>>                     from include/linux/sched.h:31,
+>>>>>                     from include/linux/blkdev.h:4,
+>>>>>                     from drivers/md/raid1.c:36:
+>>>>>    ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the
+>>>>> location of the previous definition
+>>>>>     #define COUNTER  38
+>>>>>
+>>>>>
+>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>
+>>>>
+>>>> Acked-by: David Rientjes <rientjes@google.com>
+>>>>
+>>>
+>>> Lennox or Liqin, could you please queue this patch for 3.17?
+>>
+>>
+>>
+>
