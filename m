@@ -1,90 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaGQTuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:50:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46126 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754147AbaGQTuK (ORCPT
+	id S1757234AbaGQTwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:52:50 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:35500 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781AbaGQTwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:50:10 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, Arnd Bergmann <arnd@arndb.de>,
-        andriy.shevchenko@intel.com, dmaengine@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v11 1/2] Documentation: dt: Add Allwinner A31 DMA controller bindings
-Date: Thu, 17 Jul 2014 21:46:15 +0200
-Message-Id: <1405626376-471-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 17 Jul 2014 15:52:45 -0400
+From: Aditya Kali <adityakali@google.com>
+To: tj@kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        mingo@redhat.com
+Cc: containers@lists.linux-foundation.org
+Subject: [PATCH 0/5] RFC: CGroup Namespaces
+Date: Thu, 17 Jul 2014 12:52:06 -0700
+Message-Id: <1405626731-12220-1-git-send-email-adityakali@google.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <adityakali-cgroupns>
+References: <adityakali-cgroupns>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 DMA controller is rather simple to describe in the DT. Add
-the bindings documentation.
+Background
+  Cgroups and Namespaces are used together to create “virtual”
+  containers that isolates the host environment from the processes
+  running in container. But since cgroups themselves are not
+  “virtualized”, the task is always able to see global cgroups view
+  through cgroupfs mount and via /proc/self/cgroup file.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+  $ cat /proc/self/cgroup 
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+
+  This exposure of cgroup names to the processes running inside a
+  container results in some problems:
+  (1) The container names are typically host-container-management-agent
+      (systemd, docker/libcontainer, etc.) data and leaking its name (or
+      leaking the hierarchy) reveals too much information about the host
+      system.
+  (2) It makes the container migration across machines (CRIU) more
+      difficult as the container names need to be unique across the
+      machines in the migration domain.
+  (3) It makes it difficult to run container management tools (like
+      docker/libcontainer, lmctfy, etc.) within virtual containers
+      without adding dependency on some state/agent present outside the
+      container.
+
+  Note that the feature proposed here is completely different than the
+  “ns cgroup” feature which existed in the linux kernel until recently.
+  The ns cgroup also attempted to connect cgroups and namespaces by
+  creating a new cgroup every time a new namespace was created. It did
+  not solve any of the above mentioned problems and was later dropped
+  from the kernel.
+
+Introducing CGroup Namespaces
+  With unified cgroup hierarchy
+  (Documentation/cgroups/unified-hierarchy.txt), the containers can now
+  have a much more coherent cgroup view and its easy to associate a
+  container with a single cgroup. This also allows us to virtualize the
+  cgroup view for tasks inside the container.
+
+  The new CGroup Namespace allows a process to “unshare” its cgroup
+  hierarchy starting from the cgroup its currently in.
+  For Ex:
+  $ cat /proc/self/cgroup
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+  $ ls -l /proc/self/ns/cgroup
+  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
+  $ ~/unshare -c  # calls unshare(CLONE_NEWCGROUP) and exec’s /bin/bash
+  [ns]$ ls -l /proc/self/ns/cgroup
+  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup -> cgroup:[4026532183]
+  # From within new cgroupns, process sees that its in the root cgroup
+  [ns]$ cat /proc/self/cgroup
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
+
+  # From global cgroupns:
+  $ cat /proc/<pid>/cgroup
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+
+  The virtualization of /proc/self/cgroup file combined with restricting
+  the view of cgroup hierarchy by bind-mounting for the
+  $CGROUP_MOUNT/batchjobs/c_job_id1/ directory to
+  $CONTAINER_CHROOT/sys/fs/cgroup/) should provide a completely isolated
+  cgroup view inside the container.
+
+  In its current simplistic form, the cgroup namespaces provide
+  following behavior:
+
+  (1) The “root” cgroup for a cgroup namespace is the cgroup in which
+      the process calling unshare is running.
+      For ex. if a process in /batchjobs/c_job_id1 cgroup calls unshare,
+      cgroup /batchjobs/c_job_id1 becomes the cgroupns-root.
+      For the init_cgroup_ns, this is the real root (“/”) cgroup
+      (identified in code as cgrp_dfl_root.cgrp).
+
+  (2) The cgroupns-root cgroup does not change even if the namespace
+      creator process later moves to a different cgroup.
+      $ ~/unshare -c # unshare cgroupns in some cgroup
+      [ns]$ cat /proc/self/cgroup 
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/ 
+      [ns]$ mkdir sub_cgrp_1
+      [ns]$ echo 0 > sub_cgrp_1/cgroup.procs
+      [ns]$ cat /proc/self/cgroup 
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
+
+  (3) Each process gets its CGROUPNS specific view of
+      /proc/<pid>/cgroup.
+  (a) Processes running inside the cgroup namespace will be able to see
+      cgroup paths (in /proc/self/cgroup) only inside their root cgroup
+      [ns]$ sleep 100000 &  # From within unshared cgroupns
+      [1] 7353
+      [ns]$ echo 7353 > sub_cgrp_1/cgroup.procs
+      [ns]$ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
+
+  (b) From global cgroupns, the real cgroup path will be visible:
+      $ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+
+  (c) From a sibling cgroupns, the real path will be visible:
+      [ns2]$ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+      (In correct container setup though, it should not be possible to
+       access PIDs in another container in the first place. This can be
+       detected changed if desired.)
+
+  (4) Processes inside a cgroupns are not allowed to move out of the
+      cgroupns-root. This is true even if a privileged process in global
+      cgroupns tries to move the process out of its cgroupns-root.
+
+      # From global cgroupns
+      $ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+      # cgroupns-root for 7353 is /batchjobs/c_job_id1
+      $ echo 7353 > batchjobs/c_job_id2/cgroup.procs
+      -bash: echo: write error: Operation not permitted
+
+  (5) setns() is not supported for cgroup namespace in the initial
+      version.
+
+  (6) When some thread from a multi-threaded process unshares its
+      cgroup-namespace, the new cgroupns gets applied to the entire
+      process (all the threads). This should be OK since
+      unified-hierarchy only allows process-level containerization. So
+      all the threads in the process will have the same cgroup. And both
+      - changing cgroups and unsharing namespaces - are protected under
+      threadgroup_lock(task).
+
+  (7) The cgroup namespace is alive as long as there is atleast 1
+      process inside it. When the last process exits, the cgroup
+      namespace is destroyed. The cgroupns-root and the actual cgroups
+      remain though.
+
+Implementation
+  The current patch-set is based on top of Tejun's cgroup tree (for-next
+  branch). Its fairly non-intrusive and provides above mentioned
+  features.
+
+Possible extensions of CGROUPNS:
+  (1) The Documentation/cgroups/unified-hierarchy.txt mentions use of
+      capabilities to restrict cgroups to administrative users. CGroup
+      namespaces could be of help here. With cgroup namespaces, it might
+      be possible to delegate administration of sub-cgroups under a
+      cgroupns-root to the cgroupns owner.
+
+  (2) Provide a cgroupns specific cgroupfs mount. i.e., the following
+      command when ran from inside a cgroupns should only mount the
+      hierarchy from cgroupns-root cgroup:
+      $ mount -t cgroup cgroup <cgroup-mountpoint>
+      # -o __DEVEL__sane_behavior should be implicit
+
+      This is similar to how procfs can be mounted for every PIDNS. This
+      may have some usecases.
+
 ---
- .../devicetree/bindings/dma/sun6i-dma.txt          | 45 ++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/sun6i-dma.txt
+ fs/kernfs/dir.c                  |  51 +++++++++++++---
+ fs/proc/namespaces.c             |   3 +
+ include/linux/cgroup.h           |  36 ++++++++++-
+ include/linux/cgroup_namespace.h |  62 +++++++++++++++++++
+ include/linux/kernfs.h           |   3 +
+ include/linux/nsproxy.h          |   2 +
+ include/linux/proc_ns.h          |   4 ++
+ include/uapi/linux/sched.h       |   3 +-
+ init/Kconfig                     |   9 +++
+ kernel/Makefile                  |   1 +
+ kernel/cgroup.c                  |  75 +++++++++++++++++------
+ kernel/cgroup_namespace.c        | 128 +++++++++++++++++++++++++++++++++++++++
+ kernel/fork.c                    |   2 +-
+ kernel/nsproxy.c                 |  19 +++++-
+ 14 files changed, 364 insertions(+), 34 deletions(-)
+ create mode 100644 include/linux/cgroup_namespace.h
+ create mode 100644 kernel/cgroup_namespace.c
 
-diff --git a/Documentation/devicetree/bindings/dma/sun6i-dma.txt b/Documentation/devicetree/bindings/dma/sun6i-dma.txt
-new file mode 100644
-index 000000000000..3e145c1675b1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/sun6i-dma.txt
-@@ -0,0 +1,45 @@
-+Allwinner A31 DMA Controller
-+
-+This driver follows the generic DMA bindings defined in dma.txt.
-+
-+Required properties:
-+
-+- compatible:	Must be "allwinner,sun6i-a31-dma"
-+- reg:		Should contain the registers base address and length
-+- interrupts:	Should contain a reference to the interrupt used by this device
-+- clocks:	Should contain a reference to the parent AHB clock
-+- resets:	Should contain a reference to the reset controller asserting
-+		this device in reset
-+- #dma-cells :	Should be 1, a single cell holding a line request number
-+
-+Example:
-+	dma: dma-controller@01c02000 {
-+		compatible = "allwinner,sun6i-a31-dma";
-+		reg = <0x01c02000 0x1000>;
-+		interrupts = <0 50 4>;
-+		clocks = <&ahb1_gates 6>;
-+		resets = <&ahb1_rst 6>;
-+		#dma-cells = <1>;
-+	};
-+
-+Clients:
-+
-+DMA clients connected to the A31 DMA controller must use the format
-+described in the dma.txt file, using a two-cell specifier for each
-+channel: a phandle plus one integer cells.
-+The two cells in order are:
-+
-+1. A phandle pointing to the DMA controller.
-+2. The port ID as specified in the datasheet
-+
-+Example:
-+spi2: spi@01c6a000 {
-+	compatible = "allwinner,sun6i-a31-spi";
-+	reg = <0x01c6a000 0x1000>;
-+	interrupts = <0 67 4>;
-+	clocks = <&ahb1_gates 22>, <&spi2_clk>;
-+	clock-names = "ahb", "mod";
-+	dmas = <&dma 25>, <&dma 25>;
-+	dma-names = "rx", "tx";
-+	resets = <&ahb1_rst 22>;
-+};
--- 
-2.0.1
-
+[PATCH 1/5] kernfs: Add API to get generate relative kernfs path
+[PATCH 2/5] sched: new clone flag CLONE_NEWCGROUP for cgroup
+[PATCH 3/5] cgroup: add function to get task's cgroup on default
+[PATCH 4/5] cgroup: export cgroup_get() and cgroup_put()
+[PATCH 5/5] cgroup: introduce cgroup namespaces
