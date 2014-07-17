@@ -1,87 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbaGQLUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:20:24 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:36748 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731AbaGQLUV (ORCPT
+	id S1756878AbaGQLVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:21:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33792 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698AbaGQLVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:20:21 -0400
-Message-ID: <53C7B16B.7020000@gmail.com>
-Date: Thu, 17 Jul 2014 19:20:11 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+	Thu, 17 Jul 2014 07:21:30 -0400
+Message-ID: <53C7A4F7.7010709@gmail.com>
+Date: Thu, 17 Jul 2014 13:27:03 +0300
+From: Timofey Titovets <nefelim4ag@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-CC: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <20140717095657.GC17877@ulmo> <6350114.L77bTv76Ul@wuerfel> <20140717105549.GH17877@ulmo>
-In-Reply-To: <20140717105549.GH17877@ulmo>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jerome Marchand <jmarchan@redhat.com>, minchan@kernel.org
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] zram: auto add/del devices on demand
+References: <53C7982F.8020205@gmail.com> <53C7A0C1.60600@redhat.com>
+In-Reply-To: <53C7A0C1.60600@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for comments, i will fix what you say and split patches one for 
+code and one for Documentation.
+After, i will resend patch set
 
-
-On 07/17/2014 06:55 PM, Thierry Reding wrote:
-> On Thu, Jul 17, 2014 at 12:33:32PM +0200, Arnd Bergmann wrote:
->> On Thursday 17 July 2014 11:56:58 Thierry Reding wrote:
->>> On Thu, Jul 17, 2014 at 11:20:36AM +0200, Arnd Bergmann wrote:
->>> [...]
->>>>                       score should set HAS_IOMEM and doesn't
->>>> even have public compilers
->>>
->>> This begs an interesting question. Should it be made a requirement to
->>> have publicly available compilers for new architectures so that they can
->>> at least be compile-tested? Preferably this would of course be in source
->>> form so that there aren't any dependencies on the distribution.
+On 07/17/2014 01:09 PM, Jerome Marchand wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 07/17/2014 11:32 AM, Timofey Titovets wrote:
+>> From: Timofey Titovets <nefelim4ag@gmail.com>
 >>
->> The question has come up a few times. I wouldn't mandate that the port
->> has an upstream gcc (you've got to start mainlining one of them first
->> after all), but having compilers available for download should probably be
->> required. It's hard to ask for a particular quality of that gcc port
->> though, or to expect it to stay available online.
+>> This add supporting of autochange count of zram devices on demand,
+>> like loop devices; This working by following rules: - Always save
+>> minimum devices count specified by num_device (can be specified
+>> while kernel module loading) - if last device already using add new
+>> device; - if last and prelast devices is free - delete last zram
+>> device;
 >>
->> Where did you find the gcc port for score?
-> 
-> It's upstream, though marked obsolete and to be removed in the next
-> release... =)
-> 
-
-For me, I get the latest gcc version and binutils source code, and fix 2
-bugs (one for gas, which always generate core dump, the other for gcc
-c-decl, fix it together with the other gcc members).
-
-And I only finish compiling raw cross-compiler (--without-headers),
-after make some patches, can let score pass allmodconfig.
-
-At present, it seems the score cross-compiler still contents some issue
-which I shall try to analyse (it is about link symbols), and maybe need
-communicate with gcc/binutils members.
-
-
-At present, the related score maintainers are still active in upstream
-kernel, so we also need the related maintainers' ideas and suggestions.
-
-
-Thanks
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+>
+> Hi Timofey,
+>
+> Your patch change zram behaviour. Please describe what changes from
+> the user point of view and update Documentation/blockdev/zram.txt
+> accordingly.
+>
+>> Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
+>>
+>> Please pull from: https://github.com/Nefelim4ag/linux.git ---
+>> Tested on 3.15.5-2-ARCH, can be applied on any kernel version after
+>> this patch 'zram: add LZ4 compression support' -
+>> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
+>>
+>>   --- drivers/block/zram/zram_drv.c | 65
+>> ++++++++++++++++++++++++++++++++++++++++--- 1 file changed, 61
+>> insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/block/zram/zram_drv.c
+>> b/drivers/block/zram/zram_drv.c index 089e72c..d0a3055 100644 ---
+>> a/drivers/block/zram/zram_drv.c +++
+>> b/drivers/block/zram/zram_drv.c @@ -42,6 +42,10 @@ static const
+>> char *default_compressor = "lzo";
+>>
+>> /* Module params (documentation at end) */ static unsigned int
+>> num_devices = 1; +static unsigned int last_created_dev = 1; +
+>> +static void zram_add_dev(void); +static void zram_del_dev(void);
+>>
+>> #define ZRAM_ATTR_RO(name)                        \ static ssize_t
+>> zram_attr_##name##_show(struct device *d,        \ @@ -168,6 +172,7
+>> @@ static ssize_t comp_algorithm_store(struct device *dev, struct
+>> device_attribute *attr, const char *buf, size_t len) { struct zram
+>> *zram = dev_to_zram(dev); + down_write(&zram->init_lock); if
+>> (init_done(zram)) { up_write(&zram->init_lock); @@ -239,6 +244,7 @@
+>> static struct zram_meta *zram_meta_alloc(u64 disksize) { size_t
+>> num_pages; struct zram_meta *meta = kmalloc(sizeof(*meta),
+>> GFP_KERNEL); + if (!meta) goto out;
+>>
+>> @@ -374,6 +380,7 @@ static int zram_bvec_read(struct zram *zram,
+>> struct bio_vec *bvec, struct page *page; unsigned char *user_mem,
+>> *uncmem = NULL; struct zram_meta *meta = zram->meta; + page =
+>> bvec->bv_page;
+>>
+>> read_lock(&meta->tb_lock); @@ -607,6 +614,7 @@ static void
+>> zram_reset_device(struct zram *zram, bool reset_capacity) /* Free
+>> all pages that are still in this zram device */ for (index = 0;
+>> index < zram->disksize >> PAGE_SHIFT; index++) { unsigned long
+>> handle = meta->table[index].handle; + if (!handle) continue;
+>>
+>> @@ -668,6 +676,7 @@ static ssize_t disksize_store(struct device
+>> *dev, set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+>> revalidate_disk(zram->disk); up_write(&zram->init_lock); +
+>> zram_add_dev(); return len;
+>>
+>> out_destroy_comp: @@ -712,6 +721,7 @@ static ssize_t
+>> reset_store(struct device *dev, bdput(bdev);
+>>
+>> zram_reset_device(zram, true); +    zram_del_dev(); return len;
+>>
+>> out: @@ -954,6 +964,51 @@ static void destroy_device(struct zram
+>> *zram) blk_cleanup_queue(zram->queue); }
+>>
+>> +/* remove last free device, if last and prelast dev a free */
+>> +static void zram_del_dev(void) +{ +    if (last_created_dev <
+>> num_devices) +        return; + +    if
+>> (zram_devices[last_created_dev].disksize == 0 && +
+>> zram_devices[last_created_dev-1].disksize == 0 +        ) { +
+>> destroy_device(&zram_devices[last_created_dev]); +
+>> last_created_dev--; +        pr_info("Deleted zram%u device\n",
+>> last_created_dev); +    } +} + +/* Auto add empty zram device, if
+>> last device in use */ +static void zram_add_dev(void) +{ +    int
+>> ret; + +    if (last_created_dev+1 > max_num_devices) { +
+>> pr_warn("Can't add zram%u, max device number reached\n", +
+>> num_devices); +        last_created_dev--; +        ret = -EINVAL;
+>
+> Why do you set ret to EINVAL here? It's never used.
+>
+>> +        goto out;
+>
+> That label is useless. Just use return.
+>
+>> +    } + +    if (&zram_devices[last_created_dev].disksize > 0) { +
+>> last_created_dev++; +        ret =
+>> create_device(&zram_devices[last_created_dev], +
+>> last_created_dev); +        if (ret) +            goto free;
+>
+> If ret is only used to test that create_device() succeeded, then we
+> can get rid of that variable altogether.
+>
+> Thanks,
+> Jerome
+>
+>> +        pr_info("Created zram%u device\n", last_created_dev); +
+>> } + +    return; + +free: +
+>> destroy_device(&zram_devices[last_created_dev]); +
+>> last_created_dev--; +out:; +} + static int __init zram_init(void)
+>> { int ret, dev_id; @@ -972,18 +1027,20 @@ static int __init
+>> zram_init(void) goto out; }
+>>
+>> -    /* Allocate the device array and initialize each one */ -
+>> zram_devices = kzalloc(num_devices * sizeof(struct zram),
+>> GFP_KERNEL); +    /* Allocate the device array */ +    zram_devices
+>> = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL); if
+>> (!zram_devices) { ret = -ENOMEM; goto unregister; }
+>>
+>> +    /* Initialise zram{0..num_devices} */ for (dev_id = 0; dev_id
+>> < num_devices; dev_id++) { ret =
+>> create_device(&zram_devices[dev_id], dev_id); if (ret) goto
+>> free_devices; } +    last_created_dev = num_devices-1;
+>>
+>> pr_info("Created %u device(s) ...\n", num_devices);
+>>
+>> @@ -1004,7 +1061,7 @@ static void __exit zram_exit(void) int i;
+>> struct zram *zram;
+>>
+>> -    for (i = 0; i < num_devices; i++) { +    for (i = 0; i <
+>> last_created_dev+1; i++) { zram = &zram_devices[i];
+>>
+>> destroy_device(zram); @@ -1025,7 +1082,7 @@
+>> module_init(zram_init); module_exit(zram_exit);
+>>
+>> module_param(num_devices, uint, 0); -MODULE_PARM_DESC(num_devices,
+>> "Number of zram devices"); +MODULE_PARM_DESC(num_devices, "Number
+>> of pre created  zram devices");
+>>
+>> MODULE_LICENSE("Dual BSD/GPL"); MODULE_AUTHOR("Nitin Gupta
+>> <ngupta@vflare.org>");
+>
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1
+> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+>
+> iQEcBAEBAgAGBQJTx6C9AAoJEHTzHJCtsuoC+VIH/R7Z1rQ7iNhsa5ycEIJFdxsa
+> tp3oihmg3tvdnTlXj4bBb57zyN8fV2t/pfUOHFn3BWWm8lmruE43T25E5C+HuB7H
+> VSAD8lxBHCO+NrA+imHtnReHdN22VwrJFUR9ZQfKzSj+GruoJQZVXD9NHhf9oI0q
+> TMgfHK1klnS5ZQ8y1Qq3fllFk/89XSCMAF3ySymWRzm4zcyKIiYLVm2xtou9cYCG
+> DF6JrwUtnr3swQrbTqwUPLVKIdtDfrDSBCdz0vEZ8gFtCB8vVTzF0CqUhkjaxt83
+> cldz0FfLM31iZ+l+5MVvTHIVl4a2oC+lZ4EAfX3qZBGK1HA/V0obLjgCLTZwS2s=
+> =JJII
+> -----END PGP SIGNATURE-----
+>
