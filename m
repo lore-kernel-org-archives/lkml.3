@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaGQJB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:01:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44553 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506AbaGQJBY (ORCPT
+	id S1756065AbaGQJB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:01:59 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64811 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028AbaGQJBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:01:24 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
-        <bhelgaas@google.com>, <mohit.kumar@st.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>, <grant.likely@linaro.org>
-Subject: [PATCH v3 0/4] dra7: Add PCIe support
-Date: Thu, 17 Jul 2014 14:30:39 +0530
-Message-ID: <1405587643-13808-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 17 Jul 2014 05:01:55 -0400
+Message-ID: <53C79100.9040602@gmail.com>
+Date: Thu, 17 Jul 2014 17:01:52 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lennox Wu <lennox.wu@gmail.com>
+CC: Liqin Chen <liqin.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: score: Export necessary symbols in related files
+References: <53BD01ED.30802@gmail.com> <CAF0htA6KyHZ0=-LADoc9=wuj0rtew=Un8+J5=G1m5_6FGJGu5g@mail.gmail.com>
+In-Reply-To: <CAF0htA6KyHZ0=-LADoc9=wuj0rtew=Un8+J5=G1m5_6FGJGu5g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from v2:
-* Added myself as MAINTAINER of pcie dra7xx driver
+On 07/17/2014 10:22 AM, Lennox Wu wrote:
+>  Acked-by: Lennox Wu<lennox.wu@gmail.com>
+> 
 
-Changes from v1:
-* fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
-* split dra7xx patch into driver part and documentation part
+OK, thank you for your work.
 
-[1] is split into separate series in order for individual subsystem
-Maintainers to pick up the patches. This series handles the PCIe
-support for DRA7.
 
-Rebased to pci -next.
-
-[1] -> https://lkml.org/lkml/2014/5/29/258
-
-Kishon Vijay Abraham I (4):
-  PCI: designware: Configuration space should be specified in 'reg'
-  PCI: designware: use untranslated address while programming ATU
-  Documentation: pci: ti: Add dt binding documentation for PCIe in
-    DRA7xx
-  PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
-
- .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
- Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
- MAINTAINERS                                        |    8 +
- drivers/pci/host/Kconfig                           |   10 +
- drivers/pci/host/Makefile                          |    1 +
- drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
- drivers/pci/host/pcie-designware.c                 |   72 ++-
- drivers/pci/host/pcie-designware.h                 |    4 +
- 8 files changed, 600 insertions(+), 16 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
- create mode 100644 drivers/pci/host/pci-dra7xx.c
+> 2014-07-09 16:48 GMT+08:00 Chen Gang <gang.chen.5i5j@gmail.com>:
+>> 'csum_partial_copy_from_user' and 'flush_dcache_page' are also needed by
+>> outside modules, so need export them in the related files.
+>>
+>> The related error (with allmodconfig under score):
+>>
+>>     MODPOST 1365 modules
+>>   ERROR: "csum_partial_copy_from_user" [net/rxrpc/af-rxrpc.ko] undefined!
+>>   ERROR: "flush_dcache_page" [net/sunrpc/sunrpc.ko] undefined!
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  arch/score/lib/checksum_copy.c | 1 +
+>>  arch/score/mm/cache.c          | 1 +
+>>  2 files changed, 2 insertions(+)
+>>
+>> diff --git a/arch/score/lib/checksum_copy.c b/arch/score/lib/checksum_copy.c
+>> index 04565dd..9b770b3 100644
+>> --- a/arch/score/lib/checksum_copy.c
+>> +++ b/arch/score/lib/checksum_copy.c
+>> @@ -50,3 +50,4 @@ unsigned int csum_partial_copy_from_user(const char *src, char *dst,
+>>
+>>         return csum_partial(dst, len, sum);
+>>  }
+>> +EXPORT_SYMBOL(csum_partial_copy_from_user);
+>> diff --git a/arch/score/mm/cache.c b/arch/score/mm/cache.c
+>> index f85ec1a..be91041 100644
+>> --- a/arch/score/mm/cache.c
+>> +++ b/arch/score/mm/cache.c
+>> @@ -72,6 +72,7 @@ void flush_dcache_page(struct page *page)
+>>         addr = (unsigned long) page_address(page);
+>>         flush_data_cache_page(addr);
+>>  }
+>> +EXPORT_SYMBOL(flush_dcache_page);
+>>
+>>  /* called by update_mmu_cache. */
+>>  void __update_cache(struct vm_area_struct *vma, unsigned long address,
+>> --
+>> 1.9.2.459.g68773ac
 
 -- 
-1.7.9.5
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
