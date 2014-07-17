@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819AbaGQNTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:19:09 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40507 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaGQNTG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:19:06 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18b9Jq/h40lMjXmVgjsQuwyTMV+9b6Ekuk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan A5B445AE2F7
-Date: Thu, 17 Jul 2014 09:18:54 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: suravee.suthikulpanit@amd.com
-Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
-        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X)
- support
-Message-ID: <20140717131854.GN13108@titan.lakedaemon.net>
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S932873AbaGQNT0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:19:26 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:50769
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932498AbaGQNTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:19:22 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <b02247@freescale.com>,
+        <b42378@freescale.com>
+Subject: [PATCH 0/2] ASoC: fsl_sai: Two bug fixes for fsl_sai driver
+Date: Thu, 17 Jul 2014 21:21:36 +0800
+Message-ID: <cover.1405603108.git.nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130500767595639847;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(69596002)(92726001)(77982001)(73972005)(81156004)(68736004)(44976005)(74502001)(73392001)(92566001)(106466001)(74662001)(93916002)(97736001)(6806004)(31966008)(87572001)(558084003)(87286001)(26826002)(50466002)(104016003)(110136001)(89996001)(36756003)(48376002)(46102001)(88136002)(81442001)(20776003)(87936001)(102836001)(81342001)(62966002)(99396002)(77156001)(21056001)(81542001)(55446002)(84676001)(50986999)(95666004)(4396001)(105596002)(107046002)(83072002)(64706001)(33646002)(47776003)(79102001)(82202001)(104166001)(85852003)(50226001)(86362001)(2351001)(85306003)(61266001)(80022001)(229853001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB368;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027578BB13
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> This patch set introduces support for MSI(-X) in GICv2m specification,
-> which is implemented in some variation of GIC400.
-> 
-> This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
-> (https://lkml.org/lkml/2014/3/14/320).
-> 
-> Changes in V3:
->     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
->       (per Jason Cooper request)
->     * Misc fix/clean up per Mark Rutland comments
->     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
->     * Patch 4 is new to the series:
->         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
->           for Multiple MSI.
->         * Add support for Multiple MSI for GICv2m.
-> 
-> Suravee Suthikulpanit (4):
->   irqchip: gic: Add binding probe for ARM GIC400
->   irqchip: gic: Restructuring ARM GIC code
->   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
->   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+Nicolin Chen (2):
+  ASoC: fsl_sai: Reset FIFOs after disabling TE/RE
+  ASoC: fsl_sai: Fix incorrect register writing in fsl_sai_isr()
 
-Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
-irqchip/gic with irqchip/urgent merged in.  To facilitate
-testing/merging, I've prepared an unsigned tag for you on the
-irqchip/gic branch:
+ sound/soc/fsl/fsl_sai.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-  git://git.infradead.org/users/jcooper/linux.git tags/deps-irqchip-gic-3.17-2
+-- 
+1.8.4
 
-Unless you tell me I broke something horribly, this tag and irqchip/gic
-up to that point are stable.
-
-thx,
-
-Jason.
