@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238AbaGQP7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:59:17 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37297 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaGQP7M (ORCPT
+	id S964806AbaGQP72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:59:28 -0400
+Received: from smtprelay0025.hostedemail.com ([216.40.44.25]:54657 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757263AbaGQP7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:59:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140717091931.GC21153@arm.com>
-References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
-	<1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
-	<20140716160450.GT29414@arm.com>
-	<20140716211931.GA18109@gup76>
-	<20140717091931.GC21153@arm.com>
-Date: Thu, 17 Jul 2014 08:59:10 -0700
-Message-ID: <CAMEtUux1NRqz-Bqi_H8kJe8x9u+1Q12Sg4a-92cE6OsePEBLxg@mail.gmail.com>
-Subject: Re: [PATCH RFCv3 01/14] arm64: introduce aarch64_insn_gen_comp_branch_imm()
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jul 2014 11:59:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:69:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2895:2907:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3355:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4425:4605:5007:6117:6119:7652:7875:7903:9025:9072:9388:10004:10049:10400:10848:11026:11232:11658:11914:12043:12291:12296:12517:12519:12683:12740:13019:13138:13231:13618:14094:14095:14096:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:
+X-HE-Tag: humor04_6ee8dc5954b02
+X-Filterd-Recvd-Size: 3796
+Message-ID: <1405612760.12363.14.camel@joe-AO725>
+Subject: Re: [PATCH v2 0/6] printk: start simplifying some flags
+From: Joe Perches <joe@perches.com>
+To: Alex Elder <elder@linaro.org>, Kay Sievers <kay@vrfy.org>
+Cc: akpm@linux-foundation.org, pmladek@suse.cz, bp@suse.de,
+        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
+Date: Thu, 17 Jul 2014 08:59:20 -0700
+In-Reply-To: <1405606151-19875-1-git-send-email-elder@linaro.org>
+References: <1405606151-19875-1-git-send-email-elder@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 2:19 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Jul 16, 2014 at 10:19:31PM +0100, Zi Shen Lim wrote:
->> >
->> > Is a BUG_ON justifiable here? Is there not a nicer way to fail?
->>
->> In general, it'd be nice if we returned something like -EINVAL and
->> have all callers handle failures. Today all code gen functions return
->> the u32 instruction and there's no error handling by callers.
->> I think following the precedence (aarch64_insn_gen_branch_imm())
->> of failing with BUG_ON is a reasonable tradeoff.
->
-> Well, I don't necessarily agree with that BUG_ON, either :)
-> I take it eBPF doesn't have a `trap' instruction or similar? Otherwise, we
-> could generate that and avoid having to propagate errors directly to the
-> caller.
->
->> In this case here, when we hit the default (failure) case, that means
->> there's a serious error of attempting to use an unsupported
->> variant. I think we're better off failing hard here than trying to
->> arbitrarily "fallback" on a default choice.
->
-> It might be a serious error for BPF, but a BUG_ON brings down the entire
-> machine, which I think is unfortunate.
+Again adding Kay Sievers.
 
-There is some misunderstanding here. Here BUG_ON will trigger
-only on actual bug in JIT implementation, it cannot be triggered by user.
-eBPF program is verified before it reaches JIT, so all instructions are
-valid and input to JIT is proper. Two instruction are not yet
-implemented in this JIT and they trigger pr_.._once().
-So I don't see any issue with this usage of BUG_ON
-imo living with silent bugs in JIT is more dangerous.
+Kay wrote almost all of this originally and should
+be able to review it.
 
-For the same reason there is no 'trap' instruction in eBPF.
-Static verifier checks that program is valid. If there was a 'trap'
-insn the program would be rejected. Like programs with
-'div by zero' are rejected. There is normal 'bpf_exit' insn to
-return from the program.
+Alex, if this series is resubmitted, do please cc Kay.
+
+It does seem reasonable to me, thanks for doing it.
+
+On Thu, 2014-07-17 at 09:09 -0500, Alex Elder wrote:
+> Each log record has a "flags" field.  The flags keep track of, for
+> instance, whether the record was saved in its entirety (as opposed
+> to being one of multiple records that should be merged as a single
+> unit).  A log record's flags field alone is not currently sufficient
+> to know how the record should be formatted; you need to know the
+> previous record's flags field as well.  I found understanding the
+> real effect of various combinations of these flags to be very
+> difficult, and was moved to try to do something about that.
+> 
+> This series includes three patches that begin the process of
+> simplifying how these flags are used and interpreted.  They include
+> very long, detailed explanations (as small patches often do) because
+> I want my reasoning to be very clear and examined very closely.  I
+> really don't want to break printk()...
+> 
+> The first patch changes how two global variables are initialized,
+> allowing the second patch to assume they always hold certain values.
+> 
+> The second patch simplifies some code based on the observation that
+> the LOG_CONT and LOG_NEWLINE flags are mutually exclusive.
+> 
+> The third and fourth patch fix a bug in two places.  The bug is
+> that a LOG_PREFIX in a record should implicitly terminate its
+> predecessor, even if the predecessor was marked LOG_CONT.
+> 
+> The fifth patch inserts a newline in /dev/kmsg output in the
+> event a LOG_PREFIX record follows a LOG_CONT record.
+> 
+> One trivial final patch is included at the end of the series.
+> 
+> 					-Alex
+> 
+> History:
+> v2: - Added a patch to initialize two globals with LOG_NEWLINE.
+>     - Changed the (now) second patch to argue that LOG_CONT and
+>       LOG_NEWLINES are mutally exclusive.
+>     - Added a patch to insert a newline in one case in devkmsg_read().
+>     - Added some extra parentheses in some conditions, as requested.
+>     - Fixed and updated some header commentary.
+>     - Deleted a hunk in the typo patch, as requested.
+> 
+> This series, based on v3.16-rc5, is available here:
+>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+>     Branch review/printk-flags-v2
+> 
+> Alex Elder (6):
+>   printk: initialize syslog_prev and console_prev
+>   printk: LOG_CONT and LOG_NEWLINE are opposites
+>   printk: honor LOG_PREFIX in devkmsg_read()
+>   printk: honor LOG_PREFIX in msg_print_text()
+>   printk: insert newline in devkmsg_read()
+>   printk: correct some more typos
+> 
+>  kernel/printk/printk.c | 63 +++++++++++++++++++++++++++-----------------------
+>  1 file changed, 34 insertions(+), 29 deletions(-)
+> 
+
+
+
