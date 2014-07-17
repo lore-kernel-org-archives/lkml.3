@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaGQSAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:00:54 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:39417 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaGQR7S (ORCPT
+	id S1752136AbaGQR7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:59:17 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:54984 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaGQR7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:59:18 -0400
+	Thu, 17 Jul 2014 13:59:16 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
         jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] printk: update previous message for LOG_PREFIX
-Date: Thu, 17 Jul 2014 12:59:10 -0500
-Message-Id: <1405619953-5475-3-git-send-email-elder@linaro.org>
+Subject: [PATCH 0/5] printk: more log flag simplification
+Date: Thu, 17 Jul 2014 12:59:08 -0500
+Message-Id: <1405619953-5475-1-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405619953-5475-1-git-send-email-elder@linaro.org>
-References: <1405619953-5475-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If log_store() gets flags containing LOG_PREFIX, it indicates the
-record getting stored should implicitly complete the previous log
-record and start a new one.
+This series rearranges the log code in such a way that the LOG_CONT
+and LOG_PREFIX log record flags can be eliminated entirely.  The
+result should be considerably easier to understand than before.  It
+builds on another recently-posted series of patches:
+    https://lkml.org/lkml/2014/7/17/363
 
-We can also ensure the previous record is completed by keeping
-track of the previously-logged record, and adding the LOG_NEWLINE
-flag to it when log_store() sees a LOG_PREFIX flag.
+The first patch exploits the fact that LOG_CONT and LOG_NEWLINE
+are inverses, and uses LOG_NEWLINE (or its negation) anywhere
+LOG_CONT is used.  As a result, LOG_CONT is no longer needed, so
+it's eliminated.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- kernel/printk/printk.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+The next three patches together eliminate LOG_PREFIX.  The effect
+of LOG_PREFIX is to complete the previous log entry before recording
+a new one.  Patch 2 arranges to do this directly, marking the previous
+log record with LOG_NEWLINE whenever a new record is presented with
+LOG_PREFIX set.  Patch 3 stops saving LOG_PREFIX in any log records,
+and patch 4 finally gets rid of LOG_PREFIX.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index e35d91a..6b72a77 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -242,6 +242,9 @@ static size_t syslog_partial;
- static u64 log_first_seq;
- static u32 log_first_idx;
- 
-+/* Pointer to the last record written into the log */
-+static struct printk_log *log_last_msg;
-+
- /* index and sequence number of the next record to store in the buffer */
- static u64 log_next_seq;
- static u32 log_next_idx;
-@@ -425,7 +428,13 @@ static int log_store(int facility, int level,
- 		log_next_idx = 0;
- 	}
- 
--	/* fill message */
-+	/*
-+	 * If we're forcing a new log record, update the flags for
-+	 * the previous one to mark it complete.
-+	 */
-+	if (flags & LOG_PREFIX && log_last_msg)
-+		log_last_msg->flags |= LOG_NEWLINE;
-+
- 	msg = (struct printk_log *)(log_buf + log_next_idx);
- 	memcpy(log_text(msg), text, text_len);
- 	msg->text_len = text_len;
-@@ -449,6 +458,9 @@ static int log_store(int facility, int level,
- 	log_next_idx += msg->len;
- 	log_next_seq++;
- 
-+	/* Save our previous record address for next time. */
-+	log_last_msg = msg;
-+
- 	return msg->text_len;
- }
- 
+The last patch is just some cleanup of the code now that it's gone
+through this transformation.
+
+					-Alex
+
+This series is available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/more-printk-flags
+It is based on branch review/printk-flags-v2 in that same repository.
+
+Alex Elder (5):
+  printk: kill LOG_CONT
+  printk: update previous message for LOG_PREFIX
+  printk: stop actually recording LOG_PREFIX
+  printk: kill LOG_PREFIX
+  printk: rename LOG_NEWLINE and tidy up
+
+ kernel/printk/printk.c | 135 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 81 insertions(+), 54 deletions(-)
+
 -- 
 1.9.1
 
