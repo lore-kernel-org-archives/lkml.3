@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965154AbaGQQlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:41:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56771 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934286AbaGQQjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934635AbaGQQjy (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 17 Jul 2014 12:39:54 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-c3-53c7fc572bda
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:64283 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756948AbaGQQjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:39:51 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-7a-53c7fc5430e2
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -18,117 +18,103 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         drake@endlessm.com, Marek Szyprowski <m.szyprowski@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>, loeliger@gmail.com,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v3 4/7] ARM: l2c: Add support for overriding prefetch settings
-Date: Thu, 17 Jul 2014 18:38:59 +0200
-Message-id: <1405615142-21426-5-git-send-email-t.figa@samsung.com>
+Subject: [PATCH v3 0/7] Enable L2 cache support on Exynos4210/4x12 SoCs
+Date: Thu, 17 Jul 2014 18:38:55 +0200
+Message-id: <1405615142-21426-1-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
-In-reply-to: <1405615142-21426-1-git-send-email-t.figa@samsung.com>
-References: <1405615142-21426-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t/xq7rhf44HG6xcwW7xaP5jZoveBVfZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xq7ohf44HG5zZqmrxaP5jZoveBVfZ
 	LLZ3zmC3mPJnOZPFpsfXWC0u75rDZjF7ST+LxYzz+5gsbl/mtTi3fQuLxdojd9ktXvetYbZY
 	P+M1i8WqXX8YLfZf8XLg92hp7mHz+PZ1EovH5b5eJo9F37M8ds66y+5x59oeNo/NS+o9+ras
-	YvQ4fmM7k8fnTXIBXFFcNimpOZllqUX6dglcGds3z2UpWCtVcXnZMtYGxseiXYycHBICJhIz
-	2/rZIGwxiQv31gPZXBxCAksZJfZdfs4M4fQxSTz+towFpIpNQE3ic8MjsA4RAVWJz20L2EGK
-	mAUOMEtc2PQArEhYwE9i5fLXYEUsQEXTJp5hBrF5BZwkGjZvgFonJ9G77Q1YnFPAWWLu/sdg
-	cSGgmi1tC5gmMPIuYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRES0l92MC4+ZnWIUYCD
-	UYmHt/PzsWAh1sSy4srcQ4wSHMxKIrzZ948HC/GmJFZWpRblxxeV5qQWH2Jk4uCUamDMuR6U
-	0qDDE/il3CJefLtS6sutzZcr93vaKc/4oLZX7c+rjcsqqtef5Li3pl4u/8s567ALLk/Wrkr4
-	vurmBPkNOv8UHnxK7Q/PXDLhxp7wH8cbY09aemxIj3g7hS9kl/Gu7VNWnbI4XDK75denY73Z
-	L+8xfy47LvVHvirPeHtYhS7zDnXxgioZJZbijERDLeai4kQA6EGwLEcCAAA=
+	YvQ4fmM7k8fnTXIBXFFcNimpOZllqUX6dglcGZ3bHAqmK1TsXfCOtYFxo2QXIyeHhICJxO6n
+	V5kgbDGJC/fWs3UxcnEICSxllNjxZBk7hNPHJHHpXDdYFZuAmsTnhkdsILaIgKrE57YFYEXM
+	AgeYJS5sesACkhAWcJfo7P7NDGKzABU1n94OFucVcJKYv3IHG8Q6OYnebW+YJzByL2BkWMUo
+	mlqaXFCclJ5rpFecmFtcmpeul5yfu4kREqBfdzAuPWZ1iFGAg1GJh/cH1/FgIdbEsuLK3EOM
+	EhzMSiK82feBQrwpiZVVqUX58UWlOanFhxiZODilGhjXm2bwy7vtsNh2t+Vc85alpz08107z
+	fWW6b/03u1iZ66+vbO93mxdw4P5ubjanN1E/PdJK+dtc9s5tyRQrXV+n0rbUqDc2q0N0zqeA
+	lLSvYkKvr7d8M3z25cFKLlk7vT8HDPPzzbN2vL418anxOp9ZPhpSKz57PZW2+P6trSKkhEd1
+	80nPe4eVWIozEg21mIuKEwFCUe16LgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
-settings configured in registers leading to crashes if L2C is enabled
-without overriding them. This patch introduces bindings to enable
-prefetch settings to be specified from DT and necessary support in the
-driver.
+This series intends to add support for L2 cache on Exynos4 SoCs on boards
+running under secure firmware, which requires certain initialization steps
+to be done with help of firmware, as selected registers are writable only
+from secure mode.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
----
- Documentation/devicetree/bindings/arm/l2cc.txt | 10 +++++++
- arch/arm/mm/cache-l2x0.c                       | 39 ++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
+First four patches extend existing support for secure write in L2C driver
+to account for design of secure firmware running on Exynos. Namely:
+ 1) direct read access to certain registers is needed on Exynos, because
+    secure firmware calls set several registers at once,
+ 2) not all boards are running secure firmware, so .write_sec callback
+    needs to be installed in Exynos firmware ops initialization code,
+ 3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
+    is not allowed and so must use l2c_write_sec as well,
+ 4) on certain boards, default value of prefetch register is incorrect
+    and must be overridden at L2C initialization.
+For boards running with firmware that provides access to individual
+L2C registers this series should introduce no functional changes. However
+since the driver is widely used on other platforms I'd like to kindly ask
+any interested people for testing.
 
-diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-index af527ee..3443d2d 100644
---- a/Documentation/devicetree/bindings/arm/l2cc.txt
-+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-@@ -47,6 +47,16 @@ Optional properties:
- - cache-id-part: cache id part number to be used if it is not present
-   on hardware
- - wt-override: If present then L2 is forced to Write through mode
-+- arm,double-linefill : Override double linefill enable setting. Enable if
-+  non-zero, disable if zero.
-+- arm,double-linefill-incr : Override double linefill on INCR read. Enable
-+  if non-zero, disable if zero.
-+- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
-+  if non-zero, disable if zero.
-+- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
-+  disable if zero.
-+- arm,prefetch-offset : Override prefetch offset value. Valid values are
-+  0-7, 15, 23, and 31.
- 
- Example:
- 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 21a625a0..6274803 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -1055,6 +1055,8 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 	u32 data[3] = { 0, 0, 0 };
- 	u32 tag[3] = { 0, 0, 0 };
- 	u32 filter[2] = { 0, 0 };
-+	u32 prefetch;
-+	u32 val;
- 
- 	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
- 	if (tag[0] && tag[1] && tag[2])
-@@ -1079,6 +1081,43 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 		l2x0_saved_regs.filter_start = (filter[0] & ~(SZ_1M - 1))
- 					| L310_ADDR_FILTER_EN;
- 	}
-+
-+	prefetch = l2x0_saved_regs.prefetch_ctrl;
-+
-+	if (!of_property_read_u32(np, "arm,double-linefill", &val)) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,double-linefill-incr", &val)) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,double-linefill-wrap", &val)) {
-+		if (!val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,prefetch-drop", &val)) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,prefetch-offset", &val)) {
-+		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-+		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
-+	}
-+
-+	l2x0_saved_regs.prefetch_ctrl = prefetch;
- }
- 
- static const struct l2c_init_data of_l2c310_data __initconst = {
+Further two patches add impelmentation of .write_sec for Exynos secure
+firmware and necessary DT nodes to enable L2 cache.
+
+Tested on Exynos4210-based Universal C210 and Trats (both without secure
+firmware) and Exynos4412-based TRATS2 and ODROID-U3 boards (both with secure
+firmware).
+
+Depends on:
+ - [PATCH] ARM: make it easier to check the CPU part number correctly
+   (http://thread.gmane.org/gmane.linux.ports.arm.kernel/335126
+    already in linux-next)
+ - [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+   (https://lkml.org/lkml/2014/7/17/431)
+
+Changes since v2:
+(https://lkml.org/lkml/2014/6/25/416)
+ - refactored L2C driver to use commit-like interface and make it no longer
+   depend on availability of writes to individual registers,
+ - moved L2C resume to assembly code, because doing it later makes some
+   systems unstable - this is also needed for deeper cpuidle modes,
+ - dropped unnecessary patch hacking around the .write_sec interface,
+ - dropped patch making the driver use l2c_write_sec() for LATENCY_CTRL
+   registers as Exynos is no longer affected and I'm not aware of any
+   reports that this is also needed on other platforms (can be applied
+   separately if it turns out to be so),
+ - rebased onto next-20140717 tag of linux-next tree.
+
+Changes since v1:
+(https://www.mail-archive.com/linux-omap@vger.kernel.org/msg106323.html)
+ - rebased onto for-next branch of linux-samsung tree,
+ - changed argument order of outer_cache.write_sec() callback to match
+   l2c_write_sec() function in cache-l2x0.c,
+ - added support of overriding of prefetch settings to work around incorrect
+   default settings on certain Exynos4x12-based boards,
+ - added call to firmware to invalidate whole L2 cache before setting enable
+   bit in L2C control register (required by Exynos secure firmware).
+
+Tomasz Figa (7):
+  ARM: l2c: Refactor the driver to use commit-like interface
+  ARM: l2c: Add interface to ask hypervisor to configure L2C
+  ARM: l2c: Get outer cache .write_sec callback from mach_desc only if
+    not NULL
+  ARM: l2c: Add support for overriding prefetch settings
+  ARM: EXYNOS: Add .write_sec outer cache callback for L2C-310
+  ARM: EXYNOS: Add support for non-secure L2X0 resume
+  ARM: dts: exynos4: Add nodes for L2 cache controller
+
+ Documentation/devicetree/bindings/arm/l2cc.txt |  10 +
+ arch/arm/boot/dts/exynos4210.dtsi              |   9 +
+ arch/arm/boot/dts/exynos4x12.dtsi              |  14 ++
+ arch/arm/include/asm/outercache.h              |   3 +
+ arch/arm/kernel/irq.c                          |   3 +-
+ arch/arm/mach-exynos/common.h                  |   1 +
+ arch/arm/mach-exynos/firmware.c                |  40 ++++
+ arch/arm/mach-exynos/sleep.S                   |  41 +++++
+ arch/arm/mm/cache-l2x0.c                       | 245 ++++++++++++++++---------
+ 9 files changed, 274 insertions(+), 92 deletions(-)
+
 -- 
 1.9.3
 
