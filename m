@@ -1,192 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832AbaGQG4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:56:13 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46050 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaGQG4K convert rfc822-to-8bit (ORCPT
+	id S1754973AbaGQG5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:57:06 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:55050 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846AbaGQG5B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:56:10 -0400
-Message-ID: <53c77388.e9fb420a.2550.46b7@mx.google.com>
-X-Google-Original-Message-ID: <001201cfa18c$2f263440$8d729cc0$@dulixin@gmail.com>
+	Thu, 17 Jul 2014 02:57:01 -0400
+Message-ID: <53c773bb.8660460a.2354.4acb@mx.google.com>
+X-Google-Original-Message-ID: <001301cfa18c$4d58eac0$e80ac040$@dulixin@gmail.com>
 From: "Dudley Du" <dudley.dulixin@gmail.com>
 To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
         <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         "Dudley Du" <dudl@cypress.com>
-Subject: [PATCH v4 8/14] input: cyapa: add gen3 trackpad device baseline and calibrate functions support
-Date: Thu, 17 Jul 2014 14:55:52 +0800
+Subject: [PATCH v4 9/14] input: cyapa: add gen3 trackpad device read firmware image function support
+Date: Thu, 17 Jul 2014 14:56:44 +0800
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+hjCZjr2tA+cvtRLywvjZVZPnmlg==
+Thread-Index: Ac+hjEVf4PnCxmVJTYOxtaa4tmh0QQ==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add report baseline and force calibrate functions supported for gen3
-trackpad device, which these functions are supplied through
-cyapa core baseline and calibrate interfaces.
+Add read firmware image function supported for gen3 trackpad device,
+which its function is supplied through cyapa core read_fw interface.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudl@cypress.com>
 ---
- drivers/input/mouse/cyapa_gen3.c |  135 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 135 insertions(+)
+ drivers/input/mouse/cyapa_gen3.c |   73 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
 
 diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
-index 886b2d7..801e8fd 100644
+index 801e8fd..b51e36b 100644
 --- a/drivers/input/mouse/cyapa_gen3.c
 +++ b/drivers/input/mouse/cyapa_gen3.c
-@@ -757,6 +757,138 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
+@@ -711,6 +711,36 @@ static int cyapa_gen3_write_fw_block(struct cyapa *cyapa,
+ 	return ret;
+ }
+ 
++/*
++ * A firmware block read command reads 16 bytes of data from flash starting
++ * from a given address.  The 12-byte block read command has the format:
++ *   <0xff> <CMD> <Key> <Addr>
++ *
++ *  <0xff>  - every command starts with 0xff
++ *  <CMD>   - the read command value is 0x3c
++ *  <Key>   - read commands include an 8-byte key: { 00 01 02 03 04 05 06 07 }
++ *  <Addr>  - Memory address (16-bit, big-endian)
++ *
++ * The command is followed by an i2c block read to read the 16 bytes of data.
++ */
++static int cyapa_gen3_read_fw_bytes(struct cyapa *cyapa, u16 addr, u8 *data)
++{
++	int ret;
++	u8 cmd[] = { 0xff, 0x3c, 0x00, 0x01, 0x02, 0x03, 0x04,
++		0x05, 0x06, 0x07, addr >> 8, addr };
++
++	ret = cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
++	if (ret)
++		return ret;
++
++	/* Read data buffer starting from offset 16 */
++	ret = cyapa_i2c_reg_read_block(cyapa, 16, CYAPA_FW_READ_SIZE, data);
++	if (ret != CYAPA_FW_READ_SIZE)
++		return (ret < 0) ? ret : -EIO;
++
++	return 0;
++}
++
+ static int cyapa_gen3_write_blocks(struct cyapa *cyapa,
+ 		size_t start_block, size_t block_count,
+ 		const u8 *image_data)
+@@ -757,6 +787,47 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
  	return 0;
  }
  
-+static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
++/*
++ * Read the entire firmware image into ->fw_image.
++ * If the ->fw_image has already been allocated, then this function
++ * doesn't do anything and just returns 0.
++ * If an error occurs while reading the image, ->fw_image is freed, and
++ * the error is returned.
++ *
++ * The firmware is a fixed size (CYAPA_FW_SIZE), and is read out in
++ * fixed length (CYAPA_FW_READ_SIZE) chunks.
++ */
++static int cyapa_gen3_read_fw(struct cyapa *cyapa)
 +{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int tries = 20;  /* max recalibration timeout 2s. */
 +	int ret;
++	int addr;
 +
-+	data_reporting_started = false;
++	ret = cyapa_gen3_bl_enter(cyapa);
++	if (ret)
++		goto err;
 +
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+	if (ret < 0) {
-+		dev_err(dev, "Error reading dev status. err = %d\n", ret);
-+		goto out;
-+	}
-+	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
-+		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
-+			 ret);
-+		ret = -EAGAIN;
-+		goto out;
++	cyapa->fw_image = kmalloc(CYAPA_FW_SIZE, GFP_KERNEL);
++	if (!cyapa->fw_image) {
++		ret = -ENOMEM;
++		goto err;
 +	}
 +
-+	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
-+			       OP_RECALIBRATION_MASK);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to send calibrate command. ret = %d\n",
-+			ret);
-+		goto out;
-+	}
-+
-+	do {
-+		/*
-+		 * For this recalibration, the max time will not exceed 2s.
-+		 * The average time is approximately 500 - 700 ms, and we
-+		 * will check the status every 100 - 200ms.
-+		 */
-+		usleep_range(100000, 200000);
-+
-+		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+		if (ret < 0) {
-+			dev_err(dev, "Error reading dev status. err = %d\n",
-+				ret);
-+			goto out;
-+		}
-+		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
++	for (addr = 0; addr < CYAPA_FW_SIZE; addr += CYAPA_FW_READ_SIZE) {
++		ret = cyapa_gen3_read_fw_bytes(cyapa, CYAPA_FW_HDR_START + addr,
++					  &cyapa->fw_image[addr]);
++		if (ret) {
++			kfree(cyapa->fw_image);
++			cyapa->fw_image = NULL;
 +			break;
-+	} while (--tries);
-+
-+	if (tries == 0) {
-+		dev_err(dev, "Failed to calibrate. Timeout.\n");
-+		ret = -ETIMEDOUT;
-+		goto out;
-+	}
-+	dev_dbg(dev, "Calibration successful.\n");
-+
-+out:
-+	data_reporting_started = true;
-+	return ret < 0 ? ret : count;
-+}
-+
-+static ssize_t cyapa_gen3_show_baseline(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int max_baseline, min_baseline;
-+	int tries = 3;
-+	int ret;
-+
-+	data_reporting_started = false;
-+
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+	if (ret < 0) {
-+		dev_err(dev, "Error reading dev status. err = %d\n", ret);
-+		goto out;
-+	}
-+	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
-+		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
-+			 ret);
-+		ret = -EAGAIN;
-+		goto out;
-+	}
-+
-+	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
-+			       OP_REPORT_BASELINE_MASK);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to send report baseline command. %d\n",
-+			ret);
-+		goto out;
-+	}
-+
-+	do {
-+		usleep_range(10000, 20000);
-+
-+		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+		if (ret < 0) {
-+			dev_err(dev, "Error reading dev status. err = %d\n",
-+				ret);
-+			goto out;
 +		}
-+		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
-+			break;
-+	} while (--tries);
-+
-+	if (tries == 0) {
-+		dev_err(dev, "Device timed out going to Normal state.\n");
-+		ret = -ETIMEDOUT;
-+		goto out;
 +	}
 +
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MAX_BASELINE);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to read max baseline. err = %d\n", ret);
-+		goto out;
-+	}
-+	max_baseline = ret;
-+
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MIN_BASELINE);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to read min baseline. err = %d\n", ret);
-+		goto out;
-+	}
-+	min_baseline = ret;
-+
-+	dev_dbg(dev, "Baseline report successful. Max: %d Min: %d\n",
-+		max_baseline, min_baseline);
-+	ret = scnprintf(buf, PAGE_SIZE, "%d %d\n", max_baseline, min_baseline);
-+
-+out:
-+	data_reporting_started = true;
++err:
++	if (cyapa->fw_image)
++		cyapa->fw_image_size = CYAPA_FW_SIZE;
 +	return ret;
 +}
 +
- /*
-  * cyapa_get_wait_time_for_pwr_cmd
-  *
-@@ -1064,6 +1196,9 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
- 	.update_fw = cyapa_gen3_do_fw_update,
- 	.bl_deactivate = cyapa_gen3_bl_deactivate,
+ static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
+ 				     struct device_attribute *attr,
+ 				     const char *buf, size_t count)
+@@ -1199,6 +1270,8 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
+ 	.show_baseline = cyapa_gen3_show_baseline,
+ 	.calibrate_store = cyapa_gen3_do_calibrate,
  
-+	.show_baseline = cyapa_gen3_show_baseline,
-+	.calibrate_store = cyapa_gen3_do_calibrate,
++	.read_fw = cyapa_gen3_read_fw,
 +
  	.state_parse = cyapa_gen3_state_parse,
  	.operational_check = cyapa_gen3_do_operational_check,
