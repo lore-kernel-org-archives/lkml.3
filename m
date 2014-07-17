@@ -1,53 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592AbaGQWSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 18:18:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44169 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaGQWSf (ORCPT
+	id S1757919AbaGQW2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 18:28:00 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47841 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329AbaGQW16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 18:18:35 -0400
-Date: Fri, 18 Jul 2014 00:17:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nick Krause <xerofoify@gmail.com>
-cc: Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
-        Matt Turner <mattst88@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-alpha@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: Alpha Checkpatch Errors
-In-Reply-To: <CAPDOMVgJx4NTSDXyS4k9jfWzSw_vJ=TFDBPdCUgxa-Xato1bYA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1407180013260.24854@nanos>
-References: <CAPDOMVgJx4NTSDXyS4k9jfWzSw_vJ=TFDBPdCUgxa-Xato1bYA@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 17 Jul 2014 18:27:58 -0400
+Message-ID: <53C84DEB.2090103@gmail.com>
+Date: Fri, 18 Jul 2014 01:27:55 +0300
+From: Timofey Titovets <nefelim4ag@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: minchan@kernel.org
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
+Subject: [PATCH v3] zram: auto add new devices on demand
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Nick Krause wrote:
+From: Timofey Titovets <nefelim4ag@gmail.com>
 
-> Hey Richard and other Maintainers,
-> I am wondering about cleaning up the cleanpatch errors for alpha,  as
-> I  am hitting a lot of in the arch/alpha directory.
-> It would be nice if I got a list of files that still need coding style
-> cleanup as this may be of nice to cleanup :).
+This add supporting of auto allocate new zram devices on demand, like 
+loop devices
 
-Nick, can you please stop that nonsense? checkpatch.pl is a tool to
-check PATCHES and not to apply random nonsense on existing code. See
-also:
+This working by following rules:
+	- Pre create zram devices specified by num_device
+	- if all device already in use -> add new free device
 
-  https://lwn.net/Articles/605597/
+ From v1 -> v2:
+Delete useless variable 'ret', added documentation for explain new zram 
+behaviour
 
-Joe, can you please finally remove the -f option from checkpatch.pl ?
+ From v2 -> v3
+Delete logic to destroy not used devices, for avoid concurrency issues
+Code refactoring for made patch small and clean as possible
+Patch can pass the test:
+#!/bin/sh
+modprobe zram
+while true; do
+                 echo 10485760 > /sys/block/zram0/disksize&
+                 echo 1 > /sys/block/zram0/reset&
+done
 
-Thanks,
+Please pull from:
+https://github.com/Nefelim4ag/linux.git
 
-	tglx
+Tested on 3.15.5-2-ARCH, can be applied on any kernel version
+after this patch 'zram: add LZ4 compression support' - 
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
+
+---
+
+diff --git a/Documentation/blockdev/zram.txt 
+b/Documentation/blockdev/zram.txt
+index 0595c3f..a090ac7 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -21,6 +21,9 @@ Following shows a typical sequence of steps for using 
+zram.
+  	This creates 4 devices: /dev/zram{0,1,2,3}
+  	(num_devices parameter is optional. Default: 1)
+
++	If all device in use kernel will create new zram device
++	(between num_devices and 31)
++
+  2) Set max number of compression streams
+  	Compression backend may use up to max_comp_streams compression streams,
+  	thus allowing up to max_comp_streams concurrent compression operations.
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 089e72c..cc78779 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -43,6 +43,8 @@ static const char *default_compressor = "lzo";
+  /* Module params (documentation at end) */
+  static unsigned int num_devices = 1;
+
++static inline int zram_add_dev(void);
++
+  #define ZRAM_ATTR_RO(name)						\
+  static ssize_t zram_attr_##name##_show(struct device *d,		\
+  				struct device_attribute *attr, char *b)	\
+@@ -168,6 +170,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
+  		struct device_attribute *attr, const char *buf, size_t len)
+  {
+  	struct zram *zram = dev_to_zram(dev);
++
+  	down_write(&zram->init_lock);
+  	if (init_done(zram)) {
+  		up_write(&zram->init_lock);
+@@ -239,6 +242,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+  {
+  	size_t num_pages;
+  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
++
+  	if (!meta)
+  		goto out;
+
+@@ -374,6 +378,7 @@ static int zram_bvec_read(struct zram *zram, struct 
+bio_vec *bvec,
+  	struct page *page;
+  	unsigned char *user_mem, *uncmem = NULL;
+  	struct zram_meta *meta = zram->meta;
++
+  	page = bvec->bv_page;
+
+  	read_lock(&meta->tb_lock);
+@@ -607,6 +612,7 @@ static void zram_reset_device(struct zram *zram, 
+bool reset_capacity)
+  	/* Free all pages that are still in this zram device */
+  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+  		unsigned long handle = meta->table[index].handle;
++
+  		if (!handle)
+  			continue;
+
+@@ -667,6 +673,7 @@ static ssize_t disksize_store(struct device *dev,
+  	zram->disksize = disksize;
+  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+  	revalidate_disk(zram->disk);
++	zram_add_dev();
+  	up_write(&zram->init_lock);
+  	return len;
+
+@@ -954,6 +961,34 @@ static void destroy_device(struct zram *zram)
+  	blk_cleanup_queue(zram->queue);
+  }
+
++/*
++ * Automatically add empty zram device,
++ * if all created devices already initialized
++ */
++static inline int zram_add_dev(void)
++{
++	int dev_id;
++
++	for (dev_id = 0; dev_id < num_devices; dev_id++) {
++		if (!zram_devices[dev_id].disksize)
++			return 0;
++	}
++
++	if (max_num_devices <= num_devices) {
++		pr_warn("Can't add zram%u, max device number reached\n", num_devices);
++		return 1;
++	}
++
++	if (create_device(&zram_devices[num_devices], num_devices)) {
++		destroy_device(&zram_devices[num_devices]);
++		return 1;
++	}
++	pr_info("Created zram%u device\n", num_devices);
++	num_devices++;
++
++	return 0;
++}
++
+  static int __init zram_init(void)
+  {
+  	int ret, dev_id;
+@@ -972,13 +1007,14 @@ static int __init zram_init(void)
+  		goto out;
+  	}
+
+-	/* Allocate the device array and initialize each one */
+-	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
++	/* Allocate the device array */
++	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
+  	if (!zram_devices) {
+  		ret = -ENOMEM;
+  		goto unregister;
+  	}
+
++	/* Initialise zram{0..num_devices} */
+  	for (dev_id = 0; dev_id < num_devices; dev_id++) {
+  		ret = create_device(&zram_devices[dev_id], dev_id);
+  		if (ret)
+@@ -1025,7 +1061,7 @@ module_init(zram_init);
+  module_exit(zram_exit);
+
+  module_param(num_devices, uint, 0);
+-MODULE_PARM_DESC(num_devices, "Number of zram devices");
++MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
+
+  MODULE_LICENSE("Dual BSD/GPL");
+  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
