@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555AbaGQOKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:10:45 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:35821 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaGQOJN (ORCPT
+	id S933594AbaGQOM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:12:28 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:41763 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139AbaGQOM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:09:13 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org, jack@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/6] printk: initialize syslog_prev and console_prev
-Date: Thu, 17 Jul 2014 09:09:06 -0500
-Message-Id: <1405606151-19875-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405606151-19875-1-git-send-email-elder@linaro.org>
-References: <1405606151-19875-1-git-send-email-elder@linaro.org>
+	Thu, 17 Jul 2014 10:12:26 -0400
+Date: Thu, 17 Jul 2014 10:12:18 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 01/25] mm: Add kfd_process pointer to mm_struct
+Message-ID: <20140717141216.GA1963@gmail.com>
+References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
+ <53C7D666.6000405@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C7D666.6000405@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two global variables, "syslog_prev" and "console_prev", maintain a
-copy of the flags value used in the log record most recently
-formatted for syslog or the console, respectively.
+On Thu, Jul 17, 2014 at 04:57:58PM +0300, Oded Gabbay wrote:
+> Forgot to add mm mailing list. Sorry.
+> 
+> This patch enables the amdkfd driver to retrieve the kfd_process
+> object from the process's mm_struct. This is needed because kfd_process
+> lifespan is bound to the process's mm_struct lifespan.
+> 
+> When amdkfd is notified about an mm_struct tear-down, it checks if the
+> kfd_process pointer is valid. If so, it releases the kfd_process object
+> and all relevant resources.
+> 
+> In v3 of the patchset I will update the binding to match the final discussions
+> on [PATCH 1/8] mmput: use notifier chain to call subsystem exit handler.
+> In the meantime, I'm going to try and see if I can drop the kfd_process
+> in mm_struct and remove the use of the new notification chain in mmput.
+> Instead, I will try to use the mmu release notifier.
 
-Initially there is no previous formatted log record, and these
-variables simply have an initial value 0.  And occasionally log
-records can get consumed at a rate such that syslog or the console
-can't keep up, in which case those variables (along with their
-corresponding position variables) must be reset.  Here too, they're
-reset to 0.
+So the mmput notifier chain will not happen. I did a patch with call_srcu
+and adding couple more helper to mmu_notifier. I will send that today for
+review.
 
-This patch changes it so the initial value used is LOG_NEWLINE.
-That is, if we know nothing about the prevously-formatted log
-record, we can assume it was complete, and ended with a newline.
+That being said, adding a device driver specific to mm_struct will most
+likely be a big no. I am myself gonna remove hmm from mm_struct as people
+are reluctant to see such change.
 
-This is being done to support the next patch.  Initializing
-these variables this way makes LOG_NEWLINE and LOG_CONT be
-mutually exclusive, and the next patch uses that fact to simplify
-some logic.
+Cheers,
+Jérôme
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- kernel/printk/printk.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 13e839d..ff1c7ad 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -236,7 +236,7 @@ DECLARE_WAIT_QUEUE_HEAD(log_wait);
- /* the next printk record to read by syslog(READ) or /proc/kmsg */
- static u64 syslog_seq;
- static u32 syslog_idx;
--static enum log_flags syslog_prev;
-+static enum log_flags syslog_prev = LOG_NEWLINE;
- static size_t syslog_partial;
- 
- /* index and sequence number of the first record stored in the buffer */
-@@ -250,7 +250,7 @@ static u32 log_next_idx;
- /* the next printk record to write to the console */
- static u64 console_seq;
- static u32 console_idx;
--static enum log_flags console_prev;
-+static enum log_flags console_prev = LOG_NEWLINE;
- 
- /* the next printk record to read after the last 'clear' command */
- static u64 clear_seq;
-@@ -1071,7 +1071,7 @@ static int syslog_print(char __user *buf, int size)
- 			/* messages are gone, move to first one */
- 			syslog_seq = log_first_seq;
- 			syslog_idx = log_first_idx;
--			syslog_prev = 0;
-+			syslog_prev = LOG_NEWLINE;
- 			syslog_partial = 0;
- 		}
- 		if (syslog_seq == log_next_seq) {
-@@ -1301,7 +1301,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 			/* messages are gone, move to first one */
- 			syslog_seq = log_first_seq;
- 			syslog_idx = log_first_idx;
--			syslog_prev = 0;
-+			syslog_prev = LOG_NEWLINE;
- 			syslog_partial = 0;
- 		}
- 		if (from_file) {
-@@ -2148,7 +2148,7 @@ again:
- 			/* messages are gone, move to first one */
- 			console_seq = log_first_seq;
- 			console_idx = log_first_idx;
--			console_prev = 0;
-+			console_prev = LOG_NEWLINE;
- 		} else {
- 			len = 0;
- 		}
--- 
-1.9.1
-
+> 
+> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> ---
+>  include/linux/mm_types.h | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 678097c..ff71496 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -20,6 +20,10 @@
+>  struct hmm;
+>  #endif
+>  +#if defined(CONFIG_HSA_RADEON) || defined(CONFIG_HSA_RADEON_MODULE)
+> +struct kfd_process;
+> +#endif
+> +
+>  #ifndef AT_VECTOR_SIZE_ARCH
+>  #define AT_VECTOR_SIZE_ARCH 0
+>  #endif
+> @@ -439,6 +443,16 @@ struct mm_struct {
+>  	 */
+>  	struct hmm *hmm;
+>  #endif
+> +#if defined(CONFIG_HSA_RADEON) || defined(CONFIG_HSA_RADEON_MODULE)
+> +	/*
+> +	 * kfd always register an mmu_notifier we rely on mmu notifier to keep
+> +	 * refcount on mm struct as well as forbiding registering kfd on a
+> +	 * dying mm
+> +	 *
+> +	 * This field is set with mmap_sem old in write mode.
+> +	 */
+> +	struct kfd_process *kfd_process;
+> +#endif
+>  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+>  	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
+>  #endif
+> -- 
+> 1.9.1
+> 
