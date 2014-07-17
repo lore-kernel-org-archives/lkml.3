@@ -1,36 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187AbaGQWfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 18:35:07 -0400
-Received: from mail.lang.hm ([64.81.33.126]:45882 "EHLO bifrost.lang.hm"
+	id S1757955AbaGQWii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 18:38:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11545 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757592AbaGQWfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 18:35:05 -0400
-X-Greylist: delayed 775 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 18:35:05 EDT
-Date: Thu, 17 Jul 2014 15:21:41 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Mark Kettenis <mark.kettenis@xs4all.nl>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-In-Reply-To: <53C83383.4040507@amacapital.net>
-Message-ID: <alpine.DEB.2.02.1407171521020.17284@nftneq.ynat.uz>
-References: <201407171848.s6HImBb4027900@glazunov.sibelius.xs4all.nl> <53C83383.4040507@amacapital.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754106AbaGQWig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 18:38:36 -0400
+Date: Thu, 17 Jul 2014 18:38:24 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Guillaume Morin <guillaume@morinfr.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Naoya Horiguchi <nao.horiguchi@gmail.com>,
+        linux-mm@kvack.org
+Subject: [PATCH] mm: hugetlb: fix copy_hugetlb_page_range() (Re: [BUG] new
+ copy_hugetlb_page_range() causing crashes)
+Message-ID: <20140717223824.GA828@nhori.bos.redhat.com>
+References: <019768ac467043a4aaea3e455cb74db7@BPXC18GP.gisp.nec.co.jp>
+ <FC3CA273EA98D94B96901B237F5F506BB61DC0@irvmail101.necam.prv>
+ <20140717201203.GA23591@bender.morinfr.org>
+ <20140717213332.GA20284@nhori.bos.redhat.com>
+ <20140717215936.GA28949@bender.morinfr.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140717215936.GA28949@bender.morinfr.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Andy Lutomirski wrote:
+# CCed Andrew, and linux-mm 
 
-> Can we please have a mode in which getrandom(2) can neither block nor
-> fail?  If that gets added, then this can replace things like AT_RANDOM.
+On Thu, Jul 17, 2014 at 11:59:36PM +0200, Guillaume Morin wrote:
+> On 17 Jul 17:33, Naoya Horiguchi wrote:
+...
+> > And it seems that this also happens on v3.16-rc5.
+> > So it might be an upstream bug, not a stable-specific matter.
+> 
+> That's my understanding as well. I just reported it for 3.4 and 3.14
+> since these were the kernels I could easily try my original test with.
 
-If a call to get random data isn't allowed to either block or fail, what is it 
-supposed to return if there isn't random data available?
+OK. I've checked the fix you suggested below on mainline, and
+it passed our test program.
 
-David Lang
+> > It looks strange to me that the problem is gone by removing the commit
+> > 4a705fef98 (although I confirmed it is,) because the kernel's behavior
+> > shouldn't change unless (is_hugetlb_entry_migration(entry) ||
+> > is_hugetlb_entry_hwpoisoned(entry)) is true. And I checked with systemtap
+> > that both these check returned false in the above test program.
+> > So I'm wondering why the commit makes difference for this test program.
+> 
+> I don't know why I am just thinking about that now.  Isn't this the fact
+> that your patch moved the huge_ptep_get() before
+> huge_ptep_set_wrprotect() in the pte_present() cow case?
+
+Ah, right. I was really blind :(
+
+> 
+> Actually, I've just tried to re-add the huge_ptep_get call for that
+> case and it's fixing the problem for me...
+> 
+> Hmm, want a patch?
+
+Thanks, but it's just a oneliner, so I wrote the one.
+
+Naoya Horiguchi
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Thu, 17 Jul 2014 18:11:22 -0400
+Subject: [PATCH] mm: hugetlb: fix copy_hugetlb_page_range()
+
+commit 4a705fef98 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry") changed the order of huge_ptep_set_wrprotect()
+and huge_ptep_get(), which leads to break some workload like hugepage-backed
+heap allocation via libhugetlbfs. This patch fixes it.
+
+The test program for the problem is shown below:
+
+  $ cat heap.c
+  #include <unistd.h>
+  #include <stdlib.h>
+  #include <string.h>
+
+  #define HPS 0x200000
+
+  int main() {
+  	int i;
+  	char *p = malloc(HPS);
+  	memset(p, '1', HPS);
+  	for (i = 0; i < 5; i++) {
+  		if (!fork()) {
+  			memset(p, '2', HPS);
+  			p = malloc(HPS);
+  			memset(p, '3', HPS);
+  			free(p);
+  			return 0;
+  		}
+  	}
+  	sleep(1);
+  	free(p);
+  	return 0;
+  }
+
+  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
+
+Reported-by: Guillaume Morin <guillaume@morinfr.org>
+Suggested-by: Guillaume Morin <guillaume@morinfr.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: stable@vger.kernel.org
+---
+ mm/hugetlb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index a8d4155eb019..7263c770e9b3 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2597,6 +2597,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
++			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+-- 
+1.9.3
+
