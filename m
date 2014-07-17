@@ -1,136 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaGQNSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:18:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56806 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932498AbaGQNSr (ORCPT
+	id S932819AbaGQNTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:19:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40507 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932498AbaGQNTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:18:47 -0400
-Date: Thu, 17 Jul 2014 14:17:58 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 3/4 V3] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
-Message-ID: <20140717131758.GK30313@leverpostej>
+	Thu, 17 Jul 2014 09:19:06 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18b9Jq/h40lMjXmVgjsQuwyTMV+9b6Ekuk=
+X-DKIM: OpenDKIM Filter v2.0.1 titan A5B445AE2F7
+Date: Thu, 17 Jul 2014 09:18:54 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: suravee.suthikulpanit@amd.com
+Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
+        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X)
+ support
+Message-ID: <20140717131854.GN13108@titan.lakedaemon.net>
 References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suravee,
-
-Apologies for the late reply on this one. I was hoping that Marc would
-be able to take another look at this, but he's away at present.
-
-On Thu, Jul 10, 2014 at 12:05:03AM +0100, suravee.suthikulpanit@amd.com wrote:
+On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
 > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
-> ARM GICv2m specification extends GICv2 to support MSI(-X) with
-> a new set of register frames. This patch introduces support for
-> the non-secure GICv2m register frame.
+> This patch set introduces support for MSI(-X) in GICv2m specification,
+> which is implemented in some variation of GIC400.
 > 
-> The driver currently matchs "arm,gic-400-plus" in device tree binding,
-> which implements GICv2m.
+> This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+> (https://lkml.org/lkml/2014/3/14/320).
 > 
-> The "msi-controller" keyword in ARM GIC devicetree binding is used to indentify
-> GIC driver that it should enable MSI(-X) support, The region of GICv2m MSI
-> register frame is specified using the register frame index 4 in the device tree.
-> MSI support is optional.
+> Changes in V3:
+>     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+>       (per Jason Cooper request)
+>     * Misc fix/clean up per Mark Rutland comments
+>     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+>     * Patch 4 is new to the series:
+>         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+>           for Multiple MSI.
+>         * Add support for Multiple MSI for GICv2m.
 > 
-> Each GIC maintains an "msi_chip" structure. To discover the msi_chip,
-> PCI host driver can do the following:
-> 
->     struct device_node *gic_node = of_irq_find_parent(pdev->dev.of_node);
->     pcie_bus->msi_chip = of_pci_find_msi_chip_by_node(gic_node);
-> 
-> Cc: Mark Rutland <Mark.Rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-> Cc: Will Deacon <Will.Deacon@arm.com>
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> ---
->  Documentation/devicetree/bindings/arm/gic.txt |  20 +-
->  arch/arm64/Kconfig                            |   1 +
->  drivers/irqchip/Kconfig                       |   7 +
->  drivers/irqchip/Makefile                      |   1 +
->  drivers/irqchip/irq-gic-v2m.c                 | 251 ++++++++++++++++++++++++++
->  drivers/irqchip/irq-gic-v2m.h                 |  13 ++
->  drivers/irqchip/irq-gic.c                     |  23 ++-
->  drivers/irqchip/irq-gic.h                     |  31 +++-
->  8 files changed, 334 insertions(+), 13 deletions(-)
->  create mode 100644 drivers/irqchip/irq-gic-v2m.c
->  create mode 100644 drivers/irqchip/irq-gic-v2m.h
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> index 5573c08..d2eea0b 100644
-> --- a/Documentation/devicetree/bindings/arm/gic.txt
-> +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> @@ -12,11 +12,14 @@ Main node required properties:
-> 
->  - compatible : should be one of:
->         "arm,gic-400"
-> +       "arm,gic-400-v2m"
+> Suravee Suthikulpanit (4):
+>   irqchip: gic: Add binding probe for ARM GIC400
+>   irqchip: gic: Restructuring ARM GIC code
+>   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+>   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
 
-I'm still not entirely comfortable about this, as I was under the
-impression that the MSI frame was a block on the side of the GIC rather
-than being a composite entity with the rest of the GIC.
+Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
+irqchip/gic with irqchip/urgent merged in.  To facilitate
+testing/merging, I've prepared an unsigned tag for you on the
+irqchip/gic branch:
 
-Which means that it would be entirely possible to attach multiple copies
-of that block, which this binding doesn't cover.
+  git://git.infradead.org/users/jcooper/linux.git tags/deps-irqchip-gic-3.17-2
 
->         "arm,cortex-a15-gic"
->         "arm,cortex-a9-gic"
->         "arm,cortex-a7-gic"
->         "arm,arm11mp-gic"
-> +
->  - interrupt-controller : Identifies the node as an interrupt controller
-> +
->  - #interrupt-cells : Specifies the number of cells needed to encode an
->    interrupt source.  The type shall be a <u32> and the value shall be 3.
-> 
-> @@ -37,9 +40,16 @@ Main node required properties:
->         the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
->         the interrupt is wired to that CPU.  Only valid for PPI interrupts.
-> 
-> -- reg : Specifies base physical address(s) and size of the GIC registers. The
-> -  first region is the GIC distributor register base and size. The 2nd region is
-> -  the GIC cpu interface register base and size.
-> +- reg : Specifies base physical address(s) and size of the GIC register frames.
-> +
-> +  Region | Description
-> +  Index  |
-> +  -------------------------------------------------------------------
-> +     0   | GIC distributor register base and size
-> +     1   | GIC cpu interface register base and size
-> +     2   | VGIC interface control register base and size (Optional)
-> +     3   | VGIC CPU interface register base and size (Optional)
-> +     4   | GICv2m MSI interface register base and size (Optional)
+Unless you tell me I broke something horribly, this tag and irqchip/gic
+up to that point are stable.
 
-And describing it as a separate (but related) component would get around
-the issue of orthogonality with the GICV and GICH registers.
+thx,
 
-Nit: can we use the architected prefixes here please? GICC, GICD, GICH,
-and GICV respectively for indexes 0-3.
-
-Cheers,
-Mark.
+Jason.
