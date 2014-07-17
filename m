@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933285AbaGQNzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:55:21 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:43197 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186AbaGQNzT (ORCPT
+	id S933194AbaGQN4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:56:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57294 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755275AbaGQN4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:55:19 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Cc: sivanich@sgi.com, Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH 3/4] drivers/misc/sgi-gru/grukdump.c: drop negativity check for unsgined req.gid
-Date: Thu, 17 Jul 2014 16:55:07 +0300
-Message-Id: <1405605307-13657-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	Thu, 17 Jul 2014 09:56:17 -0400
+Date: Thu, 17 Jul 2014 14:55:34 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jason Cooper <jason@lakedaemon.net>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Cc: Pawel Moll <Pawel.Moll@arm.com>, Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X) support
+Message-ID: <20140717135534.GM30313@leverpostej>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140717131854.GN13108@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140717131854.GN13108@titan.lakedaemon.net>
+Thread-Topic: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X)
+ support
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[linux-3.16-rc5/drivers/misc/sgi-gru/grukdump.c:199]: (style) Checking if
-unsigned variable 'gid' is less than zero.
+Hi Jason,
 
-    if (req.gid >= gru_max_gids || req.gid < 0)
-        return -EINVAL;
+On Thu, Jul 17, 2014 at 02:18:54PM +0100, Jason Cooper wrote:
+> On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
+> > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > 
+> > This patch set introduces support for MSI(-X) in GICv2m specification,
+> > which is implemented in some variation of GIC400.
+> > 
+> > This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+> > (https://lkml.org/lkml/2014/3/14/320).
+> > 
+> > Changes in V3:
+> >     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+> >       (per Jason Cooper request)
+> >     * Misc fix/clean up per Mark Rutland comments
+> >     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+> >     * Patch 4 is new to the series:
+> >         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+> >           for Multiple MSI.
+> >         * Add support for Multiple MSI for GICv2m.
+> > 
+> > Suravee Suthikulpanit (4):
+> >   irqchip: gic: Add binding probe for ARM GIC400
+> >   irqchip: gic: Restructuring ARM GIC code
+> >   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+> >   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+> 
+> Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
+> irqchip/gic with irqchip/urgent merged in.  To facilitate
+> testing/merging, I've prepared an unsigned tag for you on the
+> irqchip/gic branch:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80461
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- drivers/misc/sgi-gru/grukdump.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm a little concerned that this is all going through for v3.17 without
+a {Reviewed,Acked}-by from Marc or anyone working with GIC{,v2m}.
 
-diff --git a/drivers/misc/sgi-gru/grukdump.c b/drivers/misc/sgi-gru/grukdump.c
-index a3700a5..e0e0e7e 100644
---- a/drivers/misc/sgi-gru/grukdump.c
-+++ b/drivers/misc/sgi-gru/grukdump.c
-@@ -196,7 +196,7 @@ int gru_dump_chiplet_request(unsigned long arg)
- 		return -EFAULT;
- 
- 	/* Currently, only dump by gid is implemented */
--	if (req.gid >= gru_max_gids || req.gid < 0)
-+	if (req.gid >= gru_max_gids)
- 		return -EINVAL;
- 
- 	gru = GID_TO_GRU(req.gid);
--- 
-1.8.5.5
+While his comments on v1 have been addressed, he has not had a chance to
+acknowledge the solutions. I appreciate Marc's holiday is unfortunately
+timed.
 
+I also have an open concern with the binding with regard to the
+orthogonality of GICV GICH and the MSI registers.
+
+Suravee, do you need this urgently for v3.17? I was under the impression
+that we wouldn't have full PCIe support by then.
+
+Cheers,
+Mark.
