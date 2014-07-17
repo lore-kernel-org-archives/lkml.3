@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592AbaGQRMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:12:51 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:51151 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463AbaGQRMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:12:48 -0400
+	id S1757670AbaGQRM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:12:59 -0400
+Received: from sauhun.de ([89.238.76.85]:39307 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757607AbaGQRM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 13:12:57 -0400
+Date: Thu, 17 Jul 2014 19:12:49 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <jdelvare@suse.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140717171249.GB2901@katana>
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+ <20140717132135.GI2740@katana>
+ <20140717154020.650ad59c@endymion.delvare>
+ <20140717165603.GA16408@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <53C7FC32.7030704@zytor.com>
-References: <cover.1405546879.git.luto@amacapital.net> <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net>
- <53C6F5A9.80400@zytor.com> <CALCETrVwT1g-S1hLyyB_uAVwffYCnFacTfUhJeD8Bb5j3X0mkg@mail.gmail.com>
- <CALCETrVCrJEwYokasRoqQTKJWKtzq9XUMNqHoT4-ZjgyZ-mBow@mail.gmail.com>
- <53C703ED.2010605@zytor.com> <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
- <53C75733.8060507@zytor.com> <20140717103324.GJ1491@thunk.org> <53C7FC32.7030704@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 17 Jul 2014 10:12:27 -0700
-Message-ID: <CALCETrVgCw2_8x1+NrP_xO4ZtnFm_dTTUBtZd-tgfdWgfeu2FQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
+Content-Disposition: inline
+In-Reply-To: <20140717165603.GA16408@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 9:39 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/17/2014 03:33 AM, Theodore Ts'o wrote:
->> On Wed, Jul 16, 2014 at 09:55:15PM -0700, H. Peter Anvin wrote:
->>> On 07/16/2014 05:03 PM, Andy Lutomirski wrote:
->>>>>
->>>> I meant that prandom isn't using rdrand for early seeding.
->>>>
->>>
->>> We should probably fix that.
->>
->> It wouldn't hurt to explicitly use arch_get_random_long() in prandom,
->> but it does use get_random_bytes() in early seed, and for CPU's with
->> RDRAND present, we do use it in init_std_data() in
->> drivers/char/random.c, so prandom is already getting initialized via
->> an RNG (which is effectively a DRBG even if it doesn't pass all of
->> NIST's rules) which is derived from RDRAND.
->>
->
-> I assumed he was referring to before alternatives.  Not sure if we use
-> prandom before that point, though.
 
-Unless I'm reading the code wrong, the prandom_reseed_late call can
-happen after userspace is running.
+--JYK4vJDZwFMowpUq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Anyway, I'm working on a near-complete rewrite of the guest part of all of this.
+On Thu, Jul 17, 2014 at 09:56:03AM -0700, Guenter Roeck wrote:
+> SMBus block commands are different to I2C block commands since
+> the returned data is not normally accessible with byte or word
+> commands on other command offsets. Add linked list of 'block'
+> commands to support those commands.
+>=20
+> Access mechanism is quite simple: Block commands must be written
+> before they can be read. Subsequent writes can be partial. Block
+> read commands always return the number of bytes associated with
+> the longest previous write.
+>=20
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
---Andy
-
->
->         -hpa
->
->
+Applied to for-next, thanks! I took the liberty to add Jean's Rev-by tag
+=66rom V2.
 
 
+--JYK4vJDZwFMowpUq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTyAQRAAoJEBQN5MwUoCm2If4P/R4MuLx1IgodRlrIQBiPrLQ+
+8HK0OjuJUYTOIEYB1PqvKIxpnbyVr+/A2fwphhutgKE4GZwPqyAsS5QO8c2FI+q3
+zJTooXnW76OMscrRtf30KLY4W50hhcWYtuOjgX0FK/AMpU1rVU/YRzXWrxDzjLTk
+fmmK81RKim0IgJnrx+cXryMnefmmGvb/elqdP+1Py0dLTKHIuVoIQhInSr7pcmSp
+Z/wGywUd12zyqHiq0kpYcpyteffv/Zq0pWPyb3XOETQKNSUYVR14eKgvNtJfm1dQ
+qVYcneRauRq9C+TfF9abxrbNvdZS9i6pFgEe6Z8eJLgIJKukV/1GylA0ioERyQ8t
+RgVlGHNWRNpehiLq4WnaF2/F51we/yBnZif8mHU4hbTjfLBIvM9FUrk16w4w4mmh
+XzMHzLzUDxn7q3YJbsxu9dddLCVv02yeci3wK1DUUIw2e1A4PrcwGUTfIjW52qjX
+9r4O97b0wrzpl/iwZnU68wEzZSLLw8r+rneLcbqYZ1WpS0Dbq17o58mg4vFlsBEo
+Ze8GUXiwtjp8gT5dwLiXeD3/U4q88h2zMw7C/sQVvldoSgQoP2Rtb9a75ywAiOQn
+DtfagQoqPrYQpkQ19afDealZDNKAFnRZgvXXg6cOhpx5CCdv4N6jC6YK2fk2VUKT
+6X4KjeGSNZ0dPxOVwsP5
+=Q+5b
+-----END PGP SIGNATURE-----
+
+--JYK4vJDZwFMowpUq--
