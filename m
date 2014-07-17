@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaGQNPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:15:54 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49859 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756027AbaGQNPw (ORCPT
+	id S932445AbaGQNQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:16:34 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:9175 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322AbaGQNQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:15:52 -0400
-X-Sasl-enc: APSCvVL1Z8f2JojiXvINRAVP6ZFtreq3Me7cAlzqhB+F 1405602945
-Message-ID: <1405602943.12194.26.camel@localhost>
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Date: Thu, 17 Jul 2014 15:15:43 +0200
-In-Reply-To: <20140717125207.GL1491@thunk.org>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-	 <1405594627.12194.9.camel@localhost> <20140717125207.GL1491@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jul 2014 09:16:32 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-85-53c7ccadd2b6
+Message-id: <53C7CC88.5040707@samsung.com>
+Date: Thu, 17 Jul 2014 15:15:52 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 1/3] ARM: EXYNOS: Move code from hotplug.c to platsmp.c
+References: <1405520417-15027-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1405520417-15027-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xy7przxwPNuhdb2KxccZ6VovXLwwt
+	ehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FmuP3GV34PRoae5h89i8pN6jb8sqRo/P
+	m+QCWKK4bFJSczLLUov07RK4MhrfvmQrOMBZsXjxe+YGxrfsXYwcHBICJhLbrzN3MXICmWIS
+	F+6tZ+ti5OIQEljKKHHn6TNWCOczo8SqNTfYQKp4BbQkOlt+gdksAqoSV7YuYQWx2QTUJD43
+	PAKL8wPVrGm6zgKyQFQgQuLxBSGIVkGJH5PvsYDMFBF4ySix9/AEMIdZYAqjRPOkpUwgVcIC
+	3hI7LiwGO0lIwF2io2k/O4jNKeAhcf38P0YQm1lAR2J/6zQ2CFteYvOat8wTGAVnIVkyC0nZ
+	LCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKExMDXHYxLj1kdYhTgYFTi4f3BdTxY
+	iDWxrLgy9xCjBAezkgjvti6gEG9KYmVValF+fFFpTmrxIUYmDk6pBkbXV/73vz9KkrNSdzOv
+	2nkhwVYrcP226sq/XBdPMHSzP5JdWadTzZXWHeLLcWlraaqNv6OU8ZWN+wTXL2tsmLd9w+03
+	rBX963W3LLroccP7upbjjiSbgj0r2DxDlzBs3zHR/BvX3a0bNdvr97CuuGhztd6yysKRacYS
+	llk3eyv+XvkU/rJDUk+JpTgj0VCLuag4EQAv914+XwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Do, 2014-07-17 at 08:52 -0400, Theodore Ts'o wrote:
-> On Thu, Jul 17, 2014 at 12:57:07PM +0200, Hannes Frederic Sowa wrote:
-> > 
-> > Btw. couldn't libressl etc. fall back to binary_sysctl
-> > kernel.random.uuid and seed with that as a last resort? We have it
-> > available for few more years.
+Hi Krzysztof,
+
+On 16.07.2014 16:20, Krzysztof Kozlowski wrote:
+> Cleanup a little the SMP/hotplug code for Exynos by:
+> 1. Moving completely all functions from hotplug.c into the platsmp.c;
+> 2. Deleting the hotplug.c file.
 > 
-> Yes, they could.  But trying to avoid more uses of binary_sysctl seems
-> to be a good thing, I think.  The other thing is that is that this
-> interface provides is the ability to block until the entropy pool is
-> initialized, which isn't a big deal for x86 systems, but might be
-> useful as a gentle forcing function to force ARM systems to figure out
-> good ways of making sure the entropy pools are initialized (i.e., by
-> actually providing !@#!@ cycle counter) without breaking userspace
-> compatibility --- since this is a new interface.
-
-I am not questioning this new interface - I like it - just wanted to
-mention there is already a safe fallback for LibreSSL in the way they
-already seem to do it in OpenBSD (via sysctl).
-
+> After recent cleanups (e.g. 75ad2ab28f0f "ARM: EXYNOS: use
+> v7_exit_coherency_flush macro for cache disabling") there was only CPU
+> power down related code in hotplug.c file. Keeping this file does not
+> give any benefits.
 > 
-> > > +	if (count > 256)
-> > > +		return -EINVAL;
-> > > +
-> > 
-> > Why this "arbitrary" limitation? Couldn't we just check for > SSIZE_MAX
-> > or to be more conservative to INT_MAX?
+> The commit only moves code around with one additional observable change:
+> the hotplug.c was compiled with custom CFLAGS (-march=armv7-a). These
+> CFLAGS are not necessary any more.
 > 
-> I'm not wedded to this limitation.  OpenBSD's getentropy(2) has an
-> architected arbitrary limit of 128 bytes.  I haven't made a final
-> decision if the right answer is to hard code some value, or make this
-> limit be configurable, or remote the limit entirely (which in practice
-> would be SSIZE_MAX or INT_MAX).
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  arch/arm/mach-exynos/Makefile  |  3 --
+>  arch/arm/mach-exynos/common.h  |  2 -
+>  arch/arm/mach-exynos/hotplug.c | 92 ------------------------------------------
+>  arch/arm/mach-exynos/platsmp.c | 74 +++++++++++++++++++++++++++++++++
+>  4 files changed, 74 insertions(+), 97 deletions(-)
+>  delete mode 100644 arch/arm/mach-exynos/hotplug.c
 > 
-> The main argument I can see for putting in a limit is to encourage the
-> "proper" use of the interface.  In practice, anything larger than 128
-> probably means the interface is getting misused, either due to a bug
-> or some other kind of oversight.
-> 
-> For example, when I started instrumenting /dev/urandom, I caught
-> Google Chrome pulling 4k out of /dev/urandom --- twice --- at startup
-> time.  It turns out it was the fault of the NSS library, which was
-> using fopen() to access /dev/urandom.  (Sigh.)
 
-In the end people would just recall getentropy in a loop and fetch 256
-bytes each time. I don't think the artificial limit does make any sense.
-I agree that this allows a potential misuse of the interface, but
-doesn't a warning in dmesg suffice?
+For this and remaining patches from this series:
 
-It also makes it easier to port applications from open("/dev/*random"),
-read(...) to getentropy() by reusing the same limits.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-I would vote for warning (at about 256 bytes) + no limit.
-
-Thanks,
-Hannes
-
-
+--
+Best regards,
+Tomasz
