@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaGQSnX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:43:23 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41840 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548AbaGQSnW convert rfc822-to-8bit (ORCPT
+	id S1752179AbaGQSs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:48:58 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:49452 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaGQSs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 14:43:22 -0400
-Message-ID: <53C81944.5080203@arm.com>
-Date: Thu, 17 Jul 2014 20:43:16 +0200
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 14:48:56 -0400
+X-Greylist: delayed 3139 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 14:48:56 EDT
 MIME-Version: 1.0
-To: Bruno Wolff III <bruno@wolff.to>
-CC: Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from caffcdd8d27ba78730d5540396ce72ad022aff2c
-References: <20140716145546.GA6922@wolff.to> <20140716151748.GC2460@hansolo.jdub.homelinux.org> <53C6CFCC.2050300@arm.com> <20140716195414.GA16401@wolff.to> <53C7084C.7090104@arm.com> <20140717030947.GA17889@wolff.to> <53C79013.1020808@arm.com> <20140717163627.GA2489@wolff.to>
-In-Reply-To: <20140717163627.GA2489@wolff.to>
-X-OriginalArrivalTime: 17 Jul 2014 18:43:17.0722 (UTC) FILETIME=[F97FBBA0:01CFA1EE]
-X-MC-Unique: 114071719432000701
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4454941956362c58e676610d3bf489f58c689d46.1405620944.git.luto@amacapital.net>
+References: <cover.1405620944.git.luto@amacapital.net>
+	<4454941956362c58e676610d3bf489f58c689d46.1405620944.git.luto@amacapital.net>
+Date: Thu, 17 Jul 2014 11:48:55 -0700
+X-Google-Sender-Auth: A-_WqoZsEYSk7U92OaTcgU9HnQ8
+Message-ID: <CAGXu5jJcwh9WYTOQQ1hznSm-UpSQN+OLUWWH4aNR3UD_snWu3A@mail.gmail.com>
+Subject: Re: [PATCH v4 5/5] x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        bsd@redhat.com, Andrew Honig <ahonig@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/14 18:36, Bruno Wolff III wrote:
-> I did a few quick boots this morning while taking a bunch of pictures. I have
-> gone through some of them this morning and found one that shows bug on
-> was triggered at 5850 which is from:
-> BUG_ON(!cpumask_empty(sched_group_cpus(sg)));
+On Thu, Jul 17, 2014 at 11:22 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> It's considerably better than any of the alternatives on KVM.
 >
-> You can see the JPEG at:
-> https://bugzilla.kernel.org/attachment.cgi?id=143331
+> Rather than reinventing all of the cpu feature query code, this fixes
+> native_cpuid to work in PIC objects.
 >
+> I haven't combined it with boot/cpuflags.c's cpuid implementation:
+> including asm/processor.h from boot/cpuflags.c results in a flood of
+> unrelated errors, and fixing it might be messy.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Many thanks for testing this, Bruno!
+This will be very nice to have under kvm!
 
-So the memory of the cpumask of some sched_group(s) in your system has 
-been altered between __visit_domain_allocation_hell()->__sdt_alloc() and 
-build_sched_groups().
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
-In the meantime, PeterZ has posted a patch which barfs when this happens 
-but also prints out the sched groups with the related cpus but also 
-includes the cpumask_clear so your machine would boot still fine.
+Thanks,
 
-If you could apply the patch:
+-Kees
 
-https://lkml.org/lkml/2014/7/17/288
-
-and then run it on your machine, that would give us more details, i.e. 
-the information on which sched_group(s) and in which sched domain level 
-(SMT and/or DIE) this issue occurs.
-
-
-Another thing which you could do is to boot with an extra 
-'earlyprintk=keep sched_debug' in your command line options with a build 
-containing the cpumask_clear() in build_sched_groups() and extract the 
-dmesg output of the scheduler-setup code:
-
-Example:
-
-[    0.119737] CPU0 attaching sched-domain:
-[    0.119740]  domain 0: span 0-1 level SIBLING
-[    0.119742]   groups: 0 (cpu_power = 588) 1 (cpu_power = 588)
-[    0.119745]   domain 1: span 0-3 level MC
-[    0.119747]    groups: 0-1 (cpu_power = 1176) 2-3 (cpu_power = 1176)
-[    0.119751] CPU1 attaching sched-domain:
-[    0.119752]  domain 0: span 0-1 level SIBLING
-[    0.119753]   groups: 1 (cpu_power = 588) 0 (cpu_power = 588)
-[    0.119756]   domain 1: span 0-3 level MC
-[    0.119757]    groups: 0-1 (cpu_power = 1176) 2-3 (cpu_power = 1176)
-[    0.119759] CPU2 attaching sched-domain:
-[    0.119760]  domain 0: span 2-3 level SIBLING
-[    0.119761]   groups: 2 (cpu_power = 588) 3 (cpu_power = 588)
-[    0.119764]   domain 1: span 0-3 level MC
-[    0.119765]    groups: 2-3 (cpu_power = 1176) 0-1 (cpu_power = 1176)
-[    0.119767] CPU3 attaching sched-domain:
-[    0.119768]  domain 0: span 2-3 level SIBLING
-[    0.119769]   groups: 3 (cpu_power = 588) 2 (cpu_power = 588)
-[    0.119772]   domain 1: span 0-3 level MC
-[    0.119773]    groups: 2-3 (cpu_power = 1176) 0-1 (cpu_power = 1176)
-
-
+-- 
+Kees Cook
+Chrome OS Security
