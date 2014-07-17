@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909AbaGQP10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:27:26 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:41705 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933704AbaGQP1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:27:21 -0400
-Date: Thu, 17 Jul 2014 17:27:23 +0200
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/16] i2c: i2c-at91: Drop class based scanning to
- improve bootup time
-Message-ID: <20140717152723.GF2323@ldesroches-Latitude-E6320>
-Mail-Followup-To: Wolfram Sang <wsa@the-dreams.de>,
-	linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-kernel@vger.kernel.org
-References: <1404992799-3705-1-git-send-email-wsa@the-dreams.de>
- <1404992799-3705-3-git-send-email-wsa@the-dreams.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1404992799-3705-3-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934403AbaGQP0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:26:23 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60067 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934224AbaGQP0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 11:26:15 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH v2 4/4] ARM: dts: qcom: Add PM8941 and PM8841 pinctrl nodes
+Date: Thu, 17 Jul 2014 18:25:48 +0300
+Message-Id: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
+References: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 01:46:22PM +0200, Wolfram Sang wrote:
-> This driver has been flagged to drop class based instantiation. The removal
-> improves boot-up time and is unneeded for embedded controllers. Users have been
-> warned to switch for some time now, so we can actually do the removal. Keep the
-> DEPRECATED flag, so the core can inform users that the behaviour finally
-> changed now. After another transition period, this flag can go, too.
-> 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Thanks
+Add nodes for PM8941 and PM8841 GPIO and MPP sub-functions.
 
-> ---
->  drivers/i2c/busses/i2c-at91.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index e95f9ba96790..7033e9166d1f 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -768,7 +768,7 @@ static int at91_twi_probe(struct platform_device *pdev)
->  	snprintf(dev->adapter.name, sizeof(dev->adapter.name), "AT91");
->  	i2c_set_adapdata(&dev->adapter, dev);
->  	dev->adapter.owner = THIS_MODULE;
-> -	dev->adapter.class = I2C_CLASS_HWMON | I2C_CLASS_DEPRECATED;
-> +	dev->adapter.class = I2C_CLASS_DEPRECATED;
->  	dev->adapter.algo = &at91_twi_algorithm;
->  	dev->adapter.dev.parent = dev->dev;
->  	dev->adapter.nr = pdev->id;
-> -- 
-> 2.0.0
-> 
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ arch/arm/boot/dts/qcom-msm8974.dtsi | 61 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index c7ae7ba..b0164f9 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -6,6 +6,8 @@
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/reset/qcom,gcc-msm8974.h>
+ #include <dt-bindings/spmi/spmi.h>
++#include <dt-bindings/pinctrl/qcom,pm8xxx-mpp.h>
++#include <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>
+ 
+ / {
+ 	model = "Qualcomm MSM8974";
+@@ -267,6 +269,33 @@
+ 					reg-names = "rtc", "alarm";
+ 					interrupts = <0x0 0x61 0x1 IRQ_TYPE_EDGE_RISING>;
+ 				};
++
++				gpios@c000 {
++					compatible = "qcom,pm8941-gpio";
++					reg = <0xc000>;
++					gpio-controller;
++					#gpio-cells = <2>;
++					label = "pm8941-gpio";
++					interrupts = <0 0xc0 0 0>, <0 0xc1 0 0>, <0 0xc2 0 0>, <0 0xc3 0 0>,
++						     <0 0xc4 0 0>, <0 0xc5 0 0>, <0 0xc6 0 0>, <0 0xc7 0 0>,
++						     <0 0xc8 0 0>, <0 0xc9 0 0>, <0 0xca 0 0>, <0 0xcb 0 0>,
++						     <0 0xcc 0 0>, <0 0xcd 0 0>, <0 0xce 0 0>, <0 0xcf 0 0>,
++						     <0 0xd0 0 0>, <0 0xd1 0 0>, <0 0xd2 0 0>, <0 0xd3 0 0>,
++						     <0 0xd4 0 0>, <0 0xd5 0 0>, <0 0xd6 0 0>, <0 0xd7 0 0>,
++						     <0 0xd8 0 0>, <0 0xd9 0 0>, <0 0xda 0 0>, <0 0xdb 0 0>,
++						     <0 0xdc 0 0>, <0 0xdd 0 0>, <0 0xde 0 0>, <0 0xdf 0 0>,
++						     <0 0xe0 0 0>, <0 0xe1 0 0>, <0 0xe2 0 0>, <0 0xe3 0 0>;
++				};
++
++				mpps@a000 {
++					compatible = "qcom,pm8941-mpp";
++					reg = <0xa000>;
++					gpio-controller;
++					#gpio-cells = <2>;
++					label = "pm8941-mpp";
++					interrupts = <0 0xa0 0 0>, <0 0xa1 0 0>, <0 0xa2 0 0>, <0 0xa3 0 0>,
++						     <0 0xa4 0 0>, <0 0xa5 0 0>, <0 0xa6 0 0>, <0 0xa7 0 0>;
++				};
+ 			};
+ 
+ 			usid1: pm8941@1 {
+@@ -281,6 +310,38 @@
+ 				reg = <0x4 SPMI_USID>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++
++				mpps@a000 {
++					compatible = "qcom,pm8841-mpp";
++					reg = <0xa000>;
++					gpio-controller;
++					#gpio-cells = <2>;
++					interrupts = <4 0xa0 0 0>, <4 0xa1 0 0>, <4 0xa2 0 0>, <4 0xa3 0 0>;
++
++					pinctrl-names = "default", "sleep";
++					pinctrl-0 = <&pm8841_default>;
++					pinctrl-1 = <&pm8841_sleep>;
++
++					pm8841_sleep: sleep {
++						gpio {
++							pins = "mpp1", "mpp2", "mpp3", "mpp4";
++							function = "gpio";
++
++							input-enable;
++
++							power-source = <PM8XXX_GPIO_VIN0>;
++							qcom,pull-up = <PM8XXX_GPIO_STRENGTH_NO>;
++							qcom,strength = <PM8XXX_GPIO_PULL_UP_30>;
++						};
++					};
++
++					pm8841_default: default {
++						ain {
++							pins = "mpp1", "mpp2", "mpp3", "mpp4";
++							function = "ain";
++						};
++					};
++				};
+ 			};
+ 
+ 			usid5: pm8841@5 {
+-- 
+1.8.3.2
+
