@@ -1,130 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955AbaGQWii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 18:38:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106AbaGQWig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 18:38:36 -0400
-Date: Thu, 17 Jul 2014 18:38:24 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Guillaume Morin <guillaume@morinfr.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Naoya Horiguchi <nao.horiguchi@gmail.com>,
-        linux-mm@kvack.org
-Subject: [PATCH] mm: hugetlb: fix copy_hugetlb_page_range() (Re: [BUG] new
- copy_hugetlb_page_range() causing crashes)
-Message-ID: <20140717223824.GA828@nhori.bos.redhat.com>
-References: <019768ac467043a4aaea3e455cb74db7@BPXC18GP.gisp.nec.co.jp>
- <FC3CA273EA98D94B96901B237F5F506BB61DC0@irvmail101.necam.prv>
- <20140717201203.GA23591@bender.morinfr.org>
- <20140717213332.GA20284@nhori.bos.redhat.com>
- <20140717215936.GA28949@bender.morinfr.org>
+	id S1758012AbaGQWmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 18:42:31 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:49260 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896AbaGQWma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 18:42:30 -0400
+Message-ID: <53C8514F.4040606@collabora.co.uk>
+Date: Fri, 18 Jul 2014 00:42:23 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717215936.GA28949@bender.morinfr.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: Doug Anderson <dianders@chromium.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        sjg@chromium.org, olof@lixom.net, ch.naveen@samsung.com,
+        swarren@wwwdotorg.org, khilman@linaro.org, ajaynumb@gmail.com,
+        rahul.sharma@samsung.com, tushar.b@samsung.com, ben-linux@fluff.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: dts: Add cros_ec to exynos5420-peach-pit and
+ exynos5800-peach-pi
+References: <1403627332-4688-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1403627332-4688-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-# CCed Andrew, and linux-mm 
+Hello Kukjin,
 
-On Thu, Jul 17, 2014 at 11:59:36PM +0200, Guillaume Morin wrote:
-> On 17 Jul 17:33, Naoya Horiguchi wrote:
-...
-> > And it seems that this also happens on v3.16-rc5.
-> > So it might be an upstream bug, not a stable-specific matter.
+On 06/24/2014 06:28 PM, Doug Anderson wrote:
+> This adds cros_ec to exynos5420-peach-pit and exynos5800-peach-pi,
+> including:
+> * The keyboard
+> * The i2c tunnel
+> * The tps65090 under the i2c tunnel
+> * The battery under the i2c tunnel
 > 
-> That's my understanding as well. I just reported it for 3.4 and 3.14
-> since these were the kernels I could easily try my original test with.
-
-OK. I've checked the fix you suggested below on mainline, and
-it passed our test program.
-
-> > It looks strange to me that the problem is gone by removing the commit
-> > 4a705fef98 (although I confirmed it is,) because the kernel's behavior
-> > shouldn't change unless (is_hugetlb_entry_migration(entry) ||
-> > is_hugetlb_entry_hwpoisoned(entry)) is true. And I checked with systemtap
-> > that both these check returned false in the above test program.
-> > So I'm wondering why the commit makes difference for this test program.
+> To add extra motivation, it should be noted that tps65090 is one of
+> the things needed to get display-related FETs turned on for pit and
+> pi.
 > 
-> I don't know why I am just thinking about that now.  Isn't this the fact
-> that your patch moved the huge_ptep_get() before
-> huge_ptep_set_wrprotect() in the pte_present() cow case?
-
-Ah, right. I was really blind :(
-
+> Note that this relies on a few outstanding changes:
+> * Needs (spi: s3c64xx: fix broken "cs_gpios" usage in the driver) and
+>   (spi: s3c64xx: for DT platofrms always get the chipselect info from
+>   DT node) to work properly and match the documented bindings.  See
+>   <https://patchwork.kernel.org/patch/4346701/> and
+>   <https://patchwork.kernel.org/patch/4346711/>
 > 
-> Actually, I've just tried to re-add the huge_ptep_get call for that
-> case and it's fixing the problem for me...
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Tested-by: Tushar Behera <tushar.b@samsung.com>
 > 
-> Hmm, want a patch?
 
-Thanks, but it's just a oneliner, so I wrote the one.
+Mark Brown as already applied the SPI DT binding fix from Naveen [0] which was
+the dependency for this patch and he said that will try to send the whole series
+to Torvalds before the 3.16-rc cycle ends.
 
-Naoya Horiguchi
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Thu, 17 Jul 2014 18:11:22 -0400
-Subject: [PATCH] mm: hugetlb: fix copy_hugetlb_page_range()
+So I think that it's safe now if you want to pick this patch.
 
-commit 4a705fef98 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry") changed the order of huge_ptep_set_wrprotect()
-and huge_ptep_get(), which leads to break some workload like hugepage-backed
-heap allocation via libhugetlbfs. This patch fixes it.
+Thanks a lot!
 
-The test program for the problem is shown below:
+Best regards,
+Javier
 
-  $ cat heap.c
-  #include <unistd.h>
-  #include <stdlib.h>
-  #include <string.h>
-
-  #define HPS 0x200000
-
-  int main() {
-  	int i;
-  	char *p = malloc(HPS);
-  	memset(p, '1', HPS);
-  	for (i = 0; i < 5; i++) {
-  		if (!fork()) {
-  			memset(p, '2', HPS);
-  			p = malloc(HPS);
-  			memset(p, '3', HPS);
-  			free(p);
-  			return 0;
-  		}
-  	}
-  	sleep(1);
-  	free(p);
-  	return 0;
-  }
-
-  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
-
-Reported-by: Guillaume Morin <guillaume@morinfr.org>
-Suggested-by: Guillaume Morin <guillaume@morinfr.org>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org
----
- mm/hugetlb.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index a8d4155eb019..7263c770e9b3 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2597,6 +2597,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
-+			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
--- 
-1.9.3
-
+[0]:
+https://git.kernel.org/cgit/linux/kernel/git/broonie/spi.git/commit/?h=for-next&id=306972cedfdedc662dd8e32a6397d0e29f2ac90e
