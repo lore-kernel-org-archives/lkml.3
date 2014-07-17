@@ -1,114 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405AbaGQLc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:32:56 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59018 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856AbaGQLcv (ORCPT
+	id S1757432AbaGQLex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:34:53 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:58594 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882AbaGQLev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:32:51 -0400
-Message-ID: <53C7B459.7020604@gmail.com>
-Date: Thu, 17 Jul 2014 19:32:41 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Arnd Bergmann <arnd@arndb.de>
-CC: Guenter Roeck <linux@roeck-us.net>, Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+	Thu, 17 Jul 2014 07:34:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Chen <peter.chen@freescale.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C796E1.8080708@nod.at> <8453588.VVyODXRso0@wuerfel> <53C7AC6F.1070001@nod.at>
-In-Reply-To: <53C7AC6F.1070001@nod.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+        "balbi@ti.com" <balbi@ti.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Date: Thu, 17 Jul 2014 13:34:38 +0200
+Message-ID: <14435027.UvktXyQjy4@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140717111912.GA16025@shlinux1.ap.freescale.net>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com> <5456516.0fVZeXjF8k@wuerfel> <20140717111912.GA16025@shlinux1.ap.freescale.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+axIy9ukQUHE7iAz/NNi3U9U9nQXcMDzfrB4rrq7OFx
+ WoZ5OJ2OuF/6lmLNfla4zONkfiQW8rvhrCS2VGxAqwdMK9Xwof
+ qS34O1tb9ETdMGGOE0h690xUJHVCUu6SME/Sjd2u12p1IDJjL3
+ FudYMUFFaI7Ie946zuoSIq5dqjf9ezLt0b9rJsKW3SEtU2fmUg
+ de0pM/pO3pfjXEDIRmfwrHFG7XAd5FFF1+uPwpoR1p/L4yamwz
+ edIA2fZAZqsH2GMQdQSGhdoJMgIiq8Ayb8aBLNdTeat7+9Sp3Y
+ nEzdWelkoolYutfqRweOx9ctcdvb1RYY+2ma1+a1BY1k1nWPjy
+ kEaoOSxgcOW/nXp5doCw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 07/17/2014 06:58 PM, Richard Weinberger wrote:
-> Am 17.07.2014 12:28, schrieb Arnd Bergmann:
->> On Thursday 17 July 2014 11:26:57 Richard Weinberger wrote:
->>> Am 17.07.2014 11:20, schrieb Arnd Bergmann:
->>>> On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
->>>>>                                          gfp_t gfp_mask, unsigned int order);
->>>>>  extern void devm_free_pages(struct device *dev, unsigned long addr);
->>>>>  
->>>>> +#ifdef CONFIG_HAS_IOMEM
->>>>>  void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
->>>>> +#elif defined(CONFIG_COMPILE_TEST)
->>>>> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
->>>>> +                                               struct resource *res)
->>>>> +{
->>>>> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
->>>>> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
->>>>> +}
->>>>> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
->>>>>  
->>>>>  /* allows to add/remove a custom action to devres stack */
->>>>
->>>> To be honest, I think it's a bad idea to introduce wrappers functions
->>>> that are only available when CONFIG_COMPILE_TEST is set.
->>>>
->>>> COMPILE_TEST is a great tool in general, but it has its limits.
->>>> In particular, the case for !CONFIG_IOMEM is completely obscure
->>>> and we won't find any bugs by allowing more drivers to be built
->>>> in those configurations, but attempting to do it would cause
->>>> endless churn by changing each instance of 'depends on HAS_IOMEM'
->>>> to 'depends on HAS_IOMEM || COMPILE_TEST'.
->>>>
->>>> Note that s390 no has gained support for IOMEM, tile has it most
->>>> of the time (when PCI is enabled, so you get it in half the
->>>> test builds already), score should set HAS_IOMEM and doesn't
->>>> even have public compilers, and uml doesn't even compile in
->>>> latest mainline. Nothing else ever sets NO_IOMEM.
->>>
->>> Huh? UML (v3.16-rc5-143-gb6603fe) builds fine here. What build issue are you facing?
->>
->> This is what I got upon trying earlier. I have not attempted to look into
->> why this is happening. Note this is on linux-next from yesterday,
->> not mainline as I incorrectly stated above.
->>
->> In file included from ../arch/um/include/asm/fixmap.h:58:0,
->>                  from ../arch/um/include/asm/pgtable.h:11,
->>                  from ../include/linux/mm.h:51,
->>                  from ../kernel/uid16.c:6:
->> ../include/asm-generic/fixmap.h: In function 'fix_to_virt':
->> ../include/asm-generic/fixmap.h:31:2: error: size of unnamed array is negative
->>   BUILD_BUG_ON(idx >= __end_of_fixed_addresses);
+On Thursday 17 July 2014 19:19:15 Peter Chen wrote:
 > 
-> So, this is next-20140716?
-> I don't see the fixmap issue you're reporting, also not on the most recent next.
+> Currently, we are designing a generic driver, we don't know what's the
+> hardware architecture, we are trying to find a solution how to set
+> dma mask for all possible devices which will use this driver, Antoine's
+> this patch is trying to cover this feature.
 > 
-> All I see is the known ext4 issue with CONFIG_SMP=n:
+> For example, 
 > 
-> fs/ext4/super.c: In function ‘ext4_commit_super’:
-> fs/ext4/super.c:4547:41: error: ‘struct percpu_counter’ has no member named ‘counters’
->   if (EXT4_SB(sb)->s_freeclusters_counter.counters)
->                                          ^
-> fs/ext4/super.c:4551:39: error: ‘struct percpu_counter’ has no member named ‘counters’
->   if (EXT4_SB(sb)->s_freeinodes_counter.counters)
+> Marvell Berlin doesn't need to set dma mask specific.
+> http://marc.info/?l=linux-arm-kernel&m=140205228507045&w=2
+> http://www.spinics.net/lists/linux-usb/msg110598.html
 > 
+> Xilinx zynq needs to set dma mask as 0xFFFFFFF0
+> http://marc.info/?l=linux-usb&m=140384129921706&w=2
+> 
+> FSL i.mx needs to set dma mask as DMA_BIT_MASK(32)
+> https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/tree/drivers/usb/chipidea/ci_hdrc_imx.c?h=usb-next
 
-Yeah, and I have notified to ext4 related maintainer, yesterday, and he
-has already send fix patch for it, I guess it will be integrated into
-main line soon.
+Ok, I see now. I think we can safely drop it completely then:
 
+- Berlin was only recently added and doesn't need to set the
+  mask because the common code handles it just fine now.
 
-Thanks.
--- 
-Chen Gang
+- i.mx was added earlier, at a time where it was still necessary
 
-Open, share, and attitude like air, water, and life which God blessed
+- zynq just made a mistake, 0xFFFFFFF0 was never a valid mask
+  and just happened to work by accident.
+
+In summary, the 32-bit default mask will work on all of them,
+and we need no special code or DT properties for it.
+
+	Arnd
