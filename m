@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611AbaGQGhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:37:53 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57013 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbaGQGhu (ORCPT
+	id S1753726AbaGQGp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:45:26 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61771 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaGQGpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:37:50 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53C76F3C.6090104@roeck-us.net>
-Date: Wed, 16 Jul 2014 23:37:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 02:45:23 -0400
+Message-ID: <53c77101.0374440a.664d.46e2@mx.google.com>
+X-Google-Original-Message-ID: <000a01cfa18a$ad91b540$08b51fc0$@dulixin@gmail.com>
+From: "Dudley Du" <dudley.dulixin@gmail.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 0/14] input: cyapa: re-architecture driver to support multi-trackpads in one driver
+Date: Thu, 17 Jul 2014 14:45:09 +0800
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] gpio: Add support for GPIOF_ACTIVE_LOW to gpio_request_one
-References: <1405552260-30511-1-git-send-email-linux@roeck-us.net> <CAAVeFuLtUpKKVWAvJ-bw_b36jYFhrzaWeswnJKyehbwn=6y+4Q@mail.gmail.com>
-In-Reply-To: <CAAVeFuLtUpKKVWAvJ-bw_b36jYFhrzaWeswnJKyehbwn=6y+4Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+	charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+hiqcggqGLJSASR1uLi5h07B+kvg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 11:09 PM, Alexandre Courbot wrote:
-> On Thu, Jul 17, 2014 at 8:11 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> The gpio include file and the gpio documentation declare and document
->> GPIOF_ACTIVE_LOW as one of the flags to be passed to gpio_request_one
->> and related functions. However, the flag is not evaluated or used.
->>
->> Check the flag in gpio_request_one and set the gpio internal flag
->> FLAG_ACTIVE_LOW if it is set.
->
-> What is the point since the integer GPIO API has no clue of the
-> active-low status of a GPIO? It is only used by the gpiod and sysfs
-> interfaces.
->
+This patch set is made based on kernel 3.16.0-rc5.
+It's aimed to re-architecture the cyapa driver to support
+old gen3 trackpad device and new gen5 trackpad device in one
+cyapa driver for easily productions support based on
+customers' requirements, and add sysfs functions and interfaces
+supported that required by users and customers.
+Because the earlier gen3 and the latest gen5 trackpad devies using
+two different chipsets, and have different protocol and interfaces.
+If supported these two trackpad devices in two different drivers, then
+it will be difficult to manage productions and later firmware updates.
+it will cause customer don't know which one to use and update
+because these two trackpad devices have been used and integrated
+in same one productions at a time, so must to support these two trackpad
+devices in same on driver.
 
-One can use gpio_request_one() to export a gpio pin to user space from
-the kernel. That code path does use the flag, as you point out yourself above.
+Compare to v3, it has below changes:
+1) Eliminate irq-state-remembering logic, remove irq help functions;
+2) Remove state sync help functions instead of mutex_lock/mutex_unlock;
+3) Fix comments and charaters errors and not consistent issues.
+4) Fix other issues that pointed out in the review.
 
-One could also argue that the integer gpio API _should_ support this as well,
-but that is a different question.
 
-Guenter
+The new architecture is made of:
+cyapa.c - the core of the architecture, supply interfaces and
+functions to system and read trackpad devices.
+cyapa_gen3.c - functions support for gen3 trackpad devices,
+cyapa_gen5.c - functions support for gen5 trackpad devices.
 
->>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>   drivers/gpio/gpiolib.c | 3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> index 2ebc907..43d9e34 100644
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -1842,6 +1842,9 @@ int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
->>          if (flags & GPIOF_OPEN_SOURCE)
->>                  set_bit(FLAG_OPEN_SOURCE, &desc->flags);
->>
->> +       if (flags & GPIOF_ACTIVE_LOW)
->> +               set_bit(FLAG_ACTIVE_LOW, &desc->flags);
->> +
->>          if (flags & GPIOF_DIR_IN)
->>                  err = gpiod_direction_input(desc);
->>          else
->> --
->> 1.9.1
->>
->
->
+Beside this introduction patch, it has 14 patches listed as below.
+For these patches each one is patched based on previous one.
+
+patch 1/14: re-architecture cyapa driver with core functions,
+and applying the device detecting function in async thread to speed
+up system boot time.
+
+patch 2/14: add cyapa driver power management interfaces support.
+
+patch 3/14: add cyapa driver runtime power management interfaces support.
+
+patch 4/14: add cyapa key function interfaces in sysfs system.
+Including read firmware version, get production ID, read baseline,
+re-calibrate trackpad baselines and do trackpad firmware update.
+
+patch 5/14: add read firmware image and read raw trackpad device'
+sensors' raw data interface in debugfs system.
+
+patch 6/14: add gen3 trackpad device basic functions support.
+
+patch 7/14: add gen3 trackpad device firmware update function support.
+
+patch 8/14: add gen3 trackpad device report baseline and do force
+re-calibrate functions support.
+
+patch 9/14: add gen3 trackpad device read firmware image function support.
+
+patch 10/14: add gen5 trackpad device basic functions support.
+
+patch 11/14: add gen5 trackpad device firmware update function support.
+
+patch 12/14: add gen5 trackpad device report baseline and do force
+re-calibrate functions support.
+
+patch 13/14: add gen5 trackpad device read firmware image and report
+sensors' raw data values functions support.
+
+patch 14/14: add function to monitor LID close event to off trackpad device.
 
