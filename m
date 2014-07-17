@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842AbaGQRCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:02:30 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:59658 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647AbaGQRC1 (ORCPT
+	id S1757876AbaGQRD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:03:28 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:34428 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755226AbaGQRD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:02:27 -0400
-X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 13:02:27 EDT
-MIME-Version: 1.0
-In-Reply-To: <1405608520-5644-3-git-send-email-hechtb@gmail.com>
-References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
-	<1405608520-5644-3-git-send-email-hechtb@gmail.com>
-Date: Thu, 17 Jul 2014 18:54:10 +0200
-Message-ID: <CABYn4swJfYhTbXA0zYG4Mncm2xSGjL8CQPyeEB_piQWE+wUyTA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] i2c: exynos5: Remove suspension check
-From: Bastian Hecht <hechtb@gmail.com>
-To: linux-i2c@vger.kernel.org
-Cc: Linux-SH <linux-sh@vger.kernel.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Bastian Hecht <hechtb@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Naveen Krishna Ch <ch.naveen@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Masanari Iida <standby24x7@gmail.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jul 2014 13:03:27 -0400
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH v2] mm/highmem: make kmap cache coloring aware
+Date: Thu, 17 Jul 2014 21:03:18 +0400
+Message-Id: <1405616598-14798-1-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-17 16:48 GMT+02:00 Bastian Hecht <hechtb@gmail.com>:
-> We now take care of suspension in the i2c core code. So we can remove this
-> check here.
->
-> Signed-off-by: Bastian Hecht <hechtb@gmail.com>
-> ---
-> same as v1
->
->  drivers/i2c/busses/i2c-exynos5.c | 20 +-------------------
->  1 file changed, 1 insertion(+), 19 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
-> index 63d2292..a80cf28 100644
-> --- a/drivers/i2c/busses/i2c-exynos5.c
-> +++ b/drivers/i2c/busses/i2c-exynos5.c
-> @@ -145,7 +145,6 @@
->
->  struct exynos5_i2c {
->         struct i2c_adapter      adap;
-> -       unsigned int            suspended:1;
->
->         struct i2c_msg          *msg;
->         struct completion       msg_complete;
-> @@ -610,11 +609,6 @@ static int exynos5_i2c_xfer(struct i2c_adapter *adap,
->         struct exynos5_i2c *i2c = adap->algo_data;
->         int i = 0, ret = 0, stop = 0;
->
-> -       if (i2c->suspended) {
-> -               dev_err(i2c->dev, "HS-I2C is not initialized.\n");
-> -               return -EIO;
-> -       }
-> -
->         clk_prepare_enable(i2c->clk);
->
->         for (i = 0; i < num; i++, msgs++) {
-> @@ -757,16 +751,6 @@ static int exynos5_i2c_remove(struct platform_device *pdev)
->  }
->
->  #ifdef CONFIG_PM_SLEEP
-> -static int exynos5_i2c_suspend_noirq(struct device *dev)
-> -{
-> -       struct platform_device *pdev = to_platform_device(dev);
-> -       struct exynos5_i2c *i2c = platform_get_drvdata(pdev);
-> -
-> -       i2c->suspended = 1;
-> -
-> -       return 0;
-> -}
-> -
->  static int exynos5_i2c_resume_noirq(struct device *dev)
->  {
->         struct platform_device *pdev = to_platform_device(dev);
-> @@ -783,14 +767,12 @@ static int exynos5_i2c_resume_noirq(struct device *dev)
->
->         exynos5_i2c_init(i2c);
->         clk_disable_unprepare(i2c->clk);
-> -       i2c->suspended = 0;
->
->         return 0;
->  }
->  #endif
->
-> -static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_suspend_noirq,
-> -                        exynos5_i2c_resume_noirq);
-> +static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_resume_noirq);
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 
-This should be
+Provide hooks that allow architectures with aliasing cache to align
+mapping address of high pages according to their color. Such architectures
+may enforce similar coloring of low- and high-memory page mappings and
+reuse existing cache management functions to support highmem.
 
-+static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, NULL,
-exynos5_i2c_resume_noirq);
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+[ Max: extract architecture-independent part of the original patch, clean
+  up checkpatch and build warnings. ]
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+---
+Changes v1->v2:
+- fix description
 
-And this is v2, not v3.
+ mm/highmem.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
->  static struct platform_driver exynos5_i2c_driver = {
->         .probe          = exynos5_i2c_probe,
-> --
-> 1.9.1
->
+diff --git a/mm/highmem.c b/mm/highmem.c
+index b32b70c..6898a8b 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -44,6 +44,14 @@ DEFINE_PER_CPU(int, __kmap_atomic_idx);
+  */
+ #ifdef CONFIG_HIGHMEM
+ 
++#ifndef ARCH_PKMAP_COLORING
++#define set_pkmap_color(pg, cl)		/* */
++#define get_last_pkmap_nr(p, cl)	(p)
++#define get_next_pkmap_nr(p, cl)	(((p) + 1) & LAST_PKMAP_MASK)
++#define is_no_more_pkmaps(p, cl)	(!(p))
++#define get_next_pkmap_counter(c, cl)	((c) - 1)
++#endif
++
+ unsigned long totalhigh_pages __read_mostly;
+ EXPORT_SYMBOL(totalhigh_pages);
+ 
+@@ -161,19 +169,24 @@ static inline unsigned long map_new_virtual(struct page *page)
+ {
+ 	unsigned long vaddr;
+ 	int count;
++	int color __maybe_unused;
++
++	set_pkmap_color(page, color);
++	last_pkmap_nr = get_last_pkmap_nr(last_pkmap_nr, color);
+ 
+ start:
+ 	count = LAST_PKMAP;
+ 	/* Find an empty entry */
+ 	for (;;) {
+-		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
+-		if (!last_pkmap_nr) {
++		last_pkmap_nr = get_next_pkmap_nr(last_pkmap_nr, color);
++		if (is_no_more_pkmaps(last_pkmap_nr, color)) {
+ 			flush_all_zero_pkmaps();
+ 			count = LAST_PKMAP;
+ 		}
+ 		if (!pkmap_count[last_pkmap_nr])
+ 			break;	/* Found a usable entry */
+-		if (--count)
++		count = get_next_pkmap_counter(count, color);
++		if (count > 0)
+ 			continue;
+ 
+ 		/*
+-- 
+1.8.1.4
+
