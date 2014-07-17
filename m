@@ -1,156 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768AbaGQHdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 03:33:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40120 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaGQHdk (ORCPT
+	id S1754849AbaGQHeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 03:34:08 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:62629 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664AbaGQHeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 03:33:40 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53C77C2B.1030000@jp.fujitsu.com>
-Date: Thu, 17 Jul 2014 16:32:59 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 03:34:04 -0400
 MIME-Version: 1.0
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>, <bp@alien8.de>,
-        <gong.chen@linux.intel.com>, <tony.luck@intel.com>
-CC: <x86@kernel.org>, <toshi.kani@hp.com>, <imammedo@redhat.com>,
-        <huawei.libin@huawei.com>, <paul.gortmaker@windriver.com>,
-        <linux-kernel@vger.kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
-        <umgwanakikbuti@gmail.com>, <peterz@infradead.org>
-Subject: [PATCH v3] x86,cpu-hotplug: assign same CPU number to readded CPU
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+In-Reply-To: <53C6A3CB.5060005@ti.com>
+References: <1405071167-14503-1-git-send-email-jaswinder.singh@linaro.org>
+	<5461658.P0nNPHkj0L@wuerfel>
+	<CAJe_Zhdtzhv=1QfhCAu6G_nq0VqW9v6TvgHSJe9VmgJQwo0U3Q@mail.gmail.com>
+	<5214160.a78RDYzY5T@wuerfel>
+	<CAJe_Zhf8oH-MPg6HtFDoT6_LZxJzy3ff85-GsWcENQftNiJMxw@mail.gmail.com>
+	<53C6A3CB.5060005@ti.com>
+Date: Thu, 17 Jul 2014 12:55:41 +0530
+Message-ID: <CAJe_Zhdj_AyTi+b28k4etF3+eqObdfwSv5FhBZv+YyD6CTfmMA@mail.gmail.com>
+Subject: Re: [PATCHv8 2/2] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <sudeep.holla@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "Mollie.Wu@tw.fujitsu.com" <Mollie.Wu@tw.fujitsu.com>,
+        "t.takinishi@jp.fujitsu.com" <t.takinishi@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-llc_shared_map is not cleared even if CPU is offline or hot removed.
-So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
-the mask has wrong value. The mask is used by CSF schduler to create
-sched_domain. So it breaks CFS scheduler.
+On 16 July 2014 21:39, Suman Anna <s-anna@ti.com> wrote:
+> Hi,
+>
+> On 07/16/2014 09:18 AM, Jassi Brar wrote:
+>> On 16 July 2014 19:38, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> On Wednesday 16 July 2014 18:42:22 Jassi Brar wrote:
+>>>> On 16 July 2014 18:39, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>> On Wednesday 16 July 2014 18:35:33 Jassi Brar wrote:
+>>>>>> On 16 July 2014 18:15, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>>> On Wednesday 16 July 2014 18:07:04 Jassi Brar wrote:
+>>>>>>>> On 16 July 2014 15:46, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>>>>> On Wednesday 16 July 2014 10:40:19 Sudeep Holla wrote:
+>>>>>>>>>>> +
+>>>>>>>>>>> +Required property:
+>>>>>>>>>>> +- mbox: List of phandle and mailbox channel specifier.
+>>>>>>>>>>> +
+>>>>>>>>>>> +- mbox-names: List of identifier strings for each mailbox channel
+>>>>>>>>>>> +               required by the client.
+>>>>>>>>>>> +
+>>>>>>>>>>
+>>>>>>>>>> IMO the mailbox names are more associated with the controller channels/
+>>>>>>>>>> mailbox rather than the clients using it. Does it make sense to move
+>>>>>>>>>> this under controller. It also avoid each client replicating the names.
+>>>>>>>>>
+>>>>>>>>> I think it would be best to just make the mbox-names property optional,
+>>>>>>>>> like we have for other subsystems.
+>>>>>>>>>
+>>>>>>>> A very similar subsystem - DMAEngine also has 'dma-names' as a
+>>>>>>>> required property.
+>>>>>>>>
+>>>>>>>> If a client is assigned only 1 mbox in DT, we can do without
+>>>>>>>> mbox-names. But I am not sure what to do if a client needs two or more
+>>>>>>>> differently capable mboxes? Simply allocating in order of mbox request
+>>>>>>>> doesn't seem very robust.
+>>>>>>>
+>>>>>>> Traditionally, these things (regs, interrupts, ...) are just accessed
+>>>>>>> by index. The reason why dmaengine requires the name is that some machines
+>>>>>>> can use multiple DMA engine devices attached to the same request line,
+>>>>>>> so the dmaengine subsystem can pick any of them that has a matching
+>>>>>>> name.
+>>>>>> And also, I think, when a client needs 2 different dma channels, say
+>>>>>> for RX and TX each. The api can't assign the first channel specified
+>>>>>> in 'dmas' property to the first channel request that comes to it,
+>>>>>> unless we assume client driver always requests dma channels in the
+>>>>>> order written in its DT node.  And this is the main reason I see for
+>>>>>> having mbox-names property.
+>>>>>
+>>>>> Most subsystems require passing an explicit index in this case.
+>>>>>
+>>>>>>   If we make mbox-names optional, do we assume client driver must
+>>>>>> request mbox in the order specified in its DT node?
+>>>>>
+>>>>> Correct.
+>>>>>
+>>>> OK. So how about we drop mbox-names altogether and expect client
+>>>> driver to simply provide an index of the mbox needed?
+>>>
+>>> That would be fine with me, but I think a lot of people like
+>>> the idea of identifying things by name, and are used to that
+>>> from the other subsystems.
+>>>
+>>> Maybe you can leave the mbox-names property defined as 'optional'
+>>> in the generic mbox binding but remove the code in Linux? That way
+>>> we can always put it back at a later point without changing the
+>>> binding in an incompatible way.
+>
+> I like this too, especially given that the framework uses this only to
+> retrieve the index. The mbox_client structure currently requires the
+> chan_name to be filled in, which means both the client driver and the
+> framework end up having to parse the property.
+>
+Yeah let us discourage the use of mbox-names.
 
-Here is a example on my system.
-My system has 4 sockets and each socket has 15 cores and HT is enabled.
-In this case, each core of sockes is numbered as follows:
+> While we are at this, how about we change the property name from "mbox"
+> to a plural-form "mboxes" to be inline with gpios, dmas etc.
+>
+OK, will change mbox to mboxes.
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-44, 90-104
-Socket#3 | 45-59, 105-119
-
-Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-It means that last level cache of Socket#2 is shared with
-CPU#30-44 and 90-104.
-
-When hot-removing socket#2 and #3, each core of sockets is numbered
-as follows:
-
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-
-But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-having 0x3fff80000001fffc0000000.
-
-After that, when hot-adding socket#2 and #3, each core of sockets is
-numbered as follows:
-
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-59
-Socket#3 | 90-119
-
-Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-It means that last level cache of Socket#2 is shared with CPU#30-59
-and 90-104. So the mask has wrong value.
-
-At first, I cleared hot-removed CPU number's bit from llc_shared_map
-when hot removing CPU. But Borislav suggested that the problem will
-disappear if readded CPU is assigned same CPU number. And llc_shared_map
-must not be changed.
-
-So the patch assigns same CPU number to readded CPU by linking CPU
-number to APIC ID. And by the patch, the problem disappers.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Suggested-by: Borislav Petkov <bp@alien8.de>
----
-v2: change cpuid to cpunum
-v3: fix Borislav's email address of Suggested-by
-     fix typo (ACPI ID to APIC ID)
----
-  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
-  1 file changed, 32 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index ad28db7..5dc3e50 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -220,6 +220,23 @@ static void apic_pm_activate(void);
-  static unsigned long apic_phys;
-
-  /*
-+ * Bind APIC ID to Logical CPU number
-+ * Logical CPU number to APIC ID does not change by this array
-+ * even if CPU is hotplugged. So don't clear the array even if
-+ * CPU is hot-removed
-+ */
-+static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
-+	[0 ... MAX_LOCAL_APIC-1] = -1,
-+};
-+
-+/*
-+ * Represent Logical CPU number bound to APIC ID
-+ * Don't clear a bit even if CPU is hot-removed
-+ */
-+static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
-+static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
-+
-+/*
-   * Get the LAPIC version
-   */
-  static inline int lapic_get_version(void)
-@@ -2122,6 +2139,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
-  	apic_write(APIC_LVT1, value);
-  }
-
-+static int get_cpunum(int apicid)
-+{
-+	int cpu;
-+
-+	cpu = apicid_to_cpunum[apicid];
-+	if (cpu < 0)
-+		cpu = cpumask_next_zero(-1, cpu_used_mask);
-+
-+	return cpu;
-+}
-+
-  int generic_processor_info(int apicid, int version)
-  {
-  	int cpu, max = nr_cpu_ids;
-@@ -2199,7 +2227,9 @@ int generic_processor_info(int apicid, int version)
-  		 */
-  		cpu = 0;
-  	} else
--		cpu = cpumask_next_zero(-1, cpu_present_mask);
-+		cpu = get_cpunum(apicid);
-+
-+	apicid_to_cpunum[apicid] = cpu;
-
-  	/*
-  	 * Validate version
-@@ -2228,6 +2258,7 @@ int generic_processor_info(int apicid, int version)
-  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
-  		apic->x86_32_early_logical_apicid(cpu);
-  #endif
-+	cpumask_set_cpu(cpu, cpu_used_mask);
-  	set_cpu_possible(cpu, true);
-  	set_cpu_present(cpu, true);
-
-
+-jassi
