@@ -1,187 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878AbaGQLVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:21:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33792 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698AbaGQLVa (ORCPT
+	id S1757026AbaGQLX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:23:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:26591 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756881AbaGQLXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:21:30 -0400
-Message-ID: <53C7A4F7.7010709@gmail.com>
-Date: Thu, 17 Jul 2014 13:27:03 +0300
-From: Timofey Titovets <nefelim4ag@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>, minchan@kernel.org
-CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] zram: auto add/del devices on demand
-References: <53C7982F.8020205@gmail.com> <53C7A0C1.60600@redhat.com>
-In-Reply-To: <53C7A0C1.60600@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jul 2014 07:23:25 -0400
+X-AuditID: cbfee690-b7fb56d000003439-bb-53c7b22aee57
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
+        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org,
+        jic23@kernel.org
+Subject: [PATCH 0/4 v2] iio: exynos-adc: use syscon instead of ioremap
+Date: Thu, 17 Jul 2014 16:49:49 +0530
+Message-id: <1405595993-16661-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsWyRsSkTldr0/Fgg19HzC1eHtK0uP7lOavF
+	/CPnWC2aF69ns3h15AeTxYOmVUwWSybPZ7WYd+Qdi8XlXXPYLGac38dksWjbf2YHbo/ZDRdZ
+	PHbOusvusWlVJ5vH/rlr2D2WvDnE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZfc1tjAX7
+	BCreLNvB3MDYwtvFyMkhIWAi0TBxDSOELSZx4d56ti5GLg4hgaWMEmuedbPCFJ0428oOkZjO
+	KDHxyS92kISQQD+TxP67wSA2m4CZxMFFq8HiIgJxEh8u94M1MAvsZ5R4/Xo/WEJYwE3iy+KF
+	bCA2i4CqxNw/98DivAKuEjf2bAWKcwBtU5CYM8kGpFdCYB27xNmexawQ9QIS3yYfYoGokZXY
+	dIAZ4jhJiYMrbrBMYBRcwMiwilE0tSC5oDgpvchErzgxt7g0L10vOT93EyMw4E//ezZhB+O9
+	A9aHGJOBxk1klhJNzgdGTF5JvKGxmZGFqYmpsZG5pRlpwkrivGqPkoKEBNITS1KzU1MLUovi
+	i0pzUosPMTJxcEo1MNo2n436p+JWynoj/4OwUnzVz0P/Gt6kLJZn5hX5U5W4ufGx7Ge7asl3
+	wveKd/eL293e5FRYUxagX3Oh/8DHrlm9d7f4SXZM2/Bi2dMmYZ4dq7teruwunC6/jOnNgm/G
+	v0o1Qkt9z+901pnGMbVIgvuHHuObNXN2Sc8W31z0OPV90oqofwFys5VYijMSDbWYi4oTAbkY
+	KsWOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQV2tTceDDaa+1bd4eUjT4vqX56wW
+	84+cY7VoXryezeLVkR9MFg+aVjFZLJk8n9Vi3pF3LBaXd81hs5hxfh+TxaJt/5kduD1mN1xk
+	8dg56y67x6ZVnWwe++euYfdY8uYQq0ffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2Tmpdsq
+	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHamkUJaYUwoUCkgsLlbSt8M0ITTETdcC
+	pjFC1zckCK7HyAANJKxhzOhrbmMs2CdQ8WbZDuYGxhbeLkZODgkBE4kTZ1vZIWwxiQv31rN1
+	MXJxCAlMZ5SY+OQXWEJIoJ9JYv/dYBCbTcBM4uCi1WBxEYE4iQ+X+9lBGpgF9jNKvH69Hywh
+	LOAm8WXxQjYQm0VAVWLun3tgcV4BV4kbe7YCxTmAtilIzJlkM4GRewEjwypG0dSC5ILipPRc
+	Q73ixNzi0rx0veT83E2M4Hh6JrWDcWWDxSFGAQ5GJR7ehNZjwUKsiWXFlbmHGCU4mJVEeLd1
+	HQ8W4k1JrKxKLcqPLyrNSS0+xGgKtHwis5Rocj4w1vNK4g2NTcxNjU0tTSxMzCyVxHkPtFoH
+	CgmkJ5akZqemFqQWwfQxcXBKNTBuWrGQlSVqt2tEUIve24Zfe1cu3vtWbONL8ZJPS2TtpjvN
+	0d51ldX01B0T9Q8HZsqkxlW0Ch/P/rJbb/HXpT8nLw5JrDjd5mOhxVg/LcXrtoaR64SpD+Y+
+	0PyaGfK1LerNp3TbHIYTV5kUuJ9cUdM+usl4adCJg/n9K5LPmMzve3JqjutZ7rl8SizFGYmG
+	WsxFxYkAEqUreL0CAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for comments, i will fix what you say and split patches one for 
-code and one for Documentation.
-After, i will resend patch set
+Syscon is a regmap based framework to help various drivers access misc
+bits in registers which does not belong to another module.
+For example, Power Module, SYSREGs.
 
-On 07/17/2014 01:09 PM, Jerome Marchand wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 07/17/2014 11:32 AM, Timofey Titovets wrote:
->> From: Timofey Titovets <nefelim4ag@gmail.com>
->>
->> This add supporting of autochange count of zram devices on demand,
->> like loop devices; This working by following rules: - Always save
->> minimum devices count specified by num_device (can be specified
->> while kernel module loading) - if last device already using add new
->> device; - if last and prelast devices is free - delete last zram
->> device;
->>
->
-> Hi Timofey,
->
-> Your patch change zram behaviour. Please describe what changes from
-> the user point of view and update Documentation/blockdev/zram.txt
-> accordingly.
->
->> Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
->>
->> Please pull from: https://github.com/Nefelim4ag/linux.git ---
->> Tested on 3.15.5-2-ARCH, can be applied on any kernel version after
->> this patch 'zram: add LZ4 compression support' -
->> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
->>
->>   --- drivers/block/zram/zram_drv.c | 65
->> ++++++++++++++++++++++++++++++++++++++++--- 1 file changed, 61
->> insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/block/zram/zram_drv.c
->> b/drivers/block/zram/zram_drv.c index 089e72c..d0a3055 100644 ---
->> a/drivers/block/zram/zram_drv.c +++
->> b/drivers/block/zram/zram_drv.c @@ -42,6 +42,10 @@ static const
->> char *default_compressor = "lzo";
->>
->> /* Module params (documentation at end) */ static unsigned int
->> num_devices = 1; +static unsigned int last_created_dev = 1; +
->> +static void zram_add_dev(void); +static void zram_del_dev(void);
->>
->> #define ZRAM_ATTR_RO(name)                        \ static ssize_t
->> zram_attr_##name##_show(struct device *d,        \ @@ -168,6 +172,7
->> @@ static ssize_t comp_algorithm_store(struct device *dev, struct
->> device_attribute *attr, const char *buf, size_t len) { struct zram
->> *zram = dev_to_zram(dev); + down_write(&zram->init_lock); if
->> (init_done(zram)) { up_write(&zram->init_lock); @@ -239,6 +244,7 @@
->> static struct zram_meta *zram_meta_alloc(u64 disksize) { size_t
->> num_pages; struct zram_meta *meta = kmalloc(sizeof(*meta),
->> GFP_KERNEL); + if (!meta) goto out;
->>
->> @@ -374,6 +380,7 @@ static int zram_bvec_read(struct zram *zram,
->> struct bio_vec *bvec, struct page *page; unsigned char *user_mem,
->> *uncmem = NULL; struct zram_meta *meta = zram->meta; + page =
->> bvec->bv_page;
->>
->> read_lock(&meta->tb_lock); @@ -607,6 +614,7 @@ static void
->> zram_reset_device(struct zram *zram, bool reset_capacity) /* Free
->> all pages that are still in this zram device */ for (index = 0;
->> index < zram->disksize >> PAGE_SHIFT; index++) { unsigned long
->> handle = meta->table[index].handle; + if (!handle) continue;
->>
->> @@ -668,6 +676,7 @@ static ssize_t disksize_store(struct device
->> *dev, set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
->> revalidate_disk(zram->disk); up_write(&zram->init_lock); +
->> zram_add_dev(); return len;
->>
->> out_destroy_comp: @@ -712,6 +721,7 @@ static ssize_t
->> reset_store(struct device *dev, bdput(bdev);
->>
->> zram_reset_device(zram, true); +    zram_del_dev(); return len;
->>
->> out: @@ -954,6 +964,51 @@ static void destroy_device(struct zram
->> *zram) blk_cleanup_queue(zram->queue); }
->>
->> +/* remove last free device, if last and prelast dev a free */
->> +static void zram_del_dev(void) +{ +    if (last_created_dev <
->> num_devices) +        return; + +    if
->> (zram_devices[last_created_dev].disksize == 0 && +
->> zram_devices[last_created_dev-1].disksize == 0 +        ) { +
->> destroy_device(&zram_devices[last_created_dev]); +
->> last_created_dev--; +        pr_info("Deleted zram%u device\n",
->> last_created_dev); +    } +} + +/* Auto add empty zram device, if
->> last device in use */ +static void zram_add_dev(void) +{ +    int
->> ret; + +    if (last_created_dev+1 > max_num_devices) { +
->> pr_warn("Can't add zram%u, max device number reached\n", +
->> num_devices); +        last_created_dev--; +        ret = -EINVAL;
->
-> Why do you set ret to EINVAL here? It's never used.
->
->> +        goto out;
->
-> That label is useless. Just use return.
->
->> +    } + +    if (&zram_devices[last_created_dev].disksize > 0) { +
->> last_created_dev++; +        ret =
->> create_device(&zram_devices[last_created_dev], +
->> last_created_dev); +        if (ret) +            goto free;
->
-> If ret is only used to test that create_device() succeeded, then we
-> can get rid of that variable altogether.
->
-> Thanks,
-> Jerome
->
->> +        pr_info("Created zram%u device\n", last_created_dev); +
->> } + +    return; + +free: +
->> destroy_device(&zram_devices[last_created_dev]); +
->> last_created_dev--; +out:; +} + static int __init zram_init(void)
->> { int ret, dev_id; @@ -972,18 +1027,20 @@ static int __init
->> zram_init(void) goto out; }
->>
->> -    /* Allocate the device array and initialize each one */ -
->> zram_devices = kzalloc(num_devices * sizeof(struct zram),
->> GFP_KERNEL); +    /* Allocate the device array */ +    zram_devices
->> = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL); if
->> (!zram_devices) { ret = -ENOMEM; goto unregister; }
->>
->> +    /* Initialise zram{0..num_devices} */ for (dev_id = 0; dev_id
->> < num_devices; dev_id++) { ret =
->> create_device(&zram_devices[dev_id], dev_id); if (ret) goto
->> free_devices; } +    last_created_dev = num_devices-1;
->>
->> pr_info("Created %u device(s) ...\n", num_devices);
->>
->> @@ -1004,7 +1061,7 @@ static void __exit zram_exit(void) int i;
->> struct zram *zram;
->>
->> -    for (i = 0; i < num_devices; i++) { +    for (i = 0; i <
->> last_created_dev+1; i++) { zram = &zram_devices[i];
->>
->> destroy_device(zram); @@ -1025,7 +1082,7 @@
->> module_init(zram_init); module_exit(zram_exit);
->>
->> module_param(num_devices, uint, 0); -MODULE_PARM_DESC(num_devices,
->> "Number of zram devices"); +MODULE_PARM_DESC(num_devices, "Number
->> of pre created  zram devices");
->>
->> MODULE_LICENSE("Dual BSD/GPL"); MODULE_AUTHOR("Nitin Gupta
->> <ngupta@vflare.org>");
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
->
-> iQEcBAEBAgAGBQJTx6C9AAoJEHTzHJCtsuoC+VIH/R7Z1rQ7iNhsa5ycEIJFdxsa
-> tp3oihmg3tvdnTlXj4bBb57zyN8fV2t/pfUOHFn3BWWm8lmruE43T25E5C+HuB7H
-> VSAD8lxBHCO+NrA+imHtnReHdN22VwrJFUR9ZQfKzSj+GruoJQZVXD9NHhf9oI0q
-> TMgfHK1klnS5ZQ8y1Qq3fllFk/89XSCMAF3ySymWRzm4zcyKIiYLVm2xtou9cYCG
-> DF6JrwUtnr3swQrbTqwUPLVKIdtDfrDSBCdz0vEZ8gFtCB8vVTzF0CqUhkjaxt83
-> cldz0FfLM31iZ+l+5MVvTHIVl4a2oC+lZ4EAfX3qZBGK1HA/V0obLjgCLTZwS2s=
-> =JJII
-> -----END PGP SIGNATURE-----
->
+With syscon, ADC can use generic regmap API to access
+registers of PMU which are registered into syscon.
+ 
+This patch does the following
+1. Use the syscon and Regmap API instead of ioremappaing the
+   ADC_PHY register from PMU.
+2. Moves the exynos-adc.txt from bindings/arm/samsung/
+   to bindings/iio/adc/.
+3. Updates the Documentation in exynos-adc.txt with syscon phandle
+   for the ADC nodes.
+4. Updates the Dts files for Exynos3250, Exynos4x12, Exynos5250,
+   Exynos5420 with the syscon phandle.
+
+Tested on Exynos5420 based Peach PIT and Exynos5800 based Peach PI
+by verifying sysfs entries provided by HWMON based NTC thermistors.
+
+Tested-By for Exynos3250, Exynos4x12 would be appreciated.
+
+Changes since v1:
+Adding syscon description in commit message
+
+Rebased on top of v5 version of ADC for exynos3250 from Changwoo.
+iio: adc: exynos_adc: Support Exynos3250 ADC and code clean
+https://lkml.org/lkml/2014/6/27/16
+
+Naveen Krishna Chatradhi (4):
+  iio: exyno-adc: use syscon for PMU register access
+  Documentation: dt-bindings: move exynos-adc.txt to more iio/adc/
+  Documentation: dt-bindings: update exynos-adc.txt with syscon handle
+  ARM: dts: exynos: Add sysreg phandle to ADC node
+
+ .../devicetree/bindings/arm/samsung/exynos-adc.txt |   82 ------------------
+ .../devicetree/bindings/iio/adc/exynos-adc.txt     |   87 ++++++++++++++++++++
+ arch/arm/boot/dts/exynos3250.dtsi                  |    3 +-
+ arch/arm/boot/dts/exynos4x12.dtsi                  |    3 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |    3 +-
+ arch/arm/boot/dts/exynos5420.dtsi                  |    3 +-
+ drivers/iio/adc/exynos_adc.c                       |   29 +++++--
+ 7 files changed, 115 insertions(+), 95 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
+
+-- 
+1.7.9.5
+
