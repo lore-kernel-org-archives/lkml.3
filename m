@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbaGQTMC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:12:02 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:25635 "EHLO SMTP.CITRIX.COM"
+	id S1754720AbaGQTMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:12:19 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:55360 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905AbaGQTL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:11:59 -0400
+	id S1754260AbaGQTMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:12:14 -0400
 X-IronPort-AV: E=Sophos;i="5.01,679,1400025600"; 
-   d="scan'208";a="153463470"
+   d="scan'208";a="153463684"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net 4/4] xen-netback: Fix pointer incrementation to avoid incorrect logging
-Date: Thu, 17 Jul 2014 20:09:52 +0100
-Message-ID: <1405624192-21722-5-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH for stable 3.15 1/4] xen-netback: Fix handling frag_list on grant op error path
+Date: Thu, 17 Jul 2014 20:10:26 +0100
+Message-ID: <1405624229-21817-1-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405624192-21722-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1405624192-21722-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to this pointer is increased prematurely, the error log contains rubbish.
+The error handling for skb's with frag_list was completely wrong, it caused
+double unmap attempts to happen if the error was on the first skb. Move it to
+the right place in the loop.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 Reported-by: Armin Zentai <armin.zentai@ezit.hu>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xenproject.org
----
+
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index cca82de..72d8a6b 100644
+index 7367208..d7ae93d 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -1045,7 +1045,6 @@ static int xenvif_tx_check_gop(struct xenvif_queue *queue,
+@@ -1007,10 +1007,16 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ {
+ 	struct gnttab_map_grant_ref *gop_map = *gopp_map;
+ 	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
++	/* This points to the shinfo of the actually checked skb, which could be
++	 * either the first or the one on the frag_list
++	 */
+ 	struct skb_shared_info *shinfo = skb_shinfo(skb);
++	/* If this is non-NULL, we are currently checking the frag_list skb, and
++	 * this points to the shinfo of the first one
++	 */
++	struct skb_shared_info *first_shinfo = NULL;
+ 	int nr_frags = shinfo->nr_frags;
+ 	int i, err;
+-	struct sk_buff *first_skb = NULL;
  
  	/* Check status of header. */
  	err = (*gopp_copy)->status;
--	(*gopp_copy)++;
- 	if (unlikely(err)) {
- 		if (net_ratelimit())
- 			netdev_dbg(queue->vif->dev,
-@@ -1058,6 +1057,7 @@ static int xenvif_tx_check_gop(struct xenvif_queue *queue,
- 			xenvif_idx_release(queue, pending_idx,
- 					   XEN_NETIF_RSP_ERROR);
- 	}
-+	(*gopp_copy)++;
+@@ -1063,31 +1069,28 @@ check_frags:
+ 			xenvif_idx_unmap(vif, pending_idx);
+ 		}
  
- check_frags:
- 	for (i = 0; i < nr_frags; i++, gop_map++) {
++		/* And if we found the error while checking the frag_list, unmap
++		 * the first skb's frags
++		 */
++		if (first_shinfo) {
++			for (j = 0; j < first_shinfo->nr_frags; j++) {
++				pending_idx = frag_get_pending_idx(&first_shinfo->frags[j]);
++				xenvif_idx_unmap(vif, pending_idx);
++			}
++		}
++
+ 		/* Remember the error: invalidate all subsequent fragments. */
+ 		err = newerr;
+ 	}
+ 
+-	if (skb_has_frag_list(skb)) {
+-		first_skb = skb;
+-		skb = shinfo->frag_list;
+-		shinfo = skb_shinfo(skb);
++	if (skb_has_frag_list(skb) && !first_shinfo) {
++		first_shinfo = skb_shinfo(skb);
++		shinfo = skb_shinfo(skb_shinfo(skb)->frag_list);
+ 		nr_frags = shinfo->nr_frags;
+ 
+ 		goto check_frags;
+ 	}
+ 
+-	/* There was a mapping error in the frag_list skb. We have to unmap
+-	 * the first skb's frags
+-	 */
+-	if (first_skb && err) {
+-		int j;
+-		shinfo = skb_shinfo(first_skb);
+-		for (j = 0; j < shinfo->nr_frags; j++) {
+-			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
+-			xenvif_idx_unmap(vif, pending_idx);
+-		}
+-	}
+-
+ 	*gopp_map = gop_map;
+ 	return err;
+ }
