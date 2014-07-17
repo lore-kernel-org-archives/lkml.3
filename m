@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021AbaGQNUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:20:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35857 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932179AbaGQNUd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:20:33 -0400
-Date: Thu, 17 Jul 2014 15:19:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Mark Brown <broonie@kernel.org>, Clemens Ladisch <clemens@ladisch.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: firewire: CLOCK_MONOTONIC_RAW exposure
-In-Reply-To: <53C78B54.5070102@linaro.org>
-Message-ID: <alpine.DEB.2.10.1407171519360.24854@nanos>
-References: <alpine.DEB.2.10.1407161151450.24854@nanos> <53C6633D.9080905@ladisch.de> <20140716123727.GA19379@twins.programming.kicks-ass.net> <53C68943.2060003@ladisch.de> <20140716150010.GA4951@sirena.org.uk> <53C78B54.5070102@linaro.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S933040AbaGQNVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:21:45 -0400
+Received: from sauhun.de ([89.238.76.85]:37689 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932169AbaGQNVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:21:42 -0400
+Date: Thu, 17 Jul 2014 15:21:35 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Jean Delvare <jdelvare@suse.de>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140717132135.GI2740@katana>
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2xeD/fx0+7k8I/QN"
+Content-Disposition: inline
+In-Reply-To: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Daniel Thompson wrote:
 
-> On 16/07/14 16:00, Mark Brown wrote:
-> > On Wed, Jul 16, 2014 at 04:16:35PM +0200, Clemens Ladisch wrote:
-> >> Peter Zijlstra wrote:
-> >>> On Wed, Jul 16, 2014 at 01:34:21PM +0200, Clemens Ladisch wrote:
-> > 
-> >>>> The purpose is to get a stable clock, i.e., to avoid clock rate changes
-> >>>> caused by NTP corrections.
-> > 
-> >>> That's maybe half an answer; what do you need that for?
-> > 
-> >> According to the original report, "for applications which need to
-> >> synchronise with external timebases such as broadcast TV applications".
-> >> Such external clocks are not synchronous with any available clocksource,
-> >> so proper resampling requires that the (relative) rate of the two clocks
-> >> (sender and playback device) is measured accurately.
-> > 
-> >> (I don't have numbers for the errors caused by NTP adjustments.  Daniel?)
-> > 
-> > Right, the goal is to get a clock which is guaranteed to never have any
-> > adjustments that might cause discontinuities or rate changes applied to
-> > it.  My understanding is that the users are already doing their own rate
-> > matching and it's much more important to them to get a stable clock than
-> > it is to get a clock at a specific nominal rate, and given the set top
-> > box applications I expect they also need this from very soon after boot.
-> 
-> We are trying to match rates with a broadcast device that "shouts" the
-> current time many times per second (MPEG transport stream PCR packets).
-> These packets are timestamped on arrival with a local clock and the
-> resulting data is used to recover the broadcast clock. However due to
-> variable transmission delay of the packets we require very long
-> control loops to extract any useful information from this data (varies
-> between five minutes and half and hour).
-> 
-> An NTP rate correction can change the rate of CLOCK_MONOTONIC
-> sufficiently to confuse our clock recovery algorithms so we use
-> CLOCK_MONOTONIC_RAW as the master view of time.
-> 
-> Both audio and video must be presented synchronized to the recovered
-> broadcast clock which in practice this means comparing them to
-> CLOCK_MONOTONIC_RAW and doing some maths.
-> 
-> In is, of course, possible to convert ALSA's CLOCK_MONOTONIC
-> timestamps into CLOCK_MONOTONIC_RAW values so we can compare ALSA time
-> to the broadcast clock. In fact its not even that hard compared to the
-> other time conversions we have to do. Nevertheless it is a redundant
-> conversion and adds an extra dimension to a problem that only just fits
-> in most craniums ;-)
+--2xeD/fx0+7k8I/QN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the explanation!
+On Mon, Jul 07, 2014 at 07:23:03AM -0700, Guenter Roeck wrote:
+> SMBus block commands are different to I2C block commands since
+> the returned data is not normally accessible with byte or word
+> commands on other command offsets. Add linked list of 'block'
+> commands to support those commands.
+>=20
+> Access mechanism is quite simple: Block commands must be written
+> before they can be read. The first write selects the block length.
+> Subsequent writes can be partial. Block read commands always return
+> the number of bytes selected with the first write.
+>=20
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2: Make new functionality only available on request via functionality
+>     module parameter
+>     Add more details about SMBus block mode support to documentation
+>     Use correct sizeof() variable in devm_kzalloc
+>     Use stub_find_block() only in SMBus block command itself.
+>     Store first word of block data in chip->words[].
+>     When writing block data and the written data is longer than
+>     the first write, bail out with debug message indicating the reason
+>     for the error.
 
-       tglx
+Thanks for doing this and thanks to Jean for the thorough review.
+
+The thing I miss is the documentation that SMBUS_BLOCK must explicitly
+be activated and the description how to do it. A comment in the driver,
+above STUB_FUNC_* defines might not hurt as well.
+
+Also, I'd prefer to squash Jean's "increasing block length" patch into
+this one if both of you are fine with that?
+
+Regards,
+
+   Wolfram
+
+
+--2xeD/fx0+7k8I/QN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTx83fAAoJEBQN5MwUoCm2PzQQAK9LHsereWaz8VFEVzpY/mnV
+cSoRRphO5AOGTe1VXpEg2uivEhNgBRLuxUXqTN/f5YNY4MqwizXe2bstuCYc+jFX
+VhdeecDbFg9yw9UHsB/zRu3941VtFJAGkP/nIggu+XdtrnQiS3x64OmTtCMnuHAx
+1rOE1scs6xCu5u3PxmcF8KUGJt8HI2N2BVG9YQCiOMxvs24ZkZJGgZr0c2IUgYOa
+YxcSvkyAlFLSuPm2E9LUCPWnYWotuUqRt517Ki93jfXcHx9VcB9j7XF2ArpVV8Dv
+epIhUTA49OYP+2mwlVWkv7TmS1qMxGQsO5IEVTBjLcMfjfSg3uGOzMoZzKZDEXAx
+uT99x9l3bE8yHddPQBFYzd4byEVK6HF55Qn9PGjM8UPb3Pb2DdH0ZP7TSikV9vx3
+KOIqnUumNAc30l4foepmNFidVThUp/TR2gvqC+RP25mhMqpvlYuGrnIjcotcN+tD
+boPj66RTLagVCu4xw3gCIeiXXU2N1bnxQWmaDB9aiTiM9xRIVNz2LmHgCZbP2r1c
+BHLQ6+B2qcn2UQdQQB6Yx1gGE9YKZ57upqr4o6zNRzQLUH2f4IruhrgCFI5hjUfG
+CzXCcqRyyBiqzVR0VlYYScjVBv5Y56nF0Pkp+7N33bh6UPIhIjJG/Z+JVX6nyX19
+uyTfpJR3yJ1NBce9xkew
+=qHnC
+-----END PGP SIGNATURE-----
+
+--2xeD/fx0+7k8I/QN--
