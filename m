@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933954AbaGQOzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:55:37 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:43650 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933006AbaGQOzb (ORCPT
+	id S933730AbaGQOzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:55:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54773 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932865AbaGQOzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:55:31 -0400
-Date: Thu, 17 Jul 2014 09:55:29 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others to
- this_cpu_ops.txt
-In-Reply-To: <53C7E234.3020503@gmail.com>
-Message-ID: <alpine.DEB.2.11.1407170953070.28248@gentwo.org>
-References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com> <alpine.DEB.2.11.1407170934220.28121@gentwo.org> <53C7E234.3020503@gmail.com>
+	Thu, 17 Jul 2014 10:55:33 -0400
+Date: Thu, 17 Jul 2014 10:55:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Amit Virdi <amit.virdi@st.com>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rdunlap@infradead.org>,
+        <ming.lei@canonical.com>, <hdegoede@redhat.com>,
+        <hsi-ss-sw-devel@lists.codex.cro.st.com>
+Subject: Re: [PATCH] usb: core: allow zero packet flag for interrupt urbs
+In-Reply-To: <5255a576a562f60c185e89b5937357290242fe1e.1405586653.git.amit.virdi@st.com>
+Message-ID: <Pine.LNX.4.44L0.1407171053330.1517-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Pranith Kumar wrote:
+On Thu, 17 Jul 2014, Amit Virdi wrote:
 
-> > The RCU code has .... ummmm... some issues with percpu usage and should
-> > not be taken as a good example. If you look at the RCU code it looks
-> > horrible with numerous barriers around remote percpu read/wrirte
-> > accesses and one wonders if that code is actually ok.
->
-> Well, it is running in all our kernels with not many reported issues, isn't it ;)
-> And yes, that is one of the extra-ordinary situations where we use per-cpu data.
-> Once you've extracted a pointer to the per-cpu area -and- ensure that concurrent
-> accesses do not happen(or happen with enough guarantees using barriers), what is
-> the case against remote accesses? I am asking from a correctness and a
-> performance point of view, not style/aesthetics.
+> Section 4.4.7.2 of the USB3.0 spec says:
+> 	A zero-length data payload is a valid transfer and may be useful for
+> 	some implementations.
+> 
+> So, extend the logic of allowing URB_ZERO_PACKET to interrupt urbs too.
+> Otherwise, the kernel throws error of BOGUS transfer flags.
+> 
+> Signed-off-by: Amit Virdi <amit.virdi@st.com>
+> ---
+>  drivers/usb/core/urb.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
+> index 991386c..a136246 100644
+> --- a/drivers/usb/core/urb.c
+> +++ b/drivers/usb/core/urb.c
+> @@ -460,6 +460,10 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
+>  	case USB_ENDPOINT_XFER_CONTROL:
+>  		allowed |= URB_NO_FSBR;	/* only affects UHCI */
+>  		/* FALLTHROUGH */
+> +	case USB_ENDPOINT_XFER_INT:
+> +		if (is_out)
+> +			allowed |= URB_ZERO_PACKET;
+> +		/* FALLTHROUGH */
+>  	default:			/* all non-iso endpoints */
+>  		if (!is_out)
+>  			allowed |= URB_SHORT_NOT_OK;
 
-Could be working but I do not want it to be mentioned in the
-documentation given the problems it causes. IPI is preferable.
+I can't say this is actually wrong, but have you ever encountered a 
+situation where this would be needed?  How often does anyone need to do 
+a multi-packet transfer over an interrupt endpoint?
 
-> >> If data needs to be modified from multiple cpus only very rarely, doesn't it
-> >> make sense to use per-cpu areas?
-> >
-> > I would suggest that this should not occur. You can always "modify" remote
-> > percpu areas by generating an IPI on that cpu to make that processor
-> > update its own per cpu data.
-> >
->
-> The case against doing that is not to wake up CPUs which are in idle/sleep
-> states. I think mentioning it here that remote accesses are strongly discouraged
-> with a reasonable explanation of the implications should be enough. There might
-> always be rare situations where remote accesses might be necessary.
+Alan Stern
 
-Remote percpu updates are extremely rare events. If the cpu is idle/asleep
-then usually no updates are needed because no activity is occurring on
-that cpu.
