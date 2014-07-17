@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbaGQJqx (ORCPT <rfc822;w@1wt.eu>);
+	id S932158AbaGQJqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:46:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36066 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932112AbaGQJqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jul 2014 05:46:53 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:49231 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090AbaGQJqt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:46:49 -0400
-Message-ID: <53C79B85.20805@plexistor.com>
-Date: Thu, 17 Jul 2014 12:46:45 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+Date: Thu, 17 Jul 2014 11:46:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v3 2/6] acerhdf: Adding support for new models
+Message-ID: <20140717094648.GB23869@pd.tnic>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1399139966-10625-1-git-send-email-peter@piie.net>
+ <1399139966-10625-3-git-send-email-peter@piie.net>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>
-CC: sam@ravnborg.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] Fix compiler message generation
-References: <20140702105645.17220.92338.stgit@warthog.procyon.org.uk> <20140702124016.GA26965@sepie.suse.cz> <53C6A509.5060809@plexistor.com> <53C792D3.20705@suse.cz>
-In-Reply-To: <53C792D3.20705@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1399139966-10625-3-git-send-email-peter@piie.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 12:09 PM, Michal Marek wrote:
-> On 2014-07-16 18:15, Boaz Harrosh wrote:
->> This patch by itself works with kdevelop so I hope you did not submit my crap
->> KBUILD_FULL_PATH patch at all and only added this one (and I know, the fix to this
->> one with the -s)
+On Sat, May 03, 2014 at 07:59:22PM +0200, Peter Feuerer wrote:
+> added following new models:
+>    * Aspire 5755G
+>    * AO521
+>    * AO751h
+>    * Aspire One 753
+>    * Extensa 5420
+>    * Aspire 5315
+>    * Aspire 5739G
+>    * TravelMate TM8573T
 > 
-> Yes, I did not merge the KBUILD_FULL_PATH patch, because the approach
-> with the make message works out of the box.
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andreas Mohr <andi@lisas.de>
+> Cc: Borislav Petkov <bp@suse.de>
+> Signed-off-by: Peter Feuerer <peter@piie.net>
+
+Acked-by: Borislav Petkov <bp@suse.de>
+
+> ---
+>  drivers/platform/x86/acerhdf.c | 25 ++++++++++++++++++++++++-
+>  1 file changed, 24 insertions(+), 1 deletion(-)
 > 
-> 
->> Also not that I like your patches because now I can compile the same directory
->> from different machines with different absolute paths to the source and the
->> compilation will come out the same. (before changed absolute path would cause
->> a rebuild)
-> 
+> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+> index dd63e93..176edbd 100644
+> --- a/drivers/platform/x86/acerhdf.c
+> +++ b/drivers/platform/x86/acerhdf.c
+> @@ -50,7 +50,7 @@
+>   */
+>  #undef START_IN_KERNEL_MODE
+>  
+> -#define DRV_VER "0.5.29"
+> +#define DRV_VER "0.5.30"
 
-Rrrr I hope you understood that not => Note above. I *do* like your patch a lot
+What's the logic here, increment second minor version number after each
+change?
 
-> That's a nice side effect which I did not realize initially ;).
-> 
+:-)
 
-I guess this is everywhere that has __FILE__ in code needs to be rebuilt
-So it is more in debug builds than ndebug.
+-- 
+Regards/Gruss,
+    Boris.
 
-> Michal
-> 
-
-Ye cool thanks, all is well
-Boaz
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
