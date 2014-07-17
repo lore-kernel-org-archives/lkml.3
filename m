@@ -1,166 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaGQDL0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 23:11:26 -0400
-Received: from wolff.to ([98.103.208.27]:46363 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750994AbaGQDLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 23:11:24 -0400
-Date: Wed, 16 Jul 2014 22:09:47 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
+	id S1753002AbaGQDPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 23:15:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:34278 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752077AbaGQDPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 23:15:05 -0400
+Date: Thu, 17 Jul 2014 13:14:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140717030947.GA17889@wolff.to>
-References: <20140716145546.GA6922@wolff.to>
- <20140716151748.GC2460@hansolo.jdub.homelinux.org>
- <53C6CFCC.2050300@arm.com>
- <20140716195414.GA16401@wolff.to>
- <53C7084C.7090104@arm.com>
+Subject: Re: linux-next: Tree for Jul 16
+Message-ID: <20140717131457.15f3fb4d@canb.auug.org.au>
+In-Reply-To: <CAPDOMVipLjtRCyZUYCEYLsaKWUaEwM1KbRSS9COUtdHj0rodWw@mail.gmail.com>
+References: <20140716184550.18b6da3f@canb.auug.org.au>
+	<CAPDOMViywcY=cYFT9EM3N3wESXQUX7uWa3jLLLKpv=QGF-Dtmw@mail.gmail.com>
+	<20140717105144.2cb29989@canb.auug.org.au>
+	<CAPDOMVh5_JXKwPQ9EwtXHLYnqNRhEMedF5F5K7H+PEqMuCZa8Q@mail.gmail.com>
+	<20140717114718.3895d851@canb.auug.org.au>
+	<CAPDOMVipLjtRCyZUYCEYLsaKWUaEwM1KbRSS9COUtdHj0rodWw@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="dDRMvlgZJXvWKvBx"
-Content-Disposition: inline
-In-Reply-To: <53C7084C.7090104@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/E0B3fP2AJT.sWZAxMwz1JOv"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/E0B3fP2AJT.sWZAxMwz1JOv
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+Hi Nick,
 
-On Thu, Jul 17, 2014 at 01:18:36 +0200,
-  Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->So the output of
+On Wed, 16 Jul 2014 22:01:35 -0400 Nick Krause <xerofoify@gmail.com> wrote:
 >
->$ cat /proc/sys/kernel/sched_domain/cpu*/domain*/*
->
->would be handy too.
+> Absolutely , I am using the latest kernel rc from git. I am using gcc
+> 4.8.3 and binutils 2.83.91.
 
-Attached and added to the bug.
+Then that has nothing to do with me ... I am the linux-next
+maintainer.  I just happen to use the same build test system as is also
+used to test Linus' tree (kisskb).  I hope you are looking at the right
+result pages for what you are testing.  The URL I gave you was for the
+linux-next builds, not Linus' tree.
 
->Just to make sure, you do have 'CONFIG_X86_32=y' and '# CONFIG_NUMA is 
->not set' in your build?
+> In addition I am using  the default configurations as you are in less
+> I am doing it differently.
+> By the way xtensa-defconfig seems to fail because of binutils as I
+> discussed this with
+> the maintainers and they seemed to have tested it with a newer upstream b=
+inutils
+> then I am using and it succeeded it the linking failures I am seeing with=
+ it.
 
-Yes.
+Maybe we need per architecture minimum tools versions (instead of
+current global one).
 
-I probably won't be able to get /proc/schedstat on my next test since the 
-system will probably crash right away. However, I probably will have a 
-much faster rebuild and might still be able to get the info for you 
-before I leave tomorrow.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="sched_domain.out"
+--Sig_/E0B3fP2AJT.sWZAxMwz1JOv
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-32
-0
-0
-687
-0
-0
-110
-4
-28353
-2
-SMT
-0
-0
-32
-2
-1
-4143
-0
-1
-125
-8
-15370
-4
-DIE
-0
-0
-32
-0
-0
-687
-0
-0
-110
-4
-21753
-2
-SMT
-0
-0
-32
-2
-1
-4143
-0
-1
-125
-8
-12715
-4
-DIE
-0
-0
-32
-0
-0
-687
-0
-0
-110
-4
-25097
-2
-SMT
-0
-0
-32
-2
-1
-4143
-0
-1
-125
-8
-21624
-4
-DIE
-0
-0
-32
-0
-0
-687
-0
-0
-110
-4
-23714
-2
-SMT
-0
-0
-32
-2
-1
-4143
-0
-1
-125
-8
-14920
-4
-DIE
-0
-0
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
---dDRMvlgZJXvWKvBx--
+iQIcBAEBCAAGBQJTxz+2AAoJEMDTa8Ir7ZwVNS4P/i9djsFFXaUyFrNyQXfXaV1a
+HJwxFmw/U51uRtqkrJI/vdrAQVIBUcO/teQAkwkuB9rEbRs17CSHbWPxdAxEkPyt
+wBmn8I2hw42YkT5vfY59n21VmC3Y0nrF1EHWgFxWeiFhdSQdya54gHHcKO729q8q
+DCssQk8yQx8uzsrc1GS51A7BHKpOiQap07841dhYwaA/F+KFBtOeeQqf0Goi8q/v
+beT2ZNHPoQOiccFc3SoH9ZqHij6v/x0G239Gf5MZMCRpDYPUbB5RLrseRF5GWWaz
+rb6MMnB84Ag6IC3GgHjDXw+XqnXx8yRjcdE4+d9ufsboBlYi0YBA1R86yXuSfRG5
+u9DPdPsnFmsKJE4D+U7XSlweiT+53exH/eyR/e343V0nlEvdvhV+t14DQTqJ+nFg
+rr2DcKHaR85A+EVgBu6wlcZPtRuCXXk+xqWLulVy0t7bT7V+BBjKa1pGtismdVeM
+V65rawaX0vAPh79eVmNqxBHEcHkmAbnrcEwc6y6qBV9NqkbEs52gOOHp665+P9ka
+/ojPQMHIf+GE4ifFYs8vBiHSXZfo+HGKzfIW7T1MQUoqn+i6OBAIH4T1pLFeHO8I
+wG49tTkWTxnZ1lvzQnKZsxFh6HhAZNsDQhwixCGm5RVyJ0/vcx2vK38YqJz5/WQK
+7SZJ3aLPX/ufmiAGFqAz
+=z5i1
+-----END PGP SIGNATURE-----
+
+--Sig_/E0B3fP2AJT.sWZAxMwz1JOv--
