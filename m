@@ -1,184 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965789AbaGQQ0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:26:13 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:34911 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934026AbaGQQ0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:26:08 -0400
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-To: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>
-Subject: [PATCH v2 4/4] mfd: pm8921: rename pm8921-core driver
-Date: Thu, 17 Jul 2014 19:17:35 +0300
-Message-Id: <1405613855-27572-5-git-send-email-svarbanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
-References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
+	id S934958AbaGQQ1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:27:30 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:51248 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933607AbaGQQ12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:27:28 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-media@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, m.chehab@samsung.com,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH 2/4] drivers/staging/media/davinci_vpfe/dm365_ipipeif.c: fix negativity check
+Date: Thu, 17 Jul 2014 19:27:16 +0300
+Message-Id: <1405614436-4506-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pm8921-core driver presently supports pm8921 and pm8058
-Qualcomm PMICs.  To avoid confusion with new generation PMICs
-(like pm8941) rename the pm8921-core driver to more
-appropriate name pm8xxx-ssbi, which reflects better that
-those chips use SSBI interface.
+[linux-3.16-rc5/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c:210]:
+(style) Checking if unsigned variable 'val' is less than zero.
 
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+    val = get_oneshot_mode(ipipeif->input);
+    if (val < 0) {
+        pr_err("ipipeif: links setup required");
+        return -EINVAL;
+    }
+
+but
+
+static int get_oneshot_mode(enum ipipeif_input_entity input)
+
+Introduced temporary variable for negativity check.
+"val" is afterwards used in a lot of bitwise operations, so changing its type
+to signed is not safe, according to CERT C Secure Coding Standards chapter
+INT13-C: "Use bitwise operators only on unsigned operands"
+https://www.securecoding.cert.org/confluence/display/seccode/INT13-C.+Use+bitwise+operators+only+on+unsigned+operands
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80521
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 ---
- drivers/mfd/Kconfig                          |   14 +++++-----
- drivers/mfd/Makefile                         |    2 +-
- drivers/mfd/{pm8921-core.c => pm8xxx-ssbi.c} |   38 +++++++++++++-------------
- 3 files changed, 27 insertions(+), 27 deletions(-)
- rename drivers/mfd/{pm8921-core.c => pm8xxx-ssbi.c} (92%)
+ drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 122e2d9..884bc32 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -507,8 +507,8 @@ config UCB1400_CORE
- config MFD_PM8XXX
- 	tristate
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c b/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+index 59540cd..6d4893b 100644
+--- a/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
++++ b/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+@@ -196,6 +196,7 @@ static int ipipeif_hw_setup(struct v4l2_subdev *sd)
+ 	int data_shift;
+ 	int pack_mode;
+ 	int source1;
++	int tmp;
  
--config MFD_PM8921_CORE
--	tristate "Qualcomm PM8921 PMIC chip"
-+config MFD_PM8XXX_SSBI
-+	tristate "Qualcomm PM8XXX SSBI PMICs"
- 	depends on (ARM || HEXAGON)
- 	select IRQ_DOMAIN
- 	select MFD_CORE
-@@ -516,13 +516,13 @@ config MFD_PM8921_CORE
- 	select REGMAP
- 	help
- 	  If you say yes to this option, support will be included for the
--	  built-in PM8921 PMIC chip.
-+	  built-in PM8921 and PM8058 PMIC chips.
+ 	ipipeif_base_addr = ipipeif->ipipeif_base_addr;
  
--	  This is required if your board has a PM8921 and uses its features,
--	  such as: MPPs, GPIOs, regulators, interrupts, and PWM.
-+	  This is required if your board has a PM8921 or PM8058 and uses
-+	  its features, such as: MPPs, GPIOs, regulators, interrupts, and PWM.
+@@ -206,8 +207,8 @@ static int ipipeif_hw_setup(struct v4l2_subdev *sd)
+ 	outformat = &ipipeif->formats[IPIPEIF_PAD_SOURCE];
  
--	  Say M here if you want to include support for PM8921 chip as a module.
--	  This will build a module called "pm8921-core".
-+	  Say M here if you want to include support for PM8921 or PM8058 chip
-+	  as a module. This will build a module called "pm8xxx-ssbi".
- 
- config MFD_PM8XXX_SPMI
- 	tristate "Qualcomm PM8XXX SPMI PMICs"
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 93d82cc..d332085 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -152,7 +152,7 @@ obj-$(CONFIG_MFD_SI476X_CORE)	+= si476x-core.o
- 
- obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
--obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
-+obj-$(CONFIG_MFD_PM8XXX_SSBI) 	+= pm8xxx-ssbi.o ssbi.o
- obj-$(CONFIG_MFD_PM8XXX_SPMI)	+= pm8xxx-spmi.o
- obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8xxx-ssbi.c
-similarity index 92%
-rename from drivers/mfd/pm8921-core.c
-rename to drivers/mfd/pm8xxx-ssbi.c
-index 9595138..102d7fb 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8xxx-ssbi.c
-@@ -277,14 +277,14 @@ static const struct regmap_config ssbi_regmap_config = {
- 	.reg_write = ssbi_reg_write
- };
- 
--static const struct of_device_id pm8921_id_table[] = {
-+static const struct of_device_id pm8xxx_id_table[] = {
- 	{ .compatible = "qcom,pm8058", },
- 	{ .compatible = "qcom,pm8921", },
- 	{ }
- };
--MODULE_DEVICE_TABLE(of, pm8921_id_table);
-+MODULE_DEVICE_TABLE(of, pm8xxx_id_table);
- 
--static int pm8921_probe(struct platform_device *pdev)
-+static int pm8xxx_probe(struct platform_device *pdev)
- {
- 	struct regmap *regmap;
- 	int irq, rc;
-@@ -354,18 +354,18 @@ static int pm8921_probe(struct platform_device *pdev)
- 	return rc;
- }
- 
--static int pm8921_remove_child(struct device *dev, void *unused)
-+static int pm8xxx_remove_child(struct device *dev, void *unused)
- {
- 	platform_device_unregister(to_platform_device(dev));
- 	return 0;
- }
- 
--static int pm8921_remove(struct platform_device *pdev)
-+static int pm8xxx_remove(struct platform_device *pdev)
- {
- 	int irq = platform_get_irq(pdev, 0);
- 	struct pm_irq_chip *chip = platform_get_drvdata(pdev);
- 
--	device_for_each_child(&pdev->dev, NULL, pm8921_remove_child);
-+	device_for_each_child(&pdev->dev, NULL, pm8xxx_remove_child);
- 	irq_set_chained_handler(irq, NULL);
- 	irq_set_handler_data(irq, NULL);
- 	irq_domain_remove(chip->irqdomain);
-@@ -373,29 +373,29 @@ static int pm8921_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct platform_driver pm8921_driver = {
--	.probe		= pm8921_probe,
--	.remove		= pm8921_remove,
-+static struct platform_driver pm8xxx_driver = {
-+	.probe		= pm8xxx_probe,
-+	.remove		= pm8xxx_remove,
- 	.driver		= {
--		.name	= "pm8921-core",
-+		.name	= "pm8xxx-ssbi",
- 		.owner	= THIS_MODULE,
--		.of_match_table = pm8921_id_table,
-+		.of_match_table = pm8xxx_id_table,
- 	},
- };
- 
--static int __init pm8921_init(void)
-+static int __init pm8xxx_init(void)
- {
--	return platform_driver_register(&pm8921_driver);
-+	return platform_driver_register(&pm8xxx_driver);
- }
--subsys_initcall(pm8921_init);
-+subsys_initcall(pm8xxx_init);
- 
--static void __exit pm8921_exit(void)
-+static void __exit pm8xxx_exit(void)
- {
--	platform_driver_unregister(&pm8921_driver);
-+	platform_driver_unregister(&pm8xxx_driver);
- }
--module_exit(pm8921_exit);
-+module_exit(pm8xxx_exit);
- 
- MODULE_LICENSE("GPL v2");
--MODULE_DESCRIPTION("PMIC 8921 core driver");
-+MODULE_DESCRIPTION("PMIC PM8XXX SSBI driver");
- MODULE_VERSION("1.0");
--MODULE_ALIAS("platform:pm8921-core");
-+MODULE_ALIAS("platform:pm8xxx-ssbi");
+ 	/* Combine all the fields to make CFG1 register of IPIPEIF */
+-	val = get_oneshot_mode(ipipeif->input);
+-	if (val < 0) {
++	tmp = val = get_oneshot_mode(ipipeif->input);
++	if (tmp < 0) {
+ 		pr_err("ipipeif: links setup required");
+ 		return -EINVAL;
+ 	}
 -- 
-1.7.0.4
+1.8.5.5
 
