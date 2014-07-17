@@ -1,70 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439AbaGQN5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:57:16 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:52837 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711AbaGQN5N (ORCPT
+	id S933592AbaGQN5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:57:39 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:36574 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932896AbaGQN50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:57:13 -0400
-Date: Thu, 17 Jul 2014 16:57:08 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Jan Kiszka <jan.kiszka@web.de>, mtosatti@redhat.com, nadav.amit@gmail.com,
-        kvm@vger.kernel.org, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
+	Thu, 17 Jul 2014 09:57:26 -0400
+Date: Thu, 17 Jul 2014 15:57:21 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page in
- memory.
-Message-ID: <20140717135707.GP4399@minantech.com>
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
- <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com>
- <20140712080442.GH4399@minantech.com>
- <53C38D55.2040307@cn.fujitsu.com>
- <20140714145822.GK4399@minantech.com>
- <53C51608.4080109@web.de>
- <20140715120921.GT18167@minantech.com>
- <53C51E66.7030208@cn.fujitsu.com>
- <20140715124048.GU18167@minantech.com>
- <53C7D0DC.1020001@cn.fujitsu.com>
+Subject: Re: [patch 3/3] mm: vmscan: clean up struct scan_control
+Message-ID: <20140717135721.GC8011@dhcp22.suse.cz>
+References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org>
+ <1405344049-19868-4-git-send-email-hannes@cmpxchg.org>
+ <alpine.LSU.2.11.1407141240200.17669@eggly.anvils>
+ <20140717132604.GF29639@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C7D0DC.1020001@cn.fujitsu.com>
+In-Reply-To: <20140717132604.GF29639@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 09:34:20PM +0800, Tang Chen wrote:
-> Hi Gleb,
+On Thu 17-07-14 09:26:04, Johannes Weiner wrote:
+> From bbe8c1645c77297a96ecd5d64d659ddcd6984d03 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Mon, 14 Jul 2014 08:51:54 -0400
+> Subject: [patch] mm: vmscan: clean up struct scan_control
 > 
-> On 07/15/2014 08:40 PM, Gleb Natapov wrote:
-> ......
-> >>
-> >>And yes, we have the problem you said here. We can migrate the page while L2
-> >>vm is running.
-> >>So I think we should enforce L2 vm to exit to L1. Right ?
-> >>
-> >We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, so
-> >if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for L1 too.
-> >
+> Reorder the members by input and output, then turn the individual
+> integers for may_writepage, may_unmap, may_swap, compaction_ready,
+> hibernation_mode into bit fields to save stack space:
 > 
-> Sorry, I think I don't quite understand the procedure you are talking about
-> here.
+> +72/-296 -224
+> kswapd                                       104     176     +72
+> try_to_free_pages                             80      56     -24
+> try_to_free_mem_cgroup_pages                  80      56     -24
+> shrink_all_memory                             88      64     -24
+> reclaim_clean_pages_from_list                168     144     -24
+> mem_cgroup_shrink_node_zone                  104      80     -24
+> __zone_reclaim                               176     152     -24
+> balance_pgdat                                152       -    -152
 > 
-> Referring to the code, I think we have three machines: L0(host), L1 and L2.
-> And we have two types of vmexit: L2->L1 and L2->L0.  Right ?
-> 
-> We are now talking about this case: L2 and L1 shares the apic page.
-> 
-> Using patch 5/5, when apic page is migrated on L0, mmu_notifier will notify
-> L1,
-> and update L1's VMCS. At this time, we are in L0, not L2. Why cannot we
-Using patch 5/5, when apic page is migrated on L0, mmu_notifier will notify
-L1 or L2 VMCS depending on which one happens to be running right now.
-If it is L1 then L2's VMCS will be updated during vmentry emulation, if it is
-L2 we need to request reload during vmexit emulation to make sure L1's VMCS is
-updated.
+> Suggested-by: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
---
-			Gleb.
+Looks nice to me.
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/vmscan.c | 99 ++++++++++++++++++++++++++++---------------------------------
+>  1 file changed, 46 insertions(+), 53 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c28b8981e56a..81dd858b9d17 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -59,35 +59,20 @@
+>  #include <trace/events/vmscan.h>
+>  
+>  struct scan_control {
+> -	/* Incremented by the number of inactive pages that were scanned */
+> -	unsigned long nr_scanned;
+> -
+> -	/* Number of pages freed so far during a call to shrink_zones() */
+> -	unsigned long nr_reclaimed;
+> -
+> -	/* One of the zones is ready for compaction */
+> -	int compaction_ready;
+> -
+>  	/* How many pages shrink_list() should reclaim */
+>  	unsigned long nr_to_reclaim;
+>  
+> -	unsigned long hibernation_mode;
+> -
+>  	/* This context's GFP mask */
+>  	gfp_t gfp_mask;
+>  
+> -	int may_writepage;
+> -
+> -	/* Can mapped pages be reclaimed? */
+> -	int may_unmap;
+> -
+> -	/* Can pages be swapped as part of reclaim? */
+> -	int may_swap;
+> -
+> +	/* Allocation order */
+>  	int order;
+>  
+> -	/* Scan (total_size >> priority) pages at once */
+> -	int priority;
+> +	/*
+> +	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
+> +	 * are scanned.
+> +	 */
+> +	nodemask_t	*nodemask;
+>  
+>  	/*
+>  	 * The memory cgroup that hit its limit and as a result is the
+> @@ -95,11 +80,27 @@ struct scan_control {
+>  	 */
+>  	struct mem_cgroup *target_mem_cgroup;
+>  
+> -	/*
+> -	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
+> -	 * are scanned.
+> -	 */
+> -	nodemask_t	*nodemask;
+> +	/* Scan (total_size >> priority) pages at once */
+> +	int priority;
+> +
+> +	unsigned int may_writepage:1;
+> +
+> +	/* Can mapped pages be reclaimed? */
+> +	unsigned int may_unmap:1;
+> +
+> +	/* Can pages be swapped as part of reclaim? */
+> +	unsigned int may_swap:1;
+> +
+> +	unsigned int hibernation_mode:1;
+> +
+> +	/* One of the zones is ready for compaction */
+> +	unsigned int compaction_ready:1;
+> +
+> +	/* Incremented by the number of inactive pages that were scanned */
+> +	unsigned long nr_scanned;
+> +
+> +	/* Number of pages freed so far during a call to shrink_zones() */
+> +	unsigned long nr_reclaimed;
+>  };
+>  
+>  #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
+> @@ -2668,15 +2669,14 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  {
+>  	unsigned long nr_reclaimed;
+>  	struct scan_control sc = {
+> +		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+>  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+> +		.order = order,
+> +		.nodemask = nodemask,
+> +		.priority = DEF_PRIORITY,
+>  		.may_writepage = !laptop_mode,
+> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+>  		.may_unmap = 1,
+>  		.may_swap = 1,
+> -		.order = order,
+> -		.priority = DEF_PRIORITY,
+> -		.target_mem_cgroup = NULL,
+> -		.nodemask = nodemask,
+>  	};
+>  
+>  	/*
+> @@ -2706,14 +2706,11 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
+>  						unsigned long *nr_scanned)
+>  {
+>  	struct scan_control sc = {
+> -		.nr_scanned = 0,
+>  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+> +		.target_mem_cgroup = memcg,
+>  		.may_writepage = !laptop_mode,
+>  		.may_unmap = 1,
+>  		.may_swap = !noswap,
+> -		.order = 0,
+> -		.priority = 0,
+> -		.target_mem_cgroup = memcg,
+>  	};
+>  	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+>  	int swappiness = mem_cgroup_swappiness(memcg);
+> @@ -2748,16 +2745,14 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+>  	unsigned long nr_reclaimed;
+>  	int nid;
+>  	struct scan_control sc = {
+> -		.may_writepage = !laptop_mode,
+> -		.may_unmap = 1,
+> -		.may_swap = !noswap,
+>  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+> -		.order = 0,
+> -		.priority = DEF_PRIORITY,
+> -		.target_mem_cgroup = memcg,
+> -		.nodemask = NULL, /* we don't care the placement */
+>  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+>  				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
+> +		.target_mem_cgroup = memcg,
+> +		.priority = DEF_PRIORITY,
+> +		.may_writepage = !laptop_mode,
+> +		.may_unmap = 1,
+> +		.may_swap = !noswap,
+>  	};
+>  
+>  	/*
+> @@ -3015,12 +3010,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  	unsigned long nr_soft_scanned;
+>  	struct scan_control sc = {
+>  		.gfp_mask = GFP_KERNEL,
+> +		.order = order,
+>  		.priority = DEF_PRIORITY,
+> +		.may_writepage = !laptop_mode,
+>  		.may_unmap = 1,
+>  		.may_swap = 1,
+> -		.may_writepage = !laptop_mode,
+> -		.order = order,
+> -		.target_mem_cgroup = NULL,
+>  	};
+>  	count_vm_event(PAGEOUTRUN);
+>  
+> @@ -3401,14 +3395,13 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+>  {
+>  	struct reclaim_state reclaim_state;
+>  	struct scan_control sc = {
+> +		.nr_to_reclaim = nr_to_reclaim,
+>  		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+> -		.may_swap = 1,
+> -		.may_unmap = 1,
+> +		.priority = DEF_PRIORITY,
+>  		.may_writepage = 1,
+> -		.nr_to_reclaim = nr_to_reclaim,
+> +		.may_unmap = 1,
+> +		.may_swap = 1,
+>  		.hibernation_mode = 1,
+> -		.order = 0,
+> -		.priority = DEF_PRIORITY,
+>  	};
+>  	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+>  	struct task_struct *p = current;
+> @@ -3588,13 +3581,13 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  	struct task_struct *p = current;
+>  	struct reclaim_state reclaim_state;
+>  	struct scan_control sc = {
+> -		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
+> -		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
+> -		.may_swap = 1,
+>  		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
+>  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+>  		.order = order,
+>  		.priority = ZONE_RECLAIM_PRIORITY,
+> +		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
+> +		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
+> +		.may_swap = 1,
+>  	};
+>  	struct shrink_control shrink = {
+>  		.gfp_mask = sc.gfp_mask,
+> -- 
+> 2.0.0
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
