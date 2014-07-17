@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746AbaGQIqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:46:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46723 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753954AbaGQIqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:46:35 -0400
-Date: Thu, 17 Jul 2014 10:46:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Zhang Rui <rui.zhang@intel.com>,
-        Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v3 0/6] acerhdf/thermal: adding new models, appropriate
- governor and minor clean up
-Message-ID: <20140717084630.GA22791@pd.tnic>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1399139966-10625-1-git-send-email-peter@piie.net>
- <20140716222434.GC17472@pd.tnic>
- <cone.1405550072.529732.1059.1000@galar>
+	id S1755506AbaGQIsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:48:40 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:41013 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754866AbaGQIsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 04:48:37 -0400
+From: Amit Virdi <amit.virdi@st.com>
+To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Cc: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        <rdunlap@infradead.org>, <ming.lei@canonical.com>,
+        <hdegoede@redhat.com>, <hsi-ss-sw-devel@lists.codex.cro.st.com>,
+        Amit Virdi <amit.virdi@st.com>
+Subject: [PATCH] usb: core: allow zero packet flag for interrupt urbs
+Date: Thu, 17 Jul 2014 14:17:22 +0530
+Message-ID: <5255a576a562f60c185e89b5937357290242fe1e.1405586653.git.amit.virdi@st.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cone.1405550072.529732.1059.1000@galar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-17_02:2014-07-16,2014-07-17,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 12:34:32AM +0200, Peter Feuerer wrote:
-> I'll send out new set of patches by Sunday latestly, but you could of
-> course start testing with version3 of the patchset, as I just planned
-> to do minor fixes anyhow.
+Section 4.4.7.2 of the USB3.0 spec says:
+	A zero-length data payload is a valid transfer and may be useful for
+	some implementations.
 
-Yeah, I'll wait for your latest submission and give it a run here.
+So, extend the logic of allowing URB_ZERO_PACKET to interrupt urbs too.
+Otherwise, the kernel throws error of BOGUS transfer flags.
 
-Thanks.
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+---
+ drivers/usb/core/urb.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
+index 991386c..a136246 100644
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -460,6 +460,10 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
+ 	case USB_ENDPOINT_XFER_CONTROL:
+ 		allowed |= URB_NO_FSBR;	/* only affects UHCI */
+ 		/* FALLTHROUGH */
++	case USB_ENDPOINT_XFER_INT:
++		if (is_out)
++			allowed |= URB_ZERO_PACKET;
++		/* FALLTHROUGH */
+ 	default:			/* all non-iso endpoints */
+ 		if (!is_out)
+ 			allowed |= URB_SHORT_NOT_OK;
 -- 
-Regards/Gruss,
-    Boris.
+1.8.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
