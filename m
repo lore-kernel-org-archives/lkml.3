@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaGQFYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 01:24:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62453 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630AbaGQFYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 01:24:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,676,1400050800"; 
-   d="scan'208";a="457981447"
-Date: Thu, 17 Jul 2014 05:22:02 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: bsegall@google.com
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "alan.cox@intel.com" <alan.cox@intel.com>,
-        "mark.gross@intel.com" <mark.gross@intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>
-Subject: Re: [PATCH 2/2 v3] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140716212202.GB2901@intel.com>
-References: <1405475447-7783-1-git-send-email-yuyang.du@intel.com>
- <1405475447-7783-3-git-send-email-yuyang.du@intel.com>
- <20140716154614.GP26542@e103034-lin>
- <xm26lhrtw2xo.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	id S1753590AbaGQF0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 01:26:53 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:49189 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740AbaGQF0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 01:26:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xm26lhrtw2xo.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405553740-5067-1-git-send-email-sboyd@codeaurora.org>
+References: <1405553740-5067-1-git-send-email-sboyd@codeaurora.org>
+Date: Thu, 17 Jul 2014 10:56:50 +0530
+Message-ID: <CAKohpond9aNvX+x--G7AADkRhAu1iZ5mFW8pDvAXJ6yp_CCH_A@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: cpufreq: Avoid sleeping while atomic
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>, Nishanth Menon <nm@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 11:53:23AM -0700, bsegall@google.com wrote:
-> Morten Rasmussen <morten.rasmussen@arm.com> writes:
-> 
-> > On Wed, Jul 16, 2014 at 02:50:47AM +0100, Yuyang Du wrote:
-> >
-> > [...]
-> >
-> >> +/*
-> >> + * Update load_avg of the cfs_rq along with its own se. They should get
-> >> + * synchronized: group se's load_avg is used for task_h_load calc, and
-> >> + * group cfs_rq's load_avg is used for task_h_load (and update_cfs_share
-> >> + * calc).
-> >> + */
-> >> +static inline int update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
-> >>  {
-> >> -       long old_contrib = se->avg.load_avg_contrib;
-> >> +       int decayed;
-> >> 
-> >> -       if (entity_is_task(se)) {
-> >> -               __update_task_entity_contrib(se);
-> >> -       } else {
-> >> -               __update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
-> >> -               __update_group_entity_contrib(se);
-> >> +       if (atomic_long_read(&cfs_rq->removed_load_avg)) {
-> >> +               long r = atomic_long_xchg(&cfs_rq->removed_load_avg, 0);
-> >> +               cfs_rq->avg.load_avg = subtract_until_zero(cfs_rq->avg.load_avg, r);
-> >> +               r *= LOAD_AVG_MAX;
-> >> +               cfs_rq->avg.load_sum = subtract_until_zero(cfs_rq->avg.load_sum, r);
-> >>         }
-> >> 
-> >> -       return se->avg.load_avg_contrib - old_contrib;
-> >> -}
-> >> +       decayed = __update_load_avg(now, &cfs_rq->avg, cfs_rq->load.weight);
-> >> +#ifndef CONFIG_64BIT
-> >> +       if (cfs_rq->avg.last_update_time != cfs_rq->load_last_update_time_copy)
-> >> +               sa_q->last_update_time_copy = sa_q->last_update_time;
-> >
-> > to make it build. But I'm not convinced that this synchronization is
-> > right.
-> >
-> > First let me say that I'm not an expert on synchronization. It seems to
-> > me that there is nothing preventing reordering of the writes in
-> > __update_load_avg() which sets cfs_rq->avg.last_update_time and the
-> > update of cfs_rq->avg.load_last_update_time_copy.
-> 
-> You're correct, this needs to be if(...) { smp_wmb(); copy = time; },
-> the same as update_min_vruntime.
+On 17 July 2014 05:05, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> We allocate the cpufreq table after calling rcu_read_lock(),
+> which disables preemption. This causes scheduling while atomic
+> warnings. Use GFP_ATOMIC instead of GFP_KERNEL and update for
+> kcalloc while we're here.
 
-Ok, I will get the barrier back. Thanks, Morten and Ben.
+I am surprised to see that this isn't reported by anybody since the time
+it came into existence? Some special config option required to observe
+this?
 
-Yuyang
+> BUG: sleeping function called from invalid context at mm/slub.c:1246
+> in_atomic(): 0, irqs_disabled(): 0, pid: 80, name: modprobe
+> 5 locks held by modprobe/80:
+>  #0:  (&dev->mutex){......}, at: [<c050d484>] __driver_attach+0x48/0x98
+>  #1:  (&dev->mutex){......}, at: [<c050d494>] __driver_attach+0x58/0x98
+>  #2:  (subsys mutex#5){+.+.+.}, at: [<c050c114>] subsys_interface_register+0x38/0xc8
+>  #3:  (cpufreq_rwsem){.+.+.+}, at: [<c05a9c8c>] __cpufreq_add_dev.isra.22+0x84/0x92c
+>  #4:  (rcu_read_lock){......}, at: [<c05ab24c>] dev_pm_opp_init_cpufreq_table+0x18/0x10c
+> Preemption disabled at:[<  (null)>]   (null)
+>
+> CPU: 2 PID: 80 Comm: modprobe Not tainted 3.16.0-rc3-next-20140701-00035-g286857f216aa-dirty #217
+> [<c0214da8>] (unwind_backtrace) from [<c02123f8>] (show_stack+0x10/0x14)
+> [<c02123f8>] (show_stack) from [<c070141c>] (dump_stack+0x70/0xbc)
+> [<c070141c>] (dump_stack) from [<c02f4cb0>] (__kmalloc+0x124/0x250)
+> [<c02f4cb0>] (__kmalloc) from [<c05ab270>] (dev_pm_opp_init_cpufreq_table+0x3c/0x10c)
+> [<c05ab270>] (dev_pm_opp_init_cpufreq_table) from [<bf000508>] (cpufreq_init+0x48/0x378 [cpufreq_generic])
+> [<bf000508>] (cpufreq_init [cpufreq_generic]) from [<c05a9e08>] (__cpufreq_add_dev.isra.22+0x200/0x92c)
+> [<c05a9e08>] (__cpufreq_add_dev.isra.22) from [<c050c160>] (subsys_interface_register+0x84/0xc8)
+> [<c050c160>] (subsys_interface_register) from [<c05a9494>] (cpufreq_register_driver+0x108/0x2d8)
+> [<c05a9494>] (cpufreq_register_driver) from [<bf000888>] (generic_cpufreq_probe+0x50/0x74 [cpufreq_generic])
+> [<bf000888>] (generic_cpufreq_probe [cpufreq_generic]) from [<c050e994>] (platform_drv_probe+0x18/0x48)
+> [<c050e994>] (platform_drv_probe) from [<c050d1f4>] (driver_probe_device+0x128/0x370)
+> [<c050d1f4>] (driver_probe_device) from [<c050d4d0>] (__driver_attach+0x94/0x98)
+> [<c050d4d0>] (__driver_attach) from [<c050b778>] (bus_for_each_dev+0x54/0x88)
+> [<c050b778>] (bus_for_each_dev) from [<c050c894>] (bus_add_driver+0xe8/0x204)
+> [<c050c894>] (bus_add_driver) from [<c050dd48>] (driver_register+0x78/0xf4)
+> [<c050dd48>] (driver_register) from [<c0208870>] (do_one_initcall+0xac/0x1d8)
+> [<c0208870>] (do_one_initcall) from [<c028b6b4>] (load_module+0x190c/0x21e8)
+> [<c028b6b4>] (load_module) from [<c028c034>] (SyS_init_module+0xa4/0x110)
+> [<c028c034>] (SyS_init_module) from [<c020f0c0>] (ret_fast_syscall+0x0/0x48)
+>
+> Fixes: a0dd7b79657b "PM / OPP: Move cpufreq specific OPP functions out of generic OPP library"
+
+That looks to be wrong. This commit just moved things around and I can still
+see rcu_read_lock() before this commit.
+
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> Cc: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>
+> It would be nice to not do atomic allocations, but I guess the table could
+> change size?
+
+Yep. Number of OPPs can vary over time on a running machine.
+
+>  drivers/cpufreq/cpufreq_opp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq_opp.c b/drivers/cpufreq/cpufreq_opp.c
+> index c0c6f4a4eccf..f7a32d2326c6 100644
+> --- a/drivers/cpufreq/cpufreq_opp.c
+> +++ b/drivers/cpufreq/cpufreq_opp.c
+> @@ -60,7 +60,7 @@ int dev_pm_opp_init_cpufreq_table(struct device *dev,
+>                 goto out;
+>         }
+>
+> -       freq_table = kzalloc(sizeof(*freq_table) * (max_opps + 1), GFP_KERNEL);
+> +       freq_table = kcalloc(sizeof(*freq_table), (max_opps + 1), GFP_ATOMIC);
+
+I am not really sure if there would be any consequences of this, but overall it
+looks fine.
+
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
