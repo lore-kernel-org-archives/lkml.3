@@ -1,115 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571AbaGQJlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:41:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53977 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756064AbaGQJlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:41:39 -0400
-Date: Thu, 17 Jul 2014 10:41:02 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH RFCv3 08/14] arm64: introduce aarch64_insn_gen_movewide()
-Message-ID: <20140717094101.GD21153@arm.com>
-References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
- <1405405512-4423-9-git-send-email-zlim.lnx@gmail.com>
- <20140716161715.GU29414@arm.com>
- <20140716220422.GB18109@gup76>
+	id S1755757AbaGQJpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:45:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46169 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755311AbaGQJp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 05:45:29 -0400
+Date: Thu, 17 Jul 2014 11:44:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v3 1/6] acerhdf: Adding support for "manual mode"
+Message-ID: <20140717094413.GA23869@pd.tnic>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1399139966-10625-1-git-send-email-peter@piie.net>
+ <1399139966-10625-2-git-send-email-peter@piie.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140716220422.GB18109@gup76>
+In-Reply-To: <1399139966-10625-2-git-send-email-peter@piie.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 11:04:22PM +0100, Zi Shen Lim wrote:
-> On Wed, Jul 16, 2014 at 05:17:15PM +0100, Will Deacon wrote:
-> > On Tue, Jul 15, 2014 at 07:25:06AM +0100, Zi Shen Lim wrote:
-> > > Introduce function to generate move wide (immediate) instructions.
-> > 
-> > [...]
-> > 
-> > > +u32 aarch64_insn_gen_movewide(enum aarch64_insn_register dst,
-> > > +			      int imm, int shift,
-> > > +			      enum aarch64_insn_variant variant,
-> > > +			      enum aarch64_insn_movewide_type type)
-> > > +{
-> > > +	u32 insn;
-> > > +
-> > > +	switch (type) {
-> > > +	case AARCH64_INSN_MOVEWIDE_ZERO:
-> > > +		insn = aarch64_insn_get_movz_value();
-> > > +		break;
-> > > +	case AARCH64_INSN_MOVEWIDE_KEEP:
-> > > +		insn = aarch64_insn_get_movk_value();
-> > > +		break;
-> > > +	case AARCH64_INSN_MOVEWIDE_INVERSE:
-> > > +		insn = aarch64_insn_get_movn_value();
-> > > +		break;
-> > > +	default:
-> > > +		BUG_ON(1);
-> > > +	}
-> > > +
-> > > +	BUG_ON(imm < 0 || imm > 65535);
-> > 
-> > Do this check with masking instead?
+On Sat, May 03, 2014 at 07:59:21PM +0200, Peter Feuerer wrote:
+> Some Acer models require an additional command to turn off the fan after
+> bios mode has been enabled.  Adding new section in bios table to allow
+> support for those models, by writing an extra "manual mode" register.
 > 
-> Ok, if you prefer, I can change it to:
-> 
-> 	BUG_ON(imm & ~GENMASK(15, 0));
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andreas Mohr <andi@lisas.de>
+> Cc: Borislav Petkov <bp@suse.de>
+> Signed-off-by: Peter Feuerer <peter@piie.net>
 
-Sure, that or use a named constant for the upper-bound (SZ_64K - 1).
+Looks ok, I guess. I do worry a bit about the growing size of this
+bios_tbl and how it contains lotsa repeated info - you might wanna think
+of a slick scheme to slim it down one day, if you're bored.
 
-> > > +	switch (variant) {
-> > > +	case AARCH64_INSN_VARIANT_32BIT:
-> > > +		BUG_ON(shift != 0 && shift != 16);
-> > > +		break;
-> > > +	case AARCH64_INSN_VARIANT_64BIT:
-> > > +		insn |= BIT(31);
-> > > +		BUG_ON(shift != 0 && shift != 16 && shift != 32 &&
-> > > +		       shift != 48);
-> > 
-> > Would be neater as a nested switch, perhaps? If you reorder the
-> > outer-switch, you could probably fall-through too and combine the shift
-> > checks.
-> 
-> Not sure I picture what you had in mind... I couldn't come up with a
-> neater version with the properties you described.
-> 
-> The alternative I had was using masks instead of integer values, but
-> one could argue that while neater, it could also be harder to read:
-> 
-> 	switch (variant) {
-> 	case AARCH64_INSN_VARIANT_32BIT:
-> 		BUG_ON(shift & ~BIT(4));
-> 		break;
-> 	case AARCH64_INSN_VARIANT_64BIT:
-> 		insn |= BIT(31);
-> 		BUG_ON(shift & ~GENMASK(5, 4));
-> 	...
+Acked-by: Borislav Petkov <bp@suse.de>
 
-I was thinking of using nested switches, but that doesn't fall out like I
-hoped. How about:
+-- 
+Regards/Gruss,
+    Boris.
 
-	switch (variant) {
-	case AARCH64_INSN_VARIANT_64BIT:
-		BUG_ON(shift != 32 && shift != 48);
-	case AARCH64_INSN_VARIANT_32BIT:
-		BUG_ON(shift != 0 && shift != 16);
-	};
-
-?
-
-Will
+Sent from a fat crate under my desk. Formatting is fine.
+--
