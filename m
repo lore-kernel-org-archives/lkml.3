@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965209AbaGQQNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:13:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52314 "EHLO mail.kernel.org"
+	id S1757346AbaGQQVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:21:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52298 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965082AbaGQQNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:13:51 -0400
+	id S965109AbaGQQNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:13:48 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/33] perf inject: Fix build id injection
-Date: Thu, 17 Jul 2014 13:12:15 -0300
-Message-Id: <1405613555-23380-14-git-send-email-acme@kernel.org>
+Subject: [PATCH 12/33] perf symbols: Fix missing GNU IFUNC symbols
+Date: Thu, 17 Jul 2014 13:12:14 -0300
+Message-Id: <1405613555-23380-13-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405613555-23380-1-git-send-email-acme@kernel.org>
 References: <1405613555-23380-1-git-send-email-acme@kernel.org>
@@ -27,7 +27,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Build Ids won't be injected unless the build id feature flag is set.
+Symbols of type STT_GNU_IFUNC are functions so accept them as such.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -37,26 +37,26 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1405332185-4050-11-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1405332185-4050-10-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c | 3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/util/symbol-elf.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 16c7c11ad06e..cf6a605a13e8 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -389,6 +389,9 @@ static int __cmd_inject(struct perf_inject *inject)
- 	ret = perf_session__process_events(session, &inject->tool);
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 6864661a79dd..dce5ccf61f11 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -49,7 +49,8 @@ static inline uint8_t elf_sym__type(const GElf_Sym *sym)
  
- 	if (!file_out->is_pipe) {
-+		if (inject->build_ids)
-+			perf_header__set_feat(&session->header,
-+					      HEADER_BUILD_ID);
- 		session->header.data_size = inject->bytes_written;
- 		perf_session__write_header(session, session->evlist, file_out->fd, true);
- 	}
+ static inline int elf_sym__is_function(const GElf_Sym *sym)
+ {
+-	return elf_sym__type(sym) == STT_FUNC &&
++	return (elf_sym__type(sym) == STT_FUNC ||
++		elf_sym__type(sym) == STT_GNU_IFUNC) &&
+ 	       sym->st_name != 0 &&
+ 	       sym->st_shndx != SHN_UNDEF;
+ }
 -- 
 1.9.3
 
