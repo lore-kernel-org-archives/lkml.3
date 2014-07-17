@@ -1,221 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761487AbaGRKUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:20:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16273 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761460AbaGRKU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:20:29 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
+	id S1761503AbaGRKUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:20:45 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41867 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761460AbaGRKUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 06:20:41 -0400
+Subject: [PATCH v2 3/3] perf/sdt: Documentation
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, linux-scsi@vger.kernel.org,
-        qla2xxx-upstream@qlogic.com, Nicholas Bellinger <nab@daterainc.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH RFC 2/2] percpu_tags: Use percpu_tags instead of percpu_ida
-Date: Fri, 18 Jul 2014 12:20:58 +0200
-Message-Id: <142c07f0d2051ad1cc485af588de6e0c31417833.1405678629.git.agordeev@redhat.com>
-In-Reply-To: <cover.1405678629.git.agordeev@redhat.com>
-References: <cover.1405678629.git.agordeev@redhat.com>
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, namhyung@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Date: Thu, 17 Jul 2014 11:26:31 +0530
+Message-ID: <20140717055609.19995.43454.stgit@hemant-fedora>
+In-Reply-To: <20140717054826.19995.61782.stgit@hemant-fedora>
+References: <20140717054826.19995.61782.stgit@hemant-fedora>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071810-9574-0000-0000-00000016204C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users of "percpu_ida" are blindly converted to
-"percpu_tags" users. No testing has been conducted.
+This patch adds the required documentation for perf support to SDT markers.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: qla2xxx-upstream@qlogic.com
-Cc: Nicholas Bellinger <nab@daterainc.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
 ---
- drivers/scsi/qla2xxx/qla_target.c        |    6 +++---
- drivers/target/iscsi/iscsi_target_util.c |    6 +++---
- drivers/target/target_core_transport.c   |    4 ++--
- drivers/target/tcm_fc/tfc_cmd.c          |    8 ++++----
- drivers/vhost/scsi.c                     |    6 +++---
- include/target/target_core_base.h        |    4 ++--
- 6 files changed, 17 insertions(+), 17 deletions(-)
+ tools/perf/Documentation/SDT-markers.txt |  123 ++++++++++++++++++++++++++++++
+ tools/perf/Documentation/perf-list.txt   |    7 +-
+ 2 files changed, 129 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/Documentation/SDT-markers.txt
 
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index e632e14..cec4847 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -2729,7 +2729,7 @@ void qlt_free_cmd(struct qla_tgt_cmd *cmd)
- 		WARN_ON(1);
- 		return;
- 	}
--	percpu_ida_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
-+	percpu_tags_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
- }
- EXPORT_SYMBOL(qlt_free_cmd);
+diff --git a/tools/perf/Documentation/SDT-markers.txt b/tools/perf/Documentation/SDT-markers.txt
+new file mode 100644
+index 0000000..420ba2e
+--- /dev/null
++++ b/tools/perf/Documentation/SDT-markers.txt
+@@ -0,0 +1,123 @@
++Support to perf for listing the SDT markers :
++
++This helps in listing dtrace style markers(SDT) present in user space
++applications through perf. Notes/markers are placed at important places by the
++developers. They have a negligible overhead when not enabled.
++We can enable them and probe at these places and find some important information
++like the arguments' values, etc.
++
++How to add SDT markers into user applications:
++We need to have this header sys/sdt.h present.
++sys/sdt.h used is version 3.
++If not present, install systemtap-sdt-devel package (for fedora-18).
++
++A very simple example:
++
++$ cat user_app.c
++
++#include <sys/sdt.h>
++
++void main () {
++       /* ... */
++       /* 
++        * user_app is the provider name
++	* test_probe is the marker name
++	*/
++       STAP_PROBE(user_app, test_mark);
++       /* ... */
++}
++
++$ gcc user_app.c
++$ perf list sdt ./a.out
++./a.out:
++%user_app:test_mark
++
++A different example to show the same:
++- Create a file with .d extension and mention the probe names in it with
++provider name and marker name.
++
++$ cat probes.d
++provider user_app {
++         probe foo_start();
++         probe fun_start();
++};
++
++- Now create the probes.h and probes.o file :
++$ dtrace -C -h -s probes.d -o probes.h
++$ dtrace -C -G -s probes.d -o probes.o
++
++- A program using the markers:
++
++$ cat user_app.c
++
++#include <stdio.h>
++#include "probes.h"
++
++void foo(void)
++{
++        USER_APP_FOO_START();
++        printf("This is foo\n");
++}
++
++void fun(void)
++{
++        USER_APP_FUN_START();
++        printf("Inside fun\n");
++}
++int main(void)
++{
++        printf("In main\n");
++        foo();
++        fun();
++        return 0;
++}
++- Compile it and also provide probes.o file to linker:
++$ gcc user_app.c probes.o -o user_app
++
++- Now use perf to list the markers in the app:
++# perf list sdt ./user_app
++
++./user_app :
++%user_app:foo_start
++%user_app:fun_start
++
++Also, we can see the SDT markers present in our system in the usual binaries.
++First, scan the binaries using :
++# perf list sdt --scan
++
++Creating a cache of SDT markers...
++perf sdt cache created!
++ Use : "perf list sdt"
++ to see the SDT markers
++
++After the sdt cache file is created, use perf list to view the markers :
++# perf list sdt
++
++%rtld : init_start
++%rtld : init_complete
++%rtld : map_failed
++%rtld : map_start
++%rtld : lll_futex_wake
++...
++...
++%libgcc : unwind
++%libvirt : rpc_server_client_auth_allow
++%libvirt : rpc_server_client_auth_fail
++%libvirt : rpc_server_client_auth_deny
++
++Using "perf list sdt <file-name>" after this will update the entries related to that
++<file-name> in the cache.
++
++Also, this link provides important info regarding SDT notes:
++http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
++
++This link shows an example of marker probing with Systemtap:
++https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
++
++- Markers in binaries :
++These SDT markers are present in the ELF in the section named
++".note.stapsdt".
++Here, the name of the marker, its provider, type, location, base
++address, semaphore address.
++We can retrieve these values using the members name_off and desc_off in
++Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 6fce6a6..f146e53 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
+ SYNOPSIS
+ --------
+ [verse]
+-'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
++'perf list' [hw|sw|cache|tracepoint|pmu|event_glob|sdt]
  
-@@ -3153,7 +3153,7 @@ out_term:
- 	 */
- 	spin_lock_irqsave(&ha->hardware_lock, flags);
- 	qlt_send_term_exchange(vha, NULL, &cmd->atio, 1);
--	percpu_ida_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
-+	percpu_tags_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
- 	ha->tgt.tgt_ops->put_sess(sess);
- 	spin_unlock_irqrestore(&ha->hardware_lock, flags);
- }
-@@ -3173,7 +3173,7 @@ static struct qla_tgt_cmd *qlt_get_tag(scsi_qla_host_t *vha,
- 	struct qla_tgt_cmd *cmd;
- 	int tag;
+ DESCRIPTION
+ -----------
+@@ -108,6 +108,11 @@ To limit the list use:
  
--	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
-+	tag = percpu_tags_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
- 	if (tag < 0)
- 		return NULL;
+ . 'pmu' to print the kernel supplied PMU events.
  
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index fd90b28..f76729e 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -17,7 +17,7 @@
-  ******************************************************************************/
++. 'sdt' to print the SDT markers present in dsos and binaries. An additional
++  argument of filename will instruct perf to look for SDT markers only in that
++  file. If that file is already present in the cache and if there is any change,
++  then the entries for that file will be updated in the cache.
++
+ . If none of the above is matched, it will apply the supplied glob to all
+   events, printing the ones that match.
  
- #include <linux/list.h>
--#include <linux/percpu_ida.h>
-+#include <linux/percpu_tags.h>
- #include <scsi/scsi_tcq.h>
- #include <scsi/iscsi_proto.h>
- #include <target/target_core_base.h>
-@@ -158,7 +158,7 @@ struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *conn, int state)
- 	struct se_session *se_sess = conn->sess->se_sess;
- 	int size, tag;
- 
--	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, state);
-+	tag = percpu_tags_alloc(&se_sess->sess_tag_pool, state);
- 	if (tag < 0)
- 		return NULL;
- 
-@@ -701,7 +701,7 @@ void iscsit_release_cmd(struct iscsi_cmd *cmd)
- 	kfree(cmd->iov_data);
- 	kfree(cmd->text_in_ptr);
- 
--	percpu_ida_free(&sess->se_sess->sess_tag_pool, se_cmd->map_tag);
-+	percpu_tags_free(&sess->se_sess->sess_tag_pool, se_cmd->map_tag);
- }
- EXPORT_SYMBOL(iscsit_release_cmd);
- 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 7fa62fc..5c7f6f4 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -272,7 +272,7 @@ int transport_alloc_session_tags(struct se_session *se_sess,
- 		}
- 	}
- 
--	rc = percpu_ida_init(&se_sess->sess_tag_pool, tag_num);
-+	rc = percpu_tags_init(&se_sess->sess_tag_pool, tag_num);
- 	if (rc < 0) {
- 		pr_err("Unable to init se_sess->sess_tag_pool,"
- 			" tag_num: %u\n", tag_num);
-@@ -445,7 +445,7 @@ EXPORT_SYMBOL(transport_deregister_session_configfs);
- void transport_free_session(struct se_session *se_sess)
- {
- 	if (se_sess->sess_cmd_map) {
--		percpu_ida_destroy(&se_sess->sess_tag_pool);
-+		percpu_tags_destroy(&se_sess->sess_tag_pool);
- 		if (is_vmalloc_addr(se_sess->sess_cmd_map))
- 			vfree(se_sess->sess_cmd_map);
- 		else
-diff --git a/drivers/target/tcm_fc/tfc_cmd.c b/drivers/target/tcm_fc/tfc_cmd.c
-index be0c0d0..6176c92 100644
---- a/drivers/target/tcm_fc/tfc_cmd.c
-+++ b/drivers/target/tcm_fc/tfc_cmd.c
-@@ -28,7 +28,7 @@
- #include <linux/configfs.h>
- #include <linux/ctype.h>
- #include <linux/hash.h>
--#include <linux/percpu_ida.h>
-+#include <linux/percpu_tags.h>
- #include <asm/unaligned.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_host.h>
-@@ -100,7 +100,7 @@ static void ft_free_cmd(struct ft_cmd *cmd)
- 	if (fr_seq(fp))
- 		lport->tt.seq_release(fr_seq(fp));
- 	fc_frame_free(fp);
--	percpu_ida_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
-+	percpu_tags_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
- 	ft_sess_put(sess);	/* undo get from lookup at recv */
- }
- 
-@@ -456,7 +456,7 @@ static void ft_recv_cmd(struct ft_sess *sess, struct fc_frame *fp)
- 	struct se_session *se_sess = sess->se_sess;
- 	int tag;
- 
--	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
-+	tag = percpu_tags_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
- 	if (tag < 0)
- 		goto busy;
- 
-@@ -467,7 +467,7 @@ static void ft_recv_cmd(struct ft_sess *sess, struct fc_frame *fp)
- 	cmd->sess = sess;
- 	cmd->seq = lport->tt.seq_assign(lport, fp);
- 	if (!cmd->seq) {
--		percpu_ida_free(&se_sess->sess_tag_pool, tag);
-+		percpu_tags_free(&se_sess->sess_tag_pool, tag);
- 		goto busy;
- 	}
- 	cmd->req_frame = fp;		/* hold frame during cmd */
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index 69906ca..30dd962 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -48,7 +48,7 @@
- #include <linux/virtio_scsi.h>
- #include <linux/llist.h>
- #include <linux/bitmap.h>
--#include <linux/percpu_ida.h>
-+#include <linux/percpu_tags.h>
- 
- #include "vhost.h"
- 
-@@ -472,7 +472,7 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
- 	}
- 
- 	tcm_vhost_put_inflight(tv_cmd->inflight);
--	percpu_ida_free(&se_sess->sess_tag_pool, se_cmd->map_tag);
-+	percpu_tags_free(&se_sess->sess_tag_pool, se_cmd->map_tag);
- }
- 
- static int tcm_vhost_shutdown_session(struct se_session *se_sess)
-@@ -739,7 +739,7 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq, struct tcm_vhost_tpg *tpg,
- 	}
- 	se_sess = tv_nexus->tvn_se_sess;
- 
--	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
-+	tag = percpu_tags_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
- 	if (tag < 0) {
- 		pr_err("Unable to obtain tag for tcm_vhost_cmd\n");
- 		return ERR_PTR(-ENOMEM);
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 9ec9864..fd06ecf 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -5,7 +5,7 @@
- #include <linux/configfs.h>
- #include <linux/dma-mapping.h>
- #include <linux/blkdev.h>
--#include <linux/percpu_ida.h>
-+#include <linux/percpu_tags.h>
- #include <scsi/scsi_cmnd.h>
- #include <net/sock.h>
- #include <net/tcp.h>
-@@ -620,7 +620,7 @@ struct se_session {
- 	spinlock_t		sess_cmd_lock;
- 	struct kref		sess_kref;
- 	void			*sess_cmd_map;
--	struct percpu_ida	sess_tag_pool;
-+	struct percpu_tags	sess_tag_pool;
- };
- 
- struct se_device;
--- 
-1.7.7.6
 
