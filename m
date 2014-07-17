@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934531AbaGQPlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:41:32 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:37762 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933145AbaGQPla (ORCPT
+	id S934257AbaGQPnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:43:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37004 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933145AbaGQPnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:41:30 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-d5-53c7eea7e88a
-Message-id: <53C7EE82.6040803@samsung.com>
-Date: Thu, 17 Jul 2014 17:40:50 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH] irqchip: gic: Fix core ID calculation when topology is
- read from DT
-References: <1405610624-18722-1-git-send-email-t.figa@samsung.com>
- <20140717153236.GS13108@titan.lakedaemon.net>
-In-reply-to: <20140717153236.GS13108@titan.lakedaemon.net>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xK7rL3x0PNnhz3sxi44z1rBaNSy6z
-	WPQuuMpmsenxNVaLy7vmsFnMOL+PyeLN7xfsFmuP3GW32LxpKrPFql1/GB24PNbMW8PosXPW
-	XXaPhgPnWTzenTvH7rF5Sb1H35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZTQv7GIsmMZbsf/h
-	ItYGxptcXYycHBICJhK/nk9ggbDFJC7cW8/WxcjFISSwlFHi9P42JgjnM6PEqTtX2EGqeAW0
-	JJatvsYGYrMIqEqcO3wbLM4moCbxueERWJwfqGZN03WgqRwcogIREo8vCEG0Ckr8mHwPbJmI
-	gLrEuc2tYMuYBb4wSVye/AEsISwQJXH6dRPYHCGBIolbDVcYQWxOASuJ59sngO1iFtCR2N86
-	jQ3ClpfYvOYt8wRGwVlIdsxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCHx
-	8mUH4+JjVocYBTgYlXh4Oz8fCxZiTSwrrsw9xCjBwawkwpt9/3iwEG9KYmVValF+fFFpTmrx
-	IUYmDk6pBsbUCw2T7AXe1iYZLnqbdOzAzAdPJ5R6npLN/LNCQYDzeL19+cQjlm/inx3TW37x
-	T8LB6ed2zl+4aoG4YD6bwsH5LqEp25bYrKl9orNrsW9d+uw3T/aaFN66MGvFjRO7FPMPVvhf
-	XhBi6bRnbsaM+oNHniVeO8z6udEp+CwzR+e3rh2i2fNNmXaFKbEUZyQaajEXFScCAMBw+/F1	AgAA
+	Thu, 17 Jul 2014 11:43:07 -0400
+Date: Thu, 17 Jul 2014 17:43:00 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        mika.westerberg@linux.intel.com
+Subject: Re: [PATCH 4/5] tty: serial: 8250 core: add runtime pm
+Message-ID: <20140717154300.GA16623@linutronix.de>
+References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de>
+ <1405521903-5877-5-git-send-email-bigeasy@linutronix.de>
+ <20140716151604.GG1365@saruman.home>
+ <53C6A050.2050409@linutronix.de>
+ <20140716160614.GI1365@saruman.home>
+ <53C7EC6F.6060902@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53C7EC6F.6060902@hurleysoftware.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+* Peter Hurley | 2014-07-17 11:31:59 [-0400]:
 
-On 17.07.2014 17:32, Jason Cooper wrote:
-> On Thu, Jul 17, 2014 at 05:23:44PM +0200, Tomasz Figa wrote:
->> Certain GIC implementation, namely those found on earlier, single
->> cluster, Exynos SoCs, have registers mapped without per-CPU banking,
->> which means that the driver needs to use different offset for each CPU.
+>On 07/16/2014 12:06 PM, Felipe Balbi wrote:
+>>On Wed, Jul 16, 2014 at 05:54:56PM +0200, Sebastian Andrzej Siewior wrote:
+>>>On 07/16/2014 05:16 PM, Felipe Balbi wrote:
+>
+>>>>I wonder if you should get_sync() on start_tx() and only
+>>>>put_autosuspend() at stop_tx(). I guess the outcome would be
+>>>>largely the same, no ?
+>>>
+>>>I just opened minicom on ttyS0 and gave a try. start_tx() was invoked
+>>>each time I pressed a key (sent a character). I haven't seen stop_tx()
+>>>even after after I closed minicom. I guess stop_tx() is invoked if you
+>>>switch half-duplex communication.
 >>
->> Currently the driver calculates the offset by multiplying value returned
->> by cpu_logical_map() by CPU offset parsed from DT. This is correct when
->> CPU topology is not specified in DT and aforementioned function returns
->> core ID alone. However when DT contains CPU topology, the function
->> changes to return cluster ID as well, which is non-zero on mentioned
->> SoCs and so breaks the calculation in GIC driver.
->>
->> This patch fixes this by masking out cluster ID in CPU offset
->> calculation so that only core ID is considered. Multi-cluster Exynos
->> SoCs already have banked GIC implementations, so this simple fix should
->> be enough.
->>
->> Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
->> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> ---
->>  drivers/irqchip/irq-gic.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> iiuc, this was introduced by:
-> 
->   db0d4db22a78d ARM: gic: allow GIC to support non-banked setups
-> 
-> and so should be for v3.3 and up, correct?
+>>that's bad, I expected stop to be called also after each character.
+>
+>The 8250 core auto-stops tx when the tx ring buffer is empty (except
+>in the case of dma, where stopping tx isn't necessary).
 
-Could be, although there was and still is no topology data specified in
-DT for affected Exynos SoCs. The need for it showed up just recently, so
-I'm not sure this is a regression to fix in older kernels.
+This is correct. So this is what I have now for the non-dma case:
 
-Best regards,
-Tomasz
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 2e4a93b..480a1c0 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1283,6 +1283,9 @@ static inline void __stop_tx(struct uart_8250_port *p)
+ 	if (p->ier & UART_IER_THRI) {
+ 		p->ier &= ~UART_IER_THRI;
+ 		serial_out(p, UART_IER, p->ier);
++
++		pm_runtime_mark_last_busy(p->port.dev);
++		pm_runtime_put_autosuspend(p->port.dev);
+ 	}
+ }
+ 
+@@ -1310,12 +1313,12 @@ static void serial8250_start_tx(struct uart_port *port)
+ 	struct uart_8250_port *up =
+ 		container_of(port, struct uart_8250_port, port);
+ 
+-	pm_runtime_get_sync(port->dev);
+ 	if (up->dma && !serial8250_tx_dma(up)) {
+ 		goto out;
+ 	} else if (!(up->ier & UART_IER_THRI)) {
+ 		up->ier |= UART_IER_THRI;
++		pm_runtime_get_sync(port->dev);
+ 		serial_port_out(port, UART_IER, up->ier);
+ 
+ 		if (up->bugs & UART_BUG_TXEN) {
+ 			unsigned char lsr;
+@@ -1500,9 +1503,10 @@ void serial8250_tx_chars(struct uart_8250_port *up)
+ 		uart_write_wakeup(port);
+ 
+ 	DEBUG_INTR("THRE...");
+-
++#if 0
+ 	if (uart_circ_empty(xmit))
+ 		__stop_tx(up);
++#endif
+ }
+ EXPORT_SYMBOL_GPL(serial8250_tx_chars);
+ 
+
+and now I need to come up with something that is not if (port != omap)
+for that #if 0 block. The code disables the TX FIFO empty interrupt once
+the transfer is complete. I want to call __stop_tx() once the tx fifo is
+empty.
+Felipe, Would a check for dev->power.use_autosuspend be the right thing
+to do?
+
+>Regards,
+>Peter Hurley
+
+Sebastian
