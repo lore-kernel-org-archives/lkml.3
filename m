@@ -1,69 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607AbaGQO6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:58:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17234 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139AbaGQO6N (ORCPT
+	id S933967AbaGQO6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:58:21 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:43376 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139AbaGQO6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:58:13 -0400
-Date: Thu, 17 Jul 2014 17:58:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-metag@vger.kernel.org, james.hogan@imgtec.com
-Subject: Re: [PATCH 1/3] arch/metag/kernel/cachepart.c: fix failure check
-Message-ID: <20140717145811.GI25880@mwanda>
-References: <1405603586-12515-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	Thu, 17 Jul 2014 10:58:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405603586-12515-1-git-send-email-andrey.krieger.utkin@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+Date: Thu, 17 Jul 2014 16:58:17 +0200
+Message-ID: <CABYn4swJ5NHyUd5+zCK6jhHex4v9DCMe5Qo-BZqxjPf90JfusQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] i2c: Don't start transfers when suspended
+From: Bastian Hecht <hechtb@gmail.com>
+To: linux-i2c@vger.kernel.org
+Cc: Linux-SH <linux-sh@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Bastian Hecht <hechtb@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 04:26:26PM +0300, Andrey Utkin wrote:
-> [linux-3.16-rc5/arch/metag/kernel/cachepart.c:102]: (style) Checking if unsigned variable 'thread_cache_size' is less than zero.
-> 
-> Source code is
-> 
->         if (thread_cache_size < 0)
->             pr_emerg("Can't read %s cache size\n",
->                  cache_type ? "DCACHE" : "ICACHE");
-> 
-> but
-> 
->     unsigned int thread_cache_size;
-> 
-> Function get_thread_cache_size returns an error code
-> as (unsigned int) -1.
-> 
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80361
-> Reported-by: David Binderman <dcb314@hotmail.com>
-> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+I want to add the remark that I can't help further on the patch series
+in the next month about. So this is free to be taken/ignored/modified
+without any approval by my side.
+
+Have fun coding,
+
+ Bastian
+
+
+2014-07-17 16:48 GMT+02:00 Bastian Hecht <hechtb@gmail.com>:
+> i2c transfer requests come in very uncontrolled, like from interrupt routines.
+> We might be suspended when this happens. To avoid i2c timeouts caused by
+> powered down busses we check for suspension.
+>
+> Several bus drivers handle this problem on their own. We can clean things up
+> by moving the protection mechanism into the core.
+>
+> Signed-off-by: Bastian Hecht <hechtb@gmail.com>
 > ---
->  arch/metag/kernel/cachepart.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/metag/kernel/cachepart.c b/arch/metag/kernel/cachepart.c
-> index 0a2385f..b137034 100644
-> --- a/arch/metag/kernel/cachepart.c
-> +++ b/arch/metag/kernel/cachepart.c
-> @@ -99,7 +99,7 @@ void check_for_cache_aliasing(int thread_id)
->  	for (cache_type = ICACHE; cache_type <= DCACHE; cache_type++) {
->  		thread_cache_size =
->  				get_thread_cache_size(cache_type, thread_id);
-> -		if (thread_cache_size < 0)
-> +		if (thread_cache_size == (unsigned int)-1)
-
-Oh, wow.  Every single variable in this file is an unsigned int.  :P
-
-We should just make this int.  The values of thread_cache_size do not
-go that high.
-
-regards,
-dan carpenter
-
+> changelog v2:
+>
+> - commit message extended.
+> - initialization added for adap->suspended
+> - swapped branch for increased performance
+>
+>
+>  drivers/i2c/i2c-core.c | 25 ++++++++++++++++++++++++-
+>  include/linux/i2c.h    |  1 +
+>  2 files changed, 25 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 7c7f4b8..b15dc20 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -343,6 +343,13 @@ static int i2c_legacy_resume(struct device *dev)
+>  static int i2c_device_pm_suspend(struct device *dev)
+>  {
+>         const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +       struct i2c_adapter *adap = i2c_verify_adapter(dev);
+> +
+> +       if (adap) {
+> +               i2c_lock_adapter(adap);
+> +               adap->suspended = true;
+> +               i2c_unlock_adapter(adap);
+> +       }
+>
+>         if (pm)
+>                 return pm_generic_suspend(dev);
+> @@ -353,6 +360,13 @@ static int i2c_device_pm_suspend(struct device *dev)
+>  static int i2c_device_pm_resume(struct device *dev)
+>  {
+>         const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +       struct i2c_adapter *adap = i2c_verify_adapter(dev);
+> +
+> +       if (adap) {
+> +               i2c_lock_adapter(adap);
+> +               adap->suspended = false;
+> +               i2c_unlock_adapter(adap);
+> +       }
+>
+>         if (pm)
+>                 return pm_generic_resume(dev);
+> @@ -1243,6 +1257,7 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
+>         dev_set_name(&adap->dev, "i2c-%d", adap->nr);
+>         adap->dev.bus = &i2c_bus_type;
+>         adap->dev.type = &i2c_adapter_type;
+> +       adap->suspended = false;
+>         res = device_register(&adap->dev);
+>         if (res)
+>                 goto out_list;
+> @@ -1819,7 +1834,10 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+>                         i2c_lock_adapter(adap);
+>                 }
+>
+> -               ret = __i2c_transfer(adap, msgs, num);
+> +               if (!adap->suspended)
+> +                       ret = __i2c_transfer(adap, msgs, num);
+> +               else
+> +                       ret = -EIO;
+>                 i2c_unlock_adapter(adap);
+>
+>                 return ret;
+> @@ -2577,6 +2595,10 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
+>
+>         if (adapter->algo->smbus_xfer) {
+>                 i2c_lock_adapter(adapter);
+> +               if (adapter->suspended) {
+> +                       res = -EIO;
+> +                       goto unlock;
+> +               }
+>
+>                 /* Retry automatically on arbitration loss */
+>                 orig_jiffies = jiffies;
+> @@ -2590,6 +2612,7 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
+>                                        orig_jiffies + adapter->timeout))
+>                                 break;
+>                 }
+> +unlock:
+>                 i2c_unlock_adapter(adapter);
+>
+>                 if (res != -EOPNOTSUPP || !adapter->algo->master_xfer)
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index b556e0a..af08c75 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -434,6 +434,7 @@ struct i2c_adapter {
+>         int timeout;                    /* in jiffies */
+>         int retries;
+>         struct device dev;              /* the adapter device */
+> +       unsigned int suspended:1;
+>
+>         int nr;
+>         char name[48];
+> --
+> 1.9.1
+>
