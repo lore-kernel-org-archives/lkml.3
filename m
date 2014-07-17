@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405AbaGQNkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:40:09 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22920 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757113AbaGQNkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:40:06 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+x7a6waOXuqQJImi6uGTjg99ketHGvR5U=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8F5115AE3D6
-Date: Thu, 17 Jul 2014 09:39:51 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] irqchip: atmel-aic: Add irq RTC fixups
-Message-ID: <20140717133951.GQ13108@titan.lakedaemon.net>
-References: <1405016741-2407-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S932833AbaGQNka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:40:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45460 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932366AbaGQNkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:40:24 -0400
+Date: Thu, 17 Jul 2014 15:40:20 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Guenter Roeck <linux@roeck-us.net>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140717154020.650ad59c@endymion.delvare>
+In-Reply-To: <20140717132135.GI2740@katana>
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+	<20140717132135.GI2740@katana>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405016741-2407-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10, 2014 at 08:25:38PM +0200, Boris BREZILLON wrote:
-> Hello,
+On Thu, 17 Jul 2014 15:21:35 +0200, Wolfram Sang wrote:
+> On Mon, Jul 07, 2014 at 07:23:03AM -0700, Guenter Roeck wrote:
+> > SMBus block commands are different to I2C block commands since
+> > the returned data is not normally accessible with byte or word
+> > commands on other command offsets. Add linked list of 'block'
+> > commands to support those commands.
+> > 
+> > Access mechanism is quite simple: Block commands must be written
+> > before they can be read. The first write selects the block length.
+> > Subsequent writes can be partial. Block read commands always return
+> > the number of bytes selected with the first write.
+> > 
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> > v2: Make new functionality only available on request via functionality
+> >     module parameter
+> >     Add more details about SMBus block mode support to documentation
+> >     Use correct sizeof() variable in devm_kzalloc
+> >     Use stub_find_block() only in SMBus block command itself.
+> >     Store first word of block data in chip->words[].
+> >     When writing block data and the written data is longer than
+> >     the first write, bail out with debug message indicating the reason
+> >     for the error.
 > 
-> This patch series introduce the notion of irq fixups for atmel SoCs.
-> 
-> In most at91 SoCs the first interrupt line is shared by several IPs, and
-> some of these HW blocks might be in an unknown state when booting the
-> Linux kernel.
-> Hence these IPs might generate spurious interrupts if they've not masked
-> their irqs and the shared irq line is requested by another peripheral.
-> 
-> These fixups were previously done in arch/arm/mach-at91/sysirq_mask.c
-> but as we're trying to use standard implementation (IRQCHIP_DECLARE and
-> automatic call of irqchip_init within arch/arm/kernel/irq.c) we need to
-> do those fixups in the irqchip driver.
-> 
-> This series only fix RTC irqs, but other HW blocks (RTT, PMC, ...) will
-> be added later on.
-> 
-> This series depends on this one [1].
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/271413.html
-> 
-> Boris BREZILLON (3):
->   irqchip: atmel-aic: Add irq fixup infrastructure
->   irqchip: atmel-aic: Implement RTC irq fixup
->   irqchip: atmel-aic: Define irq fixups for atmel SoCs
-> 
->  drivers/irqchip/irq-atmel-aic-common.c | 47 ++++++++++++++++++++++++++++++++++
->  drivers/irqchip/irq-atmel-aic-common.h |  4 +++
->  drivers/irqchip/irq-atmel-aic.c        | 15 +++++++++++
->  drivers/irqchip/irq-atmel-aic5.c       | 12 +++++++++
->  4 files changed, 78 insertions(+)
+> Thanks for doing this and thanks to Jean for the thorough review.
 
-Whole series applied on top of irqchip/atmel-aic.
+You're welcome.
 
-thx,
+> The thing I miss is the documentation that SMBUS_BLOCK must explicitly
+> be activated and the description how to do it. A comment in the driver,
+> above STUB_FUNC_* defines might not hurt as well.
 
-Jason.
+Good point.
+
+> Also, I'd prefer to squash Jean's "increasing block length" patch into
+> this one if both of you are fine with that?
+
+Yes, I would be perfectly fine with that.
+
+Guenter, can you please send an updated patch?
+
+-- 
+Jean Delvare
+SUSE L3 Support
