@@ -1,232 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327AbaGQHBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 03:01:08 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63940 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaGQHBF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 03:01:05 -0400
-Message-ID: <53c774ae.aa84460a.5c97.4c7a@mx.google.com>
-X-Google-Original-Message-ID: <001801cfa18c$de7c86b0$9b759410$@dulixin@gmail.com>
-From: "Dudley Du" <dudley.dulixin@gmail.com>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Dudley Du" <dudl@cypress.com>
-Subject: [PATCH v4 14/14] input: cyapa: add function to monitor LID close event to off trackpad device
-Date: Thu, 17 Jul 2014 15:00:47 +0800
+	id S1754016AbaGQHFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 03:05:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14066 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751802AbaGQHFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 03:05:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,676,1400050800"; 
+   d="asc'?scan'208";a="544633267"
+Date: Thu, 17 Jul 2014 02:34:38 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de,
+        huawei.libin@huawei.com, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        umgwanakikbuti@gmail.com, peterz@infradead.org
+Subject: Re: [PATCH v2] x86,cpu-hotplug: assign same CPU number to readded CPU
+Message-ID: <20140717063438.GA2311@gchen.bj.intel.com>
+References: <53C62AAF.7060509@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+hjNYV6R0EhjUySMmG0duozkt7FA==
-Content-Language: zh-cn
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <53C62AAF.7060509@jp.fujitsu.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the function to monitor lid close event to suspend and resume
-trackpad device.
-Because system suspend takes some time to trigger from user space,
-and in that time, the lid panel of the laptop may couple with the
-active trackpad. This may generate stray input events, which may
-in turn cancel the suspend if the drivers use pm_wakup_event(), and
-those input events may trigger something unwanted in the UI.
-So this patch adds the function to do off the trackpad device quickly.
-When the lid is closed, as soon as possible, the trakcpad device must
-be off. And furthermore, the policy on lid close is not always to
-enter suspend (lid closed with external display), and at this time,
-the trackpad device must be disabled as well as again to avoid the
-risk of generating stray events.
-TEST=test on Chromebooks.
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cyapa.c |  136 +++++++++++++++++++++++++++++++++++++++++++
- drivers/input/mouse/cyapa.h |    4 +-
- 2 files changed, 139 insertions(+), 1 deletion(-)
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 
-diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index a5f6473..a681a3b 100644
---- a/drivers/input/mouse/cyapa.c
-+++ b/drivers/input/mouse/cyapa.c
-@@ -1072,6 +1072,140 @@ static const struct attribute_group cyapa_sysfs_group = {
- 	.attrs = cyapa_sysfs_entries,
- };
- 
-+
-+/*
-+ * We rely on EV_SW and SW_LID bits to identify a LID device, and hook
-+ * up our filter to listen for SW_LID events to enable/disable touchpad when
-+ * LID is open/closed.
-+ */
-+static const struct input_device_id lid_device_ids[] = {
-+	{
-+		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-+			 INPUT_DEVICE_ID_MATCH_SWBIT,
-+		.evbit = { BIT_MASK(EV_SW) },
-+		.swbit = { BIT_MASK(SW_LID) },
-+	},
-+	{ },
-+};
-+
-+static int lid_device_connect(struct input_handler *handler,
-+			      struct input_dev *dev,
-+			      const struct input_device_id *id)
-+{
-+	struct input_handle *lid_handle;
-+	int error;
-+
-+	pr_info("cyapa: LID device: '%s' connected\n", dev->name);
-+	lid_handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
-+	if (!lid_handle)
-+		return -ENOMEM;
-+
-+	lid_handle->dev = dev;
-+	lid_handle->handler = handler;
-+	lid_handle->name = "lid_event_handler";
-+	lid_handle->private = handler->private;
-+
-+	error = input_register_handle(lid_handle);
-+	if (error) {
-+		pr_err("Failed to register lid_event_handler, error %d\n",
-+		       error);
-+		goto err_free;
-+	}
-+
-+	error = input_open_device(lid_handle);
-+	if (error) {
-+		pr_err("Failed to open input device, error %d\n", error);
-+		goto err_unregister;
-+	}
-+
-+	return 0;
-+err_unregister:
-+	input_unregister_handle(lid_handle);
-+err_free:
-+	kfree(lid_handle);
-+	return error;
-+}
-+
-+static void lid_device_disconnect(struct input_handle *handle)
-+{
-+	input_close_device(handle);
-+	input_unregister_handle(handle);
-+	kfree(handle);
-+}
-+
-+static bool lid_event_filter(struct input_handle *handle,
-+			     unsigned int type, unsigned int code, int value)
-+{
-+	struct cyapa *cyapa = handle->private;
-+	struct device *dev = &cyapa->client->dev;
-+
-+	if (type == EV_SW && code == SW_LID) {
-+		pr_info("cyapa %s: %s touch device\n",
-+			dev_name(&cyapa->client->dev),
-+			(value ? "disable" : "enable"));
-+		if (cyapa->suspended) {
-+			/*
-+			 * If the lid event filter is called while suspended,
-+			 * there is no guarantee that the underlying i2cs are
-+			 * resumed at this point, so it is not safe to issue
-+			 * the command to change power modes.
-+			 * Instead, rely on cyapa_resume to set us back to
-+			 * PWR_MODE_FULL_ACTIVE.
-+			 */
-+			pr_info("cyapa %s: skipping lid pm change in suspend\n",
-+				dev_name(&cyapa->client->dev));
-+			return false;
-+		}
-+		if (value == 0) {
-+			if (cyapa->ops->set_power_mode)
-+				cyapa->ops->set_power_mode(cyapa,
-+						PWR_MODE_FULL_ACTIVE, 0);
-+			pm_runtime_set_active(dev);
-+			pm_runtime_enable(dev);
-+		} else {
-+			pm_runtime_disable(dev);
-+			if (cyapa->ops->set_power_mode)
-+				cyapa->ops->set_power_mode(cyapa,
-+						PWR_MODE_OFF, 0);
-+		}
-+	}
-+
-+	return false;
-+}
-+
-+static void lid_event_register_handler(struct cyapa *cyapa)
-+{
-+	int error;
-+	struct input_handler *lid_handler = &cyapa->lid_handler;
-+
-+	if (cyapa->lid_handler_registered) {
-+		pr_err("lid handler is registered already\n");
-+		return;
-+	}
-+
-+	lid_handler->filter	= lid_event_filter;
-+	lid_handler->connect	= lid_device_connect;
-+	lid_handler->disconnect	= lid_device_disconnect;
-+	lid_handler->name	= "cyapa_lid_event_handler";
-+	lid_handler->id_table	= lid_device_ids;
-+	lid_handler->private	= cyapa;
-+
-+	error = input_register_handler(lid_handler);
-+	if (error) {
-+		pr_err("Failed to register lid handler(%d)\n", error);
-+		return;
-+	}
-+	cyapa->lid_handler_registered = true;
-+}
-+
-+static void lid_event_unregister_handler(struct cyapa *cyapa)
-+{
-+	if (cyapa->lid_handler_registered) {
-+		input_unregister_handler(&cyapa->lid_handler);
-+		cyapa->lid_handler_registered = false;
-+	}
-+}
-+
- void cyapa_detect_async(void *data, async_cookie_t cookie)
- {
- 	struct cyapa *cyapa = (struct cyapa *)data;
-@@ -1091,6 +1225,7 @@ static void cyapa_detect_and_start(void *data, async_cookie_t cookie)
- 	cyapa_detect_async(data, cookie);
- 
- 	cyapa_start_runtime(cyapa);
-+	lid_event_register_handler(cyapa);
- }
- 
- static int cyapa_tp_modules_init(struct cyapa *cyapa)
-@@ -1239,6 +1374,7 @@ static int cyapa_remove(struct i2c_client *client)
- 	mutex_destroy(&cyapa->debugfs_mutex);
- 
- 	input_unregister_device(cyapa->input);
-+	lid_event_unregister_handler(cyapa);
- 	if (cyapa->ops->set_power_mode)
- 		cyapa->ops->set_power_mode(cyapa, PWR_MODE_OFF, 0);
- 	cyapa_tp_modules_uninit(cyapa);
-diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
-index 728bf70..ff3ac00 100644
---- a/drivers/input/mouse/cyapa.h
-+++ b/drivers/input/mouse/cyapa.h
-@@ -271,8 +271,10 @@ struct cyapa {
- 	size_t tp_raw_data_size;
- 
- 	const struct cyapa_dev_ops *ops;
--};
- 
-+	bool lid_handler_registered;
-+	struct input_handler lid_handler;
-+};
- 
- 
- ssize_t cyapa_i2c_reg_read_block(struct cyapa *cyapa, u8 reg, size_t len,
--- 
-1.7.9.5
+On Wed, Jul 16, 2014 at 04:33:03PM +0900, Yasuaki Ishimatsu wrote:
+[...]
+> + * Bind ACPI ID to Logical CPU number
+           ^^^^
+           APIC
 
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTx25+AAoJEI01n1+kOSLH5mMP+weieRzFDzNswOi1/VVSeib4
+buzsGpqBRvW51ZjY4UQp/0xLmpgshvt9WFyI2rtRq9j/YCKSRKA/SszgKfLWbNb9
++F3MqCXJJZEZ3W6yLc8SUAViRDGZn5YLN+FjhTgmLFIVICk4mBcciMPYBOiy6zzC
+5TFZTnvymI2YAeCvECWlN6kJJHK5waP9PDVSnXTBkiqCKzj9gRBdtQ7mRSYduhAB
+nOPKjxGlMax4Fy2uaOQRxPtfK8PishCxEi4Es/YnsXsdwmQM5psDo//ROLzBNxl4
+oX2vgdfB5k/dKc7bSyQtZ5p3ClUBJwqWKegPB7+giXQPPVmmgkdEdxpcWg/DG4sm
+Y2qM5ghnILLJgrZA/ioGIQgN0eAetP73Vmrvz+JzDCpFvr6Ck+GlFfj/2wcvmEGS
+kk7EjloJPdu0dByCRQUTBGxeiPfYw4kem43F3vqBHEwLdBVcGHEsOpcf2hAZG1ki
+/mI2QmGersu3V6Ltjvp9T/CtI7YSDJ0ZMgUrRw/2PldebHMho2ZDRDCgBQqJtwMm
+NIs/O4Ve/mkJscPPbaYmM8wgbDO/l8c84zQSdAkw/b2XfD24B3M5vJJ9Vk1LMqX1
+KyYw5ujtAQz4oV7Rt/Y+ziP9JYqNQXFJUS1Lh1tejO2+ob1ZNNqTLt/w6VBrmzpP
+t5/1KfRCBSIQOhe/nuID
+=DG+w
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
