@@ -1,255 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaGQKyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:54:44 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:39534 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaGQKyl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:54:41 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: linux-omap@vger.kernel.org
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH CFT] arm: omap1: Migrate debug_ll macros to use 8250.S
-Date: Thu, 17 Jul 2014 11:54:04 +0100
-Message-Id: <1405594444-27633-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1756827AbaGQKzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:55:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756555AbaGQKzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:55:16 -0400
+Date: Thu, 17 Jul 2014 12:55:00 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCHv3 4/5] perf tools: Add --debug optionto set debug variable
+Message-ID: <20140717105500.GG516@krava.redhat.com>
+References: <1405374411-29012-1-git-send-email-jolsa@kernel.org>
+ <1405374411-29012-5-git-send-email-jolsa@kernel.org>
+ <87wqbc1juy.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wqbc1juy.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The omap1's debug-macro.S is similar to the generic 8250 code. Compared to
-the 8520 code the omap1 macro automatically determines what UART to use
-based on breadcrumbs left by the bootloader and automatically copes with
-the eccentric register layout on OMAP7XX.
+On Thu, Jul 17, 2014 at 05:15:49PM +0900, Namhyung Kim wrote:
 
-This patch drops both these features and relies instead on the generic
-8250 macros:
+SNIP
 
-1. Dropping support for the bootloader breadcrumbs is identical to the
-   way the migration was handled for OMAP2 (see 808b7e07464d...).
+> > index 0eeb247dc7d2..c75a42822c53 100644
+> > --- a/tools/perf/Documentation/perf.txt
+> > +++ b/tools/perf/Documentation/perf.txt
+> > @@ -8,7 +8,15 @@ perf - Performance analysis tools for Linux
+> >  SYNOPSIS
+> >  --------
+> >  [verse]
+> > -'perf' [--version] [--help] COMMAND [ARGS]
+> > +'perf' [--version] [--debug variable[=VALUE]] [--help] COMMAND [ARGS]
+> 
+> Hmm.. is this really needed?  Also, there're other options might be
+> added here.  What about just saying
+> 
+>   'perf' [--version] [--help] [OPTIONS] COMMAND [ARGS]
+> 
+> ?
+> 
 
-2. Support for OMAP7XX still exists but is configured at compile time
-   rather than runtime.
+yep, it's better, v3 attached
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: linux-omap@vger.kernel.org
+thanks,
+jirka
+
+
 ---
- arch/arm/Kconfig.debug                         |  57 +++++++++++++-
- arch/arm/mach-omap1/include/mach/debug-macro.S | 101 -------------------------
- 2 files changed, 56 insertions(+), 102 deletions(-)
- delete mode 100644 arch/arm/mach-omap1/include/mach/debug-macro.S
+Adding --debug option as a way to setup debug variables.
+Starting with support for verbose, more will come.
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 6f9664a..0881853 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -463,6 +463,30 @@ choice
- 		  Say Y here if you want kernel low-level debugging support
- 		  on TI-NSPIRE CX models.
+It's possible to use it now with report command:
+  $ perf --debug verbose   ...
+  $ perf --debug verbose=2 ...
+
+I'll need this support to add separated debug variable
+for ordered events change in order to separate debug
+output out of standard verbose stream.
+
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/Documentation/perf.txt | 10 ++++++++-
+ tools/perf/perf.c                 | 13 +++++++++++-
+ tools/perf/util/debug.c           | 44 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/debug.h           |  2 ++
+ 4 files changed, 67 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf.txt b/tools/perf/Documentation/perf.txt
+index 0eeb247dc7d2..d240bb2e5b22 100644
+--- a/tools/perf/Documentation/perf.txt
++++ b/tools/perf/Documentation/perf.txt
+@@ -8,7 +8,15 @@ perf - Performance analysis tools for Linux
+ SYNOPSIS
+ --------
+ [verse]
+-'perf' [--version] [--help] COMMAND [ARGS]
++'perf' [--version] [--help] [OPTIONS] COMMAND [ARGS]
++
++OPTIONS
++-------
++--debug::
++	Setup debug variable (just verbose for now) in value
++	range (0, 10). Use like:
++	  --debug verbose   # sets verbose = 1
++	  --debug verbose=2 # sets verbose = 2
  
-+	config DEBUG_OMAP1UART1
-+		bool "Kernel low-level debugging via OMAP1 UART1"
-+		depends on ARCH_OMAP1 && !ARCH_OMAP730
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on OMAP1 based platforms (expect OMAP730) on the UART1.
-+
-+	config DEBUG_OMAP1UART2
-+		bool "Kernel low-level debugging via OMAP1 UART2"
-+		depends on ARCH_OMAP1 && !ARCH_OMAP730
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on OMAP1 based platforms (expect OMAP730) on the UART2.
-+
-+	config DEBUG_OMAP1UART3
-+		bool "Kernel low-level debugging via OMAP1 UART3"
-+		depends on ARCH_OMAP1 && !ARCH_OMAP730
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on OMAP1 based platforms (expect OMAP730) on the UART3.
-+
- 	config DEBUG_OMAP2UART1
- 		bool "OMAP2/3/4 UART1 (omap2/3 sdp boards and some omap3 boards)"
- 		depends on ARCH_OMAP2PLUS
-@@ -505,6 +529,30 @@ choice
- 		depends on ARCH_OMAP2PLUS
- 		select DEBUG_OMAP2PLUS_UART
+ DESCRIPTION
+ -----------
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 95c58fc15284..eed3fb2a3af0 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -13,11 +13,12 @@
+ #include "util/quote.h"
+ #include "util/run-command.h"
+ #include "util/parse-events.h"
++#include "util/debug.h"
+ #include <api/fs/debugfs.h>
+ #include <pthread.h>
  
-+	config DEBUG_OMAP7XXUART1
-+		bool "Kernel low-level debugging via OMAP730 UART1"
-+		depends on ARCH_OMAP730
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on OMAP730 based platforms on the UART1.
-+
-+	config DEBUG_OMAP7XXUART2
-+		bool "Kernel low-level debugging via OMAP730 UART2"
-+		depends on ARCH_OMAP730
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on OMAP730 based platforms on the UART2.
-+
-+	config DEBUG_OMAP7XXUART3
-+		bool "Kernel low-level debugging via OMAP730 UART3"
-+		depends on ARCH_OMAP730
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on OMAP730 based platforms on the UART3.
-+
- 	config DEBUG_TI81XXUART1
- 		bool "Kernel low-level debugging messages via TI81XX UART1 (ti8148evm)"
- 		depends on ARCH_OMAP2PLUS
-@@ -1106,6 +1154,9 @@ config DEBUG_UART_PHYS
- 	default 0xfe800000 if ARCH_IOP32X
- 	default 0xffc02000 if DEBUG_SOCFPGA_UART
- 	default 0xffd82340 if ARCH_IOP13XX
-+	default 0xfffb0000 if DEBUG_OMAP1UART1 || DEBUG_OMAP7XXUART1
-+	default 0xfffb0800 if DEBUG_OMAP1UART2 || DEBUG_OMAP7XXUART2
-+	default 0xfffb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
- 	default 0xfff36000 if DEBUG_HIGHBANK_UART
- 	default 0xfffff700 if ARCH_IOP33X
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
-@@ -1173,6 +1224,9 @@ config DEBUG_UART_VIRT
- 	default 0xfef00000 if ARCH_IXP4XX && !CPU_BIG_ENDIAN
- 	default 0xfef00003 if ARCH_IXP4XX && CPU_BIG_ENDIAN
- 	default 0xfef36000 if DEBUG_HIGHBANK_UART
-+	default 0xfefb0000 if DEBUG_OMAP1UART1 || DEBUG_OMAP7XXUART1
-+	default 0xfefb0800 if DEBUG_OMAP1UART2 || DEBUG_OMAP7XXUART2
-+	default 0xfefb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
- 	default 0xfefff700 if ARCH_IOP33X
- 	default 0xff003000 if DEBUG_U300_UART
- 	default DEBUG_UART_PHYS if !MMU
-@@ -1183,7 +1237,8 @@ config DEBUG_UART_VIRT
- config DEBUG_UART_8250_SHIFT
- 	int "Register offset shift for the 8250 debug UART"
- 	depends on DEBUG_LL_UART_8250 || DEBUG_UART_8250
--	default 0 if FOOTBRIDGE || ARCH_IOP32X
-+	default 0 if FOOTBRIDGE || ARCH_IOP32X || \
-+		DEBUG_OMAP7XXUART1 || DEBUG_OMAP7XXUART2 || DEBUG_OMAP7XXUART3
- 	default 2
+ const char perf_usage_string[] =
+-	"perf [--version] [--help] COMMAND [ARGS]";
++	"perf [--version] [--debug variable[=VALUE]] [--help] COMMAND [ARGS]";
  
- config DEBUG_UART_8250_WORD
-diff --git a/arch/arm/mach-omap1/include/mach/debug-macro.S b/arch/arm/mach-omap1/include/mach/debug-macro.S
-deleted file mode 100644
-index 5c1a26c..0000000
---- a/arch/arm/mach-omap1/include/mach/debug-macro.S
-+++ /dev/null
-@@ -1,101 +0,0 @@
--/* arch/arm/mach-omap1/include/mach/debug-macro.S
-- *
-- * Debugging macro include header
-- *
-- *  Copyright (C) 1994-1999 Russell King
-- *  Moved from linux/arch/arm/kernel/debug.S by Ben Dooks
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
--*/
--
--#include <linux/serial_reg.h>
--
--#include "serial.h"
--
--		.pushsection .data
--omap_uart_phys:	.word	0x0
--omap_uart_virt:	.word	0x0
--		.popsection
--
--		/*
--		 * Note that this code won't work if the bootloader passes
--		 * a wrong machine ID number in r1. To debug, just hardcode
--		 * the desired UART phys and virt addresses temporarily into
--		 * the omap_uart_phys and omap_uart_virt above.
--		 */
--		.macro	addruart, rp, rv, tmp
--
--		/* Use omap_uart_phys/virt if already configured */
--9:		adr	\rp, 99f		@ get effective addr of 99f
--		ldr	\rv, [\rp]		@ get absolute addr of 99f
--		sub	\rv, \rv, \rp		@ offset between the two
--		ldr	\rp, [\rp, #4]		@ abs addr of omap_uart_phys
--		sub	\tmp, \rp, \rv		@ make it effective
--		ldr	\rp, [\tmp, #0]		@ omap_uart_phys
--		ldr	\rv, [\tmp, #4]		@ omap_uart_virt
--		cmp	\rp, #0			@ is port configured?
--		cmpne	\rv, #0
--		bne	100f			@ already configured
--
--		/* Check the debug UART configuration set in uncompress.h */
--		and	\rp, pc, #0xff000000
--		ldr	\rv, =OMAP_UART_INFO_OFS
--		ldr	\rp, [\rp, \rv]
--
--		/* Select the UART to use based on the UART1 scratchpad value */
--10:		cmp	\rp, #0			@ no port configured?
--		beq	11f			@ if none, try to use UART1
--		cmp	\rp, #OMAP1UART1
--		beq	11f			@ configure OMAP1UART1
--		cmp	\rp, #OMAP1UART2
--		beq	12f			@ configure OMAP1UART2
--		cmp	\rp, #OMAP1UART3
--		beq	13f			@ configure OMAP2UART3
--
--		/* Configure the UART offset from the phys/virt base */
--11:		mov	\rp, #0x00fb0000	@ OMAP1UART1
--		b	98f
--12:		mov	\rp, #0x00fb0000	@ OMAP1UART1
--		orr	\rp, \rp, #0x00000800	@ OMAP1UART2
--		b	98f
--13:		mov	\rp, #0x00fb0000	@ OMAP1UART1
--		orr	\rp, \rp, #0x00000800	@ OMAP1UART2
--		orr	\rp, \rp, #0x00009000	@ OMAP1UART3
--
--		/* Store both phys and virt address for the uart */
--98:		add	\rp, \rp, #0xff000000	@ phys base
--		str	\rp, [\tmp, #0]		@ omap_uart_phys
--		sub	\rp, \rp, #0xff000000	@ phys base
--		add	\rp, \rp, #0xfe000000	@ virt base
--		str	\rp, [\tmp, #4]		@ omap_uart_virt
--		b	9b
--
--		.align
--99:		.word	.
--		.word	omap_uart_phys
--		.ltorg
--
--100:
--		.endm
--
--		.macro	senduart,rd,rx
--		strb	\rd, [\rx]
--		.endm
--
--		.macro	busyuart,rd,rx
--1001:		ldrb	\rd, [\rx, #(UART_LSR << OMAP_PORT_SHIFT)]
--		and	\rd, \rd, #(UART_LSR_TEMT | UART_LSR_THRE)
--		teq	\rd, #(UART_LSR_TEMT | UART_LSR_THRE)
--		beq	1002f
--		ldrb	\rd, [\rx, #(UART_LSR << OMAP7XX_PORT_SHIFT)]
--		and	\rd, \rd, #(UART_LSR_TEMT | UART_LSR_THRE)
--		teq	\rd, #(UART_LSR_TEMT | UART_LSR_THRE)
--		bne	1001b
--1002:
--		.endm
--
--		.macro	waituart,rd,rx
--		.endm
+ const char perf_more_info_string[] =
+ 	"See 'perf help COMMAND' for more information on a specific command.";
+@@ -212,6 +213,16 @@ static int handle_options(const char ***argv, int *argc, int *envchanged)
+ 				printf("%s ", p->cmd);
+ 			}
+ 			exit(0);
++		} else if (!strcmp(cmd, "--debug")) {
++			if (*argc < 2) {
++				fprintf(stderr, "No variable specified for --debug.\n");
++				usage(perf_usage_string);
++			}
++			if (perf_debug_option((*argv)[1]))
++				usage(perf_usage_string);
++
++			(*argv)++;
++			(*argc)--;
+ 		} else {
+ 			fprintf(stderr, "Unknown option: %s\n", cmd);
+ 			usage(perf_usage_string);
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index c208d6f56e63..71d419362634 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -105,3 +105,47 @@ void trace_event(union perf_event *event)
+ 	}
+ 	printf(".\n");
+ }
++
++static struct debug_variable {
++	const char *name;
++	int *ptr;
++} debug_variables[] = {
++	{ .name = "verbose", .ptr = &verbose },
++	{ .name = NULL, }
++};
++
++int perf_debug_option(const char *str)
++{
++	struct debug_variable *var = &debug_variables[0];
++	char *vstr, *s = strdup(str);
++	int v = 1;
++
++	vstr = strchr(s, '=');
++	if (vstr)
++		*vstr++ = 0;
++
++	while (var->name) {
++		if (!strcmp(s, var->name))
++			break;
++		var++;
++	}
++
++	if (!var->name) {
++		pr_err("Unknown debug variable name '%s'\n", s);
++		free(s);
++		return -1;
++	}
++
++	if (vstr) {
++		v = atoi(vstr);
++		/*
++		 * Allow only values in range (0, 10),
++		 * otherwise set 0.
++		 */
++		v = (v < 0) || (v > 10) ? 0 : v;
++	}
++
++	*var->ptr = v;
++	free(s);
++	return 0;
++}
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 1cb808123242..89fb6b0f7ab2 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -39,4 +39,6 @@ void pr_stat(const char *fmt, ...);
+ 
+ int eprintf(int level, int var, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+ 
++int perf_debug_option(const char *str);
++
+ #endif	/* __PERF_DEBUG_H */
 -- 
-1.9.3
+1.8.3.1
 
