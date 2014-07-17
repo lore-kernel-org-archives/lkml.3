@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934589AbaGQQEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:04:31 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:61473 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaGQQEa (ORCPT
+	id S964829AbaGQQEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:04:42 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:50167 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757019AbaGQQEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:04:30 -0400
-Message-ID: <53C7F40F.7040404@linaro.org>
-Date: Thu, 17 Jul 2014 11:04:31 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 12:04:39 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Kay Sievers <kay@vrfy.org>
-CC: akpm@linux-foundation.org, pmladek@suse.cz, bp@suse.de,
-        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/6] printk: start simplifying some flags
-References: <1405606151-19875-1-git-send-email-elder@linaro.org> <1405612760.12363.14.camel@joe-AO725>
-In-Reply-To: <1405612760.12363.14.camel@joe-AO725>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJAp7OggtuxPSc0yXzMCs10aQ2R6E+m4Bu8sdLJopvrZ3+5Rmg@mail.gmail.com>
+References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1405465241-28684-2-git-send-email-bjorn.andersson@sonymobile.com>
+	<CAMf-jS=tkBYQ7mXp71F2_rPo6DE3e4C=sFHqg3Q26a08m6NxJQ@mail.gmail.com>
+	<CAJAp7OggtuxPSc0yXzMCs10aQ2R6E+m4Bu8sdLJopvrZ3+5Rmg@mail.gmail.com>
+Date: Thu, 17 Jul 2014 21:34:37 +0530
+Message-ID: <CAMf-jSkvC4P8-06XbmMH2i0xHvaYwH_VbfG6Ypp3F+ct5ZxM+A@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] soc: devicetree: bindings: Add Qualcomm RPM DT binding
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 10:59 AM, Joe Perches wrote:
-> Again adding Kay Sievers.
-> 
-> Kay wrote almost all of this originally and should
-> be able to review it.
-> 
-> Alex, if this series is resubmitted, do please cc Kay.
+On Thu, Jul 17, 2014 at 3:50 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
+>> On Wed, Jul 16, 2014 at 4:30 AM, Bjorn Andersson
+>> <bjorn.andersson@sonymobile.com> wrote:
+> [...]
+>>> +       rpm@108000 {
+>>> +               compatible = "qcom,rpm-msm8960";
+>>> +               reg = <0x108000 0x1000>;
+>>> +               qcom,ipc = <&apcs 0x8 2>;
+>>
+>> Tried adding this but there is no reference to 'apcs' registers itself
+>> in any dts.
+>>
+>> Without these changes rpm breaks hence not able to test SATA which needs rpm.
+>>
+>
+> Hi Pramod,
+>
+> Unfortunately the ipc bits resides in a block that needs to be
+> accesses by various device drivers so I had to extract the access; so
+> you now need to reference it via a syscon handle and offset instead -
+> as described above.
+>
+> The apcs node I used for testing this with looks like this:
+>
+> apcs: syscon@2011000 {
+>     compatible = "syscon";
+>     reg = <0x2011000 0x1000>;
+> };
+>
+> Enable CONFIG_MFD_SYSCON and put the dt snippet somewhere under soc
+> and you should be good.
+>
 
-Yes, sorry about that.  I meant to but forgot.  Thanks for
-forwarding.
+Thanks Bjorn. Did this and seen things working (sata atleast).
 
-					-Alex
+> Regards,
+> Bjorn
 
-> It does seem reasonable to me, thanks for doing it.
-> 
-> On Thu, 2014-07-17 at 09:09 -0500, Alex Elder wrote:
->> Each log record has a "flags" field.  The flags keep track of, for
->> instance, whether the record was saved in its entirety (as opposed
->> to being one of multiple records that should be merged as a single
->> unit).  A log record's flags field alone is not currently sufficient
->> to know how the record should be formatted; you need to know the
->> previous record's flags field as well.  I found understanding the
->> real effect of various combinations of these flags to be very
->> difficult, and was moved to try to do something about that.
->>
->> This series includes three patches that begin the process of
->> simplifying how these flags are used and interpreted.  They include
->> very long, detailed explanations (as small patches often do) because
->> I want my reasoning to be very clear and examined very closely.  I
->> really don't want to break printk()...
->>
->> The first patch changes how two global variables are initialized,
->> allowing the second patch to assume they always hold certain values.
->>
->> The second patch simplifies some code based on the observation that
->> the LOG_CONT and LOG_NEWLINE flags are mutually exclusive.
->>
->> The third and fourth patch fix a bug in two places.  The bug is
->> that a LOG_PREFIX in a record should implicitly terminate its
->> predecessor, even if the predecessor was marked LOG_CONT.
->>
->> The fifth patch inserts a newline in /dev/kmsg output in the
->> event a LOG_PREFIX record follows a LOG_CONT record.
->>
->> One trivial final patch is included at the end of the series.
->>
->> 					-Alex
->>
->> History:
->> v2: - Added a patch to initialize two globals with LOG_NEWLINE.
->>     - Changed the (now) second patch to argue that LOG_CONT and
->>       LOG_NEWLINES are mutally exclusive.
->>     - Added a patch to insert a newline in one case in devkmsg_read().
->>     - Added some extra parentheses in some conditions, as requested.
->>     - Fixed and updated some header commentary.
->>     - Deleted a hunk in the typo patch, as requested.
->>
->> This series, based on v3.16-rc5, is available here:
->>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
->>     Branch review/printk-flags-v2
->>
->> Alex Elder (6):
->>   printk: initialize syslog_prev and console_prev
->>   printk: LOG_CONT and LOG_NEWLINE are opposites
->>   printk: honor LOG_PREFIX in devkmsg_read()
->>   printk: honor LOG_PREFIX in msg_print_text()
->>   printk: insert newline in devkmsg_read()
->>   printk: correct some more typos
->>
->>  kernel/printk/printk.c | 63 +++++++++++++++++++++++++++-----------------------
->>  1 file changed, 34 insertions(+), 29 deletions(-)
->>
-> 
-> 
-> 
 
+
+-- 
+Thanks and Regards
+Pramod
