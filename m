@@ -1,256 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592AbaGQN5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:57:39 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:36574 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932896AbaGQN50 (ORCPT
+	id S933520AbaGQN51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:57:27 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:29457 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711AbaGQN5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:57:26 -0400
-Date: Thu, 17 Jul 2014 15:57:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: vmscan: clean up struct scan_control
-Message-ID: <20140717135721.GC8011@dhcp22.suse.cz>
-References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org>
- <1405344049-19868-4-git-send-email-hannes@cmpxchg.org>
- <alpine.LSU.2.11.1407141240200.17669@eggly.anvils>
- <20140717132604.GF29639@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717132604.GF29639@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 17 Jul 2014 09:57:23 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-a8-53c7d6404442
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Cc: Sachin Kamat <spk.linux@gmail.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, cpgs@samsung.com,
+        Grant Grundler <grundler@chromium.org>, jic23@kernel.org
+Subject: Re: [PATCH 1/4 v2] iio: exyno-adc: use syscon for PMU register access
+Date: Thu, 17 Jul 2014 15:56:55 +0200
+Message-id: <4202302.OdUuvHROuH@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <CAHfPSqDBfdmt2R4yB1AUG9U8UvsYtmVtL03-OMuozKGXYGdMgw@mail.gmail.com>
+References: <1405595993-16661-1-git-send-email-ch.naveen@samsung.com>
+ <CAK5sBcFR0nwmL97CYxhHHhwHREdNOMYZnc2DF+O=WdQLBHQbLA@mail.gmail.com>
+ <CAHfPSqDBfdmt2R4yB1AUG9U8UvsYtmVtL03-OMuozKGXYGdMgw@mail.gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e+xgK7DtePBBtsmW1vcfX6Y0eLlIU2L
+	61+es1rMP3KO1aJ58Xo2i1dHfjBZPGhaxWSxZPJ8Vot5R96xWFzeNYfNYsb5fUwWi7b9Z7Zo
+	+XqOxYHXY3bDRRaPnbPusntsWtXJ5rF/7hp2jyVvDrF69G1ZxejxeZNcAHsUl01Kak5mWWqR
+	vl0CV8aaGY1sBWs4K7ZePcTawLiVvYuRk0NCwETibutHZghbTOLCvfVsXYxcHEICixglOmYd
+	YoRwWpgkbvx/wQRSxSZgJTGxfRUjiC0iYCQx88FCsCJmgTfMEuuWPmIDSQgL+Em0LvrPAmKz
+	CKhKTNk/FSzOK6ApsfXnHLC4qICnxI7tK8HinALBEnv+9TBBbLvMKNF19DELRIOgxI/J98Bs
+	ZgF5iX37p7JC2OoSk+YtYp7AKDALSdksJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66X
+	nJ+7iREcOc+kdjCubLA4xCjAwajEw5vQeixYiDWxrLgy9xCjBAezkgjvtq7jwUK8KYmVValF
+	+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoYuW5zzhFaeGq2UopIxRn/
+	mZNFcuZ9svHzDw7alaXGqePnlLfqb0fBxISApJzs//WpcT0RTW1d87Of3437yWgwtfRozyWu
+	j9MvVrXdFS5Y0fdZJt7qf/KmpqozisfqQkRuXc9IVIuwyulwXTDlwdNHs3wmliyZUagpt/gN
+	Q6qPb92UkDUXeGcpsRRnJBpqMRcVJwIAfE6rk5gCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 17-07-14 09:26:04, Johannes Weiner wrote:
-> From bbe8c1645c77297a96ecd5d64d659ddcd6984d03 Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Mon, 14 Jul 2014 08:51:54 -0400
-> Subject: [patch] mm: vmscan: clean up struct scan_control
-> 
-> Reorder the members by input and output, then turn the individual
-> integers for may_writepage, may_unmap, may_swap, compaction_ready,
-> hibernation_mode into bit fields to save stack space:
-> 
-> +72/-296 -224
-> kswapd                                       104     176     +72
-> try_to_free_pages                             80      56     -24
-> try_to_free_mem_cgroup_pages                  80      56     -24
-> shrink_all_memory                             88      64     -24
-> reclaim_clean_pages_from_list                168     144     -24
-> mem_cgroup_shrink_node_zone                  104      80     -24
-> __zone_reclaim                               176     152     -24
-> balance_pgdat                                152       -    -152
-> 
-> Suggested-by: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Looks nice to me.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Hi,
 
-> ---
->  mm/vmscan.c | 99 ++++++++++++++++++++++++++++---------------------------------
->  1 file changed, 46 insertions(+), 53 deletions(-)
+On Thursday, July 17, 2014 05:41:16 PM Naveen Krishna Ch wrote:
+> Hello Sachin,
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c28b8981e56a..81dd858b9d17 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -59,35 +59,20 @@
->  #include <trace/events/vmscan.h>
->  
->  struct scan_control {
-> -	/* Incremented by the number of inactive pages that were scanned */
-> -	unsigned long nr_scanned;
-> -
-> -	/* Number of pages freed so far during a call to shrink_zones() */
-> -	unsigned long nr_reclaimed;
-> -
-> -	/* One of the zones is ready for compaction */
-> -	int compaction_ready;
-> -
->  	/* How many pages shrink_list() should reclaim */
->  	unsigned long nr_to_reclaim;
->  
-> -	unsigned long hibernation_mode;
-> -
->  	/* This context's GFP mask */
->  	gfp_t gfp_mask;
->  
-> -	int may_writepage;
-> -
-> -	/* Can mapped pages be reclaimed? */
-> -	int may_unmap;
-> -
-> -	/* Can pages be swapped as part of reclaim? */
-> -	int may_swap;
-> -
-> +	/* Allocation order */
->  	int order;
->  
-> -	/* Scan (total_size >> priority) pages at once */
-> -	int priority;
-> +	/*
-> +	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
-> +	 * are scanned.
-> +	 */
-> +	nodemask_t	*nodemask;
->  
->  	/*
->  	 * The memory cgroup that hit its limit and as a result is the
-> @@ -95,11 +80,27 @@ struct scan_control {
->  	 */
->  	struct mem_cgroup *target_mem_cgroup;
->  
-> -	/*
-> -	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
-> -	 * are scanned.
-> -	 */
-> -	nodemask_t	*nodemask;
-> +	/* Scan (total_size >> priority) pages at once */
-> +	int priority;
-> +
-> +	unsigned int may_writepage:1;
-> +
-> +	/* Can mapped pages be reclaimed? */
-> +	unsigned int may_unmap:1;
-> +
-> +	/* Can pages be swapped as part of reclaim? */
-> +	unsigned int may_swap:1;
-> +
-> +	unsigned int hibernation_mode:1;
-> +
-> +	/* One of the zones is ready for compaction */
-> +	unsigned int compaction_ready:1;
-> +
-> +	/* Incremented by the number of inactive pages that were scanned */
-> +	unsigned long nr_scanned;
-> +
-> +	/* Number of pages freed so far during a call to shrink_zones() */
-> +	unsigned long nr_reclaimed;
->  };
->  
->  #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
-> @@ -2668,15 +2669,14 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  {
->  	unsigned long nr_reclaimed;
->  	struct scan_control sc = {
-> +		.nr_to_reclaim = SWAP_CLUSTER_MAX,
->  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-> +		.order = order,
-> +		.nodemask = nodemask,
-> +		.priority = DEF_PRIORITY,
->  		.may_writepage = !laptop_mode,
-> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
->  		.may_unmap = 1,
->  		.may_swap = 1,
-> -		.order = order,
-> -		.priority = DEF_PRIORITY,
-> -		.target_mem_cgroup = NULL,
-> -		.nodemask = nodemask,
->  	};
->  
->  	/*
-> @@ -2706,14 +2706,11 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  						unsigned long *nr_scanned)
->  {
->  	struct scan_control sc = {
-> -		.nr_scanned = 0,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> +		.target_mem_cgroup = memcg,
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
->  		.may_swap = !noswap,
-> -		.order = 0,
-> -		.priority = 0,
-> -		.target_mem_cgroup = memcg,
->  	};
->  	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
->  	int swappiness = mem_cgroup_swappiness(memcg);
-> @@ -2748,16 +2745,14 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
->  	unsigned long nr_reclaimed;
->  	int nid;
->  	struct scan_control sc = {
-> -		.may_writepage = !laptop_mode,
-> -		.may_unmap = 1,
-> -		.may_swap = !noswap,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> -		.order = 0,
-> -		.priority = DEF_PRIORITY,
-> -		.target_mem_cgroup = memcg,
-> -		.nodemask = NULL, /* we don't care the placement */
->  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
-> +		.target_mem_cgroup = memcg,
-> +		.priority = DEF_PRIORITY,
-> +		.may_writepage = !laptop_mode,
-> +		.may_unmap = 1,
-> +		.may_swap = !noswap,
->  	};
->  
->  	/*
-> @@ -3015,12 +3010,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  	unsigned long nr_soft_scanned;
->  	struct scan_control sc = {
->  		.gfp_mask = GFP_KERNEL,
-> +		.order = order,
->  		.priority = DEF_PRIORITY,
-> +		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
->  		.may_swap = 1,
-> -		.may_writepage = !laptop_mode,
-> -		.order = order,
-> -		.target_mem_cgroup = NULL,
->  	};
->  	count_vm_event(PAGEOUTRUN);
->  
-> @@ -3401,14 +3395,13 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
->  {
->  	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
-> +		.nr_to_reclaim = nr_to_reclaim,
->  		.gfp_mask = GFP_HIGHUSER_MOVABLE,
-> -		.may_swap = 1,
-> -		.may_unmap = 1,
-> +		.priority = DEF_PRIORITY,
->  		.may_writepage = 1,
-> -		.nr_to_reclaim = nr_to_reclaim,
-> +		.may_unmap = 1,
-> +		.may_swap = 1,
->  		.hibernation_mode = 1,
-> -		.order = 0,
-> -		.priority = DEF_PRIORITY,
->  	};
->  	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
->  	struct task_struct *p = current;
-> @@ -3588,13 +3581,13 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	struct task_struct *p = current;
->  	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
-> -		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
-> -		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
-> -		.may_swap = 1,
->  		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
->  		.order = order,
->  		.priority = ZONE_RECLAIM_PRIORITY,
-> +		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
-> +		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
-> +		.may_swap = 1,
->  	};
->  	struct shrink_control shrink = {
->  		.gfp_mask = sc.gfp_mask,
-> -- 
-> 2.0.0
+> On 17 July 2014 17:24, Sachin Kamat <spk.linux@gmail.com> wrote:
+> > Hi Naveen,
+> >
+> > On Thu, Jul 17, 2014 at 4:49 PM, Naveen Krishna Chatradhi
+> > <ch.naveen@samsung.com> wrote:
+> >> This patch updates the IIO based ADC driver to use syscon and regmap
+> >> APIs to access and use PMU registers instead of remapping the PMU
+> >> registers in the driver.
+> >>
+> >> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> >> To: linux-iio@vger.kernel.org
+> >
+> > With only this patch applied, I believe the ADC functionality would be broken.
+> > Perhaps the DT changes should be merged along with this patch?
 > 
+> Jonathan already mentioned that, he would wait for Ack from Kukjin.
+> With out the dts changes ADC driver will fail to probe but it wont
+> crash the system.
+> git bisect should still work.
 
--- 
-Michal Hocko
-SUSE Labs
+Unless someone bisects things related to ADC functionality..
+
+Also patch #1 seems to break device tree ABI (the old dtb will no longer
+work with the new kernel).
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
