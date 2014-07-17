@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040AbaGQNVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:21:45 -0400
-Received: from sauhun.de ([89.238.76.85]:37689 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932169AbaGQNVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:21:42 -0400
-Date: Thu, 17 Jul 2014 15:21:35 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Jean Delvare <jdelvare@suse.de>,
-        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+	id S932554AbaGQNYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:24:05 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:33413 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaGQNYC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:24:02 -0400
+X-AuditID: cbfec37b-b7fbe6d000006742-59-53c7ce7088ea
+Message-id: <53C7CE67.5040500@samsung.com>
+Date: Thu, 17 Jul 2014 07:23:51 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
-Message-ID: <20140717132135.GI2740@katana>
-References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2xeD/fx0+7k8I/QN"
-Content-Disposition: inline
-In-Reply-To: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.14 00/66] 3.14.13-stable review
+References: <20140715231702.156040999@linuxfoundation.org>
+In-reply-to: <20140715231702.156040999@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.242]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9hX92Cc8eDDdbv57SYs34Nm0Xz4vVs
+	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
+	rFFcNimpOZllqUX6dglcGTPnPGQtuMRWsfrqJtYGxsWsXYycHBICJhKTH3xlhrDFJC7cW8/W
+	xcjFISSwjFFi8fZdUE4vk8SU7bPYIZxtjBKfmnqYQFp4BbQkFp96CjaKRUBV4t/vjWCj2ATU
+	JT6/3sEOYgsJyEk0LVkNFhcViJA40PeMFaJXUOLH5HssILaIQLDE2q8LGUEWMAusYpS4fnk5
+	G0hCWMBUYtevbcwQg6wkHu35yAhicwpYS3xe9xCshlnATOJRyzpmCFteYvOat1D1yhJ/Lp9i
+	gvhNWWLfgzmMExhFZiHZPQtJ+ywk7QsYmVcxipUWJxcUJ6WnVhjpFSfmFpfmpesl5+duYoRE
+	U/UOxrtfbQ4xCnAwKvHwKsw4FizEmlhWXJl7iFGCg1lJhHdb1/FgId6UxMqq1KL8+KLSnNTi
+	Q4xMHJxSDYxLD+zYO2Vn0MOw2x7XuwQU1DML13ca87ZYJipOO8piucm4/lCrHltkxnU2afk5
+	k7cKHH/nUBM61eFoXnR0yKnLJ6/cqPnye+ZdWW7LZM+eQ+/sL51usTe2YP0Y3pdllv1/dvgv
+	1WTGredrXOZq3uUJYm/NPivRIDVXbhefTknHKZMI9rasHUosxRmJhlrMRcWJAGv04JiEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/15/2014 05:16 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.13 release.
+> There are 66 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Jul 17 23:16:50 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.13-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
---2xeD/fx0+7k8I/QN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+rc1 and rc2 compiled and booted on my test system. No dmesg regressions.
 
-On Mon, Jul 07, 2014 at 07:23:03AM -0700, Guenter Roeck wrote:
-> SMBus block commands are different to I2C block commands since
-> the returned data is not normally accessible with byte or word
-> commands on other command offsets. Add linked list of 'block'
-> commands to support those commands.
->=20
-> Access mechanism is quite simple: Block commands must be written
-> before they can be read. The first write selects the block length.
-> Subsequent writes can be partial. Block read commands always return
-> the number of bytes selected with the first write.
->=20
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v2: Make new functionality only available on request via functionality
->     module parameter
->     Add more details about SMBus block mode support to documentation
->     Use correct sizeof() variable in devm_kzalloc
->     Use stub_find_block() only in SMBus block command itself.
->     Store first word of block data in chip->words[].
->     When writing block data and the written data is longer than
->     the first write, bail out with debug message indicating the reason
->     for the error.
+-- Shuah
 
-Thanks for doing this and thanks to Jean for the thorough review.
-
-The thing I miss is the documentation that SMBUS_BLOCK must explicitly
-be activated and the description how to do it. A comment in the driver,
-above STUB_FUNC_* defines might not hurt as well.
-
-Also, I'd prefer to squash Jean's "increasing block length" patch into
-this one if both of you are fine with that?
-
-Regards,
-
-   Wolfram
-
-
---2xeD/fx0+7k8I/QN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTx83fAAoJEBQN5MwUoCm2PzQQAK9LHsereWaz8VFEVzpY/mnV
-cSoRRphO5AOGTe1VXpEg2uivEhNgBRLuxUXqTN/f5YNY4MqwizXe2bstuCYc+jFX
-VhdeecDbFg9yw9UHsB/zRu3941VtFJAGkP/nIggu+XdtrnQiS3x64OmTtCMnuHAx
-1rOE1scs6xCu5u3PxmcF8KUGJt8HI2N2BVG9YQCiOMxvs24ZkZJGgZr0c2IUgYOa
-YxcSvkyAlFLSuPm2E9LUCPWnYWotuUqRt517Ki93jfXcHx9VcB9j7XF2ArpVV8Dv
-epIhUTA49OYP+2mwlVWkv7TmS1qMxGQsO5IEVTBjLcMfjfSg3uGOzMoZzKZDEXAx
-uT99x9l3bE8yHddPQBFYzd4byEVK6HF55Qn9PGjM8UPb3Pb2DdH0ZP7TSikV9vx3
-KOIqnUumNAc30l4foepmNFidVThUp/TR2gvqC+RP25mhMqpvlYuGrnIjcotcN+tD
-boPj66RTLagVCu4xw3gCIeiXXU2N1bnxQWmaDB9aiTiM9xRIVNz2LmHgCZbP2r1c
-BHLQ6+B2qcn2UQdQQB6Yx1gGE9YKZ57upqr4o6zNRzQLUH2f4IruhrgCFI5hjUfG
-CzXCcqRyyBiqzVR0VlYYScjVBv5Y56nF0Pkp+7N33bh6UPIhIjJG/Z+JVX6nyX19
-uyTfpJR3yJ1NBce9xkew
-=qHnC
------END PGP SIGNATURE-----
-
---2xeD/fx0+7k8I/QN--
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
