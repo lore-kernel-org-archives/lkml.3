@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989AbaGQHm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 03:42:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33776 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397AbaGQHmZ (ORCPT
+	id S1755214AbaGQHmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 03:42:51 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37536 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838AbaGQHmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 03:42:25 -0400
-Date: Thu, 17 Jul 2014 09:42:19 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140717074219.GA29193@linutronix.de>
-References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de>
- <1405521903-5877-6-git-send-email-bigeasy@linutronix.de>
- <20140717070859.GD18374@atomide.com>
+	Thu, 17 Jul 2014 03:42:46 -0400
+Date: Thu, 17 Jul 2014 00:42:34 -0700
+From: "hch@infradead.org" <hch@infradead.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "kys@microsoft.com" <kys@microsoft.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 4/8] Drivers: scsi: storvsc: Filter WRITE_SAME_16
+Message-ID: <20140717074234.GA7604@infradead.org>
+References: <20140711063216.GA20660@infradead.org>
+ <328b7a6174ef4dd8a54a7db5ac959834@BY2PR03MB299.namprd03.prod.outlook.com>
+ <yq1a98d2z5x.fsf@sermon.lab.mkp.net>
+ <20140716110111.GA7382@infradead.org>
+ <yq14myhtijx.fsf@sermon.lab.mkp.net>
+ <20140716173827.GB20528@infradead.org>
+ <yq1fvi1rya0.fsf@sermon.lab.mkp.net>
+ <1405533734.3165.12.camel@dabdike.int.hansenpartnership.com>
+ <94D0CD8314A33A4D9D801C0FE68B402958BA721F@G9W0745.americas.hpqcorp.net>
+ <yq138e1rtzz.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140717070859.GD18374@atomide.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <yq138e1rtzz.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren | 2014-07-17 00:09:00 [-0700]:
+On Wed, Jul 16, 2014 at 03:20:00PM -0400, Martin K. Petersen wrote:
+> The block layer can only describe one contiguous block range in a
+> request. My copy offload patches introduces the bi_special field that
+> allows us to attach additional information to an I/O. I have
+> experimented with doing that for discards to overcome the suck of DSM
+> TRIM. Splitting and merging requests in MD/DM gets much more cumbersome,
+> though.
 
->Seems to boot a bit further now with output from serial console
->initially, then I'm getting the following error again that's probably
->related to clocks not enabled when the registers are accessed:
+I had a bunch of prototypes for this years ago that didn't really work
+out.  I always made ranged didscards something that driver had to opt
+in for.  In my case md and dm never opted in, although for mirroring or
+multipath it should of course handle it fairly easily.
 
-It is (mostly) the same thing as before. We have additionally 
-omap_8250_startup() in the backtrace but it is the same thing.
-So you  say I miss a clock? Looking through serial8250_do_startup() I see:
-- pm_runtime_get_sync(port->dev); which should get the clocks up
-- serial8250_clear_fifos() which does a write at address + 8. Seems to 
-  work. 
-- serial_port_in(port, UART_LSR); does a read at address + 0x14, seems 
-  to work.
-- serial_port_in(port, UART_RX); does a read at address + 0. This is 
-  probably the bad one.
+> It also wasn't evident that it was worth the hassle. While UNMAP allows
+> us to express large regions, DSM TRIM on the SATA side is limited to 32
+> MB per range. So in many cases we end up maxing out the payload capacity
+> even with a single contiguous range.
 
-Now comparing with omap-serial I noticed that I do a 32bit access
-instead a 16bit.
-Could you please try the following hack:
-
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 2e4a93b..94af5a3 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -420,13 +420,13 @@ static void mem_serial_out(struct uart_port *p, int offset, int value)
- static void mem32_serial_out(struct uart_port *p, int offset, int value)
- {
- 	offset = offset << p->regshift;
--	writel(value, p->membase + offset);
-+	writew(value, p->membase + offset);
- }
- 
- static unsigned int mem32_serial_in(struct uart_port *p, int offset)
- {
- 	offset = offset << p->regshift;
--	return readl(p->membase + offset);
-+	return readw(p->membase + offset);
- }
- 
- static unsigned int io_serial_in(struct uart_port *p, int offset)
-
-
-besides that, I don't see what could be different.
-
->Regards,
->
->Tony
-
-Sebastian
+That's mostly because we don't support larger than 512 byte TRIM payloads
+yet..
