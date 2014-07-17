@@ -1,81 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933242AbaGQO1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:27:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54735 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756840AbaGQO1r (ORCPT
+	id S1757130AbaGQOa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:30:27 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:48922 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821AbaGQOa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:27:47 -0400
-Date: Thu, 17 Jul 2014 10:27:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Add "rpm_not_supported" flag
-In-Reply-To: <1961774.JeWiFOnpio@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1407171021250.1517-100000@iolanthe.rowland.org>
+	Thu, 17 Jul 2014 10:30:26 -0400
+Date: Thu, 17 Jul 2014 16:30:21 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: rewrite charge API fix - hugetlb charging
+Message-ID: <20140717143021.GE8011@dhcp22.suse.cz>
+References: <1405528080-2975-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405528080-2975-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Rafael J. Wysocki wrote:
-
-> On Wednesday, July 16, 2014 04:03:45 PM Greg Kroah-Hartman wrote:
-> > On Thu, Jul 17, 2014 at 12:40:23AM +0200, Rafael J. Wysocki wrote:
-> > > On Wednesday, July 02, 2014 10:27:06 AM Alan Stern wrote:
-> > > > Here's a brief summary of the story behind this patch...
-> > > > 
-> > > > At one point, I suggested to Dan that instead of doing something
-> > > > special for these devices, we could simply have the runtime_suspend()
-> > > > routine always return -EBUSY.  He didn't like that idea because then
-> > > > the user would see the device was never powering down but would have no
-> > > > idea why.  The rpm_not_supported flag provides this information to the
-> > > > user by causing the power/runtime_status attribute to say "not
-> > > > supported".  (Although to be entirely fair, we could just put a message
-> > > > in the kernel log during probe if the hardware doesn't support runtime
-> > > > suspend.)
-> > > > 
-> > > > Instead, Dan introduced a messy PM QoS mechanism in commit
-> > > > e3d105055525.  I didn't like that approach, but Greg merged it before I
-> > > > objected.
-> > > 
-> > > That really looks a bit like a hack to me to be honest.
-
-My thought exactly.
-
-> > > Greg, what's your plan toward this?
-> > 
-> > If I need to revert something that you all find was wrong, I'll be glad
-> > to do so, sorry for merging something too early.
+On Wed 16-07-14 12:28:00, Johannes Weiner wrote:
+> Naoya-san reports that hugetlb pages now get charged as file cache,
+> which wreaks all kinds of havoc during migration, uncharge etc.
 > 
-> Alan, what do you think?
+> The file-specific charge path used to filter PageCompound(), but it
+> wasn't commented and so it got lost when unifying the charge paths.
+> 
+> We can't add PageCompound() back into a unified charge path because of
+> THP, so filter huge pages directly in add_to_page_cache().
 
-I'm in favor of reverting that commit and putting something else in its 
-place.  But first we have to figure out an approach that will satisfy 
-everyone.
+This looks a bit fragile to me but I understand your motivation to not
+punish all the code paths with PageHuge check.
 
-I've been hoping that Dan would contribute to this thread.  He has
-spear-headed this whole line of development, and he wrote the commit in
-question.
+> Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Maybe he would be happy with the simplest approach: If the device
-doesn't support runtime PM, write a message in the kernel log and make
-->runtime_suspend() always return -EBUSY.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> I think we're still unsure if the approach taken by that commit is correct,
-> but then I suppose we don't need to revert it at this point and we can fix
-> it later.  Is that correct, or would fixing it be difficult for some reason?
+> ---
+>  mm/filemap.c | 20 ++++++++++++++------
+>  1 file changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 114cd89c1cc2..c088ac01e856 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/security.h>
+>  #include <linux/cpuset.h>
+>  #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
+> +#include <linux/hugetlb.h>
+>  #include <linux/memcontrol.h>
+>  #include <linux/cleancache.h>
+>  #include <linux/rmap.h>
+> @@ -560,19 +561,24 @@ static int __add_to_page_cache_locked(struct page *page,
+>  				      pgoff_t offset, gfp_t gfp_mask,
+>  				      void **shadowp)
+>  {
+> +	int huge = PageHuge(page);
+>  	struct mem_cgroup *memcg;
+>  	int error;
+>  
+>  	VM_BUG_ON_PAGE(!PageLocked(page), page);
+>  	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
+>  
+> -	error = mem_cgroup_try_charge(page, current->mm, gfp_mask, &memcg);
+> -	if (error)
+> -		return error;
+> +	if (!huge) {
+> +		error = mem_cgroup_try_charge(page, current->mm,
+> +					      gfp_mask, &memcg);
+> +		if (error)
+> +			return error;
+> +	}
+>  
+>  	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
+>  	if (error) {
+> -		mem_cgroup_cancel_charge(page, memcg);
+> +		if (!huge)
+> +			mem_cgroup_cancel_charge(page, memcg);
+>  		return error;
+>  	}
+>  
+> @@ -587,14 +593,16 @@ static int __add_to_page_cache_locked(struct page *page,
+>  		goto err_insert;
+>  	__inc_zone_page_state(page, NR_FILE_PAGES);
+>  	spin_unlock_irq(&mapping->tree_lock);
+> -	mem_cgroup_commit_charge(page, memcg, false);
+> +	if (!huge)
+> +		mem_cgroup_commit_charge(page, memcg, false);
+>  	trace_mm_filemap_add_to_page_cache(page);
+>  	return 0;
+>  err_insert:
+>  	page->mapping = NULL;
+>  	/* Leave page->index set: truncation relies upon it */
+>  	spin_unlock_irq(&mapping->tree_lock);
+> -	mem_cgroup_cancel_charge(page, memcg);
+> +	if (!huge)
+> +		mem_cgroup_cancel_charge(page, memcg);
+>  	page_cache_release(page);
+>  	return error;
+>  }
+> -- 
+> 2.0.0
+> 
 
-As far as I can see, it would be okay to wait a while before making any 
-changes.
-
-Alan Stern
-
+-- 
+Michal Hocko
+SUSE Labs
