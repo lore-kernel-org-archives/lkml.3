@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409AbaGQN4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:56:51 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:59372 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725AbaGQN4t (ORCPT
+	id S933439AbaGQN5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:57:16 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:52837 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711AbaGQN5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:56:49 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-wireless@vger.kernel.org, ath9k-devel@qca.qualcomm.com
-Cc: linville@tuxdriver.com, Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH 4/4] ath9k: drop negativity checks for unsigned values coming from kstrtoul()
-Date: Thu, 17 Jul 2014 16:56:37 +0300
-Message-Id: <1405605397-13749-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	Thu, 17 Jul 2014 09:57:13 -0400
+Date: Thu, 17 Jul 2014 16:57:08 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jan Kiszka <jan.kiszka@web.de>, mtosatti@redhat.com, nadav.amit@gmail.com,
+        kvm@vger.kernel.org, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page in
+ memory.
+Message-ID: <20140717135707.GP4399@minantech.com>
+References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com>
+ <20140712080442.GH4399@minantech.com>
+ <53C38D55.2040307@cn.fujitsu.com>
+ <20140714145822.GK4399@minantech.com>
+ <53C51608.4080109@web.de>
+ <20140715120921.GT18167@minantech.com>
+ <53C51E66.7030208@cn.fujitsu.com>
+ <20140715124048.GU18167@minantech.com>
+ <53C7D0DC.1020001@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C7D0DC.1020001@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80471
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80481
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- drivers/net/wireless/ath/ath9k/debug.c    | 2 +-
- drivers/net/wireless/ath/ath9k/spectral.c | 8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+On Thu, Jul 17, 2014 at 09:34:20PM +0800, Tang Chen wrote:
+> Hi Gleb,
+> 
+> On 07/15/2014 08:40 PM, Gleb Natapov wrote:
+> ......
+> >>
+> >>And yes, we have the problem you said here. We can migrate the page while L2
+> >>vm is running.
+> >>So I think we should enforce L2 vm to exit to L1. Right ?
+> >>
+> >We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, so
+> >if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for L1 too.
+> >
+> 
+> Sorry, I think I don't quite understand the procedure you are talking about
+> here.
+> 
+> Referring to the code, I think we have three machines: L0(host), L1 and L2.
+> And we have two types of vmexit: L2->L1 and L2->L0.  Right ?
+> 
+> We are now talking about this case: L2 and L1 shares the apic page.
+> 
+> Using patch 5/5, when apic page is migrated on L0, mmu_notifier will notify
+> L1,
+> and update L1's VMCS. At this time, we are in L0, not L2. Why cannot we
+Using patch 5/5, when apic page is migrated on L0, mmu_notifier will notify
+L1 or L2 VMCS depending on which one happens to be running right now.
+If it is L1 then L2's VMCS will be updated during vmentry emulation, if it is
+L2 we need to request reload during vmexit emulation to make sure L1's VMCS is
+updated.
 
-diff --git a/drivers/net/wireless/ath/ath9k/debug.c b/drivers/net/wireless/ath/ath9k/debug.c
-index ce073e9..d227936 100644
---- a/drivers/net/wireless/ath/ath9k/debug.c
-+++ b/drivers/net/wireless/ath/ath9k/debug.c
-@@ -202,7 +202,7 @@ static ssize_t write_file_ani(struct file *file,
- 	if (kstrtoul(buf, 0, &ani))
- 		return -EINVAL;
- 
--	if (ani < 0 || ani > 1)
-+	if (ani > 1)
- 		return -EINVAL;
- 
- 	common->disable_ani = !ani;
-diff --git a/drivers/net/wireless/ath/ath9k/spectral.c b/drivers/net/wireless/ath/ath9k/spectral.c
-index 99f4de9..5fe29b9 100644
---- a/drivers/net/wireless/ath/ath9k/spectral.c
-+++ b/drivers/net/wireless/ath/ath9k/spectral.c
-@@ -313,7 +313,7 @@ static ssize_t write_file_spectral_short_repeat(struct file *file,
- 	if (kstrtoul(buf, 0, &val))
- 		return -EINVAL;
- 
--	if (val < 0 || val > 1)
-+	if (val > 1)
- 		return -EINVAL;
- 
- 	sc->spec_config.short_repeat = val;
-@@ -361,7 +361,7 @@ static ssize_t write_file_spectral_count(struct file *file,
- 	if (kstrtoul(buf, 0, &val))
- 		return -EINVAL;
- 
--	if (val < 0 || val > 255)
-+	if (val > 255)
- 		return -EINVAL;
- 
- 	sc->spec_config.count = val;
-@@ -409,7 +409,7 @@ static ssize_t write_file_spectral_period(struct file *file,
- 	if (kstrtoul(buf, 0, &val))
- 		return -EINVAL;
- 
--	if (val < 0 || val > 255)
-+	if (val > 255)
- 		return -EINVAL;
- 
- 	sc->spec_config.period = val;
-@@ -457,7 +457,7 @@ static ssize_t write_file_spectral_fft_period(struct file *file,
- 	if (kstrtoul(buf, 0, &val))
- 		return -EINVAL;
- 
--	if (val < 0 || val > 15)
-+	if (val > 15)
- 		return -EINVAL;
- 
- 	sc->spec_config.fft_period = val;
--- 
-1.8.5.5
-
+--
+			Gleb.
