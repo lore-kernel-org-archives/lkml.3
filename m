@@ -1,138 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589AbaGQMUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:20:16 -0400
-Received: from mga14.intel.com ([192.55.52.115]:30430 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932102AbaGQMUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:20:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,678,1400050800"; 
-   d="scan'208";a="563179525"
-Date: Thu, 17 Jul 2014 20:21:15 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Bandan Das <bsd@redhat.com>,
-        Zhang Yang <yang.z.zhang@intel.com>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] KVM: nVMX: Fix fail to get nested ack intr's
- vector during nested vmexit
-Message-ID: <20140717122115.GA10266@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1405594981-31384-1-git-send-email-wanpeng.li@linux.intel.com>
- <1405594981-31384-2-git-send-email-wanpeng.li@linux.intel.com>
- <53C7B378.2030509@redhat.com>
- <53C7BBBB.3000009@redhat.com>
+	id S932664AbaGQMUZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:20:25 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42256 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932075AbaGQMUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 08:20:17 -0400
+Date: Thu, 17 Jul 2014 13:20:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140717122000.GV21766@n2100.arm.linux.org.uk>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com> <22032517.gk8PRUMaIU@wuerfel> <93903d5fdf85427bb8a418894540c122@BN1PR0301MB0772.namprd03.prod.outlook.com> <5456516.0fVZeXjF8k@wuerfel> <20140717111912.GA16025@shlinux1.ap.freescale.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C7BBBB.3000009@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140717111912.GA16025@shlinux1.ap.freescale.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 02:04:11PM +0200, Paolo Bonzini wrote:
->Il 17/07/2014 13:28, Paolo Bonzini ha scritto:
->> Il 17/07/2014 13:03, Wanpeng Li ha scritto:
->>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->>> index 4ae5ad8..a704f71 100644
->>> --- a/arch/x86/kvm/vmx.c
->>> +++ b/arch/x86/kvm/vmx.c
->>> @@ -8697,6 +8697,9 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
->>>  	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
->>>  	    && nested_exit_intr_ack_set(vcpu)) {
->>>  		int irq = kvm_cpu_get_interrupt(vcpu);
->>> +
->>> +		if (irq < 0 && kvm_apic_vid_enabled(vcpu->kvm))
->>> +			irq = kvm_lapic_find_highest_irr(vcpu);
->>>  		WARN_ON(irq < 0);
->>>  		vmcs12->vm_exit_intr_info = irq |
->>>  			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
->> 
->> I wonder if this should be kvm_apic_has_interrupt, so that the PPR
->> register is taken into consideration?
->
->
->And actually, I think the acknowledging should include the three steps to
->set-ISR/update-PPR/clear-IRR.  (With APICv update PPR is not strictly
->necessary, but it doesn't hurt either).
->
->You cannot let the processor do these because it would deliver the interrupt
->through the IDT,  but you still must do it in the hypervisor.
->
->This gives this patch:
->
->diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
->index bd0da43..a1ec6a5 100644
->--- a/arch/x86/kvm/irq.c
->+++ b/arch/x86/kvm/irq.c
->@@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
+On Thu, Jul 17, 2014 at 07:19:15PM +0800, Peter Chen wrote:
+> Currently, we are designing a generic driver, we don't know what's the
+> hardware architecture, we are trying to find a solution how to set
+> dma mask for all possible devices which will use this driver, Antoine's
+> this patch is trying to cover this feature.
 > 
-> 	vector = kvm_cpu_get_extint(v);
+> For example, 
 > 
->-	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
->+	if (vector != -1)
-> 		return vector;			/* PIC */
-> 
-> 	return kvm_get_apic_interrupt(v);	/* APIC */
->diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
->index 3855103..6cbc7af 100644
->--- a/arch/x86/kvm/lapic.c
->+++ b/arch/x86/kvm/lapic.c
->@@ -360,10 +360,20 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> 
-> static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> {
->-	/* Note that we never get here with APIC virtualization enabled.  */
->+	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR)) {
->+		/*
->+		 * With APIC virtualization enabled, all caching is disabled
->+		 * because the processor can modify ISR under the hood.  Instead
->+		 * just set SVI.
->+		 */
->+		if (kvm_apic_vid_enabled(vcpu->kvm)) {
->+			kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
->+			return;
->+		}
-> 
->-	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> 		++apic->isr_count;
->+	}
->+
-> 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-> 	/*
-> 	 * ISR (in service register) bit is set when injecting an interrupt.
->@@ -1627,11 +1637,16 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
-> 	int vector = kvm_apic_has_interrupt(vcpu);
-> 	struct kvm_lapic *apic = vcpu->arch.apic;
-> 
->-	/* Note that we never get here with APIC virtualization enabled.  */
->-
-> 	if (vector == -1)
-> 		return -1;
-> 
->+	/*
->+	 * We get here even with APIC virtualization enabled, if doing
->+	 * nested virtualization and L1 runs with the "acknowledge interrupt 
->+	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
->+	 * because the process would deliver it through the IDT.
->+	 */
->+
-> 	apic_set_isr(vector, apic);
-> 	apic_update_ppr(apic);
-> 	apic_clear_irr(vector, apic);
->
->
->I think the right way to do it must be something like this; you cannot
->do it just in nested_vmx_vmexit.  Testing is welcome since I don't have
->easy access to APICv-capable hardware (it would take a few days).
+> Marvell Berlin doesn't need to set dma mask specific.
+> http://marc.info/?l=linux-arm-kernel&m=140205228507045&w=2
+> http://www.spinics.net/lists/linux-usb/msg110598.html
 
-I will test it tomorrow, it's late today for me. ;-)
+I can't make sense of those messages.
 
-Regards,
-Wanpeng Li 
+What are you saying - that ci_hdrc on Berlin does not use DMA at all?
+Or that it doesn't care what the DMA mask is set to?
 
->
->Paolo
+> Xilinx zynq needs to set dma mask as 0xFFFFFFF0
+> http://marc.info/?l=linux-usb&m=140384129921706&w=2
+
+Why?  The DMA mask does /not/ convey the DMA alignment requirements of
+the transfers.  If you need it to be aligned to 16-bytes, then that's
+something which is internal to the driver.  This is no different from
+devices which require 32-bit alignment or 64-bit alignment.
+
+You can't really expect the DMA subsystem to take care of that for you.
+The DMA mask is about indicating what memory ranges are acceptable for
+DMA, and not the alignment.
+
+So, in this case, your DMA mask should be DMA_BIT_MASK(32), the same as
+iMX.
+
+However, if your driver does receive memory which is not appropriately
+aligned, it is the driver's responsibility, not the DMA API, to deal
+with that appropriately.
+
+So, it sounds to me like:
+
+- The DT code should be setting the DMA mask appropriately already.
+
+- If the driver is using streaming DMA, should call:
+
+	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+	if (err)
+		handle error;
+
+- If the driver is using coherent DMA only:
+
+	err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+	if (err)
+		handle error;
+
+- If the driver uses both coherent DMA and streaming DMA:
+
+	err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+	if (err)
+		handle error;
+
+Where the _bus_ has restrictions on the available memory (iow, the
+higher address bits), these should be dealt with inside the DMA API.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
