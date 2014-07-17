@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaGQEeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 00:34:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41668 "EHLO mx2.suse.de"
+	id S1752849AbaGQEoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 00:44:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20207 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaGQEep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 00:34:45 -0400
-Date: Thu, 17 Jul 2014 14:34:35 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ian Kent <raven@themaw.net>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6 v2] autofs4: factor should_expire() out of
- autofs4_expire_indirect.
-Message-ID: <20140717143435.2fc69837@notabene.brown>
-In-Reply-To: <1405497017.2527.89.camel@perseus.fritz.box>
-References: <20140709233541.4525.25151.stgit@notabene.brown>
-	<20140709234114.4525.25725.stgit@notabene.brown>
-	<20140714105359.4415aab4@notabene.brown>
-	<1405497017.2527.89.camel@perseus.fritz.box>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1750832AbaGQEn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 00:43:57 -0400
+Message-ID: <53C75481.1090705@redhat.com>
+Date: Thu, 17 Jul 2014 12:43:45 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/=PE+AHc+SOMeN=N=c=zw6lS"; protocol="application/pgp-signature"
+To: Varka Bhadram <varkabhadram@gmail.com>, rusty@rustcorp.com.au,
+        mst@redhat.com, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: Vlad Yasevich <vyasevic@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH net-next V2 3/3] virtio-net: rx busy polling support
+References: <1405491707-22706-1-git-send-email-jasowang@redhat.com> <1405491707-22706-4-git-send-email-jasowang@redhat.com> <53C63A11.4050401@gmail.com> <53C73B29.4070107@redhat.com> <53C742BA.3050402@gmail.com>
+In-Reply-To: <53C742BA.3050402@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=PE+AHc+SOMeN=N=c=zw6lS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 07/17/2014 11:27 AM, Varka Bhadram wrote:
+>
+> On Thursday 17 July 2014 08:25 AM, Jason Wang wrote:
+>> On 07/16/2014 04:38 PM, Varka Bhadram wrote:
+>>> On 07/16/2014 11:51 AM, Jason Wang wrote:
+>>>> Add basic support for rx busy polling.
+>>>>
+>>>> Test was done between a kvm guest and an external host. Two hosts were
+>>>> connected through 40gb mlx4 cards. With both busy_poll and busy_read
+>>>> are set to 50 in guest, 1 byte netperf tcp_rr shows 116% improvement:
+>>>> transaction rate was increased from 9151.94 to 19787.37.
+>>>>
+>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>>>> Cc: Vlad Yasevich <vyasevic@redhat.com>
+>>>> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>>> ---
+>>>>    drivers/net/virtio_net.c | 190
+>>>> ++++++++++++++++++++++++++++++++++++++++++++++-
+>>>>    1 file changed, 187 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>>>> index e417d93..4830713 100644
+>>>> --- a/drivers/net/virtio_net.c
+>>>> +++ b/drivers/net/virtio_net.c
+>>>> @@ -27,6 +27,7 @@
+>>>>    #include <linux/slab.h>
+>>>>    #include <linux/cpu.h>
+>>>>    #include <linux/average.h>
+>>>> +#include <net/busy_poll.h>
+>>>>      static int napi_weight = NAPI_POLL_WEIGHT;
+>>>>    module_param(napi_weight, int, 0444);
+>>>> @@ -94,8 +95,143 @@ struct receive_queue {
+>>>>          /* Name of this receive queue: input.$index */
+>>>>        char name[40];
+>>>> +
+>>>> +#ifdef CONFIG_NET_RX_BUSY_POLL
+>>>> +    unsigned int state;
+>>>> +#define VIRTNET_RQ_STATE_IDLE        0
+>>>> +#define VIRTNET_RQ_STATE_NAPI         1    /* NAPI or refill owns
+>>>> this RQ */
+>>>> +#define VIRTNET_RQ_STATE_POLL         2    /* poll owns this RQ */
+>>>> +#define VIRTNET_RQ_STATE_DISABLED    4    /* RQ is disabled */
+>>>> +#define VIRTNET_RQ_OWNED (VIRTNET_RQ_STATE_NAPI |
+>>>> VIRTNET_RQ_STATE_POLL)
+>>>> +#define VIRTNET_RQ_LOCKED (VIRTNET_RQ_OWNED |
+>>>> VIRTNET_RQ_STATE_DISABLED)
+>>>> +#define VIRTNET_RQ_STATE_NAPI_YIELD  8    /* NAPI or refill yielded
+>>>> this RQ */
+>>>> +#define VIRTNET_RQ_STATE_POLL_YIELD  16   /* poll yielded this RQ */
+>>>> +    spinlock_t lock;
+>>>> +#endif  /* CONFIG_NET_RX_BUSY_POLL */
+>>>>    };
+>>>>    +#ifdef CONFIG_NET_RX_BUSY_POLL
+>>>> +static inline void virtnet_rq_init_lock(struct receive_queue *rq)
+>>>> +{
+>>>> +
+>>>> +    spin_lock_init(&rq->lock);
+>>>> +    rq->state = VIRTNET_RQ_STATE_IDLE;
+>>>> +}
+>>>> +
+>>>> +/* called from the device poll routine or refill routine to get
+>>>> ownership of a
+>>>> + * receive queue.
+>>>> + */
+>>>> +static inline bool virtnet_rq_lock_napi_refill(struct receive_queue
+>>>> *rq)
+>>>> +{
+>>>> +    int rc = true;
+>>>> +
+>>> bool instead of int...?
+>> Yes, it was better.
+>>>> +    spin_lock(&rq->lock);
+>>>> +    if (rq->state & VIRTNET_RQ_LOCKED) {
+>>>> +        WARN_ON(rq->state & VIRTNET_RQ_STATE_NAPI);
+>>>> +        rq->state |= VIRTNET_RQ_STATE_NAPI_YIELD;
+>>>> +        rc = false;
+>>>> +    } else
+>>>> +        /* we don't care if someone yielded */
+>>>> +        rq->state = VIRTNET_RQ_STATE_NAPI;
+>>>> +    spin_unlock(&rq->lock);
+>>> Lock for rq->state ...?
+>>>
+>>> If yes:
+>>> spin_lock(&rq->lock);
+>>> if (rq->state & VIRTNET_RQ_LOCKED) {
+>>>      rq->state |= VIRTNET_RQ_STATE_NAPI_YIELD;
+>>>      spin_unlock(&rq->lock);
+>>>      WARN_ON(rq->state & VIRTNET_RQ_STATE_NAPI);
+>>>      rc = false;
+>>> } else {
+>>>      /* we don't care if someone yielded */
+>>>      rq->state = VIRTNET_RQ_STATE_NAPI;
+>>>      spin_unlock(&rq->lock);
+>>> }
+>> I didn't see any differences. Is this used to catch the bug of driver
+>> earlier? btw, several other rx busy polling capable driver does the same
+>> thing.
+>
+> We need not to include WARN_ON() & rc=false under critical section.
+>
 
-On Wed, 16 Jul 2014 15:50:17 +0800 Ian Kent <raven@themaw.net> wrote:
+Ok. but unless there's a bug in the driver itself, WARN_ON() should be
+just a condition check for a branch, so there should not be noticeable
+differences.
 
-
-> > +	if (simple_empty(dentry))
-> > +		return NULL;
-> > +
-> > +	/* Case 2: tree mount, expire iff entire tree is not busy */
-> > +	if (!exp_leaves) {
-> > +		/* Path walk currently on this dentry? */
-> > +		ino_count =3D atomic_read(&ino->count) + 1;
-> > +		if (d_count(dentry) > ino_count)
-> > +			return NULL;
-> > +
-> > +		if (!autofs4_tree_busy(mnt, dentry, timeout, do_now))
-> > +			return dentry;
-> > +		/*
-> > +		 * Case 3: pseudo direct mount, expire individual leaves
-> > +		 *	   (autofs-4.1).
-> > +		 */
->=20
-> I recommend removing one of the tab stops on this since it relates to
-> the else case but feels like it's "attached" to the code above the else.
-
-The auto-reindent feature of emacs put it there and I didn't double check.
-I've fix it.
-
-
->=20
-> > +	} else {
-> > +		/* Path walk currently on this dentry? */
-> > +		struct dentry *expired;
-> > +		ino_count =3D atomic_read(&ino->count) + 1;
-> > +		if (d_count(dentry) > ino_count)
-> > +			return NULL;
-> > +
-> > +		expired =3D autofs4_check_leaves(mnt, dentry, timeout, do_now);
-> > +		if (expired) {
-> > +			if (expired =3D=3D dentry)
-> > +				dput(dentry);
-> > +			return dentry;
->=20
-> Umm .. I think this should be "return expired".
-
-Yes, of course it should.  Fixed.
-
->=20
-> Otherwise this looks like a straight refactor.
-
-Thanks,
-NeilBrown
-
---Sig_/=PE+AHc+SOMeN=N=c=zw6lS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU8dSWznsnt1WYoG5AQLlYBAApd5Yf+k/kyaTcqXxFmaeBqxeChQzOK9X
-jNqttzEIDAapShyePQg6XNbBLCJV2+4Cm9OhVXcVO48z35daIvB5lZUlMCWjTpH9
-pOTutQB40Uk1pWaj+D0EzbY+JEVRFkl/cmQVtLLp7+Qs2pKDQJtXZrD22mL3p3ab
-6sK9xjlE9fWTjFjhyhjUn7BRAtHkzrtpeTzF7Z8JKIEpSaIoSEG3wLgvu5lGZZLu
-jmNzcwgW5mjUPxO/Qu37V8/cRXFOvd+hNj7z23xMYzk9FnoP9Helz94I5RiJe3Gb
-bBVcCDAZ+LdJMckK/c7xW2C55TtlX3bgdA/17slcm4xPLA4I6Q+Z3I5xgrXztUq0
-5EWPLuxjcYkVViDDIrQ9QhoufbYdj5VOe+rAfitm9fBNzFT8pMBsjq+yay+MK3bI
-Y62UrInmBjYRu2qfEBP/sylNO1WJMSJ+U3pH/sy2jUonr0sLXsTu66E/Rl2Ch9CE
-mUpCi6cd7g9xIh4jN7ypqJu4/nUgGAkxiel+wuNmd7UQNyEbA7kOudbPEbAYNv+r
-mfAW98KmyIL52KSQKT922E8va9Zez81vgllJ9rsVPE2L7f38VSZ6pCpWci3+hGyv
-k11aCIyQ6lCnmaKL7kdo+nTJ8by3pbyw9OqS4EnrcokS/y+293HEfE54TmM63Hi3
-P5BNwWbWHQQ=
-=LC1B
------END PGP SIGNATURE-----
-
---Sig_/=PE+AHc+SOMeN=N=c=zw6lS--
+Also we should not check rq->state outside the protection of lock.
