@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934026AbaGQPcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:32:12 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58277 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933006AbaGQPcJ (ORCPT
+	id S934155AbaGQPcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:32:52 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61014 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933006AbaGQPcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:32:09 -0400
-Message-ID: <53C7EC6F.6060902@hurleysoftware.com>
-Date: Thu, 17 Jul 2014 11:31:59 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 17 Jul 2014 11:32:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+lEKT41YPn+PJvc+PPVcHtQhahN9gDHHM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 153FF5AE5C3
+Date: Thu, 17 Jul 2014 11:32:36 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH] irqchip: gic: Fix core ID calculation when topology is
+ read from DT
+Message-ID: <20140717153236.GS13108@titan.lakedaemon.net>
+References: <1405610624-18722-1-git-send-email-t.figa@samsung.com>
 MIME-Version: 1.0
-To: balbi@ti.com, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        mika.westerberg@linux.intel.com
-Subject: Re: [PATCH 4/5] tty: serial: 8250 core: add runtime pm
-References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de> <1405521903-5877-5-git-send-email-bigeasy@linutronix.de> <20140716151604.GG1365@saruman.home> <53C6A050.2050409@linutronix.de> <20140716160614.GI1365@saruman.home>
-In-Reply-To: <20140716160614.GI1365@saruman.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405610624-18722-1-git-send-email-t.figa@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 12:06 PM, Felipe Balbi wrote:
-> On Wed, Jul 16, 2014 at 05:54:56PM +0200, Sebastian Andrzej Siewior wrote:
->> On 07/16/2014 05:16 PM, Felipe Balbi wrote:
+On Thu, Jul 17, 2014 at 05:23:44PM +0200, Tomasz Figa wrote:
+> Certain GIC implementation, namely those found on earlier, single
+> cluster, Exynos SoCs, have registers mapped without per-CPU banking,
+> which means that the driver needs to use different offset for each CPU.
+> 
+> Currently the driver calculates the offset by multiplying value returned
+> by cpu_logical_map() by CPU offset parsed from DT. This is correct when
+> CPU topology is not specified in DT and aforementioned function returns
+> core ID alone. However when DT contains CPU topology, the function
+> changes to return cluster ID as well, which is non-zero on mentioned
+> SoCs and so breaks the calculation in GIC driver.
+> 
+> This patch fixes this by masking out cluster ID in CPU offset
+> calculation so that only core ID is considered. Multi-cluster Exynos
+> SoCs already have banked GIC implementations, so this simple fix should
+> be enough.
+> 
+> Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  drivers/irqchip/irq-gic.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 
->>> I wonder if you should get_sync() on start_tx() and only
->>> put_autosuspend() at stop_tx(). I guess the outcome would be
->>> largely the same, no ?
->>
->> I just opened minicom on ttyS0 and gave a try. start_tx() was invoked
->> each time I pressed a key (sent a character). I haven't seen stop_tx()
->> even after after I closed minicom. I guess stop_tx() is invoked if you
->> switch half-duplex communication.
->
-> that's bad, I expected stop to be called also after each character.
+iiuc, this was introduced by:
 
-The 8250 core auto-stops tx when the tx ring buffer is empty (except
-in the case of dma, where stopping tx isn't necessary).
+  db0d4db22a78d ARM: gic: allow GIC to support non-banked setups
 
-Regards,
-Peter Hurley
+and so should be for v3.3 and up, correct?
+
+thx,
+
+Jason.
