@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962AbaGQWGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 18:06:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36311 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511AbaGQWGR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 18:06:17 -0400
-Date: Thu, 17 Jul 2014 15:06:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH] CMA: generalize CMA reserved area management
- functionality (fixup)
-Message-Id: <20140717150615.32c48786b6bdbc880bdc5ed4@linux-foundation.org>
-In-Reply-To: <1405589767-17513-1-git-send-email-m.szyprowski@samsung.com>
-References: <53C78ED7.7030002@samsung.com>
-	<1405589767-17513-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757883AbaGQWIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 18:08:24 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41930 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752829AbaGQWIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 18:08:22 -0400
+Date: Thu, 17 Jul 2014 18:08:06 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] random: limit the contribution of the hw rng to at most
+ half
+Message-ID: <20140717220806.GW1491@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	linux-crypto@vger.kernel.org
+References: <1405591436-15445-1-git-send-email-tytso@mit.edu>
+ <53C80A6D.5010201@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C80A6D.5010201@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014 11:36:07 +0200 Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-
-> MAX_CMA_AREAS is used by other subsystems (i.e. arch/arm/mm/dma-mapping.c),
-> so we need to provide correct definition even if CMA is disabled.
-> This patch fixes this issue.
+On Thu, Jul 17, 2014 at 10:39:57AM -0700, H. Peter Anvin wrote:
 > 
-> Reported-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  include/linux/cma.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/cma.h b/include/linux/cma.h
-> index 9a18a2b1934c..c077635cad76 100644
-> --- a/include/linux/cma.h
-> +++ b/include/linux/cma.h
-> @@ -5,7 +5,11 @@
->   * There is always at least global CMA area and a few optional
->   * areas configured in kernel .config.
->   */
-> +#ifdef CONFIG_CMA
->  #define MAX_CMA_AREAS	(1 + CONFIG_CMA_AREAS)
-> +#else
-> +#define MAX_CMA_AREAS	(0)
-> +#endif
->  
->  struct cma;
+> I saw exactly one complaint to that nature, but that was from someone
+> who really wanted the "nordrand" option (at which point I observed that
+> it had inadvertently left RDSEED enabled which quickly got rectified.)
+> The implication was that this was a request from a specific customer who
+> presumably have their own "audited" hardware RNG.
 
-Joonsoo already fixed this up, a bit differently:
-http://ozlabs.org/~akpm/mmots/broken-out/cma-generalize-cma-reserved-area-management-functionality-fix.patch
+There was another complaint more recently, that wasn't related to
+nordrand.  And I was rather disturbed that in
+add_interrupt_randomness() 97% of the entropy was coming from RDSEED.
+I'm willing to have some of the entropy come from RDSEED by default,
+but 97% seems to really way too much.
 
-Which approach makes more sense?
+And the emergency refill code in random_read() was extremely
+problematic.  First of all, we're dropping 512 bytes on the stack,
+which is kind of bad, but hopefully all of the code paths which call
+random_read() won't have a terribly deep stack.  Secondly, even after
+the emergency refill, we block anyway.  Which is kind of OK, but what
+it means is that we are pulling 512 bytes from RDSEED, and giving
+credit for 2048 bits of entropy; but since we block until the next
+contribution from interrupt randomness, that means we get 1 bit from
+the entropy randomness, and 2048 bits of entropy from RDSEED --- which
+means that from the standpoint of entropy accounting, 99.95%
+(2048/2049) of the entropy is coming from RDSEED when reading from
+/dev/random when its entropy pool is empty.
 
+Remember, regardless of whether or not you believe (as a former head
+of NSA's technology directorate recently claimed) that the DUAL-EC p
+and q were generated using NSA's standard high-quality HW RNG system
+which they use to generate all of their crypto variables, or (as the
+NIST advisory panel has recently concluded) that it was highly likely
+that DUAL-EC was backdoored, it's the optics that matter, because
+those of us without top-drawer SI security clearances can't prove
+things one way or another.
 
+And when 99.95% of the entropy when reading large quantities of keying
+material from /dev/random is coming from RDSEED, that just has
+terrible, terrible optics....
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: CMA: fix ARM build failure related to MAX_CMA_AREAS definition
-
-If CMA is disabled, CONFIG_CMA_AREAS isn't defined so compile error
-happens. To fix it, define MAX_CMA_AREAS if CONFIG_CMA_AREAS
-isn't defined.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/cma.h |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff -puN include/linux/cma.h~cma-generalize-cma-reserved-area-management-functionality-fix include/linux/cma.h
---- a/include/linux/cma.h~cma-generalize-cma-reserved-area-management-functionality-fix
-+++ a/include/linux/cma.h
-@@ -5,8 +5,14 @@
-  * There is always at least global CMA area and a few optional
-  * areas configured in kernel .config.
-  */
-+#ifdef CONFIG_CMA_AREAS
- #define MAX_CMA_AREAS	(1 + CONFIG_CMA_AREAS)
- 
-+#else
-+#define MAX_CMA_AREAS	(0)
-+
-+#endif
-+
- struct cma;
- 
- extern phys_addr_t cma_get_base(struct cma *cma);
-_
-
-
+						- Ted
