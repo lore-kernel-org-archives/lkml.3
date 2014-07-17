@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897AbaGQT4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:56:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753066AbaGQT4K convert rfc822-to-8bit (ORCPT
+	id S1757819AbaGQT40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:56:26 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:45345 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358AbaGQT4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:56:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <acdd27e3b559b0c1bc57a9393e4e5540a90bab36.1405094060.git.d.kasatkin@samsung.com>
-References: <acdd27e3b559b0c1bc57a9393e4e5540a90bab36.1405094060.git.d.kasatkin@samsung.com> <cover.1405094060.git.d.kasatkin@samsung.com> <cover.1405094060.git.d.kasatkin@samsung.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, zohar@linux.vnet.ibm.com,
-        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
-Subject: Making the asymmetric keys config option into a top-level option
+	Thu, 17 Jul 2014 15:56:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <13160.1405626953.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 17 Jul 2014 20:55:53 +0100
-Message-ID: <13161.1405626953@warthog.procyon.org.uk>
+In-Reply-To: <20140717173433.GQ1491@thunk.org>
+References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+ <20140717161215.GA14951@infradead.org> <20140717170115.GO1491@thunk.org>
+ <CAComcpM9-sUwzT9BPFT7BJjk97V0kj996D=AaivDpeTZUNbiew@mail.gmail.com> <20140717173433.GQ1491@thunk.org>
+From: Bob Beck <beck@openbsd.org>
+Date: Thu, 17 Jul 2014 13:56:03 -0600
+X-Google-Sender-Auth: mxVQO_7TdFraksLVzzd9KUxFABo
+Message-ID: <CAComcpPO1hrcfpe+Pmy2jtVE=dVU1S+=ZsVotuBzZEVOivwwvA@mail.gmail.com>
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+To: "Theodore Ts'o" <tytso@mit.edu>, Bob Beck <beck@openbsd.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-abi <linux-abi@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+Hey Ted, one more nit. Yes, I have a bicycle too..
 
-> When ASYMMETRIC_KEYS=y, but depends on CRYPTO=m, selections will be also modules.
-> In random config case OID_REGISTRY, MPILIB and ASN1 became modules producing build
-> break. This patch removes asymmetric keys dependency from CRYPTO, but instead
-> selects CRYPTO and CRYPTO_HASH as they are needed.
+I see here we add a flag to make it block - whereas it seems most
+other system calls that can block the flag is
+added to make it not block (I.E. O_NONBLOCK, etc. etc.)  Would it make
+more sense to invert this so it was more
+like the typical convention in other system calls?
 
-You do realise that this makes the asymmetric key config option into a
-top-level option?  I think, logically, that's the wrong thing to do.  They
-should still appear under the crypto menu.
 
-Note that I think your patch is really the wrong solution.  The right solution
-is to fix the configuration tools - but that's quite an undertaking.
-
-David
+On Thu, Jul 17, 2014 at 11:34 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jul 17, 2014 at 11:05:01AM -0600, Bob Beck wrote:
+>> Hi Ted, yeah I understand the reasoning, it would be good if there was
+>> a way to influence the various libc people to
+>> ensure they manage to provide a getentropy().
+>
+> I don't anticipate that to be a problem.  And before they do, and/or
+> if you are dealing with a system where the kernel has been upgraded,
+> but not libc, you have your choice of either sticking with the
+> binary_sysctl approach, or calling getrandom directly using the
+> syscall method; and in that case, whether we use getrandom() or
+> provide an exact getentropy() replacement system call isn't that much
+> difference, since you'd have to have Linux-specific workaround code
+> anyway....
+>
+>                                 - Ted
