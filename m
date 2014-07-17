@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaGQKnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:43:43 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:64364 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaGQKnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:43:40 -0400
-Message-ID: <53C7A8C5.2090002@redhat.com>
-Date: Thu, 17 Jul 2014 12:43:17 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S932300AbaGQKoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:44:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755289AbaGQKoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:44:09 -0400
+Message-ID: <53C7A8C6.3010001@redhat.com>
+Date: Thu, 17 Jul 2014 12:43:18 +0200
+From: Hans de Goede <hdegoede@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Bandan Das <bsd@redhat.com>,
-        "Hu, Robert" <robert.hu@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: nVMX: Fix fail to get nested ack intr's vector
- during nested vmexit
-References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com> <1405573011-41330-2-git-send-email-wanpeng.li@linux.intel.com> <53C78E37.5090807@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AB31D9E@SHSMSX104.ccr.corp.intel.com> <20140717100130.GA9118@kernel>
-In-Reply-To: <20140717100130.GA9118@kernel>
+To: Amit Virdi <amit.virdi@st.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        rdunlap@infradead.org, ming.lei@canonical.com,
+        hsi-ss-sw-devel@lists.codex.cro.st.com
+Subject: Re: [PATCH] usb: core: allow zero packet flag for interrupt urbs
+References: <5255a576a562f60c185e89b5937357290242fe1e.1405586653.git.amit.virdi@st.com>
+In-Reply-To: <5255a576a562f60c185e89b5937357290242fe1e.1405586653.git.amit.virdi@st.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/07/2014 12:01, Wanpeng Li ha scritto:
-> That is my original proposal solution of this bug. However, what I concern
-> after more think is since kvm_lapic_find_highest_irr will not clear
-> irr, if the intr will be injected by kvm_86_ops->hwapic_irr_update(vcpu,
-> kvm_lapic_find_highest_irr(vcpu)) which called by vcpu_enter_guest() again?
->
-> Any idea, Paolo?
+Hi,
 
-The processor should do that when it does the virtual interrupt 
-delivery.  It will do (29.2.2):
+On 07/17/2014 10:47 AM, Amit Virdi wrote:
+> Section 4.4.7.2 of the USB3.0 spec says:
+> 	A zero-length data payload is a valid transfer and may be useful for
+> 	some implementations.
+> 
+> So, extend the logic of allowing URB_ZERO_PACKET to interrupt urbs too.
+> Otherwise, the kernel throws error of BOGUS transfer flags.
+> 
+> Signed-off-by: Amit Virdi <amit.virdi@st.com>
 
-    Vector := RVI;
-    VISR[Vector] := 1;
-    SVI := Vector;
-    VIRR[Vector] := 0;
-    If VIRR not empty
-       then RVI := highest index of bit set in VIRR
-       else RVI := 0
-    Fi;
-    deliver interrupt with Vector through IDT;
+Seems sensible to me:
 
-Please post a patch, so we can reason on it better.
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-Paolo
+Regards,
+
+Hans
+
+
+> ---
+>  drivers/usb/core/urb.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
+> index 991386c..a136246 100644
+> --- a/drivers/usb/core/urb.c
+> +++ b/drivers/usb/core/urb.c
+> @@ -460,6 +460,10 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
+>  	case USB_ENDPOINT_XFER_CONTROL:
+>  		allowed |= URB_NO_FSBR;	/* only affects UHCI */
+>  		/* FALLTHROUGH */
+> +	case USB_ENDPOINT_XFER_INT:
+> +		if (is_out)
+> +			allowed |= URB_ZERO_PACKET;
+> +		/* FALLTHROUGH */
+>  	default:			/* all non-iso endpoints */
+>  		if (!is_out)
+>  			allowed |= URB_SHORT_NOT_OK;
+> 
