@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658AbaGQKsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:48:08 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:47112 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaGQKsF (ORCPT
+	id S1756757AbaGQKsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:48:33 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:62309 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617AbaGQKs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:48:05 -0400
+	Thu, 17 Jul 2014 06:48:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
-References: <1404834869-23049-1-git-send-email-svarbanov@mm-sol.com>
-	<1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
-Date: Thu, 17 Jul 2014 16:18:02 +0530
-Message-ID: <CAMf-jSk5+c1QYfKfjqmstB60bM3adK5tgAYwmPKhOi6cSeM_WA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: qpnp-spmi: add support for Qualcomm QPNP PMICs
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Mark Brown <broonie@kernel.org>
+In-Reply-To: <7476152.ZcIrSvABEg@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<5170097.X9RFbxSEnp@wuerfel>
+	<CAFiDJ5_dTKXSVPtr20uDU32=v_jb3NKUDHGw4OFjW6DuvoZyeA@mail.gmail.com>
+	<7476152.ZcIrSvABEg@wuerfel>
+Date: Thu, 17 Jul 2014 18:48:27 +0800
+X-Google-Sender-Auth: N4-tlY0nhH0rAGEOia12Qwfmr7w
+Message-ID: <CAFiDJ5_mT=Ho200cCaLqVJNjJvg5M__X+8E=Z+Pi_SUhaVD-RA@mail.gmail.com>
+Subject: Re: [PATCH v2 12/29] nios2: Interrupt handling
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Mark Brown
-Hi Josh/Stanimir,
-
-
-On Tue, Jul 8, 2014 at 9:24 PM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
-> From: Josh Cartwright <joshc@codeaurora.org>
+On Thu, Jul 17, 2014 at 5:24 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 17 July 2014 14:15:44 Ley Foon Tan wrote:
+>> On Tue, Jul 15, 2014 at 5:27 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Tuesday 15 July 2014 16:45:39 Ley Foon Tan wrote:
+>> >> +#ifndef _ASM_NIOS2_IRQ_H
+>> >> +#define _ASM_NIOS2_IRQ_H
+>> >> +
+>> >> +#define NIOS2_CPU_NR_IRQS    32
+>> >> +/* Reserve 32 additional interrupts for GPIO IRQs */
+>> >> +#define NR_IRQS                      (NIOS2_CPU_NR_IRQS + 32)
+>> >
+>> > Is this intentional? I would expect that you use SPARSE_IRQ
+>> > instead and not define NR_IRQS.
+>> Okay, will change to use SPARSE_IRQ.
+>> >
+>> >> +#ifndef NO_IRQ
+>> >> +#define NO_IRQ                       (-1)
+>> >> +#endif
+>> >
+>> > New architectures should no longer define NO_IRQ. Please fix all users
+>> > you encounter instead.
+>> Okay.
+>>
+>> >
+>> >> diff --git a/arch/nios2/kernel/irq.c b/arch/nios2/kernel/irq.c
+>> >> new file mode 100644
+>> >> index 0000000..8770d50
+>> >> --- /dev/null
+>> >> +++ b/arch/nios2/kernel/irq.c
+>> >> +#include <linux/init.h>
+>> >> +#include <linux/interrupt.h>
+>> >> +#include <linux/of.h>
+>> >
+>> > Maybe move this into drivers/irqchip/? Probably doesn't matter either way,
+>> > your choice.
+>> Will keep it here.
+>> BTW, this interrupt controller is part of Nios2 cpu architecture.
+>> Should we move to drivers/irqchip/ if that's the case? Any example of
+>> arch doing this?
 >
-> The Qualcomm QPNP PMIC chips are components used with the
-> Snapdragon 800 series SoC family.  This driver exists
-.
-[SNIP]
-.
-> +config MFD_QPNP_SPMI
-> +       tristate "Qualcomm QPNP SPMI PMIC"
-> +       depends on ARCH_QCOM || COMPILE_TEST
-> +       depends on OF
-> +       select MFD_CORE
-> +       select REGMAP_SPMI
-REGMAP_SPMI use SPMI functions.
-
-https://patchwork.kernel.org/patch/4566591/
-
-> +       help
-> +         This enables support for the Qualcomm QPNP SPMI PMICs.
-> +         These PMICs are currently used with the Snapdragon 800 series of
-> +         SoCs.  Note, that this will only be useful paired with descriptions
-.
-[snip]
-.
-> +
-> +MODULE_DESCRIPTION("QPNP PMIC SPMI driver");
-> +MODULE_ALIAS("platform:" KBUILD_MODNAME);
-> +MODULE_AUTHOR("The Linux Foundation");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.7.0.4
+> A lot of interrupt controllers can be used on multiple architectures,
+> and a lot of architectures have a wide variety of interrupt controllers
+> that can be used, so moving them all into drivers/irqchip is the generally
+> preferred choice.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> If your driver can't work on anything other than nios2 (e.g. because it
+> uses special CPU instructions rather than MMIO access) or the CPU core
+> always comes with this irqchip and doesn't have a way to use a different
+> one, there is no problem leaving it in the arch code.
+Yes, this driver only can be used with nios2 and all these irq
+registers are part of nios2 control registers.
+So, we just leave code here.
 
+Thanks.
 
-
--- 
-Thanks and Regards
-Pramod
+Regards
+Ley Foon
