@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339AbaGQKoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:44:15 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:57057 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaGQKoK (ORCPT
+	id S1756658AbaGQKsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:48:08 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:47112 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaGQKsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:44:10 -0400
-Message-ID: <53C7A8EE.4040605@redhat.com>
-Date: Thu, 17 Jul 2014 12:43:58 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 06:48:05 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Bandan Das <bsd@redhat.com>,
-        "Hu, Robert" <robert.hu@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] KVM: nVMX: Fix virtual interrupt delivery injection
-References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com> <53C78F67.1060802@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AB31D4A@SHSMSX104.ccr.corp.intel.com> <20140717091148.GA7744@kernel>
-In-Reply-To: <20140717091148.GA7744@kernel>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
+References: <1404834869-23049-1-git-send-email-svarbanov@mm-sol.com>
+	<1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
+Date: Thu, 17 Jul 2014 16:18:02 +0530
+Message-ID: <CAMf-jSk5+c1QYfKfjqmstB60bM3adK5tgAYwmPKhOi6cSeM_WA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: qpnp-spmi: add support for Qualcomm QPNP PMICs
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/07/2014 11:11, Wanpeng Li ha scritto:
->>> >> What hypervisor did you test with? nested_exit_on_intr(vcpu) will
->> >
->> >Jailhouse will clear External-interrupt exiting bit. Am I right? Jan.
->> >
->>> >> return true for both Xen and KVM (nested_exit_on_intr is not the same
->>> >> thing as ACK_INTR_ON_EXIT).
->> >
->> >I guess he want to say External-interrupt exiting bit not ACK_INTR_ON_EXIT.
->> >
-> Ah yes, a typo here.
++Mark Brown
+Hi Josh/Stanimir,
 
-Ok, please repost this patch together with your version of patch 2.
 
-Leave aside patch 3 for now, as I think the original use-after-free 
-patch was wrong.
+On Tue, Jul 8, 2014 at 9:24 PM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+> From: Josh Cartwright <joshc@codeaurora.org>
+>
+> The Qualcomm QPNP PMIC chips are components used with the
+> Snapdragon 800 series SoC family.  This driver exists
+.
+[SNIP]
+.
+> +config MFD_QPNP_SPMI
+> +       tristate "Qualcomm QPNP SPMI PMIC"
+> +       depends on ARCH_QCOM || COMPILE_TEST
+> +       depends on OF
+> +       select MFD_CORE
+> +       select REGMAP_SPMI
+REGMAP_SPMI use SPMI functions.
 
-Paolo
+https://patchwork.kernel.org/patch/4566591/
+
+> +       help
+> +         This enables support for the Qualcomm QPNP SPMI PMICs.
+> +         These PMICs are currently used with the Snapdragon 800 series of
+> +         SoCs.  Note, that this will only be useful paired with descriptions
+.
+[snip]
+.
+> +
+> +MODULE_DESCRIPTION("QPNP PMIC SPMI driver");
+> +MODULE_ALIAS("platform:" KBUILD_MODNAME);
+> +MODULE_AUTHOR("The Linux Foundation");
+> +MODULE_LICENSE("GPL v2");
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Thanks and Regards
+Pramod
