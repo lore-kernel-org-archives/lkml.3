@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaGQGNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:13:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36932 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaGQGNk (ORCPT
+	id S1753245AbaGQGPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 02:15:10 -0400
+Received: from regular2.263xmail.com ([211.157.152.4]:55330 "EHLO
+	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaGQGPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:13:40 -0400
-Message-ID: <53C76990.3000304@ti.com>
-Date: Thu, 17 Jul 2014 11:43:36 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-api@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via Ethtool
- Coalesce
-References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com> <20140709.164420.157865201153845876.davem@davemloft.net>
-In-Reply-To: <20140709.164420.157865201153845876.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jul 2014 02:15:07 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 02:15:05 EDT
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: thierry.reding@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <62440d8db8ce8f212f7b34de54d44f68>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: caesar <caesar.wang@rock-chips.com>
+To: thierry.reding@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org
+Cc: linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cf@rock-chips.com, addy.ke@rock-chips.com, xjq@rock-chips.com,
+        huangtao@rock-chips.com, hj@rock-chips.com,
+        caesar <caesar.wang@rock-chips.com>
+Subject: [PATCH 1/2] pwm: add this series patch to introduce for rk-pwm and vop-pwm.
+Date: Thu, 17 Jul 2014 14:08:13 +0800
+Message-Id: <1405577294-19336-2-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405577294-19336-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1405577294-19336-1-git-send-email-caesar.wang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 July 2014 05:14 AM, David Miller wrote:
-> From: Mugunthan V N <mugunthanvnm@ti.com>
-> Date: Wed, 9 Jul 2014 12:44:07 +0530
->
->> A system/cpu can be loaded by a hacker with flooding of broadcast or
->> multicast packets, to prevent this some Ethernet controllers like CPSW
->> provide a mechanism to limit the broadcast/multicast packet rate via
->> hardware limiters. This patch series enables this feature via
->> Ethtool Coalesce.
-> This is pretty bogus if you ask me.
->
-> What is the difference from accepting a high rate of unicast packets?
-> I say it is no different.
->
-> Therefore, this feature makes no sense to me at all.
+Signed-off-by: caesar <caesar.wang@rock-chips.com>
+---
+ Documentation/devicetree/bindings/pwm/pwm-rockchip.txt | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-Any packet storm can cause an endpoint some issues. Typically packet
-storms will cause the system CPU to thrash resulting is very low system
-performance.
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+index 3182126..bb6e7f1 100644
+--- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
++++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+@@ -1,11 +1,14 @@
+ Rockchip PWM controller
+ 
+ Required properties:
+- - compatible: should be "rockchip,rk2928-pwm"
+- - reg: physical base address and length of the controller's registers
+- - clocks: phandle and clock specifier of the PWM reference clock
+- - #pwm-cells: should be 2. See pwm.txt in this directory for a
+-   description of the cell format.
++- compatible: should be "rockchip,<name>-pwm"should be one of following:
++    "rockchip,rk2928-pwm" - support the old version PWM for RK29xx,RK3066,RK3188 SoCs.
++    "rockchip,rk3288-pwm" - support the new version PWM for RK3036,RK3288 SoCs.
++    "rockchip,vop-pwm" - support rockchip integrated VOP-PWM for RK32 SoCs.
++- reg: physical base address and length of the controller's registers.
++- clocks: phandle and clock specifier of the PWM reference clock.
++- #pwm-cells: should be 2. See pwm.txt in this directory for a
++  description of the cell format.
+ 
+ Example:
+ 
+-- 
+1.9.1
 
-Unicast storms only target a single destination end station, it can be
-easily mitigated by the host adding a blocking entry in the LUT for each
-aggressor.
 
-Broadcast and multicast target multiple end stations, or an entire
-network, not only can it cause CPU thrashing, it can result in loss of
-other broadcast and multicast services. The rate limiting feature allow
-the broadcast and or multicast traffic to be dropped if the rates are
-too high. This eliminates the CPU thrashing issue. It also allows the
-system to analyze the aggressors and block them for future transgressions.
-
-Regards
-Mugunthan V N
