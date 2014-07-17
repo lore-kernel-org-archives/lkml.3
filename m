@@ -1,182 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaGQLYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:24:48 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:14293 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951AbaGQLX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:23:27 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-8d-53c7b22c1e2f
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
-        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
-        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org,
-        jic23@kernel.org
-Subject: [PATCH 1/4 v2] iio: exyno-adc: use syscon for PMU register access
-Date: Thu, 17 Jul 2014 16:49:50 +0530
-Message-id: <1405595993-16661-2-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1405595993-16661-1-git-send-email-ch.naveen@samsung.com>
-References: <1405595993-16661-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsWyRsSkSldn0/Fgg11LDCxeHtK0uP7lOavF
-	/CPnWC2aF69ns3h15AeTxYOmVUwWSybPZ7WYd+Qdi8XlXXPYLGac38dksWjbf2YHbo/ZDRdZ
-	PHbOusvusWlVJ5vH/rlr2D2WvDnE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZUxYEFRyT
-	q7gweS17A+NayS5GDg4JAROJ1rNMXYycQKaYxIV769m6GLk4hASWMkoc6jvNDJEwkbi8aTcL
-	RGI6o8S5Zb1QTj+TxOs3nxhBqtgEzCQOLlrNDmKLCMRJfLjczw5SxCywn1Hi9ev9YAlhAS+J
-	U+/3sYHYLAKqEov2PgSL8wq4SkzqvcsMcZKCxJxJNiBhTgE3iRVr/rCBhIWASm48yAMZKSFw
-	jF1i5csZrBBjBCS+TT7EAtEqK7HpANTRkhIHV9xgmcAovICRYRWjaGpBckFxUnqRsV5xYm5x
-	aV66XnJ+7iZGYHSc/vesfwfj3QPWhxiTgcZNZJYSTc4HRldeSbyhsZmRhamJqbGRuaUZacJK
-	4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamAMrQtuXb0964v5il15vz3nBtwIkFE5
-	78NWUdj+17Zu2pR5UY+l3R5mLZxnHdBupuH1Z8Ga7IKXUXa3FP+pqTerOhgazOFO+Cl2zkFj
-	g/zF2HspMXmMThIx6/4dfeHFk2tY+JFjqrjag6ZPa1f/ustbq58uxbO4cMIsTWZbIdvOE5c3
-	sLnK5CixFGckGmoxFxUnAgCiAZO0pAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t9jQV2dTceDDZp2aFi8PKRpcf3Lc1aL
-	+UfOsVo0L17PZvHqyA8miwdNq5gslkyez2ox78g7FovLu+awWcw4v4/JYtG2/8wO3B6zGy6y
-	eOycdZfdY9OqTjaP/XPXsHsseXOI1aNvyypGj8+b5ALYoxoYbTJSE1NSixRS85LzUzLz0m2V
-	vIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAjlRSKEvMKQUKBSQWFyvp22GaEBripmsB
-	0xih6xsSBNdjZIAGEtYwZkxZEFRwTK7iwuS17A2MayW7GDk5JARMJC5v2s0CYYtJXLi3nq2L
-	kYtDSGA6o8S5Zb0sEE4/k8TrN58YQarYBMwkDi5azQ5iiwjESXy43M8OUsQssJ9R4vXr/WAJ
-	YQEviVPv97GB2CwCqhKL9j4Ei/MKuEpM6r3L3MXIAbROQWLOJBuQMKeAm8SKNX/YQMJCQCU3
-	HuRNYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4+p5J7WBc2WBxiFGAg1GJhzeh
-	9ViwEGtiWXFl7iFGCQ5mJRHebV3Hg4V4UxIrq1KL8uOLSnNSiw8xmgLdNJFZSjQ5H5gY8kri
-	DY1NzE2NTS1NLEzMLJXEeQ+0WgcKCaQnlqRmp6YWpBbB9DFxcEo1MBq8tVy16fiK7qa3iUwp
-	YlMCDgTYnrJsCPtew1iS+lOfPfDwLKn1SblMl6q1HVYELlL3s7Gq1XGz69nMe3Ad56O1pY5h
-	KYoK2ySfhGrdunA0ZbZ8+P3XC3/7ybAKTFB159+9VEPI/zmH7pdfsW1GXxRztz9cr5FxyXyG
-	Wf1U3WtbNc9I7J0/W4mlOCPRUIu5qDgRANCsX5fUAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932322AbaGQLZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:25:03 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:8331
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932218AbaGQLY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 07:24:57 -0400
+Date: Thu, 17 Jul 2014 19:19:15 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140717111912.GA16025@shlinux1.ap.freescale.net>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <22032517.gk8PRUMaIU@wuerfel>
+ <93903d5fdf85427bb8a418894540c122@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <5456516.0fVZeXjF8k@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5456516.0fVZeXjF8k@wuerfel>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(24454002)(189002)(199002)(164054003)(79102001)(83072002)(76482001)(15975445006)(77982001)(21056001)(74502001)(107046002)(74662001)(97736001)(97756001)(4396001)(46102001)(15395725005)(44976005)(83506001)(19580395003)(81542001)(83322001)(31966008)(102836001)(92566001)(92726001)(86362001)(80022001)(575784001)(85852003)(64706001)(47776003)(20776003)(81342001)(33656002)(69596002)(68736004)(104016003)(15202345003)(46406003)(105606002)(23726002)(110136001)(81156004)(87936001)(106466001)(84676001)(76176999)(54356999)(99396002)(6806004)(50986999)(93886003)(50466002)(26826002)(95666004)(85306003)(6606295002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB567;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027578BB13
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the IIO based ADC driver to use syscon and regmap
-APIs to access and use PMU registers instead of remapping the PMU
-registers in the driver.
+On Thu, Jul 17, 2014 at 12:21:56PM +0200, Arnd Bergmann wrote:
+> On Thursday 17 July 2014 01:20:54 Peter Chen wrote:
+> > Thanks, arnd.
+> > 
+> > For chipidea generic glue layer case, if there are three devices who use this
+> > driver, and all devices have 32-bit bus, some devices have less 32 address lines.
+> > For example:
+> > 
+> > - the device_a doesn't need to use dma_mask
+> > - the device_b needs dma_mask as 0xfffffffff
+> > - the device_c needs dma_mask as 0xfffffff0, assume it has only 28 address lines
+> 
+> This makes no sense. You always need a dma mask, so the first case doesn't exist,
+> and the second one is the default.
+> 
+> In the third case, I assume you mean 0x0fffffff, which is a 28-bit mask.
+> 
+> > My questions are:
+> > - Can we not set dma_mask at driver, and only set dma-ranges at dts for device_b
+> > and device_c as a solution to cover this different dma mask use case?
+> 
+> try to understand my earlier reply. What is the problem with device_b?
+> Is that a limitation of the bus it is connected to, or the version of the
+> chipidea hardware?
+> 
+> > - If we can't use this solution, would you suggest one?
+> 
+> It depends on what the requirement of the hardware is, as I explained
+> now for three times.
+> 
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org
----
-Changes since v1:
-None
+Thanks, Arnd.
 
- drivers/iio/adc/exynos_adc.c |   29 ++++++++++++++++++++---------
- 1 file changed, 20 insertions(+), 9 deletions(-)
+Currently, we are designing a generic driver, we don't know what's the
+hardware architecture, we are trying to find a solution how to set
+dma mask for all possible devices which will use this driver, Antoine's
+this patch is trying to cover this feature.
 
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index b63e882..60847ef 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -38,6 +38,8 @@
- #include <linux/iio/iio.h>
- #include <linux/iio/machine.h>
- #include <linux/iio/driver.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
- 
- /* EXYNOS4412/5250 ADC_V1 registers definitions */
- #define ADC_V1_CON(x)		((x) + 0x00)
-@@ -79,11 +81,14 @@
- 
- #define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
- 
-+#define EXYNOS_ADCV1_PHY_OFFSET	0x0718
-+#define EXYNOS_ADCV2_PHY_OFFSET	0x0720
-+
- struct exynos_adc {
- 	struct exynos_adc_data	*data;
- 	struct device		*dev;
- 	void __iomem		*regs;
--	void __iomem		*enable_reg;
-+	struct regmap		*pmu_map;
- 	struct clk		*clk;
- 	struct clk		*sclk;
- 	unsigned int		irq;
-@@ -98,6 +103,7 @@ struct exynos_adc {
- struct exynos_adc_data {
- 	int num_channels;
- 	bool needs_sclk;
-+	int phy_offset;
- 
- 	void (*init_hw)(struct exynos_adc *info);
- 	void (*exit_hw)(struct exynos_adc *info);
-@@ -169,7 +175,7 @@ static void exynos_adc_v1_init_hw(struct exynos_adc *info)
- {
- 	u32 con1;
- 
--	writel(1, info->enable_reg);
-+	regmap_write(info->pmu_map, info->data->phy_offset, 1);
- 
- 	/* set default prescaler values and Enable prescaler */
- 	con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-@@ -183,7 +189,7 @@ static void exynos_adc_v1_exit_hw(struct exynos_adc *info)
- {
- 	u32 con;
- 
--	writel(0, info->enable_reg);
-+	regmap_write(info->pmu_map, info->data->phy_offset, 0);
- 
- 	con = readl(ADC_V1_CON(info->regs));
- 	con |= ADC_V1_CON_STANDBY;
-@@ -208,6 +214,7 @@ static void exynos_adc_v1_start_conv(struct exynos_adc *info,
- 
- static struct exynos_adc_data const exynos_adc_v1_data = {
- 	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.phy_offset	= EXYNOS_ADCV1_PHY_OFFSET,
- 
- 	.init_hw	= exynos_adc_v1_init_hw,
- 	.exit_hw	= exynos_adc_v1_exit_hw,
-@@ -219,7 +226,7 @@ static void exynos_adc_v2_init_hw(struct exynos_adc *info)
- {
- 	u32 con1, con2;
- 
--	writel(1, info->enable_reg);
-+	regmap_write(info->pmu_map, info->data->phy_offset, 1);
- 
- 	con1 = ADC_V2_CON1_SOFT_RESET;
- 	writel(con1, ADC_V2_CON1(info->regs));
-@@ -236,7 +243,7 @@ static void exynos_adc_v2_exit_hw(struct exynos_adc *info)
- {
- 	u32 con;
- 
--	writel(0, info->enable_reg);
-+	regmap_write(info->pmu_map, info->data->phy_offset, 0);
- 
- 	con = readl(ADC_V2_CON1(info->regs));
- 	con &= ~ADC_CON_EN_START;
-@@ -271,10 +278,12 @@ static void exynos_adc_v2_start_conv(struct exynos_adc *info,
- 
- static struct exynos_adc_data const exynos_adc_v2_data = {
- 	__EXYNOS_ADC_V2_DATA
-+	.phy_offset = EXYNOS_ADCV2_PHY_OFFSET,
- };
- 
- static struct exynos_adc_data const exynos3250_adc_v2_data = {
- 	__EXYNOS_ADC_V2_DATA
-+	.phy_offset = EXYNOS_ADCV1_PHY_OFFSET,
- 	.needs_sclk = true,
- };
- 
-@@ -437,10 +446,12 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	if (IS_ERR(info->regs))
- 		return PTR_ERR(info->regs);
- 
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
--	if (IS_ERR(info->enable_reg))
--		return PTR_ERR(info->enable_reg);
-+	info->pmu_map = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
-+					"samsung,syscon-phandle");
-+	if (IS_ERR(info->pmu_map)) {
-+		dev_err(&pdev->dev, "syscon regmap lookup failed.\n");
-+		return PTR_ERR(info->pmu_map);
-+	}
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
+For example, 
+
+Marvell Berlin doesn't need to set dma mask specific.
+http://marc.info/?l=linux-arm-kernel&m=140205228507045&w=2
+http://www.spinics.net/lists/linux-usb/msg110598.html
+
+Xilinx zynq needs to set dma mask as 0xFFFFFFF0
+http://marc.info/?l=linux-usb&m=140384129921706&w=2
+
+FSL i.mx needs to set dma mask as DMA_BIT_MASK(32)
+https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/tree/drivers/usb/chipidea/ci_hdrc_imx.c?h=usb-next
+
 -- 
-1.7.9.5
 
+Best Regards,
+Peter Chen
