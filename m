@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaGQR7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:59:17 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:54984 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaGQR7Q (ORCPT
+	id S1753085AbaGQSBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:01:21 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:52217 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaGQSBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:59:16 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] printk: more log flag simplification
-Date: Thu, 17 Jul 2014 12:59:08 -0500
-Message-Id: <1405619953-5475-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 17 Jul 2014 14:01:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrXfNi3yqv3S3eNcG-y74SUP8opnni=tU=XuSdc+ts7Huw@mail.gmail.com>
+References: <20140717174959.GA12788@www.outflux.net>
+	<CALCETrVRC8Zh3yGQuuMyWFob0v8i2x+PLMNK0nZ2cryHvv_NEQ@mail.gmail.com>
+	<CAGXu5j+d38Uy=Rwjrt4NFjEgWZ13djFdF_RWHVPKAMnDn9YTVw@mail.gmail.com>
+	<CALCETrXfNi3yqv3S3eNcG-y74SUP8opnni=tU=XuSdc+ts7Huw@mail.gmail.com>
+Date: Thu, 17 Jul 2014 11:01:16 -0700
+X-Google-Sender-Auth: _HCzrTMFTBjV5HOngPdyGpbjAcU
+Message-ID: <CAGXu5jKWWAz5yG6nZu8bjZmBL-_P+DgpW2ZB7bBd6RnYG7JGMw@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: do not reject initial filter using TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Oleg Nesterov <oleg@redhat.com>,
+        David Drysdale <drysdale@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series rearranges the log code in such a way that the LOG_CONT
-and LOG_PREFIX log record flags can be eliminated entirely.  The
-result should be considerably easier to understand than before.  It
-builds on another recently-posted series of patches:
-    https://lkml.org/lkml/2014/7/17/363
+On Thu, Jul 17, 2014 at 10:59 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Jul 17, 2014 at 10:56 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Thu, Jul 17, 2014 at 10:53 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Thu, Jul 17, 2014 at 10:49 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>> There was an unneeded sanity check in the TSYNC code that was causing
+>>>> the first filter applied to not allow the TSYNC flag. Additionally,
+>>>> this optimizes the thread loops to skip "current". It was harmless, but
+>>>> better to not cause problems in the future.
+>>>>
+>>>> Reported-by: David Drysdale <drysdale@google.com>
+>>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>>> ---
+>>>> This goes on top of the v11 seccomp-tsync series. If I should respin
+>>>> as v12, please let me know.
+>>>>
+>>>> Thanks!
+>>>> ---
+>>>>  kernel/seccomp.c |   11 ++++++++---
+>>>>  1 file changed, 8 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>>>> index 2125b83ccfd4..0e0c6905b81d 100644
+>>>> --- a/kernel/seccomp.c
+>>>> +++ b/kernel/seccomp.c
+>>>> @@ -255,14 +255,15 @@ static inline pid_t seccomp_can_sync_threads(void)
+>>>>         BUG_ON(!mutex_is_locked(&current->signal->cred_guard_mutex));
+>>>>         BUG_ON(!spin_is_locked(&current->sighand->siglock));
+>>>>
+>>>> -       if (current->seccomp.mode != SECCOMP_MODE_FILTER)
+>>>> -               return -EACCES;
+>>>> -
+>>>>         /* Validate all threads being eligible for synchronization. */
+>>>>         caller = current;
+>>>>         for_each_thread(caller, thread) {
+>>>>                 pid_t failed;
+>>>>
+>>>> +               /* Skip current, since it is initiating the sync. */
+>>>> +               if (thread == current)
+>>>> +                       continue;
+>>>> +
+>>>
+>>> Should that be "thread == caller"?
+>>
+>> caller shouldn't be changing, correct? Won't it be the same?
+>>
+>
+> I assumed that you loaded caller once as an optimization -- ISTR that,
+> at least at some point, accessing current was a slightly expensive.
+> Maybe this is moot now.
+>
+> Anyway, the rest of the code in there is comparing thread to caller,
+> using caller seems a bit more consistent.
 
-The first patch exploits the fact that LOG_CONT and LOG_NEWLINE
-are inverses, and uses LOG_NEWLINE (or its negation) anywhere
-LOG_CONT is used.  As a result, LOG_CONT is no longer needed, so
-it's eliminated.
+Fair enough. :)
 
-The next three patches together eliminate LOG_PREFIX.  The effect
-of LOG_PREFIX is to complete the previous log entry before recording
-a new one.  Patch 2 arranges to do this directly, marking the previous
-log record with LOG_NEWLINE whenever a new record is presented with
-LOG_PREFIX set.  Patch 3 stops saving LOG_PREFIX in any log records,
-and patch 4 finally gets rid of LOG_PREFIX.
+I'll resend with this folded in for a v12.
 
-The last patch is just some cleanup of the code now that it's gone
-through this transformation.
+Thanks!
 
-					-Alex
-
-This series is available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/more-printk-flags
-It is based on branch review/printk-flags-v2 in that same repository.
-
-Alex Elder (5):
-  printk: kill LOG_CONT
-  printk: update previous message for LOG_PREFIX
-  printk: stop actually recording LOG_PREFIX
-  printk: kill LOG_PREFIX
-  printk: rename LOG_NEWLINE and tidy up
-
- kernel/printk/printk.c | 135 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 81 insertions(+), 54 deletions(-)
+-Kees
 
 -- 
-1.9.1
-
+Kees Cook
+Chrome OS Security
