@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285AbaGQLrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:47:07 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48543 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898AbaGQLrE (ORCPT
+	id S1757334AbaGQLrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:47:43 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:32943 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898AbaGQLrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:47:04 -0400
-Message-ID: <53C7B7AF.3070103@gmail.com>
-Date: Thu, 17 Jul 2014 19:46:55 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 07:47:39 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        jic23@kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7977B.9090903@gmail.com> <7018119.hVYUML2rzD@wuerfel>
-In-Reply-To: <7018119.hVYUML2rzD@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53C56FB1.2040700@kernel.org>
+References: <1405069589-10388-1-git-send-email-ch.naveen@samsung.com>
+ <53C56F40.1070304@kernel.org> <53C56FB1.2040700@kernel.org>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Thu, 17 Jul 2014 17:17:18 +0530
+Message-ID: <CAHfPSqDqJuhsMMocpz0jWxJhAuFQDpfssNB3kFN9bMcaPGtH0g@mail.gmail.com>
+Subject: Re: [PATCH 0/4] iio: exynos-adc: use syscon instead of ioremap
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cw00.choi@samsung.com, gregkh@linuxfoundation.org, lars@metafoo.de,
+        cpgs@samsung.com, grundler@chromium.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Jonathan,
 
-
-On 07/17/2014 06:38 PM, Arnd Bergmann wrote:
-> On Thursday 17 July 2014 17:29:31 Chen Gang wrote:
+On 15 July 2014 23:45, Jonathan Cameron <jic23@kernel.org> wrote:
+> On 15/07/14 19:13, Jonathan Cameron wrote:
+>>
+>> On 11/07/14 10:06, Naveen Krishna Chatradhi wrote:
 >>>
->>> COMPILE_TEST is a great tool in general, but it has its limits.
->>> In particular, the case for !CONFIG_IOMEM is completely obscure
->>> and we won't find any bugs by allowing more drivers to be built
->>> in those configurations, but attempting to do it would cause
->>> endless churn by changing each instance of 'depends on HAS_IOMEM'
->>> to 'depends on HAS_IOMEM || COMPILE_TEST'.
+>>> This patch does the following
+>>> 1. Use the syscon and Regmap API instead of ioremappaing the
+>>>     ADC_PHY register from PMU.
+>>> 2. Moves the exynos-adc.txt from bindings/arm/samsung/
+>>>     to bindings/iio/adc/.
+>>> 3. Updates the Documentation in exynos-adc.txt with syscon phandle
+>>>     for the ADC nodes.
+>>> 4. Updates the Dts files for Exynos3250, Exynos4x12, Exynos5250,
+>>>     Exynos5420 with the syscon phandle.
+>>>
+>>> Tested on Exynos5420 based Peach PIT and Exynos5800 based Peach PI
+>>> by verifying sysfs entries provided by HWMON based NTC thermistors.
+>>>
+>>> Tested-By for Exynos3250, Exynos4x12 would be appreciated.
+>>>
+>> This series all looks fine to me.  Took me a minute to work out what the
+>> point
+>> of the syscon change was (perhaps a little description in the cover letter
+>> would have been nice ;)
+>>
+>> Anyhow, with the device tree changes in here we'll have to let it sit for
+>> a while.  I'll also definitely want an ack from
+>> Kukjin Kim <kgene.kim@samsung.com> for the device tree changes.
+>
+> Although I haven't tried it, I'd imagine this might cause a little bit
+> of merging fun with the other exynos series waiting for Kukjin to
+> ack...
+
+I've tried to rebase on top of Chongwoo's v5 version changes for Exynos5320.
+there is one conflict with Documentation. I've submitted the v2 version.
+
+> [PATCHv5 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and code clean
+>>
+>>
+>> Jonathan
+>>>
+>>> Naveen Krishna Chatradhi (4):
+>>>    iio: exyno-adc: use syscon for PMU register access
+>>>    Documentation: dt-bindings: move exynos-adc.txt to more iio/adc/
+>>>    Documentation: dt-bindings: update exynos-adc.txt with syscon handle
+>>>    ARM: dts: exynos: Add sysreg phandle to ADC node
+>>>
+>>>   .../devicetree/bindings/arm/samsung/exynos-adc.txt |   82
+>>> ------------------
+>>>   .../devicetree/bindings/iio/adc/exynos-adc.txt     |   87
+>>> ++++++++++++++++++++
+>>>   arch/arm/boot/dts/exynos3250.dtsi                  |    3 +-
+>>>   arch/arm/boot/dts/exynos4x12.dtsi                  |    3 +-
+>>>   arch/arm/boot/dts/exynos5250.dtsi                  |    3 +-
+>>>   arch/arm/boot/dts/exynos5420.dtsi                  |    3 +-
+>>>   drivers/iio/adc/exynos_adc.c                       |   29 +++++--
+>>>   7 files changed, 115 insertions(+), 95 deletions(-)
+>>>   delete mode 100644
+>>> Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>>>   create mode 100644
+>>> Documentation/devicetree/bindings/iio/adc/exynos-adc.txt
 >>>
 >>
->> Architecture members and driver members really have different tastes,
->> they are different roles. It really need additional discussion.
->>
->> For me, I only want to change devm_io*map*, not touch so much.
-> 
-> But what do you gain from that? All drivers that need these
-> functions should already 'depends on HAS_IOMEM' and if they don't,
-> we should fix /that/ instead. I don't see this dependency as any
-> different from a lot of others (PCI, DMAENGINE, HAVE_CLK, ...)
-> that we use to intentionally annotate drivers that need a particular
-> feature to be present for compilation. Do you want to do the
-> same hack to those?
-> 
->> Welcome any other members' idea or suggestions.
-> 
->>> Note that s390 no has gained support for IOMEM, tile has it most
->>> of the time (when PCI is enabled, so you get it in half the
->>> test builds already), score should set HAS_IOMEM and doesn't
->>> even have public compilers, and uml doesn't even compile in
->>> latest mainline. Nothing else ever sets NO_IOMEM.
->>>
->>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-I guess, we are just discussing about them in another threads, so I skip
-them. If it is still necessary to reply (e.g. I misunderstand), please
-let me know, thanks.
 
->> In latest gcc and binutils, can compile score cross compiler
->> successfully for building kernel (but I am not quite sure whether the
->> compiling result are really OK, but I guess so).
-> 
-> Ok. Would you mind sending a patch that enables HAS_IOMEM on
-> score?
->  
 
-For me, welcome the score related maintainers' idea and suggestions.
-
->> And next (maybe after finish allmodconfig for microblaze), I shall try
->> to let uml pass allmodconfig for linux-next tree.
-> 
-> That is a fair goal, but it seems better to do that by ensuring
-> we don't build any code that tries to call the MMIO functions
-> rather than trying to make them build.
-> 
-
-When I am performing uml, I will try and also communicate with the
-related maintainers for it (their suggestions and ideas are valuable).
-
-Thanks.
 -- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+Regards,
+(: Naveen :)
