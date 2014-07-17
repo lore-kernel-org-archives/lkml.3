@@ -1,110 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242AbaGQA73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 20:59:29 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:47125 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706AbaGQA7Z (ORCPT
+	id S1755331AbaGQBBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 21:01:31 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:65420 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbaGQBB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 20:59:25 -0400
-Date: Wed, 16 Jul 2014 17:59:22 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andrea Arcangeli <aarcange@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch v3] mm, thp: only collapse hugepages to nodes with affinity
- for zone_reclaim_mode
-In-Reply-To: <alpine.DEB.2.02.1407161754000.23892@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407161757500.23892@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com> <53C69C7B.1010709@suse.cz> <alpine.DEB.2.02.1407161754000.23892@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 16 Jul 2014 21:01:27 -0400
+Message-ID: <53C72080.5040501@gmail.com>
+Date: Wed, 16 Jul 2014 21:01:52 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
+References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com> <1405463509-2468-2-git-send-email-bobby.prani@gmail.com> <20140715225313.GB24290@cloud> <53C5B1F7.3000409@gmail.com> <20140716124729.GR8690@linux.vnet.ibm.com> <53C67E2E.7080402@gmail.com> <53C71EF3.8010901@cn.fujitsu.com>
+In-Reply-To: <53C71EF3.8010901@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target 
-node") improved the previous khugepaged logic which allocated a 
-transparent hugepages from the node of the first page being collapsed.
+On 07/16/2014 08:55 PM, Lai Jiangshan wrote:
+> On 07/16/2014 09:29 PM, Pranith Kumar wrote:
+>> On 07/16/2014 08:47 AM, Paul E. McKenney wrote:
+>>> On Tue, Jul 15, 2014 at 06:57:59PM -0400, Pranith Kumar wrote:
+>>>>
+>>>> On 07/15/2014 06:53 PM, josh@joshtriplett.org wrote:
+>>>>> On Tue, Jul 15, 2014 at 06:31:48PM -0400, Pranith Kumar wrote:
+>>>>>> This commit removes a stale comment in rcu/tree.c.
+>>>>>> FYI, an updated comment exists a few lines below this.
+>>>>>>
+>>>>>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>>>>> In general, when removing a stale comment, I'd suggest explaining why
+>>>>> the comment is stale.  Was code removed without removing the
+>>>>> corresponding comment, or was code changed such that the comment no
+>>>>> longer applies, or...?
+>>>>
+>>>> I guess it was left out when code was moved around previously. And I did mention that an updated comment is there a few lines below.
+>>>>
+>>>> For reference this is the new comment which is below the old comment, they mean the same :)
+>>>>
+>>>>     /* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+>>>
+>>> Indeed that is the case.
+>>>
+>>> Please update the commit log with this explanation and resend.
+>>>
+>>> 								Thanx, Paul
+>>>
+>>
+>> Please find the updated patch below.
+>>
+>> --
+>> Pranith
+>>
+>> From: Pranith Kumar <bobby.prani@gmail.com>
+>> Date: Mon, 14 Jul 2014 16:01:05 -0400
+>> Subject: [PATCH 2/3] rcu: Remove stale comment in tree.c
+>>
+>> This commit removes a stale comment in rcu/tree.c which was left out when some
+>> code was moved around previously.
+> 
+> Which commit caused this leftover comment? Could you mention that commit in
+> your changlog?
+> 
+> 12BitsCmmtID ("commit title...")
+> 
 
-However, it is still possible to collapse pages to remote memory which may 
-suffer from additional access latency.  With the current policy, it is 
-possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed remotely 
-if the majority are allocated from that node.
+Sure, please find an updated patch with Josh Triplett's sign-off added:
 
-When zone_reclaim_mode is enabled, it means the VM should make every attempt
-to allocate locally to prevent NUMA performance degradation.  In this case,
-we do not want to collapse hugepages to remote nodes that would suffer from
-increased access latency.  Thus, when zone_reclaim_mode is enabled, only
-allow collapsing to nodes with RECLAIM_DISTANCE or less.
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Mon, 14 Jul 2014 16:01:05 -0400
+Subject: [PATCH 2/3] rcu: Remove stale comment in tree.c
 
-There is no functional change for systems that disable zone_reclaim_mode.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+This commit removes a stale comment in rcu/tree.c which was left out in
+commit 2036d94a7b61ca5032ce (rcu:  Rework detection of use of RCU by offline CPUs)
+
+For reference, the following updated comment exists a few lines below this which
+means the same.
+
+/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reviewed-by: Joe Tripplett <josh@joshtriplett.org>
 ---
- v2: only change behavior for zone_reclaim_mode per Dave Hansen
- v3: optimization based on previous node counts per Vlastimil Babka
+ kernel/rcu/tree.c | 2 --
+ 1 file changed, 2 deletions(-)
 
- mm/huge_memory.c | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2234,6 +2234,30 @@ static void khugepaged_alloc_sleep(void)
- static int khugepaged_node_load[MAX_NUMNODES];
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index a1abaa8..e67246e 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2211,8 +2211,6 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ 	/* Adjust any no-longer-needed kthreads. */
+ 	rcu_boost_kthread_setaffinity(rnp, -1);
  
- #ifdef CONFIG_NUMA
-+static bool khugepaged_scan_abort(int nid)
-+{
-+	int i;
-+
-+	/*
-+	 * If zone_reclaim_mode is disabled, then no extra effort is made to
-+	 * allocate memory locally.
-+	 */
-+	if (!zone_reclaim_mode)
-+		return false;
-+
-+	/* If there is a count for this node already, it must be acceptable */
-+	if (khugepaged_node_load[nid])
-+		return false;
-+
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		if (!khugepaged_node_load[i])
-+			continue;
-+		if (node_distance(nid, i) > RECLAIM_DISTANCE)
-+			return true;
-+	}
-+	return false;
-+}
-+
- static int khugepaged_find_target_node(void)
- {
- 	static int last_khugepaged_target_node = NUMA_NO_NODE;
-@@ -2309,6 +2333,11 @@ static struct page
- 	return *hpage;
- }
- #else
-+static bool khugepaged_scan_abort(int nid)
-+{
-+	return false;
-+}
-+
- static int khugepaged_find_target_node(void)
- {
- 	return 0;
-@@ -2545,6 +2574,8 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 		 * hit record.
- 		 */
- 		node = page_to_nid(page);
-+		if (khugepaged_scan_abort(node))
-+			goto out_unmap;
- 		khugepaged_node_load[node]++;
- 		VM_BUG_ON_PAGE(PageCompound(page), page);
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+-	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
+-
+ 	/* Exclude any attempts to start a new grace period. */
+ 	mutex_lock(&rsp->onoff_mutex);
+ 	raw_spin_lock_irqsave(&rsp->orphan_lock, flags);
+-- 
+1.9.1
+
