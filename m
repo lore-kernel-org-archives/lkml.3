@@ -1,117 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaGQFPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 01:15:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9967 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630AbaGQFPm convert rfc822-to-8bit (ORCPT
+	id S1753354AbaGQFYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 01:24:18 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57448 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbaGQFYQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 01:15:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,676,1400050800"; 
-   d="scan'208";a="574473993"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, "Hu, Robert" <robert.hu@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] KVM: nVMX: Fix fail to get nested ack intr's vector
- during nested vmexit 
-Thread-Topic: [PATCH 2/3] KVM: nVMX: Fix fail to get nested ack intr's
- vector during nested vmexit 
-Thread-Index: AQHPoXuikddnaoag5U2tLEhCw/IMSZujuTVQ
-Date: Thu, 17 Jul 2014 05:15:35 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB31AE4@SHSMSX104.ccr.corp.intel.com>
-References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com>
- <1405573011-41330-2-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1405573011-41330-2-git-send-email-wanpeng.li@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 17 Jul 2014 01:24:16 -0400
+Date: Wed, 16 Jul 2014 22:24:15 -0700 (PDT)
+Message-Id: <20140716.222415.728402505581829764.davem@davemloft.net>
+To: michel@daenzer.net
+Cc: nic_swsd@realtek.com, romieu@fr.zoreil.com, hayeswang@realtek.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] r8169: Enable RX_MULTI_EN for RTL_GIGA_MAC_VER_40
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1405569340-31507-1-git-send-email-michel@daenzer.net>
+References: <20140716.202945.2231269352453909430.davem@davemloft.net>
+	<1405569340-31507-1-git-send-email-michel@daenzer.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Jul 2014 22:24:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li wrote on 2014-07-17:
-> WARNING: CPU: 9 PID: 7251 at arch/x86/kvm/vmx.c:8719
-> nested_vmx_vmexit+0xa4/0x233 [kvm_intel]() Modules linked in: tun
-> nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4 dns_resolver nfs fscache
-> lockd sunrpc pci_stub netconsole kvm_intel kvm bridge stp llc autofs4
-> 8021q ipv6 uinput joydev microcode pcspkr igb i2c_algo_bit ehci_pci
-> ehci_hcd e1000e ixgbe ptp pps_core hwmon mdio i2c_i801 i2c_core
-> tpm_tis tpm ipmi_si ipmi_msghandler isci libsas scsi_transport_sas
-> button dm_mirror dm_region_hash dm_log dm_mod
-> CPU: 9 PID: 7251 Comm: qemu-system-x86 Tainted: G        W
-> 3.16.0-rc1 #2
-> Hardware name: Intel Corporation S2600CP/S2600CP, BIOS
-> RMLSDP.86I.00.29.D696.1311111329 11/11/2013  000000000000220f
-> ffff880ffd107bf8 ffffffff81493563 000000000000220f
->  0000000000000000 ffff880ffd107c38 ffffffff8103f0eb ffff880ffd107c48
->  ffffffffa059709a ffff881ffc9e0040 ffff8800b74b8000 00000000ffffffff
->  Call Trace: [<ffffffff81493563>] dump_stack+0x49/0x5e 
->  [<ffffffff8103f0eb>]
-> warn_slowpath_common+0x7c/0x96  [<ffffffffa059709a>] ?
-> nested_vmx_vmexit+0xa4/0x233 [kvm_intel]  [<ffffffff8103f11a>]
-> warn_slowpath_null+0x15/0x17  [<ffffffffa059709a>]
-> nested_vmx_vmexit+0xa4/0x233 [kvm_intel]  [<ffffffffa0594295>] ?
-> nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]  [<ffffffffa0537931>] ?
-> kvm_apic_has_interrupt+0x80/0xd5 [kvm]  [<ffffffffa05972ec>]
-> vmx_check_nested_events+0xc3/0xd3 [kvm_intel]  [<ffffffffa051ebe9>]
-> inject_pending_event+0xd0/0x16e [kvm]  [<ffffffffa051efa0>]
-> vcpu_enter_guest+0x319/0x704 [kvm]
-> 
-> After commit 77b0f5d (KVM: nVMX: Ack and write vector info to
-> intr_info if L1 asks us to), "Acknowledge interrupt on exit" behavior
-> can be emulated. Current logic will ask for intr vector if it is
-> nested vmexit and VM_EXIT_ACK_INTR_ON_EXIT is set by L1. However, intr
-> vector for posted intr can't be got by generic read pending interrupt
-> vector and intack routine, there is a requirement to sync from pir to
-> irr. This patch fix it by ask the intr vector after sync pir to irr.
-> 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Michel Dänzer <michel@daenzer.net>
+Date: Thu, 17 Jul 2014 12:55:40 +0900
 
-Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
-
+> The ethernet port on my ASUS A88X Pro mainboard stopped working
+> several times a day, with messages like these in dmesg:
+> 
+> AMD-Vi: Event logged [IO_PAGE_FAULT device=05:00.0 domain=0x001e address=0x0000000000003000 flags=0x0050]
+> 
+> Searching the web for these messages led me to similar reports about
+> different hardware supported by r8169, and eventually to commits
+> 3ced8c955e74d319f3e3997f7169c79d524dfd06 ('r8169: enforce RX_MULTI_EN
+> for the 8168f.') and eb2dc35d99028b698cdedba4f5522bc43e576bd2 ('r8169:
+> RxConfig hack for the 8168evl'). So I tried this change, and it fixes
+> the problem for me.
+> 
+> Signed-off-by: Michel Dänzer <michel@daenzer.net>
 > ---
->  arch/x86/kvm/lapic.c | 1 +
->  arch/x86/kvm/vmx.c   | 3 +++
->  2 files changed, 4 insertions(+)
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c index
-> 0069118..b7d45dc 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -1637,6 +1637,7 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
->  	apic_clear_irr(vector, apic);
->  	return vector;
->  }
-> +EXPORT_SYMBOL_GPL(kvm_get_apic_interrupt);
 > 
->  void kvm_apic_post_state_restore(struct kvm_vcpu *vcpu,
->  		struct kvm_lapic_state *s)
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index
-> 4ae5ad8..31f1479 100644 --- a/arch/x86/kvm/vmx.c +++
-> b/arch/x86/kvm/vmx.c @@ -8697,6 +8697,9 @@ static void
-> nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
->  	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
->  	    && nested_exit_intr_ack_set(vcpu)) {
->  		int irq = kvm_cpu_get_interrupt(vcpu);
-> +
-> +		if (irq < 0 && kvm_apic_vid_enabled(vcpu->kvm))
-> +			irq = kvm_get_apic_interrupt(vcpu);
->  		WARN_ON(irq < 0);
->  		vmcs12->vm_exit_intr_info = irq |
->  			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
+> v2: Updated commit log, how about this?
 
-
-Best regards,
-Yang
-
-
+Works for me, applied, thanks.
