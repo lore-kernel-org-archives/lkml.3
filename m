@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaGQIVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:21:30 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58805 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaGQIV0 (ORCPT
+	id S1755237AbaGQI01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:26:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33542 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811AbaGQI0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:21:26 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+	Thu, 17 Jul 2014 04:26:25 -0400
+Date: Thu, 17 Jul 2014 10:26:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] perf stat: Pass PERF_STAT_RUN environment variable for each run
-Date: Thu, 17 Jul 2014 17:21:06 +0900
-Message-Id: <1405585266-28268-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
+Subject: Re: [PATCH] perf stat: Pass PERF_STAT_RUN environment variable for
+ each run
+Message-ID: <20140717082613.GF19379@twins.programming.kicks-ass.net>
+References: <1405585266-28268-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fOJARmXCc2lxmu6e"
+Content-Disposition: inline
+In-Reply-To: <1405585266-28268-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When perf stat runs multiple times via -r option, it's sometimes
-useful for a workload to know which run it executing.  So pass new
-PERF_STAT_RUN environment variable to the workload for each run
-(starting from 1).
 
-Cc: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-stat.c |  8 +++++---
- tools/perf/util/evlist.c  | 10 +++++++++-
- 2 files changed, 14 insertions(+), 4 deletions(-)
+--fOJARmXCc2lxmu6e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 65a151e36067..53b3c99be5b3 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -144,6 +144,8 @@ static struct timespec		ref_time;
- static struct cpu_map		*aggr_map;
- static int			(*aggr_get_id)(struct cpu_map *m, int cpu);
- 
-+int stat_run;
-+
- static volatile int done = 0;
- 
- struct perf_stat {
-@@ -1674,7 +1676,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 		"perf stat [<options>] [<command>]",
- 		NULL
- 	};
--	int status = -EINVAL, run_idx;
-+	int status = -EINVAL;
- 	const char *mode;
- 
- 	setlocale(LC_ALL, "");
-@@ -1812,10 +1814,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	signal(SIGABRT, skip_signal);
- 
- 	status = 0;
--	for (run_idx = 0; forever || run_idx < run_count; run_idx++) {
-+	for (stat_run = 1; forever || stat_run <= run_count; stat_run++) {
- 		if (run_count != 1 && verbose)
- 			fprintf(output, "[ perf stat: executing run #%d ... ]\n",
--				run_idx + 1);
-+				stat_run);
- 
- 		status = run_perf_stat(argc, argv);
- 		if (forever && status != -1) {
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 59ef2802fcf6..3bd86aeea99d 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1031,6 +1031,7 @@ out_err:
- 	return err;
- }
- 
-+extern int stat_run;
- int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *target,
- 				  const char *argv[], bool pipe_output,
- 				  void (*exec_error)(int signo, siginfo_t *info, void *ucontext))
-@@ -1055,6 +1056,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
- 	}
- 
- 	if (!evlist->workload.pid) {
-+		char buf[32];
-+
- 		if (pipe_output)
- 			dup2(2, 1);
- 
-@@ -1075,7 +1078,12 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
- 		if (read(go_pipe[0], &bf, 1) == -1)
- 			perror("unable to read pipe");
- 
--		execvp(argv[0], (char **)argv);
-+		if (stat_run) {
-+			snprintf(buf, sizeof(buf), "%d", stat_run);
-+			setenv("PERF_STAT_RUN", buf, 1);
-+		}
-+
-+		execvpe(argv[0], (char **)argv, environ);
- 
- 		if (exec_error) {
- 			union sigval val;
--- 
-2.0.1
+On Thu, Jul 17, 2014 at 05:21:06PM +0900, Namhyung Kim wrote:
+> When perf stat runs multiple times via -r option, it's sometimes
+> useful for a workload to know which run it executing.  So pass new
+> PERF_STAT_RUN environment variable to the workload for each run
+> (starting from 1).
 
+This seems counter intuitive, runs should be _identical_ otherwise
+there's no point. That means the workload should very much _not_ know
+these things.
+
+--fOJARmXCc2lxmu6e
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTx4ilAAoJEHZH4aRLwOS6uVsQAJ2m0Sag4LqFtRPwqaGqUDlF
+ir1+LH/cUbLIEP/EDz8BqVGziPWUFEYRd7ejHgrYmakdLeLPyKozFnTzp3b3A9JG
+Nyu314YesU0GuHHTf+dKkllUhHQJFqU1l+PLXEG1VC/t1CSr5At27xmeMt13qhq4
+kkyrl9vsneJMGAHyGfVH+gJSUMjt3qZmxj4equhTV4yXjy4VwHx2JkuEJp8hEuTg
+BVvzalfAD3Fc1SswlRyRMPwFUAjfi2GxI9rsiMEEoPtuIQn/s2UHI4kJoLiKF86x
+/E5nEAGn53JtJABxOj4wF+x8CCQUlnVFxFeZFlNtCEhtyUslCAK9NVjQhUD3U7gH
+dR7gekiHxDOn39y8sPg9fMz88wmW5aTDMc9atafPmPwUAPpsIYj/5yn0uI7mSCYa
+CzwAgzP2++b3eKOeeyx8/6arP40is6G9a322YGN45L5aEdBjPYTOaDhyY0Dk0XbP
+WUkp9xwmxXyy8VWtN8ab5pwUCV8apRBxtftz6kK3LkxG6MnZ5Jvotpz+vUS2jZqn
+/CbKByvMTlA85v7OTcP8ERreyuVOw6AJsiFPP66gF+2S8tDImLmpXNMpiTlWkwiE
+ZVKTrMbQcFRVa4AVmRLcmM8So8lMx2mO39V2+LiTnatTHAjOQyrLFZ5NexYED06S
+PqiLAnjiMeqprjECJQ74
+=rRtj
+-----END PGP SIGNATURE-----
+
+--fOJARmXCc2lxmu6e--
