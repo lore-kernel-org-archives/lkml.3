@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084AbaGQL7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:59:36 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:49014 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648AbaGQL7e (ORCPT
+	id S1757199AbaGQMBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:01:42 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19292 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754855AbaGQMBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:59:34 -0400
-Message-ID: <53C7BA82.9020602@de.ibm.com>
-Date: Thu, 17 Jul 2014 13:58:58 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 08:01:39 -0400
+Date: Thu, 17 Jul 2014 13:01:22 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <Will.Deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] asm-generic/io.h: Implement generic
+ {read,write}s*()
+Message-ID: <20140717120122.GG18203@arm.com>
+References: <1405508484-18303-1-git-send-email-thierry.reding@gmail.com>
 MIME-Version: 1.0
-To: mingo@kernel.org, dave.anglin@bell.net,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: torvalds@linux-foundation.org, catalin.marinas@arm.com,
-        peterz@infradead.org, cmetcalf@tilera.com, jason.low2@hp.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com,
-        James.Bottomley@hansenpartnership.com, will.deacon@arm.com,
-        waiman.long@hp.com, james.hogan@imgtec.com, mpatocka@redhat.com,
-        davem@davemloft.net, paulmck@linux.vnet.ibm.com, vgupta@synopsys.com,
-        benh@kernel.crashing.org, jejb@parisc-linux.org
-Subject: Re: [tip:locking/urgent] locking/mutex:  Disable optimistic spinning
- on some architectures
-References: <20140606175316.GV13930@laptop.programming.kicks-ass.net> <tip-4badad352a6bb202ec68afa7a574c0bb961e5ebc@git.kernel.org> <53C7B8AC.2040305@de.ibm.com>
-In-Reply-To: <53C7B8AC.2040305@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071711-2966-0000-0000-0000008D663E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405508484-18303-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/14 13:51, Christian Borntraeger wrote:
+On Wed, Jul 16, 2014 at 12:01:22PM +0100, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> Currently driver writers need to use io{read,write}{8,16,32}_rep() when
+> accessing FIFO registers portably. This is bad for two reasons: it is
+> inconsistent with how other registers are accessed using the standard
+> {read,write}{b,w,l}() functions, which can lead to confusion. On some
+> architectures the io{read,write}*() functions also need to perform some
+> extra checks to determine whether an address is memory-mapped or refers
+> to I/O space. Drivers which can be expected to never use I/O can safely
+> use the {read,write}s{b,w,l,q}(), just like they use their non-string
+> variants and there's no need for these extra checks.
+> 
+> This patch implements generic versions of readsb(), readsw(), readsl(),
+> readsq(), writesb(), writesw(), writesl() and writesq(). Variants of
+> these string functions for I/O accesses (ins*() and outs*() as well as
+> ioread*_rep() and iowrite*_rep()) are now implemented in terms of the
+> new functions.
+> 
+> Going forward, {read,write}{,s}{b,w,l,q}() should be used consistently
+> by drivers for devices that will only ever be memory-mapped and hence
+> don't need to access I/O space, whereas io{read,write}{8,16,32}_rep()
+> should be used by drivers for devices that can be either memory-mapped
+> or I/O-mapped.
+> 
+> While at it, also make sure that any of the functions provided as
+> fallback for architectures that don't override them can't be overridden
+> subsequently.
+> 
+> This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
+> tested on Microblaze, s390, SPARC and Xtensa. For ARC, Blackfin, Metag,
+> OpenRISC, Score and Unicore32 which also use asm-generic/io.h I couldn't
+> find or build a cross-compiler that would run on my system. But by code
+> inspection they shouldn't break with this patch.
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
->  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-> +	select ARCH_SUPPORTS_ATOMIC_RMW
-
-This begs the question, if both defines were created for the same reason and could be combined.
-
-Christian
-
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
