@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623AbaGQJRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:17:52 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:5635 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298AbaGQJRu (ORCPT
+	id S1756050AbaGQJSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:18:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44735 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180AbaGQJSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:17:50 -0400
-Message-ID: <53C794B0.4060504@imgtec.com>
-Date: Thu, 17 Jul 2014 10:17:36 +0100
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 05:18:07 -0400
+Date: Thu, 17 Jul 2014 12:16:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, msalter@redhat.com,
+        Guenter Roeck <linux@roeck-us.net>, linux-pwm@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
+        arnd@arndb.de, linux-input@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+Message-ID: <20140717091601.GF25880@mwanda>
+References: <53C3994C.1010309@metafoo.de>
+ <53C39B66.4060500@nod.at>
+ <5A40E1FC-CA61-4AFF-B205-4BAC175AA7AC@gmail.com>
+ <53C47725.8000005@gmail.com>
+ <53C47B76.4080306@roeck-us.net>
+ <53C47FB7.6080304@gmail.com>
+ <53C53CE1.4090803@gmail.com>
+ <53C7269E.4010702@gmail.com>
+ <20140717083756.GA19686@ulmo>
+ <53C7905D.9090003@gmail.com>
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>, Ralf Baechle <ralf@linux-mips.org>,
-        <gregkh@linuxfoundation.org>, <m.szyprowski@samsung.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>
-Subject: Re: [PATCH 4/4] mips: dma: Add cma support
-References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1405525892-60383-5-git-send-email-Zubair.Kakakhel@imgtec.com> <xa1t7g3db6mu.fsf@mina86.com>
-In-Reply-To: <xa1t7g3db6mu.fsf@mina86.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C7905D.9090003@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 16/07/14 17:39, Michal Nazarewicz wrote:
-> On Wed, Jul 16 2014, Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com> wrote:
->> Adds cma support to the mips architecture.
->>
->> cma uses memblock. However, mips uses bootmem.
+On Thu, Jul 17, 2014 at 04:59:09PM +0800, Chen Gang wrote:
+> >> +	return (__force void __iomem *)ERR_PTR(-ENXIO);
+> > 
+> > There's apparently an IOMEM_ERR_PTR() for this nowadays...
+> > 
 > 
-> Does cma_early_percent_memory work correctly then?
+> IOMEM_ERR_PTR() is defined within "lib/devres.c", not in "./include".
+> But may we move it from "lib/devres.c" to "./include/linux/err.h"?
 > 
+> For me, I am not quite sure, it may need additional discussion, but at
+> least, that will be another patch.
 
-Yes it does. All memblock functions work. And this is before bootmem
-is informed.
+Yes.  Move it there.  That is the right place.
 
->> bootmem is informed about any regions reserved by memblock
-> 
-> Alternatively maybe it would make sense to create a new definition of
-> dma_contiguous_reserve_area that uses bootmem and choose it based on
-> some CONFIG_CMA_USE_BOOTMEM which would be selected by MIPS.
-> 
+regards,
+dan carpenter
 
-Telling bootmem takes only 3 lines.
-
-Adding CONFIG_CMA_USE_BOOTMEM would add more functions and maintenance overhead.
-And it will basically do the same thing.
-Reserve memory. And tell the bootmem allocator.
-
->> dma api is modified to use cma reserved memory regions when available
->>
->> Tested using cma_test. cma_test is a simple driver that assigns blocks
->> of memory from cma reserved sections.
->>
->> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-> 
-> Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-Thank-you
-
-ZubairLK
