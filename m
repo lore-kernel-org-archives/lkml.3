@@ -1,71 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaGQDFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 23:05:16 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:51368 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaGQDFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 23:05:14 -0400
+	id S1752810AbaGQDL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 23:11:26 -0400
+Received: from wolff.to ([98.103.208.27]:46363 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750994AbaGQDLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 23:11:24 -0400
+Date: Wed, 16 Jul 2014 22:09:47 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140717030947.GA17889@wolff.to>
+References: <20140716145546.GA6922@wolff.to>
+ <20140716151748.GC2460@hansolo.jdub.homelinux.org>
+ <53C6CFCC.2050300@arm.com>
+ <20140716195414.GA16401@wolff.to>
+ <53C7084C.7090104@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <877g3cbueb.fsf@purkki.adurom.net>
-References: <20140715.002844.679028486034873225.davem@davemloft.net>
-	<CA+55aFw9=c_jSb7GOXDoityxWGiDs9y7LsdasyPHXESiZR75bg@mail.gmail.com>
-	<20140715.114614.827795344549781033.davem@davemloft.net>
-	<20140715190252.GC26012@tuxdriver.com>
-	<877g3cbueb.fsf@purkki.adurom.net>
-Date: Wed, 16 Jul 2014 17:05:12 -1000
-X-Google-Sender-Auth: aWQqVl-ChsI4TqdNiek1aODoMlI
-Message-ID: <CA+55aFzbpYjoJfLnoQy_rGb-FYoh5LKVeTRhp7xX_vXEFk_adA@mail.gmail.com>
-Subject: Re: [GIT] Networking
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Kalle Valo <kvalo@adurom.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="dDRMvlgZJXvWKvBx"
+Content-Disposition: inline
+In-Reply-To: <53C7084C.7090104@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 4:18 PM, Kalle Valo <kvalo@adurom.com> wrote:
+
+--dDRMvlgZJXvWKvBx
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+
+On Thu, Jul 17, 2014 at 01:18:36 +0200,
+  Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>So the output of
 >
-> Just out of curiosity, what is the best way to send a proposal how to
-> fix a merge conflict? For example, if I send a pull request to John
-> which I know will issue a conflict it would be nice to include
-> instructions (or some sort of patch) how I think it should be resolved.
+>$ cat /proc/sys/kernel/sched_domain/cpu*/domain*/*
+>
+>would be handy too.
 
-So from personal experience seeing lots of different explanations, my
-preferred one is not so much a patch, as explaining *why* something
-generates a merge conflict.
+Attached and added to the bug.
 
-Optimally for each conflict, say what happened ("X changed Y, A
-changed B close by") and then describe the result in those terms (eg
-"pick the code from my branch, but then do the rename of xyz to abc
-that caused the conflict", or "pick your side, it obsoletes the fix
-from me that causes the conflict" or whatever).
+>Just to make sure, you do have 'CONFIG_X86_32=y' and '# CONFIG_NUMA is 
+>not set' in your build?
 
-And if you have a *lot* of conflicts, explain why that happaned too,
-and think very hard about whether what you do is perhaps screwed up
-(or complain about the other entity that did annoying whitespace
-changes for no good reason or whatever). Maybe it's just that the
-source code is badly organized, but more likely it's because somebody
-is just doing something stupid, and people are stepping on each others
-toes. If the explanation is "this is a one-time issue brought on by
-xyz", then that's fine - sh*t happens. If it's something else, at
-least mention it. And if it keeps happening, something needs to be
-done.
+Yes.
 
-And in the end, I personally tend to always resolve the conflicts
-*without* really looking at the explanation, by just trying to figure
-it out on my own. I've had people send me incorrect resolution
-suggestions, and I've also occasionally just screwed up my own
-resolution. Having somebody elses explanations of what they did is a
-good sanity check that things went right (when their explanation
-matches mine), and is a good red flag about "maybe this is more
-complicated than I thought" when the explanations and results don't
-match up.
+I probably won't be able to get /proc/schedstat on my next test since the 
+system will probably crash right away. However, I probably will have a 
+much faster rebuild and might still be able to get the info for you 
+before I leave tomorrow.
 
-                     Linus
+--dDRMvlgZJXvWKvBx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="sched_domain.out"
+
+32
+0
+0
+687
+0
+0
+110
+4
+28353
+2
+SMT
+0
+0
+32
+2
+1
+4143
+0
+1
+125
+8
+15370
+4
+DIE
+0
+0
+32
+0
+0
+687
+0
+0
+110
+4
+21753
+2
+SMT
+0
+0
+32
+2
+1
+4143
+0
+1
+125
+8
+12715
+4
+DIE
+0
+0
+32
+0
+0
+687
+0
+0
+110
+4
+25097
+2
+SMT
+0
+0
+32
+2
+1
+4143
+0
+1
+125
+8
+21624
+4
+DIE
+0
+0
+32
+0
+0
+687
+0
+0
+110
+4
+23714
+2
+SMT
+0
+0
+32
+2
+1
+4143
+0
+1
+125
+8
+14920
+4
+DIE
+0
+0
+
+--dDRMvlgZJXvWKvBx--
