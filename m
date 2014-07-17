@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaGQRpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:45:45 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:50394 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaGQRpo (ORCPT
+	id S1751876AbaGQRqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:46:21 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:46018 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaGQRqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:45:44 -0400
+	Thu, 17 Jul 2014 13:46:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKB9nXs=htVXQciEfXQ4tMnLJT8RemHoVs+dVGPWXN+rGbdk6g@mail.gmail.com>
-References: <cover.1405546879.git.luto@amacapital.net> <3e019617640d1b07d0ab1c9a91455957c201d4cd.1405546879.git.luto@amacapital.net>
- <CAKB9nXs=htVXQciEfXQ4tMnLJT8RemHoVs+dVGPWXN+rGbdk6g@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 17 Jul 2014 10:45:22 -0700
-Message-ID: <CALCETrW0gbWMujW0+cty7nzaNxvAeUpsFDFrhg1bFxBL_wrDcw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching
- feature bit
-To: Andrew Honig <ahonig@google.com>
-Cc: kvm <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>
+In-Reply-To: <20140717173433.GQ1491@thunk.org>
+References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+ <20140717161215.GA14951@infradead.org> <20140717170115.GO1491@thunk.org>
+ <CAComcpM9-sUwzT9BPFT7BJjk97V0kj996D=AaivDpeTZUNbiew@mail.gmail.com> <20140717173433.GQ1491@thunk.org>
+From: Bob Beck <beck@openbsd.org>
+Date: Thu, 17 Jul 2014 11:45:56 -0600
+X-Google-Sender-Auth: 1lHwhju5n5fKqoFuf5RyZj6wy5c
+Message-ID: <CAComcpPkOM9oy9tYcDqVfF3siKT_RLe54qskhUJRPLWm-MukEA@mail.gmail.com>
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+To: "Theodore Ts'o" <tytso@mit.edu>, Bob Beck <beck@openbsd.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-abi <linux-abi@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 10:43 AM, Andrew Honig <ahonig@google.com> wrote:
->> +       case MSR_KVM_GET_RNG_SEED:
->> +               get_random_bytes(&data, sizeof(data));
->> +               break;
+we have diffs pending that will do the syscall method until we start
+to see it in libc :)
+
+So basically we're going to put that in right away :)
+
+On Thu, Jul 17, 2014 at 11:34 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jul 17, 2014 at 11:05:01AM -0600, Bob Beck wrote:
+>> Hi Ted, yeah I understand the reasoning, it would be good if there was
+>> a way to influence the various libc people to
+>> ensure they manage to provide a getentropy().
 >
-> Should this be rate limited in the interest of conserving randomness?
-> If there ever is an attack on the prng, this would create very
-> favorable conditions for an attacker to exploit it.
-
-IMO if the nonblocking pool has a weakness that requires us to
-conserve its output, then this is the least of our worries.
-
---Andy
+> I don't anticipate that to be a problem.  And before they do, and/or
+> if you are dealing with a system where the kernel has been upgraded,
+> but not libc, you have your choice of either sticking with the
+> binary_sysctl approach, or calling getrandom directly using the
+> syscall method; and in that case, whether we use getrandom() or
+> provide an exact getentropy() replacement system call isn't that much
+> difference, since you'd have to have Linux-specific workaround code
+> anyway....
+>
+>                                 - Ted
