@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130AbaGQOa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:30:27 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:48922 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821AbaGQOa0 (ORCPT
+	id S933221AbaGQOeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:34:14 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56459 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932361AbaGQOeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:30:26 -0400
-Date: Thu, 17 Jul 2014 16:30:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: rewrite charge API fix - hugetlb charging
-Message-ID: <20140717143021.GE8011@dhcp22.suse.cz>
-References: <1405528080-2975-1-git-send-email-hannes@cmpxchg.org>
+	Thu, 17 Jul 2014 10:34:13 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53C7DEE3.6060107@roeck-us.net>
+Date: Thu, 17 Jul 2014 07:34:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405528080-2975-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] gpio: Add support for GPIOF_ACTIVE_LOW to gpio_request_one
+References: <1405552260-30511-1-git-send-email-linux@roeck-us.net> <CAAVeFuLtUpKKVWAvJ-bw_b36jYFhrzaWeswnJKyehbwn=6y+4Q@mail.gmail.com> <53C76F3C.6090104@roeck-us.net> <CAAVeFuKC19AK8BjM7OBm=FWm0ua5YJXoGRkpOvM1TWkz9yOZ5Q@mail.gmail.com>
+In-Reply-To: <CAAVeFuKC19AK8BjM7OBm=FWm0ua5YJXoGRkpOvM1TWkz9yOZ5Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 16-07-14 12:28:00, Johannes Weiner wrote:
-> Naoya-san reports that hugetlb pages now get charged as file cache,
-> which wreaks all kinds of havoc during migration, uncharge etc.
-> 
-> The file-specific charge path used to filter PageCompound(), but it
-> wasn't commented and so it got lost when unifying the charge paths.
-> 
-> We can't add PageCompound() back into a unified charge path because of
-> THP, so filter huge pages directly in add_to_page_cache().
+On 07/17/2014 12:26 AM, Alexandre Courbot wrote:
+> On Thu, Jul 17, 2014 at 3:37 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 07/16/2014 11:09 PM, Alexandre Courbot wrote:
+>>>
+>>> On Thu, Jul 17, 2014 at 8:11 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>
+>>>> The gpio include file and the gpio documentation declare and document
+>>>> GPIOF_ACTIVE_LOW as one of the flags to be passed to gpio_request_one
+>>>> and related functions. However, the flag is not evaluated or used.
+>>>>
+>>>> Check the flag in gpio_request_one and set the gpio internal flag
+>>>> FLAG_ACTIVE_LOW if it is set.
+>>>
+>>>
+>>> What is the point since the integer GPIO API has no clue of the
+>>> active-low status of a GPIO? It is only used by the gpiod and sysfs
+>>> interfaces.
+>>>
+>>
+>> One can use gpio_request_one() to export a gpio pin to user space from
+>> the kernel. That code path does use the flag, as you point out yourself
+>> above.
+>
+> Ok, in that case I suppose it makes sense.
+>
+> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+>> One could also argue that the integer gpio API _should_ support this as
+>> well,
+>> but that is a different question.
+>
+> Probably not going to happen. The integer GPIO interface is deprecated
+> and users who need new features should seriously consider switching to
+> gpiod.
+>
 
-This looks a bit fragile to me but I understand your motivation to not
-punish all the code paths with PageHuge check.
+The new API is unfortunately not equivalent to the old one. For example,
+if I understand correctly, gpiod_get is expected to be used instead of
+gpio_request_one. That may work nicely in a world with full DT or ACPI
+support, but doesn't work as well otherwise unless one drops the notion
+of using platform specific drivers built as modules (gpiod_add_lookup_table
+is not exported, and there is no remove function).
 
-> Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Specifically, I don't see an easy way to convert mdio-gpio to use the new
+model, and that driver could really use support for an API which supports
+active-low pins. And even if gpiod_add_lookup_table was supported,
+converting a driver like this would be a major pain. Sure, it would be
+all easy if there would be a gpiod equivalent to gpio_request_one and
+gpio_request_array, but that is not the case. This makes converting
+drivers from the old to the new model challenging enough that I suspect
+that it won't really happen.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Guenter
 
-> ---
->  mm/filemap.c | 20 ++++++++++++++------
->  1 file changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 114cd89c1cc2..c088ac01e856 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -31,6 +31,7 @@
->  #include <linux/security.h>
->  #include <linux/cpuset.h>
->  #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
-> +#include <linux/hugetlb.h>
->  #include <linux/memcontrol.h>
->  #include <linux/cleancache.h>
->  #include <linux/rmap.h>
-> @@ -560,19 +561,24 @@ static int __add_to_page_cache_locked(struct page *page,
->  				      pgoff_t offset, gfp_t gfp_mask,
->  				      void **shadowp)
->  {
-> +	int huge = PageHuge(page);
->  	struct mem_cgroup *memcg;
->  	int error;
->  
->  	VM_BUG_ON_PAGE(!PageLocked(page), page);
->  	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
->  
-> -	error = mem_cgroup_try_charge(page, current->mm, gfp_mask, &memcg);
-> -	if (error)
-> -		return error;
-> +	if (!huge) {
-> +		error = mem_cgroup_try_charge(page, current->mm,
-> +					      gfp_mask, &memcg);
-> +		if (error)
-> +			return error;
-> +	}
->  
->  	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
->  	if (error) {
-> -		mem_cgroup_cancel_charge(page, memcg);
-> +		if (!huge)
-> +			mem_cgroup_cancel_charge(page, memcg);
->  		return error;
->  	}
->  
-> @@ -587,14 +593,16 @@ static int __add_to_page_cache_locked(struct page *page,
->  		goto err_insert;
->  	__inc_zone_page_state(page, NR_FILE_PAGES);
->  	spin_unlock_irq(&mapping->tree_lock);
-> -	mem_cgroup_commit_charge(page, memcg, false);
-> +	if (!huge)
-> +		mem_cgroup_commit_charge(page, memcg, false);
->  	trace_mm_filemap_add_to_page_cache(page);
->  	return 0;
->  err_insert:
->  	page->mapping = NULL;
->  	/* Leave page->index set: truncation relies upon it */
->  	spin_unlock_irq(&mapping->tree_lock);
-> -	mem_cgroup_cancel_charge(page, memcg);
-> +	if (!huge)
-> +		mem_cgroup_cancel_charge(page, memcg);
->  	page_cache_release(page);
->  	return error;
->  }
-> -- 
-> 2.0.0
-> 
-
--- 
-Michal Hocko
-SUSE Labs
