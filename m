@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaGQCwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 22:52:35 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:61198 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaGQCwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 22:52:32 -0400
+	id S1752769AbaGQCxu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 22:53:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51133 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024AbaGQCxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 22:53:48 -0400
+Message-ID: <53C73AB7.4080603@kernel.org>
+Date: Wed, 16 Jul 2014 22:53:43 -0400
+From: Sasha Levin <sashal@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <53C73534.1090502@roeck-us.net>
-References: <53AC10CB.3000007@gmail.com>
-	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>
-	<alpine.DEB.2.02.1407161849090.19429@chino.kir.corp.google.com>
-	<CAF0htA5eVTPQC0c1XfzU=RHnNWLtRgtYbN+se5HPLYkJ9_E=5w@mail.gmail.com>
-	<53C73534.1090502@roeck-us.net>
-Date: Thu, 17 Jul 2014 10:52:32 +0800
-Message-ID: <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
-Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the
- macros which not be used currently
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: David Rientjes <rientjes@google.com>, Liqin Chen <liqin.linux@gmail.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
+To: Nick Krause <xerofoify@gmail.com>, Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
+        robh@kernel.org, florian.vaussard@epfl.ch,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Checkpatch Feature Idea: Search directory for files with errors
+ and warnings with -d argument
+References: <CAPDOMVggidq18zBrnVbS=P-DRjTd8K4zYemiNs=OnmbqTXGNAg@mail.gmail.com>	<1405481937.14773.8.camel@joe-AO725>	<CAPDOMVhSosu-WZkBo+mKs3mJ+2+W-rBq0LFUnU_Lnzn=jR7=wg@mail.gmail.com>	<1405484621.14773.22.camel@joe-AO725>	<CAPDOMVi87FAukETbMbjtRqejgFN+mWfqZvP+Uw2eT===Oaz0ww@mail.gmail.com>	<1405485592.14773.29.camel@joe-AO725> <CAPDOMVgExn5i0ogz8dwtFgYXCPwGCpnt6Af_o-UOk-BUtFD9KA@mail.gmail.com>
+In-Reply-To: <CAPDOMVgExn5i0ogz8dwtFgYXCPwGCpnt6Af_o-UOk-BUtFD9KA@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, you might miss something. Some patches were merged once I
-acknowledged them,and some were missed.
-So I am not sure the rule, if someone will merge these patches once
-them are acknowledged, it is redundant that I issue a
-PULL request again.
+On 07/16/2014 12:59 AM, Nick Krause wrote:
+> On Wed, Jul 16, 2014 at 12:39 AM, Joe Perches <joe@perches.com> wrote:
+>> > On Wed, 2014-07-16 at 00:28 -0400, Nick Krause wrote:
+>>> >> I am cleaning up the kernel as it needs a lot of cleanup.
+>> >
+>> > Needs are curious things.
+>> >
+>> > Consistency is a nicety not really a need.
+>> >
+>> > Bugs need fixing.  Defects need eliminating.
+>> > Enhancements are appreciated.  Inconsistent
+>> > code style is a minor annoyance.
+>> >
+>> > I suggest you focus on the bugs, defects or
+>> > enhancements in performance or testing.
+>> >
+>> > Are you really cross-compiling the patches you
+>> > submit here or do you have an alpha on your desk?
+>> >
+>> >
+> I am cross compiling then. I don't have the hardware :(.
+
+Are you sure you're actually cross compiling them? From your
+recent patchset it doesn't seem you even bother to do that:
+
+diff --git a/arch/alpha/boot/misc.c b/arch/alpha/boot/misc.c
+index 174b7c6..886e469 100644
+--- a/arch/alpha/boot/misc.c
++++ b/arch/alpha/boot/misc.c
+@@ -23,7 +23,7 @@
+
+ #include <asm/uaccess.h>
+
+-#define memzero (s, n)	memset((s), 0 , (n))
++#define memzero { (s, n)	memset((s), 0 , (n)) }
+ #define puts		srm_printk
+ extern long srm_printk(const char *, ...)
+ 	__attribute__ ((format (printf, 1, 2)));
+@@ -61,8 +61,8 @@ static unsigned outcnt;		/* bytes in output buffer */
+
+ /* Diagnostic functions */
+ #ifdef DEBUG
+-#  define Assert (cond, msg) {if (!(cond)) error(msg) ; }
+-#  define Trace(x) fprintf x
++#  define Assert { (cond, msg) {if (!(cond)) error(msg) ; } }
++#  define Trace { (x) fprintf x }
+ #  define Tracev(x) {if (verbose) fprintf x ; }
+ #  define Tracevv(x) {if (verbose > 1) fprintf x ; }
+ #  define Tracec(c, x) {if (verbose && (c)) fprintf x ; }
+
+Or:
+
+diff --git a/arch/alpha/boot/misc.c b/arch/alpha/boot/misc.c
+index 886e469..56c3325 100644
+--- a/arch/alpha/boot/misc.c
++++ b/arch/alpha/boot/misc.c
+@@ -144,7 +144,7 @@ static void error(char *x)
+ 	puts(x);
+ 	puts("\n\n -- System halted");
+
+-	while (1);
++	while{ (1); }
+ 	/* Halt */
+ }
 
 
-
-2014-07-17 10:30 GMT+08:00 Guenter Roeck <linux@roeck-us.net>:
-> On 07/16/2014 07:14 PM, Lennox Wu wrote:
->>
->> Actually, I don't know the rule for merging patches. Some patches will
->> be merge,and some will be miss. If the patch is missed, we will merge
->> it into our git.
->>
-> Unless I am missing something, this patch is in arch/score, so the
-> expectation would be for you to pick it up and send it to Linus.
->
-> Guenter
->
->
->> Best,
->> Lennox
->>
->> 2014-07-17 9:49 GMT+08:00 David Rientjes <rientjes@google.com>:
->>>
->>> On Thu, 26 Jun 2014, David Rientjes wrote:
->>>
->>>> On Thu, 26 Jun 2014, Chen Gang wrote:
->>>>
->>>>> 'COUNTER' and other same kind macros are too common to use, and easy to
->>>>> get conflict with other modules.
->>>>>
->>>>> At present, they are not used, so it is OK to simply remove them. And
->>>>> the
->>>>> related warning (allmodconfig with score):
->>>>>
->>>>>      CC [M]  drivers/md/raid1.o
->>>>>    In file included from drivers/md/raid1.c:42:0:
->>>>>    drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
->>>>>     #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
->>>>>     ^
->>>>>    In file included from ./arch/score/include/asm/ptrace.h:4:0,
->>>>>                     from include/linux/sched.h:31,
->>>>>                     from include/linux/blkdev.h:4,
->>>>>                     from drivers/md/raid1.c:36:
->>>>>    ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the
->>>>> location of the previous definition
->>>>>     #define COUNTER  38
->>>>>
->>>>>
->>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>>
->>>>
->>>> Acked-by: David Rientjes <rientjes@google.com>
->>>>
->>>
->>> Lennox or Liqin, could you please queue this patch for 3.17?
->>
->>
->>
->
+Thanks,
+Sasha
