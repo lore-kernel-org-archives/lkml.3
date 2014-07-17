@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaGQKmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:42:47 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:49308 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755488AbaGQKmm (ORCPT
+	id S932269AbaGQKnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:43:43 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:64364 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaGQKnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:42:42 -0400
-Message-ID: <1405593759.4808.43.camel@x220>
-Subject: [PATCH] tgt: remove SCSI_TGT and SCSI_FC_TGT_ATTRS
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Christoph Hellwig <hch@lst.de>,
-        Paolo Bonzini <pbonzini@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 17 Jul 2014 12:42:39 +0200
-In-Reply-To: <20140714083154.GA21756@lst.de>
-References: <1405326544.8281.17.camel@x220> <20140714083154.GA21756@lst.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Thu, 17 Jul 2014 06:43:40 -0400
+Message-ID: <53C7A8C5.2090002@redhat.com>
+Date: Thu, 17 Jul 2014 12:43:17 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Bandan Das <bsd@redhat.com>,
+        "Hu, Robert" <robert.hu@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: nVMX: Fix fail to get nested ack intr's vector
+ during nested vmexit
+References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com> <1405573011-41330-2-git-send-email-wanpeng.li@linux.intel.com> <53C78E37.5090807@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AB31D9E@SHSMSX104.ccr.corp.intel.com> <20140717100130.GA9118@kernel>
+In-Reply-To: <20140717100130.GA9118@kernel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Jul 2014 10:42:40.0097 (UTC) FILETIME=[D4EF5D10:01CFA1AB]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbols SCSI_TGT and SCSI_FC_TGT_ATTRS are unused since
-commit 73685a458f2e ("tgt: removal"). Setting them has no effect. Remove
-these symbols.
+Il 17/07/2014 12:01, Wanpeng Li ha scritto:
+> That is my original proposal solution of this bug. However, what I concern
+> after more think is since kvm_lapic_find_highest_irr will not clear
+> irr, if the intr will be injected by kvm_86_ops->hwapic_irr_update(vcpu,
+> kvm_lapic_find_highest_irr(vcpu)) which called by vcpu_enter_guest() again?
+>
+> Any idea, Paolo?
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested by running "make oldconfig" on a Fedora 20 based .config.
-That .config has CONFIG_SCSI_TGT set to 'm' and CONFIG_SCSI_FC_TGT_ATTRS
-set to 'y'. This patch only makes both symbols disappear from
-the .config, which is what we want. Please shout if that's not enough
-testing in your opinion.
+The processor should do that when it does the virtual interrupt 
+delivery.  It will do (29.2.2):
 
-Note that the commit explanation references a linux-next commit ID. If
-that patch gets rebased before entering mainline that won't be a ID
-found in the mainline repository anymore!
+    Vector := RVI;
+    VISR[Vector] := 1;
+    SVI := Vector;
+    VIRR[Vector] := 0;
+    If VIRR not empty
+       then RVI := highest index of bit set in VIRR
+       else RVI := 0
+    Fi;
+    deliver interrupt with Vector through IDT;
 
- drivers/scsi/Kconfig | 14 --------------
- 1 file changed, 14 deletions(-)
+Please post a patch, so we can reason on it better.
 
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index 1fa07e4221f7..18a3358eb1d4 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -40,13 +40,6 @@ config SCSI_DMA
- 	bool
- 	default n
- 
--config SCSI_TGT
--	tristate "SCSI target support"
--	depends on SCSI
--	---help---
--	  If you want to use SCSI target mode drivers enable this option.
--	  If you choose M, the module will be called scsi_tgt.
--
- config SCSI_NETLINK
- 	bool
- 	default	n
-@@ -271,13 +264,6 @@ config SCSI_FC_ATTRS
- 	  each attached FiberChannel device to sysfs, say Y.
- 	  Otherwise, say N.
- 
--config SCSI_FC_TGT_ATTRS
--	bool "SCSI target support for FiberChannel Transport Attributes"
--	depends on SCSI_FC_ATTRS
--	depends on SCSI_TGT = y || SCSI_TGT = SCSI_FC_ATTRS
--	help
--		If you want to use SCSI target mode drivers enable this option.
--
- config SCSI_ISCSI_ATTRS
- 	tristate "iSCSI Transport Attributes"
- 	depends on SCSI && NET
--- 
-1.9.3
-
+Paolo
