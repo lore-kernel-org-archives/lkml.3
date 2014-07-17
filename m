@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaGQCSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 22:18:10 -0400
-Received: from purkki.adurom.net ([80.68.90.206]:59865 "EHLO purkki.adurom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaGQCSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 22:18:08 -0400
-From: Kalle Valo <kvalo@adurom.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-References: <20140715.002844.679028486034873225.davem@davemloft.net>
-	<CA+55aFw9=c_jSb7GOXDoityxWGiDs9y7LsdasyPHXESiZR75bg@mail.gmail.com>
-	<20140715.114614.827795344549781033.davem@davemloft.net>
-	<20140715190252.GC26012@tuxdriver.com>
-Date: Thu, 17 Jul 2014 05:18:04 +0300
-In-Reply-To: <20140715190252.GC26012@tuxdriver.com> (John W. Linville's
-	message of "Tue, 15 Jul 2014 15:02:52 -0400")
-Message-ID: <877g3cbueb.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752002AbaGQCUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 22:20:11 -0400
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:54764 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaGQCUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jul 2014 22:20:08 -0400
+Message-ID: <53C732F1.7030005@gmail.com>
+Date: Wed, 16 Jul 2014 22:20:33 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, paulmck@linux.vnet.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] rcu: Remove stale comment in tree.c
+References: <1405463509-2468-1-git-send-email-bobby.prani@gmail.com> <1405463509-2468-2-git-send-email-bobby.prani@gmail.com> <20140715225313.GB24290@cloud> <53C5B1F7.3000409@gmail.com> <20140716124729.GR8690@linux.vnet.ibm.com> <53C67E2E.7080402@gmail.com> <53C71EF3.8010901@cn.fujitsu.com> <53C72080.5040501@gmail.com> <20140717021405.GA1102@thin>
+In-Reply-To: <20140717021405.GA1102@thin>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"John W. Linville" <linville@tuxdriver.com> writes:
+On 07/16/2014 10:14 PM, Josh Triplett wrote:
+> On Wed, Jul 16, 2014 at 09:01:52PM -0400, Pranith Kumar wrote:
+>> Sure, please find an updated patch with Josh Triplett's sign-off added:
+> 
+> It appears to have a reviewed-by from someone named "Joe Tripplett"
+> instead. ;)
+> 
 
-> On Tue, Jul 15, 2014 at 11:46:14AM -0700, David Miller wrote:
->> From: Linus Torvalds <torvalds@linux-foundation.org>
->> Date: Tue, 15 Jul 2014 08:52:33 -0700
->> 
->> > And if David actually asks for these, my apologies..
->> 
->> I didn't ask for these :-)
->
-> Just trying to be helpful, for those times when there are non-trivial
-> merge conflicts.  I can stop.
+I apologize for fat-fingering this.
+Since I've sent one too many emails in this thread already, I suppose on more can not do much harm :)
 
-Just out of curiosity, what is the best way to send a proposal how to
-fix a merge conflict? For example, if I send a pull request to John
-which I know will issue a conflict it would be nice to include
-instructions (or some sort of patch) how I think it should be resolved.
+This time with Reviewed-by Lai Jiangshan added and Reviewed-by Josh Triplett corrected.
 
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Mon, 14 Jul 2014 16:01:05 -0400
+Subject: [PATCH 2/3] rcu: Remove stale comment in tree.c
+
+This commit removes a stale comment in rcu/tree.c which was left out when some
+code was moved around previously in the commit
+
+2036d94a7b61 ("rcu:  Rework detection of use of RCU by offline CPUs")
+
+For reference, the following updated comment exists a few lines below this which
+means the same.
+
+/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/rcu/tree.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index a1abaa8..e67246e 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2211,8 +2211,6 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ 	/* Adjust any no-longer-needed kthreads. */
+ 	rcu_boost_kthread_setaffinity(rnp, -1);
+ 
+-	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
+-
+ 	/* Exclude any attempts to start a new grace period. */
+ 	mutex_lock(&rsp->onoff_mutex);
+ 	raw_spin_lock_irqsave(&rsp->orphan_lock, flags);
 -- 
-Kalle Valo
+1.9.1
+
+
