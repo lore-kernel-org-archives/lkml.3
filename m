@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370AbaGQMxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:53:22 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29804 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755046AbaGQMxT (ORCPT
+	id S1757426AbaGQMyp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:54:45 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:45656 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756598AbaGQMyn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:53:19 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18yB0yhioHRIrZzdlWb9DUI9SNwHfW99BA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 395505AE288
-Date: Thu, 17 Jul 2014 08:53:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: suravee.suthikulpanit@amd.com
-Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
-        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 4/4 V3] irqchip: gicv2m: Add support for multiple MSI
- for ARM64 GICv2m
-Message-ID: <20140717125309.GK13108@titan.lakedaemon.net>
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com>
+	Thu, 17 Jul 2014 08:54:43 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Mugunthan V N'" <mugunthanvnm@ti.com>,
+        David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via
+ Ethtool Coalesce
+Thread-Topic: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via
+ Ethtool Coalesce
+Thread-Index: AQHPoYY9UvFwPwDojUudrRwQY6wBHpuj9NlQ
+Date: Thu, 17 Jul 2014 12:53:41 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D172768B0@AcuExch.aculab.com>
+References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com>
+ <20140709.164420.157865201153845876.davem@davemloft.net>
+ <53C76990.3000304@ti.com>
+In-Reply-To: <53C76990.3000304@ti.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suravee,
-
-On Wed, Jul 09, 2014 at 06:05:04PM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> From: Mugunthan V N
+> On Thursday 10 July 2014 05:14 AM, David Miller wrote:
+> > From: Mugunthan V N <mugunthanvnm@ti.com>
+> > Date: Wed, 9 Jul 2014 12:44:07 +0530
+> >
+> >> A system/cpu can be loaded by a hacker with flooding of broadcast or
+> >> multicast packets, to prevent this some Ethernet controllers like CPSW
+> >> provide a mechanism to limit the broadcast/multicast packet rate via
+> >> hardware limiters. This patch series enables this feature via
+> >> Ethtool Coalesce.
+> > This is pretty bogus if you ask me.
+> >
+> > What is the difference from accepting a high rate of unicast packets?
+> > I say it is no different.
+> >
+> > Therefore, this feature makes no sense to me at all.
 > 
-> This patch extend GICv2m MSI to support multiple MSI in ARM64.
+> Any packet storm can cause an endpoint some issues. Typically packet
+> storms will cause the system CPU to thrash resulting is very low system
+> performance.
 > 
-> This requires the common arch_setup_msi_irqs() to be overwriten
-> with ARM64 version which does not return 1 for PCI_CAP_ID_MSI and
-> nvec > 1.
+> Unicast storms only target a single destination end station, it can be
+> easily mitigated by the host adding a blocking entry in the LUT for each
+> aggressor.
 > 
-> Cc: Mark Rutland <Mark.Rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-> Cc: Will Deacon <Will.Deacon@arm.com>
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> ---
->  arch/arm64/include/asm/msi.h  | 15 ++++++++
->  arch/arm64/kernel/Makefile    |  1 +
->  arch/arm64/kernel/msi.c       | 57 ++++++++++++++++++++++++++++++
->  drivers/irqchip/irq-gic-v2m.c | 80 +++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 153 insertions(+)
->  create mode 100644 arch/arm64/include/asm/msi.h
->  create mode 100644 arch/arm64/kernel/msi.c
+> Broadcast and multicast target multiple end stations, or an entire
+> network, not only can it cause CPU thrashing, it can result in loss of
+> other broadcast and multicast services. The rate limiting feature allow
+> the broadcast and or multicast traffic to be dropped if the rates are
+> too high. This eliminates the CPU thrashing issue. It also allows the
+> system to analyze the aggressors and block them for future transgressions.
 
-With the Subject line nit fixed ("irqchip: gic-v2m: ..."),
+Rate limiting multicast traffic will definitely cause the loss of multicast
+services.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+My experience of broadcast storms is that many of the ethernet switches
+(probably especially the cheap ones) end up using a much slower software?
+path for broadcasts. In a broadcast storm they start discarding normal
+traffic - to point where a single ssh session becomes unusable.
+This is true even when isolated from the storm by a 10M hub.
 
-Please route as you see fit.
+Broadcast storms are probably mostly caused by network topology issues.
+Especially is switches are sending traffic to 'all ports' while resetting
+the spanning tree tables.
 
-thx,
+	David
 
-Jason.
+
+
+
