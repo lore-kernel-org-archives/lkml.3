@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050AbaGQLH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:07:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17037 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757003AbaGQLH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:07:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,677,1400050800"; 
-   d="scan'208";a="544724425"
-Date: Thu, 17 Jul 2014 19:08:26 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, "Hu, Robert" <robert.hu@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] KVM: nVMX: Fix virtual interrupt delivery injection
-Message-ID: <20140717110826.GA9872@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com>
- <53C78F67.1060802@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AB31D4A@SHSMSX104.ccr.corp.intel.com>
- <20140717091148.GA7744@kernel>
- <53C7A8EE.4040605@redhat.com>
+	id S1756952AbaGQLIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:08:13 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:65321 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756553AbaGQLIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 07:08:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v2 21/29] nios2: Futex operations
+Date: Thu, 17 Jul 2014 13:07:54 +0200
+Message-ID: <12323898.sHjczXbE7P@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFiDJ5-UQ4pu1Hkc444yaA6cbttTXM7KM2eProGUkYgjqvOSUg@mail.gmail.com>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <alpine.DEB.2.10.1407151201170.24854@nanos> <CAFiDJ5-UQ4pu1Hkc444yaA6cbttTXM7KM2eProGUkYgjqvOSUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C7A8EE.4040605@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:KvOxSgNExwGdB6KdY8EknDHO8WOxknl7qNQ0x1LkBLr
+ YLxe1jExzAZCpQpItwA6JSgj3lDYFUkihSimJ8G1heBbwSgOd8
+ 7F3C6FBOekqDUZMM9rqWmvx3zfqgq7tDor1nCmdG0g1VvDR+OB
+ JnqRv1OfMSZ1fTzBiloBvgAXf9Iu5XJZzbd34qaF6A8V4BtFUg
+ uLkMIqFJwOIj6REVlfPxL0BAKbNfAjhCjNy1ZnFOjDrAr4pNpR
+ h/iBRuV8kErbTIeFA0nJvzu9A4buV6jUWzPj3Un0DqIj/cBCG9
+ PSC6QRjQX2V8Ii+m/iJuUFh/vJ9sAfcPqpO67SsQKUtirQQ092
+ U8qhYBaaeIvhQ/uHQXKA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 12:43:58PM +0200, Paolo Bonzini wrote:
->Il 17/07/2014 11:11, Wanpeng Li ha scritto:
->>>>>> What hypervisor did you test with? nested_exit_on_intr(vcpu) will
->>>>
->>>>Jailhouse will clear External-interrupt exiting bit. Am I right? Jan.
->>>>
->>>>>> return true for both Xen and KVM (nested_exit_on_intr is not the same
->>>>>> thing as ACK_INTR_ON_EXIT).
->>>>
->>>>I guess he want to say External-interrupt exiting bit not ACK_INTR_ON_EXIT.
->>>>
->>Ah yes, a typo here.
->
->Ok, please repost this patch together with your version of patch 2.
+On Thursday 17 July 2014 18:55:49 Ley Foon Tan wrote:
+> On Tue, Jul 15, 2014 at 6:03 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Tue, 15 Jul 2014, Ley Foon Tan wrote:
+> >  +static inline int atomic_futex_op_xchg_set(int oparg, u32 __user *uaddr,
+> >> +                                        int *oldval)
+> >> +{
+> >> +     unsigned long flags;
+> >> +     int ret;
+> >> +
+> >> +     local_irq_save(flags);
+> >> +
+> >> +     ret = get_user(*oldval, uaddr);
+> >> +     if (!ret)
+> >> +             ret = put_user(oparg, uaddr);
+> >
+> > This is wrong as it gets. get_user() might fault and sleep.
+> >
+> > You need a proper implementation, which handles fault exceptions.
+> I have checked that we use nios2 specific get_user() in [1]. This
+> function will not sleep and it handles fault exception.
+> I think this should be fine.
 
-Just send out the version two of 1/3 and 2/3. 
+The get_user/put_user functions really need to be annotated might_fault(),
+because that's what they do.
 
->
->Leave aside patch 3 for now, as I think the original use-after-free
->patch was wrong.
+The whole point of get_user() is to access an unchecked user space
+pointer, which 	can do a number of things based on what the pointer
+points to:
 
-Any proposal is appreciated. ;-)
+- access a user space variable that resides in memory
+- access a kernel pointer and fail because of the access_ok()
+  check
+- access a user space pointer that is not mapped and return
+  through the __ex_table fixup.
+- access a user space pointer that has a valid VMA but not PTE,
+  causing a page fault to be resolved.
 
-Regards,
-Wanpeng Li 
+It's the last case that breaks here.
 
->
->Paolo
+	Arnd
