@@ -1,56 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaGQG7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 02:59:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755216AbaGQG7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 02:59:39 -0400
-Message-ID: <53C7744E.60806@redhat.com>
-Date: Thu, 17 Jul 2014 14:59:26 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755291AbaGQHAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 03:00:18 -0400
+Received: from mail-pa0-f68.google.com ([209.85.220.68]:53909 "EHLO
+	mail-pa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678AbaGQHAP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 03:00:15 -0400
+Message-ID: <53c7747d.a459460a.591b.49a9@mx.google.com>
+X-Google-Original-Message-ID: <001701cfa18c$be8c68c0$3ba53a40$@dulixin@gmail.com>
+From: "Dudley Du" <dudley.dulixin@gmail.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Benson Leung" <bleung@google.com>, "Patrik Fimml" <patrikf@google.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Dudley Du" <dudl@cypress.com>
+Subject: [PATCH v4 13/14] input: cyapa: add gen5 trackpad device read firmware image and raw data functions support
+Date: Thu, 17 Jul 2014 14:59:52 +0800
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next V2 0/3] rx busy polling support for virtio-net
-References: <1405491707-22706-1-git-send-email-jasowang@redhat.com> <20140716.232116.802194909968085691.davem@davemloft.net>
-In-Reply-To: <20140716.232116.802194909968085691.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+hjLUWmu0XDLVWRvW3JSIQ12dwlg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 02:21 PM, David Miller wrote:
-> From: Jason Wang <jasowang@redhat.com>
-> Date: Wed, 16 Jul 2014 14:21:44 +0800
->
->> Hi all:
->>
->> This series introduces the support for rx busy polling support. This
->> was useful for reduing the latency for a kvm guest. Patch 1-2
->> introduces helpers which is used for rx busy polling. Patch 3
->> implement the main function.
->>
->> Test was done between a kvm guest and an external host. Two hosts were
->> connected through 40gb mlx4 cards. With both busy_poll and busy_read are
->> set to 50 in guest, 1 byte netperf tcp_rr shows 116% improvement:
->> transaction rate was increased from 9151.94 to 19787.37.
->>
->> Changes from V1:
->> - split the patch info smaller ones
->> - add more details about test setup/configuration
->>
->> Please review.
-> Looks like you can make some minor adjustments based upon review, and
-> anyways I'd like to wait for Michael to get back and review a change
-> of this nature.
->
-> Thanks.
+Add read firmware image function supported for gen5 trackpad device,
+which its function is supplied through cyapa core read_fw interface.
+Through this interface, upper layer application can read out, check
+and backup the firmware image in trackpad device before updated
+with new one when new firmware image may have problems.
+Also add interfaces to report all sensor's raw data values to upper
+layer, so it can help to find out the performance issue when users
+reports problem, and also it's useful and required interface for
+some customers that require sensors' raw data.
+TEST=test on Chromebooks.
 
-Ok, I will wait for Michael's comments and then post V3.
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa_gen5.c |  265 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 265 insertions(+)
 
-Thanks
+diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
+index efd22af..de49e8b 100644
+--- a/drivers/input/mouse/cyapa_gen5.c
++++ b/drivers/input/mouse/cyapa_gen5.c
+@@ -1226,6 +1226,158 @@ static int cyapa_gen5_write_fw_block(struct cyapa *cyapa,
+ 	return 0;
+ }
+ 
++static int cyapa_gen5_read_fw_bytes(struct cyapa *cyapa, u16 row_num, u8 *data)
++{
++	int ret;
++	u8 cmd[16];
++	size_t cmd_len;
++	u8 resp_data[CYAPA_TSG_FW_ROW_SIZE / 2 + GEN5_MIN_BL_RESP_LENGTH];
++	int resp_len;
++	u16 offset;
++	u16 cmd_crc;
++	struct cyapa_tsg_bin_image_data_record *fw_img_record;
++
++	fw_img_record = (struct cyapa_tsg_bin_image_data_record *)data;
++
++	cmd[0] = 0x04;  /* Register address */
++	cmd[1] = 0x00;
++	cmd[2] = 0x0e;
++	cmd[3] = 0x00;
++	cmd[4] = 0x40;  /* Report id 40h */
++	cmd[5] = 0x00;
++	cmd[6] = GEN5_SOP_KEY;
++	cmd[7] = 0x3d;  /* Read application image command code */
++	cmd[8] = 0x03;
++	cmd[9] = 0x00;
++	offset = row_num * CYAPA_TSG_FW_ROW_SIZE -
++			CYAPA_TSG_START_OF_APPLICATION;
++	put_unaligned_le16(offset, &cmd[10]);
++	cmd[12] = CYAPA_TSG_IMG_READ_SIZE;
++	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
++	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
++	cmd[15] = GEN5_EOP_KEY;  /* EOP = 17h */
++	cmd_len = 16;
++
++	resp_len = CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH;
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, cmd_len,
++			resp_data, &resp_len,
++			50, cyapa_gen5_sort_tsg_pip_bl_resp_data);
++	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
++			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
++			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
++		return (ret < 0) ? ret : -EAGAIN;
++
++	/* Copy first 64 bytes in the row. */
++	memcpy(&fw_img_record->record_data[0], &resp_data[8],
++			CYAPA_TSG_IMG_READ_SIZE);
++
++	if (row_num == CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM) {
++		/* Last row's rest 64 bytes are bootloader metadata,
++		 * it's not allowed to be read out, will respond with error. */
++		memset(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
++			0, CYAPA_TSG_IMG_READ_SIZE);
++		goto skip_last_row;
++	}
++
++	/* Read next 64 bytes in the row. */
++	offset = offset + CYAPA_TSG_IMG_READ_SIZE;
++	put_unaligned_le16(offset, &cmd[10]);
++	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
++	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, cmd_len,
++			resp_data, &resp_len,
++			500, cyapa_gen5_sort_tsg_pip_bl_resp_data);
++	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
++			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
++			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
++		return (ret < 0) ? ret : -EAGAIN;
++
++	/* Copy last 64 bytes in the row. */
++	memcpy(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
++		&resp_data[8], CYAPA_TSG_IMG_READ_SIZE);
++
++skip_last_row:
++	fw_img_record->flash_array_id = 0;
++	put_unaligned_be16(row_num, &fw_img_record->row_number);
++	put_unaligned_be16(CYAPA_TSG_FW_ROW_SIZE, &fw_img_record->record_len);
++
++	return 0;
++}
++
++static int cyapa_gen5_read_fw(struct cyapa *cyapa)
++{
++	int ret;
++	int fw_img_head_size;
++	int fw_img_record_size;
++	int row_index;
++	int array_index;
++	u32 img_start;
++	u16 img_len;
++	u16 img_start_row;
++	u16 img_end_row;
++	struct cyapa_tsg_bin_image_data_record app_integrity;
++	u8 *record_data;
++
++	ret = cyapa_gen5_bl_enter(cyapa);
++	if (ret)
++		goto err;
++
++	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
++
++	fw_img_head_size = sizeof(struct cyapa_tsg_bin_image_head);
++	fw_img_record_size = sizeof(struct cyapa_tsg_bin_image_data_record);
++
++	/* Read app integrity block data. */
++	row_index = CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM;
++	ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, (u8 *)&app_integrity);
++	if (ret)
++		goto err;
++	img_start = get_unaligned_le32(&app_integrity.record_data[16]);
++	img_len = get_unaligned_le16(&app_integrity.record_data[20]);
++	if ((img_start + img_len) % CYAPA_TSG_FW_ROW_SIZE)
++		goto err;
++	img_start_row = img_start / CYAPA_TSG_FW_ROW_SIZE;
++	img_end_row = (img_start + img_len) / CYAPA_TSG_FW_ROW_SIZE - 1;
++
++	/* Allocate memory for image. */
++	cyapa->fw_image_size = fw_img_head_size +
++		(img_end_row -  img_start_row + 2) * fw_img_record_size;
++	cyapa->fw_image = kmalloc(cyapa->fw_image_size, GFP_KERNEL);
++	if (!cyapa->fw_image) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	/* Set image head data. */
++	memcpy(cyapa->fw_image, &gen5_fw_img_head, fw_img_head_size);
++
++	/* Read image blocks. */
++	for (row_index = img_start_row, array_index = 0;
++			row_index <= img_end_row;
++			row_index++, array_index++) {
++		record_data = &cyapa->fw_image[fw_img_head_size +
++				array_index * fw_img_record_size];
++		ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, record_data);
++		if (ret)
++			goto err;
++	}
++
++	/* Append last app integrity block data. */
++	record_data = &cyapa->fw_image[fw_img_head_size +
++				array_index * fw_img_record_size];
++	memcpy(record_data, &app_integrity, fw_img_record_size);
++
++err:
++	if (ret) {
++		kfree(cyapa->fw_image);
++		cyapa->fw_image = NULL;
++		cyapa->fw_image_size = 0;
++	}
++	return ret;
++}
++
+ static int cyapa_gen5_do_fw_update(struct cyapa *cyapa,
+ 		const struct firmware *fw)
+ {
+@@ -2212,6 +2364,116 @@ resume_scanning:
+ 	return ret + err;
+ }
+ 
++static int cyapa_gen5_read_raw_data(struct cyapa *cyapa)
++{
++	int ret, err;
++	int raw_cap_mutual_max, raw_cap_mutual_min, raw_cap_mutual_ave;
++	int raw_cap_self_max, raw_cap_self_min, raw_cap_self_ave;
++	int offset;
++	int data_size, max, min, ave;
++	ktime_t time_mono;
++
++	offset = 0;
++	if (!cyapa->tp_raw_data) {
++		if (cyapa->state != CYAPA_STATE_GEN5_APP ||
++			!cyapa->electrodes_x || !cyapa->electrodes_y)
++			return  -EINVAL;
++
++		cyapa->tp_raw_data_size = sizeof(s32) * (cyapa->electrodes_x *
++			cyapa->electrodes_y + cyapa->electrodes_x +
++			cyapa->electrodes_y) + GEN5_RAW_DATA_HEAD_SIZE;
++		/*
++		 * This buffer will be hold after used until the driver is
++		 * unloaded, the purpose of it is to improve the performace
++		 * to avoid frequently allocate and release the buffer.
++		 */
++		cyapa->tp_raw_data =
++			kmalloc(cyapa->tp_raw_data_size, GFP_KERNEL);
++		if (!cyapa->tp_raw_data)
++			return -ENOMEM;
++		memset(cyapa->tp_raw_data, 0, cyapa->tp_raw_data_size);
++	}
++
++
++	/*
++	 * 1. Suspend Scanning.
++	 *
++	 * After suspend scanning, the raw data will not be updated,
++	 * so the time of the raw data is before scanning suspended.
++	 */
++	time_mono = ktime_get();
++	ret = cyapa_gen5_suspend_scanning(cyapa);
++	if (ret)
++		return ret;
++
++	/* 2. Get the correct electrodes_rx number. */
++	if (cyapa->electrodes_rx == 0) {
++		/*
++		 * Through the read global idac interface to get the Rx number.
++		 * this value is useful to the raw data map.
++		 */
++		data_size = 0;
++		err = cyapa_gen5_read_idac_data(cyapa,
++				GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
++				GEN5_RETRIEVE_MUTUAL_PWC_DATA,
++				&data_size, &max, &min, &ave);
++		if (err || cyapa->electrodes_rx == 0)
++			goto resume_scanning;
++	}
++
++	/* 3. Execuate panel scan. It must be executed before read data. */
++	err = cyapa_gen5_execute_panel_scan(cyapa);
++	if (err)
++		goto resume_scanning;
++
++	/* 4. Retrive panel scan, mutual cap raw data. */
++	offset = GEN5_RAW_DATA_HEAD_SIZE;
++	err = cyapa_gen5_read_panel_scan_raw_data(cyapa,
++				GEN5_CMD_RETRIEVE_PANEL_SCAN,
++				GEN5_PANEL_SCAN_MUTUAL_DIFFCOUNT,
++				cyapa->electrodes_x * cyapa->electrodes_y,
++				&raw_cap_mutual_max, &raw_cap_mutual_min,
++				&raw_cap_mutual_ave,
++				cyapa->tp_raw_data + offset);
++	if (err)
++		goto resume_scanning;
++
++	offset += sizeof(s32) * cyapa->electrodes_x * cyapa->electrodes_y;
++
++	/* 5. Retrive panel scan, self cap raw data. */
++	err = cyapa_gen5_read_panel_scan_raw_data(cyapa,
++				GEN5_CMD_RETRIEVE_PANEL_SCAN,
++				GEN5_PANEL_SCAN_SELF_DIFFCOUNT,
++				cyapa->electrodes_x + cyapa->electrodes_y,
++				&raw_cap_self_max, &raw_cap_self_min,
++				&raw_cap_self_ave,
++				cyapa->tp_raw_data + offset);
++	if (err)
++		goto resume_scanning;
++
++	offset += sizeof(s32) * (cyapa->electrodes_x + cyapa->electrodes_y);
++
++resume_scanning:
++	/* 6. Resume Scanning*/
++	ret = cyapa_gen5_resume_scanning(cyapa);
++	if (ret || err)
++		return ret ? ret : err;
++
++	*((struct timeval *)&cyapa->tp_raw_data[0]) =
++						ktime_to_timeval(time_mono);
++	cyapa->tp_raw_data[16] = (u8)cyapa->electrodes_x;
++	cyapa->tp_raw_data[17] = (u8)cyapa->electrodes_y;
++	cyapa->tp_raw_data[18] = (u8)cyapa->x_origin;
++	cyapa->tp_raw_data[19] = (u8)cyapa->y_origin;
++	cyapa->tp_raw_data[20] = (u8)sizeof(s32);
++	cyapa->tp_raw_data[21] = (u8)sizeof(s32);
++	cyapa->tp_raw_data[22] = (u8)cyapa->electrodes_rx;
++	cyapa->tp_raw_data[23] = 0;  /* Reserved. */
++
++	cyapa->tp_raw_data_size = offset;
++	return 0;
++}
++
+ static bool cyapa_gen5_sort_system_info_data(struct cyapa *cyapa,
+ 		u8 *buf, int len)
+ {
+@@ -2616,6 +2878,9 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
+ 	.show_baseline = cyapa_gen5_show_baseline,
+ 	.calibrate_store = cyapa_gen5_do_calibrate,
+ 
++	.read_fw = cyapa_gen5_read_fw,
++	.read_raw_data = cyapa_gen5_read_raw_data,
++
+ 	.initialize = cyapa_gen5_initialize,
+ 	.uninitialize = cyapa_gen5_uninitialize,
+ 
+-- 
+1.7.9.5
+
+
