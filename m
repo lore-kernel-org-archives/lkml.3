@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952AbaGQLIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 07:08:13 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:65321 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553AbaGQLIK (ORCPT
+	id S1756744AbaGQLL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 07:11:28 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:35036 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379AbaGQLL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 07:08:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH v2 21/29] nios2: Futex operations
-Date: Thu, 17 Jul 2014 13:07:54 +0200
-Message-ID: <12323898.sHjczXbE7P@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAFiDJ5-UQ4pu1Hkc444yaA6cbttTXM7KM2eProGUkYgjqvOSUg@mail.gmail.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <alpine.DEB.2.10.1407151201170.24854@nanos> <CAFiDJ5-UQ4pu1Hkc444yaA6cbttTXM7KM2eProGUkYgjqvOSUg@mail.gmail.com>
+	Thu, 17 Jul 2014 07:11:26 -0400
+Message-ID: <53C7AF58.5030807@gmail.com>
+Date: Thu, 17 Jul 2014 14:11:20 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:KvOxSgNExwGdB6KdY8EknDHO8WOxknl7qNQ0x1LkBLr
- YLxe1jExzAZCpQpItwA6JSgj3lDYFUkihSimJ8G1heBbwSgOd8
- 7F3C6FBOekqDUZMM9rqWmvx3zfqgq7tDor1nCmdG0g1VvDR+OB
- JnqRv1OfMSZ1fTzBiloBvgAXf9Iu5XJZzbd34qaF6A8V4BtFUg
- uLkMIqFJwOIj6REVlfPxL0BAKbNfAjhCjNy1ZnFOjDrAr4pNpR
- h/iBRuV8kErbTIeFA0nJvzu9A4buV6jUWzPj3Un0DqIj/cBCG9
- PSC6QRjQX2V8Ii+m/iJuUFh/vJ9sAfcPqpO67SsQKUtirQQ092
- U8qhYBaaeIvhQ/uHQXKA=
+To: Paul Bolle <pebolle@tiscali.nl>, Christoph Hellwig <hch@infradead.org>,
+        viro@zeniv.linux.org.uk
+CC: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
+        pramod.gurav.etc@gmail.com, Jason Cooper <jason@lakedaemon.net>,
+        Markus Mayer <markus.mayer@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] direct-io: squelch maybe-uninitialized warning in do_direct_IO()
+References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>	 <20140713115022.GA6054@infradead.org> <53C6B199.2070606@gmail.com>	 <20140716175803.GA3631@infradead.org> <1405536124.4357.17.camel@x41> <53C79949.7010201@gmail.com>
+In-Reply-To: <53C79949.7010201@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 18:55:49 Ley Foon Tan wrote:
-> On Tue, Jul 15, 2014 at 6:03 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Tue, 15 Jul 2014, Ley Foon Tan wrote:
-> >  +static inline int atomic_futex_op_xchg_set(int oparg, u32 __user *uaddr,
-> >> +                                        int *oldval)
-> >> +{
-> >> +     unsigned long flags;
-> >> +     int ret;
-> >> +
-> >> +     local_irq_save(flags);
-> >> +
-> >> +     ret = get_user(*oldval, uaddr);
-> >> +     if (!ret)
-> >> +             ret = put_user(oparg, uaddr);
-> >
-> > This is wrong as it gets. get_user() might fault and sleep.
-> >
-> > You need a proper implementation, which handles fault exceptions.
-> I have checked that we use nios2 specific get_user() in [1]. This
-> function will not sleep and it handles fault exception.
-> I think this should be fine.
+From: Paul Bolle <pebolle@tiscali.nl>
 
-The get_user/put_user functions really need to be annotated might_fault(),
-because that's what they do.
+The following warnings:
 
-The whole point of get_user() is to access an unchecked user space
-pointer, which 	can do a number of things based on what the pointer
-points to:
+  fs/direct-io.c: In function ‘__blockdev_direct_IO’:
+  fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  fs/direct-io.c:913:16: note: ‘to’ was declared here
+  fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  fs/direct-io.c:913:10: note: ‘from’ was declared here
 
-- access a user space variable that resides in memory
-- access a kernel pointer and fail because of the access_ok()
-  check
-- access a user space pointer that is not mapped and return
-  through the __ex_table fixup.
-- access a user space pointer that has a valid VMA but not PTE,
-  causing a page fault to be resolved.
+are false positive because dio_get_page() either fails, or sets both
+'from' and 'to'.
 
-It's the last case that breaks here.
+Maybe it's better to move initializing "to" and "from" out of
+dio_get_page(). That _might_ make it easier for both the the reader and
+the compiler to understand what's going on. Something like this:
 
-	Arnd
+Christoph Hellwig said ...
+The fix of moving the code definitively looks nicer, while I think
+uninitialized_var is horrible wart that won't get anywhere near my code.
+
+Boaz Harrosh: I agree with Christoph and Paul
+
+Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+---
+ fs/direct-io.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 98040ba..194d0d1 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -198,9 +198,8 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
+  * L1 cache.
+  */
+ static inline struct page *dio_get_page(struct dio *dio,
+-		struct dio_submit *sdio, size_t *from, size_t *to)
++					struct dio_submit *sdio)
+ {
+-	int n;
+ 	if (dio_pages_present(sdio) == 0) {
+ 		int ret;
+ 
+@@ -209,10 +208,7 @@ static inline struct page *dio_get_page(struct dio *dio,
+ 			return ERR_PTR(ret);
+ 		BUG_ON(dio_pages_present(sdio) == 0);
+ 	}
+-	n = sdio->head++;
+-	*from = n ? 0 : sdio->from;
+-	*to = (n == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
+-	return dio->pages[n];
++	return dio->pages[sdio->head];
+ }
+ 
+ /**
+@@ -911,11 +907,15 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
+ 	while (sdio->block_in_file < sdio->final_block_in_request) {
+ 		struct page *page;
+ 		size_t from, to;
+-		page = dio_get_page(dio, sdio, &from, &to);
++
++		page = dio_get_page(dio, sdio);
+ 		if (IS_ERR(page)) {
+ 			ret = PTR_ERR(page);
+ 			goto out;
+ 		}
++		from = sdio->head ? 0 : sdio->from;
++		to = (sdio->head == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
++		sdio->head++;
+ 
+ 		while (from < to) {
+ 			unsigned this_chunk_bytes;	/* # of bytes mapped */
+-- 
+1.9.3
+
