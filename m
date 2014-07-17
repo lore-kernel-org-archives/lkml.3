@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaGQTNY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:13:24 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:5911 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362AbaGQTMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:12:18 -0400
-X-IronPort-AV: E=Sophos;i="5.01,679,1400025600"; 
-   d="scan'208";a="153868204"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH for stable 3.15 2/4] xen-netback: Fix releasing frag_list skbs in error path
-Date: Thu, 17 Jul 2014 20:10:27 +0100
-Message-ID: <1405624229-21817-2-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405624229-21817-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1405624229-21817-1-git-send-email-zoltan.kiss@citrix.com>
+	id S1752991AbaGQTQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:16:05 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:42104 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaGQTQD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 15:16:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+In-Reply-To: <1405622543.23772.142820021.13876840@webmail.messagingengine.com>
+References: <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net>
+ <53C6F5A9.80400@zytor.com> <CALCETrVwT1g-S1hLyyB_uAVwffYCnFacTfUhJeD8Bb5j3X0mkg@mail.gmail.com>
+ <CALCETrVCrJEwYokasRoqQTKJWKtzq9XUMNqHoT4-ZjgyZ-mBow@mail.gmail.com>
+ <53C703ED.2010605@zytor.com> <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
+ <53C75733.8060507@zytor.com> <20140717103324.GJ1491@thunk.org>
+ <53C7FC32.7030704@zytor.com> <CALCETrVgCw2_8x1+NrP_xO4ZtnFm_dTTUBtZd-tgfdWgfeu2FQ@mail.gmail.com>
+ <20140717173230.GP1491@thunk.org> <CALCETrULQcPNOPvt1iX5oZdfY_a64NA5tOcDe5KWsCwBvoKrGA@mail.gmail.com>
+ <1405622543.23772.142820021.13876840@webmail.messagingengine.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 17 Jul 2014 12:15:41 -0700
+Message-ID: <CALCETrXz=1rKwMFvJx1mhJUBejFjrDWjnmXx7EzQwufwDB1+gQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the grant operations failed, the skb is freed up eventually, and it tries
-to release the frags, if there is any. For the main skb nr_frags is set to 0 to
-avoid this, but on the frag_list it iterates through the frags array, and tries
-to call put_page on the page pointer which contains garbage at that time.
+On Thu, Jul 17, 2014 at 11:42 AM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+>
+>
+> On Thu, Jul 17, 2014, at 19:34, Andy Lutomirski wrote:
+>> On Thu, Jul 17, 2014 at 10:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>> > On Thu, Jul 17, 2014 at 10:12:27AM -0700, Andy Lutomirski wrote:
+>> >>
+>> >> Unless I'm reading the code wrong, the prandom_reseed_late call can
+>> >> happen after userspace is running.
+>> >
+>> > But there is also the prandom_reseed() call, which happens early.
+>> >
+>>
+>> Right -- I missed that.
+>
+> prandom_init is a core_initcall, prandom_reseed is a late_initcall.
+> During initialization of the network stack we have calls to prandom_u32
+> before the late_initcall happens. That said, I think it is not that
+> important to seed prandom with rdseed/rdrand as security relevant
+> entropy extraction should always use get_random_bytes(), but we should
+> do it nonetheless.
+>
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Reported-by: Armin Zentai <armin.zentai@ezit.hu>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 1e19001..8ca6a26 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1509,6 +1509,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		/* Check the remap error code. */
- 		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map, &gop_copy))) {
- 			skb_shinfo(skb)->nr_frags = 0;
-+			if (skb_has_frag_list(skb)) {
-+				struct sk_buff *nskb =
-+						skb_shinfo(skb)->frag_list;
-+				skb_shinfo(nskb)->nr_frags = 0;
-+			}
- 			kfree_skb(skb);
- 			continue;
- 		}
+Regardless, I don't want to do this as part of this patch series.  One
+thing at a time...
+
+--Andy
