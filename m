@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256AbaGQJgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:36:23 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:17783 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbaGQJgU (ORCPT
+	id S1756312AbaGQJhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:37:24 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:44436 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432AbaGQJhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:36:20 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-d7-53c79911cae1
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH] CMA: generalize CMA reserved area management functionality
- (fixup)
-Date: Thu, 17 Jul 2014 11:36:07 +0200
-Message-id: <1405589767-17513-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <53C78ED7.7030002@samsung.com>
-References: <53C78ED7.7030002@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t/xy7qCM48HG/yaK2Vx4so/Ros569ew
-	WTx+PY/F4kNTK7PFl5/XGS2aF69ns1jZ3cxm8eaTtsWcqYUWmx5fY7W4vGsOm8W9Nf9ZLW5f
-	5rX4/f0fq8XaI3fZLRYcb2G1WPb1PbvFmiOL2S32bwNKXDo+k9lBxKOluYfN4//BScwePW9a
-	WD02repk89j0aRK7R9fbK0weJ2b8ZvF4cGgzi8f+uWvYPTYvqfc4P2Mho8e6P6+YPN7vu8rm
-	MXdXH6NH35ZVjB6bT1cHCEZx2aSk5mSWpRbp2yVwZRzduJK1YCZbxamL81kaGHtYuxg5OCQE
-	TCRudZR2MXICmWISF+6tZwOxhQSWMkocvM7fxcgFZPcxSexu+s8CkmATMJToetvFBpIQEdjG
-	KPHyxlwmEIdZ4AqLxL2lnWDtwgKhEpsnr2cGsVkEVCU+9y9nArF5BTwk+p5fZ4NYJyfx/+UK
-	sDingLbE5P4dbCAXCQloSZzuS5/AyLuAkWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkj0
-	fNnBuPiY1SFGAQ5GJR7ezs/HgoVYE8uKK3MPMUpwMCuJ8G7rOh4sxJuSWFmVWpQfX1Sak1p8
-	iJGJg1OqgXHSvLRpjt4FzHM/tVbNcDMRV+xveanop1Jbwi3GX3k7raTrk6zC7/p11+8v0Pd/
-	aXj5a9RM45AT/kG3W2ZP7ZwfcUI7p/XH9LPL5FaKGX9KVk2W7qzIOzU/KTRisb1puuPE36ce
-	X5mrolnoOTPN7p9dm8MRhXCZZP3HjaySGfzcmU8fT1l0RomlOCPRUIu5qDgRAJ3wGFN8AgAA
+	Thu, 17 Jul 2014 05:37:21 -0400
+Message-ID: <53C79949.7010201@gmail.com>
+Date: Thu, 17 Jul 2014 12:37:13 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>, Christoph Hellwig <hch@infradead.org>,
+        viro@zeniv.linux.org.uk
+CC: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
+        pramod.gurav.etc@gmail.com, Jason Cooper <jason@lakedaemon.net>,
+        Markus Mayer <markus.mayer@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: direct-io: squelch maybe-uninitialized warning in do_direct_IO()
+References: <1404452632-10912-1-git-send-email-pramod.gurav.etc@gmail.com>	 <20140713115022.GA6054@infradead.org> <53C6B199.2070606@gmail.com>	 <20140716175803.GA3631@infradead.org> <1405536124.4357.17.camel@x41>
+In-Reply-To: <1405536124.4357.17.camel@x41>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX_CMA_AREAS is used by other subsystems (i.e. arch/arm/mm/dma-mapping.c),
-so we need to provide correct definition even if CMA is disabled.
-This patch fixes this issue.
+From: Paul Bolle <pebolle@tiscali.nl>
 
-Reported-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+The following warnings:
+
+  fs/direct-io.c: In function ‘__blockdev_direct_IO’:
+  fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  fs/direct-io.c:913:16: note: ‘to’ was declared here
+  fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  fs/direct-io.c:913:10: note: ‘from’ was declared here
+
+are false positive because dio_get_page() either fails, or sets both
+'from' and 'to'.
+
+Maybe it's better to move initializing "to" and "from" out of
+dio_get_page(). That _might_ make it easier for both the the reader and
+the compiler to understand what's going on. Something like this:
+
+Christoph Hellwig said ...
+The fix of moving the code defintively looks nicer, while I think
+uninitialized_var is horrible wart that won't get anywhere near my code.
+
+Boaz Harrosh I agree with Christoph and Paul
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
 ---
- include/linux/cma.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/direct-io.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/cma.h b/include/linux/cma.h
-index 9a18a2b1934c..c077635cad76 100644
---- a/include/linux/cma.h
-+++ b/include/linux/cma.h
-@@ -5,7 +5,11 @@
-  * There is always at least global CMA area and a few optional
-  * areas configured in kernel .config.
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 98040ba..2f024fc 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -198,9 +198,8 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
+  * L1 cache.
   */
-+#ifdef CONFIG_CMA
- #define MAX_CMA_AREAS	(1 + CONFIG_CMA_AREAS)
-+#else
-+#define MAX_CMA_AREAS	(0)
-+#endif
+ static inline struct page *dio_get_page(struct dio *dio,
+-		struct dio_submit *sdio, size_t *from, size_t *to)
++		struct dio_submit *sdio)
+ {
+-	int n;
+ 	if (dio_pages_present(sdio) == 0) {
+ 		int ret;
  
- struct cma;
+@@ -209,10 +208,7 @@ static inline struct page *dio_get_page(struct dio *dio,
+ 			return ERR_PTR(ret);
+ 		BUG_ON(dio_pages_present(sdio) == 0);
+ 	}
+-	n = sdio->head++;
+-	*from = n ? 0 : sdio->from;
+-	*to = (n == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
+-	return dio->pages[n];
++	return dio->pages[sdio->head];
+ }
  
+ /**
+@@ -911,11 +907,15 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
+ 	while (sdio->block_in_file < sdio->final_block_in_request) {
+ 		struct page *page;
+ 		size_t from, to;
+-		page = dio_get_page(dio, sdio, &from, &to);
++
++		page = dio_get_page(dio, sdio);
+ 		if (IS_ERR(page)) {
+ 			ret = PTR_ERR(page);
+ 			goto out;
+ 		}
++		from = sdio->head ? 0 : sdio->from;
++		to = (sdio->head == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
++		sdio->head++;
+ 
+ 		while (from < to) {
+ 			unsigned this_chunk_bytes;	/* # of bytes mapped */
 -- 
-1.9.2
+1.9.3
+
 
