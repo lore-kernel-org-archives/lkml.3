@@ -1,141 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294AbaGQK7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:59:11 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:34894 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251AbaGQK7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:59:07 -0400
-Message-ID: <53C7AC71.3090902@redhat.com>
-Date: Thu, 17 Jul 2014 12:58:57 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S932247AbaGQK7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:59:05 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65278 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756693AbaGQK7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:59:02 -0400
+Message-ID: <53C7AC6F.1070001@nod.at>
+Date: Thu, 17 Jul 2014 12:58:55 +0200
+From: Richard Weinberger <richard@nod.at>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org
-Subject: Re: [patch V2 44/64] x86: kvm: Make kvm_get_time_and_clockread()
- nanoseconds based
-References: <20140716205018.175419210@linutronix.de> <20140716205055.929964640@linutronix.de>
-In-Reply-To: <20140716205055.929964640@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Chen Gang <gang.chen.5i5j@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C796E1.8080708@nod.at> <8453588.VVyODXRso0@wuerfel>
+In-Reply-To: <8453588.VVyODXRso0@wuerfel>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/07/2014 23:04, Thomas Gleixner ha scritto:
-> Convert the relevant base data right away to nanoseconds instead of
-> doing the conversion on every readout. Reduces text size by 160 bytes.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: kvm@vger.kernel.org
-> ---
->  arch/x86/kvm/x86.c |   44 ++++++++++++++------------------------------
->  1 file changed, 14 insertions(+), 30 deletions(-)
->
-> Index: tip/arch/x86/kvm/x86.c
-> ===================================================================
-> --- tip.orig/arch/x86/kvm/x86.c
-> +++ tip/arch/x86/kvm/x86.c
-> @@ -984,9 +984,8 @@ struct pvclock_gtod_data {
->  		u32	shift;
->  	} clock;
->
-> -	/* open coded 'struct timespec' */
-> -	u64		monotonic_time_snsec;
-> -	time_t		monotonic_time_sec;
-> +	u64		boot_ns;
-> +	u64		nsec_base;
->  };
->
->  static struct pvclock_gtod_data pvclock_gtod_data;
-> @@ -994,6 +993,9 @@ static struct pvclock_gtod_data pvclock_
->  static void update_pvclock_gtod(struct timekeeper *tk)
->  {
->  	struct pvclock_gtod_data *vdata = &pvclock_gtod_data;
-> +	u64 boot_ns;
-> +
-> +	boot_ns = ktime_to_ns(ktime_add(tk->base_mono, tk->offs_boot));
->
->  	write_seqcount_begin(&vdata->seq);
->
-> @@ -1004,17 +1006,8 @@ static void update_pvclock_gtod(struct t
->  	vdata->clock.mult		= tk->mult;
->  	vdata->clock.shift		= tk->shift;
->
-> -	vdata->monotonic_time_sec	= tk->xtime_sec
-> -					+ tk->wall_to_monotonic.tv_sec;
-> -	vdata->monotonic_time_snsec	= tk->xtime_nsec
-> -					+ (tk->wall_to_monotonic.tv_nsec
-> -						<< tk->shift);
-> -	while (vdata->monotonic_time_snsec >=
-> -					(((u64)NSEC_PER_SEC) << tk->shift)) {
-> -		vdata->monotonic_time_snsec -=
-> -					((u64)NSEC_PER_SEC) << tk->shift;
-> -		vdata->monotonic_time_sec++;
-> -	}
-> +	vdata->boot_ns			= boot_ns;
-> +	vdata->nsec_base		= tk->xtime_nsec;
->
->  	write_seqcount_end(&vdata->seq);
->  }
-> @@ -1371,23 +1364,22 @@ static inline u64 vgettsc(cycle_t *cycle
->  	return v * gtod->clock.mult;
->  }
->
-> -static int do_monotonic(struct timespec *ts, cycle_t *cycle_now)
-> +static int do_monotonic_boot(s64 *t, cycle_t *cycle_now)
->  {
-> +	struct pvclock_gtod_data *gtod = &pvclock_gtod_data;
->  	unsigned long seq;
-> -	u64 ns;
->  	int mode;
-> -	struct pvclock_gtod_data *gtod = &pvclock_gtod_data;
-> +	u64 ns;
->
-> -	ts->tv_nsec = 0;
->  	do {
->  		seq = read_seqcount_begin(&gtod->seq);
->  		mode = gtod->clock.vclock_mode;
-> -		ts->tv_sec = gtod->monotonic_time_sec;
-> -		ns = gtod->monotonic_time_snsec;
-> +		ns = gtod->nsec_base;
->  		ns += vgettsc(cycle_now);
->  		ns >>= gtod->clock.shift;
-> +		ns += gtod->boot_ns;
->  	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-> -	timespec_add_ns(ts, ns);
-> +	*t = ns;
->
->  	return mode;
->  }
-> @@ -1395,19 +1387,11 @@ static int do_monotonic(struct timespec
->  /* returns true if host is using tsc clocksource */
->  static bool kvm_get_time_and_clockread(s64 *kernel_ns, cycle_t *cycle_now)
->  {
-> -	struct timespec ts;
-> -
->  	/* checked again under seqlock below */
->  	if (pvclock_gtod_data.clock.vclock_mode != VCLOCK_TSC)
->  		return false;
->
-> -	if (do_monotonic(&ts, cycle_now) != VCLOCK_TSC)
-> -		return false;
-> -
-> -	monotonic_to_bootbased(&ts);
-> -	*kernel_ns = timespec_to_ns(&ts);
-> -
-> -	return true;
-> +	return do_monotonic_boot(kernel_ns, cycle_now) == VCLOCK_TSC;
->  }
->  #endif
->
->
->
+Am 17.07.2014 12:28, schrieb Arnd Bergmann:
+> On Thursday 17 July 2014 11:26:57 Richard Weinberger wrote:
+>> Am 17.07.2014 11:20, schrieb Arnd Bergmann:
+>>> On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
+>>>>                                          gfp_t gfp_mask, unsigned int order);
+>>>>  extern void devm_free_pages(struct device *dev, unsigned long addr);
+>>>>  
+>>>> +#ifdef CONFIG_HAS_IOMEM
+>>>>  void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+>>>> +#elif defined(CONFIG_COMPILE_TEST)
+>>>> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
+>>>> +                                               struct resource *res)
+>>>> +{
+>>>> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
+>>>> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
+>>>> +}
+>>>> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
+>>>>  
+>>>>  /* allows to add/remove a custom action to devres stack */
+>>>
+>>> To be honest, I think it's a bad idea to introduce wrappers functions
+>>> that are only available when CONFIG_COMPILE_TEST is set.
+>>>
+>>> COMPILE_TEST is a great tool in general, but it has its limits.
+>>> In particular, the case for !CONFIG_IOMEM is completely obscure
+>>> and we won't find any bugs by allowing more drivers to be built
+>>> in those configurations, but attempting to do it would cause
+>>> endless churn by changing each instance of 'depends on HAS_IOMEM'
+>>> to 'depends on HAS_IOMEM || COMPILE_TEST'.
+>>>
+>>> Note that s390 no has gained support for IOMEM, tile has it most
+>>> of the time (when PCI is enabled, so you get it in half the
+>>> test builds already), score should set HAS_IOMEM and doesn't
+>>> even have public compilers, and uml doesn't even compile in
+>>> latest mainline. Nothing else ever sets NO_IOMEM.
+>>
+>> Huh? UML (v3.16-rc5-143-gb6603fe) builds fine here. What build issue are you facing?
+> 
+> This is what I got upon trying earlier. I have not attempted to look into
+> why this is happening. Note this is on linux-next from yesterday,
+> not mainline as I incorrectly stated above.
+> 
+> In file included from ../arch/um/include/asm/fixmap.h:58:0,
+>                  from ../arch/um/include/asm/pgtable.h:11,
+>                  from ../include/linux/mm.h:51,
+>                  from ../kernel/uid16.c:6:
+> ../include/asm-generic/fixmap.h: In function 'fix_to_virt':
+> ../include/asm-generic/fixmap.h:31:2: error: size of unnamed array is negative
+>   BUILD_BUG_ON(idx >= __end_of_fixed_addresses);
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+So, this is next-20140716?
+I don't see the fixmap issue you're reporting, also not on the most recent next.
+
+All I see is the known ext4 issue with CONFIG_SMP=n:
+
+fs/ext4/super.c: In function ‘ext4_commit_super’:
+fs/ext4/super.c:4547:41: error: ‘struct percpu_counter’ has no member named ‘counters’
+  if (EXT4_SB(sb)->s_freeclusters_counter.counters)
+                                         ^
+fs/ext4/super.c:4551:39: error: ‘struct percpu_counter’ has no member named ‘counters’
+  if (EXT4_SB(sb)->s_freeinodes_counter.counters)
+
+Thanks,
+//richard
