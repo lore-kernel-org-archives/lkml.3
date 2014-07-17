@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645AbaGQVsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 17:48:12 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:40979 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427AbaGQVsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 17:48:10 -0400
-Date: Thu, 17 Jul 2014 14:48:07 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Dave Hansen <dave.hansen@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch v4] mm, thp: only collapse hugepages to nodes with affinity
- for zone_reclaim_mode
-In-Reply-To: <53C7F9AC.1080007@intel.com>
-Message-ID: <alpine.DEB.2.02.1407171447310.9717@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407141807030.8808@chino.kir.corp.google.com> <alpine.DEB.2.02.1407151712520.12279@chino.kir.corp.google.com> <53C69C7B.1010709@suse.cz> <alpine.DEB.2.02.1407161754000.23892@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1407161757500.23892@chino.kir.corp.google.com> <53C7F9AC.1080007@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757563AbaGQV5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 17:57:17 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:39746 "EHLO tetsuo.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856AbaGQV5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 17:57:15 -0400
+Date: Thu, 17 Jul 2014 14:57:14 -0700
+From: Zach Brown <zab@zabbo.net>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org,
+        beck@openbsd.org
+Subject: Re: [PATCH, RFC -v2] random: introduce getrandom(2) system call
+Message-ID: <20140717215714.GF24196@lenny.home.zabbo.net>
+References: <1405633100-4889-1-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405633100-4889-1-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target 
-node") improved the previous khugepaged logic which allocated a 
-transparent hugepages from the node of the first page being collapsed.
+On Thu, Jul 17, 2014 at 05:38:20PM -0400, Theodore Ts'o wrote:
+> The getrandom(2) system call was requested by the LibreSSL Portable
+> developers.  It is analoguous to the getentropy(2) system call in
+> OpenBSD.
 
-However, it is still possible to collapse pages to remote memory which may 
-suffer from additional access latency.  With the current policy, it is 
-possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed remotely 
-if the majority are allocated from that node.
+> +SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
+> +		unsigned int, flags)
+> +{
+> +	int r;
+> +
+> +	if (flags & ~(GRND_NONBLOCK|GRND_RANDOM))
+> +		return -EINVAL;
+> +
+> +	if (count > INT_MAX)
+> +		count = INT_MAX;
+> +
+> +	if (flags & GRND_RANDOM)
+> +		return _random_read(flags & GRND_NONBLOCK, buf, count);
+> +	if (flags & GRND_NONBLOCK) {
+> +		if (!completion_done(&urandom_initialized))
+> +			return -EAGAIN;
+> +	} else {
+> +		r = wait_for_completion_interruptible(&urandom_initialized);
+> +		if (r)
+> +			return r;
+> +	}
+> +	return urandom_read(NULL, buf, count, NULL);
+> +}
 
-When zone_reclaim_mode is enabled, it means the VM should make every attempt
-to allocate locally to prevent NUMA performance degradation.  In this case,
-we do not want to collapse hugepages to remote nodes that would suffer from
-increased access latency.  Thus, when zone_reclaim_mode is enabled, only
-allow collapsing to nodes with RECLAIM_DISTANCE or less.
+I like how tiny this ends up being.  Feel free to add my rb:.
 
-There is no functional change for systems that disable zone_reclaim_mode.
+Reviewed-by: Zach Brown <zab@zabbo.net>
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- v2: only change behavior for zone_reclaim_mode per Dave Hansen
- v3: optimization based on previous node counts per Vlastimil Babka
- v4: unconditionally define khugepaged_scan_abort per Dave Hansen
-     no increase in .text size for CONFIG_NUMA=n
-
- mm/huge_memory.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2233,6 +2233,30 @@ static void khugepaged_alloc_sleep(void)
- 
- static int khugepaged_node_load[MAX_NUMNODES];
- 
-+static bool khugepaged_scan_abort(int nid)
-+{
-+	int i;
-+
-+	/*
-+	 * If zone_reclaim_mode is disabled, then no extra effort is made to
-+	 * allocate memory locally.
-+	 */
-+	if (!zone_reclaim_mode)
-+		return false;
-+
-+	/* If there is a count for this node already, it must be acceptable */
-+	if (khugepaged_node_load[nid])
-+		return false;
-+
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		if (!khugepaged_node_load[i])
-+			continue;
-+		if (node_distance(nid, i) > RECLAIM_DISTANCE)
-+			return true;
-+	}
-+	return false;
-+}
-+
- #ifdef CONFIG_NUMA
- static int khugepaged_find_target_node(void)
- {
-@@ -2545,6 +2569,8 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 		 * hit record.
- 		 */
- 		node = page_to_nid(page);
-+		if (khugepaged_scan_abort(node))
-+			goto out_unmap;
- 		khugepaged_node_load[node]++;
- 		VM_BUG_ON_PAGE(PageCompound(page), page);
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+- z
