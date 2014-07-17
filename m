@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaGQSJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 14:09:31 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51683 "EHLO smtp.outflux.net"
+	id S1752624AbaGQSJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 14:09:29 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38462 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876AbaGQSJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751693AbaGQSJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jul 2014 14:09:22 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -17,9 +17,9 @@ Cc: Kees Cook <keescook@chromium.org>,
         linux-api@vger.kernel.org, x86@kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
         linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v12 10/11] seccomp: allow mode setting across threads
-Date: Thu, 17 Jul 2014 11:08:37 -0700
-Message-Id: <1405620518-18495-11-git-send-email-keescook@chromium.org>
+Subject: [PATCH v12 03/11] seccomp: split mode setting routines
+Date: Thu, 17 Jul 2014 11:08:30 -0700
+Message-Id: <1405620518-18495-4-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1405620518-18495-1-git-send-email-keescook@chromium.org>
 References: <1405620518-18495-1-git-send-email-keescook@chromium.org>
@@ -28,110 +28,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes the mode setting helper to allow threads to change the
-seccomp mode from another thread. We must maintain barriers to keep
-TIF_SECCOMP synchronized with the rest of the seccomp state.
+Separates the two mode setting paths to make things more readable with
+fewer #ifdefs within function bodies.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 ---
- kernel/seccomp.c |   36 +++++++++++++++++++++++++-----------
- 1 file changed, 25 insertions(+), 11 deletions(-)
+ kernel/seccomp.c |   71 ++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 48 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index d5543e787e4e..9065d2c79c56 100644
+index 9df7def86c3b..05cac2c2eca1 100644
 --- a/kernel/seccomp.c
 +++ b/kernel/seccomp.c
-@@ -173,21 +173,24 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+@@ -489,48 +489,66 @@ long prctl_get_seccomp(void)
+ }
+ 
+ /**
+- * seccomp_set_mode: internal function for setting seccomp mode
+- * @seccomp_mode: requested mode to use
+- * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
+- *
+- * This function may be called repeatedly with a @seccomp_mode of
+- * SECCOMP_MODE_FILTER to install additional filters.  Every filter
+- * successfully installed will be evaluated (in reverse order) for each system
+- * call the task makes.
++ * seccomp_set_mode_strict: internal function for setting strict seccomp
+  *
+  * Once current->seccomp.mode is non-zero, it may not be changed.
+  *
+  * Returns 0 on success or -EINVAL on failure.
   */
- static u32 seccomp_run_filters(int syscall)
+-static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
++static long seccomp_set_mode_strict(void)
  {
--	struct seccomp_filter *f;
-+	struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
- 	struct seccomp_data sd;
- 	u32 ret = SECCOMP_RET_ALLOW;
++	const unsigned long seccomp_mode = SECCOMP_MODE_STRICT;
+ 	long ret = -EINVAL;
  
- 	/* Ensure unexpected behavior doesn't result in failing open. */
--	if (WARN_ON(current->seccomp.filter == NULL))
-+	if (unlikely(WARN_ON(f == NULL)))
- 		return SECCOMP_RET_KILL;
+ 	if (!seccomp_may_assign_mode(seccomp_mode))
+ 		goto out;
  
-+	/* Make sure cross-thread synced filter points somewhere sane. */
-+	smp_read_barrier_depends();
-+
- 	populate_seccomp_data(&sd);
- 
- 	/*
- 	 * All filters in the list are evaluated and the lowest BPF return
- 	 * value always takes priority (ignoring the DATA).
- 	 */
--	for (f = current->seccomp.filter; f; f = f->prev) {
-+	for (; f; f = f->prev) {
- 		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
- 
- 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
-@@ -207,12 +210,18 @@ static inline bool seccomp_may_assign_mode(unsigned long seccomp_mode)
- 	return true;
- }
- 
--static inline void seccomp_assign_mode(unsigned long seccomp_mode)
-+static inline void seccomp_assign_mode(struct task_struct *task,
-+				       unsigned long seccomp_mode)
- {
--	BUG_ON(!spin_is_locked(&current->sighand->siglock));
-+	BUG_ON(!spin_is_locked(&task->sighand->siglock));
- 
--	current->seccomp.mode = seccomp_mode;
--	set_tsk_thread_flag(current, TIF_SECCOMP);
-+	task->seccomp.mode = seccomp_mode;
-+	/*
-+	 * Make sure TIF_SECCOMP cannot be set before the mode (and
-+	 * filter) is set.
-+	 */
-+	smp_mb__before_atomic();
-+	set_tsk_thread_flag(task, TIF_SECCOMP);
- }
- 
- #ifdef CONFIG_SECCOMP_FILTER
-@@ -435,12 +444,17 @@ static int mode1_syscalls_32[] = {
- 
- int __secure_computing(int this_syscall)
- {
--	int mode = current->seccomp.mode;
- 	int exit_sig = 0;
- 	int *syscall;
- 	u32 ret;
- 
--	switch (mode) {
-+	/*
-+	 * Make sure that any changes to mode from another thread have
-+	 * been seen after TIF_SECCOMP was seen.
-+	 */
-+	rmb();
-+
-+	switch (current->seccomp.mode) {
- 	case SECCOMP_MODE_STRICT:
- 		syscall = mode1_syscalls;
- #ifdef CONFIG_COMPAT
-@@ -545,7 +559,7 @@ static long seccomp_set_mode_strict(void)
+-	switch (seccomp_mode) {
+-	case SECCOMP_MODE_STRICT:
+-		ret = 0;
  #ifdef TIF_NOTSC
- 	disable_TSC();
+-		disable_TSC();
++	disable_TSC();
  #endif
--	seccomp_assign_mode(seccomp_mode);
-+	seccomp_assign_mode(current, seccomp_mode);
- 	ret = 0;
+-		break;
++	seccomp_assign_mode(seccomp_mode);
++	ret = 0;
++
++out:
++
++	return ret;
++}
++
+ #ifdef CONFIG_SECCOMP_FILTER
+-	case SECCOMP_MODE_FILTER:
+-		ret = seccomp_attach_user_filter(filter);
+-		if (ret)
+-			goto out;
+-		break;
+-#endif
+-	default:
++/**
++ * seccomp_set_mode_filter: internal function for setting seccomp filter
++ * @filter: struct sock_fprog containing filter
++ *
++ * This function may be called repeatedly to install additional filters.
++ * Every filter successfully installed will be evaluated (in reverse order)
++ * for each system call the task makes.
++ *
++ * Once current->seccomp.mode is non-zero, it may not be changed.
++ *
++ * Returns 0 on success or -EINVAL on failure.
++ */
++static long seccomp_set_mode_filter(char __user *filter)
++{
++	const unsigned long seccomp_mode = SECCOMP_MODE_FILTER;
++	long ret = -EINVAL;
++
++	if (!seccomp_may_assign_mode(seccomp_mode))
++		goto out;
++
++	ret = seccomp_attach_user_filter(filter);
++	if (ret)
+ 		goto out;
+-	}
  
+ 	seccomp_assign_mode(seccomp_mode);
  out:
-@@ -595,7 +609,7 @@ static long seccomp_set_mode_filter(unsigned int flags,
- 	/* Do not free the successfully attached filter. */
- 	prepared = NULL;
+ 	return ret;
+ }
++#else
++static inline long seccomp_set_mode_filter(char __user *filter)
++{
++	return -EINVAL;
++}
++#endif
  
--	seccomp_assign_mode(seccomp_mode);
-+	seccomp_assign_mode(current, seccomp_mode);
- out:
- 	spin_unlock_irq(&current->sighand->siglock);
- 	seccomp_filter_free(prepared);
+ /**
+  * prctl_set_seccomp: configures current->seccomp.mode
+@@ -541,5 +559,12 @@ out:
+  */
+ long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
+ {
+-	return seccomp_set_mode(seccomp_mode, filter);
++	switch (seccomp_mode) {
++	case SECCOMP_MODE_STRICT:
++		return seccomp_set_mode_strict();
++	case SECCOMP_MODE_FILTER:
++		return seccomp_set_mode_filter(filter);
++	default:
++		return -EINVAL;
++	}
+ }
 -- 
 1.7.9.5
 
