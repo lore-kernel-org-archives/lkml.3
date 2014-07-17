@@ -1,107 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374AbaGQJI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:08:57 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:60493 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605AbaGQJIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:08:53 -0400
-Message-ID: <53C792A2.300@gmail.com>
-Date: Thu, 17 Jul 2014 17:08:50 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755912AbaGQJKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:10:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35133 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755415AbaGQJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 05:10:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,676,1400050800"; 
+   d="scan'208";a="544681771"
+Date: Thu, 17 Jul 2014 17:11:48 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, "Hu, Robert" <robert.hu@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] KVM: nVMX: Fix virtual interrupt delivery injection
+Message-ID: <20140717091148.GA7744@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1405573011-41330-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53C78F67.1060802@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AB31D4A@SHSMSX104.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Lennox Wu <lennox.wu@gmail.com>, Guenter Roeck <linux@roeck-us.net>
-CC: David Rientjes <rientjes@google.com>, Liqin Chen <liqin.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the macros
- which not be used currently
-References: <53AC10CB.3000007@gmail.com>	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>	<alpine.DEB.2.02.1407161849090.19429@chino.kir.corp.google.com>	<CAF0htA5eVTPQC0c1XfzU=RHnNWLtRgtYbN+se5HPLYkJ9_E=5w@mail.gmail.com>	<53C73534.1090502@roeck-us.net> <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
-In-Reply-To: <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AB31D4A@SHSMSX104.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 10:52 AM, Lennox Wu wrote:
-> Yes, you might miss something. Some patches were merged once I
-> acknowledged them,and some were missed.
-> So I am not sure the rule, if someone will merge these patches once
-> them are acknowledged, it is redundant that I issue a
-> PULL request again.
-> 
+On Thu, Jul 17, 2014 at 09:03:01AM +0000, Zhang, Yang Z wrote:
+>Paolo Bonzini wrote on 2014-07-17:
+>> Il 17/07/2014 06:56, Wanpeng Li ha scritto:
+>>> This patch fix bug reported in
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=73331, after the patch
+>>> http://www.spinics.net/lists/kvm/msg105230.html applied, there is some
+>>> progress and the L2 can boot up, however, slowly. The original idea of
+>>> this fix vid injection patch is from "Zhang, Yang Z"
+>>> <yang.z.zhang@intel.com>.
+>>> 
+>>> Interrupt which delivered by vid should be injected to L1 by L0 if
+>>> current is in L1, or should be injected to L2 by L0 through the old
+>>> injection way if L1 doesn't have set VM_EXIT_ACK_INTR_ON_EXIT. The
+>>> current logic doen't consider these cases. This patch fix it by vid
+>>> intr to L1 if current is L1 or L2 through old injection way if L1
+>>> doen't have VM_EXIT_ACK_INTR_ON_EXIT set.
+>>> 
+>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> Signed-off-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+>>> ---
+>>>  arch/x86/kvm/vmx.c | 18 ++++++++++++++++--
+>>>  1 file changed, 16 insertions(+), 2 deletions(-)
+>>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index
+>>> 021d84a..ad36646 100644
+>>> --- a/arch/x86/kvm/vmx.c
+>>> +++ b/arch/x86/kvm/vmx.c
+>>> @@ -7112,8 +7112,22 @@ static void vmx_hwapic_irr_update(struct
+>>> kvm_vcpu *vcpu, int max_irr)  {
+>>>  	if (max_irr == -1)
+>>>  		return;
+>>> -
+>>> -	vmx_set_rvi(max_irr);
+>>> +	if (!is_guest_mode(vcpu)) {
+>>> +		vmx_set_rvi(max_irr);
+>>> +	} else if (is_guest_mode(vcpu) && !nested_exit_on_intr(vcpu)) {
+>>> +		/*
+>>> +		 * Fall back to old way to inject the interrupt since there
+>>> +		 * is no vAPIC-v for L2.
+>>> +		 */
+>>> +		if (vcpu->arch.exception.pending ||
+>>> +				vcpu->arch.nmi_injected ||
+>>> +				vcpu->arch.interrupt.pending)
+>>> +			return;
+>>> +		else if (vmx_interrupt_allowed(vcpu)) {
+>>> +			kvm_queue_interrupt(vcpu, max_irr, false);
+>>> +			vmx_inject_irq(vcpu);
+>>> +		}
+>>> +	}
+>>>  }
+>>>  
+>>>  static void vmx_load_eoi_exitmap(struct kvm_vcpu *vcpu, u64
+>>> *eoi_exit_bitmap)
+>>> 
+>> 
+>> What hypervisor did you test with? nested_exit_on_intr(vcpu) will
+>
+>Jailhouse will clear External-interrupt exiting bit. Am I right? Jan.
+>
+>> return true for both Xen and KVM (nested_exit_on_intr is not the same
+>> thing as ACK_INTR_ON_EXIT).
+>
+>I guess he want to say External-interrupt exiting bit not ACK_INTR_ON_EXIT. 
+>
 
-I guess, we need consult another version merging members (e.g Stephen
-Rothwell), they may provide more useful suggestions or ideas.
+Ah yes, a typo here. 
 
-For me, if the patch is mainly under "arch/*/*", it need be applied by
-related architecture members. And these architecture related patches can
-be merged into linux-next tree firstly, then to upstream main line.
+Regards,
+Wanpeng Li 
 
-
-Thanks.
-
-> 
-> 
-> 2014-07-17 10:30 GMT+08:00 Guenter Roeck <linux@roeck-us.net>:
->> On 07/16/2014 07:14 PM, Lennox Wu wrote:
->>>
->>> Actually, I don't know the rule for merging patches. Some patches will
->>> be merge,and some will be miss. If the patch is missed, we will merge
->>> it into our git.
->>>
->> Unless I am missing something, this patch is in arch/score, so the
->> expectation would be for you to pick it up and send it to Linus.
->>
->> Guenter
->>
->>
->>> Best,
->>> Lennox
->>>
->>> 2014-07-17 9:49 GMT+08:00 David Rientjes <rientjes@google.com>:
->>>>
->>>> On Thu, 26 Jun 2014, David Rientjes wrote:
->>>>
->>>>> On Thu, 26 Jun 2014, Chen Gang wrote:
->>>>>
->>>>>> 'COUNTER' and other same kind macros are too common to use, and easy to
->>>>>> get conflict with other modules.
->>>>>>
->>>>>> At present, they are not used, so it is OK to simply remove them. And
->>>>>> the
->>>>>> related warning (allmodconfig with score):
->>>>>>
->>>>>>      CC [M]  drivers/md/raid1.o
->>>>>>    In file included from drivers/md/raid1.c:42:0:
->>>>>>    drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
->>>>>>     #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
->>>>>>     ^
->>>>>>    In file included from ./arch/score/include/asm/ptrace.h:4:0,
->>>>>>                     from include/linux/sched.h:31,
->>>>>>                     from include/linux/blkdev.h:4,
->>>>>>                     from drivers/md/raid1.c:36:
->>>>>>    ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the
->>>>>> location of the previous definition
->>>>>>     #define COUNTER  38
->>>>>>
->>>>>>
->>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>>>
->>>>>
->>>>> Acked-by: David Rientjes <rientjes@google.com>
->>>>>
->>>>
->>>> Lennox or Liqin, could you please queue this patch for 3.17?
->>>
->>>
->>>
->>
-
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+>> 
+>> Paolo
+>
+>
+>Best regards,
+>Yang
+>
