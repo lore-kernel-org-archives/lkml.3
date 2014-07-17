@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaGQBNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 21:13:24 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:44836 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706AbaGQBNU (ORCPT
+	id S1755223AbaGQBQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 21:16:20 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:52196 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaGQBQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 21:13:20 -0400
+	Wed, 16 Jul 2014 21:16:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <36350.1405374230@turing-police.cc.vt.edu>
-References: <1405361664-5210-1-git-send-email-xerofoify@gmail.com>
-	<36350.1405374230@turing-police.cc.vt.edu>
-Date: Wed, 16 Jul 2014 21:13:19 -0400
-Message-ID: <CAPDOMVgOfaf7qHXGSdwpyT4edo_ZjbbnkP7UYNbzkRzudW_f-A@mail.gmail.com>
-Subject: Re: [PATCH] mach-s3c64xx: Remove all defintions not related to regs-clocks
+In-Reply-To: <20140717105144.2cb29989@canb.auug.org.au>
+References: <20140716184550.18b6da3f@canb.auug.org.au>
+	<CAPDOMViywcY=cYFT9EM3N3wESXQUX7uWa3jLLLKpv=QGF-Dtmw@mail.gmail.com>
+	<20140717105144.2cb29989@canb.auug.org.au>
+Date: Wed, 16 Jul 2014 21:16:16 -0400
+Message-ID: <CAPDOMVh5_JXKwPQ9EwtXHLYnqNRhEMedF5F5K7H+PEqMuCZa8Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 16
 From: Nick Krause <xerofoify@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: ben-linux <ben-linux@fluff.org>, "kgene.kim" <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 5:43 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Mon, 14 Jul 2014 14:14:24 -0400, Nicholas Krause said:
->> This patch addresses the fix me message in this file that states to
->> remove all definitions not related to reg-clocks in this header
->> file.
+>
+> On Wed, 16 Jul 2014 20:45:25 -0400 Nick Krause <xerofoify@gmail.com> wrote:
 >>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  arch/arm/mach-s3c64xx/include/mach/regs-clock.h | 22 +---------------------
->>  1 file changed, 1 insertion(+), 21 deletions(-)
+>> On Wed, Jul 16, 2014 at 4:45 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >
+>> > Status of my local build tests will be at
+>> > http://kisskb.ellerman.id.au/linux-next .
 >
->> -#endif /* _PLAT_REGS_CLOCK_H */
->> +/#endif /* _PLAT_REGS_CLOCK_H */
+>> I am trying to get the maintainers to clean up still failing builds.
+>> When you get time I wondering
+>> if you can send me a list  of still failing builds and warnings of
+>> interest in the kernel that is'
+>> up to date for me to help clean up these outstanding issues with the
+>> maintainers support as needed.
 >
-> You're kidding us, right? Given that this was obviously *not* compile
-> tested at all, why should we believe that in fact all those #defines
-> are in fact no longer used?
+> See above ...
 >
-> Hint: There's a very high chance that somebody stuck that FIXME in there rather
-> than just cleaning it up themselves precisely *because* it was still in use in
-> an inconvenient to fix place in the tree..
->
-I build the arch/arm directory I seem to me hitting a error.
- arch/arm/xen/enlighten.c:17:29: fatal error: asm/system_misc.h: No
-such file or directory
- #include <asm/system_misc.h>
-I am also looking into fixing this issue.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+
+There seems to be a few that are still succeeding for me that aren't for.
+Would you mind testing some of them again to see if they are succeeding
+with a gcc compiler that is newer then version 4.7.
 Cheers Nick
