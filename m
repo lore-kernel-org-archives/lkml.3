@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaGQJUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:20:47 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:42201 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400AbaGQJUn (ORCPT
+	id S1756297AbaGQJVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:21:04 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:57974 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353AbaGQJU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:20:43 -0400
-Message-ID: <53C79551.9020902@linaro.org>
-Date: Thu, 17 Jul 2014 10:20:17 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 05:20:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
+Date: Thu, 17 Jul 2014 11:20:36 +0200
+Message-ID: <6823014.2plXDE9VA9@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53C7269E.4010702@gmail.com>
+References: <201407130545.23004.marex@denx.de> <53C53CE1.4090803@gmail.com> <53C7269E.4010702@gmail.com>
 MIME-Version: 1.0
-To: Harro Haan <hrhaan@gmail.com>
-CC: Marek Vasut <marex@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
-        patches@linaro.org, kgdb-bugreport@lists.sourceforge.net,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, kernel-team@android.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Martin <Dave.Martin@arm.com>, Detlev Zundel <dzu@denx.de>
-Subject: Re: [PATCH v8 0/4] arm: KGDB NMI/FIQ support
-References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>	<CAB5oZtCk5NwBJF+dBESKGhYabti=EWWtF2jJYK7HdyNHM46nTw@mail.gmail.com>	<53C4F745.3070701@linaro.org>	<201407152045.06517.marex@denx.de>	<53C6761A.9090002@linaro.org> <CAB5oZtCWe2Z4PqUaMBzmO-W_UH3Hau4U8Yw+9ca71wTUksWs8w@mail.gmail.com>
-In-Reply-To: <CAB5oZtCWe2Z4PqUaMBzmO-W_UH3Hau4U8Yw+9ca71wTUksWs8w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+I0K/LYzfxNYkX5fe3vQAWJGKtR9xDmv/IURg1Uwk4+
+ RqCN82F8KMaBUyRKXeGn8cJ24x3GDy6UgjC1e7AFGvrjbhpP1R
+ xlWlUE5vlFVMgiYz5rn8a9Uo+9njiwUGfjV1HUNyC8n7d8k0EQ
+ gr4Q+SUPVOETqzIQNUtWIA4/GS2AZrzr/n5ntfQ9kR4zCQEYD1
+ +wozDh1ycOmrPlwD0cNmlsEvcgKqVliX3z7rXVC2ZI1cRCXoOR
+ ulsVWSCdRoXlmwbRJDnNly+T6XyTwGFNRDveEqs4FIpPQVcIZE
+ 76Zf4ZYiWBQYYonH5kLE0WjVwG1xAmRdUNd2zGmbZxzf1d75lA
+ VN2y4n8MrmQP8zS9wDjk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/14 18:21, Harro Haan wrote:
-> On 16 July 2014 14:54, Daniel Thompson <daniel.thompson@linaro.org> wrote:
->> On 15/07/14 19:45, Marek Vasut wrote:
->>>>> I can reduce the number of occurrences (not prevent it) by adding the
->>>>> following hack to irq-gic.c
->>>>> @@ -297,10 +309,12 @@ static asmlinkage void __exception_irq_entry
->>>>> gic_handle_irq(struct pt_regs *regs
->>>>>
->>>>>   u32 irqstat, irqnr;
->>>>>   struct gic_chip_data *gic = &gic_data[0];
->>>>>   void __iomem *cpu_base = gic_data_cpu_base(gic);
->>>>>
->>>>>   do {
->>>>>
->>>>> + while(readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_PENDING_SET)
->>>>> & (1 << 30))
->>>>> +   printk(KERN_ERR "TEMP: gic_handle_irq: wait for FIQ exception\n");
->>>>>
->>>>>   irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
->>>>>   irqnr = irqstat & ~0x1c00;
->>>>
->>>> I've made a more complete attempt to fix this. Could you test the
->>>> following? (and be prepared to fuzz the line numbers)
->>>
->>> There's also another workaround, look at [1], but it's really a perverse hack
->>> thus far (blush). What I did there is I got hinted that an L1 page table can
->>> have this NS bit set. If this bit is set for a mapping, all accesses to memory
->>> area via that mapping will be non-secure. And then, in turn, by doing a non-
->>> secure read of the INTACK register, it will not ever happen that the FIQ number
->>> will pop up in the INTACK. I only do a non-secure read of the INTACK register,
->>> all other registers of the GICv1 are read via regular secure-mode accesses.
->>
->> I'll be looking into this approach.
->>
->> It is technically a better approach than mine since it prevents the IRQ
->> handler from ever reading a group 0 interrupt from INTACK.
-> 
-> Agree, preventing the problem is better than fixing it afterwards.
-> 
->>
->> Unfortunately the tentacles of this workaround reach pretty deep in the
->> memory management code (rather than being concentrated in the GIC
->> driver) but the improved runtime behaviour might be worth it.
-> 
-> I did some worst case measurements on the SabreSD while running:
-> $ while true; do hackbench 20; done &
-> 
-> Use banked non-secure GIC_CPU_INTACK register for regular interrupts
-> (patches by Marek):
-> The FIQ handler reads the TWD_TIMER_COUNTER 2570 ticks (which is x
-> 1000 / 498 = 5161 nsec) after FIQ interrupt ID30 is generated.
-> The average is around 497 ticks.
-> The minimum is around 34 ticks.
-> 
-> Use re-trigger approach by putting it back to pending state (latest
-> patch by Daniel):
-> The FIQ handler reads the TWD_TIMER_COUNTER 2678 ticks (which is x
-> 1000 / 498 = 5378 nsec) after FIQ interrupt ID30 is generated.
-> The average is around 563 ticks (note: almost everything is normal path)
-> The minimum is around 34 ticks (note: this is the normal path, not the
-> re-trigger path)
-> 
-> So the results are quite similar.
+On Thursday 17 July 2014 09:27:58 Chen Gang wrote:
+>                                          gfp_t gfp_mask, unsigned int order);
+>  extern void devm_free_pages(struct device *dev, unsigned long addr);
+>  
+> +#ifdef CONFIG_HAS_IOMEM
+>  void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+> +#elif defined(CONFIG_COMPILE_TEST)
+> +static inline void __iomem *devm_ioremap_resource(struct device *dev,
+> +                                               struct resource *res)
+> +{
+> +       pr_warn("no hardware io memory, only for COMPILE_TEST\n");
+> +       return (__force void __iomem *)ERR_PTR(-ENXIO);
+> +}
+> +#endif /* CONFIG_HAS_IOMEM || CONFIG_COMPILE_TEST */
+>  
+>  /* allows to add/remove a custom action to devres stack */
 
-This is great work.
+To be honest, I think it's a bad idea to introduce wrappers functions
+that are only available when CONFIG_COMPILE_TEST is set.
 
-Be aware that I'd also expect the the performance of my workaround would
-drop a little bit when when support for SGIs is added (mostly due to due
-to increased code size).
+COMPILE_TEST is a great tool in general, but it has its limits.
+In particular, the case for !CONFIG_IOMEM is completely obscure
+and we won't find any bugs by allowing more drivers to be built
+in those configurations, but attempting to do it would cause
+endless churn by changing each instance of 'depends on HAS_IOMEM'
+to 'depends on HAS_IOMEM || COMPILE_TEST'.
 
+Note that s390 no has gained support for IOMEM, tile has it most
+of the time (when PCI is enabled, so you get it in half the
+test builds already), score should set HAS_IOMEM and doesn't
+even have public compilers, and uml doesn't even compile in
+latest mainline. Nothing else ever sets NO_IOMEM.
+
+	Arnd
