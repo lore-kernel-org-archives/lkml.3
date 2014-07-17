@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717AbaGQMbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 08:31:53 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:63981 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657AbaGQMbv (ORCPT
+	id S932761AbaGQMcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 08:32:45 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.171]:9577 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756162AbaGQMcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 08:31:51 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-e5-53c7c233f877
-Message-id: <53C7C234.4030903@samsung.com>
-Date: Thu, 17 Jul 2014 14:31:48 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>,
-        ralf@linux-mips.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        gregkh@linuxfoundation.org, mina86@mina86.com
-Cc: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 0/4] mips: Add cma support to mips
-References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-In-reply-to: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e/4FV3jQ8eDDT4es7D4O+kYu8X7ZT2M
-	Fs2L17NZTNsobtGx6yuLxabH11gtLu+aw2YxYeokdosFx1tYLS4dWMBkcWmPisXmTVOZLV5+
-	PMFi8WPDY1aLv21vmB34PdbMW8Po8fvXJEaPnp1nGD02repk83h37hy7x9GVa5k89s9dw+6x
-	eUm9x7o/r5g83u+7yubxeZOcx4mWL6wBPFFcNimpOZllqUX6dglcGTPnfmAu2MVTMf1IZQPj
-	Sc4uRk4OCQETiXP7brJA2GISF+6tZ+ti5OIQEljKKPF/zVRGCOcTo8SpnXvBqngFtCQ61vxi
-	72Lk4GARUJXYubAQJMwmYCjR9baLDcQWFYiRONP7mRmiXFDix+R7LCBzRAS+MUocer4fbCiz
-	wERGiRdfDrODVAkLmElMW93NCGILCXhJ3P3TwQRicwp4Szz/+A1sMTNQzaOWdcwQtrzE5jVv
-	mScwCsxCsmQWkrJZSMoWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJu687GJceszrE
-	KMDBqMTD+4PreLAQa2JZcWXuIUYJDmYlEd5tXUAh3pTEyqrUovz4otKc1OJDjEwcnFINjM4L
-	EiUzcjdopiyO2fPxyo2TohtXBJk02W5rNJvo/tNu2XX5B3f2ftp+V3M1n2pWrO67j0YP525L
-	cy8tOWH9sVyke7VUrHrqRCYelo7XakvEd0aVvNynHPPdKH3NLet95T7zdNZ6ui1a1fN219GD
-	fn4Ja1UdTj+887NNPGURx6L6tb8nrHmbyafEUpyRaKjFXFScCABqtWeemQIAAA==
+	Thu, 17 Jul 2014 08:32:43 -0400
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 08:32:43 EDT
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-3.tower-38.messagelabs.com!1405599930!20213753!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 17 Jul 2014 14:25:31 +0200
+Date: Thu, 17 Jul 2014 15:17:39 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: <linux-kernel@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>
+Subject: [PATCH v3 0/3] Introduce MEN 14F021P BMC driver series
+Message-ID: <cover.1405602280.git.andreas.werner@men.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch set add support for the MEN 14F021P00 Board Management called BMC.
 
-On 2014-07-16 17:51, Zubair Lutfullah Kakakhel wrote:
-> Here we have 4 patches that add cma support to mips.
->
-> Patch 1 adds dma-contiguous.h to asm-generic
-> Patch 2 and 3 make arm64 and x86 use dma-contiguous from asm-generic
-> Patch 4 adds cma to mips.
->
-> I'd like to request ralf to take these set of 4 patches via his tree.
->
-> acks from asm-generic, arm64 and x86 welcome.
->
-> patches based on linux-next b997a07604562f1a54cc531fe1cf7447f0ed6078
+The BMC is a PIC Mikrocontroller which assembled on almost all of our
+3U Compact PCI CPU board and a few Box PCs.
+The main part of the BMC is to start and monitor the board, but there are a
+lot more features which can be accessed using an I2C Host interface
+ 
+Features supported in this Patchset:
+         - Watchdog
+         - LEDs
 
-Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+The Patchset includes a MFD Core driver, Watchdog and LEDs driver.
 
-> Zubair Lutfullah Kakakhel (4):
->    asm-generic: Add dma-contiguous.h
->    arm64: use generic dma-contiguous.h
->    x86: use generic dma-contiguous.h
->    mips: dma: Add cma support
->
->   arch/arm64/include/asm/Kbuild           |  1 +
->   arch/arm64/include/asm/dma-contiguous.h | 28 -------------------------
->   arch/mips/Kconfig                       |  1 +
->   arch/mips/include/asm/Kbuild            |  1 +
->   arch/mips/kernel/setup.c                |  9 ++++++++
->   arch/mips/mm/dma-default.c              | 37 ++++++++++++++++++++++-----------
->   arch/x86/include/asm/Kbuild             |  1 +
->   arch/x86/include/asm/dma-contiguous.h   | 12 -----------
->   include/asm-generic/dma-contiguous.h    |  9 ++++++++
->   9 files changed, 47 insertions(+), 52 deletions(-)
->   delete mode 100644 arch/arm64/include/asm/dma-contiguous.h
->   delete mode 100644 arch/x86/include/asm/dma-contiguous.h
->   create mode 100644 include/asm-generic/dma-contiguous.h
+Changes in v3:
+	- deleted i2c_smbus wrapper functions and use native one
+	- some cosmentics and variable renaming to be more clear
+	- renamed "leave production" mode to "exit production mode"
 
-Best regards
+Changes in v2:
+	- changed i2c_smbus_read wrapper function to return both, value
+	  and error.
+	- moved "leave production mode" from Watchdog driver to mfd core.
+	- fixed some return values in the watchdog driver to return the original
+	  error value instead of -EIO.
+
+Andreas Werner (3):
+  drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC MFD Core driver
+  drivers/watchdog/menf21bmc_wdt: introduce MEN 14F021P00 BMC Watchdog
+    driver
+  drivers/leds/leds-menf21bmc: introduce MEN 14F021P00 BMC LED driver
+
+ drivers/leds/Kconfig             |   6 ++
+ drivers/leds/Makefile            |   1 +
+ drivers/leds/leds-menf21bmc.c    | 134 +++++++++++++++++++++++++
+ drivers/mfd/Kconfig              |  12 +++
+ drivers/mfd/Makefile             |   1 +
+ drivers/mfd/menf21bmc.c          | 136 ++++++++++++++++++++++++++
+ drivers/watchdog/Kconfig         |   7 ++
+ drivers/watchdog/Makefile        |   1 +
+ drivers/watchdog/menf21bmc_wdt.c | 206 +++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 504 insertions(+)
+ create mode 100644 drivers/leds/leds-menf21bmc.c
+ create mode 100644 drivers/mfd/menf21bmc.c
+ create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+2.0.1
 
