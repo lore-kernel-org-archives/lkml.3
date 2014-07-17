@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaGQUku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 16:40:50 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:58857 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaGQUkt (ORCPT
+	id S1757135AbaGQUlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 16:41:21 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:55097 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582AbaGQUlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 16:40:49 -0400
-Date: Fri, 18 Jul 2014 02:10:40 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] staging: iio: adis16203: Use devm_iio_device_register
-Message-ID: <20140717204040.GA22788@himangi-Dell>
+	Thu, 17 Jul 2014 16:41:19 -0400
+X-CheckPoint: {53C834EA-8-2100090A-C0000000}
+Message-ID: <53C834EA.5030605@tilera.com>
+Date: Thu, 17 Jul 2014 16:41:14 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lars-Peter Clausen <lars@metafoo.de>
+CC: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <dmitry.torokhov@gmail.com>, <linux-iio@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, <teg@jklm.no>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, <msalter@redhat.com>,
+        <linux-pwm@vger.kernel.org>, <devel@driverdev.osuosl.org>,
+        <linux-watchdog@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <knaack.h@gmx.de>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        <Mischa.Jonker@synopsys.com>, <jic23@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7A819.40403@metafoo.de> <6485666.LVFO2YCEQx@wuerfel> <53C7B365.4080000@gmail.com>
+In-Reply-To: <53C7B365.4080000@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of iio_device_register and does away with
-the call to the corressponding unregister function in the probe and
-remove functions of the driver respectively.
+On 7/17/2014 7:28 AM, Chen Gang wrote:
+> On 07/17/2014 06:48 PM, Arnd Bergmann wrote:
+>> AFAICT, NO_IOMEM only has a real purpose on UML these days. Could we take
+>> a shortcut here and make COMPILE_TEST depend on !UML? Getting random stuff
+>> to build on UML seems pointless to me and we special-case it in a number of
+>> places already.
+>>
+> According to current source code, tile still has chance to choose
+> NO_IOMEM, for me, welcome the tile's maintainer's ideas or suggestions.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/staging/iio/accel/adis16203_core.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I'm not really sure.  It's true that on tile, if you don't enable PCI
+support there's no other I/O memory (or I/O port) space you can use.
+We pretty much always enable PCI support in our kernel, though.  I'm
+kind of surprised that other architectures don't also have the model
+that IOMEM requires PCI, but perhaps most architectures just don't
+encode that in the Kconfig file?
 
-diff --git a/drivers/staging/iio/accel/adis16203_core.c b/drivers/staging/iio/accel/adis16203_core.c
-index 409a28e..5077779 100644
---- a/drivers/staging/iio/accel/adis16203_core.c
-+++ b/drivers/staging/iio/accel/adis16203_core.c
-@@ -175,7 +175,7 @@ static int adis16203_probe(struct spi_device *spi)
- 	if (ret)
- 		goto error_cleanup_buffer_trigger;
- 
--	ret = iio_device_register(indio_dev);
-+	ret = devm_iio_device_register(&spi->dev, indio_dev);
- 	if (ret)
- 		goto error_cleanup_buffer_trigger;
- 
-@@ -191,7 +191,6 @@ static int adis16203_remove(struct spi_device *spi)
- 	struct iio_dev *indio_dev = spi_get_drvdata(spi);
- 	struct adis *st = iio_priv(indio_dev);
- 
--	iio_device_unregister(indio_dev);
- 	adis_cleanup_buffer_and_trigger(st, indio_dev);
- 
- 	return 0;
+My observation is just that if I remove the "NO_IOMEM if !PCI" from
+arch/tile/Kconfig, my build fails with ioremap() undefined.  No doubt I
+could work around that, but my assumption was that NO_IOMEM was exactly the
+right thing to express the fact that without PCI there is no I/O memory :-)
+
 -- 
-1.9.1
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
