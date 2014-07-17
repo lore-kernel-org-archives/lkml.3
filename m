@@ -1,174 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaGQKRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:17:08 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:53705 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656AbaGQKRF (ORCPT
+	id S1756669AbaGQKRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:17:44 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38797 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755370AbaGQKRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:17:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Alexander Kolesnikov <akolesni@codeaurora.org>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>
-Subject: Re: char interface to sdio, chdio.c
-Date: Thu, 17 Jul 2014 12:17 +0200
-Message-ID: <7228146.FsqiNq1Vpj@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140717053347.GB22970@kroah.com>
-References: <20140716032655.GB30412@kroah.com> <53C705DB.3040700@codeaurora.org> <20140717053347.GB22970@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:SMja1boN0vtxCERXNDE4bSPMvAjwag0XioaHuXwyqt4
- NEGsUNuQKs2/PfMc9B60WAQDZjttkJHnqOFVd4wMyhAofjI825
- v16JhWWIt4JBz150JewPkzCVf+zU71G0r0/qtACQON2Gq4fjCy
- yNmXT7MI+k9KKxlcj77XF/ZK59ym2b6bH1UYnod8wiiOm8pDM8
- 1aJUWaMeNoq/uVAKeKxEE2ivvJarkIpI9Xcrd194dOIYIhztf7
- 5THslth1vJLak40aUCJVrVtIAEfSb78Izz0iHoAatTUrKrH05E
- gmpu0WIKP2JlJRDsQQHCk2PliQVrngV2VccAWpUdU5DTqzYKOh
- VEFVq+lndQl0z6Gq/ujQ=
+	Thu, 17 Jul 2014 06:17:41 -0400
+X-Sasl-enc: fsnfj+43+QC3BQrM/RK6fbzQ+agNcxTy75ZhM2X2zYNx 1405592257
+Message-ID: <1405592252.20621.63.camel@perseus.fritz.box>
+Subject: Re: [PATCH 3/6] autofs4: allow RCU-walk to walk through autofs4.
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 17 Jul 2014 18:17:32 +0800
+In-Reply-To: <20140717180414.2e2596d1@notabene.brown>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	 <20140709234114.4525.46882.stgit@notabene.brown>
+	 <1405485857.2527.38.camel@perseus.fritz.box>
+	 <20140716155150.044c2ea3@notabene.brown>
+	 <1405493777.2527.72.camel@perseus.fritz.box>
+	 <1405573256.3002.25.camel@perseus.fritz.box>
+	 <20140717180414.2e2596d1@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 July 2014 22:33:47 Greg KH wrote:
-> + mmc: Char SDIO Device Driver
 
-A few comments on the ioctl interface, since I suppose we'll have
-to live with that once it gets merged.
+On Thu, 2014-07-17 at 18:04 +1000, NeilBrown wrote:
+> On Thu, 17 Jul 2014 13:00:56 +0800 Ian Kent <raven@themaw.net> wrote:
+> 
+> > On Wed, 2014-07-16 at 14:56 +0800, Ian Kent wrote:
+> > > > That looks a bit messy ... I wonder if we could have a new "ino" flag which
+> > > > says "This dentry is mounted-on if it needs to be.  Gets set by ->lookup
+> > > > and cleared by ->d_automount or when ->d_manage returns -EISDIR.
+> > > 
+> > > At one point DCACHE_NEED_AUTOMOUNT and DCACHE_MANAGE_TRANSIT were
+> > > handled separately and DCACHE_NEED_AUTOMOUNT was cleared for rootless
+> > > multi-mount dentrys following a mount and set again at expire. Not
+> > > having to worry about managing that flag was also part of the
+> > > optimization.
+> > > 
+> > > We could go back to managing DCACHE_NEED_AUTOMOUNT or add a new flag.
+> > > I'm not fussy how it's done as long as it works. IIRC there was one
+> > > quite convoluted if check (in the expire code) that was removed due to
+> > > the optimization.
+> > 
+> > Umm ... using DCACHE_NEED_AUTOMOUNT rather than a new flag means using
+> > an additional lock so perhaps a new flag would be preferred since
+> > reducing lock overhead was the point of this.
+> 
+> Actually, I've managed to convince myself that there is nothing that needs
+> fixing here.
+> 
+> autofs4 already sets DCACHE_NEED_AUTOMOUNT on any directory that might need
+> to be mounted on.  It does this before the dentry is added to the dcache, so
+> before rcuwalk could possibly see the dentry.
 
-> +Interface
-> +=========
-> +The Char SDIO Device Driver has two char device interfaces:
-> + - Control Interface;
-> + - Function Interface.
-> +
-> +Char SDIO Device Driver Control Interface consists of:
-> + - open()   - device node is /dev/csdio0;
-> + - close()
-> + - ioctl()  - the following options are available:
-> +   - CSDIO_IOC_ENABLE_HIGHSPEED_MODE;
-> +   - CSDIO_IOC_SET_DATA_TRANSFER_CLOCKS;
-> +   - CSDIO_IOC_ENABLE_ISR;
-> +   - CSDIO_IOC_DISABLE_ISR.
+Yep, that's right and that takes care of indirect mounts, but also have
+a quick look at fs/autofs4/inode.c:autofs4_fill_super() which will set
+the flags on the root dentry for direct mounts.
 
+Actually they are often called triggers in the code as the so called
+direct and offset mounts have the same semantics, so in
+autofs4_fill_super() you'll see:
 
-The documentation doesn't match the code.:
+	if (autofs_type_trigger(sbi->type))
+                __managed_dentry_set_managed(root);
 
-CSDIO_IOC_GET/SET_VDD are implemented in the control device,
-not the function device, and that is probably a good idea.
-CSDIO_IOC_ENABLE_HIGHSPEED_MODE is not implemented
-at all. CSDIO_IOC_ENABLE_ISR seems redundant with what
-the CSDIO_IOC_{DIS,}CONNECT_ISR functions do, but I could be
-wrong here.
+which is what I'm referring to.
 
-The sysfs interface may actually be more appropriate than the
-control node, if I was to pick one of the two.
+> 
+> If __follow_mount_rcu find that the dentry is d_mountpoint(), it will
+> follow down to the mounted directory, which is always correct.
+> If it isn't d_mountpoint, then lookup_fast, which is the only caller for
+> __follow_mount_rcu, will check if DCACHE_NEED_AUTOMOUNT is set, and if so
+> will goto unlazy, which drops back to refwalk and tries again.  So that is
+> always safe.
 
-> +Char SDIO Device Driver Function Interface consists of:
-> + - open()  - device node is /dev/csdiofX, where X is Function Id;
-> + - close()
-> + - read()  - send CMD53 read;
-> + - write() - send CMD53 write;
-> + - ioctl() - the following options are available:
-> +   - CSDIO_IOC_SET_OP_CODE - 0 fixed adrress, 1 autoincrement.
-> +   - CSDIO_IOC_FUNCTION_SET_BLOCK_SIZE;
-> +   - CSDIO_IOC_SET_BLOCK_MODE - 0 byte mode, 1 block mode;
-> +   - CSDIO_IOC_CMD52 - execute CMD52, receives the
-> +        following structure as a parameter:
-> +            struct csdio_cmd52_ctrl_t {
-> +	            uint32_t    m_write; // 0 - read, 1 -write
-> +	            uint32_t    m_address;
-> +	            uint32_t    m_data;  // data to write or read data
-> +	            uint32_t    m_ret;   // command execution status
-> +            }__attribute__ ((packed));
-> +   - CSDIO_IOC_CMD53 - setup CMD53 data transfer, receives the
-> +        following structure as a parameter:
-> +            struct csdio_cmd53_ctrl_t {
-> +	            uint32_t    m_block_mode;
-> +	            uint32_t    m_op_code;
-> +	            uint32_t    m_address;
-> +            }__attribute__ ((packed));
-> +   - CSDIO_IOC_CONNECT_ISR;
-> +   - CSDIO_IOC_DISCONNECT_ISR;
-> +   - CSDIO_IOC_GET_VDD;
-> +   - CSDIO_IOC_SET_VDD.
-> +
-> +Additionally, user space application can use fcntl system call with
-> +parameters F_SETOWN and F_SETFL in order to set an asynchronous
-> +callback for SDIO interrupt.
+That all sound right having now looked at the rcu-walk code.
 
-The read/write API seems very strange. SDIO has multiple ways of
-passing data between OS and device using CMD52 and CMD53, and they
-are all done differently here:
+> 
+> So it is currently either correct or safe.
+> 
+> I'm not 100% sure about the v4 code paths, but it seems OK.
+> If there some documentation about the interactions between the automountd and
+> the kernel?
 
-- A one-byte read or write uses a single CSDIO_IOC_CMD52 ioctl.
-  This could be done using pread/pwrite with length '1' rather than
-  an ioctl, if we want to.
+Not really, only the ioctl interaction described in
+Documentation/filesystems/autofs4-mount-control.txt
 
-- a byte-addressed multi-byte read/write needs to first 'seek' using
-  CSDIO_IOC_CMD53 or and then transfer using read() or write().
+> It looks like:
+>  With V5, every name in the root directory gets something mounted on it,
+>       either another autofs or the target filesystem.
+>  With V4, you don't mount an autofs onto an autofs, but when a name in the
+>       root is automounted, all the names beneath there are created and the
+>       target filesystems are mounted before the top level automount is
+>       acknowledged.
+> 
+> Does that sound at all right (I suspect I haven't explained it very clearly).
 
-- a block-addressed read/write is similar, but the number of bytes
-  copied to/from user space is now multiplied with the block size (!).
-  The block size needs to be set using both CSDIO_IOC_SET_BLOCK_MODE
-  and CSDIO_IOC_CMD53, using the same value.
+Mostly, but let me try and simplify it (or perhaps confuse you even more
+and bore you as a bonus, ;)) and offer a broader picture.
 
-- to do a multi-byte read/write at a constant address rather than
-  a block copy, CSDIO_IOC_CMD53 needs to set at least one bit (not
-  necessarily the one used in the actual command) in m_op_code.
+I always relate to this in terms of automount maps and some map features
+weren't available in version 4, in particular direct mounts. That lead
+to some of the hard to understand code in the kernel, more so because
+there's virtually nothing left of it in user space now.
 
-I guess all of this could be done using pread/pwrite, using the
-loff_t value to encode the m_address in the lower bits and the
-mode (single-byte, multi-byte, multi-byte auto-increment,
-block, block auto-increment) in some of the upper bits.
+Basically all autofs mounted file systems are either indirect or direct
+mounts that are driven by automount maps.
 
-Alternatively, the read/write functions could be removed completely
-and everything be done in the ioctls, but in a more consistent
-way.
+These maps (stored in a file, nis, ldap or other) are associated with
+autofs mounts by the master map (poor example below).
 
-> +
-> +#define CSDIO_IOC_MAGIC  'm'
-> +
-> +#define CSDIO_IOC_ENABLE_HIGHSPEED_MODE      _IO(CSDIO_IOC_MAGIC, 0)
-> +#define CSDIO_IOC_SET_DATA_TRANSFER_CLOCKS   _IO(CSDIO_IOC_MAGIC, 1)
-> +#define CSDIO_IOC_SET_OP_CODE                _IO(CSDIO_IOC_MAGIC, 2)
-> +#define CSDIO_IOC_FUNCTION_SET_BLOCK_SIZE    _IO(CSDIO_IOC_MAGIC, 3)
-> +#define CSDIO_IOC_SET_BLOCK_MODE             _IO(CSDIO_IOC_MAGIC, 4)
-> +#define CSDIO_IOC_CONNECT_ISR                _IO(CSDIO_IOC_MAGIC, 5)
-> +#define CSDIO_IOC_DISCONNECT_ISR             _IO(CSDIO_IOC_MAGIC, 6)
-> +#define CSDIO_IOC_CMD52                      _IO(CSDIO_IOC_MAGIC, 7)
-> +#define CSDIO_IOC_CMD53                      _IO(CSDIO_IOC_MAGIC, 8)
-> +#define CSDIO_IOC_ENABLE_ISR                 _IO(CSDIO_IOC_MAGIC, 9)
-> +#define CSDIO_IOC_DISABLE_ISR                _IO(CSDIO_IOC_MAGIC, 10)
-> +#define CSDIO_IOC_SET_VDD                    _IO(CSDIO_IOC_MAGIC, 11)
-> +#define CSDIO_IOC_GET_VDD                    _IO(CSDIO_IOC_MAGIC, 12)
-> +
-> +#define CSDIO_IOC_MAXNR   12
+Indirect mounts have a mounted autofs filesystem and mounts are entries
+in the root of that file system as enumerated by map entry keys (or
+matched by a wildcard map entry) in the map. In this case the keys are a
+single directory component.
 
-The command codes above should use _IOR or _IOW where appropriate to
-encode the size of the transferred data.
+This is where the everything in the root directory gets mounted comes
+from, but there are exceptions.
 
-> +
-> +struct csdio_cmd53_ctrl_t {
-> +	uint32_t    m_block_mode;   /* data tran. byte(0)/block(1) mode */
-> +	uint32_t    m_op_code;      /* address auto increment flag */
-> +	uint32_t    m_address;
-> +} __attribute__ ((packed));
-> +
-> +struct csdio_cmd52_ctrl_t {
-> +	uint32_t    m_write;
-> +	uint32_t    m_address;
-> +	uint32_t    m_data;
-> +	uint32_t    m_ret;
-> +} __attribute__ ((packed));
+Direct mounts are distinct autofs filesystem mounts that correspond to
+distinct map entries in automount maps. Each direct mount map entry
+represents a full path that can trigger a mount directly. But there are
+exception here too.
 
-The packing is not necessary here, but at least all of these are
-compatible between 32 and 64 bit, so enabling compat mode is a one-line
-change and requires no conversion.
+This is where the setting in autofs4_fill_super() comes from.
 
-	Arnd
+Indirect maps can have one map only associated with a specific autofs
+mounted filesystem whereas direct mount maps can have multiple entries
+in the master map and therefore can have multiple maps associated with
+them. Direct mount entries all have a pseudo mount path of "/-" in the
+master map.
+
+For example the master map used by autofs connectathon, before it gets
+translated by the test driver script, is (ignore the fact that "_" is
+used in map names here, even though the Linux convention is to use "."):
+
+/net            -hosts  -nosuid
+#/home          auto_home       -nosuid
+/-                      AUTOMAP_DIR/auto_dcthon
+/-                      AUTOMAP_DIR/auto_test3_direct
+/-                      AUTOMAP_DIR/auto_test4_direct
+AUTO_CLIENT_MNTPNT/iparse       AUTOMAP_DIR/auto_icthon
+AUTO_CLIENT_MNTPNT/eparse       AUTOMAP_DIR/auto_ecthon
+AUTO_CLIENT_MNTPNT/oparse       AUTOMAP_DIR/auto_octhon
+
+AUTO_CLIENT_MNTPNT/test1        AUTOMAP_DIR/auto_icthon
+AUTO_CLIENT_MNTPNT/test2        AUTOMAP_DIR/auto_ecthon
+AUTO_CLIENT_MNTPNT/test4/indirect       AUTOMAP_DIR/auto_icthon
+AUTO_CLIENT_MNTPNT/options      AUTOMAP_DIR/auto_octhon
+AUTO_CLIENT_MNTPNT/nested       AUTOMAP_DIR/auto_nested
+AUTO_CLIENT_MNTPNT/badnames     AUTOMAP_DIR/auto_badnames
+
+AUTO_CLIENT_MNTPNT/vers         AUTOMAP_DIR/auto_octhon
++auto_master
+
+I'm thinking this is much more than you want or need so I'll cut it
+short right now.
+
+Two notable exceptions to the above common map entry types are:
+
+1) multi-mount map entries (as I briefly described before) that can give
+rise to the rootless mount trees we have special handling for in kernel.
+They can also be used by direct mounts but they always have at least an
+autofs file system mounted at the root so are simpler to handle.
+
+2) sub-mounts which are always indirect mounts, mounted within an autofs
+mounted filesystem (hence sub-mount). Typically you'll see those as map
+entries that have -fstype=autofs in the map entry.
+
+So 1) gives rise to those pesky special cases you see in the kernel
+requiring walks to pass through them and 2) gives rise to special cases
+mostly in the expire code because they are managed almost entirely by
+user space.
+
+And finally the inbuilt hosts map (often mounted on /net) is essentially
+a multi-mount map entry of the exports of each host.
+
+So that's version 5.
+
+The differences between v4 and v5 are few.
+
+Most notably direct mounts had no kernel support (and were not
+originally implemented in the daemon at all) and this is where the
+pseudo-direct mounts of version 4 came from. They where made up of a
+directory tree corresponding to the map entries and a convoluted path
+matching was done by the daemon to mount and expire leaves of the
+directory tree.
+
+And in version 4 multi-mount map entries were mounted and expired as a
+whole whereas in version 5 they are mounted and expired on demand (well
+almost anyway) using mount triggers (the offset mount type seen in the
+kernel). This on demand functionality gives rise to the "mount the base,
+mount the triggers inside (and expire in reverse)" that I think you
+referred to above.
+
+Other than that there isn't really much difference (although I've
+probably forgotten some).
+
+> 
+> 
+> Also I'd like to send a few of the simple patches to Andrew Morton now to get
+> them out of the way.  Then the patches which need more thought and testing
+> can wait until we are ready.  I'm in no hurry - as long as there is
+> expectation of forward progress I don't need to target any particular release.
+> 
+> As well as the first two that you provided an Acked-by for, I'd like to send
+> akpm:
+
+Feel free to forward those patches and add any attribution you think is
+warranted, Acked-by, Reviewed-by or even Signed-off-by.
+
+I think I've made forward progress with my ref-counting problem so, with
+some luck, I might be back on track by the end of the weekend, fingers
+crossed.
+
+> 
+>  - A revised version of the last patch which also avoids the spinlock for
+>    autofs4_lookup_active
+>  - A patch which removes some more unused 'inlines' from the header file.
+>  - a typo-fix.
+> 
+> I've included the changed one inline below.  If you are happy I'll send them
+> all to Andrew.
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> From 31b8be2565c72b053d0a92ec4fb2bfadd9545557 Mon Sep 17 00:00:00 2001
+> From: NeilBrown <neilb@suse.de>
+> Date: Wed, 9 Jul 2014 12:33:15 +1000
+> Subject: [PATCH 1/3] autofs4: don't take spinlock when not needed in
+>  autofs4_lookup_expiring
+> 
+> If the expiring_list is empty, we can avoid a costly spinlock
+> in the rcu-walk path through autofs4_d_manage (once the rest
+> of the path becomes rcu-walk friendly).
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Acked-by: Ian Kent <raven@themaw.net>
+> ---
+>  fs/autofs4/root.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+> index cc87c1abac97..fb202cadd4b3 100644
+> --- a/fs/autofs4/root.c
+> +++ b/fs/autofs4/root.c
+> @@ -166,8 +166,10 @@ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
+>  	const unsigned char *str = name->name;
+>  	struct list_head *p, *head;
+>  
+> -	spin_lock(&sbi->lookup_lock);
+>  	head = &sbi->active_list;
+> +	if (list_empty(head))
+> +		return NULL;
+> +	spin_lock(&sbi->lookup_lock);
+>  	list_for_each(p, head) {
+>  		struct autofs_info *ino;
+>  		struct dentry *active;
+> @@ -218,8 +220,10 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
+>  	const unsigned char *str = name->name;
+>  	struct list_head *p, *head;
+>  
+> -	spin_lock(&sbi->lookup_lock);
+>  	head = &sbi->expiring_list;
+> +	if (list_empty(head))
+> +		return NULL;
+> +	spin_lock(&sbi->lookup_lock);
+>  	list_for_each(p, head) {
+>  		struct autofs_info *ino;
+>  		struct dentry *expiring;
+
+Yep, looks fine.
+
+> -- 
+> 2.0.0
+> 
+> From 7ea8366c9b2022e05c4a5bceee1d495bc6517bee Mon Sep 17 00:00:00 2001
+> From: NeilBrown <neilb@suse.de>
+> Date: Thu, 17 Jul 2014 14:49:37 +1000
+> Subject: [PATCH 2/3] AUTOFS: remove some unused inline functions.
+> 
+> {__,}manage_dentry_{set,clear}_{automount,transit}
+> 
+> are 4 unused inline functions.  Discard them.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  fs/autofs4/autofs_i.h | 49 -------------------------------------------------
+>  1 file changed, 49 deletions(-)
+> 
+> diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+> index 22a280151e45..9e359fb20c0a 100644
+> --- a/fs/autofs4/autofs_i.h
+> +++ b/fs/autofs4/autofs_i.h
+> @@ -177,55 +177,6 @@ extern const struct file_operations autofs4_root_operations;
+>  extern const struct dentry_operations autofs4_dentry_operations;
+>  
+>  /* VFS automount flags management functions */
+> -
+> -static inline void __managed_dentry_set_automount(struct dentry *dentry)
+> -{
+> -	dentry->d_flags |= DCACHE_NEED_AUTOMOUNT;
+> -}
+> -
+> -static inline void managed_dentry_set_automount(struct dentry *dentry)
+> -{
+> -	spin_lock(&dentry->d_lock);
+> -	__managed_dentry_set_automount(dentry);
+> -	spin_unlock(&dentry->d_lock);
+> -}
+> -
+> -static inline void __managed_dentry_clear_automount(struct dentry *dentry)
+> -{
+> -	dentry->d_flags &= ~DCACHE_NEED_AUTOMOUNT;
+> -}
+> -
+> -static inline void managed_dentry_clear_automount(struct dentry *dentry)
+> -{
+> -	spin_lock(&dentry->d_lock);
+> -	__managed_dentry_clear_automount(dentry);
+> -	spin_unlock(&dentry->d_lock);
+> -}
+> -
+> -static inline void __managed_dentry_set_transit(struct dentry *dentry)
+> -{
+> -	dentry->d_flags |= DCACHE_MANAGE_TRANSIT;
+> -}
+> -
+> -static inline void managed_dentry_set_transit(struct dentry *dentry)
+> -{
+> -	spin_lock(&dentry->d_lock);
+> -	__managed_dentry_set_transit(dentry);
+> -	spin_unlock(&dentry->d_lock);
+> -}
+> -
+> -static inline void __managed_dentry_clear_transit(struct dentry *dentry)
+> -{
+> -	dentry->d_flags &= ~DCACHE_MANAGE_TRANSIT;
+> -}
+> -
+> -static inline void managed_dentry_clear_transit(struct dentry *dentry)
+> -{
+> -	spin_lock(&dentry->d_lock);
+> -	__managed_dentry_clear_transit(dentry);
+> -	spin_unlock(&dentry->d_lock);
+> -}
+> -
+>  static inline void __managed_dentry_set_managed(struct dentry *dentry)
+>  {
+>  	dentry->d_flags |= (DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT);
+
+Yeah, I kept these around deliberately and some were never used and
+others became unused over time.
+
+I can always put them back if I need any of them.
+
+> -- 
+> 2.0.0
+> 
+> From e1b74448bf2d0ab7e3c5d5b219d7a938bfd82d99 Mon Sep 17 00:00:00 2001
+> From: NeilBrown <neilb@suse.de>
+> Date: Thu, 17 Jul 2014 14:58:08 +1000
+> Subject: [PATCH 3/3] AUTOFS: comment typo: remove a a doubled word.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  fs/autofs4/root.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+> index fb202cadd4b3..cdb25ebccc4c 100644
+> --- a/fs/autofs4/root.c
+> +++ b/fs/autofs4/root.c
+> @@ -377,7 +377,7 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
+>  		 * this because the leaves of the directory tree under the
+>  		 * mount never trigger mounts themselves (they have an autofs
+>  		 * trigger mount mounted on them). But v4 pseudo direct mounts
+> -		 * do need the leaves to to trigger mounts. In this case we
+> +		 * do need the leaves to trigger mounts. In this case we
+>  		 * have no choice but to use the list_empty() check and
+>  		 * require user space behave.
+>  		 */
+
+Right, not much to say about this one, ;)
+
+Ian
+
