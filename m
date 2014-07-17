@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407AbaGQJlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:41:03 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54450 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050AbaGQJk4 (ORCPT
+	id S1756571AbaGQJlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:41:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53977 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756064AbaGQJlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:40:56 -0400
-Date: Thu, 17 Jul 2014 11:40:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-tip-commits@vger.kernel.org, akataria@vmware.com,
-        anil.s.keshavamurthy@intel.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: Re: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find
- blacklist" error on ia64 and ppc64
-Message-ID: <20140717094045.GC4232@gmail.com>
-References: <1404276081.7254.1.camel@concordia>
- <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
- <1405394370.17767.7.camel@concordia>
- <1405408602.9343.75.camel@pasglop>
- <53C4FDC8.9050801@hitachi.com>
- <20140716132838.GA18597@gmail.com>
- <53C776ED.3050001@hitachi.com>
+	Thu, 17 Jul 2014 05:41:39 -0400
+Date: Thu, 17 Jul 2014 10:41:02 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFCv3 08/14] arm64: introduce aarch64_insn_gen_movewide()
+Message-ID: <20140717094101.GD21153@arm.com>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+ <1405405512-4423-9-git-send-email-zlim.lnx@gmail.com>
+ <20140716161715.GU29414@arm.com>
+ <20140716220422.GB18109@gup76>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C776ED.3050001@hitachi.com>
+In-Reply-To: <20140716220422.GB18109@gup76>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2014/07/16 22:28), Ingo Molnar wrote:
+On Wed, Jul 16, 2014 at 11:04:22PM +0100, Zi Shen Lim wrote:
+> On Wed, Jul 16, 2014 at 05:17:15PM +0100, Will Deacon wrote:
+> > On Tue, Jul 15, 2014 at 07:25:06AM +0100, Zi Shen Lim wrote:
+> > > Introduce function to generate move wide (immediate) instructions.
 > > 
-> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > [...]
 > > 
-> >> (2014/07/15 16:16), Benjamin Herrenschmidt wrote:
-> >>> On Tue, 2014-07-15 at 13:19 +1000, Michael Ellerman wrote:
-> >>>
-> >>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >>>>> Reported-by: Tony Luck <tony.luck@gmail.com>
-> >>>>> Tested-by: Tony Luck <tony.luck@intel.com>
-> >>>>> Cc: Michael Ellerman <mpe@ellerman.id.au>
-> >>>>
-> >>>> Tested-by: Michael Ellerman <mpe@ellerman.id.au>
-> >>>> Acked-by: Michael Ellerman <mpe@ellerman.id.au> (for powerpc)
-> >>>>
-> >>>> Ben, can you take this in your tree?
-> >>>
-> >>> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >>>
-> >>> That looks more like generic material. Do we have a kprobes maintainer ?
-> >>> Andrew, do you want to take this ?
-> >>
-> >> Yeah, I usually use Ingo's tip tree for kprobes maintenance.
-> >> Ingo, could you pull this as urgent-for-linus patch?
+> > > +u32 aarch64_insn_gen_movewide(enum aarch64_insn_register dst,
+> > > +			      int imm, int shift,
+> > > +			      enum aarch64_insn_variant variant,
+> > > +			      enum aarch64_insn_movewide_type type)
+> > > +{
+> > > +	u32 insn;
+> > > +
+> > > +	switch (type) {
+> > > +	case AARCH64_INSN_MOVEWIDE_ZERO:
+> > > +		insn = aarch64_insn_get_movz_value();
+> > > +		break;
+> > > +	case AARCH64_INSN_MOVEWIDE_KEEP:
+> > > +		insn = aarch64_insn_get_movk_value();
+> > > +		break;
+> > > +	case AARCH64_INSN_MOVEWIDE_INVERSE:
+> > > +		insn = aarch64_insn_get_movn_value();
+> > > +		break;
+> > > +	default:
+> > > +		BUG_ON(1);
+> > > +	}
+> > > +
+> > > +	BUG_ON(imm < 0 || imm > 65535);
 > > 
-> > Mind resending it in a separate thread with all acks added, etc?
+> > Do this check with masking instead?
 > 
-> OK, I'll resend that soon.
-> BTW, I missed Suzuki's Signed-off-by in this version,
-> I'd like to recover that since he made a big bugfix on this.
+> Ok, if you prefer, I can change it to:
+> 
+> 	BUG_ON(imm & ~GENMASK(15, 0));
 
-That kind of credit can be added as:
+Sure, that or use a named constant for the upper-bound (SZ_64K - 1).
 
-  Fixed-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+> > > +	switch (variant) {
+> > > +	case AARCH64_INSN_VARIANT_32BIT:
+> > > +		BUG_ON(shift != 0 && shift != 16);
+> > > +		break;
+> > > +	case AARCH64_INSN_VARIANT_64BIT:
+> > > +		insn |= BIT(31);
+> > > +		BUG_ON(shift != 0 && shift != 16 && shift != 32 &&
+> > > +		       shift != 48);
+> > 
+> > Would be neater as a nested switch, perhaps? If you reorder the
+> > outer-switch, you could probably fall-through too and combine the shift
+> > checks.
+> 
+> Not sure I picture what you had in mind... I couldn't come up with a
+> neater version with the properties you described.
+> 
+> The alternative I had was using masks instead of integer values, but
+> one could argue that while neater, it could also be harder to read:
+> 
+> 	switch (variant) {
+> 	case AARCH64_INSN_VARIANT_32BIT:
+> 		BUG_ON(shift & ~BIT(4));
+> 		break;
+> 	case AARCH64_INSN_VARIANT_64BIT:
+> 		insn |= BIT(31);
+> 		BUG_ON(shift & ~GENMASK(5, 4));
+> 	...
 
-and by also adding a sentence to the log message (outside of the 
-version changelogs which get stripped ususally).
+I was thinking of using nested switches, but that doesn't fall out like I
+hoped. How about:
 
-Thanks,
+	switch (variant) {
+	case AARCH64_INSN_VARIANT_64BIT:
+		BUG_ON(shift != 32 && shift != 48);
+	case AARCH64_INSN_VARIANT_32BIT:
+		BUG_ON(shift != 0 && shift != 16);
+	};
 
-	Ingo
+?
+
+Will
