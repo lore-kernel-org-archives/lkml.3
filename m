@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360AbaGQNNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:13:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:18521 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757297AbaGQNNA (ORCPT
+	id S1757438AbaGQNNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:13:38 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19796 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757375AbaGQNNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:13:00 -0400
-Date: Thu, 17 Jul 2014 09:12:55 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [patch V2 64/64] ftrace: Provide trace clocks monotonic
-Message-ID: <20140717091255.486b5556@gandalf.local.home>
-In-Reply-To: <20140717085535.782e1fc1@gandalf.local.home>
-References: <20140716205018.175419210@linutronix.de>
-	<20140716205057.643948282@linutronix.de>
-	<20140717085535.782e1fc1@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 17 Jul 2014 09:13:34 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18aN2jYhNufwGoc6EFeANOT7oBEQ3TZuPM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 2D55E5AE2D4
+Date: Thu, 17 Jul 2014 09:13:20 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: suravee.suthikulpanit@amd.com
+Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
+        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/4 V3] irqchip: gic: Add supports for ARM GICv2m
+ MSI(-X)
+Message-ID: <20140717131320.GM13108@titan.lakedaemon.net>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014 08:55:35 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Wed, 16 Jul 2014 21:05:25 -0000
-> Thomas Gleixner <tglx@linutronix.de> wrote:
+On Wed, Jul 09, 2014 at 06:05:03PM -0500, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
- 
-> I'm not sure I like the name "mono" because all the clocks listed are
-> considered monolithic (with the view of tracing). What about calling it
-
-Peter nicely informed me on IRC that I just confused monotonic with
-monolithic. I think this is an improvement over my usual embarrassing
-moments when I confuse the words generic with genetic.
-
--- Steve
-
-
-> "user" as I believe this clock is the one that will be used to
-> synchronize userspace times with the kernel. Right?
+> ARM GICv2m specification extends GICv2 to support MSI(-X) with
+> a new set of register frames. This patch introduces support for
+> the non-secure GICv2m register frame.
 > 
-> -- Steve
+> The driver currently matchs "arm,gic-400-plus" in device tree binding,
+> which implements GICv2m.
 > 
-> >  	ARCH_TRACE_CLOCKS
-> >  };
-> >  
-> > 
+> The "msi-controller" keyword in ARM GIC devicetree binding is used to indentify
+> GIC driver that it should enable MSI(-X) support, The region of GICv2m MSI
+> register frame is specified using the register frame index 4 in the device tree.
+> MSI support is optional.
 > 
+> Each GIC maintains an "msi_chip" structure. To discover the msi_chip,
+> PCI host driver can do the following:
+> 
+>     struct device_node *gic_node = of_irq_find_parent(pdev->dev.of_node);
+>     pcie_bus->msi_chip = of_pci_find_msi_chip_by_node(gic_node);
+> 
+> Cc: Mark Rutland <Mark.Rutland@arm.com>
+> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
+> Cc: Will Deacon <Will.Deacon@arm.com>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> ---
+>  Documentation/devicetree/bindings/arm/gic.txt |  20 +-
+>  arch/arm64/Kconfig                            |   1 +
+>  drivers/irqchip/Kconfig                       |   7 +
+>  drivers/irqchip/Makefile                      |   1 +
+>  drivers/irqchip/irq-gic-v2m.c                 | 251 ++++++++++++++++++++++++++
+>  drivers/irqchip/irq-gic-v2m.h                 |  13 ++
+>  drivers/irqchip/irq-gic.c                     |  23 ++-
+>  drivers/irqchip/irq-gic.h                     |  31 +++-
+>  8 files changed, 334 insertions(+), 13 deletions(-)
+>  create mode 100644 drivers/irqchip/irq-gic-v2m.c
+>  create mode 100644 drivers/irqchip/irq-gic-v2m.h
 
+Applied to irqchip/gic with some minor typos fixed in the commit
+message.
+
+thx,
+
+Jason.
