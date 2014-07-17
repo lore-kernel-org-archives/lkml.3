@@ -1,130 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933989AbaGQOtH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:49:07 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:43578 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaGQOtD (ORCPT
+	id S934112AbaGQOtS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:49:18 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:41757 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933488AbaGQOtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:49:03 -0400
+	Thu, 17 Jul 2014 10:49:14 -0400
 From: Bastian Hecht <hechtb@gmail.com>
 To: linux-i2c@vger.kernel.org
 Cc: Linux-SH <linux-sh@vger.kernel.org>,
         Tomoya MORINAGA <tomoya.rohm@gmail.com>,
         Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        Bastian Hecht <hechtb@gmail.com>,
+        Bastian Hecht <hechtb@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Naveen Krishna Ch <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 1/5] i2c: Don't start transfers when suspended
-Date: Thu, 17 Jul 2014 16:48:36 +0200
-Message-Id: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+Subject: [PATCH v3 3/5] i2c: exynos5: Remove suspension check
+Date: Thu, 17 Jul 2014 16:48:38 +0200
+Message-Id: <1405608520-5644-3-git-send-email-hechtb@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+References: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2c transfer requests come in very uncontrolled, like from interrupt routines.
-We might be suspended when this happens. To avoid i2c timeouts caused by
-powered down busses we check for suspension.
-
-Several bus drivers handle this problem on their own. We can clean things up
-by moving the protection mechanism into the core.
+We now take care of suspension in the i2c core code. So we can remove this
+check here.
 
 Signed-off-by: Bastian Hecht <hechtb@gmail.com>
 ---
-changelog v2:
+same as v1
 
-- commit message extended.
-- initialization added for adap->suspended
-- swapped branch for increased performance
+ drivers/i2c/busses/i2c-exynos5.c | 20 +-------------------
+ 1 file changed, 1 insertion(+), 19 deletions(-)
 
-
- drivers/i2c/i2c-core.c | 25 ++++++++++++++++++++++++-
- include/linux/i2c.h    |  1 +
- 2 files changed, 25 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 7c7f4b8..b15dc20 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -343,6 +343,13 @@ static int i2c_legacy_resume(struct device *dev)
- static int i2c_device_pm_suspend(struct device *dev)
+diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+index 63d2292..a80cf28 100644
+--- a/drivers/i2c/busses/i2c-exynos5.c
++++ b/drivers/i2c/busses/i2c-exynos5.c
+@@ -145,7 +145,6 @@
+ 
+ struct exynos5_i2c {
+ 	struct i2c_adapter	adap;
+-	unsigned int		suspended:1;
+ 
+ 	struct i2c_msg		*msg;
+ 	struct completion	msg_complete;
+@@ -610,11 +609,6 @@ static int exynos5_i2c_xfer(struct i2c_adapter *adap,
+ 	struct exynos5_i2c *i2c = adap->algo_data;
+ 	int i = 0, ret = 0, stop = 0;
+ 
+-	if (i2c->suspended) {
+-		dev_err(i2c->dev, "HS-I2C is not initialized.\n");
+-		return -EIO;
+-	}
+-
+ 	clk_prepare_enable(i2c->clk);
+ 
+ 	for (i = 0; i < num; i++, msgs++) {
+@@ -757,16 +751,6 @@ static int exynos5_i2c_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+-static int exynos5_i2c_suspend_noirq(struct device *dev)
+-{
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct exynos5_i2c *i2c = platform_get_drvdata(pdev);
+-
+-	i2c->suspended = 1;
+-
+-	return 0;
+-}
+-
+ static int exynos5_i2c_resume_noirq(struct device *dev)
  {
- 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+	struct i2c_adapter *adap = i2c_verify_adapter(dev);
-+
-+	if (adap) {
-+		i2c_lock_adapter(adap);
-+		adap->suspended = true;
-+		i2c_unlock_adapter(adap);
-+	}
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -783,14 +767,12 @@ static int exynos5_i2c_resume_noirq(struct device *dev)
  
- 	if (pm)
- 		return pm_generic_suspend(dev);
-@@ -353,6 +360,13 @@ static int i2c_device_pm_suspend(struct device *dev)
- static int i2c_device_pm_resume(struct device *dev)
- {
- 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+	struct i2c_adapter *adap = i2c_verify_adapter(dev);
-+
-+	if (adap) {
-+		i2c_lock_adapter(adap);
-+		adap->suspended = false;
-+		i2c_unlock_adapter(adap);
-+	}
+ 	exynos5_i2c_init(i2c);
+ 	clk_disable_unprepare(i2c->clk);
+-	i2c->suspended = 0;
  
- 	if (pm)
- 		return pm_generic_resume(dev);
-@@ -1243,6 +1257,7 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
- 	dev_set_name(&adap->dev, "i2c-%d", adap->nr);
- 	adap->dev.bus = &i2c_bus_type;
- 	adap->dev.type = &i2c_adapter_type;
-+	adap->suspended = false;
- 	res = device_register(&adap->dev);
- 	if (res)
- 		goto out_list;
-@@ -1819,7 +1834,10 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
- 			i2c_lock_adapter(adap);
- 		}
+ 	return 0;
+ }
+ #endif
  
--		ret = __i2c_transfer(adap, msgs, num);
-+		if (!adap->suspended)
-+			ret = __i2c_transfer(adap, msgs, num);
-+		else
-+			ret = -EIO;
- 		i2c_unlock_adapter(adap);
+-static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_suspend_noirq,
+-			 exynos5_i2c_resume_noirq);
++static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_resume_noirq);
  
- 		return ret;
-@@ -2577,6 +2595,10 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
- 
- 	if (adapter->algo->smbus_xfer) {
- 		i2c_lock_adapter(adapter);
-+		if (adapter->suspended) {
-+			res = -EIO;
-+			goto unlock;
-+		}
- 
- 		/* Retry automatically on arbitration loss */
- 		orig_jiffies = jiffies;
-@@ -2590,6 +2612,7 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
- 				       orig_jiffies + adapter->timeout))
- 				break;
- 		}
-+unlock:
- 		i2c_unlock_adapter(adapter);
- 
- 		if (res != -EOPNOTSUPP || !adapter->algo->master_xfer)
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index b556e0a..af08c75 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -434,6 +434,7 @@ struct i2c_adapter {
- 	int timeout;			/* in jiffies */
- 	int retries;
- 	struct device dev;		/* the adapter device */
-+	unsigned int suspended:1;
- 
- 	int nr;
- 	char name[48];
+ static struct platform_driver exynos5_i2c_driver = {
+ 	.probe		= exynos5_i2c_probe,
 -- 
 1.9.1
 
