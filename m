@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030357AbaGQQOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:14:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52588 "EHLO mail.kernel.org"
+	id S934952AbaGQQPC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:15:02 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52656 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934903AbaGQQOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:14:45 -0400
+	id S1030363AbaGQQO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:14:57 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 25/33] perf machine: Fix map groups of threads with unknown pids
-Date: Thu, 17 Jul 2014 13:12:27 -0300
-Message-Id: <1405613555-23380-26-git-send-email-acme@kernel.org>
+Subject: [PATCH 28/33] perf tools: Remove verbose from functions prototypes
+Date: Thu, 17 Jul 2014 13:12:30 -0300
+Message-Id: <1405613555-23380-29-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405613555-23380-1-git-send-email-acme@kernel.org>
 References: <1405613555-23380-1-git-send-email-acme@kernel.org>
@@ -25,150 +25,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-Events like sched_switch do not provide a pid (tgid) which can result in
-threads with an unknown pid.  If the pid is later discovered, join the
-map groups.
+And use verbose as an global object in following functions:
 
-Note the thread's map groups should be empty because they are populated
-by MMAP events which do provide the pid and tid.
+  __map_groups__fprintf_maps
+  __map_groups__fprintf_removed_maps
+  map_groups__fprintf_maps
+  map_groups__fprintf
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Also making map_groups__fprintf_maps static.
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1405498033-23817-1-git-send-email-adrian.hunter@intel.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1405374411-29012-2-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 57 ++++++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/map.c     | 14 ++++++++++++
- tools/perf/util/map.h     |  1 +
- 3 files changed, 66 insertions(+), 6 deletions(-)
+ tools/perf/ui/stdio/hist.c |  2 +-
+ tools/perf/util/map.c      | 24 ++++++++++++------------
+ tools/perf/util/map.h      |  9 ++++-----
+ tools/perf/util/thread.c   |  4 ++--
+ 4 files changed, 19 insertions(+), 20 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 5b8087728f28..5484fa4385fc 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -272,6 +272,52 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
- }
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 90122abd3721..40af0acb4fe9 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -479,7 +479,7 @@ print_entries:
  
-+static void machine__update_thread_pid(struct machine *machine,
-+				       struct thread *th, pid_t pid)
-+{
-+	struct thread *leader;
-+
-+	if (pid == th->pid_ || pid == -1 || th->pid_ != -1)
-+		return;
-+
-+	th->pid_ = pid;
-+
-+	if (th->pid_ == th->tid)
-+		return;
-+
-+	leader = machine__findnew_thread(machine, th->pid_, th->pid_);
-+	if (!leader)
-+		goto out_err;
-+
-+	if (!leader->mg)
-+		leader->mg = map_groups__new();
-+
-+	if (!leader->mg)
-+		goto out_err;
-+
-+	if (th->mg == leader->mg)
-+		return;
-+
-+	if (th->mg) {
-+		/*
-+		 * Maps are created from MMAP events which provide the pid and
-+		 * tid.  Consequently there never should be any maps on a thread
-+		 * with an unknown pid.  Just print an error if there are.
-+		 */
-+		if (!map_groups__empty(th->mg))
-+			pr_err("Discarding thread maps for %d:%d\n",
-+			       th->pid_, th->tid);
-+		map_groups__delete(th->mg);
-+	}
-+
-+	th->mg = map_groups__get(leader->mg);
-+
-+	return;
-+
-+out_err:
-+	pr_err("Failed to join map groups for %d:%d\n", th->pid_, th->tid);
-+}
-+
- static struct thread *__machine__findnew_thread(struct machine *machine,
- 						pid_t pid, pid_t tid,
- 						bool create)
-@@ -285,10 +331,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid) {
--		if (pid != -1 && pid != machine->last_match->pid_)
--			machine->last_match->pid_ = pid;
--		return machine->last_match;
-+	th = machine->last_match;
-+	if (th && th->tid == tid) {
-+		machine__update_thread_pid(machine, th, pid);
-+		return th;
- 	}
- 
- 	while (*p != NULL) {
-@@ -297,8 +343,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
- 
- 		if (th->tid == tid) {
- 			machine->last_match = th;
--			if (pid != -1 && pid != th->pid_)
--				th->pid_ = pid;
-+			machine__update_thread_pid(machine, th, pid);
- 			return th;
+ 		if (h->ms.map == NULL && verbose > 1) {
+ 			__map_groups__fprintf_maps(h->thread->mg,
+-						   MAP__FUNCTION, verbose, fp);
++						   MAP__FUNCTION, fp);
+ 			fprintf(fp, "%.10s end\n", graph_dotted_line);
  		}
- 
+ 	}
 diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 25c571f4cba6..7af14807ee90 100644
+index 7af14807ee90..845f627e45f4 100644
 --- a/tools/perf/util/map.c
 +++ b/tools/perf/util/map.c
-@@ -454,6 +454,20 @@ void map_groups__exit(struct map_groups *mg)
- 	}
+@@ -12,6 +12,7 @@
+ #include "vdso.h"
+ #include "build-id.h"
+ #include "util.h"
++#include "debug.h"
+ #include <linux/string.h>
+ 
+ const char *map_type__name[MAP__NR_TYPES] = {
+@@ -568,8 +569,8 @@ int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
+ 	return ams->sym ? 0 : -1;
  }
  
-+bool map_groups__empty(struct map_groups *mg)
-+{
-+	int i;
-+
-+	for (i = 0; i < MAP__NR_TYPES; ++i) {
-+		if (maps__first(&mg->maps[i]))
-+			return false;
-+		if (!list_empty(&mg->removed_maps[i]))
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
- struct map_groups *map_groups__new(void)
+-size_t __map_groups__fprintf_maps(struct map_groups *mg,
+-				  enum map_type type, int verbose, FILE *fp)
++size_t __map_groups__fprintf_maps(struct map_groups *mg, enum map_type type,
++				  FILE *fp)
  {
- 	struct map_groups *mg = malloc(sizeof(*mg));
+ 	size_t printed = fprintf(fp, "%s:\n", map_type__name[type]);
+ 	struct rb_node *nd;
+@@ -587,17 +588,16 @@ size_t __map_groups__fprintf_maps(struct map_groups *mg,
+ 	return printed;
+ }
+ 
+-size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp)
++static size_t map_groups__fprintf_maps(struct map_groups *mg, FILE *fp)
+ {
+ 	size_t printed = 0, i;
+ 	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		printed += __map_groups__fprintf_maps(mg, i, verbose, fp);
++		printed += __map_groups__fprintf_maps(mg, i, fp);
+ 	return printed;
+ }
+ 
+ static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
+-						 enum map_type type,
+-						 int verbose, FILE *fp)
++						 enum map_type type, FILE *fp)
+ {
+ 	struct map *pos;
+ 	size_t printed = 0;
+@@ -614,23 +614,23 @@ static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
+ }
+ 
+ static size_t map_groups__fprintf_removed_maps(struct map_groups *mg,
+-					       int verbose, FILE *fp)
++					       FILE *fp)
+ {
+ 	size_t printed = 0, i;
+ 	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		printed += __map_groups__fprintf_removed_maps(mg, i, verbose, fp);
++		printed += __map_groups__fprintf_removed_maps(mg, i, fp);
+ 	return printed;
+ }
+ 
+-size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp)
++size_t map_groups__fprintf(struct map_groups *mg, FILE *fp)
+ {
+-	size_t printed = map_groups__fprintf_maps(mg, verbose, fp);
++	size_t printed = map_groups__fprintf_maps(mg, fp);
+ 	printed += fprintf(fp, "Removed maps:\n");
+-	return printed + map_groups__fprintf_removed_maps(mg, verbose, fp);
++	return printed + map_groups__fprintf_removed_maps(mg, fp);
+ }
+ 
+ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
+-				   int verbose, FILE *fp)
++				   FILE *fp)
+ {
+ 	struct rb_root *root = &mg->maps[map->type];
+ 	struct rb_node *next = rb_first(root);
 diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 7758c72522ef..5806a906198b 100644
+index 5806a906198b..22d13a219590 100644
 --- a/tools/perf/util/map.h
 +++ b/tools/perf/util/map.h
-@@ -66,6 +66,7 @@ struct map_groups {
+@@ -142,8 +142,8 @@ void map__fixup_end(struct map *map);
  
- struct map_groups *map_groups__new(void);
- void map_groups__delete(struct map_groups *mg);
-+bool map_groups__empty(struct map_groups *mg);
+ void map__reloc_vmlinux(struct map *map);
  
- static inline struct map_groups *map_groups__get(struct map_groups *mg)
+-size_t __map_groups__fprintf_maps(struct map_groups *mg,
+-				  enum map_type type, int verbose, FILE *fp);
++size_t __map_groups__fprintf_maps(struct map_groups *mg, enum map_type type,
++				  FILE *fp);
+ void maps__insert(struct rb_root *maps, struct map *map);
+ void maps__remove(struct rb_root *maps, struct map *map);
+ struct map *maps__find(struct rb_root *maps, u64 addr);
+@@ -153,8 +153,7 @@ void map_groups__init(struct map_groups *mg);
+ void map_groups__exit(struct map_groups *mg);
+ int map_groups__clone(struct map_groups *mg,
+ 		      struct map_groups *parent, enum map_type type);
+-size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp);
+-size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp);
++size_t map_groups__fprintf(struct map_groups *mg, FILE *fp);
+ 
+ int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
+ 				     u64 addr);
+@@ -211,7 +210,7 @@ struct symbol *map_groups__find_function_by_name(struct map_groups *mg,
+ }
+ 
+ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
+-				   int verbose, FILE *fp);
++				   FILE *fp);
+ 
+ struct map *map_groups__find_by_name(struct map_groups *mg,
+ 				     enum map_type type, const char *name);
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index b9c36ef42d2f..9692c06a9e21 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -129,12 +129,12 @@ int thread__comm_len(struct thread *thread)
+ size_t thread__fprintf(struct thread *thread, FILE *fp)
  {
+ 	return fprintf(fp, "Thread %d %s\n", thread->tid, thread__comm_str(thread)) +
+-	       map_groups__fprintf(thread->mg, verbose, fp);
++	       map_groups__fprintf(thread->mg, fp);
+ }
+ 
+ void thread__insert_map(struct thread *thread, struct map *map)
+ {
+-	map_groups__fixup_overlappings(thread->mg, map, verbose, stderr);
++	map_groups__fixup_overlappings(thread->mg, map, stderr);
+ 	map_groups__insert(thread->mg, map);
+ }
+ 
 -- 
 1.9.3
 
