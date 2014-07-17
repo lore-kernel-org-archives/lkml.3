@@ -1,71 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095AbaGQNZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:25:26 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:58412 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185AbaGQNZX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:25:23 -0400
-X-AuditID: cbfec37d-b7fbf6d000005712-b6-53c7cec1b9d3
-Message-id: <53C7CEBF.5040400@samsung.com>
-Date: Thu, 17 Jul 2014 07:25:19 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S933108AbaGQN0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:26:19 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:32840 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932185AbaGQN0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:26:17 -0400
+Date: Thu, 17 Jul 2014 09:26:04 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan.kim@gmail.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.4 00/22] 3.4.99-stable review
-References: <20140715231622.121816073@linuxfoundation.org>
-In-reply-to: <20140715231622.121816073@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.242]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9hP92D544HG/TMNraYs34Nm0Xz4vVs
-	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
-	rFFcNimpOZllqUX6dglcGT9ndLMUXGKrmH17B1MD40LWLkZODgkBE4nDc3exQ9hiEhfurWfr
-	YuTiEBJYxijR2r2EHcLpZZJ4fHM7VGYbo0THlGYmkBZeAS2J2Wc+sYDYLAKqEjcfrwUbyyag
-	LvH59Q6wsUICchJNS1Yzg9iiAhESB/qesUL0Ckr8mHwPrFdEIFhi7deFjCALmAVWMUpcv7yc
-	DSQhLGAs8evafKhBVhJnL7wAa+AUsJZYcH8XWA2zgJnEo5Z1zBC2vMTmNW+ZIeqVJf5cPsUE
-	8ZuyxL4HcxgnMIrMQrJ7FpL2WUjaFzAyr2IUKy1OLihOSk+tMNErTswtLs1L10vOz93ECImm
-	2h2M97/aHGIU4GBU4uFNaD0WLMSaWFZcmXuIUYKDWUmEd1vX8WAh3pTEyqrUovz4otKc1OJD
-	jEwcnFINjBZcJYYFu45dD8r9ybks8/l+jxmNqheN/LntLeL7tNxFZA2dfhR6uDJedDxUrl5v
-	2VbOH5ck/cfHUXbfkWkmCdrHS1u8HBojz59LWnVd6TC7rlvCrVWTdsteVvTXerbn/2K9gwaB
-	XAmZ6jfSJU5LMPHyxE/0jQw+cqBnypuLQov5pKuvlXcosRRnJBpqMRcVJwIAVn2ihoQCAAA=
+Subject: Re: [patch 3/3] mm: vmscan: clean up struct scan_control
+Message-ID: <20140717132604.GF29639@cmpxchg.org>
+References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org>
+ <1405344049-19868-4-git-send-email-hannes@cmpxchg.org>
+ <alpine.LSU.2.11.1407141240200.17669@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1407141240200.17669@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2014 05:17 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.99 release.
-> There are 22 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jul 17 23:16:04 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.99-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Mon, Jul 14, 2014 at 12:46:21PM -0700, Hugh Dickins wrote:
+> On Mon, 14 Jul 2014, Johannes Weiner wrote:
+> 
+> > Reorder the members by input and output, then turn the individual
+> > integers for may_writepage, may_unmap, may_swap, compaction_ready,
+> > hibernation_mode into flags that fit into a single integer.
+> > 
+> > Stack delta: +72/-296 -224                   old     new   delta
+> > kswapd                                       104     176     +72
+> > try_to_free_pages                             80      56     -24
+> > try_to_free_mem_cgroup_pages                  80      56     -24
+> > shrink_all_memory                             88      64     -24
+> > reclaim_clean_pages_from_list                168     144     -24
+> > mem_cgroup_shrink_node_zone                  104      80     -24
+> > __zone_reclaim                               176     152     -24
+> > balance_pgdat                                152       -    -152
+> > 
+> >    text    data     bss     dec     hex filename
+> >   38151    5641      16   43808    ab20 mm/vmscan.o.old
+> >   38047    5641      16   43704    aab8 mm/vmscan.o
+> > 
+> > Suggested-by: Mel Gorman <mgorman@suse.de>
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  mm/vmscan.c | 158 ++++++++++++++++++++++++++++++------------------------------
+> >  1 file changed, 78 insertions(+), 80 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index c28b8981e56a..73d8e69ff3eb 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -58,36 +58,28 @@
+> >  #define CREATE_TRACE_POINTS
+> >  #include <trace/events/vmscan.h>
+> >  
+> > -struct scan_control {
+> > -	/* Incremented by the number of inactive pages that were scanned */
+> > -	unsigned long nr_scanned;
+> > -
+> > -	/* Number of pages freed so far during a call to shrink_zones() */
+> > -	unsigned long nr_reclaimed;
+> > -
+> > -	/* One of the zones is ready for compaction */
+> > -	int compaction_ready;
+> > +/* Scan control flags */
+> > +#define MAY_WRITEPAGE		0x1
+> > +#define MAY_UNMAP		0x2
+> > +#define MAY_SWAP		0x4
+> > +#define MAY_SKIP_CONGESTION	0x8
+> > +#define COMPACTION_READY	0x10
+> >  
+> > +struct scan_control {
+> >  	/* How many pages shrink_list() should reclaim */
+> >  	unsigned long nr_to_reclaim;
+> >  
+> > -	unsigned long hibernation_mode;
+> > -
+> >  	/* This context's GFP mask */
+> >  	gfp_t gfp_mask;
+> >  
+> > -	int may_writepage;
+> > -
+> > -	/* Can mapped pages be reclaimed? */
+> > -	int may_unmap;
+> > -
+> > -	/* Can pages be swapped as part of reclaim? */
+> > -	int may_swap;
+> > -
+> > +	/* Allocation order */
+> >  	int order;
+> >  
+> > -	/* Scan (total_size >> priority) pages at once */
+> > -	int priority;
+> > +	/*
+> > +	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
+> > +	 * are scanned.
+> > +	 */
+> > +	nodemask_t	*nodemask;
+> >  
+> >  	/*
+> >  	 * The memory cgroup that hit its limit and as a result is the
+> > @@ -95,11 +87,17 @@ struct scan_control {
+> >  	 */
+> >  	struct mem_cgroup *target_mem_cgroup;
+> >  
+> > -	/*
+> > -	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
+> > -	 * are scanned.
+> > -	 */
+> > -	nodemask_t	*nodemask;
+> > +	/* Scan (total_size >> priority) pages at once */
+> > +	int priority;
+> > +
+> > +	/* Scan control flags; see above */
+> > +	unsigned int flags;
+> 
+> This seems to result in a fair amount of unnecessary churn:
+> why not just put may_writepage etc into an unsigned int bitfield,
+> then you get the saving without changing all the rest of the code.
 
-rc1 and rc2 compiled and booted on my test system. No dmesg regressions.
+Good point, I didn't even think of that.  Thanks!
 
--- Shuah
+Andrew, could you please replace this patch with the following?
 
+---
+>From bbe8c1645c77297a96ecd5d64d659ddcd6984d03 Mon Sep 17 00:00:00 2001
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Mon, 14 Jul 2014 08:51:54 -0400
+Subject: [patch] mm: vmscan: clean up struct scan_control
 
+Reorder the members by input and output, then turn the individual
+integers for may_writepage, may_unmap, may_swap, compaction_ready,
+hibernation_mode into bit fields to save stack space:
+
++72/-296 -224
+kswapd                                       104     176     +72
+try_to_free_pages                             80      56     -24
+try_to_free_mem_cgroup_pages                  80      56     -24
+shrink_all_memory                             88      64     -24
+reclaim_clean_pages_from_list                168     144     -24
+mem_cgroup_shrink_node_zone                  104      80     -24
+__zone_reclaim                               176     152     -24
+balance_pgdat                                152       -    -152
+
+Suggested-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 99 ++++++++++++++++++++++++++++---------------------------------
+ 1 file changed, 46 insertions(+), 53 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c28b8981e56a..81dd858b9d17 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -59,35 +59,20 @@
+ #include <trace/events/vmscan.h>
+ 
+ struct scan_control {
+-	/* Incremented by the number of inactive pages that were scanned */
+-	unsigned long nr_scanned;
+-
+-	/* Number of pages freed so far during a call to shrink_zones() */
+-	unsigned long nr_reclaimed;
+-
+-	/* One of the zones is ready for compaction */
+-	int compaction_ready;
+-
+ 	/* How many pages shrink_list() should reclaim */
+ 	unsigned long nr_to_reclaim;
+ 
+-	unsigned long hibernation_mode;
+-
+ 	/* This context's GFP mask */
+ 	gfp_t gfp_mask;
+ 
+-	int may_writepage;
+-
+-	/* Can mapped pages be reclaimed? */
+-	int may_unmap;
+-
+-	/* Can pages be swapped as part of reclaim? */
+-	int may_swap;
+-
++	/* Allocation order */
+ 	int order;
+ 
+-	/* Scan (total_size >> priority) pages at once */
+-	int priority;
++	/*
++	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
++	 * are scanned.
++	 */
++	nodemask_t	*nodemask;
+ 
+ 	/*
+ 	 * The memory cgroup that hit its limit and as a result is the
+@@ -95,11 +80,27 @@ struct scan_control {
+ 	 */
+ 	struct mem_cgroup *target_mem_cgroup;
+ 
+-	/*
+-	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
+-	 * are scanned.
+-	 */
+-	nodemask_t	*nodemask;
++	/* Scan (total_size >> priority) pages at once */
++	int priority;
++
++	unsigned int may_writepage:1;
++
++	/* Can mapped pages be reclaimed? */
++	unsigned int may_unmap:1;
++
++	/* Can pages be swapped as part of reclaim? */
++	unsigned int may_swap:1;
++
++	unsigned int hibernation_mode:1;
++
++	/* One of the zones is ready for compaction */
++	unsigned int compaction_ready:1;
++
++	/* Incremented by the number of inactive pages that were scanned */
++	unsigned long nr_scanned;
++
++	/* Number of pages freed so far during a call to shrink_zones() */
++	unsigned long nr_reclaimed;
+ };
+ 
+ #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
+@@ -2668,15 +2669,14 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ {
+ 	unsigned long nr_reclaimed;
+ 	struct scan_control sc = {
++		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+ 		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
++		.order = order,
++		.nodemask = nodemask,
++		.priority = DEF_PRIORITY,
+ 		.may_writepage = !laptop_mode,
+-		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
+-		.order = order,
+-		.priority = DEF_PRIORITY,
+-		.target_mem_cgroup = NULL,
+-		.nodemask = nodemask,
+ 	};
+ 
+ 	/*
+@@ -2706,14 +2706,11 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
+ 						unsigned long *nr_scanned)
+ {
+ 	struct scan_control sc = {
+-		.nr_scanned = 0,
+ 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
++		.target_mem_cgroup = memcg,
+ 		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+ 		.may_swap = !noswap,
+-		.order = 0,
+-		.priority = 0,
+-		.target_mem_cgroup = memcg,
+ 	};
+ 	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+ 	int swappiness = mem_cgroup_swappiness(memcg);
+@@ -2748,16 +2745,14 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+ 	unsigned long nr_reclaimed;
+ 	int nid;
+ 	struct scan_control sc = {
+-		.may_writepage = !laptop_mode,
+-		.may_unmap = 1,
+-		.may_swap = !noswap,
+ 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+-		.order = 0,
+-		.priority = DEF_PRIORITY,
+-		.target_mem_cgroup = memcg,
+-		.nodemask = NULL, /* we don't care the placement */
+ 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+ 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
++		.target_mem_cgroup = memcg,
++		.priority = DEF_PRIORITY,
++		.may_writepage = !laptop_mode,
++		.may_unmap = 1,
++		.may_swap = !noswap,
+ 	};
+ 
+ 	/*
+@@ -3015,12 +3010,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	unsigned long nr_soft_scanned;
+ 	struct scan_control sc = {
+ 		.gfp_mask = GFP_KERNEL,
++		.order = order,
+ 		.priority = DEF_PRIORITY,
++		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
+-		.may_writepage = !laptop_mode,
+-		.order = order,
+-		.target_mem_cgroup = NULL,
+ 	};
+ 	count_vm_event(PAGEOUTRUN);
+ 
+@@ -3401,14 +3395,13 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ {
+ 	struct reclaim_state reclaim_state;
+ 	struct scan_control sc = {
++		.nr_to_reclaim = nr_to_reclaim,
+ 		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+-		.may_swap = 1,
+-		.may_unmap = 1,
++		.priority = DEF_PRIORITY,
+ 		.may_writepage = 1,
+-		.nr_to_reclaim = nr_to_reclaim,
++		.may_unmap = 1,
++		.may_swap = 1,
+ 		.hibernation_mode = 1,
+-		.order = 0,
+-		.priority = DEF_PRIORITY,
+ 	};
+ 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+ 	struct task_struct *p = current;
+@@ -3588,13 +3581,13 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	struct task_struct *p = current;
+ 	struct reclaim_state reclaim_state;
+ 	struct scan_control sc = {
+-		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
+-		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
+-		.may_swap = 1,
+ 		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
+ 		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+ 		.order = order,
+ 		.priority = ZONE_RECLAIM_PRIORITY,
++		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
++		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
++		.may_swap = 1,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+2.0.0
+
