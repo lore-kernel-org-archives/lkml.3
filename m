@@ -1,37 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712AbaGQJcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:32:11 -0400
-Received: from r11.bigoemm.com ([172.246.45.12]:40968 "EHLO smtp1.chndama.net"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778AbaGQJcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:32:07 -0400
-X-Greylist: delayed 1834 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 05:32:07 EDT
-Date: Thu, 17 Jul 2014 17:03:10 +0800
-From: "Christine Zhou" <yj5@smtp1.chndama.net>
-Reply-To: sales@sonier-pins.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [AD]:Eco-friendly metal production and strict QC
-Message-ID: <201407171703105985679@smtp1.chndama.net>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1756218AbaGQJch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:32:37 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:40122 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969AbaGQJcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 05:32:35 -0400
+Message-ID: <53C7982F.8020205@gmail.com>
+Date: Thu, 17 Jul 2014 12:32:31 +0300
+From: Timofey Titovets <nefelim4ag@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+To: minchan@kernel.org
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
+Subject: [PATCH] zram: auto add/del devices on demand
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6H9WFn6003517
 
-Hi Sir/Madam
+From: Timofey Titovets <nefelim4ag@gmail.com>
 
-High-quality metal prmotional items, our products are customizable to your specific needs.
->From design to delivery, we specialize in turning ideas into reality, and orders completed in 15 ays. 
-I am Christine, welcome to contact with me for more information.
+This add supporting of autochange count of zram devices on demand, like 
+loop devices;
+This working by following rules:
+	- Always save minimum devices count specified by num_device (can be 
+specified while kernel module loading)
+	- if last device already using add new device;
+	- if last and prelast devices is free - delete last zram device;
 
-kind regars
-Christine
+Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
 
-Sonier Pins Co.,Ltd
-No.2, JiXi ShunCheng Center ,Xiaolan Town,
-Zhongshan City, 528415,Guangdong ,China.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Please pull from:
+https://github.com/Nefelim4ag/linux.git
+---
+Tested on 3.15.5-2-ARCH, can be applied on any kernel version
+after this patch 'zram: add LZ4 compression support' -
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
+---
+drivers/block/zram/zram_drv.c | 65 
+++++++++++++++++++++++++++++++++++++++++---
+1 file changed, 61 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 089e72c..d0a3055 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -42,6 +42,10 @@ static const char *default_compressor = "lzo";
+
+  /* Module params (documentation at end) */
+  static unsigned int num_devices = 1;
++static unsigned int last_created_dev = 1;
++
++static void zram_add_dev(void);
++static void zram_del_dev(void);
+
+  #define ZRAM_ATTR_RO(name)						\
+  static ssize_t zram_attr_##name##_show(struct device *d,		\
+@@ -168,6 +172,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
+  		struct device_attribute *attr, const char *buf, size_t len)
+  {
+  	struct zram *zram = dev_to_zram(dev);
++
+  	down_write(&zram->init_lock);
+  	if (init_done(zram)) {
+  		up_write(&zram->init_lock);
+@@ -239,6 +244,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+  {
+  	size_t num_pages;
+  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
++
+  	if (!meta)
+  		goto out;
+
+@@ -374,6 +380,7 @@ static int zram_bvec_read(struct zram *zram, struct 
+bio_vec *bvec,
+  	struct page *page;
+  	unsigned char *user_mem, *uncmem = NULL;
+  	struct zram_meta *meta = zram->meta;
++
+  	page = bvec->bv_page;
+
+  	read_lock(&meta->tb_lock);
+@@ -607,6 +614,7 @@ static void zram_reset_device(struct zram *zram, 
+bool reset_capacity)
+  	/* Free all pages that are still in this zram device */
+  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+  		unsigned long handle = meta->table[index].handle;
++
+  		if (!handle)
+  			continue;
+
+@@ -668,6 +676,7 @@ static ssize_t disksize_store(struct device *dev,
+  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+  	revalidate_disk(zram->disk);
+  	up_write(&zram->init_lock);
++	zram_add_dev();
+  	return len;
+
+  out_destroy_comp:
+@@ -712,6 +721,7 @@ static ssize_t reset_store(struct device *dev,
+  	bdput(bdev);
+
+  	zram_reset_device(zram, true);
++	zram_del_dev();
+  	return len;
+
+  out:
+@@ -954,6 +964,51 @@ static void destroy_device(struct zram *zram)
+  	blk_cleanup_queue(zram->queue);
+  }
+
++/* remove last free device, if last and prelast dev a free */
++static void zram_del_dev(void)
++{
++	if (last_created_dev < num_devices)
++		return;
++
++	if (zram_devices[last_created_dev].disksize == 0 &&
++		zram_devices[last_created_dev-1].disksize == 0
++		) {
++		destroy_device(&zram_devices[last_created_dev]);
++		last_created_dev--;
++		pr_info("Deleted zram%u device\n", last_created_dev);
++	}
++}
++
++/* Auto add empty zram device, if last device in use */
++static void zram_add_dev(void)
++{
++	int ret;
++
++	if (last_created_dev+1 > max_num_devices) {
++		pr_warn("Can't add zram%u, max device number reached\n",
++			num_devices);
++		last_created_dev--;
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (&zram_devices[last_created_dev].disksize > 0) {
++		last_created_dev++;
++		ret = create_device(&zram_devices[last_created_dev],
++							last_created_dev);
++		if (ret)
++			goto free;
++		pr_info("Created zram%u device\n", last_created_dev);
++	}
++
++	return;
++
++free:
++	destroy_device(&zram_devices[last_created_dev]);
++	last_created_dev--;
++out:;
++}
++
+  static int __init zram_init(void)
+  {
+  	int ret, dev_id;
+@@ -972,18 +1027,20 @@ static int __init zram_init(void)
+  		goto out;
+  	}
+
+-	/* Allocate the device array and initialize each one */
+-	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
++	/* Allocate the device array */
++	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
+  	if (!zram_devices) {
+  		ret = -ENOMEM;
+  		goto unregister;
+  	}
+
++	/* Initialise zram{0..num_devices} */
+  	for (dev_id = 0; dev_id < num_devices; dev_id++) {
+  		ret = create_device(&zram_devices[dev_id], dev_id);
+  		if (ret)
+  			goto free_devices;
+  	}
++	last_created_dev = num_devices-1;
+
+  	pr_info("Created %u device(s) ...\n", num_devices);
+
+@@ -1004,7 +1061,7 @@ static void __exit zram_exit(void)
+  	int i;
+  	struct zram *zram;
+
+-	for (i = 0; i < num_devices; i++) {
++	for (i = 0; i < last_created_dev+1; i++) {
+  		zram = &zram_devices[i];
+
+  		destroy_device(zram);
+@@ -1025,7 +1082,7 @@ module_init(zram_init);
+  module_exit(zram_exit);
+
+  module_param(num_devices, uint, 0);
+-MODULE_PARM_DESC(num_devices, "Number of zram devices");
++MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
+
+  MODULE_LICENSE("Dual BSD/GPL");
+  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
