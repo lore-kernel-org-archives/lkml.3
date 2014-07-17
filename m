@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaGQEze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 00:55:34 -0400
-Received: from ozlabs.org ([103.22.144.67]:43370 "EHLO ozlabs.org"
+	id S1753465AbaGQEzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 00:55:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48977 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143AbaGQEza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 00:55:30 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Lucas Tanure <tanure@linux.com>
-Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NoMoreModuleVmalloc - Try alloc_pages_exact before vmalloc, if fails do vmalloc
-In-Reply-To: <CAJyon0sTcZNpWZaBmiUBv99T4=BRTfEV+sJukc4deGMN1ZPFyw@mail.gmail.com>
-References: <20140713130407.GA27344@archDesk> <87lhrw4515.fsf@rustcorp.com.au> <CAJyon0sTcZNpWZaBmiUBv99T4=BRTfEV+sJukc4deGMN1ZPFyw@mail.gmail.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 15 Jul 2014 21:04:17 +0930
-Message-ID: <874myi5006.fsf@rustcorp.com.au>
+	id S1753160AbaGQEzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 00:55:33 -0400
+Message-ID: <53C75733.8060507@zytor.com>
+Date: Wed, 16 Jul 2014 21:55:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
+References: <cover.1405546879.git.luto@amacapital.net> <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net> <53C6F5A9.80400@zytor.com> <CALCETrVwT1g-S1hLyyB_uAVwffYCnFacTfUhJeD8Bb5j3X0mkg@mail.gmail.com> <CALCETrVCrJEwYokasRoqQTKJWKtzq9XUMNqHoT4-ZjgyZ-mBow@mail.gmail.com> <53C703ED.2010605@zytor.com> <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
+In-Reply-To: <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucas Tanure <tanure@linux.com> writes:
-> Hi Russell,
->
-> I found that project
-> http://kernelnewbies.org/KernelProjects/NoMoreModuleVmalloc.
-> So I thought that doing first a alloc_pages_exact would be the goal.
-> The kernel/module.c doesn't need this task any more, or I just did in
-> the wrong way ?
+On 07/16/2014 05:03 PM, Andy Lutomirski wrote:
+>>
+>> prandom is exactly the opposite; it is designed for when we need
+>> possibly low quality random numbers very quickly.  RDRAND is actually
+>> too slow.
+> 
+> I meant that prandom isn't using rdrand for early seeding.
+> 
 
-Hmm, that's hardly a newbie project!
+We should probably fix that.
 
-arch/x86/kernel/module.c contains the module_alloc() code for x86.
-You'd need to repalce that, and set module_free() too.
+	-hpa
 
-And it's not entirely clear that replacing it with kmalloc is actually
-useful, since it will break CONFIG_DEBUG_SET_MODULE_RONX=y.
 
-Cheers,
-Rusty.
