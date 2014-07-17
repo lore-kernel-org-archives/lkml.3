@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaGQKe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:34:27 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:56089 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712AbaGQKeY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:34:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
-        Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
-Date: Thu, 17 Jul 2014 12:33:32 +0200
-Message-ID: <6350114.L77bTv76Ul@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140717095657.GC17877@ulmo>
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <20140717095657.GC17877@ulmo>
+	id S1756658AbaGQKgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:36:37 -0400
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:43701 "EHLO
+	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756055AbaGQKgf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:36:35 -0400
+X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jul 2014 06:36:35 EDT
+Date: Thu, 17 Jul 2014 06:26:39 -0400 (EDT)
+Subject: RE: Fwd: [PATCH v6 04/12] mmc: mmci: Add Qcom datactrl register variant
+From: prakash.burla@smartplayin.com
+To: srinivas.kandagatla@linaro.org
+Cc: linux@arm.linux.org.uk, ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:AWoig9/F19CkpprDn+B2UT04DGwJ1CIoPDF+FCwKe2T
- RIJUnK4mNoOJ589ubhs5HZfOS5LYY0lmpLOoP2Tay3P9BoPiCo
- v6Y0nJomQn2O5SuOK11daUYv2l1YU7l5GoOlm/X1twfalCGXMu
- sKpGtAffz4wivuLJ+WvMJeK8stOUwKu4gdlk+SiJeCjzxTtmDN
- 8zrupqw4+x8e0NsT/6O+eHyoBOdmEsP4NBBQOvPpJTRZqDCV8r
- K5H6/VPjk05tqMCFC0DxaIOmrvhGqDffVHhwOhrzBejn/Jf2R4
- QA7wcCtbHAcYfNNEAw+FSArewCMJuczdI+1Y2dQw5JoGLEqRjQ
- 3O+fFNY34NbDem6SSkkQ=
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Importance: Normal
+X-Priority: 3 (Normal)
+X-Type: plain
+In-Reply-To: <CA+neC=Of9Ua5OxUiezmTHfzq9zkXVRCFei3xKMbXi3OGV84EHw@mail.gmail.com>
+References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org> 
+ <1401700146-11588-1-git-send-email-srinivas.kandagatla@linaro.org> 
+ <CA+neC=Of9Ua5OxUiezmTHfzq9zkXVRCFei3xKMbXi3OGV84EHw@mail.gmail.com>
+Message-ID: <1405592799.65820182@apps.rackspace.com>
+X-Mailer: webmail7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 11:56:58 Thierry Reding wrote:
-> On Thu, Jul 17, 2014 at 11:20:36AM +0200, Arnd Bergmann wrote:
-> [...]
-> >                       score should set HAS_IOMEM and doesn't
-> > even have public compilers
-> 
-> This begs an interesting question. Should it be made a requirement to
-> have publicly available compilers for new architectures so that they can
-> at least be compile-tested? Preferably this would of course be in source
-> form so that there aren't any dependencies on the distribution.
+tested-by: Prakash Burla <prakash.burla@smartplayin.com>
+This driver tested on AP806X with mmc Driver.
 
-The question has come up a few times. I wouldn't mandate that the port
-has an upstream gcc (you've got to start mainlining one of them first
-after all), but having compilers available for download should probably be
-required. It's hard to ask for a particular quality of that gcc port
-though, or to expect it to stay available online.
+----------------------------------------------------------------------------------
+From:  <srinivas.kandagatla@linaro.org>
+Date: Mon, Jun 2, 2014 at 2:39 PM
+Subject: [PATCH v6 04/12] mmc: mmci: Add Qcom datactrl register variant
+To: Russell King <linux@arm.linux.org.uk>, Ulf Hansson
+<ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org, Srinivas
 
-Where did you find the gcc port for score?
 
-	Arnd
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+
+Instance of this IP on Qualcomm's SOCs has bit different layout for datactrl
+register. Bit position datactrl[16:4] hold the true block size instead of power
+of 2.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mmc/host/mmci.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index ed20bf5..72981f6 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -60,6 +60,8 @@ static unsigned int fmax = 515633;
+  * @sdio: variant supports SDIO
+  * @st_clkdiv: true if using a ST-specific clock divider algorithm
+  * @blksz_datactrl16: true if Block size is at b16..b30 position in
+datactrl register
++ * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
++ *                  register
+  * @pwrreg_powerup: power up value for MMCIPOWER register
+  * @signal_direction: input/out direction of bus signals can be indicated
+  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
+@@ -75,6 +77,7 @@ struct variant_data {
+        bool                    sdio;
+        bool                    st_clkdiv;
+        bool                    blksz_datactrl16;
++       bool                    blksz_datactrl4;
+        u32                     pwrreg_powerup;
+        bool                    signal_direction;
+        bool                    pwrreg_clkgate;
+@@ -731,6 +734,8 @@ static void mmci_start_data(struct mmci_host
+*host, struct mmc_data *data)
+
+        if (variant->blksz_datactrl16)
+                datactrl = MCI_DPSM_ENABLE | (data->blksz << 16);
++       else if (variant->blksz_datactrl4)
++               datactrl = MCI_DPSM_ENABLE | (data->blksz << 4);
+        else
+                datactrl = MCI_DPSM_ENABLE | blksz_bits << 4;
+
+--
+1.9.1
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
