@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491AbaGQQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 12:12:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52021 "EHLO mail.kernel.org"
+	id S934730AbaGQQNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 12:13:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52058 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757058AbaGQQMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 12:12:55 -0400
+	id S1757320AbaGQQND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 12:13:03 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/33] perf kvm: Use defines of kvm events
-Date: Thu, 17 Jul 2014 13:12:03 -0300
-Message-Id: <1405613555-23380-2-git-send-email-acme@kernel.org>
+Subject: [PATCH 03/33] perf kvm: Add skip_event() for --duration option
+Date: Thu, 17 Jul 2014 13:12:05 -0300
+Message-Id: <1405613555-23380-4-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405613555-23380-1-git-send-email-acme@kernel.org>
 References: <1405613555-23380-1-git-send-email-acme@kernel.org>
@@ -28,24 +28,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-Currently perf-kvm uses string literals for kvm event names, but it
-works only for x86, because other architectures may have other names for
-those events.
+Current code skips output of the x86 specific HLT event in order to
+avoid flooding the output with enabled --duration option. The events to
+be skipped should be architecture dependent, though.
 
-To reduce dependence on architecture, we add <asm/kvm_perf.h> file with
-defines for:
+Let's add an architecture specific array of events to be skipped and
+introduce a skip_event() function checking against that array.
 
-- kvm_entry and kvm_exit events,
-- exit reason field name in kvm_exit event,
-- length of exit reasons strings,
-- vcpu_id field name in kvm trace events,
-
-and replace literals in perf-kvm.
-
+Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
 Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Reviewed-by David Ahern <dsahern@gmail.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
 Cc: Christian Borntraeger <borntraeger@de.ibm.com>
 Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -53,193 +46,72 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1404397747-20939-2-git-send-email-yarygin@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
+Link: http://lkml.kernel.org/r/1404397747-20939-4-git-send-email-yarygin@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/include/uapi/asm/Kbuild     |  1 +
- arch/x86/include/uapi/asm/kvm_perf.h | 16 ++++++++++++++++
- tools/perf/MANIFEST                  |  1 +
- tools/perf/builtin-kvm.c             | 34 ++++++++++++++++------------------
- 4 files changed, 34 insertions(+), 18 deletions(-)
- create mode 100644 arch/x86/include/uapi/asm/kvm_perf.h
+ tools/perf/arch/x86/util/kvm-stat.c |  5 +++++
+ tools/perf/builtin-kvm.c            | 13 ++++++++++++-
+ tools/perf/util/kvm-stat.h          |  1 +
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/uapi/asm/Kbuild b/arch/x86/include/uapi/asm/Kbuild
-index 09409c44f9a5..3dec769cadf7 100644
---- a/arch/x86/include/uapi/asm/Kbuild
-+++ b/arch/x86/include/uapi/asm/Kbuild
-@@ -22,6 +22,7 @@ header-y += ipcbuf.h
- header-y += ist.h
- header-y += kvm.h
- header-y += kvm_para.h
-+header-y += kvm_perf.h
- header-y += ldt.h
- header-y += mce.h
- header-y += mman.h
-diff --git a/arch/x86/include/uapi/asm/kvm_perf.h b/arch/x86/include/uapi/asm/kvm_perf.h
-new file mode 100644
-index 000000000000..3bb964f88aa1
---- /dev/null
-+++ b/arch/x86/include/uapi/asm/kvm_perf.h
-@@ -0,0 +1,16 @@
-+#ifndef _ASM_X86_KVM_PERF_H
-+#define _ASM_X86_KVM_PERF_H
-+
-+#include <asm/svm.h>
-+#include <asm/vmx.h>
-+#include <asm/kvm.h>
-+
-+#define DECODE_STR_LEN 20
-+
-+#define VCPU_ID "vcpu_id"
-+
-+#define KVM_ENTRY_TRACE "kvm:kvm_entry"
-+#define KVM_EXIT_TRACE "kvm:kvm_exit"
-+#define KVM_EXIT_REASON "exit_reason"
-+
-+#endif /* _ASM_X86_KVM_PERF_H */
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 45da209b6ed3..02b485d619cd 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -37,3 +37,4 @@ arch/x86/include/asm/kvm_host.h
- arch/x86/include/uapi/asm/svm.h
- arch/x86/include/uapi/asm/vmx.h
- arch/x86/include/uapi/asm/kvm.h
-+arch/x86/include/uapi/asm/kvm_perf.h
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 41dbeaf8cc11..6d73346ef2a6 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -30,9 +30,7 @@
- #include <math.h>
- 
- #ifdef HAVE_KVM_STAT_SUPPORT
--#include <asm/svm.h>
--#include <asm/vmx.h>
--#include <asm/kvm.h>
-+#include <asm/kvm_perf.h>
- 
- struct event_key {
- 	#define INVALID_KEY     (~0ULL)
-@@ -75,7 +73,7 @@ struct kvm_events_ops {
- 	bool (*is_end_event)(struct perf_evsel *evsel,
- 			     struct perf_sample *sample, struct event_key *key);
- 	void (*decode_key)(struct perf_kvm_stat *kvm, struct event_key *key,
--			   char decode[20]);
-+			   char *decode);
- 	const char *name;
+diff --git a/tools/perf/arch/x86/util/kvm-stat.c b/tools/perf/arch/x86/util/kvm-stat.c
+index 2f8d2c1af5ca..14e4e668fad7 100644
+--- a/tools/perf/arch/x86/util/kvm-stat.c
++++ b/tools/perf/arch/x86/util/kvm-stat.c
+@@ -136,6 +136,11 @@ struct kvm_reg_events_ops kvm_reg_events_ops[] = {
+ 	{ NULL, NULL },
  };
  
-@@ -126,12 +124,12 @@ static void exit_event_get_key(struct perf_evsel *evsel,
- 			       struct event_key *key)
++const char * const kvm_skip_events[] = {
++	"HLT",
++	NULL,
++};
++
+ int cpu_isa_init(struct perf_kvm_stat *kvm, const char *cpuid)
  {
- 	key->info = 0;
--	key->key = perf_evsel__intval(evsel, sample, "exit_reason");
-+	key->key = perf_evsel__intval(evsel, sample, KVM_EXIT_REASON);
+ 	if (strstr(cpuid, "Intel")) {
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 75ee8c1a6baf..fc2d63d3e791 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -261,6 +261,17 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+ 	return true;
  }
  
- static bool kvm_exit_event(struct perf_evsel *evsel)
- {
--	return !strcmp(evsel->name, "kvm:kvm_exit");
-+	return !strcmp(evsel->name, KVM_EXIT_TRACE);
- }
- 
- static bool exit_event_begin(struct perf_evsel *evsel,
-@@ -147,7 +145,7 @@ static bool exit_event_begin(struct perf_evsel *evsel,
- 
- static bool kvm_entry_event(struct perf_evsel *evsel)
- {
--	return !strcmp(evsel->name, "kvm:kvm_entry");
-+	return !strcmp(evsel->name, KVM_ENTRY_TRACE);
- }
- 
- static bool exit_event_end(struct perf_evsel *evsel,
-@@ -182,12 +180,12 @@ static const char *get_exit_reason(struct perf_kvm_stat *kvm,
- 
- static void exit_event_decode_key(struct perf_kvm_stat *kvm,
- 				  struct event_key *key,
--				  char decode[20])
-+				  char *decode)
- {
- 	const char *exit_reason = get_exit_reason(kvm, kvm->exit_reasons,
- 						  key->key);
- 
--	scnprintf(decode, 20, "%s", exit_reason);
-+	scnprintf(decode, DECODE_STR_LEN, "%s", exit_reason);
- }
- 
- static struct kvm_events_ops exit_events = {
-@@ -249,9 +247,9 @@ static bool mmio_event_end(struct perf_evsel *evsel, struct perf_sample *sample,
- 
- static void mmio_event_decode_key(struct perf_kvm_stat *kvm __maybe_unused,
- 				  struct event_key *key,
--				  char decode[20])
-+				  char *decode)
- {
--	scnprintf(decode, 20, "%#lx:%s", (unsigned long)key->key,
-+	scnprintf(decode, DECODE_STR_LEN, "%#lx:%s", (unsigned long)key->key,
- 				key->info == KVM_TRACE_MMIO_WRITE ? "W" : "R");
- }
- 
-@@ -292,9 +290,9 @@ static bool ioport_event_end(struct perf_evsel *evsel,
- 
- static void ioport_event_decode_key(struct perf_kvm_stat *kvm __maybe_unused,
- 				    struct event_key *key,
--				    char decode[20])
-+				    char *decode)
- {
--	scnprintf(decode, 20, "%#llx:%s", (unsigned long long)key->key,
-+	scnprintf(decode, DECODE_STR_LEN, "%#llx:%s", (unsigned long long)key->key,
- 				key->info ? "POUT" : "PIN");
- }
- 
-@@ -524,7 +522,7 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
- 	time_diff = sample->time - time_begin;
- 
- 	if (kvm->duration && time_diff > kvm->duration) {
--		char decode[32];
-+		char decode[DECODE_STR_LEN];
++static bool skip_event(const char *event)
++{
++	const char * const *skip_events;
++
++	for (skip_events = kvm_skip_events; *skip_events; skip_events++)
++		if (!strcmp(event, *skip_events))
++			return true;
++
++	return false;
++}
++
+ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 			     struct vcpu_event_record *vcpu_record,
+ 			     struct event_key *key,
+@@ -312,7 +323,7 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 		char decode[DECODE_STR_LEN];
  
  		kvm->events_ops->decode_key(kvm, &event->key, decode);
- 		if (strcmp(decode, "HLT")) {
-@@ -552,7 +550,7 @@ struct vcpu_event_record *per_vcpu_record(struct thread *thread,
- 			return NULL;
- 		}
+-		if (strcmp(decode, "HLT")) {
++		if (!skip_event(decode)) {
+ 			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
+ 				 sample->time, sample->pid, vcpu_record->vcpu_id,
+ 				 decode, time_diff/1000);
+diff --git a/tools/perf/util/kvm-stat.h b/tools/perf/util/kvm-stat.h
+index d0d9fb1ae52a..ba937caa28ac 100644
+--- a/tools/perf/util/kvm-stat.h
++++ b/tools/perf/util/kvm-stat.h
+@@ -126,5 +126,6 @@ int cpu_isa_init(struct perf_kvm_stat *kvm, const char *cpuid);
  
--		vcpu_record->vcpu_id = perf_evsel__intval(evsel, sample, "vcpu_id");
-+		vcpu_record->vcpu_id = perf_evsel__intval(evsel, sample, VCPU_ID);
- 		thread->priv = vcpu_record;
- 	}
+ extern const char * const kvm_events_tp[];
+ extern struct kvm_reg_events_ops kvm_reg_events_ops[];
++extern const char * const kvm_skip_events[];
  
-@@ -739,7 +737,7 @@ static void show_timeofday(void)
- 
- static void print_result(struct perf_kvm_stat *kvm)
- {
--	char decode[20];
-+	char decode[DECODE_STR_LEN];
- 	struct kvm_event *event;
- 	int vcpu = kvm->trace_vcpu;
- 
-@@ -750,7 +748,7 @@ static void print_result(struct perf_kvm_stat *kvm)
- 
- 	pr_info("\n\n");
- 	print_vcpu_info(kvm);
--	pr_info("%20s ", kvm->events_ops->name);
-+	pr_info("%*s ", DECODE_STR_LEN, kvm->events_ops->name);
- 	pr_info("%10s ", "Samples");
- 	pr_info("%9s ", "Samples%");
- 
-@@ -769,7 +767,7 @@ static void print_result(struct perf_kvm_stat *kvm)
- 		min = get_event_min(event, vcpu);
- 
- 		kvm->events_ops->decode_key(kvm, &event->key, decode);
--		pr_info("%20s ", decode);
-+		pr_info("%*s ", DECODE_STR_LEN, decode);
- 		pr_info("%10llu ", (unsigned long long)ecount);
- 		pr_info("%8.2f%% ", (double)ecount / kvm->total_count * 100);
- 		pr_info("%8.2f%% ", (double)etime / kvm->total_time * 100);
+ #endif /* __PERF_KVM_STAT_H */
 -- 
 1.9.3
 
