@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971AbaGQKue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:50:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33383 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756941AbaGQKua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:50:30 -0400
-Date: Thu, 17 Jul 2014 12:50:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
- CMCI reports.
-Message-ID: <20140717105025.GA22549@pd.tnic>
-References: <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
- <20140710164151.GA5603@pd.tnic>
- <CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
- <20140710184416.GE5603@pd.tnic>
- <CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
- <20140710191224.GF5603@pd.tnic>
- <20140711092454.GA17083@pd.tnic>
- <CA+8MBbKYo_Tmb3Zk4W9gBZmZqBpCu4uLUu9M5C2MZAYZEb16Vg@mail.gmail.com>
- <20140711195200.GA18246@pd.tnic>
- <CAFQmdRZ7d6Mgxob2A0nuJP09oAWW=BykL_bH7DeWo_8CM3YywA@mail.gmail.com>
+	id S1757078AbaGQKvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:51:39 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:56281 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757026AbaGQKvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:51:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAFQmdRZ7d6Mgxob2A0nuJP09oAWW=BykL_bH7DeWo_8CM3YywA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAMf-jSk5+c1QYfKfjqmstB60bM3adK5tgAYwmPKhOi6cSeM_WA@mail.gmail.com>
+References: <1404834869-23049-1-git-send-email-svarbanov@mm-sol.com>
+	<1404834869-23049-2-git-send-email-svarbanov@mm-sol.com>
+	<CAMf-jSk5+c1QYfKfjqmstB60bM3adK5tgAYwmPKhOi6cSeM_WA@mail.gmail.com>
+Date: Thu, 17 Jul 2014 16:21:33 +0530
+Message-ID: <CAMf-jSkxEmCeKDfw+=+QwgLHz7wYdWJB9qk1bi1gzP7Qpw-6jQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: qpnp-spmi: add support for Qualcomm QPNP PMICs
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 02:15:49PM -0700, Havard Skinnemoen wrote:
-> But the problem with shared banks is that multiple CPUs read them,
-> and we can't tell if the errors are duplicate unless we make sure
-> that only one CPU gets to read and clear it at a time. Any cpu-local
-> synchronization mechanism isn't going to work.
+On Thu, Jul 17, 2014 at 4:18 PM, pramod gurav
+<pramod.gurav.etc@gmail.com> wrote:
+> +Mark Brown
+> Hi Josh/Stanimir,
+>
+>
+> On Tue, Jul 8, 2014 at 9:24 PM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+>> From: Josh Cartwright <joshc@codeaurora.org>
+>>
+>> The Qualcomm QPNP PMIC chips are components used with the
+>> Snapdragon 800 series SoC family.  This driver exists
+> .
+> [SNIP]
+> .
+>> +config MFD_QPNP_SPMI
+>> +       tristate "Qualcomm QPNP SPMI PMIC"
+>> +       depends on ARCH_QCOM || COMPILE_TEST
+>> +       depends on OF
+>> +       select MFD_CORE
+>> +       select REGMAP_SPMI
+> REGMAP_SPMI use SPMI functions.
+>
+> https://patchwork.kernel.org/patch/4566591/
 
-Well, maybe it is about time we tracked shared banks.
+Sorry for incomplete comment as I sent the mail by mistake.
+In above patchwork discussion Mark Brown suggested "driver using
+REGMAP_SPMI should depend on SPMI and select REGMAP_SPMI, assuming
+SPMI is a user-selectable Kconfig symbol."
 
-> If you're worried about disabling interrupts, it's possible we don't
-> really need to make the spinlocks irqsafe. I'm not sure if we had any
-> reason for that other than "just to be safe".
+>> +       help
+>> +         This enables support for the Qualcomm QPNP SPMI PMICs.
+>> +         These PMICs are currently used with the Snapdragon 800 series of
+>> +         SoCs.  Note, that this will only be useful paired with descriptions
+> .
+>
+> --
+> Thanks and Regards
+> Pramod
 
-Hmm, so machine_check_poll gets called mostly in irqs off context except
-in the timer callback which runs in softirq context.
 
-I hear hrtimer callbacks will be made to run *always* in interrupt
-context so we could switch cmci to use an hrtimer at some point...
-
-> Or we could keep the (irqsafe) spinlocks but move the clearing much
-> earlier. There may have been a reason why the current code clears the
-> bank status last though -- perhaps we also need to read out all the
-> state while we hold the lock, before we clear the status bit.
-
-... or, yeah, do what you do currently and disable IRQs but do all the
-MSR accesses in there, after you've detected MCI_STATUS_VAL set. That
-would make the critical section at least shorter even if we disable
-interrupts for non-shared banks too.
-
-The clearing of the MCI_STATUS_VAL bit is unrelated to the rest of the
-MSRs in the MCA bank so you can read them all in one go in the critical
-section.
-
-We can evaluate later if the IRQs disabling is too heavy after all.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks and Regards
+Pramod
