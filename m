@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaGQRV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:21:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43943 "EHLO bear.ext.ti.com"
+	id S1754620AbaGQRX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:23:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44017 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160AbaGQRV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:21:28 -0400
-Date: Thu, 17 Jul 2014 12:20:45 -0500
+	id S1751389AbaGQRX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 13:23:56 -0400
+Date: Thu, 17 Jul 2014 12:23:35 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <kernel@stlinux.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <peter.griffin+familyguy@linaro.org>
-Subject: Re: [RFC PATCH] usb: dwc3: core: allow vendor drivers to check probe
- status
-Message-ID: <20140717172045.GM10459@saruman.home>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <Peter.Chen@freescale.com>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
+        <yoshihiro.shimoda.uh@renesas.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/8] usb: add support for the generic PHY framework
+Message-ID: <20140717172335.GN10459@saruman.home>
 Reply-To: <balbi@ti.com>
-References: <1405617213-27360-1-git-send-email-lee.jones@linaro.org>
+References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
+ <20140716174513.GF3016@saruman.home>
+ <20140717080302.GA3090@kwain>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="um2V5WpqCyd73IVb"
+	protocol="application/pgp-signature"; boundary="GEn4szYucjS2InE7"
 Content-Disposition: inline
-In-Reply-To: <1405617213-27360-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <20140717080302.GA3090@kwain>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---um2V5WpqCyd73IVb
-Content-Type: text/plain; charset=us-ascii
+--GEn4szYucjS2InE7
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Thu, Jul 17, 2014 at 06:13:33PM +0100, Lee Jones wrote:
-> This patch provides mechanism for subordinate devices to check
-> whether the DWC3 core probed successfully or otherwise.  Useful
-> if PHYs are required to configure controllers, but aren't yet
-> available.  The DWC3 core driver will defer probe if PHYs are
-> unavailable, however subordinate DWC3 drivers currently do not
-> have any visibility or means to check status - until now.
-
-what's a subordinate DWC3 driver ?
-
-> Another way to do this would be to *_phy_get*(), but if every
-> driver did this it would create a high level of code
-> duplication.
+On Thu, Jul 17, 2014 at 10:03:02AM +0200, Antoine T=E9nart wrote:
+> Hi Felipe,
 >=20
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/usb/dwc3/core.c | 12 ++++++++++++
->  drivers/usb/dwc3/core.h |  1 +
->  2 files changed, 13 insertions(+)
+> On Wed, Jul 16, 2014 at 12:45:13PM -0500, Felipe Balbi wrote:
+> > On Tue, Jul 15, 2014 at 04:39:08PM +0200, Antoine T=E9nart wrote:
+> > >=20
+> > > [1] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.h=
+tml
+> >=20
+> > Since this has a dependency on the other series which hasn't showed up
+> > with enough Acks, I can't take this one either. Let's get this ready
+> > early into v3.18-rc cycle so we don't miss this and the other series
+> > again.
 >=20
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index eb69eb9..171ca52 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-> @@ -47,6 +47,14 @@
-> =20
->  /* ---------------------------------------------------------------------=
------ */
-> =20
-> +static bool is_enabled =3D false;
-> +
-> +int dwc3_is_enabled(void)
-> +{
-> +	return is_enabled;
-> +}
-> +EXPORT_SYMBOL(dwc3_is_enabled);
+> Since this patch does not differ a lot from what I proposed, and is not
+> that big, can't we try to have acks in the next days so that we can take
+> this series as well? That would help my Berlin USB series[1] which
+> depends on this one :)
+>=20
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/27284=
+0.html
 
-no, no, no, no. Let me try that again, hello no! You _do_ realise there
-are systems with more than one dwc3 instance, right ? And this is the
-most fragile possible way of doing this.
-
-You never explained what's a dwc3 subordinate driver, you don't show any
-example of how this would be used and why/where does the PHY need to
-poke into DWC3. Why isn't probe defer enough for you ? Which platform
-are you working on ? what is the problem that you're trying to solve ?
-
-=46rom this patch, all I can is NAK this patch with no mercy, sorry.
+my tree is already closed for v3.17 unless it's an important fix for
+what's already in my 'next' branch. Moreover, I never got acks from
+everybody necessary. Sorry, it has to wait until v3.18.
 
 --=20
 balbi
 
---um2V5WpqCyd73IVb
+--GEn4szYucjS2InE7
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTyAXtAAoJEIaOsuA1yqREHSAP/3LVR5BSRVxHqSlfsBFo9PW8
-lVbGAMC//Rqo/EiZCHvQsitYDe/PfyPRE6NS1NQvw8THg7uJAgCX/A87+m9V2Cp0
-vjVCflOpdTfiJU+pGvLWWaJxaNlLHttCuIf83+Rbt1pBC3lHhb0LnyIRoU2KsSVn
-xHyKUeK4vScvlRsEQ+fZAHLB/dmJLOlMv3nA8BUrbQo/moH6nZxhKSodmPHVcEgP
-X73XuUmRg1Cm2fcS+l67X+ISWDeASKX7jjNu19VIohDV2fKsNr8/hqGR3OK5vD5m
-Ir6Xzho2DB3M1gQQf068ndcs4RWF3w5kjB7EkWPb3DBXS1rvjgK1VJ0xaLwbQuBA
-fegVpw4JDTVhsElue3q/s8pxpB80kIizW7gqOzzwapGz3IHrkGKo+IzaLbb9BQeM
-uS94RL7rQ1IRQDHqA6iA6zUaPf67iEPNXuvVWk8bwLqHZxnEjTn9Q3O8JzZAOEst
-uD8UCiS7f6iQ6bsVNV0d+VZFdbE0Sj43axYkoHnST+k2GtHhw5hHis9AwMKTQupa
-Jt8w5J3yz99yTbLpNKwQROaKOrdYiR+rJ+4g329wGUNSsCDCSBi4Hw485StZVNuK
-iHauB7tK9gjlU1j1p/dhFkcnrOKvmd6r3vo/yU72QhtUuy3JDW9cznSstSsqLBam
-Ru0BFpXAl3U8JCT2mWwx
-=Al43
+iQIcBAEBAgAGBQJTyAaXAAoJEIaOsuA1yqREqawQAJrwp3KJ6t7ARiDAgFr++aaj
+MKQ//irw169Itk3b795WMQ4Z9LeAOxb5FU506FF1FzOsICJxxRIoazqLbriPRrUp
+2MMNf399w6bYhSMIjGr0Ep/OjKqYZOQUgruxZCPxdU4pHjFSgL/lhzUZmeCyv+7v
+dm/IjvHVHjmc39vHMU7DJFVcHdU6NK82kKi8VVy14HhUwsHVbQz4QQuxs1ObEyl8
+rVkaxs8eDl+EK6YOpXX5/VgXNDqTeyCYxt4nWW2hO3pCMnZKQNHFinvuXIEHzyto
+RwhFittPG0888QHR22uCSXU4+wLq5bhYNNJjuw57GcEatrJmcBKu6l7lrRPWj2R9
+3k361pzj45U3lSfVuhZ1QypmKmjUg8zT8U4iRAWy0P02hcyGUKQoduvxD40OPERF
+qTgA4LYqngPuDvquF91r+gqpz77RgEZlq0MhMzwWIpevBalVRhbFfOT7KdzuoIGi
+uqhGdyeUIsAWj4qAcxvleThCqFMZZ8di/vn2MkxuLataP4QArK13+ugUGt4+1kkq
+Kf1uROkW07CrO4vSgNs4njZBIJjrqE1CoYsCVbor0SR2FLkYdxQdMlsua9J40myN
+oEh+7kVdcnPQcxW8ba72u2LFM4Q/gI3DPaD+ChIOtMxg7BQA3/zPjn5zkfNxo+VA
+7omByZoVoWWw3SapAyrx
+=n/sk
 -----END PGP SIGNATURE-----
 
---um2V5WpqCyd73IVb--
+--GEn4szYucjS2InE7--
