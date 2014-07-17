@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaGQB3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 21:29:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48582 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348AbaGQB3J convert rfc822-to-8bit (ORCPT
+	id S1752076AbaGQBgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 21:36:53 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:36938 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaGQBgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 21:29:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,674,1400050800"; 
-   d="scan'208";a="457926272"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Mark Brown <broonie@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: RE: [PATCH v3 7/7] ACPI: Cleanup useless ACPI inclusion.
-Thread-Topic: [PATCH v3 7/7] ACPI: Cleanup useless ACPI inclusion.
-Thread-Index: AQHPoNS4Owl88UV5j0iqd+oxRhZTzJuiFVoAgAChmwD///y8gIAAx1VA
-Date: Thu, 17 Jul 2014 01:29:04 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802643042@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1387336613.git.lv.zheng@intel.com>
- <7ac00c9c5a32f7a3ec98f061080ba1573ae57d0d.1405500886.git.lv.zheng@intel.com>
- <20140716120750.GM17528@sirena.org.uk> <4307509.CpjlMkz69H@vostro.rjw.lan>
- <20140716213433.GD17528@sirena.org.uk>
-In-Reply-To: <20140716213433.GD17528@sirena.org.uk>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Jul 2014 21:36:51 -0400
+Date: Thu, 17 Jul 2014 10:35:32 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgap: introduce dgap_cleanup_nodes()
+Message-ID: <20140717013532.GA1040@devel.8.8.4.4>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When a configration file is parsed with dgap_parsefile(),
+makes nodes for saving configrations for board.
 
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Thursday, July 17, 2014 5:35 AM
-> 
-> On Wed, Jul 16, 2014 at 11:46:14PM +0200, Rafael J. Wysocki wrote:
-> > On Wednesday, July 16, 2014 01:07:50 PM Mark Brown wrote:
-> > > On Wed, Jul 16, 2014 at 04:59:02PM +0800, Lv Zheng wrote:
-> 
-> > > > The sst-haswell-dsp.c is an ACPI independent file, this patch removes
-> > > > ACPI header files for it.
-> 
-> > > Applied, thanks.  Please use subject lines matching the style for the
-> > > subsystem and send at least the cover letter for the series to everyone
-> > > so that they know what's going on with dependencies and so on.
-> 
-> > Lv thought that this would go through the ACPI tree I suppose.
-> 
-> Even so the subject line should still line up (it's part of how some of
-> us pick out which mail to read).
+Making a node will allocate node memory and strings for saving
+configrations with kstrdup().
 
-I just didn't notice this. :-)
-I'll take care next time.
+So these are freed when dgap is unloaded or failed to initialize.
 
-Thanks and best regards
--Lv
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+Mark, please review this patch.
+Thanks.
+
+ drivers/staging/dgap/dgap.c |   47 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 06c55cb..e9df2ea 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -201,6 +201,7 @@ static int dgap_test_fep(struct board_t *brd);
+ static int dgap_tty_register_ports(struct board_t *brd);
+ static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
+ 			      struct board_t *brd);
++static void dgap_cleanup_nodes(void);
+ 
+ static void dgap_cleanup_module(void);
+ 
+@@ -619,6 +620,7 @@ unregister_tty:
+ free_flipbuf:
+ 	dgap_free_flipbuf(brd);
+ cleanup_brd:
++	dgap_cleanup_nodes();
+ 	dgap_release_remap(brd);
+ 	kfree(brd);
+ 
+@@ -659,6 +661,8 @@ static void dgap_cleanup_module(void)
+ 		dgap_cleanup_board(dgap_board[i]);
+ 	}
+ 
++	dgap_cleanup_nodes();
++
+ 	if (dgap_numboards)
+ 		pci_unregister_driver(&dgap_driver);
+ }
+@@ -6323,6 +6327,49 @@ static void dgap_remove_tty_sysfs(struct device *c)
+ 	sysfs_remove_group(&c->kobj, &dgap_tty_attribute_group);
+ }
+ 
++static void dgap_cleanup_nodes(void)
++{
++	struct cnode *p;
++
++	p = &dgap_head;
++
++	while (p) {
++		struct cnode *tmp = p->next;
++
++		switch (p->type) {
++		case BNODE:
++			kfree(p->u.board.portstr);
++			kfree(p->u.board.addrstr);
++			kfree(p->u.board.pcibusstr);
++			kfree(p->u.board.pcislotstr);
++			kfree(p->u.board.method);
++			break;
++		case CNODE:
++			kfree(p->u.conc.id);
++			kfree(p->u.conc.connect);
++			break;
++		case MNODE:
++			kfree(p->u.module.id);
++			break;
++		case TNODE:
++			kfree(p->u.ttyname);
++			break;
++		case CUNODE:
++			kfree(p->u.cuname);
++			break;
++		case LNODE:
++			kfree(p->u.line.cable);
++			break;
++		case PNODE:
++			kfree(p->u.printname);
++			break;
++		}
++
++		kfree(p->u.board.status);
++		kfree(p);
++		p = tmp;
++	}
++}
+ /*
+  * Parse a configuration file read into memory as a string.
+  */
+-- 
+1.7.1
+
