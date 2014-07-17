@@ -1,151 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645AbaGQVNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 17:13:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35905 "EHLO mail.kernel.org"
+	id S1756425AbaGQVXE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 17:23:04 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41839 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668AbaGQVNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 17:13:53 -0400
-Date: Thu, 17 Jul 2014 23:13:48 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: "Tc, Jenny" <jenny.tc@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Message-ID: <20140717211347.GD13832@earth.universe>
-References: <1404122155-12369-1-git-send-email-jenny.tc@intel.com>
- <1404122155-12369-4-git-send-email-jenny.tc@intel.com>
- <20140703145617.GA23309@earth.universe>
- <20ADAB092842284E95860F279283C56422F95A3E@BGSMSX104.gar.corp.intel.com>
- <20140708155614.GA12945@earth.universe>
- <20ADAB092842284E95860F279283C56422F9B99C@BGSMSX104.gar.corp.intel.com>
+	id S1752770AbaGQVXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 17:23:02 -0400
+Date: Thu, 17 Jul 2014 17:14:25 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-crypto@vger.kernel.org, beck@openbsd.org
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+Message-ID: <20140717211425.GU1491@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+	linux-api@vger.kernel.org, linux-crypto@vger.kernel.org,
+	beck@openbsd.org
+References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+ <53C8319A.8090108@amacapital.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="RhUH2Ysw6aD5utA4"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20ADAB092842284E95860F279283C56422F9B99C@BGSMSX104.gar.corp.intel.com>
+In-Reply-To: <53C8319A.8090108@amacapital.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 17, 2014 at 01:27:06PM -0700, Andy Lutomirski wrote:
+> > +	return urandom_read(NULL, buf, count, NULL);
+> 
+> This can return -ERESTARTSYS.  Does it need any logic to restart correctly?
 
---RhUH2Ysw6aD5utA4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Nope; because we only return -ERESTARTSYS when we haven't generated
+any randomness yet.  The way /dev/urandom and /dev/random devices work
+is that if we get interrupted, we return a short read.  We do *not*
+resume generation of random bytes from where we got interrupted from
+the signal handler.
 
-On Fri, Jul 11, 2014 at 02:46:35AM +0000, Tc, Jenny wrote:
-> > From: Sebastian Reichel [mailto:sre@kernel.org]
-> > Sent: Tuesday, July 08, 2014 9:26 PM
-> > To: Tc, Jenny
-> > Cc: linux-kernel@vger.kernel.org; Dmitry Eremin-Solenikov; Pavel Machek=
-; Stephen
-> > Rothwell; Anton Vorontsov; David Woodhouse; David Cohen; Pallala, Ramak=
-rishna
-> > Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-> >=20
-> > On Tue, Jul 08, 2014 at 06:07:29AM +0000, Tc, Jenny wrote:
-> > > > > +static int get_tempzone(struct psy_pse_chrg_prof *pse_mod_bprof,
-> > > > > +		int temp)
-> > > > > +{
-> > > > > +	int i =3D 0;
-> > > > > +	int temp_range_cnt;
-> > > > > +
-> > > > > +	temp_range_cnt =3D  min_t(u16, pse_mod_bprof->temp_mon_ranges,
-> > > > > +					BATT_TEMP_NR_RNG);
-> > > > > +	if ((temp < pse_mod_bprof->temp_low_lim) ||
-> > > > > +		(temp > pse_mod_bprof->temp_mon_range[0].temp_up_lim))
-> > > > > +		return -EINVAL;
-> > > > > +
-> > > > > +	for (i =3D 0; i < temp_range_cnt; ++i)
-> > > > > +		if (temp > pse_mod_bprof->temp_mon_range[i].temp_up_lim)
-> > > > > +			break;
-> > > > > +	return i-1;
-> > > > > +}
-> > > >
-> > > > pse_mod_bprof->temp_mon_ranges > BATT_TEMP_NR_RNG is not allowed, so
-> > > > I suggest to print an error and return some error code.
-> > > >
-> > > min_t takes care of the upper bound. The algorithm process
-> > > BATT_TEMP_NR_RNG even if the actual number of zones are greater than =
-this.
-> >=20
-> > Right, the function will not fail, but the zone information table is tr=
-uncated. I would
-> > expect at least warning about that. I think it doesn't hurt to have a s=
-mall function,
-> > which validates the zone data as good as possible. Using incorrect temp=
-erature
-> > zones is a safety thread and we should try our best to avoid exploding =
-batteries ;)
-> >=20
-> > Maybe something like that:
-> >=20
-> > static bool check_tempzones(struct psy_pse_chrg_prof *pse_mod_bprof) {
-> >     int i =3D 0;
-> >     int last_temp =3D ;
-> >=20
-> >     /* check size */
-> >     if (BATT_TEMP_NR_RNG > pse_mod_bprof->temp_mon_ranges)
-> >         return false;
->=20
-> This is in a way good to have, OK to implement the same.
->=20
-> But KO with below suggestion. This doesn't guarantee safety. IMHO
-> Safety is 1/0 - SAFE or NOT SAFE. No half safety.
+This is consistent with the definition in the signal(7) man page:
 
-We won't be able to handle every possible case, but we can try our
-best to avoid problems. One (possibly useless) safety check too much
-is better than one missing check.
+       If a blocked call to one of the following interfaces is
+       interrupted by a signal handler, then the call will be
+       automatically restarted after the signal handler returns if the
+       SA_RESTART flag was used; otherwise the call will fail with the
+       error EINTR:
 
-> To ensure complete safety, measures should be taken at the entry
-> point- where data is read from external source. Since the
-> algorithm gets the data from internal kernel component
-> (power_supply_charger.c), it trust the data. Since the data is
-> originated from battery identification driver, the safety should
-> be ensured at that level.
+           * read(2), readv(2), write(2), writev(2), and ioctl(2)
+             calls on "slow" devices.  A "slow" device is one where
+             the I/O call may block for an indefinite time, for
+             example, a terminal, pipe, or socket.  (A disk is not a
+             slow device according to this definition.)  If an I/O
+             call on a slow device has already transferred some data
+             by the time it is interrupted by a signal handler, then
+             the call will return a success status (normally, the
+             number of bytes transferred).
 
-I think some basic checks of kernel's platform data help to avoid
-potential problems during development phase.
+And in answer to Zach's question along these lines, ERESTARTSYS gets
+restarted or transformed into EINTR by the system call layer, so long
+as you only set ERESTARTSYS when signal_pending(current) is true.  If
+you accidentally set the return value to ERESTARTSYS when a signal is
+not pending, this error code can escape out to user space, which is
+considered a bug.  But we're using this correctly in
+drivers/char/random.c.
 
-> >     /* check zone order */
-> >     for (i =3D 0; i < pse_mod_bprof->temp_mon_ranges; i++) {
-> >         if (last_temp < pse_mod_bprof->temp_mon_range[i].temp_up_lim)
-> >             return false;
-> >         last_temp =3D pse_mod_bprof->temp_mon_range[i].temp_up_lim;
-> >     }
-> >=20
-> >     return true;
-> > }
-
--- Sebastian
-
---RhUH2Ysw6aD5utA4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTyDyLAAoJENju1/PIO/qacr8P/jJURP0nfVoQFdWwKtOEwZhd
-z+XhTeq5GqM4AgQxf5o2lLdtBv7JnaUV28Q4OUAa5MK2rhCtVVr/j3oEyCkFwaXI
-pPFQw7Mrax2He0ZNRgvDVGBypIvpnlvIAyJKx7B1um10npzGPM9PKoz7BEgcCITx
-6qYS9TtElFqLAU4JwCMt2kSwVP8wu2JprFZKJ5G9ge0hrZzA8IeDtCHDnYAqmmTO
-zN1jF9W0Gp8CgRZAH68oWTaWqwTYhcbSpAkpMs4ENtlEy2KBJDyUfF2dTjjvJmAj
-czrLVhxItgdfoBFoM1a8UL5iVyc6pxTHuA6wfW/YpqMZDiERaSUd8jZPNulQqerW
-WDDYbXTxMyAj04tYHdQqfbM8G5vrftxoYDlwOGvc8+2aFO6wGBI8ZJMoW6i+WtR4
-R6lRjsifZ+1CyLhoRsP/gTsFjr/Davtokb3sSLI2SBkCD1NV4BJXc4bS6JujCjAi
-rDoL3hpFUZm2pD1jJJdQtkutmryTFXxmTrpkURcPKrGpr4Maqi/UQpRo3yNx3wn+
-VAqjjX+T4cLKxL5elc2KHf6Z/M0xlbKtE7kqzLnYUq2Hj/Ow2bkpkBO3j/KZXlDv
-rPFWEr/nX84KkMd2ULjtDTaVwYgZ9CmnLzMlRBXyIgszRV/ZhpytqukmrjO6+qWa
-NRLxAiuRqzXybo8cNU6D
-=UdSM
------END PGP SIGNATURE-----
-
---RhUH2Ysw6aD5utA4--
+						- Ted
