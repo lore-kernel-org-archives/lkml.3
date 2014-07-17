@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaGQUML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 16:12:11 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:5546 "EHLO smtp6-g21.free.fr"
+	id S1754150AbaGQUQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 16:16:52 -0400
+Received: from fieldses.org ([174.143.236.118]:53468 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050AbaGQUMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 16:12:09 -0400
-Date: Thu, 17 Jul 2014 22:12:04 +0200
-From: Guillaume Morin <guillaume@morinfr.org>
-To: "Horiguchi, Naoya" <Naoya.Horiguchi@necam.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, nao.horiguchi@gmail.com
-Subject: Re: [BUG] new copy_hugetlb_page_range() causing crashes
-Message-ID: <20140717201203.GA23591@bender.morinfr.org>
-Mail-Followup-To: "Horiguchi, Naoya" <Naoya.Horiguchi@necam.com>,
-	Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-	Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org, nao.horiguchi@gmail.com
-References: <019768ac467043a4aaea3e455cb74db7@BPXC18GP.gisp.nec.co.jp>
- <FC3CA273EA98D94B96901B237F5F506BB61DC0@irvmail101.necam.prv>
+	id S1751952AbaGQUQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 16:16:50 -0400
+Date: Thu, 17 Jul 2014 16:16:50 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfsd: silence sparse warning about accessing credentials
+Message-ID: <20140717201649.GF30442@fieldses.org>
+References: <1405443576-28348-1-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <FC3CA273EA98D94B96901B237F5F506BB61DC0@irvmail101.necam.prv>
+In-Reply-To: <1405443576-28348-1-git-send-email-jlayton@primarydata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nayoa,
+On Tue, Jul 15, 2014 at 12:59:36PM -0400, Jeff Layton wrote:
+> sparse says:
+> 
+>     fs/nfsd/auth.c:31:38: warning: incorrect type in argument 1 (different address spaces)
+>     fs/nfsd/auth.c:31:38:    expected struct cred const *cred
+>     fs/nfsd/auth.c:31:38:    got struct cred const [noderef] <asn:4>*real_cred
+> 
+> Add a new accessor for the ->real_cred and use that to fetch the
+> pointer. Accessing current->real_cred directly is actually quite safe
+> since we know that they can't go away so this is mostly a cosmetic fixup
+> to silence sparse.
 
-Thanks for your answer.
+Thanks, applying, absent any objections.
 
-On 17 Jul 14:35, Horiguchi, Naoya wrote:
-> I tried some simple operation (below) on 3.14.12, but not reproduced the crash,
-> so some non-trivial condition seemed to trigger this.
-> Could you elaborate about how you reproduced the crash?
+--b.
 
-Well, It's just a bunch of fairly random unit tests and I was not able
-to make it happen on a small program.  However, I modified your program
-a bit and managed to reproduce the problem:
-
-$ cat heap.c 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-
-int main() {
-        int i;
-        char *p = malloc(4096*512);
-        for (i = 0; i < 512; i++)
-                p[i*4096] = '1';
-        printf("p %p\n", p);
-        for (i = 0 ; i < 10; i++)
-                if (!fork()) {
-                    memset(p, '2', 4096*512);
-                    p = malloc(4096*512);
-                    printf("pid %d\n", getpid());
-                    memset(p, '3', 4096*512);
-                    free(p);
-
-                    return 0;
-                }
-        pause();                                    
-}
-
-This is what happens on my 3.14.12 machine:
-$ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./h
-p 0x800010
-pid 7974
-pid 7975
-h: malloc.c:2369: sysmalloc: Assertion `(old_top == (((mbinptr) (((char *) &((av)->bins[((1) - 1) * 2])) - __builtin_offsetof (struct malloc_chunk, fd)))) && old_size == 0) || ((unsigned long) (old_size) >= (unsigned long)((((__builtin_offsetof (struct malloc_chunk, fd_nextsize))+((2 * (sizeof(size_t))) - 1)) & ~((2 * (sizeof(size_t))) - 1))) && ((old_top)->size & 0x1) && ((unsigned long)old_end & pagemask) == 0)' failed.
-
-Sometimes the process gets stuck instead asserting out.  But I could not
-make it SIGSEGV
-
-Same result with the 3.4.98 kernel.
-
-It works fine when I remove your patch though
-
-Guillaume.
-
--- 
-Guillaume Morin <guillaume@morinfr.org>
+> 
+> Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+> ---
+>  fs/nfsd/auth.c       | 2 +-
+>  include/linux/cred.h | 9 +++++++++
+>  2 files changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/nfsd/auth.c b/fs/nfsd/auth.c
+> index 72f44823adbb..9d46a0bdd9f9 100644
+> --- a/fs/nfsd/auth.c
+> +++ b/fs/nfsd/auth.c
+> @@ -28,7 +28,7 @@ int nfsd_setuser(struct svc_rqst *rqstp, struct svc_export *exp)
+>  	validate_process_creds();
+>  
+>  	/* discard any old override before preparing the new set */
+> -	revert_creds(get_cred(current->real_cred));
+> +	revert_creds(get_cred(current_real_cred()));
+>  	new = prepare_creds();
+>  	if (!new)
+>  		return -ENOMEM;
+> diff --git a/include/linux/cred.h b/include/linux/cred.h
+> index f61d6c8f5ef3..b2d0820837c4 100644
+> --- a/include/linux/cred.h
+> +++ b/include/linux/cred.h
+> @@ -259,6 +259,15 @@ static inline void put_cred(const struct cred *_cred)
+>  	rcu_dereference_protected(current->cred, 1)
+>  
+>  /**
+> + * current_real_cred - Access the current task's objective credentials
+> + *
+> + * Access the objective credentials of the current task.  RCU-safe,
+> + * since nobody else can modify it.
+> + */
+> +#define current_real_cred() \
+> +	rcu_dereference_protected(current->real_cred, 1)
+> +
+> +/**
+>   * __task_cred - Access a task's objective credentials
+>   * @task: The task to query
+>   *
+> -- 
+> 1.9.3
+> 
