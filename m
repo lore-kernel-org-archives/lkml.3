@@ -1,70 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933945AbaGQOsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:48:52 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:60952 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaGQOry (ORCPT
+	id S933989AbaGQOtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:49:07 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:43578 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342AbaGQOtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:47:54 -0400
-Message-ID: <53C7E234.3020503@gmail.com>
-Date: Thu, 17 Jul 2014 10:48:20 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>
-CC: rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others
- to this_cpu_ops.txt
-References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com> <alpine.DEB.2.11.1407170934220.28121@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1407170934220.28121@gentwo.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jul 2014 10:49:03 -0400
+From: Bastian Hecht <hechtb@gmail.com>
+To: linux-i2c@vger.kernel.org
+Cc: Linux-SH <linux-sh@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
+        Bastian Hecht <hechtb@gmail.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2 1/5] i2c: Don't start transfers when suspended
+Date: Thu, 17 Jul 2014 16:48:36 +0200
+Message-Id: <1405608520-5644-1-git-send-email-hechtb@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 10:39 AM, Christoph Lameter wrote:
-> On Thu, 17 Jul 2014, Pranith Kumar wrote:
-> 
->>> The use of atomic_t implies a remote write operation to a percpu area.
->>>
->>> atomic_t needs to be avoided. If data needs to be modified from multiple
->>> cpus then it usually does not belong into a percpu area.
->>>
->>
->> Yes, I think I made it pretty clear that remote accesses need to be avoided
->> unless absolutely necessary. But, there will be scenarios where mostly local
->> data will need to be have remote accesses. In such scenarios, isn't using
->> atomic_t better? FYI, that is how RCU code currently works. It uses atomic_t in
->> per cpu areas to ensure atomicity for remote accesses.
-> 
-> The RCU code has .... ummmm... some issues with percpu usage and should
-> not be taken as a good example. If you look at the RCU code it looks
-> horrible with numerous barriers around remote percpu read/wrirte
-> accesses and one wonders if that code is actually ok.
+i2c transfer requests come in very uncontrolled, like from interrupt routines.
+We might be suspended when this happens. To avoid i2c timeouts caused by
+powered down busses we check for suspension.
 
-Well, it is running in all our kernels with not many reported issues, isn't it ;)
-And yes, that is one of the extra-ordinary situations where we use per-cpu data.
-Once you've extracted a pointer to the per-cpu area -and- ensure that concurrent
-accesses do not happen(or happen with enough guarantees using barriers), what is
-the case against remote accesses? I am asking from a correctness and a
-performance point of view, not style/aesthetics.
+Several bus drivers handle this problem on their own. We can clean things up
+by moving the protection mechanism into the core.
 
-> 
->> If data needs to be modified from multiple cpus only very rarely, doesn't it
->> make sense to use per-cpu areas?
-> 
-> I would suggest that this should not occur. You can always "modify" remote
-> percpu areas by generating an IPI on that cpu to make that processor
-> update its own per cpu data.
-> 
+Signed-off-by: Bastian Hecht <hechtb@gmail.com>
+---
+changelog v2:
 
-The case against doing that is not to wake up CPUs which are in idle/sleep
-states. I think mentioning it here that remote accesses are strongly discouraged
-with a reasonable explanation of the implications should be enough. There might
-always be rare situations where remote accesses might be necessary.
+- commit message extended.
+- initialization added for adap->suspended
+- swapped branch for increased performance
 
---
-Pranith
+
+ drivers/i2c/i2c-core.c | 25 ++++++++++++++++++++++++-
+ include/linux/i2c.h    |  1 +
+ 2 files changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 7c7f4b8..b15dc20 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -343,6 +343,13 @@ static int i2c_legacy_resume(struct device *dev)
+ static int i2c_device_pm_suspend(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
++	struct i2c_adapter *adap = i2c_verify_adapter(dev);
++
++	if (adap) {
++		i2c_lock_adapter(adap);
++		adap->suspended = true;
++		i2c_unlock_adapter(adap);
++	}
+ 
+ 	if (pm)
+ 		return pm_generic_suspend(dev);
+@@ -353,6 +360,13 @@ static int i2c_device_pm_suspend(struct device *dev)
+ static int i2c_device_pm_resume(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
++	struct i2c_adapter *adap = i2c_verify_adapter(dev);
++
++	if (adap) {
++		i2c_lock_adapter(adap);
++		adap->suspended = false;
++		i2c_unlock_adapter(adap);
++	}
+ 
+ 	if (pm)
+ 		return pm_generic_resume(dev);
+@@ -1243,6 +1257,7 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
+ 	dev_set_name(&adap->dev, "i2c-%d", adap->nr);
+ 	adap->dev.bus = &i2c_bus_type;
+ 	adap->dev.type = &i2c_adapter_type;
++	adap->suspended = false;
+ 	res = device_register(&adap->dev);
+ 	if (res)
+ 		goto out_list;
+@@ -1819,7 +1834,10 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+ 			i2c_lock_adapter(adap);
+ 		}
+ 
+-		ret = __i2c_transfer(adap, msgs, num);
++		if (!adap->suspended)
++			ret = __i2c_transfer(adap, msgs, num);
++		else
++			ret = -EIO;
+ 		i2c_unlock_adapter(adap);
+ 
+ 		return ret;
+@@ -2577,6 +2595,10 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
+ 
+ 	if (adapter->algo->smbus_xfer) {
+ 		i2c_lock_adapter(adapter);
++		if (adapter->suspended) {
++			res = -EIO;
++			goto unlock;
++		}
+ 
+ 		/* Retry automatically on arbitration loss */
+ 		orig_jiffies = jiffies;
+@@ -2590,6 +2612,7 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
+ 				       orig_jiffies + adapter->timeout))
+ 				break;
+ 		}
++unlock:
+ 		i2c_unlock_adapter(adapter);
+ 
+ 		if (res != -EOPNOTSUPP || !adapter->algo->master_xfer)
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index b556e0a..af08c75 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -434,6 +434,7 @@ struct i2c_adapter {
+ 	int timeout;			/* in jiffies */
+ 	int retries;
+ 	struct device dev;		/* the adapter device */
++	unsigned int suspended:1;
+ 
+ 	int nr;
+ 	char name[48];
+-- 
+1.9.1
+
