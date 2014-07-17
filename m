@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaGQA1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 20:27:17 -0400
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:39022 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848AbaGQA1O convert rfc822-to-8bit (ORCPT
+	id S1755133AbaGQA2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 20:28:25 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:52124 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693AbaGQA2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 20:27:14 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Robert Baldyga <r.baldyga@samsung.com>, "balbi@ti.com" <balbi@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
-Subject: RE: [PATCH v2 00/12] usb: dwc2/gadget: fix series
-Thread-Topic: [PATCH v2 00/12] usb: dwc2/gadget: fix series
-Thread-Index: AQHPoN/j+g6HSwJVtUaYykO7pirJvpujaKXQ
-Date: Thu, 17 Jul 2014 00:27:12 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844BEC8C@US01WEMBX2.internal.synopsys.com>
-References: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
-In-Reply-To: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Jul 2014 20:28:23 -0400
+X-Greylist: delayed 57813 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jul 2014 20:28:23 EDT
 MIME-Version: 1.0
+In-Reply-To: <1450785.beFNo3ByBF@vostro.rjw.lan>
+References: <cover.1404231535.git.viresh.kumar@linaro.org>
+	<CAKohpo=Z5gEHOC5q40q8dfQfoNP5-WyhjG1arV99zJiG2c+6Xg@mail.gmail.com>
+	<CAKohpo=bUMKa752fBXZTb0WPYMfJtuR5uk7z-YaXYV63fhJWtg@mail.gmail.com>
+	<1450785.beFNo3ByBF@vostro.rjw.lan>
+Date: Thu, 17 Jul 2014 05:58:22 +0530
+Message-ID: <CAKohpomPAp74Sf_DxqzFk1WzUTx5m=G-nj+d+QHW5q=gnVphhA@mail.gmail.com>
+Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Tomasz Figa <t.figa@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Rob Herring <rob.herring@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Simon Horman <horms@verge.net.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> Sent: Wednesday, July 16, 2014 3:22 AM
-> 
-> This patchset contains fixes for dwc2 gadget driver. It touches PHY,
-> FIFO configuration, initialization sequence and adds many other small fixes.
-> 
-> Best regards
-> Robert Baldyga
-> Samsung R&D Institute Poland
-> 
-> Changelog:
-> v2:
->  - add patch usb: dwc2/gadget: avoid disabling ep0
->  - fix FIFO flushing when it's assigned to endpoint dynamically
->  - write to proper FIFO in s3c_hsotg_write_fifo() function
->  - use real FIFO size in kill_all_requests
->  - fix comment in s3c_hsotg_init_fifo() function
-> 
-> v1: https://lkml.org/lkml/2014/6/23/67
+On 17 July 2014 02:48, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> I don't like that idea, but I wonder what other people think.
 
-Hi Robert,
+Hmm, the other thread around looking at the bindings is really slow.
 
-For v1, I gave my Ack for the entire series, but I don't see my Ack on
-any of these. Any reason for that?
+One common thing around the platforms which want to use
+cpufreq-cpu0 is they have different clocks for ALL CPUs.
 
--- 
-Paul
+I was wondering if instead of a clock-matching routine, we can provide
+some temporary relief to them via some other means.
 
+I meant we can allow cpufreq-cpu0/generic to either set policy->cpus
+to ALL CPUs or just 1. So that existing and these new platforms can
+atleast get going..
+
+But don't know how should we do that. Not a binding ofcourse, a
+Kconfig option could work but multiplatform stuff would break. What
+else?
+
+Maybe platform data as we are handling cpufreq-cpu0 with a platform
+device?
+
+--
+viresh
