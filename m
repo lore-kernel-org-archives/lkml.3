@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbaGQTlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 15:41:01 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:56101 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897AbaGQTk7 (ORCPT
+	id S1756425AbaGQTlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 15:41:16 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:61442 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437AbaGQTlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 15:40:59 -0400
-Subject: [PATCH 3/3] mpt3sas,
-	mpt2sas: fix scsi_add_host error handling problems in _scsih_probe
-To: axboe@kernel.dk, abhijit.mahajan@avagotech.com, kmo@datarainc.com,
-        nagalakshmi.nandigama@avagotech.com, asamymuthupa@micron.com,
-        snitzer@redhat.com, JBottomley@parallels.com,
-        relliott@beardog.cce.hp.com, sreekanth.reddy@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, agordeev@redhat.com,
-        scameron@beardog.cce.hp.com, tom.leiming@gmail.com, elliott@hp.com,
-        sbradshaw@micron.com, hch@lst.de, m@bjorling.me
-From: Robert Elliott <elliott@hp.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Thu, 17 Jul 2014 14:39:30 -0500
-Message-ID: <20140717193926.1924.21344.stgit@beardog.cce.hp.com>
-In-Reply-To: <20140717193707.1924.87867.stgit@beardog.cce.hp.com>
-References: <20140717193707.1924.87867.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Thu, 17 Jul 2014 15:41:09 -0400
+Message-ID: <53C826D1.1020609@linaro.org>
+Date: Thu, 17 Jul 2014 20:41:05 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: linux-mmc@vger.kernel.org
+CC: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        agross@codeaurora.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1] mmc: mmci: Add qcom dml support to the driver.
+References: <1405079306-1406-1-git-send-email-srinivas.kandagatla@linaro.org> <1405625780-13503-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1405625780-13503-1-git-send-email-srinivas.kandagatla@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In _scsih_probe, propagate the return value from scsi_add_host.
-In mpt3sas, avoid calling list_del twice if that returns an
-error, which causes list_del corruption warnings if an error
-is returned.
 
-Tested with blk-mq and scsi-mq patches to properly cleanup
-from and propagate blk_mq_init_rq_map errors.
+On 17/07/14 20:36, Srinivas Kandagatla wrote:
+> On Qualcomm APQ8064 SOCs, SD card controller has an additional glue
+> called DML (Data Mover Local/Lite) to assist dma transfers.
+> This hardware needs to be setup before any dma transfer is requested.
+> DML itself is not a DMA engine, its just a gule between the SD card
+> controller and dma controller.
+>
+> Most of this code has been ported from qualcomm's 3.4 kernel.
+>
+> This patch adds the code necessary to intialize the hardware and setup
+> before doing any dma transfers.
+>
+> Tested-by: Prakash Burla <prakash.burla@smartplayin.com>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> ---
 
-Signed-off-by: Robert Elliott <elliott@hp.com>
----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    8 ++++++--
- drivers/scsi/mpt3sas/mpt3sas_scsih.c |    9 ++++++---
- 2 files changed, 12 insertions(+), 5 deletions(-)
+Here is the change log which I forgot in the original patch
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 4f8a45f..7110e75 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -8123,6 +8123,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct MPT2SAS_ADAPTER *ioc;
- 	struct Scsi_Host *shost;
-+	int rv;
- 
- 	shost = scsi_host_alloc(&scsih_driver_template,
- 	    sizeof(struct MPT2SAS_ADAPTER));
-@@ -8218,6 +8219,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	if (!ioc->firmware_event_thread) {
- 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
-+		rv = -ENODEV;
- 		goto out_thread_fail;
- 	}
- 
-@@ -8225,6 +8227,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	if ((mpt2sas_base_attach(ioc))) {
- 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
-+		rv = -ENODEV;
- 		goto out_attach_fail;
- 	}
- 
-@@ -8242,7 +8245,8 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	} else
- 		ioc->hide_drives = 0;
- 
--	if ((scsi_add_host(shost, &pdev->dev))) {
-+	rv = scsi_add_host(shost, &pdev->dev);
-+	if (rv) {
- 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
- 		goto out_add_shost_fail;
-@@ -8259,7 +8263,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-  out_thread_fail:
- 	list_del(&ioc->list);
- 	scsi_host_put(shost);
--	return -ENODEV;
-+	return rv;
- }
- 
- #ifdef CONFIG_PM
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_scsih.c b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-index d2e95ff..07454f0 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-@@ -7727,6 +7727,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct MPT3SAS_ADAPTER *ioc;
- 	struct Scsi_Host *shost;
-+	int rv;
- 
- 	shost = scsi_host_alloc(&scsih_driver_template,
- 	    sizeof(struct MPT3SAS_ADAPTER));
-@@ -7819,6 +7820,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	if (!ioc->firmware_event_thread) {
- 		pr_err(MPT3SAS_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
-+		rv = -ENODEV;
- 		goto out_thread_fail;
- 	}
- 
-@@ -7826,13 +7828,14 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	if ((mpt3sas_base_attach(ioc))) {
- 		pr_err(MPT3SAS_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
-+		rv = -ENODEV;
- 		goto out_attach_fail;
- 	}
- 
--	if ((scsi_add_host(shost, &pdev->dev))) {
-+	rv = scsi_add_host(shost, &pdev->dev);
-+	if (rv) {
- 		pr_err(MPT3SAS_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
--		list_del(&ioc->list);
- 		goto out_add_shost_fail;
- 	}
- 
-@@ -7846,7 +7849,7 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-  out_thread_fail:
- 	list_del(&ioc->list);
- 	scsi_host_put(shost);
--	return -ENODEV;
-+	return rv;
- }
- 
- #ifdef CONFIG_PM
+Changes since RFC:
+	- Moved	qcom_dml.* to mmci_qcom_dml.* as suggested by Linus W.
+	- added BAM DMA dependency in Kconfig as suggested by Linus W
+	
 
+
+>   drivers/mmc/host/Kconfig         |  11 +++
+>   drivers/mmc/host/Makefile        |   1 +
+>   drivers/mmc/host/mmci.c          |  19 ++++-
+>   drivers/mmc/host/mmci_qcom_dml.c | 171 +++++++++++++++++++++++++++++++++++++++
+>   drivers/mmc/host/mmci_qcom_dml.h |  17 ++++
+>   5 files changed, 218 insertions(+), 1 deletion(-)
+>   create mode 100644 drivers/mmc/host/mmci_qcom_dml.c
+>   create mode 100644 drivers/mmc/host/mmci_qcom_dml.h
+>
+
+
+thanks,
+srini
