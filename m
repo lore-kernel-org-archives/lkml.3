@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaGQC7D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jul 2014 22:59:03 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36979 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaGQC66 (ORCPT
+	id S1753127AbaGQDFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jul 2014 23:05:16 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:51368 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaGQDFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jul 2014 22:58:58 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-76-53c73bf014aa
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com, mohit.kumar@st.com,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1405349705-31400-1-git-send-email-kishon@ti.com>
-In-reply-to: <1405349705-31400-1-git-send-email-kishon@ti.com>
-Subject: Re: [PATCH v2 0/4] dra7: Add PCIe support
-Date: Thu, 17 Jul 2014 11:58:55 +0900
-Message-id: <009001cfa16b$0c558ea0$2500abe0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+fc6jaSCSfrxqlRd+Y0jGvhRQk4AB9Z4Ew
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t8zI90P1seDDR7+YLJY0pRh8fKQpsX8
-	I+dYLQ782cFocXnhJVaLC0972CwWti1hsbi8aw6bxdl5x9ksNk79xejA5bFgU6nHnWt72Dz6
-	tqxi9Hj6Yy+zx/Eb25k8Pm+SC2CL4rJJSc3JLEst0rdL4MrYvmQZU0EXb8XUi99ZGhhfcXYx
-	cnBICJhITNuc08XICWSKSVy4t56ti5GLQ0hgGaNE89ql7BAJE4k33XvZIRLTGSWWtkxlgXB+
-	M0psfjKTBaSKTUBN4suXw2AdIgI6EgtPr2cGKWIWuMcoseDCPzaQhJCArcSraT/YQVZzCthJ
-	bOtLBQkLCxhJLDu4gAkkzCKgKtH4KxTE5AWqXnnHDaSCV0BQ4sfke2CbmAW0JNbvPM4EYctL
-	bF7zlhniF3WJR391IQ4wkjj59BFUuYjEvhfvGEGOkRDo5JCYtOUpM0iCRUBA4tvkQywQvbIS
-	mw4wQ7wrKXFwxQ2WCYwSs5BsnoVk8ywkm2chWbGAkWUVo2hqQXJBcVJ6kZFecWJucWleul5y
-	fu4mRkhs9+1gvHnA+hBjMtD6icxSosn5wNSQVxJvaGxmZGFqYmpsZG5pRpqwkjjvoodJQUIC
-	6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYRU6FMh7cvU5ErOr9sdWT5OY8L7Z663X8+8Q1HpOq
-	tvJdP/VS7mj0OZ3WwCjOtpSmhtTW27kK1hsNukrqgsN9jn/K4llT/krspkTwplVlZhYvnpzV
-	v/jJ8vEkpXm+7hNr51z4ybYyc9Xhj6c3+XHfW1HN7rOiSnffwaCpk3n4DmcbfGdad2vDJiWW
-	4oxEQy3mouJEALw2dPMDAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAKsWRmVeSWpSXmKPExsVy+t9jQd331seDDVYtsbZY0pRh8fKQpsX8
-	I+dYLQ782cFocXnhJVaLC0972CwWti1hsbi8aw6bxdl5x9ksNk79xejA5bFgU6nHnWt72Dz6
-	tqxi9Hj6Yy+zx/Eb25k8Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
-	MFdSyEvMTbVVcvEJ0HXLzAE6TEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
-	WMeYsX3JMqaCLt6KqRe/szQwvuLsYuTkkBAwkXjTvZcdwhaTuHBvPVsXIxeHkMB0RomlLVNZ
-	IJzfjBKbn8xkAaliE1CT+PLlMFiHiICOxMLT65lBipgF7jFKLLjwjw0kISRgK/Fq2g+gIg4O
-	TgE7iW19qSBhYQEjiWUHFzCBhFkEVCUaf4WCmLxA1SvvuIFU8AoISvyYfA9sE7OAlsT6nceZ
-	IGx5ic1r3jKDlEsIqEs8+qsLcYCRxMmnj6DKRST2vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlW
-	MYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgSnjmdSOxhXNlgcYhTgYFTi4U1oPRYsxJpYVlyZ
-	e4hRgoNZSYTXlel4sBBvSmJlVWpRfnxRaU5q8SFGU6A3JzJLiSbnA9NaXkm8obGJmZGlkZmF
-	kYm5uZI474FW60AhgfTEktTs1NSC1CKYPiYOTqkGxrMf+XNTy91LOb74zX/ucGjzv2if26ba
-	m9aun+n0QlCv+ZvKNtXDK+u/T0ix4p7q5M/g3xZ69drtj8/dNi1YGXD4f92SmUrHvFbc0tt6
-	JKjq9f/a5eUfM5c0lt1b7beqTflH1tHvO7Zu+5Cflvn948Hf56auabTq0dk0z/2+YuOsnPmO
-	Gyb8efhAiaU4I9FQi7moOBEAed8ZBDMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 16 Jul 2014 23:05:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <877g3cbueb.fsf@purkki.adurom.net>
+References: <20140715.002844.679028486034873225.davem@davemloft.net>
+	<CA+55aFw9=c_jSb7GOXDoityxWGiDs9y7LsdasyPHXESiZR75bg@mail.gmail.com>
+	<20140715.114614.827795344549781033.davem@davemloft.net>
+	<20140715190252.GC26012@tuxdriver.com>
+	<877g3cbueb.fsf@purkki.adurom.net>
+Date: Wed, 16 Jul 2014 17:05:12 -1000
+X-Google-Sender-Auth: aWQqVl-ChsI4TqdNiek1aODoMlI
+Message-ID: <CA+55aFzbpYjoJfLnoQy_rGb-FYoh5LKVeTRhp7xX_vXEFk_adA@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Kalle Valo <kvalo@adurom.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 14, 2014 11:55 PM, Kishon Vijay Abraham I wrote:
-> 
-> Changes from v1:
-> * fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
-> * split dra7xx patch into driver part and documentation part
-> 
-> [1] is split into separate series in order for individual subsystem
-> Maintainers to pick up the patches. This series handles the PCIe
-> support for DRA7.
-> 
-> Rebased to pci -next.
-> 
-> [1] -> https://lkml.org/lkml/2014/5/29/258
-> 
-> Kishon Vijay Abraham I (4):
->   PCI: designware: Configuration space should be specified in 'reg'
->   PCI: designware: use untranslated address while programming ATU
->   Documentation: pci: ti: Add dt binding documentation for PCIe in
->     DRA7xx
->   PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
+On Wed, Jul 16, 2014 at 4:18 PM, Kalle Valo <kvalo@adurom.com> wrote:
+>
+> Just out of curiosity, what is the best way to send a proposal how to
+> fix a merge conflict? For example, if I send a pull request to John
+> which I know will issue a conflict it would be nice to include
+> instructions (or some sort of patch) how I think it should be resolved.
 
-Kishon,
+So from personal experience seeing lots of different explanations, my
+preferred one is not so much a patch, as explaining *why* something
+generates a merge conflict.
 
-Actually, I have no objections to these patches.
-Then, how about adding maintainer entry for pci-dra7xx.c
-to MAINTAINERS file? It would be good. :-)
+Optimally for each conflict, say what happened ("X changed Y, A
+changed B close by") and then describe the result in those terms (eg
+"pick the code from my branch, but then do the rename of xyz to abc
+that caused the conflict", or "pick your side, it obsoletes the fix
+from me that causes the conflict" or whatever).
 
-Best regards,
-Jingoo Han
+And if you have a *lot* of conflicts, explain why that happaned too,
+and think very hard about whether what you do is perhaps screwed up
+(or complain about the other entity that did annoying whitespace
+changes for no good reason or whatever). Maybe it's just that the
+source code is badly organized, but more likely it's because somebody
+is just doing something stupid, and people are stepping on each others
+toes. If the explanation is "this is a one-time issue brought on by
+xyz", then that's fine - sh*t happens. If it's something else, at
+least mention it. And if it keeps happening, something needs to be
+done.
 
-> 
->  .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
->  Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
->  drivers/pci/host/Kconfig                           |   10 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
->  drivers/pci/host/pcie-designware.c                 |   72 ++-
->  drivers/pci/host/pcie-designware.h                 |    4 +
->  7 files changed, 592 insertions(+), 16 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
->  create mode 100644 drivers/pci/host/pci-dra7xx.c
-> 
-> --
-> 1.7.9.5
+And in the end, I personally tend to always resolve the conflicts
+*without* really looking at the explanation, by just trying to figure
+it out on my own. I've had people send me incorrect resolution
+suggestions, and I've also occasionally just screwed up my own
+resolution. Having somebody elses explanations of what they did is a
+good sanity check that things went right (when their explanation
+matches mine), and is a good red flag about "maybe this is more
+complicated than I thought" when the explanations and results don't
+match up.
 
+                     Linus
