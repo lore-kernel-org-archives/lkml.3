@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549AbaGQJzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 05:55:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41862 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756505AbaGQJzE (ORCPT
+	id S1756575AbaGQJ5T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 05:57:19 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:35153 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755128AbaGQJ5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 05:55:04 -0400
-Date: Thu, 17 Jul 2014 11:50:20 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/14] AT91: PIT: Cleanups and move to
- drivers/clocksource
-Message-ID: <20140717095020.GB20328@lukather>
-References: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140710075105.GA27469@lukather>
+	Thu, 17 Jul 2014 05:57:16 -0400
+Date: Thu, 17 Jul 2014 11:56:58 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
+        Richard Weinberger <richard@nod.at>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+Message-ID: <20140717095657.GC17877@ulmo>
+References: <201407130545.23004.marex@denx.de>
+ <53C53CE1.4090803@gmail.com>
+ <53C7269E.4010702@gmail.com>
+ <6823014.2plXDE9VA9@wuerfel>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O5XBE6gyVG5Rl6Rj"
+	protocol="application/pgp-signature"; boundary="R+My9LyyhiUvIEro"
 Content-Disposition: inline
-In-Reply-To: <20140710075105.GA27469@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <6823014.2plXDE9VA9@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---O5XBE6gyVG5Rl6Rj
+--R+My9LyyhiUvIEro
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 10, 2014 at 09:51:05AM +0200, Maxime Ripard wrote:
-> Hi Daniel,
->=20
-> On Tue, Jul 01, 2014 at 11:33:13AM +0200, Maxime Ripard wrote:
-> > Hi everyone,
-> >=20
-> > This series cleans up the PIT driver in order for it to not depend on
-> > anything in mach-at91 anymore, and in the end move it out of
-> > mach-at91.
-> >=20
-> > Along the way, these patches also do a bit of cleanup.
-> >=20
-> > This has been tested on a G45-EK without DT and an Xplained with DT.
-> >=20
->=20
-> Even though most of this patches are not clocksource related, it would
-> be great if we could at least get an acked-by on the last patch that
-> moves the driver to drivers/clocksource, since it pretty much becomes
-> your burden :)
+On Thu, Jul 17, 2014 at 11:20:36AM +0200, Arnd Bergmann wrote:
+[...]
+>                       score should set HAS_IOMEM and doesn't
+> even have public compilers
 
-Ping?
+This begs an interesting question. Should it be made a requirement to
+have publicly available compilers for new architectures so that they can
+at least be compile-tested? Preferably this would of course be in source
+form so that there aren't any dependencies on the distribution.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thierry
 
---O5XBE6gyVG5Rl6Rj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--R+My9LyyhiUvIEro
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTx5xcAAoJEBx+YmzsjxAgnzMP/jmj4C6+4CXLENUoCCvlqxHb
-Uqr2auJrRZFFLKg2zhuO063xenql/PjT+sAS/G6JrcJo2H/71yklP0NKG+mrvx5I
-88nD87XmrVrFCgQp11Gea4IIgHaky02LmjijyjuZ2cE9kBjEtpppSbSnhNPbK0aS
-6xa/FBsXdOiNYXKZg/4DLmzlT3XVCXu10z0yUduN29l3kQYD3Ouj6d/31budxHvk
-hMPL3ecoX/33NAx35wc69hdqWGHUdekL6a1HK+TbuZCgYVVQpCWI2jhpyQivG05h
-tTcFRCovB8mixTaTsn0FJE/dYzHCZ+mJrrGMna3hvZj+1LnCoXYSCVoVWDhFH///
-f3bOpHLisxhO8UUE9v3llDwAAt+uLzLKLcIqP9QYPBJTFlkp/BwQdhmzK9ByZ2b/
-AVAmgOZpipdbQOKt/Z77tIj9uQzH5ZqIsFEa1Z79pYTEnkwVqB51XH0H9xbcTHOz
-niuoqYNlpJ1wKrYTONdcgLgNYavOEof3RjhjcorRr9/8MZa73d90fCNxTUOvKaBs
-bQPyoHUBuVzeFiFCFoolWbKZ0yhyFEJ0J3z5nNewxwX7SsxwK6bN5Wv2Pvk/JVmB
-vshS0gS7prhcF+n8xIWuyRKodSFNM5poNverq1LvWdh0/xp2zcWgXzxuwvj448Id
-Wb/Mqt+LF7MVn6CreJ6c
-=uNPP
+iQIcBAEBAgAGBQJTx53pAAoJEN0jrNd/PrOhf/8P/2X54LIgpjrxnJPx8B4sv3TP
+o9A12YuzrVI/fL3USm6qF9uSgq/J2d5w34PzDP9zcj5AkCPHY9nJXHbkKnUBE9jj
+dxRP4mOrdfZG+Pvmc5gvD48KqwonrvEay0qYqDQLWdBtl7sRP/DA3KObVLCdRD8f
+SGCjaJSxdcPjKjrEICUlEQ+xZk2rhILWdLHt9BhDxuzapdFxIgxy5RZQpQdJDm1Z
+FKR20aKreT+2drvj8rJKIqN5qJN/9o832J6vH6iWc+a4DxthIMNyM1iAolBZ/DwL
+E2z0CAVTuEVtsOjTZ/MfhAMW5O/SyQeEnG+V5yi3cp3Z2P9OO3kNvbXDwleTPRZ+
+wEtiIy0vSQALP/Gkbwqwk2pAkMsefc9Du7JPlSF8kXNsxB2QOSbuxcQasz35VeMR
+CgDRx1DOO+sDInHq0SneO3B0mhQRCvRXX1mKghVxkWRr/GLFjaPqBW7NjrZy88Wr
+qNX/TyGadB0n+in1o4K7IxrNOunlFmnqzhujhmZo6UKzjZljlf1qlcmEVnnOeMkB
+qa6F7AYwz4ifJt/VUtRSsa0NJkPnNZCwAwdgSR+xn6dFdOUC5plqKx5pCT1rC7Cp
+cCalBOg8Dp7saiFGij5RWCsiMT6g4HzFCCnaupylrWrAds2C0bf8q/3GyEQ41mco
+CEVT3bsEWUOF1QYRyoi0
+=U/Tt
 -----END PGP SIGNATURE-----
 
---O5XBE6gyVG5Rl6Rj--
+--R+My9LyyhiUvIEro--
