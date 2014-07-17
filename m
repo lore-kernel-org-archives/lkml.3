@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686AbaGQIJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 04:09:39 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:55800 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396AbaGQIGe (ORCPT
+	id S1755720AbaGQIJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 04:09:44 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:57051 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382AbaGQIGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 04:06:34 -0400
+	Thu, 17 Jul 2014 04:06:32 -0400
 From: Tom Gundersen <teg@jklm.no>
 To: netdev@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, Jay Vosburgh <j.vosburgh@gmail.com>,
-        Veaceslav Falico <vfalico@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>
-Subject: [PATCH net-next v9 5/9] net: bond - make bond_create take name_assign_type
-Date: Thu, 17 Jul 2014 10:06:06 +0200
-Message-Id: <1405584370-30054-6-git-send-email-teg@jklm.no>
+        Tom Gundersen <teg@jklm.no>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net
+Subject: [PATCH net-next v9 3/9] net: nl802154 - make add_iface take name assign type
+Date: Thu, 17 Jul 2014 10:06:04 +0200
+Message-Id: <1405584370-30054-4-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1405584370-30054-1-git-send-email-teg@jklm.no>
 References: <1405584370-30054-1-git-send-email-teg@jklm.no>
@@ -24,73 +24,91 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Jay Vosburgh <j.vosburgh@gmail.com>
-Cc: Veaceslav Falico <vfalico@gmail.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>
+Acked-by: Alexander Aring <alex.aring@gmail.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-zigbee-devel@lists.sourceforge.net
 ---
- drivers/net/bonding/bond_main.c  | 7 ++++---
- drivers/net/bonding/bond_sysfs.c | 2 +-
- drivers/net/bonding/bonding.h    | 2 +-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ include/net/wpan-phy.h         | 4 +++-
+ net/ieee802154/nl-phy.c        | 5 ++++-
+ net/mac802154/ieee802154_dev.c | 7 ++++---
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index d643807..1769745 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -4421,7 +4421,7 @@ unsigned int bond_get_num_tx_queues(void)
-  * Caller must NOT hold rtnl_lock; we need to release it here before we
-  * set up our sysfs entries.
-  */
--int bond_create(struct net *net, const char *name)
-+int bond_create(struct net *net, const char *name, unsigned char name_assign_type)
- {
- 	struct net_device *bond_dev;
- 	int res;
-@@ -4429,7 +4429,8 @@ int bond_create(struct net *net, const char *name)
- 	rtnl_lock();
+diff --git a/include/net/wpan-phy.h b/include/net/wpan-phy.h
+index 10ab0fc..bb07a1b 100644
+--- a/include/net/wpan-phy.h
++++ b/include/net/wpan-phy.h
+@@ -58,7 +58,9 @@ struct wpan_phy {
+ 	int idx;
  
- 	bond_dev = alloc_netdev_mq(sizeof(struct bonding),
--				   name ? name : "bond%d", NET_NAME_UNKNOWN,
-+				   name ? name : "bond%d",
-+				   name ? name_assign_type : NET_NAME_ENUM,
- 				   bond_setup, tx_queues);
- 	if (!bond_dev) {
- 		pr_err("%s: eek! can't alloc netdev!\n", name);
-@@ -4509,7 +4510,7 @@ static int __init bonding_init(void)
- 	bond_create_debugfs();
+ 	struct net_device *(*add_iface)(struct wpan_phy *phy,
+-					const char *name, int type);
++					const char *name,
++					unsigned char name_assign_type,
++					int type);
+ 	void (*del_iface)(struct wpan_phy *phy, struct net_device *dev);
  
- 	for (i = 0; i < max_bonds; i++) {
--		res = bond_create(&init_net, NULL);
-+		res = bond_create(&init_net, NULL, NET_NAME_UNKNOWN);
- 		if (res)
- 			goto err;
+ 	int (*set_txpower)(struct wpan_phy *phy, int db);
+diff --git a/net/ieee802154/nl-phy.c b/net/ieee802154/nl-phy.c
+index 972baf8..5e1a28e 100644
+--- a/net/ieee802154/nl-phy.c
++++ b/net/ieee802154/nl-phy.c
+@@ -174,6 +174,7 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
+ 	struct wpan_phy *phy;
+ 	const char *name;
+ 	const char *devname;
++	unsigned char name_assign_type;
+ 	int rc = -ENOBUFS;
+ 	struct net_device *dev;
+ 	int type = __IEEE802154_DEV_INVALID;
+@@ -192,8 +193,10 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
+ 		if (devname[nla_len(info->attrs[IEEE802154_ATTR_DEV_NAME]) - 1]
+ 				!= '\0')
+ 			return -EINVAL; /* phy name should be null-terminated */
++		name_assign_type = NET_NAME_USER;
+ 	} else  {
+ 		devname = "wpan%d";
++		name_assign_type = NET_NAME_ENUM;
  	}
-diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
-index 98db8ed..7ac498c 100644
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -111,7 +111,7 @@ static ssize_t bonding_store_bonds(struct class *cls,
  
- 	if (command[0] == '+') {
- 		pr_info("%s is being created...\n", ifname);
--		rv = bond_create(bn->net, ifname);
-+		rv = bond_create(bn->net, ifname, NET_NAME_USER);
- 		if (rv) {
- 			if (rv == -EEXIST)
- 				pr_info("%s already exists\n", ifname);
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index b2e548e..95b5e70 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -496,7 +496,7 @@ struct bond_net {
+ 	if (strlen(devname) >= IFNAMSIZ)
+@@ -227,7 +230,7 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
+ 		}
+ 	}
  
- int bond_arp_rcv(const struct sk_buff *skb, struct bonding *bond, struct slave *slave);
- void bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb, struct net_device *slave_dev);
--int bond_create(struct net *net, const char *name);
-+int bond_create(struct net *net, const char *name, unsigned char name_assign_type);
- int bond_create_sysfs(struct bond_net *net);
- void bond_destroy_sysfs(struct bond_net *net);
- void bond_prepare_sysfs_group(struct bonding *bond);
+-	dev = phy->add_iface(phy, devname, type);
++	dev = phy->add_iface(phy, devname, name_assign_type, type);
+ 	if (IS_ERR(dev)) {
+ 		rc = PTR_ERR(dev);
+ 		goto nla_put_failure;
+diff --git a/net/mac802154/ieee802154_dev.c b/net/mac802154/ieee802154_dev.c
+index b36b2b9..cee12b2 100644
+--- a/net/mac802154/ieee802154_dev.c
++++ b/net/mac802154/ieee802154_dev.c
+@@ -159,7 +159,8 @@ mac802154_del_iface(struct wpan_phy *phy, struct net_device *dev)
+ }
+ 
+ static struct net_device *
+-mac802154_add_iface(struct wpan_phy *phy, const char *name, int type)
++mac802154_add_iface(struct wpan_phy *phy, const char *name,
++		    unsigned char name_assign_type, int type)
+ {
+ 	struct net_device *dev;
+ 	int err = -ENOMEM;
+@@ -167,12 +168,12 @@ mac802154_add_iface(struct wpan_phy *phy, const char *name, int type)
+ 	switch (type) {
+ 	case IEEE802154_DEV_MONITOR:
+ 		dev = alloc_netdev(sizeof(struct mac802154_sub_if_data),
+-				   name, NET_NAME_UNKNOWN,
++				   name, name_assign_type,
+ 				   mac802154_monitor_setup);
+ 		break;
+ 	case IEEE802154_DEV_WPAN:
+ 		dev = alloc_netdev(sizeof(struct mac802154_sub_if_data),
+-				   name, NET_NAME_UNKNOWN,
++				   name, name_assign_type,
+ 				   mac802154_wpan_setup);
+ 		break;
+ 	default:
 -- 
 1.9.3
 
