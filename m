@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031AbaGQPMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:12:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36813 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaGQPMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:12:05 -0400
-Message-ID: <53C7E7BE.7030403@linutronix.de>
-Date: Thu, 17 Jul 2014 17:11:58 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S934102AbaGQPN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:13:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38118 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933520AbaGQPN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 11:13:26 -0400
+Message-ID: <53C7E78A.8080604@ti.com>
+Date: Thu, 17 Jul 2014 11:11:06 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
-References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de> <1405521903-5877-6-git-send-email-bigeasy@linutronix.de> <20140717145430.GF10459@saruman.home>
-In-Reply-To: <20140717145430.GF10459@saruman.home>
-X-Enigmail-Version: 1.6+git0.20140323
-Content-Type: text/plain; charset=windows-1252
+To: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+CC: "Jingoo Han (jg1.han@samsung.com)" <jg1.han@samsung.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Pratyush ANAND <pratyush.anand@st.com>
+Subject: Re: [PATCH v5 3/5] PCI: designware: enhance dw_pcie_host_init() to
+ support v3.65 DW hardware
+References: <1405528686-16539-1-git-send-email-m-karicheri2@ti.com> <1405528686-16539-4-git-send-email-m-karicheri2@ti.com> <20140717033638.GI12278@pratyush-vbox> <2CC2A0A4A178534D93D5159BF3BCB661A47A2A83BB@EAPEX1MAIL1.st.com>
+In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB661A47A2A83BB@EAPEX1MAIL1.st.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 04:54 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Wed, Jul 16, 2014 at 04:45:03PM +0200, Sebastian Andrzej Siewior wrote:
->> +static int omap_8250_startup(struct uart_port *port)
->> +{
->> +	struct uart_8250_port *up =
->> +		container_of(port, struct uart_8250_port, port);
->> +	struct omap8250_priv *priv = port->private_data;
->> +
->> +	int ret;
->> +
->> +	if (priv->wakeirq) {
->> +		ret = request_irq(priv->wakeirq, omap_wake_irq,
->> +				port->irqflags, "wakeup irq", port);
->> +		if (ret)
->> +			return ret;
->> +		disable_irq(priv->wakeirq);
->> +	}
->> +
->> +	ret = serial8250_do_startup(port);
->> +	if (ret)
->> +		goto err;
->> +
->> +	pm_runtime_get_sync(port->dev);
-> 
-> should this pm_runtime_get_sync() be placed above
-> serial8250_do_startup() call ?
+On 07/17/2014 12:18 AM, Mohit KUMAR DCG wrote:
+>
+>
+>> -----Original Message-----
+>> From: Pratyush ANAND
+>> Sent: Thursday, July 17, 2014 9:07 AM
+>> To: Murali Karicheri
+>> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
+>> kernel@lists.infradead.org; Santosh Shilimkar; Russell King; Grant Likely; Rob
+>> Herring; Mohit KUMAR DCG; Jingoo Han; Bjorn Helgaas; Richard Zhu; Kishon
+>> Vijay Abraham I; Marek Vasut; Arnd Bergmann; Pawel Moll; Mark Rutland;
+>> Ian Campbell; Kumar Gala; Randy Dunlap
+>> Subject: Re: [PATCH v5 3/5] PCI: designware: enhance dw_pcie_host_init()
+>> to support v3.65 DW hardware
+>>
+>> On Thu, Jul 17, 2014 at 12:38:04AM +0800, Murali Karicheri wrote:
+>>> keystone PCI controller is based on v3.65 designware hardware. This
+>>> version differs from newer versions of the hardware in few functional
+>>> areas discussed below that makes it necessary to change
+>>> dw_pcie_host_init() to support v3.65 based PCI controller.
+>>>
+>>>   1. No support for ATU port. So any ATU specific resource handling code
+>>>      is to be bypassed for v3.65 h/w.
+>>>   2. MSI controller uses Application space to implement MSI and 32 MSI
+>>>      interrupts are multiplexed over 8 IRQs to the host. Hence the code
+>>>      to process MSI IRQ needs to be different. This patch allows platform
+>>>      driver to provide its own irq_domain_ops ptr to irq_domain_add_linear()
+>>>      through an API callback from the designware core driver.
+>>>   3. MSI interrupt generation requires EP to write to the RC's application
+>>>      register. So enhance the driver to allow setup of inbound access to
+>>>      MSI irq register as a post scan bus API callback.
+>>>
+>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>
+>> Looks almost ok to me.
+>>
+>> Reviewed-by: Pratyush Anand<pratyush.anand@st.com>
+>>
+>
+> - Now looks fine to me.
+>
+> Acked-by: Mohit KUMAR<mohit.kumar@st.com>
+>
+> Jingoo,
+> After Murali's patches,  dw code can be used by  older Synopsys controller based driver too.
+> Pls have a look at the series if you have any further comment.
+>
+> Thanks
+> Mohit
 
-I don't think it matters since serial8250_do_startup() has its own
-pm_runtime_get_sync().
+Mohit,
 
-->startup(), ->shutdown() are called via omap callbacks so we could
-spare in the 8250-core if we do it in the omap code before invoking the
-function. The same goes for serial8250_set_termios() which is not used
-by omap but has those runtime-pm stuff, too.
-It would be wrong if someone would use the serial8250_do_startup()
-without his own runtime-pm get but it is omap only which does this
-things.
-So it is not used by anyone else (right now) and if you want to keep it
-to a minimum I could remove them from those places.
+Thanks for the review and Ack.
 
-Sebastian
+Murali
+>
+>>>   int __init dw_pcie_host_init(struct pcie_port *pp)  {
+>>>   	struct device_node *np = pp->dev->of_node;
+>>> -	struct of_pci_range range;
+>>>   	struct of_pci_range_parser parser;
+>>> +	struct of_pci_range range;
+>>
+>> You may avoid moving the above line.
+>>
+>> ~Pratyush
+
