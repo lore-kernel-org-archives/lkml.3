@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194AbaGQOUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:20:09 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:65182 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186AbaGQOUG (ORCPT
+	id S933360AbaGQOW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 10:22:56 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:50780 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405AbaGQOWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 10:20:06 -0400
-Date: Thu, 17 Jul 2014 16:20:03 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] mm: memcontrol: rewrite uncharge API fix - double
- migration
-Message-ID: <20140717142003.GD8011@dhcp22.suse.cz>
-References: <1405527596-7267-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405527596-7267-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 17 Jul 2014 10:22:55 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-mips@linux-mips.org
+Cc: dborkman@redhat.com, markos.chandras@imgtec.com, ralf@linux-mips.org,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] arch/mips/net/bpf_jit.c: fix failure check
+Date: Thu, 17 Jul 2014 17:22:38 +0300
+Message-Id: <1405606958-14383-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1405603655-12571-1-git-send-email-andrey.krieger.utkin@gmail.com>
+References: <1405603655-12571-1-git-send-email-andrey.krieger.utkin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 16-07-14 12:19:56, Johannes Weiner wrote:
-> Hugh reports:
-> 
-> VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-> mm/memcontrol.c:6680!
-> page had count 1 mapcount 0 mapping anon index 0x196
-> flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-> mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-> compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-> __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-> handle_mm_fault < __do_page_fault
-> 
-> mem_cgroup_migrate() assumes that a page is only migrated once and
-> then freed immediately after.
-> 
-> However, putting the page back on the LRU list and dropping the
-> isolation refcount is not done atomically.  This allows a PFN-based
-> migrator like compaction to isolate the page, see the expected
-> anonymous page refcount of 1, and migrate the page once more.
-> 
-> Properly uncharge the page after it's been migrated, including the
-> clearing of PCG_USED, so that a subsequent charge migration attempt
-> will be able to detect it and bail out.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reported-by: Hugh Dickins <hughd@google.com>
+static int pkt_type_offset(void) returned -1 in case of failure, and actual
+(positive) offset value in case of success. In the only instance of its usage,
+the result was saved to local "unsigned int off" variable, which is used in a
+lot of places in the same (large) function, so changing its type could cause
+many warnings. So new signed int variable was added.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80371
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ arch/mips/net/bpf_jit.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-> ---
->  mm/memcontrol.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> Andrew, this replaces the patch of the same name in -mm.  As Hugh
-> points out, we really have to clear PCG_USED of migrated pages, as
-> they are no longer pinning the memcg and so their pc->mem_cgroup can
-> no longer be trusted.
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 1e3b27f8dc2f..1439537fe7c9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6655,7 +6655,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  
->  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
->  	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
-> -	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
->  
->  	if (PageTransHuge(oldpage)) {
->  		nr_pages <<= compound_order(oldpage);
-> @@ -6663,6 +6662,13 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
->  	}
->  
-> +	pc->flags = 0;
-> +
-> +	local_irq_disable();
-> +	mem_cgroup_charge_statistics(pc->mem_cgroup, oldpage, -nr_pages);
-> +	memcg_check_events(pc->mem_cgroup, oldpage);
-> +	local_irq_enable();
-> +
->  	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
->  }
->  
-> -- 
-> 2.0.0
-> 
-
+diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
+index b87390a..918b341 100644
+--- a/arch/mips/net/bpf_jit.c
++++ b/arch/mips/net/bpf_jit.c
+@@ -793,6 +793,7 @@ static int build_body(struct jit_ctx *ctx)
+ 	const struct sock_filter *inst;
+ 	unsigned int i, off, load_order, condt;
+ 	u32 k, b_off __maybe_unused;
++	int tmp;
+ 
+ 	for (i = 0; i < prog->len; i++) {
+ 		u16 code;
+@@ -1332,9 +1333,9 @@ jmp_cmp:
+ 		case BPF_ANC | SKF_AD_PKTTYPE:
+ 			ctx->flags |= SEEN_SKB;
+ 
+-			off = pkt_type_offset();
++			tmp = off = pkt_type_offset();
+ 
+-			if (off < 0)
++			if (tmp < 0)
+ 				return -1;
+ 			emit_load_byte(r_tmp, r_skb, off, ctx);
+ 			/* Keep only the last 3 bits */
 -- 
-Michal Hocko
-SUSE Labs
+1.8.5.5
+
