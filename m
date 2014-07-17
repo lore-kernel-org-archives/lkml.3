@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaGQRcr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:32:47 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41416 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048AbaGQRcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:32:45 -0400
-Date: Thu, 17 Jul 2014 13:32:30 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v3 2/5] random,x86: Add arch_get_slow_rng_u64
-Message-ID: <20140717173230.GP1491@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andy Lutomirski <luto@amacapital.net>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-	Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
-	Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-	kvm list <kvm@vger.kernel.org>,
-	Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-	Daniel Borkmann <dborkman@redhat.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Kees Cook <keescook@chromium.org>
-References: <5778e65d5ca52bebbaa023e177d863e44f098e96.1405546879.git.luto@amacapital.net>
- <53C6F5A9.80400@zytor.com>
- <CALCETrVwT1g-S1hLyyB_uAVwffYCnFacTfUhJeD8Bb5j3X0mkg@mail.gmail.com>
- <CALCETrVCrJEwYokasRoqQTKJWKtzq9XUMNqHoT4-ZjgyZ-mBow@mail.gmail.com>
- <53C703ED.2010605@zytor.com>
- <CALCETrVSG_Lp=OSw-U+QK+_VsEhKBS=rBQ3ojTrnO9kAKR+Qag@mail.gmail.com>
- <53C75733.8060507@zytor.com>
- <20140717103324.GJ1491@thunk.org>
- <53C7FC32.7030704@zytor.com>
- <CALCETrVgCw2_8x1+NrP_xO4ZtnFm_dTTUBtZd-tgfdWgfeu2FQ@mail.gmail.com>
+	id S1751650AbaGQRd1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:33:27 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:65348 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaGQRdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 13:33:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVgCw2_8x1+NrP_xO4ZtnFm_dTTUBtZd-tgfdWgfeu2FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1405465241-28684-3-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1405465241-28684-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1405465241-28684-3-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Thu, 17 Jul 2014 23:03:23 +0530
+Message-ID: <CAMf-jSnPpo39cXLbM9cefUr37J=hnEHqfJSetORxMnjsdoANdw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] soc: qcom-rpm: Driver for the Qualcomm RPM
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 10:12:27AM -0700, Andy Lutomirski wrote:
-> 
-> Unless I'm reading the code wrong, the prandom_reseed_late call can
-> happen after userspace is running.
+Hi Bjorn,
 
-But there is also the prandom_reseed() call, which happens early.
+On Wed, Jul 16, 2014 at 4:30 AM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
+> Driver for the Resource Power Manager (RPM) found in Qualcomm 8660, 8960
+> and 8064 based devices. The driver exposes resources that child drivers
+> can operate on; to implementing regulator, clock and bus frequency
+> drivers.
+>
 
-    	     	      		       	     	   	   - Ted
+[snip]
+
+> +       }
+> +
+> +       ret = irq_set_irq_wake(irq_ack, 1);
+
+This calls fails and throws error on my ifc6410 with 3.16-rc5.
+Does this driver depend on pincntrl. Looks like the DT support for
+pincntrl driver is missing in apq8064 dts in mainline.
+Is that right?
+
+> +       if (ret)
+> +               dev_warn(&pdev->dev, "failed to mark ack irq as wakeup\n");
+> +
+
+[snip]
+
+> +               return ret;
+> +       }
+> +
+> +       ret = irq_set_irq_wake(irq_wakeup, 1);
+
+This fails as well.
+
+> +       if (ret)
+> +               dev_warn(&pdev->dev, "failed to mark wakeup irq as wakeup\n");
+> +
+> +       return of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+
+[snip]
+
+
+-- 
+Thanks and Regards
+Pramod
