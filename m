@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaGQXgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 19:36:33 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40165 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758168AbaGQXgb (ORCPT
+	id S1758816AbaGQXhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 19:37:55 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40635 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753858AbaGQXhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 19:36:31 -0400
-Date: Thu, 17 Jul 2014 16:34:53 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
- take 3
-In-Reply-To: <53C7F55B.8030307@suse.cz>
-Message-ID: <alpine.LSU.2.11.1407171602370.2544@eggly.anvils>
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 17 Jul 2014 19:37:54 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlULALRdyFN5LHOdPGdsb2JhbABZgw5SV4InhQilagEBAQYFlmCHS4EJFwQBAQEBODaERBwjGCQ0BSUDBy2IQcVbGIVjiQNNHYMYgRgFhXKVLJgDKy+BBA
+Date: Fri, 18 Jul 2014 09:37:50 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: [GIT PULL] xfs: fixes for 3.16-rc5
+Message-ID: <20140717233750.GE20518@dastard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Vlastimil Babka wrote:
-> On 07/15/2014 12:28 PM, Hugh Dickins wrote:
-> > In the end I decided that we had better look at it as two problems,
-> > the trinity faulting starvation, and the indefinite punching loop,
-> > so 1/2 and 2/2 present both solutions: belt and braces.
-> 
-> I tested that with my reproducer and it was OK, but as I already said, it's
-> not trinity so I didn't observe the new problems in the first place.
+Hi Linus,
 
-Yes, but thanks for doing so anyway.
+Can you please pull the updates listed below? These are regression
+fixes for issues recently introduced - the change in the stack
+switch location is fairly important, so I've held off sending this
+update until I was sure that it still addresses the stack usage
+problem the original solved. So while the commits in the xfs tree
+are recent, it has been under tested for several weeks now.
 
-> 
-> > Which may be the best for fixing, but the worst for ease of backporting.
-> > Vlastimil, I have prepared (and lightly tested) a 3.2.61-based version
-> > of the combination of f00cdc6df7d7 and 1/2 and 2/2 (basically, I moved
-> > vmtruncate_range from mm/truncate.c to mm/shmem.c, since nothing but
-> > shmem ever implemented the truncate_range method).  It should give a
-> 
-> I don't know how much stable kernel updates are supposed to care about
-> out-of-tree modules,
+-Dave.
 
-I suggest that stable kernel updates do not need to care about
-out-of-tree modules: for so long as they are out of tree, they have
-to look after their own compatibility from one version to another.
-I have no desire to break them gratuitously, but it's not for me
-to spend more time accommodating them.
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
 
-Now, SLES and RHEL and other distros may have different priorities
-from that: if they distribute additional filesystems, which happen to
-support the ->truncate_range() method, or work with partners who supply
-such filesystems, then they may want to rework the shmem-specific
-vmtruncate_range() to allow for those - that's up to them.
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
-> but doesn't the change mean that an out-of-tree FS
-> supporting truncate_range (if such thing exists) would effectively stop
-> supporting madvise(MADV_REMOVE) after this change?
+are available in the git repository at:
 
-Yes, it would need to be reworked a little for them: I've not thought
-through what more would need to be done.  But it seems odd to me that
-an out-of-tree driver would support it, when it got no take up at all
-from in-tree filesystems, even from those which went on to support
-hole-punching in fallocate() (until the tmpfs series brought them in).
+  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-3.16-rc5
 
-Or perhaps MADV_REMOVE-support is their secret sauce :-?  In that case
-I would expect them to support FALLOC_FL_PUNCH_HOLE already, and prefer
-a backport of v3.5's merging of the madvise and fallocate routes.
+for you to fetch changes up to 03e01349c654fbdea80d3d9b4ab599244eb55bb7:
 
-> But hey it's still madvise so maybe we don't need to care.
+  xfs: null unused quota inodes when quota is on (2014-07-15 07:28:41 +1000)
 
-That's an argument I would not use, not in Linus's kernel anyway:
-users may have come to rely upon the behaviour of madvise(MADV_REMOVE):
-never mind that it says "advise", I would not be happy to break them.
+----------------------------------------------------------------
+xfs: fixes for 3.15-rc5
 
-> And I suppose kernels where
-> FALLOC_FL_PUNCH_HOLE is supported, can be backported normally.
+Fixes for low memory perforamnce regressions and a quota inode handling
+regression.
 
-Yes.
+----------------------------------------------------------------
+Dave Chinner (3):
+      Revert "xfs: block allocation work needs to be kswapd aware"
+      xfs: refine the allocation stack switch
+      xfs: null unused quota inodes when quota is on
 
-Hugh
+ fs/xfs/xfs_bmap.c      |    7 ++-----
+ fs/xfs/xfs_bmap.h      |    4 +---
+ fs/xfs/xfs_bmap_util.c |   53 -----------------------------------------------------
+ fs/xfs/xfs_bmap_util.h |    4 ----
+ fs/xfs/xfs_btree.c     |   82 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/xfs/xfs_iomap.c     |    3 +--
+ fs/xfs/xfs_sb.c        |   25 +++++++++++++++++++++----
+ 7 files changed, 106 insertions(+), 72 deletions(-)
+
+
+-- 
+Dave Chinner
+david@fromorbit.com
