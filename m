@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558AbaGQPDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 11:03:12 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:37617 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaGQPDK (ORCPT
+	id S933715AbaGQPFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 11:05:23 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:46990 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932975AbaGQPFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 11:03:10 -0400
-Message-ID: <53C7E5C8.9070400@gmail.com>
-Date: Thu, 17 Jul 2014 11:03:36 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 17 Jul 2014 11:05:20 -0400
 MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>
-CC: rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others
- to this_cpu_ops.txt
-References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com> <alpine.DEB.2.11.1407170934220.28121@gentwo.org> <53C7E234.3020503@gmail.com> <alpine.DEB.2.11.1407170953070.28248@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1407170953070.28248@gentwo.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1405547442-26641-12-git-send-email-keescook@chromium.org>
+References: <1405547442-26641-1-git-send-email-keescook@chromium.org> <1405547442-26641-12-git-send-email-keescook@chromium.org>
+From: David Drysdale <drysdale@google.com>
+Date: Thu, 17 Jul 2014 16:04:56 +0100
+Message-ID: <CAHse=S_32tmusk4ceY4U6GbNpX4PkX12iPPDZFVZ7qgv-RAooA@mail.gmail.com>
+Subject: Re: [PATCH v11 11/11] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 10:55 AM, Christoph Lameter wrote:
-> On Thu, 17 Jul 2014, Pranith Kumar wrote:
-> 
->>> The RCU code has .... ummmm... some issues with percpu usage and should
->>> not be taken as a good example. If you look at the RCU code it looks
->>> horrible with numerous barriers around remote percpu read/wrirte
->>> accesses and one wonders if that code is actually ok.
->>
->> Well, it is running in all our kernels with not many reported issues, isn't it ;)
->> And yes, that is one of the extra-ordinary situations where we use per-cpu data.
->> Once you've extracted a pointer to the per-cpu area -and- ensure that concurrent
->> accesses do not happen(or happen with enough guarantees using barriers), what is
->> the case against remote accesses? I am asking from a correctness and a
->> performance point of view, not style/aesthetics.
-> 
-> Could be working but I do not want it to be mentioned in the
-> documentation given the problems it causes. IPI is preferable.
+On Wed, Jul 16, 2014 at 10:50 PM, Kees Cook <keescook@chromium.org> wrote:
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index 9065d2c79c56..2125b83ccfd4 100644
+> +/**
+> + * seccomp_can_sync_threads: checks if all threads can be synchronized
+> + *
+> + * Expects sighand and cred_guard_mutex locks to be held.
+> + *
+> + * Returns 0 on success, -ve on error, or the pid of a thread which was
+> + * either not in the correct seccomp mode or it did not have an ancestral
+> + * seccomp filter.
+> + */
+> +static inline pid_t seccomp_can_sync_threads(void)
+> +{
+> +       struct task_struct *thread, *caller;
+> +
+> +       BUG_ON(!mutex_is_locked(&current->signal->cred_guard_mutex));
+> +       BUG_ON(!spin_is_locked(&current->sighand->siglock));
+> +
+> +       if (current->seccomp.mode != SECCOMP_MODE_FILTER)
+> +               return -EACCES;
 
-I can mention that IPI is preferable. What is that you don't want mentioned? atomic_t?
+Quick question -- is it possible to apply the first filter and also synchronize
+it across threads in the same operation?  If so, does this arm also need to
+cope with seccomp.mode being SECCOMP_MODE_DISABLED?
 
-> 
->>>> If data needs to be modified from multiple cpus only very rarely, doesn't it
->>>> make sense to use per-cpu areas?
->>>
->>> I would suggest that this should not occur. You can always "modify" remote
->>> percpu areas by generating an IPI on that cpu to make that processor
->>> update its own per cpu data.
->>>
->>
->> The case against doing that is not to wake up CPUs which are in idle/sleep
->> states. I think mentioning it here that remote accesses are strongly discouraged
->> with a reasonable explanation of the implications should be enough. There might
->> always be rare situations where remote accesses might be necessary.
-> 
-> Remote percpu updates are extremely rare events. If the cpu is idle/asleep
-> then usually no updates are needed because no activity is occurring on
-> that cpu.
-> 
+[seccomp_set_mode_filter() looks to call this via seccomp_attach_filter()
+before it does seccomp_assign_mode()]
 
-Yes, -usually- that is the case. But we are talking about the extreme rare event
-where we need to update some remote CPU`s per-cpu data without waking it up from
-sleep/idle. How do you suggest we handle this? I don't think suggesting not to
-use per-cpu areas because of this is a good idea, since we lose a lot of
-performance in the most common cases.
-
-Thoughts?
-
---
-Pranith
+> +
+> +       /* Validate all threads being eligible for synchronization. */
+> +       caller = current;
+> +       for_each_thread(caller, thread) {
+> +               pid_t failed;
+> +
+> +               if (thread->seccomp.mode == SECCOMP_MODE_DISABLED ||
+> +                   (thread->seccomp.mode == SECCOMP_MODE_FILTER &&
+> +                    is_ancestor(thread->seccomp.filter,
+> +                                caller->seccomp.filter)))
+> +                       continue;
+> +
+> +               /* Return the first thread that cannot be synchronized. */
+> +               failed = task_pid_vnr(thread);
+> +               /* If the pid cannot be resolved, then return -ESRCH */
+> +               if (unlikely(WARN_ON(failed == 0)))
+> +                       failed = -ESRCH;
+> +               return failed;
+> +       }
+> +
+> +       return 0;
+> +}
