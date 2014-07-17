@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158AbaGQKFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:05:12 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:34721 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767AbaGQKFJ convert rfc822-to-8bit (ORCPT
+	id S932201AbaGQKHA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:07:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34503 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767AbaGQKG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:05:09 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] bluetooth: never linger on process exit
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1405412728-4706-1-git-send-email-vdavydov@parallels.com>
-Date: Thu, 17 Jul 2014 12:05:26 +0200
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Linux Bluetooth mailing list 
-	<linux-bluetooth@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2ECFA3A4-C890-4512-86CD-B17EFDB57663@holtmann.org>
-References: <1405412728-4706-1-git-send-email-vdavydov@parallels.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Thu, 17 Jul 2014 06:06:58 -0400
+Message-ID: <53C7A01C.50107@linutronix.de>
+Date: Thu, 17 Jul 2014 12:06:20 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
+References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de> <1405521903-5877-6-git-send-email-bigeasy@linutronix.de> <20140717070859.GD18374@atomide.com> <20140717074219.GA29193@linutronix.de> <20140717081232.GH18374@atomide.com>
+In-Reply-To: <20140717081232.GH18374@atomide.com>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vladimir,
+On 07/17/2014 10:12 AM, Tony Lindgren wrote:
+> Hmm it could be that it works for a while because the clocks are on
+> from the bootloader and pm_runtime calls won't do anything. This
+> could happen if the interconnect data based on the ti,hwmods entry
+> is not getting matched to the new driver. This gets initialized when
+> the device entry gets created in omap_device_build_from_dt().
+> 
+> Or maybe something now affects the clock aliases? It seems that we
+> are still missing the clocks entries in the .dtsi files, see the
+> mappings with $ git grep uart drivers/clk/ti/
 
-please always include linux-bluetooth@vger.kernel.org since otherwise it might be missed in the massive amount of emails that is LKML.
+I've been looking for something completely different while I noticed
+this:
 
-> If the current process is exiting, lingering on socket close will make
-> it unkillable, so we should avoid it.
-> 
-> Reproducer:
-> 
->  #include <sys/types.h>
->  #include <sys/socket.h>
-> 
->  #define BTPROTO_L2CAP   0
->  #define BTPROTO_SCO     2
->  #define BTPROTO_RFCOMM  3
-> 
->  int main()
->  {
->          int fd;
->          struct linger ling;
-> 
->          fd = socket(PF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
->          //or: fd = socket(PF_BLUETOOTH, SOCK_DGRAM, BTPROTO_L2CAP);
->          //or: fd = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_SCO);
-> 
->          ling.l_onoff = 1;
->          ling.l_linger = 1000000000;
->          setsockopt(fd, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling));
-> 
->          return 0;
->  }
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: Gustavo Padovan <gustavo@padovan.org>
-> Cc: Johan Hedberg <johan.hedberg@gmail.com>
-> ---
-> net/bluetooth/l2cap_sock.c  |    3 ++-
-> net/bluetooth/rfcomm/sock.c |    3 ++-
-> net/bluetooth/sco.c         |    6 ++++--
-> 3 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-> index e1378693cc90..d0fd8b04f2e6 100644
-> --- a/net/bluetooth/l2cap_sock.c
-> +++ b/net/bluetooth/l2cap_sock.c
-> @@ -1111,7 +1111,8 @@ static int l2cap_sock_shutdown(struct socket *sock, int how)
-> 		l2cap_chan_close(chan, 0);
-> 		lock_sock(sk);
-> 
-> -		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
-> +		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
-> +		    !(current->flags & PF_EXITING))
-> 			err = bt_sock_wait_state(sk, BT_CLOSED,
-> 						 sk->sk_lingertime);
-> 	}
+in drivers/tty/serial/omap-serial.c
+| static struct platform_driver serial_omap_driver = {
+|         .driver         = {
+|                 .name   = DRIVER_NAME,
+|         },
+| };
+|
 
-The only other example of using PF_EXITING I found is net/ipv4/af_inet.c and if this is the preferred way of handling this, the patch looks fine to me.
+and DRIVER_NAME should come from include/linux/platform_data/serial-omap.h
+Looking further, I've found arch/arm/mach-omap2/serial.c:
+| void __init omap_serial_init_port(struct omap_board_data *bdata,
+|                         struct omap_uart_port_info *info)
+| {
+|         char *name
+…
+|	name = DRIVER_NAME;
+…
+|	pdev = omap_device_build(name, uart->num, oh, pdata, pdata_size);
+…
+|
 
-Regards
+Would this explain it?
 
-Marcel
+> Regards,
+> 
+> Tony
 
+Sebastian
