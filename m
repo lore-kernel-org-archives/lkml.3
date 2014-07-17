@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933375AbaGQOJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 10:09:21 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:45870 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933296AbaGQOJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933319AbaGQOJT (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 17 Jul 2014 10:09:19 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:39819 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933174AbaGQOJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 10:09:16 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org, jack@suse.cz,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/6] printk: honor LOG_PREFIX in devkmsg_read()
-Date: Thu, 17 Jul 2014 09:09:08 -0500
-Message-Id: <1405606151-19875-4-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 4/6] printk: honor LOG_PREFIX in msg_print_text()
+Date: Thu, 17 Jul 2014 09:09:09 -0500
+Message-Id: <1405606151-19875-5-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405606151-19875-1-git-send-email-elder@linaro.org>
 References: <1405606151-19875-1-git-send-email-elder@linaro.org>
@@ -21,86 +21,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In devkmsg_read(), a variable "cont" holds a character that's used
-to indicate whether a given log line is a "continuation", that is,
-whether a log record should be merged with the one before or after
-it.  If a record should be merged with its successor (but not its
-predecessor) that character is 'c'.  And the line following such a
-'c' log record is normally marked with a '+' to show it is continues
-its predecessor.  Any other cases are marked '-', indicating the
-log record stands on its own.
+This patch fixes a problem similar to what was addressed in the
+previous patch.
 
-There is an exception.  If a log record is marked LOG_PREFIX, it
-indicates that this record represents a new log entry, implicitly
-terminating the predecessor--even if the predecessor would otherwise
-have been continued.  So a record marked LOG_PREFIX (that is not
-also marked LOG_CONT) should have '-' for its "cont" variable.
+All paths that read and format log records (for consoles, and for
+reading via syslog and /dev/kmsg) go through msg_print_text().  That
+function starts with some logic to determine whether the given log
+record when formatted should begin with a "prefix" string, and
+whether it should end with a newline.  That logic has a bug.
 
-The logic that determines this "continuation" character has a bug
-that gets that exceptional case wrong.
+The LOG_PREFIX flag in a log record indicates that when it's
+formatted, a log record should include a prefix.  This is used to
+force a record to begin a new line--even if its preceding log record
+contained LOG_CONT (indicating its content should be combined with
+the next record).
 
-The specific case that produces the wrong result is when all of
-these conditions are non-zero:
-    user->prev & LOG_CONT
+Like the previous patch, the problem occurs when these flags are
+all set:
+    prev & LOG_CONT
     msg->flags & LOG_PREFIX
     msg->flags & LOG_CONT
-The bug is that despite the message's LOG_PREFIX flag, the
-"cont" character is getting set to '+' rather than 'c'.
+In that case, "prefix" should be true but it is not.
 
-The problem is that the message's LOG_PREFIX flag is getting
-ignored if its LOG_CONT flag is also set.  Rearrange the logic
-here to produce the correct result.
+The fix involves checking LOG_PREFIX when a message has its LOG_CONT
+flag set, and in that case allowing "prefix" to become false only
+if LOG_PREFIX is not set.  I.e., the logic for "prefix" would become:
+
+    if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
+        prefix = false;
+    if (msg->flags & LOG_CONT)
+        if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
+            prefix = false;
+
+However, note that this makes the (msg->flags & LOG_CONT) block
+redunant--it's handled by the test just above it.  The result
+becomes quite a bit simpler than before.
 
 The following table concisely defines the problem:
 
-     prev | msg  | msg  ||"cont"
-     CONT |PREFIX| CONT || char
+     prev | msg  | msg  ||
+     CONT |PREFIX| CONT ||prefix
     ------+------+------++------
-     clear| clear| clear||  '-'
-     clear| clear|  set ||  'c'
-     clear|  set | clear||  '-'
-     clear|  set |  set ||  'c'
-      set | clear| clear||  '+'
-      set | clear|  set ||  '+'
-      set |  set | clear||  '-'
-      set |  set |  set ||  '+'     <-- should be 'c'
+     clear| clear| clear||  true
+     clear| clear|  set ||  true
+     clear|  set | clear||  true
+     clear|  set |  set ||  true
+      set | clear| clear|| false
+      set | clear|  set || false
+      set |  set | clear||  true
+      set |  set |  set || false    <-- should be true
 
 Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
 ---
- kernel/printk/printk.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ kernel/printk/printk.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 1ee1862..5d719bf 100644
+index 5d719bf..e5ee1cb 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -572,7 +572,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	struct printk_log *msg;
- 	u64 ts_usec;
- 	size_t i;
--	char cont = '-';
-+	char cont;
- 	size_t len;
- 	ssize_t ret;
+@@ -1006,11 +1006,8 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+ 	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
+ 		prefix = false;
  
-@@ -619,11 +619,12 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	 * better readable output. 'c' in the record flags mark the first
- 	 * fragment of a line, '+' the following.
- 	 */
--	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
--		cont = 'c';
--	else if ((msg->flags & LOG_CONT) ||
--		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
-+	if ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
- 		cont = '+';
-+	else if (msg->flags & LOG_CONT)
-+		cont = 'c';
-+	else
-+		cont = '-';
+-	if (msg->flags & LOG_CONT) {
+-		if (prev & LOG_CONT)
+-			prefix = false;
++	if (msg->flags & LOG_CONT)
+ 		newline = false;
+-	}
  
- 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
- 		      (msg->facility << 3) | msg->level,
+ 	do {
+ 		const char *next = memchr(text, '\n', text_size);
 -- 
 1.9.1
 
