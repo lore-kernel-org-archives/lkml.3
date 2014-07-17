@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaGQVXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 17:23:04 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41839 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770AbaGQVXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 17:23:02 -0400
-Date: Thu, 17 Jul 2014 17:14:25 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140717211425.GU1491@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-	linux-api@vger.kernel.org, linux-crypto@vger.kernel.org,
-	beck@openbsd.org
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <53C8319A.8090108@amacapital.net>
+	id S1757592AbaGQVXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 17:23:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36168 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757128AbaGQVX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 17:23:29 -0400
+Date: Thu, 17 Jul 2014 14:23:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.15 00/84] 3.15.6-stable review
+Message-ID: <20140717212304.GA2991@kroah.com>
+References: <20140715231713.193785557@linuxfoundation.org>
+ <53C7CE8D.1050200@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53C8319A.8090108@amacapital.net>
+In-Reply-To: <53C7CE8D.1050200@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 01:27:06PM -0700, Andy Lutomirski wrote:
-> > +	return urandom_read(NULL, buf, count, NULL);
+On Thu, Jul 17, 2014 at 07:24:29AM -0600, Shuah Khan wrote:
+> On 07/15/2014 05:16 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.15.6 release.
+> >There are 84 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Thu Jul 17 23:17:00 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.6-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
 > 
-> This can return -ERESTARTSYS.  Does it need any logic to restart correctly?
+> rc1 and rc2 compiled and booted on my test system. No dmesg regressions.
 
-Nope; because we only return -ERESTARTSYS when we haven't generated
-any randomness yet.  The way /dev/urandom and /dev/random devices work
-is that if we get interrupted, we return a short read.  We do *not*
-resume generation of random bytes from where we got interrupted from
-the signal handler.
+Thanks for testing all of these and letting me know.
 
-This is consistent with the definition in the signal(7) man page:
-
-       If a blocked call to one of the following interfaces is
-       interrupted by a signal handler, then the call will be
-       automatically restarted after the signal handler returns if the
-       SA_RESTART flag was used; otherwise the call will fail with the
-       error EINTR:
-
-           * read(2), readv(2), write(2), writev(2), and ioctl(2)
-             calls on "slow" devices.  A "slow" device is one where
-             the I/O call may block for an indefinite time, for
-             example, a terminal, pipe, or socket.  (A disk is not a
-             slow device according to this definition.)  If an I/O
-             call on a slow device has already transferred some data
-             by the time it is interrupted by a signal handler, then
-             the call will return a success status (normally, the
-             number of bytes transferred).
-
-And in answer to Zach's question along these lines, ERESTARTSYS gets
-restarted or transformed into EINTR by the system call layer, so long
-as you only set ERESTARTSYS when signal_pending(current) is true.  If
-you accidentally set the return value to ERESTARTSYS when a signal is
-not pending, this error code can escape out to user space, which is
-considered a bug.  But we're using this correctly in
-drivers/char/random.c.
-
-						- Ted
+greg k-h
