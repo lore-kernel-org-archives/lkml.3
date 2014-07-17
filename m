@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597AbaGQKWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 06:22:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756382AbaGQKWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 06:22:11 -0400
-Date: Thu, 17 Jul 2014 12:22:52 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/2] PCI/MSI: Remove arch_msi_check_device()
-Message-ID: <20140717102252.GA17987@dhcp-26-207.brq.redhat.com>
-References: <cover.1405160163.git.agordeev@redhat.com>
- <1005232855c3af2c0c669818ee63be445389b6ad.1405160163.git.agordeev@redhat.com>
- <20140716222024.GE14366@google.com>
+	id S1756699AbaGQKXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 06:23:40 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:34482 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755474AbaGQKXh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 06:23:37 -0400
+Date: Thu, 17 Jul 2014 11:23:19 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 2/4] arm64: use generic dma-contiguous.h
+Message-ID: <20140717102318.GC18203@arm.com>
+References: <1405525892-60383-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+ <1405525892-60383-3-git-send-email-Zubair.Kakakhel@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716222024.GE14366@google.com>
+In-Reply-To: <1405525892-60383-3-git-send-email-Zubair.Kakakhel@imgtec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 04:20:24PM -0600, Bjorn Helgaas wrote:
-> > @@ -809,22 +799,23 @@ out_free:
-> >  }
-> >  
-> >  /**
-> > - * pci_msi_check_device - check whether MSI may be enabled on a device
-> > + * msi_check_device - check whether MSI may be enabled on a device
-> >   * @dev: pointer to the pci_dev data structure of MSI device function
-> >   * @nvec: how many MSIs have been requested ?
-> > - * @type: are we checking for MSI or MSI-X ?
-> >   *
-> >   * Look at global flags, the device itself, and its parent buses
-> >   * to determine if MSI/-X are supported for the device. If MSI/-X is
-> >   * supported return 0, else return an error code.
-> >   **/
-> > -static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
-> > +static int msi_check_device(struct pci_dev *dev, int nvec)
+On Wed, Jul 16, 2014 at 04:51:30PM +0100, Zubair Lutfullah Kakakhel wrote:
+> dma-contiguous.h is now in asm-generic. Use that to avoid code
+> repetition in arm64.
 > 
-> I think "check_device" is a terrible name because it really doesn't
-> give a clue about what it's doing or what the return value means.
-> Since you're removing the external usage (arch_msi_check_device) and
-> this one is static, this would be a good time to fix it.  Maybe
-> "pci_msi_supported()" or something?
+> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+> ---
+>  arch/arm64/include/asm/Kbuild           |  1 +
+>  arch/arm64/include/asm/dma-contiguous.h | 28 ----------------------------
+>  2 files changed, 1 insertion(+), 28 deletions(-)
+>  delete mode 100644 arch/arm64/include/asm/dma-contiguous.h
 
-What about pci_can_enable_msi() or pci_msi_can_enable() or msi_can_enable()?
-
-> I *love* the idea of getting rid of this much code!
-> 
-> Bjorn
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
