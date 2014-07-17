@@ -1,386 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025AbaGQNpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 09:45:17 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:57456 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932179AbaGQNpO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 09:45:14 -0400
-Date: Thu, 17 Jul 2014 15:45:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
-Message-ID: <20140717134509.GB8011@dhcp22.suse.cz>
-References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
- <20140716155814.GZ29639@cmpxchg.org>
+	id S933040AbaGQNqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 09:46:08 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:29322
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932129AbaGQNqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 09:46:06 -0400
+X-WSS-ID: 0N8UYWP-07-BXV-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: David Airlie <airlied@linux.ie>, Jerome Glisse <j.glisse@gmail.com>,
+        "Alex Deucher" <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        "Oded Gabbay" <oded.gabbay@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 05/25] drm/radeon: adding synchronization for GRBM GFX
+Date: Thu, 17 Jul 2014 16:29:12 +0300
+Message-ID: <1405603773-32688-6-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
+References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140716155814.GZ29639@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.20.0.84]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(77982001)(79102001)(87936001)(95666004)(50226001)(4396001)(87286001)(101416001)(44976005)(86362001)(21056001)(106466001)(105586002)(81342001)(93916002)(64706001)(20776003)(47776003)(76176999)(99396002)(92726001)(33646002)(50986999)(31966008)(104166001)(92566001)(83072002)(88136002)(89996001)(85852003)(50466002)(77156001)(97736001)(83322001)(229853001)(107046002)(19580405001)(68736004)(36756003)(48376002)(19580395003)(81542001)(77096002)(74502001)(74662001)(46102001)(80022001)(102836001)(62966002)(85306003)(84676001)(76482001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB047;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 027578BB13
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 16-07-14 11:58:14, Johannes Weiner wrote:
-> On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
-[...]
-> > +/* memcg knobs for new cgroups API (default aka unified hierarchy) */
-> > +static struct cftype dfl_mem_cgroup_files[] = {
-> > +	{
-> > +		.name = "usage_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
-> > +		.read_u64 = mem_cgroup_read_u64,
-> > +	},
-> 
-> The _in_bytes suffix is pointless, we just need to document that
-> everything in memcg is in bytes, unless noted otherwise.
-> 
-> How about "memory.current"?
+Implementing a lock for selecting and accessing shader engines and arrays.
+This lock will make sure that radeon and amdkfd are not colliding when
+accessing shader engines and arrays with GRBM_GFX_INDEX register.
 
-I wanted old users to change the minimum possible when moving to unified
-hierarchy so I didn't touch the old names.
-Why should we make the end users life harder? If there is general
-agreement I have no problem with renaming I just do not think it is
-really necessary because there is no real reason why configurations
-which do not use any of the deprecated or unified-hierarchy-only
-features shouldn't run in both unified and legacy hierarchies without
-any changes.
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/gpu/drm/radeon/cik.c           | 26 ++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon.h        |  2 ++
+ drivers/gpu/drm/radeon/radeon_device.c |  1 +
+ 3 files changed, 29 insertions(+)
 
-I do realize that this is a _new_ API so we can do such radical changes
-but I am also aware that some people have to maintain their stacks on
-top of different kernels and it really sucks to maintain two different
-configurations. In such a case it would be easier for those users to
-stay with the legacy mode which is a fair option but I would much rather
-see them move to the new API sooner rather than later.
-
-memory.usage would be much better fit IMO.
-
-> > +	{
-> > +		.name = "max_usage_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_MEM, RES_MAX_USAGE),
-> > +		.write = mem_cgroup_reset,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> 
-> What is this actually good for?  We have lazy cache shrinking, which
-> means that the high watermark of most workloads depends on the group
-> max limit.
-
-Well that is a good questions. I was going back and forth disabling this
-and failcnt before posting this RFC and ended up adding them as they
-never were controversial.
-I have no problem ditching them, though, because the usefulness is quite
-dubious. If someone wants to see whether the hard limit can be decreased
-without putting too much reclaim pressure then we have a notification
-mechanism for it.
-
-> > +	},
-> > +	{
-> > +		.name = "limit_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_MEM, RES_LIMIT),
-> > +		.write = mem_cgroup_write,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> > +	},
-> 
-> We already agreed that there will be a max, a high, a min, and a low
-> limit, why would you want to reintroduce the max limit as "limit"?
-
-Same as above. I didn't rename knobs for easier transition. On the
-other hand it is true that the name doesn't fit so nicely with the new
-upcoming limits scheme. Is this reason sufficient to make users lives
-harder?
-
-> How about "memory.max"?
-> 
-> memory.min
-> memory.low
-> memory.high
-> memory.max
-> memory.current
-> 
-> > +	{
-> > +		.name = "failcnt",
-> > +		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
-> > +		.write = mem_cgroup_reset,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> > +	},
-> 
-> This indicates the number of times the function res_counter_charge()
-> was called and didn't succeed.
-> 
-> Let that sink in.
-> 
-> This is way too dependent on the current implementation. 
-
-Well not really. It doesn't depend on the res_counter directly. We just
-happen to use it this way. Whatever we will use in future there will
-still be a moment when the hard (or whatever we call it) limit is hit.
-Whether somebody depends on it is a question. I wouldn't be surprised if
-somebody does but I also think that making any decisions based on the
-counter are dubious at best. But hey, users are really creative...
-
-> If you want a measure of how much pressure the group is under, look at
-> vmpressure, or add scanned/reclaimed reclaim statistics.  NAK.
-
-OK, I will not miss this one either. As you say there is a better way to
-measure the pressure and make decisions based on that.
-
-> > +	{
-> > +		.name = "stat",
-> > +		.seq_show = memcg_stat_show,
-> > +	},
-> 
-> This file is a complete mess.
-
-It is!
-
-> pgpgin/pgpgout originally refers to IO, here it means pages charged
-> and uncharged.  It's questionable whether we even need counters for
-> charges and uncharges.
-> 
-> mapped_file vs. NR_FILE_MAPPED is another eyesore.
-> 
-> We should generally try harder to be consistent with /proc/vmstat.
-> And rename it to "memory.vmstat" while we are at it.
-
-I definitely agree that we should converge to vmstat-like counters. We
-should also fix the counters which do not make much sense. I just do not
-want to end up with two sets of stats depending on whether we are in
-default or legacy hierarchy.
-
-> Also, having local counters no longer makes sense as there won't be
-> tasks in intermediate nodes anymore and we are getting rid of
-> reparenting. 
-
-I am not sure we should get rid of reparenting. It makes sense to have
-pages from the gone memcgs in the parent so they are the first candidate
-to reclaim.
-
-> All counters should appear once, in their hierarchical form.
-
-Each memcg has its local state (e.g. LRUs) so we should reflect that in
-the stat file IMO. Or are there any plans to use different mem_cgroup
-structure for the intermediate nodes? I haven't heard anything like
-that.
-
-> The exception is the root_mem_cgroup, which should probably
-> have a separate file for the local counters.
-> 
-> > +	{
-> > +		.name = "cgroup.event_control",		/* XXX: for compat */
-> > +		.write = memcg_write_event_control,
-> > +		.flags = CFTYPE_NO_PREFIX,
-> > +		.mode = S_IWUGO,
-> 
-> Why?
-
-For the oom, thresholds and vmpressure notifications, obviously. Or do
-we have any other means to do the same? Does it really make sense to
-push all the current users to use something else?
-
-I understand that cgroup core didn't want to support such a generic
-tool. But I think it serves its purpose for memcg and it works
-reasonably well.
-
-I am surely open to discuss alternatives.
-
-> > +	},
-> > +	{
-> > +		.name = "swappiness",
-> > +		.read_u64 = mem_cgroup_swappiness_read,
-> > +		.write_u64 = mem_cgroup_swappiness_write,
-> 
-> Do we actually need this?
-
-Swappiness is a natural property of LRU (anon/file) scanning and LRUs
-belong to memcg so they should have a way to tell their preference.
-Consider container setups for example. There will never be
-one-swappiness-suits-all of them.
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 1d7dd3b..b4bbc22 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -1563,6 +1563,8 @@ static const u32 godavari_golden_registers[] =
  
-> > +	},
-> > +	{
-> > +		.name = "move_charge_at_immigrate",
-> > +		.read_u64 = mem_cgroup_move_charge_read,
-> > +		.write_u64 = mem_cgroup_move_charge_write,
-> 
-> This creates significant pain because pc->mem_cgroup becomes a moving
-> target during the lifetime of the page.  When this feature was added,
-> there was no justification - except that "some users feel [charges
-> staying in the group] to be strange" - and it was lacking the
-> necessary synchronization to make this work properly, so the cost of
-> this feature was anything but obvious during the initial submission.
-
-Actually I think that move charge with tasks should be enabled by
-default. If the task moving between groups should be supported (and I
-think it should be) then leaving the charges and pages behind is more
-than strange. Why does the task move in the first place? Just to get rid
-of the responsibility for its previous memory consumption?
-
-So I am OK with the knob removing but I think we should move charge by
-default in the unified hierarchy.
-
-> I generally don't see why tasks should be moving between groups aside
-> from the initial setup phase.  And then they shouldn't have consumed
-> any amounts of memory that they couldn't afford to leave behind in the
-> root/parent.
-> 
-> So what is the usecase for this that would justify the immense cost in
-> terms of both performance and code complexity?
-
-One of them would be cooperation with other controllers where moving
-task has its own meaning (e.g. to a cpu group with a different share or a
-cpuset with a slightly different cpu/node set etc...). Memory controller
-shouldn't disallow task moving.
-
-Another one would be memory "load" balancing. Say you have 2 (high and low
-priority) sets of tasks running on your system/container. High priority
-tasks shouldn't be reclaimed much because that would increase their
-latencies or whatever. Low prio tasks can get reclaimed or even OOM
-killed. Load balancer, admin, user putting task to/from the background
-or any other mechanism can decide to change the "priority" of the task
-simply by moving it to the appropriate memcg.
-
-> 
-> > +	},
-> > +	{
-> > +		.name = "oom_control",
-> > +		.seq_show = mem_cgroup_oom_control_read,
-> > +		.write_u64 = mem_cgroup_oom_control_write,
-> > +		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
-> 
-> This needs a usecase description as well.
-
-There are more of them I think. Btw. I have seen users who started using
-memory cgroups just because they were able to control OOM from userspace.
-
-The strongest use case is to handle OOM conditions gracefully. This
-includes 1) allow proper shutdown of the service 2) allow killing OOM
-victim's related processes which do not make any sense on their own
-3) make a more workload aware victim selection.
-
-I am fully aware that there has been a lot of abuse in the past and
-users pushing the feature to its limits but that doesn't qualify to
-removing otherwise very useful feature.
-
-> 
-> > +	},
-> > +	{
-> > +		.name = "pressure_level",
-> 
-> "memory.pressure"?
-> 
-> > +	},
-> > +#ifdef CONFIG_NUMA
-> > +	{
-> > +		.name = "numa_stat",
-> > +		.seq_show = memcg_numa_stat_show,
-> > +	},
-> 
-> This would also be a chance to clean up this file, which is suddenly
-> specifying memory size in pages rather than bytes.
-
-OK, we should merge it with stat file.
-
-> > +#ifdef CONFIG_MEMCG_KMEM
-> > +	{
-> > +		.name = "kmem.limit_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-> > +		.write = mem_cgroup_write,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> > +	},
-> 
-> Does it really make sense to have a separate limit for kmem only?
-> IIRC, the reason we introduced this was that this memory is not
-> reclaimable and so we need to limit it.
-
-My recollection is different. Basically there are users who really do
-not care about kmem accounting and do not want to pay runtime overhead.
-Documentation/cgroups/memory.txt then describes different usecases in
-chapter 2.7.3. I am not user of kmem myself and considering the current
-state of the extension I have never encourage anybody to use it for
-anything but playing so I cannot tell you which of the scenario is used
-most widespread.
-I do not have any objections to leave the kmem extension in the legacy
-mode for now and add it later when it matures. In fact my original
-patch did that but then I've decided to keep it because the current
-limitations seem to be more implementation than semantic specific. And
-Vladimir is doing a really great job to fill the gaps.
-
-> But the opposite effect happened: because it's not reclaimable, the
-> separate kmem limit is actually unusable for any values smaller than
-> the overall memory limit: because there is no reclaim mechanism for
-> that limit, once you hit it, it's over, there is nothing you can do
-> anymore.  The problem isn't so much unreclaimable memory, the problem
-> is unreclaimable limits.
-
-This is the limitation of the current implementation.
-
-> If the global case produces memory pressure through kernel memory
-> allocations, we reclaim page cache, anonymous pages, inodes, dentries
-> etc.  I think the same should happen for kmem: kmem should just be
-> accounted and limited in the overall memory limit of a group, and when
-> pressure arises, we go after anything that's reclaimable.
-> 
-> > +	{
-> > +		.name = "kmem.max_usage_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
-> > +		.write = mem_cgroup_reset,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> 
-> As per above, I don't see that a high watermark is meaningful with
-> lazy cache shrinking.
-
-Sure, if other max_usage_in_bytes goes away this one will go as well.
-
-> > +	{
-> > +		.name = "kmem.usage_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
-> > +		.read_u64 = mem_cgroup_read_u64,
-> > +	},
-> 
-> We could just include slab counters, kernel stack pages etc. in the
-> statistics file, like /proc/vmstat does.
-
-Agreed.
+ static void cik_init_golden_registers(struct radeon_device *rdev)
+ {
++	/* Some of the registers might be dependant on GRBM_GFX_INDEX */
++	mutex_lock(&rdev->grbm_idx_mutex);
+ 	switch (rdev->family) {
+ 	case CHIP_BONAIRE:
+ 		radeon_program_register_sequence(rdev,
+@@ -1637,6 +1639,7 @@ static void cik_init_golden_registers(struct radeon_device *rdev)
+ 	default:
+ 		break;
+ 	}
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ }
  
-> > +	{
-> > +		.name = "kmem.failcnt",
-> > +		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
-> > +		.write = mem_cgroup_reset,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> 
-> NAK as per above.
-> 
-> > +#ifdef CONFIG_SLABINFO
-> > +	{
-> > +		.name = "kmem.slabinfo",
-> > +		.seq_show = mem_cgroup_slabinfo_read,
-> > +	},
-> > +#endif
-> > +#endif
-> > +	{ },	/* terminate */
-> > +};
-> > +
-> >  #ifdef CONFIG_MEMCG_SWAP
-> >  static struct cftype memsw_cgroup_files[] = {
-> >  	{
-> > @@ -6266,7 +6364,8 @@ struct cgroup_subsys memory_cgrp_subsys = {
-> >  	.cancel_attach = mem_cgroup_cancel_attach,
-> >  	.attach = mem_cgroup_move_task,
-> >  	.bind = mem_cgroup_bind,
-> > -	.legacy_cftypes = mem_cgroup_files,
-> > +	.legacy_cftypes = legacy_mem_cgroup_files,
-> > +	.dfl_cftypes = dfl_mem_cgroup_files,
-
+ /**
+@@ -3418,6 +3421,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
+ 	u32 disabled_rbs = 0;
+ 	u32 enabled_rbs = 0;
+ 
++	mutex_lock(&rdev->grbm_idx_mutex);
+ 	for (i = 0; i < se_num; i++) {
+ 		for (j = 0; j < sh_per_se; j++) {
+ 			cik_select_se_sh(rdev, i, j);
+@@ -3429,6 +3433,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
+ 		}
+ 	}
+ 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 	mask = 1;
+ 	for (i = 0; i < max_rb_num_per_se * se_num; i++) {
+@@ -3439,6 +3444,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
+ 
+ 	rdev->config.cik.backend_enable_mask = enabled_rbs;
+ 
++	mutex_lock(&rdev->grbm_idx_mutex);
+ 	for (i = 0; i < se_num; i++) {
+ 		cik_select_se_sh(rdev, i, 0xffffffff);
+ 		data = 0;
+@@ -3466,6 +3472,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
+ 		WREG32(PA_SC_RASTER_CONFIG, data);
+ 	}
+ 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ }
+ 
+ /**
+@@ -3683,6 +3690,12 @@ static void cik_gpu_init(struct radeon_device *rdev)
+ 	/* set HW defaults for 3D engine */
+ 	WREG32(CP_MEQ_THRESHOLDS, MEQ1_START(0x30) | MEQ2_START(0x60));
+ 
++	mutex_lock(&rdev->grbm_idx_mutex);
++	/*
++	 * making sure that the following register writes will be broadcasted
++	 * to all the shaders
++	 */
++	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
+ 	WREG32(SX_DEBUG_1, 0x20);
+ 
+ 	WREG32(TA_CNTL_AUX, 0x00010000);
+@@ -3738,6 +3751,7 @@ static void cik_gpu_init(struct radeon_device *rdev)
+ 
+ 	WREG32(PA_CL_ENHANCE, CLIP_VTX_REORDER_ENA | NUM_CLIP_SEQ(3));
+ 	WREG32(PA_SC_ENHANCE, ENABLE_PA_SC_OUT_OF_ORDER);
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 	udelay(50);
+ }
+@@ -6037,6 +6051,7 @@ static void cik_wait_for_rlc_serdes(struct radeon_device *rdev)
+ 	u32 i, j, k;
+ 	u32 mask;
+ 
++	mutex_lock(&rdev->grbm_idx_mutex);
+ 	for (i = 0; i < rdev->config.cik.max_shader_engines; i++) {
+ 		for (j = 0; j < rdev->config.cik.max_sh_per_se; j++) {
+ 			cik_select_se_sh(rdev, i, j);
+@@ -6048,6 +6063,7 @@ static void cik_wait_for_rlc_serdes(struct radeon_device *rdev)
+ 		}
+ 	}
+ 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 	mask = SE_MASTER_BUSY_MASK | GC_MASTER_BUSY | TC0_MASTER_BUSY | TC1_MASTER_BUSY;
+ 	for (k = 0; k < rdev->usec_timeout; k++) {
+@@ -6182,10 +6198,12 @@ static int cik_rlc_resume(struct radeon_device *rdev)
+ 	WREG32(RLC_LB_CNTR_INIT, 0);
+ 	WREG32(RLC_LB_CNTR_MAX, 0x00008000);
+ 
++	mutex_lock(&rdev->grbm_idx_mutex);
+ 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
+ 	WREG32(RLC_LB_INIT_CU_MASK, 0xffffffff);
+ 	WREG32(RLC_LB_PARAMS, 0x00600408);
+ 	WREG32(RLC_LB_CNTL, 0x80000004);
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 	WREG32(RLC_MC_CNTL, 0);
+ 	WREG32(RLC_UCODE_CNTL, 0);
+@@ -6252,11 +6270,13 @@ static void cik_enable_cgcg(struct radeon_device *rdev, bool enable)
+ 
+ 		tmp = cik_halt_rlc(rdev);
+ 
++		mutex_lock(&rdev->grbm_idx_mutex);
+ 		cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
+ 		WREG32(RLC_SERDES_WR_CU_MASTER_MASK, 0xffffffff);
+ 		WREG32(RLC_SERDES_WR_NONCU_MASTER_MASK, 0xffffffff);
+ 		tmp2 = BPM_ADDR_MASK | CGCG_OVERRIDE_0 | CGLS_ENABLE;
+ 		WREG32(RLC_SERDES_WR_CTRL, tmp2);
++		mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 		cik_update_rlc(rdev, tmp);
+ 
+@@ -6298,11 +6318,13 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
+ 
+ 		tmp = cik_halt_rlc(rdev);
+ 
++		mutex_lock(&rdev->grbm_idx_mutex);
+ 		cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
+ 		WREG32(RLC_SERDES_WR_CU_MASTER_MASK, 0xffffffff);
+ 		WREG32(RLC_SERDES_WR_NONCU_MASTER_MASK, 0xffffffff);
+ 		data = BPM_ADDR_MASK | MGCG_OVERRIDE_0;
+ 		WREG32(RLC_SERDES_WR_CTRL, data);
++		mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 		cik_update_rlc(rdev, tmp);
+ 
+@@ -6346,11 +6368,13 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
+ 
+ 		tmp = cik_halt_rlc(rdev);
+ 
++		mutex_lock(&rdev->grbm_idx_mutex);
+ 		cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
+ 		WREG32(RLC_SERDES_WR_CU_MASTER_MASK, 0xffffffff);
+ 		WREG32(RLC_SERDES_WR_NONCU_MASTER_MASK, 0xffffffff);
+ 		data = BPM_ADDR_MASK | MGCG_OVERRIDE_1;
+ 		WREG32(RLC_SERDES_WR_CTRL, data);
++		mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 		cik_update_rlc(rdev, tmp);
+ 	}
+@@ -6783,10 +6807,12 @@ static u32 cik_get_cu_active_bitmap(struct radeon_device *rdev, u32 se, u32 sh)
+ 	u32 mask = 0, tmp, tmp1;
+ 	int i;
+ 
++	mutex_lock(&rdev->grbm_idx_mutex);
+ 	cik_select_se_sh(rdev, se, sh);
+ 	tmp = RREG32(CC_GC_SHADER_ARRAY_CONFIG);
+ 	tmp1 = RREG32(GC_USER_SHADER_ARRAY_CONFIG);
+ 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
++	mutex_unlock(&rdev->grbm_idx_mutex);
+ 
+ 	tmp &= 0xffff0000;
+ 
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 4e7e41f..5136855 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -2334,6 +2334,8 @@ struct radeon_device {
+ 	struct radeon_atcs		atcs;
+ 	/* srbm instance registers */
+ 	struct mutex			srbm_mutex;
++	/* GRBM index mutex. Protects concurrents access to GRBM index */
++	struct mutex			grbm_idx_mutex;
+ 	/* clock, powergating flags */
+ 	u32 cg_flags;
+ 	u32 pg_flags;
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 98538d2..1b8b8b7 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1258,6 +1258,7 @@ int radeon_device_init(struct radeon_device *rdev,
+ 	mutex_init(&rdev->pm.mutex);
+ 	mutex_init(&rdev->gpu_clock_mutex);
+ 	mutex_init(&rdev->srbm_mutex);
++	mutex_init(&rdev->grbm_idx_mutex);
+ 	init_rwsem(&rdev->pm.mclk_lock);
+ 	init_rwsem(&rdev->exclusive_lock);
+ 	init_waitqueue_head(&rdev->irq.vblank_queue);
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
