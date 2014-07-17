@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaGQR6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:58:21 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:44466 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaGQR6U (ORCPT
+	id S1752471AbaGQR7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:59:21 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41981 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbaGQR7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:58:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAComcpOkWLPJGDXWuYrC4Gtk02H_81qwSUzzM87qkx-tf6PUhQ@mail.gmail.com>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717161215.GA14951@infradead.org> <20140717170115.GO1491@thunk.org>
- <CAComcpM9-sUwzT9BPFT7BJjk97V0kj996D=AaivDpeTZUNbiew@mail.gmail.com>
- <20140717173433.GQ1491@thunk.org> <CAComcpPkOM9oy9tYcDqVfF3siKT_RLe54qskhUJRPLWm-MukEA@mail.gmail.com>
- <CAComcpOkWLPJGDXWuYrC4Gtk02H_81qwSUzzM87qkx-tf6PUhQ@mail.gmail.com>
-From: Bob Beck <beck@openbsd.org>
-Date: Thu, 17 Jul 2014 11:57:59 -0600
-X-Google-Sender-Auth: AHuEiTTVOJWtfLgc3WkPCS8_-EQ
-Message-ID: <CAComcpPTRoHr3C7r7tdte+j94PmUw7VrptTVOg8uEsT-hTFuzA@mail.gmail.com>
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-To: "Theodore Ts'o" <tytso@mit.edu>, Bob Beck <beck@openbsd.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-abi <linux-abi@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jul 2014 13:59:19 -0400
+From: Alex Elder <elder@linaro.org>
+To: akpm@linux-foundation.org
+Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] printk: stop actually recording LOG_PREFIX
+Date: Thu, 17 Jul 2014 12:59:11 -0500
+Message-Id: <1405619953-5475-4-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405619953-5475-1-git-send-email-elder@linaro.org>
+References: <1405619953-5475-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Or perhaps to put that another way, since you don't do minherit -
-maybe a FORK_ZERO for madvise? or a similar way
-to do that?
+Whenever log_store() sees a LOG_PREFIX flag it marks the previous
+log entry (if there is one) with LOG_NEWLINE, which (also) produces
+the desired effect.
 
+There's therefore no need to record LOG_PREFIX in log records.
 
-On Thu, Jul 17, 2014 at 11:46 AM, Bob Beck <beck@openbsd.org> wrote:
-> And thanks btw.
->
-> I don't suppose you guys know who we should talk to about possibly
-> getting MAP_INHERIT_ZERO minherit() support?
->
-> On Thu, Jul 17, 2014 at 11:45 AM, Bob Beck <beck@openbsd.org> wrote:
->> we have diffs pending that will do the syscall method until we start
->> to see it in libc :)
->>
->> So basically we're going to put that in right away :)
->>
->> On Thu, Jul 17, 2014 at 11:34 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->>> On Thu, Jul 17, 2014 at 11:05:01AM -0600, Bob Beck wrote:
->>>> Hi Ted, yeah I understand the reasoning, it would be good if there was
->>>> a way to influence the various libc people to
->>>> ensure they manage to provide a getentropy().
->>>
->>> I don't anticipate that to be a problem.  And before they do, and/or
->>> if you are dealing with a system where the kernel has been upgraded,
->>> but not libc, you have your choice of either sticking with the
->>> binary_sysctl approach, or calling getrandom directly using the
->>> syscall method; and in that case, whether we use getrandom() or
->>> provide an exact getentropy() replacement system call isn't that much
->>> difference, since you'd have to have Linux-specific workaround code
->>> anyway....
->>>
->>>                                 - Ted
+If no log entries contain LOG_PREFIX, devkmsg_read() and
+msg_print_text() don't need to check for it.
+
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ kernel/printk/printk.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 6b72a77..df38b5e 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -432,8 +432,11 @@ static int log_store(int facility, int level,
+ 	 * If we're forcing a new log record, update the flags for
+ 	 * the previous one to mark it complete.
+ 	 */
+-	if (flags & LOG_PREFIX && log_last_msg)
+-		log_last_msg->flags |= LOG_NEWLINE;
++	if (flags & LOG_PREFIX) {
++		if (log_last_msg)
++			log_last_msg->flags |= LOG_NEWLINE;
++		flags &= ~LOG_PREFIX;
++	}
+ 
+ 	msg = (struct printk_log *)(log_buf + log_next_idx);
+ 	memcpy(log_text(msg), text, text_len);
+@@ -633,7 +636,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	 * a record that should be merged with one or more earlier records.
+ 	 * And a '-' indicates a "normal" self-contained single record.
+ 	 */
+-	if (!(user->prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
++	if (!(user->prev & LOG_NEWLINE))
+ 		cont = '+';
+ 	else if (!(msg->flags & LOG_NEWLINE))
+ 		cont = 'c';
+@@ -1020,7 +1023,7 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+ 	bool newline = true;
+ 	size_t len = 0;
+ 
+-	if (!(prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
++	if (!(prev & LOG_NEWLINE))
+ 		prefix = false;
+ 
+ 	if (!(msg->flags & LOG_NEWLINE))
+-- 
+1.9.1
+
