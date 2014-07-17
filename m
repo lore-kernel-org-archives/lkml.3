@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaGQR7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 13:59:43 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:48189 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaGQR7l (ORCPT
+	id S1752380AbaGQR7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 13:59:19 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:43875 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaGQR7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 13:59:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+d38Uy=Rwjrt4NFjEgWZ13djFdF_RWHVPKAMnDn9YTVw@mail.gmail.com>
-References: <20140717174959.GA12788@www.outflux.net> <CALCETrVRC8Zh3yGQuuMyWFob0v8i2x+PLMNK0nZ2cryHvv_NEQ@mail.gmail.com>
- <CAGXu5j+d38Uy=Rwjrt4NFjEgWZ13djFdF_RWHVPKAMnDn9YTVw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 17 Jul 2014 10:59:19 -0700
-Message-ID: <CALCETrXfNi3yqv3S3eNcG-y74SUP8opnni=tU=XuSdc+ts7Huw@mail.gmail.com>
-Subject: Re: [PATCH] seccomp: do not reject initial filter using TSYNC
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Oleg Nesterov <oleg@redhat.com>,
-        David Drysdale <drysdale@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jul 2014 13:59:17 -0400
+From: Alex Elder <elder@linaro.org>
+To: akpm@linux-foundation.org
+Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] printk: kill LOG_CONT
+Date: Thu, 17 Jul 2014 12:59:09 -0500
+Message-Id: <1405619953-5475-2-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405619953-5475-1-git-send-email-elder@linaro.org>
+References: <1405619953-5475-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 10:56 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Thu, Jul 17, 2014 at 10:53 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Thu, Jul 17, 2014 at 10:49 AM, Kees Cook <keescook@chromium.org> wrote:
->>> There was an unneeded sanity check in the TSYNC code that was causing
->>> the first filter applied to not allow the TSYNC flag. Additionally,
->>> this optimizes the thread loops to skip "current". It was harmless, but
->>> better to not cause problems in the future.
->>>
->>> Reported-by: David Drysdale <drysdale@google.com>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> ---
->>> This goes on top of the v11 seccomp-tsync series. If I should respin
->>> as v12, please let me know.
->>>
->>> Thanks!
->>> ---
->>>  kernel/seccomp.c |   11 ++++++++---
->>>  1 file changed, 8 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
->>> index 2125b83ccfd4..0e0c6905b81d 100644
->>> --- a/kernel/seccomp.c
->>> +++ b/kernel/seccomp.c
->>> @@ -255,14 +255,15 @@ static inline pid_t seccomp_can_sync_threads(void)
->>>         BUG_ON(!mutex_is_locked(&current->signal->cred_guard_mutex));
->>>         BUG_ON(!spin_is_locked(&current->sighand->siglock));
->>>
->>> -       if (current->seccomp.mode != SECCOMP_MODE_FILTER)
->>> -               return -EACCES;
->>> -
->>>         /* Validate all threads being eligible for synchronization. */
->>>         caller = current;
->>>         for_each_thread(caller, thread) {
->>>                 pid_t failed;
->>>
->>> +               /* Skip current, since it is initiating the sync. */
->>> +               if (thread == current)
->>> +                       continue;
->>> +
->>
->> Should that be "thread == caller"?
->
-> caller shouldn't be changing, correct? Won't it be the same?
->
+The LOG_CONT and LOG_NEWLINE flags are mutually exclusive, i.e.,
+the presence of LOG_NEWLINE implies the absense of LOG_CONT, and
+vice-versa.  As a result, wherever LOG_CONT is used, we can
+equivalently substitute !LOG_NEWLINE; and we can use LOG_NEWLINE
+wherever !LOG_CONT is used.
 
-I assumed that you loaded caller once as an optimization -- ISTR that,
-at least at some point, accessing current was a slightly expensive.
-Maybe this is moot now.
+Switch to using LOG_NEWLINE only, and get rid of LOG_CONT.  Make
+some refinements on a nearby block of comments.
 
-Anyway, the rest of the code in there is comparing thread to caller,
-using caller seems a bit more consistent.
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ kernel/printk/printk.c | 29 ++++++++++++++---------------
+ 1 file changed, 14 insertions(+), 15 deletions(-)
 
---Andy
-
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
-
-
-
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index eff68a4..e35d91a 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -211,7 +211,6 @@ enum log_flags {
+ 	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
+ 	LOG_NEWLINE	= 2,	/* text ended with a newline */
+ 	LOG_PREFIX	= 4,	/* text started with a prefix */
+-	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
+ };
+ 
+ struct printk_log {
+@@ -613,16 +612,18 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	do_div(ts_usec, 1000);
+ 
+ 	/*
+-	 * If we couldn't merge continuation line fragments during the print,
+-	 * export the stored flags to allow an optional external merge of the
+-	 * records. Merging the records isn't always necessarily correct, like
+-	 * when we hit a race during printing. In most cases though, it produces
+-	 * better readable output. 'c' in the record flags mark the first
+-	 * fragment of a line, '+' the following.
++	 * Sometimes it's necessary to flush an incomplete record to the log.
++	 * When this happens, consecutive records should be merged to produce
++	 * a logically complete message.
++	 *
++	 * Indicate this to user space with a flag character.  A 'c' indicates
++	 * the first of a series of incomplete log records.  A '+' indicates
++	 * a record that should be merged with one or more earlier records.
++	 * And a '-' indicates a "normal" self-contained single record.
+ 	 */
+-	if ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
++	if (!(user->prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		cont = '+';
+-	else if (msg->flags & LOG_CONT)
++	else if (!(msg->flags & LOG_NEWLINE))
+ 		cont = 'c';
+ 	else
+ 		cont = '-';
+@@ -1007,10 +1008,10 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+ 	bool newline = true;
+ 	size_t len = 0;
+ 
+-	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
++	if (!(prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		prefix = false;
+ 
+-	if (msg->flags & LOG_CONT)
++	if (!(msg->flags & LOG_NEWLINE))
+ 		newline = false;
+ 
+ 	do {
+@@ -1516,7 +1517,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 
+ 	if (cont.len + len > sizeof(cont.buf)) {
+ 		/* the line gets too long, split it up in separate records */
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 		return false;
+ 	}
+ 
+@@ -1534,7 +1535,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 	cont.len += len;
+ 
+ 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 
+ 	return true;
+ }
+@@ -1647,8 +1648,6 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	if (text_len && text[text_len-1] == '\n') {
+ 		text_len--;
+ 		lflags = LOG_NEWLINE;
+-	} else {
+-		lflags = LOG_CONT;
+ 	}
+ 
+ 	/* strip kernel syslog prefix and extract log level or control flags */
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.1
+
