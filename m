@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762400AbaGRUJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:09:49 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55862 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761955AbaGRUJs (ORCPT
+	id S1762447AbaGRULF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:11:05 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:41481 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913AbaGRULD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:09:48 -0400
-Date: Fri, 18 Jul 2014 16:09:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Patrik Fimml <patrikf@chromium.org>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Dmitry Torokhov <dtor@google.com>,
-        Bastien Nocera <hadess@hadess.net>, <linux-pm@vger.kernel.org>,
-        Benson Leung <bleung@google.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Power-managing devices that are not of interest at some point
- in time
-In-Reply-To: <20140718192334.GA10631@google.com>
-Message-ID: <Pine.LNX.4.44L0.1407181557020.979-100000@iolanthe.rowland.org>
+	Fri, 18 Jul 2014 16:11:03 -0400
+Date: Fri, 18 Jul 2014 23:10:59 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/10] proc: fix PAGE_SIZE limit of /proc/$PID/cmdline
+Message-ID: <20140718201059.GA26857@p183.telecom.by>
+References: <20140716213247.GC21290@p183.telecom.by>
+ <20140717155346.afadf6243dc6c0ebfda95853@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140717155346.afadf6243dc6c0ebfda95853@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014, Patrik Fimml wrote:
-
-> On Fri, Jul 18, 2014 at 03:00:46PM -0400, Alan Stern wrote:
-> > "Quiescing" is the wrong word.  "Quiescing a device" means stopping the
-> > device from doing anything, which isn't what you want.  You want to
-> > ignore any activity the device may generate and reduce the device's
-> > power consumption as much as possible.  A better word would be
-> > "deactivating".
+On Thu, Jul 17, 2014 at 03:53:46PM -0700, Andrew Morton wrote:
+> On Thu, 17 Jul 2014 00:32:47 +0300 Alexey Dobriyan <adobriyan@gmail.com> wrote:
 > 
-> Yeah, I agree that terminology is a bit tricky here, and we have some
-> words conveying a specific idea already ("suspend"). To me, deactivating
-> suggests a more permanent condition. FWIW, I've used "inhibit" in this
-> context before and think it captures the idea well, to add another
-> choice to the list.
-
-Well, you can always reactivate a device after it has been deactivated.  
-But "inhibit" is good too.
-
-> > You mentioned that handles to the device would remain open.  So when 
-> > the user opens the lid again, the old handles would start functioning, 
-> > right?
-> 
-> That's the idea, yes, and I think this would be desirable for the input
-> device class at least.
-
-For the input class, it may not matter.  For example, the X server 
-should deal well with a touchpad that effectively gets hot-unplugged 
-and then hot-plugged later.
-
-> > This has the disadvantage that the class device could not be
-> > unregistered, because doing so would invalidate the open handles.  
-> > Under such circumestances, how would a userspace video program know not
-> > to list a camera built into the lid among the possible video sources
-> > (an example given earlier in this discussion)?  The program would have
-> > to make an explicit test of the "deactivate" property -- it wouldn't
-> > automatically become aware that the camera wasn't available.
+> > Convert /proc/$PID/cmdline to seq_file interface.
 > > 
-> > Would it sometimes be okay to unregister the class device and
-> > invalidate the old handles, forcing programs to open new handles when
-> > the lid is opened?  This would reduce the number of changes user 
-> > programs would need.
+> > XXX
 > 
-> I guess we could potentially leave this for the device class to decide.
-
-Makes sense.
-
-> I'm not sure what the appropriate action for a video camera is anyway.
-> Should it go away completely, including its device? Should it be there,
-> but certainly not be the default choice when there is an external
-> camera? I'm thinking along the lines of some application's settings
-> dialog here, where it might be desirable to still be able to select the
-> internal camera for future recordings.
+> Unsure what XXX signifies.
 > 
-> Of course, userspace could still decide simply not to
-> quiesce|deactivate|inhibit the device if that was desired.
+> > This one must be buggy.
+> > 
+> > seq_file buffer is adjustable, so userspace can execute itself
+> > with huge command line (which can be arbitrarily long now), then read 1 byte.
+> > 
+> > Voila, whole command line now is in kmalloced/vmalloced memory.
+> > 
+> > Imposing limit is trivial but equally lame to current PAGE_SIZE limit.
+> 
+> Confused. Why send the patch if you don't like it?
+> 
+> Why not go ahead and impose the PAGE_SIZE limit?
 
-There's some question about how much of userspace needs to get 
-involved.  Just the daemon that manages these configuration changes, or 
-other programs as well?  I guess that's not really our problem...
+I thought someone smarter than me would suggest what to do.
 
-In the end, it sounds like you're suggesting a new pair of PM
-callbacks: ->deactivate() and ->reactivate(), or ->inhibit() and
-->uninhibit().  Plus an optional (?) sysfs interface for invoking the
-callbacks.
-
-Alan Stern
-
+Please replace with v2.
