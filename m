@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934407AbaGRM4t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:56:49 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:35047 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489AbaGRM4r (ORCPT
+	id S1760708AbaGRM6c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:58:32 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:43765 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170AbaGRM6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:56:47 -0400
-Message-ID: <53C9198B.1020808@imgtec.com>
-Date: Fri, 18 Jul 2014 13:56:43 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 18 Jul 2014 08:58:31 -0400
 MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
-CC: <lftan.linux@gmail.com>, <cltang@codesourcery.com>, Arnd <arnd@arndb.de>
-Subject: Re: [PATCH v2 15/29] nios2: System calls handling
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <1405413956-2772-16-git-send-email-lftan@altera.com>
-In-Reply-To: <1405413956-2772-16-git-send-email-lftan@altera.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+In-Reply-To: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>
+Date: Fri, 18 Jul 2014 14:58:30 +0200
+Message-ID: <CAFLxGvw6W196E4mcefz_b16iGHSFKF=RP1gx5eLj0U5NSR9SXg@mail.gmail.com>
+Subject: Re: ls -l /proc/1/exe -> Permission denied
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jul 17, 2014 at 1:18 PM, Joakim Tjernlund
+<joakim.tjernlund@transmode.se> wrote:
+> Trying to real /proc/<pid>/exe I noticed I could not read links not
+> belonging to my user such as:
+> jocke >  ls -l /proc/1/exe
+>              ls: cannot read symbolic link /proc/1/exe: Permission denied
+>
+> Is this expected?
 
-On 15/07/14 09:45, Ley Foon Tan wrote:
-> This patch adds support for system calls from userspaces. It uses the
-> asm-generic/unistd.h definitions with architecture spcific syscall. The sys_call_table
-> is just an array defined in a C file and it contains pointers to the syscall functions.
+Why do you think this is unexpected?
 
-I don't think you need the renameat syscall now that renameat2 exists.
-
-Can I suggest preceding your patchset with this patch:
-https://lkml.org/lkml/2014/4/23/197
-([RFC 3/3] asm-generic: Drop renameat syscall from default list)
-
-which drops renameat from the generic list unless __ARCH_WANT_RENAMEAT
-is defined in the arch's uapi/asm/unistd.h.
-
-Cheers
-James
+-- 
+Thanks,
+//richard
