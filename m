@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762063AbaGRNj6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:39:58 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17657 "EHLO
+	id S1762090AbaGRNkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:40:31 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17647 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761824AbaGRNMi (ORCPT
+	by vger.kernel.org with ESMTP id S1761418AbaGRNMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:12:38 -0400
+	Fri, 18 Jul 2014 09:12:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, hujianyang <hujianyang@huawei.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Julian Anastasov <ja@ssi.bg>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 022/170] UBIFS: Remove incorrect assertion in shrink_tnc()
-Date: Fri, 18 Jul 2014 14:10:27 +0200
-Message-Id: <c395e325c8bf59881fc68676ceed38c52b3051ea.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 002/170] ipvs: stop tot_stats estimator only under CONFIG_SYSCTL
+Date: Fri, 18 Jul 2014 14:10:07 +0200
+Message-Id: <f730d2ab16bae1111f796d01d3ab0b7d53e805f3.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,110 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: hujianyang <hujianyang@huawei.com>
+From: Julian Anastasov <ja@ssi.bg>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 72abc8f4b4e8574318189886de627a2bfe6cd0da upstream.
+[ Upstream commit 9802d21e7a0b0d2167ef745edc1f4ea7a0fc6ea3 ]
 
-I hit the same assert failed as Dolev Raviv reported in Kernel v3.10
-shows like this:
+The tot_stats estimator is started only when CONFIG_SYSCTL
+is defined. But it is stopped without checking CONFIG_SYSCTL.
+Fix the crash by moving ip_vs_stop_estimator into
+ip_vs_control_net_cleanup_sysctl.
 
-[ 9641.164028] UBIFS assert failed in shrink_tnc at 131 (pid 13297)
-[ 9641.234078] CPU: 1 PID: 13297 Comm: mmap.test Tainted: G           O 3.10.40 #1
-[ 9641.234116] [<c0011a6c>] (unwind_backtrace+0x0/0x12c) from [<c000d0b0>] (show_stack+0x20/0x24)
-[ 9641.234137] [<c000d0b0>] (show_stack+0x20/0x24) from [<c0311134>] (dump_stack+0x20/0x28)
-[ 9641.234188] [<c0311134>] (dump_stack+0x20/0x28) from [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs])
-[ 9641.234265] [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs]) from [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs])
-[ 9641.234307] [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs]) from [<c00cdad8>] (shrink_slab+0x1d4/0x2f8)
-[ 9641.234327] [<c00cdad8>] (shrink_slab+0x1d4/0x2f8) from [<c00d03d0>] (do_try_to_free_pages+0x300/0x544)
-[ 9641.234344] [<c00d03d0>] (do_try_to_free_pages+0x300/0x544) from [<c00d0a44>] (try_to_free_pages+0x2d0/0x398)
-[ 9641.234363] [<c00d0a44>] (try_to_free_pages+0x2d0/0x398) from [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8)
-[ 9641.234382] [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8) from [<c00f62d8>] (new_slab+0x78/0x238)
-[ 9641.234400] [<c00f62d8>] (new_slab+0x78/0x238) from [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c)
-[ 9641.234419] [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c) from [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188)
-[ 9641.234459] [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188) from [<bf227908>] (do_readpage+0x168/0x468 [ubifs])
-[ 9641.234553] [<bf227908>] (do_readpage+0x168/0x468 [ubifs]) from [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs])
-[ 9641.234606] [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs]) from [<c00c17c0>] (filemap_fault+0x304/0x418)
-[ 9641.234638] [<c00c17c0>] (filemap_fault+0x304/0x418) from [<c00de694>] (__do_fault+0xd4/0x530)
-[ 9641.234665] [<c00de694>] (__do_fault+0xd4/0x530) from [<c00e10c0>] (handle_pte_fault+0x480/0xf54)
-[ 9641.234690] [<c00e10c0>] (handle_pte_fault+0x480/0xf54) from [<c00e2bf8>] (handle_mm_fault+0x140/0x184)
-[ 9641.234716] [<c00e2bf8>] (handle_mm_fault+0x140/0x184) from [<c0316688>] (do_page_fault+0x150/0x3ac)
-[ 9641.234737] [<c0316688>] (do_page_fault+0x150/0x3ac) from [<c000842c>] (do_DataAbort+0x3c/0xa0)
-[ 9641.234759] [<c000842c>] (do_DataAbort+0x3c/0xa0) from [<c0314e38>] (__dabt_usr+0x38/0x40)
+The change is needed after commit 14e405461e664b
+("IPVS: Add __ip_vs_control_{init,cleanup}_sysctl()") from 2.6.39.
 
-After analyzing the code, I found a condition that may cause this failed
-in correct operations. Thus, I think this assertion is wrong and should be
-removed.
-
-Suppose there are two clean znodes and one dirty znode in TNC. So the
-per-filesystem atomic_t @clean_zn_cnt is (2). If commit start, dirty_znode
-is set to COW_ZNODE in get_znodes_to_commit() in case of potentially ops
-on this znode. We clear COW bit and DIRTY bit in write_index() without
-@tnc_mutex locked. We don't increase @clean_zn_cnt in this place. As the
-comments in write_index() shows, if another process hold @tnc_mutex and
-dirty this znode after we clean it, @clean_zn_cnt would be decreased to (1).
-We will increase @clean_zn_cnt to (2) with @tnc_mutex locked in
-free_obsolete_znodes() to keep it right.
-
-If shrink_tnc() performs between decrease and increase, it will release
-other 2 clean znodes it holds and found @clean_zn_cnt is less than zero
-(1 - 2 = -1), then hit the assertion. Because free_obsolete_znodes() will
-soon correct @clean_zn_cnt and no harm to fs in this case, I think this
-assertion could be removed.
-
-2 clean zondes and 1 dirty znode, @clean_zn_cnt == 2
-
-Thread A (commit)         Thread B (write or others)       Thread C (shrinker)
-->write_index
-   ->clear_bit(DIRTY_NODE)
-   ->clear_bit(COW_ZNODE)
-
-            @clean_zn_cnt == 2
-                          ->mutex_locked(&tnc_mutex)
-                          ->dirty_cow_znode
-                              ->!ubifs_zn_cow(znode)
-                              ->!test_and_set_bit(DIRTY_NODE)
-                              ->atomic_dec(&clean_zn_cnt)
-                          ->mutex_unlocked(&tnc_mutex)
-
-            @clean_zn_cnt == 1
-                                                           ->mutex_locked(&tnc_mutex)
-                                                           ->shrink_tnc
-                                                             ->destroy_tnc_subtree
-                                                             ->atomic_sub(&clean_zn_cnt, 2)
-                                                             ->ubifs_assert  <- hit
-                                                           ->mutex_unlocked(&tnc_mutex)
-
-            @clean_zn_cnt == -1
-->mutex_lock(&tnc_mutex)
-->free_obsolete_znodes
-   ->atomic_inc(&clean_zn_cnt)
-->mutux_unlock(&tnc_mutex)
-
-            @clean_zn_cnt == 0 (correct after shrink)
-
-Signed-off-by: hujianyang <hujianyang@huawei.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: <stable@vger.kernel.org> # 3.15.x
+Cc: <stable@vger.kernel.org> # 3.14.x
+Cc: <stable@vger.kernel.org> # 3.12.x
+Cc: <stable@vger.kernel.org> # 3.10.x
+Cc: <stable@vger.kernel.org> # 3.2.x
+Reported-by: Jet Chen <jet.chen@intel.com>
+Tested-by: Jet Chen <jet.chen@intel.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Sgned-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ubifs/shrinker.c | 1 -
- 1 file changed, 1 deletion(-)
+ net/netfilter/ipvs/ip_vs_ctl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ubifs/shrinker.c b/fs/ubifs/shrinker.c
-index f35135e28e96..9a9fb94a41c6 100644
---- a/fs/ubifs/shrinker.c
-+++ b/fs/ubifs/shrinker.c
-@@ -128,7 +128,6 @@ static int shrink_tnc(struct ubifs_info *c, int nr, int age, int *contention)
- 			freed = ubifs_destroy_tnc_subtree(znode);
- 			atomic_long_sub(freed, &ubifs_clean_zn_cnt);
- 			atomic_long_sub(freed, &c->clean_zn_cnt);
--			ubifs_assert(atomic_long_read(&c->clean_zn_cnt) >= 0);
- 			total_freed += freed;
- 			znode = zprev;
- 		}
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index a3df9bddc4f7..f9568654ffd2 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -3765,6 +3765,7 @@ static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
+ 	cancel_delayed_work_sync(&ipvs->defense_work);
+ 	cancel_work_sync(&ipvs->defense_work.work);
+ 	unregister_net_sysctl_table(ipvs->sysctl_hdr);
++	ip_vs_stop_estimator(net, &ipvs->tot_stats);
+ }
+ 
+ #else
+@@ -3825,7 +3826,6 @@ void __net_exit ip_vs_control_net_cleanup(struct net *net)
+ 	 */
+ 	rcu_barrier();
+ 	ip_vs_trash_cleanup(net);
+-	ip_vs_stop_estimator(net, &ipvs->tot_stats);
+ 	ip_vs_control_net_cleanup_sysctl(net);
+ 	remove_proc_entry("ip_vs_stats_percpu", net->proc_net);
+ 	remove_proc_entry("ip_vs_stats", net->proc_net);
 -- 
 2.0.0
 
