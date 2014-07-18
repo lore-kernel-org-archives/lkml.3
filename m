@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161127AbaGRNPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:15:38 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17824 "EHLO
+	id S1161145AbaGRNPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:15:45 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17832 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934054AbaGRNPd (ORCPT
+	by vger.kernel.org with ESMTP id S1161129AbaGRNPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:15:33 -0400
+	Fri, 18 Jul 2014 09:15:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 036/170] NFS: Don't declare inode uptodate unless all attributes were checked
-Date: Fri, 18 Jul 2014 14:10:41 +0200
-Message-Id: <9b8a9bf75003800ba4143b8b6c53bb41e57d00f9.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 117/170] md: flush writes before starting a recovery.
+Date: Fri, 18 Jul 2014 14:12:02 +0200
+Message-Id: <ff2828f6090b15eefc0b5c747bff20fffdef60f0.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,115 +23,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: NeilBrown <neilb@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 43b6535e717d2f656f71d9bd16022136b781c934 upstream.
+commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
 
-Fix a bug, whereby nfs_update_inode() was declaring the inode to be
-up to date despite not having checked all the attributes.
-The bug occurs because the temporary variable in which we cache
-the validity information is 'sanitised' before reapplying to
-nfsi->cache_validity.
+When we write to a degraded array which has a bitmap, we
+make sure the relevant bit in the bitmap remains set when
+the write completes (so a 're-add' can quickly rebuilt a
+temporarily-missing device).
 
-Reported-by: Kinglong Mee <kinglongmee@gmail.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+If, immediately after such a write starts, we incorporate a spare,
+commence recovery, and skip over the region where the write is
+happening (because the 'needs recovery' flag isn't set yet),
+then that write will not get to the new device.
+
+Once the recovery finishes the new device will be trusted, but will
+have incorrect data, leading to possible corruption.
+
+We cannot set the 'needs recovery' flag when we start the write as we
+do not know easily if the write will be "degraded" or not.  That
+depends on details of the particular raid level and particular write
+request.
+
+This patch fixes a corruption issue of long standing and so it
+suitable for any -stable kernel.  It applied correctly to 3.0 at
+least and will minor editing to earlier kernels.
+
+Reported-by: Bill <billstuff2001@sbcglobal.net>
+Tested-by: Bill <billstuff2001@sbcglobal.net>
+Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/inode.c | 26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
+ drivers/md/md.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index fdeeb28f287b..7f5799d098fd 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1540,18 +1540,20 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_version = fattr->change_attr;
- 		}
- 	} else if (server->caps & NFS_CAP_CHANGE_ATTR)
--		invalid |= save_cache_validity;
-+		nfsi->cache_validity |= save_cache_validity;
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index c98e681fc9fc..bf030d4b09a7 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7484,6 +7484,19 @@ void md_do_sync(struct md_thread *thread)
+ 			    rdev->recovery_offset < j)
+ 				j = rdev->recovery_offset;
+ 		rcu_read_unlock();
++
++		/* If there is a bitmap, we need to make sure all
++		 * writes that started before we added a spare
++		 * complete before we start doing a recovery.
++		 * Otherwise the write might complete and (via
++		 * bitmap_endwrite) set a bit in the bitmap after the
++		 * recovery has checked that bit and skipped that
++		 * region.
++		 */
++		if (mddev->bitmap) {
++			mddev->pers->quiesce(mddev, 1);
++			mddev->pers->quiesce(mddev, 0);
++		}
+ 	}
  
- 	if (fattr->valid & NFS_ATTR_FATTR_MTIME) {
- 		memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
- 	} else if (server->caps & NFS_CAP_MTIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_CTIME) {
- 		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
- 	} else if (server->caps & NFS_CAP_CTIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	/* Check if our cached file size is stale */
-@@ -1574,7 +1576,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 					(long long)new_isize);
- 		}
- 	} else
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_PAGECACHE
- 				| NFS_INO_REVAL_FORCED);
- 
-@@ -1582,7 +1585,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 	if (fattr->valid & NFS_ATTR_FATTR_ATIME)
- 		memcpy(&inode->i_atime, &fattr->atime, sizeof(inode->i_atime));
- 	else if (server->caps & NFS_CAP_ATIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATIME
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATIME
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_MODE) {
-@@ -1593,7 +1597,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL;
- 		}
- 	} else if (server->caps & NFS_CAP_MODE)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1604,7 +1609,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_uid = fattr->uid;
- 		}
- 	} else if (server->caps & NFS_CAP_OWNER)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1615,7 +1621,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_gid = fattr->gid;
- 		}
- 	} else if (server->caps & NFS_CAP_OWNER_GROUP)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1628,7 +1635,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			set_nlink(inode, fattr->nlink);
- 		}
- 	} else if (server->caps & NFS_CAP_NLINK)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_SPACE_USED) {
+ 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
 -- 
 2.0.0
 
