@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747AbaGRASZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 20:18:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36846 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675AbaGRASX (ORCPT
+	id S1758780AbaGRAYr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 20:24:47 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56375 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752675AbaGRAYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 20:18:23 -0400
-Date: Thu, 17 Jul 2014 17:18:23 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jeremiah Mahler <jmmahler@gmail.com>
-Cc: Eli Billauer <eli.billauer@gmail.com>, devel@driverdev.osuosl.org,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH] xillybus: place 'else' on same line as '}'
-Message-ID: <20140718001823.GA24907@kroah.com>
-References: <1405307220-15946-1-git-send-email-jmmahler@gmail.com>
+	Thu, 17 Jul 2014 20:24:45 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dtor@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Bastien Nocera <hadess@hadess.net>,
+        Patrik Fimml <patrikf@chromium.org>, linux-pm@vger.kernel.org,
+        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Power-managing devices that are not of interest at some point in time
+Date: Fri, 18 Jul 2014 02:43:02 +0200
+Message-ID: <8587268.sIIBz6Y2QN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3088260.XkiUM6Vtxh@dtor-glaptop>
+References: <Pine.LNX.4.44L0.1407171029210.1517-100000@iolanthe.rowland.org> <3088260.XkiUM6Vtxh@dtor-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405307220-15946-1-git-send-email-jmmahler@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 13, 2014 at 08:07:00PM -0700, Jeremiah Mahler wrote:
-> Place 'else' on same line as closing brace '}' as per
-> Documentation/CodingStyle.  Fixes 1 error found by checkpatch.pl.
+On Thursday, July 17, 2014 09:59:19 AM Dmitry Torokhov wrote:
+> On Thursday, July 17, 2014 10:39:16 AM Alan Stern wrote:
+> > On Wed, 16 Jul 2014, Dmitry Torokhov wrote:
+> > > We are not planning on implementing the policy in kernel, that's
+> > > indeed task for userspace; but unless we bring in the heavy hammer of
+> > > forcibly unbinding drivers, we do not currently have universal
+> > > mechanism of quiescing devices.
+> > 
+> > We sort of do: the ->freeze() callback.  But it wasn't intended for
+> > this kind of use; drivers may very well expect that userspace will
+> > already be frozen when the callback runs.  Besides, ->freeze() is
+> > supposed to quiesce devices without powering them down, whereas you
+> > want to do both.
 > 
-> Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-> ---
->  drivers/staging/xillybus/xillybus_core.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> Right.
+> 
+> > 
+> > What you're asking for is different from anything the PM subsystem has
+> > done before.
+> 
+> Right.
+> 
+> > Given this fact, I don't see any alternatives to adding a
+> > new API or repurposing an existing API.  Either one would be somewhat
+> > painful.
+> > 
+> > For example, we could arrange to invoke ->suspend().  However, since
+> > the circumstances would be unusual (userspace is still running,
+> > ->prepare() was not called beforehand, ->suspend_irq() won't be called
+> > afterward), subsystems and drivers may very well react inappropriately.
+> 
+> I do not think anybody expects that drivers would not have to be modified to 
+> support this functionality; I expect drivers would have to declare themselves 
+> "queiscable" and therefore would assert that they will act according to 
+> whatever rules we set up. I only want to make sure that this new state is 
+> added to existing list of PM states rather than creating completely new 
+> facility, so that driver authors have a chance to understand PM state 
+> transitions that involve their driver.
 
-Sorry, someone else sent this patch, which I applied already.  They did
-so after you, but I missed this one as you didn't have the 'staging'
-line on the Subject, my fault.
+If you're referring to runtime PM, it doesn't use "states".  It uses status
+values (you can think of them as metastates) which are "active", "suspended"
+or in-transit from one to the other.  There's no room for more of these in
+the design, I'm afraid.
 
-Sorry about that.
+Moreover, .runtime_suspend() can only be called when the device is quiescent
+already.  [That also applies to .suspend_late() and .suspend_irq() for
+system suspend and the freezing of tasks is requisite for the .prepare() and
+.suspend() callbacks (and the corresponding hibernation-related ones).]
 
-greg k-h
+>From past discussions on similar topics it followed that there really was
+no generic way for individual drivers to quiesce devices on demand as long as
+user space was running.  Everything we could come up with was racy, this way or
+another.  That is the reason for using the freezer during system suspend.  In
+other words, if you want drivers to quiesce devices by force, you need to quiesce
+user space by force to start with - for example by freezing it.
+
+For runtime PM, on the other hand, the underlying observation is that drivers
+should be able to detect when devices are already quiescent and initialize power
+transitions at those points.  It's role is to help with that, but not with quiescing
+things.
+
+That said, in the "laptop lid closed" scenario (assuming that the system is not
+supposed to suspend in response to that, which in my opinion is the best approach)
+the problem really seems to be that drivers are not aggressive enough with starting
+PM transitions (using runtime PM) when they see no activity.  Thus it seems that
+when the lid is closed, it'll be good to switch the drivers into a "more aggressive
+runtime PM mode" in which they will use any opportunity to start a power transition
+without worrying about extra latencies resulting from that.  In that mode they
+should also disable remote wakeup.  I think this should be sufficient to address
+the use case at hand.
+
+Rafael
+
