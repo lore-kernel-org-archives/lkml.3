@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935172AbaGRRbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:31:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57396 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935137AbaGRRbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:31:37 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <linux-sound@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <broonie@kernel.org>, Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH 1/2] ASoC: tas2552: Fix PM sequencing
-Date: Fri, 18 Jul 2014 12:31:07 -0500
-Message-ID: <1405704668-8038-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S935204AbaGRRbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:31:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:11342 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S935179AbaGRRbn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 13:31:43 -0400
+Date: Fri, 18 Jul 2014 13:31:39 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
+        Matt Turner <mattst88@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: Alpha Checkpatch Errors
+Message-ID: <20140718133139.5fcc69cd@gandalf.local.home>
+In-Reply-To: <CAPDOMVjj_v6eLiweiGHOCV61hxbpRoYLeKJVHCR35-1kJoM-wA@mail.gmail.com>
+References: <CAPDOMVgJx4NTSDXyS4k9jfWzSw_vJ=TFDBPdCUgxa-Xato1bYA@mail.gmail.com>
+	<alpine.DEB.2.10.1407180013260.24854@nanos>
+	<CAPDOMViHhE22ndcjez+vfZWGprsx_Cw0Rn-FpaoNsi63cRnr9g@mail.gmail.com>
+	<1405653693.21735.9.camel@buesod1.americas.hpqcorp.net>
+	<CAPDOMVh-gtvTP6OY_fM31NcM_ez==f1fBNgV_YaoSXuQcUtiRQ@mail.gmail.com>
+	<20140718115847.GA23985@home.goodmis.org>
+	<CAPDOMVjj_v6eLiweiGHOCV61hxbpRoYLeKJVHCR35-1kJoM-wA@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the pm suspend/resume it is better
-to disable the GPIO after the regmap_cache
-setting calls so that if the call is interrupted
-the new reg values will be cached and set on resume.
+On Fri, 18 Jul 2014 13:08:39 -0400
+Nick Krause <xerofoify@gmail.com> wrote:
 
-Also add pm_runtime_put in the remove call.
+> Sorry I was trying to help , I guess this conversation is now closed.
+> It was a fucking stupid idea.
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
- sound/soc/codecs/tas2552.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Are you afraid of sex?
 
-diff --git a/sound/soc/codecs/tas2552.c b/sound/soc/codecs/tas2552.c
-index f0760af..a3ae394 100644
---- a/sound/soc/codecs/tas2552.c
-+++ b/sound/soc/codecs/tas2552.c
-@@ -239,12 +239,12 @@ static int tas2552_runtime_suspend(struct device *dev)
- 
- 	tas2552_sw_shutdown(tas2552, 0);
- 
--	if (tas2552->enable_gpio)
--		gpiod_set_value(tas2552->enable_gpio, 0);
--
- 	regcache_cache_only(tas2552->regmap, true);
- 	regcache_mark_dirty(tas2552->regmap);
- 
-+	if (tas2552->enable_gpio)
-+		gpiod_set_value(tas2552->enable_gpio, 0);
-+
- 	return 0;
- }
- 
-@@ -382,6 +382,8 @@ static int tas2552_codec_remove(struct snd_soc_codec *codec)
- {
- 	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
- 
-+	pm_runtime_put(codec->dev);
-+
- 	if (tas2552->enable_gpio)
- 		gpiod_set_value(tas2552->enable_gpio, 0);
- 
--- 
-1.7.9.5
-
+-- Steve
