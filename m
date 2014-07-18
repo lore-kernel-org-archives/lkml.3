@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760908AbaGRIS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:18:28 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:48795 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114AbaGRISV (ORCPT
+	id S1760940AbaGRISs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:18:48 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58639 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758588AbaGRISn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:18:21 -0400
-Date: Fri, 18 Jul 2014 10:18:12 +0200
-From: Alexander Aring <alex.aring@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: teg@jklm.no, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-zigbee-devel@lists.sourceforge.net
-Subject: Re: [Linux-zigbee-devel] [PATCH net-next v9 3/9] net: nl802154 -
- make add_iface take name assign type
-Message-ID: <20140718081810.GA6555@omega>
-References: <1405584370-30054-1-git-send-email-teg@jklm.no>
- <1405584370-30054-4-git-send-email-teg@jklm.no>
- <20140717.161931.283488873926282207.davem@davemloft.net>
+	Fri, 18 Jul 2014 04:18:43 -0400
+Date: Fri, 18 Jul 2014 09:18:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 06/24] mfd: max77686: Make error checking consistent
+Message-ID: <20140718081836.GP30888@lee--X1>
+References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404505467-26526-7-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140717.161931.283488873926282207.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404505467-26526-7-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 04:19:31PM -0700, David Miller wrote:
-> From: Tom Gundersen <teg@jklm.no>
-> Date: Thu, 17 Jul 2014 10:06:04 +0200
+On Fri, 04 Jul 2014, Javier Martinez Canillas wrote:
+
+> Error checking across the driver is mostly consistent besides
+> a few exceptions, so change these exceptions for consistency.
 > 
-> > @@ -192,8 +193,10 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
-> >  		if (devname[nla_len(info->attrs[IEEE802154_ATTR_DEV_NAME]) - 1]
-> >  				!= '\0')
-> >  			return -EINVAL; /* phy name should be null-terminated */
-> > +		name_assign_type = NET_NAME_USER;
-> >  	} else  {
-> >  		devname = "wpan%d";
-> > +		name_assign_type = NET_NAME_ENUM;
-> >  	}
-> >  
-> >  	if (strlen(devname) >= IFNAMSIZ)
-> 
-> Just wondering what should happen if "%d" appears in a user provided name.
-> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/max77686.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 
-I tested it. If I use a name like "foobar%d" then I get a foobar0,
-foobar1 ... foobarX.
+Applied now, thanks.
 
-> That would seem to be both USER and ENUM.
-> 
+> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> index ada4976..87fe52e 100644
+> --- a/drivers/mfd/max77686.c
+> +++ b/drivers/mfd/max77686.c
+> @@ -134,7 +134,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  
+>  	max77686 = devm_kzalloc(&i2c->dev,
+>  				sizeof(struct max77686_dev), GFP_KERNEL);
+> -	if (max77686 == NULL)
+> +	if (!max77686)
+>  		return -ENOMEM;
+>  
+>  	i2c_set_clientdata(i2c, max77686);
+> @@ -153,8 +153,8 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  		return ret;
+>  	}
+>  
+> -	if (regmap_read(max77686->regmap,
+> -			 MAX77686_REG_DEVICE_ID, &data) < 0) {
+> +	ret = regmap_read(max77686->regmap, MAX77686_REG_DEVICE_ID, &data);
+> +	if (ret < 0) {
+>  		dev_err(max77686->dev,
+>  			"device not found on this channel (this is not an error)\n");
+>  		return -ENODEV;
+> @@ -180,7 +180,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+>  				  IRQF_SHARED, 0, &max77686_irq_chip,
+>  				  &max77686->irq_data);
+> -	if (ret != 0) {
+> +	if (ret) {
+>  		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
+>  		goto err_unregister_i2c;
+>  	}
+> @@ -188,7 +188,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+>  				  IRQF_SHARED, 0, &max77686_rtc_irq_chip,
+>  				  &max77686->rtc_irq_data);
+> -	if (ret != 0) {
+> +	if (ret) {
+>  		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
+>  		goto err_del_irqc;
+>  	}
 
-yes.
-
-
-- Alex
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
