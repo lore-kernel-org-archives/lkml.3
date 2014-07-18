@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030329AbaGRNJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:09:47 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17455 "EHLO
+	id S1030407AbaGRNJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:09:55 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17463 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761778AbaGRNJp (ORCPT
+	by vger.kernel.org with ESMTP id S1030335AbaGRNJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:45 -0400
+	Fri, 18 Jul 2014 09:09:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 115/170] tools: ffs-test: fix header values endianess
-Date: Fri, 18 Jul 2014 14:12:00 +0200
-Message-Id: <2783cdeacf558b5a7d479643c7e42af161660e9c.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 031/170] IB/umad: Fix error handling
+Date: Fri, 18 Jul 2014 14:10:36 +0200
+Message-Id: <266b09f397670c5c10ae6aaea7d2b2fb873b4759.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,41 +24,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
+commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
 
-It appears that no one ever run ffs-test on a big-endian machine,
-since it used cpu-endianess for fs_count and hs_count fields which
-should be in little-endian format.  Fix by wrapping the numbers in
-cpu_to_le32.
+Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
+or if nonseekable_open() fails.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Avoid leaking a kref count, that sm_sem is kept down and also that the
+IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
+nonseekable_open() fails.
+
+Since container_of() never returns NULL, remove the code that tests
+whether container_of() returns NULL.
+
+Moving the kref_get() call from the start of ib_umad_*open() to the
+end is safe since it is the responsibility of the caller of these
+functions to ensure that the cdev pointer remains valid until at least
+when these functions return.
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+
+[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+
+[ nonseekable_open() can't actually fail, but....  - Roland ]
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- tools/usb/ffs-test.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/infiniband/core/user_mad.c | 49 +++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index fe1e66b6ef40..a87e99f37c52 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -116,8 +116,8 @@ static const struct {
- 	.header = {
- 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = 3,
--		.hs_count = 3,
-+		.fs_count = cpu_to_le32(3),
-+		.hs_count = cpu_to_le32(3),
- 	},
- 	.fs_descs = {
- 		.intf = {
+diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
+index f0d588f8859e..9bdf576cd4ab 100644
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ {
+ 	struct ib_umad_port *port;
+ 	struct ib_umad_file *file;
+-	int ret;
++	int ret = -ENXIO;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	mutex_lock(&port->file_mutex);
+ 
+-	if (!port->ib_dev) {
+-		ret = -ENXIO;
++	if (!port->ib_dev)
+ 		goto out;
+-	}
+ 
++	ret = -ENOMEM;
+ 	file = kzalloc(sizeof *file, GFP_KERNEL);
+-	if (!file) {
+-		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+-		ret = -ENOMEM;
++	if (!file)
+ 		goto out;
+-	}
+ 
+ 	mutex_init(&file->mutex);
+ 	spin_lock_init(&file->send_lock);
+@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ 	list_add_tail(&file->port_list, &port->file_list);
+ 
+ 	ret = nonseekable_open(inode, filp);
++	if (ret) {
++		list_del(&file->port_list);
++		kfree(file);
++		goto out;
++	}
++
++	kref_get(&port->umad_dev->ref);
+ 
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	int ret;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	if (filp->f_flags & O_NONBLOCK) {
+ 		if (down_trylock(&port->sm_sem)) {
+@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	}
+ 
+ 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
+-	if (ret) {
+-		up(&port->sm_sem);
+-		goto fail;
+-	}
++	if (ret)
++		goto err_up_sem;
+ 
+ 	filp->private_data = port;
+ 
+-	return nonseekable_open(inode, filp);
++	ret = nonseekable_open(inode, filp);
++	if (ret)
++		goto err_clr_sm_cap;
++
++	kref_get(&port->umad_dev->ref);
++
++	return 0;
++
++err_clr_sm_cap:
++	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
++	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
++
++err_up_sem:
++	up(&port->sm_sem);
+ 
+ fail:
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+ 	return ret;
+ }
+ 
 -- 
 2.0.0
 
