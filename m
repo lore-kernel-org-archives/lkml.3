@@ -1,65 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761561AbaGRKWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:22:43 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:54807 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760723AbaGRKWk (ORCPT
+	id S1761578AbaGRKWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:22:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36680 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761559AbaGRKWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:22:40 -0400
-Message-ID: <53C8F56C.5070706@imgtec.com>
-Date: Fri, 18 Jul 2014 11:22:36 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 06:22:43 -0400
+Date: Fri, 18 Jul 2014 03:21:26 -0700
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-d81b4253b0f0f1e7b7e03b0cd0f80cab18bc4d7b@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, rusty@rustcorp.com.au,
+        mpe@ellerman.id.au, tony.luck@intel.com, arnd@arndb.de,
+        jeremy@goop.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, paulus@samba.org, haokexin@gmail.com,
+        tony.luck@gmail.com, davem@davemloft.net, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, benh@kernel.crashing.org,
+        suzuki@in.ibm.com, chrisw@sous-sol.org, fenghua.yu@intel.com
+Reply-To: mingo@kernel.org, rusty@rustcorp.com.au,
+        torvalds@linux-foundation.org, mpe@ellerman.id.au, tony.luck@intel.com,
+        arnd@arndb.de, jeremy@goop.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, paulus@samba.org,
+        haokexin@gmail.com, tony.luck@gmail.com, davem@davemloft.net,
+        ananth@in.ibm.com, benh@kernel.crashing.org,
+        masami.hiramatsu.pt@hitachi.com, chrisw@sous-sol.org,
+        suzuki@in.ibm.com, fenghua.yu@intel.com
+In-Reply-To: <20140717114411.13401.2632.stgit@kbuild-fedora.novalocal>
+References: <20140717114411.13401.2632.stgit@kbuild-fedora.novalocal>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] kprobes: Fix "Failed to find blacklist"
+  probing errors on ia64 and ppc64
+Git-Commit-ID: d81b4253b0f0f1e7b7e03b0cd0f80cab18bc4d7b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: MIPS seccomp and changing syscalls
-References: <CAGXu5jJJ7dqC-or=ZhKKj8=eA5itKX4aLRsnxmFZvwnyRcrUrw@mail.gmail.com>
-In-Reply-To: <CAGXu5jJJ7dqC-or=ZhKKj8=eA5itKX4aLRsnxmFZvwnyRcrUrw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.109]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+Commit-ID:  d81b4253b0f0f1e7b7e03b0cd0f80cab18bc4d7b
+Gitweb:     http://git.kernel.org/tip/d81b4253b0f0f1e7b7e03b0cd0f80cab18bc4d7b
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Thu, 17 Jul 2014 11:44:11 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 18 Jul 2014 06:23:40 +0200
 
-On 07/17/2014 11:29 PM, Kees Cook wrote:
-> Hi,
-> 
-> I recently fixed a bug in seccomp on ARM that I think may be present
-> in the MIPS implementation too. In arch/mips/kernel/ptrace.c
-> syscall_trace_enter, the syscall variable is used (and returned), but
-> the syscall may be changed by either secure_computing or
-> tracehook_report_syscall_entry (via ptracers which can block and
-> change the registers). (I would note that "ret" is also set but never
-> used, so tracehook_report_syscall_entry failures actually won't get
-> noticed.)
-> 
-> The discussion about this bug on ARM is here:
-> https://lkml.org/lkml/2014/6/20/439
+kprobes: Fix "Failed to find blacklist" probing errors on ia64 and ppc64
 
-Thanks for letting us know.
-Right, I believe MIPS will have the same problem and a similar patch to
-Will Deacon's one will fix it properly. Would you like to submit one for
-MIPS too? Otherwise I can do it myself.
+On ia64 and ppc64, function pointers do not point to the
+entry address of the function, but to the address of a
+function descriptor (which contains the entry address and misc
+data).
 
-> 
-> I don't yet have a working MIPS environment to test this on, but it
-> feels like the same bug. (Though, for testing, what's the right way to
-> change syscall during PTRACE_SYSCALL? On x86 it's the orig_ax
-> register, on ARM it's a arch-specific ptrace function
-> (PTRACE_SET_SYSCALL).
+Since the kprobes code passes the function pointer stored
+by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+initalizing its blacklist, it fails and reports many errors,
+such as:
 
-For MIPS, the syscall numbers is in the v0 register ($2). But the o32
-ABI also has the syscall() system call. So in case of indirect system
-calls, the real system call is the first argument of syscall(), which is
-register a0 ($4). See syscall_get_nr in arch/mips/include/asm/syscall.h
+  Failed to find blacklist 0001013168300000
+  Failed to find blacklist 0001013000f0a000
+  [...]
 
--- 
-markos
+To fix this bug, use arch_deref_entry_point() to get the
+function entry address for kallsyms_lookup_size_offset()
+instead of the raw function pointer.
+
+Suzuki also pointed out that blacklist entries should also
+be updated as well.
+
+Reported-by: Tony Luck <tony.luck@gmail.com>
+Fixed-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+Tested-by: Tony Luck <tony.luck@intel.com>
+Tested-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Michael Ellerman <mpe@ellerman.id.au> (for powerpc)
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: sparse@chrisli.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: akataria@vmware.com
+Cc: anil.s.keshavamurthy@intel.com
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Chris Wright <chrisw@sous-sol.org>
+Cc: yrl.pp-manager.tt@hitachi.com
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: rdunlap@infradead.org
+Cc: dl9pf@gmx.de
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-ia64@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Link: http://lkml.kernel.org/r/20140717114411.13401.2632.stgit@kbuild-fedora.novalocal
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/kprobes.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3214289..734e9a7 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -2037,19 +2037,23 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+ {
+ 	unsigned long *iter;
+ 	struct kprobe_blacklist_entry *ent;
+-	unsigned long offset = 0, size = 0;
++	unsigned long entry, offset = 0, size = 0;
+ 
+ 	for (iter = start; iter < end; iter++) {
+-		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+-			pr_err("Failed to find blacklist %p\n", (void *)*iter);
++		entry = arch_deref_entry_point((void *)*iter);
++
++		if (!kernel_text_address(entry) ||
++		    !kallsyms_lookup_size_offset(entry, &size, &offset)) {
++			pr_err("Failed to find blacklist at %p\n",
++				(void *)entry);
+ 			continue;
+ 		}
+ 
+ 		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+ 		if (!ent)
+ 			return -ENOMEM;
+-		ent->start_addr = *iter;
+-		ent->end_addr = *iter + size;
++		ent->start_addr = entry;
++		ent->end_addr = entry + size;
+ 		INIT_LIST_HEAD(&ent->list);
+ 		list_add_tail(&ent->list, &kprobe_blacklist);
+ 	}
