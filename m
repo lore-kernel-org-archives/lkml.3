@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934814AbaGRJwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:52:39 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43903 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934416AbaGRJwf (ORCPT
+	id S1761268AbaGRJzj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:55:39 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:51818 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456AbaGRJzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:52:35 -0400
-Message-ID: <53C8EE60.8020707@gmail.com>
-Date: Fri, 18 Jul 2014 11:52:32 +0200
-From: Neil Armstrong <superna9999@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 05:55:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ley Foon Tan <lftan@altera.com>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v2 21/29] nios2: Futex operations
+Date: Fri, 18 Jul 2014 11:55:26 +0200
+Message-ID: <5659104.6O7AZx76W6@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.10.1407181140250.24854@nanos>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <17186253.ZJUn1qWK0f@wuerfel> <alpine.DEB.2.10.1407181140250.24854@nanos>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] net: macb: Separate rx and tx ring init function
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:DlgMV9DtiJSj2dEnx6JrPehUByA/ICX6WAwG3c0XmV/
+ uL7WwcFFEA1DzzdrIyLR43yjddEzn5BsnsZzP5bsTH5Bfc6ESc
+ QR0FohxA9E4mOAqzH9IElluECkV+CImER5A/Zc0UVTWImgEAsa
+ dsY8LdlU5/1SwZNH+/2QybxcGsoFd6Q16kw/XTEUWYUPngqga/
+ iOVYdg0D6ln3Fh7RekoBM1i20l1+7WrGxAwU7fyUyHcAfCEIgv
+ 2LEf5DJoxYtd0esG4umS+mFqMcQmooUZW2xzKQITLjz4Ln4CZl
+ SivfAd7sm9vA1uhh0wK0zuNQbd9m2IR9Fl9Zt2954lKS1tn8pY
+ KLupnOTz1WgQua208dqo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A single method is called to initialize the TX and RX
-rings. Separate the methods into distinct ones for
-MACB and GEM context.
+On Friday 18 July 2014 11:42:34 Thomas Gleixner wrote:
+> On Fri, 18 Jul 2014, Arnd Bergmann wrote:
+> > On Friday 18 July 2014 14:07:42 Ley Foon Tan wrote:
+> > > On Thu, Jul 17, 2014 at 7:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > If this understanding is right, we can probably just merge the
+> > m68k implementation into the asm-generic version, as that does
+> > exactly that, and just isn't SMP safe. I'm still unsure whether
+> > I'm missing something here though, as everything else seems to
+> > do this in assembly, even for non-SMP machines that could use
+> > the trivial method that m68k has.
+> 
+> For UP relying of pagefault disable should be good enough indeed. I
+> guess the asm for the other UP stuff results from looking at
+> architectures or copying from architectures which did this in ASM 
 
-Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
----
- drivers/net/ethernet/cadence/macb.c |   33 ++++++++++++++++++++++++---------
- drivers/net/ethernet/cadence/macb.h |    3 ++-
- 2 files changed, 26 insertions(+), 10 deletions(-)
+Ok, thanks for the confirmation!
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index e9daa07..20ad483 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1219,7 +1219,14 @@ out_err:
- 	return -ENOMEM;
- }
- 
--static void gem_init_rings(struct macb *bp)
-+static void gem_init_rx_rings(struct macb *bp)
-+{
-+	bp->rx_tail = bp->rx_prepared_head = 0;
-+
-+	gem_rx_refill(bp);
-+}
-+
-+static void gem_init_tx_rings(struct macb *bp)
- {
- 	int i;
- 
-@@ -1229,12 +1236,10 @@ static void gem_init_rings(struct macb *bp)
- 	}
- 	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
- 
--	bp->rx_tail = bp->rx_prepared_head = bp->tx_head = bp->tx_tail = 0;
--
--	gem_rx_refill(bp);
-+	bp->tx_head = bp->tx_tail = 0;
- }
- 
--static void macb_init_rings(struct macb *bp)
-+static void macb_init_rx_rings(struct macb *bp)
- {
- 	int i;
- 	dma_addr_t addr;
-@@ -1247,13 +1252,20 @@ static void macb_init_rings(struct macb *bp)
- 	}
- 	bp->rx_ring[RX_RING_SIZE - 1].addr |= MACB_BIT(RX_WRAP);
- 
-+	bp->rx_tail = 0;
-+}
-+
-+static void macb_init_tx_rings(struct macb *bp)
-+{
-+	int i;
-+
- 	for (i = 0; i < TX_RING_SIZE; i++) {
- 		bp->tx_ring[i].addr = 0;
- 		bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
- 	}
- 	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
- 
--	bp->rx_tail = bp->tx_head = bp->tx_tail = 0;
-+	bp->tx_head = bp->tx_tail = 0;
- }
- 
- static void macb_reset_hw(struct macb *bp)
-@@ -1554,7 +1566,8 @@ static int macb_open(struct net_device *dev)
- 
- 	napi_enable(&bp->napi);
- 
--	bp->macbgem_ops.mog_init_rings(bp);
-+	bp->macbgem_ops.mog_init_rx_rings(bp);
-+	bp->macbgem_ops.mog_init_tx_rings(bp);
- 	macb_init_hw(bp);
- 
- 	/* schedule a link state check */
-@@ -1901,12 +1914,14 @@ static int __init macb_probe(struct platform_device *pdev)
- 	if (macb_is_gem(bp)) {
- 		bp->macbgem_ops.mog_alloc_rx_buffers = gem_alloc_rx_buffers;
- 		bp->macbgem_ops.mog_free_rx_buffers = gem_free_rx_buffers;
--		bp->macbgem_ops.mog_init_rings = gem_init_rings;
-+		bp->macbgem_ops.mog_init_rx_rings = gem_init_rx_rings;
-+		bp->macbgem_ops.mog_init_tx_rings = gem_init_tx_rings;
- 		bp->macbgem_ops.mog_rx = gem_rx;
- 	} else {
- 		bp->macbgem_ops.mog_alloc_rx_buffers = macb_alloc_rx_buffers;
- 		bp->macbgem_ops.mog_free_rx_buffers = macb_free_rx_buffers;
--		bp->macbgem_ops.mog_init_rings = macb_init_rings;
-+		bp->macbgem_ops.mog_init_rx_rings = macb_init_rx_rings;
-+		bp->macbgem_ops.mog_init_tx_rings = macb_init_tx_rings;
- 		bp->macbgem_ops.mog_rx = macb_rx;
- 	}
- 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 51c0244..8016d08 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -550,7 +550,8 @@ struct macb;
- struct macb_or_gem_ops {
- 	int	(*mog_alloc_rx_buffers)(struct macb *bp);
- 	void	(*mog_free_rx_buffers)(struct macb *bp);
--	void	(*mog_init_rings)(struct macb *bp);
-+	void	(*mog_init_rx_rings)(struct macb *bp);
-+	void	(*mog_init_tx_rings)(struct macb *bp);
- 	int	(*mog_rx)(struct macb *bp, int budget);
- };
- 
--- 
-1.7.0.4
+Ley Foon Tan, I think the best way forward then is for you to
+take the m68k code and copy (or move) that into asm-generic/futex.h
+under an #ifndef CONFIG_SMP.
+
+	Arnd
