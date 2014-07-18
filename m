@@ -1,184 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934419AbaGRJ4a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:56:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:38640 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934148AbaGRJ42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:56:28 -0400
-Message-ID: <53C8EF3E.1090706@huawei.com>
-Date: Fri, 18 Jul 2014 17:56:14 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-CC: Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Mel Gorman" <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Pei Feiyue" <peifeiyue@huawei.com>, <linux-mm@kvack.org>,
-        <x86@kernel.org>, <linux-ia64@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-sh@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] memory-hotplug: suitable memory should go to ZONE_MOVABLE
-References: <1405670163-53747-1-git-send-email-wangnan0@huawei.com> <53C8E602.1060301@cn.fujitsu.com>
-In-Reply-To: <53C8E602.1060301@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+	id S934480AbaGRJ77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:59:59 -0400
+Received: from imap.thunk.org ([74.207.234.97]:42835 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755203AbaGRJ74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:59:56 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org
+Cc: linux-abi@vger.kernel.org, linux-crypto@vger.kernel.org, beck@openbsd.org,
+        deraadt@cvs.openbsd.org, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH, RFC -v3] random: introduce getrandom(2) system call
+Date: Fri, 18 Jul 2014 05:59:24 -0400
+Message-Id: <1405677564-16802-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 2.0.0
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/18 17:16, Zhang Yanfei wrote:
-> Hello,
-> 
-> On 07/18/2014 03:55 PM, Wang Nan wrote:
->> This series of patches fix a problem when adding memory in bad manner.
->> For example: for a x86_64 machine booted with "mem=400M" and with 2GiB
->> memory installed, following commands cause problem:
->>
->>  # echo 0x40000000 > /sys/devices/system/memory/probe
->> [   28.613895] init_memory_mapping: [mem 0x40000000-0x47ffffff]
->>  # echo 0x48000000 > /sys/devices/system/memory/probe
->> [   28.693675] init_memory_mapping: [mem 0x48000000-0x4fffffff]
->>  # echo online_movable > /sys/devices/system/memory/memory9/state
->>  # echo 0x50000000 > /sys/devices/system/memory/probe 
->> [   29.084090] init_memory_mapping: [mem 0x50000000-0x57ffffff]
->>  # echo 0x58000000 > /sys/devices/system/memory/probe 
->> [   29.151880] init_memory_mapping: [mem 0x58000000-0x5fffffff]
->>  # echo online_movable > /sys/devices/system/memory/memory11/state
->>  # echo online> /sys/devices/system/memory/memory8/state
->>  # echo online> /sys/devices/system/memory/memory10/state
->>  # echo offline> /sys/devices/system/memory/memory9/state
->> [   30.558819] Offlined Pages 32768
->>  # free
->>              total       used       free     shared    buffers     cached
->> Mem:        780588 18014398509432020     830552          0          0      51180
->> -/+ buffers/cache: 18014398509380840     881732
->> Swap:            0          0          0
->>
->> This is because the above commands probe higher memory after online a
->> section with online_movable, which causes ZONE_HIGHMEM (or ZONE_NORMAL
->> for systems without ZONE_HIGHMEM) overlaps ZONE_MOVABLE.
-> 
-> Yeah, this is rare in reality but can happen. Could you please also
-> include the free result and zoneinfo after applying your patch?
-> 
-> Thanks.
-> 
+The getrandom(2) system call was requested by the LibreSSL Portable
+developers.  It is analoguous to the getentropy(2) system call in
+OpenBSD.
 
-OK.
+The rationale of this system call is to provide resiliance against
+file descriptor exhaustion attacks, where the attacker consumes all
+available file descriptors, forcing the use of the fallback code where
+/dev/[u]random is not available.  Since the fallback code is often not
+well-tested, it is better to eliminate this potential failure mode
+entirely.
 
-I paste the free result and zoneinfo at the end of this mail. This is a x86_64 result,
-generated on qemu, after applying my patches.
+The other feature provided by this new system call is the ability to
+request randomness from the /dev/urandom entropy pool, but to block
+until at least 128 bits of entropy has been accumulated in the
+/dev/urandom entropy pool.  Historically, the emphasis in the
+/dev/urandom development has been to ensure that urandom pool is
+initialized as quickly as possible after system boot, and preferably
+before the init scripts start execution.
 
-I only tested x86_64 and x86_32 (and found a typo). Could any one can help me verify
-other platforms?
+This is because changing /dev/urandom reads to block represents an
+interface change that could potentially break userspace which is not
+acceptable.  In practice, on most x86 desktop and server systems, in
+general the entropy pool can be initialized before it is needed (and
+in modern kernels, we will printk a warning message if not).  However,
+on an embedded system, this may not be the case.  And so with this new
+interface, we can provide the functionality of blocking until the
+urandom pool has been initialized.  Any userspace program which uses
+this new functionality must take care to assure that if it is used
+during the boot process, that it will not cause the init scripts or
+other portions of the system startup to hang indefinitely.
 
-Thanks.
+SYNOPSIS
+	#include <linux/random.h>
 
->>
->> After the second online_movable, the problem can be observed from
->> zoneinfo:
->>
->>  # cat /proc/zoneinfo
->> ...
->> Node 0, zone  Movable
->>   pages free     65491
->>         min      250
->>         low      312
->>         high     375
->>         scanned  0
->>         spanned  18446744073709518848
->>         present  65536
->>         managed  65536
->> ...
->>
->> This series of patches solve the problem by checking ZONE_MOVABLE when
->> choosing zone for new memory. If new memory is inside or higher than
->> ZONE_MOVABLE, makes it go there instead.
->>
->>
->> Wang Nan (5):
->>   memory-hotplug: x86_64: suitable memory should go to ZONE_MOVABLE
->>   memory-hotplug: x86_32: suitable memory should go to ZONE_MOVABLE
->>   memory-hotplug: ia64: suitable memory should go to ZONE_MOVABLE
->>   memory-hotplug: sh: suitable memory should go to ZONE_MOVABLE
->>   memory-hotplug: powerpc: suitable memory should go to ZONE_MOVABLE
->>
->>  arch/ia64/mm/init.c   |  7 +++++++
->>  arch/powerpc/mm/mem.c |  6 ++++++
->>  arch/sh/mm/init.c     | 13 ++++++++-----
->>  arch/x86/mm/init_32.c |  6 ++++++
->>  arch/x86/mm/init_64.c | 10 ++++++++--
->>  5 files changed, 35 insertions(+), 7 deletions(-)
->>
-> 
-> 
+	int getrandom(void *buf, size_t buflen, unsigned int flags);
 
-After applying the above patches, here is the free result and zoneinfo (after offline memory9):
+DESCRIPTION
+	The system call getrandom() fills the buffer pointed to by buf
+	with up to buflen random bytes which can be used to seed user
+	space random number generators (i.e., DRBG's) or for other
+	cryptographic processes.  It should not be used Monte Carlo
+	simulations or for other probabilistic sampling applications.
 
-bash-4.2# free
-             total       used       free     shared    buffers     cached
-Mem:        780588      80860     699728          0          0      51180
--/+ buffers/cache:      29680     750908
-Swap:            0          0          0
+	If the GRND_RANDOM flags bit is set, then draw from the
+	/dev/random pool instead of the /dev/urandom pool.  The
+	/dev/random pool is limited based on the entropy that can be
+	obtained from environmental noise, so if there is insufficient
+	entropy, the requested number of bytes may not be returned.
+	If there is no entropy available at all, getrandom(2) will
+	either block, or return an error with errno set to EAGAIN if
+	the GRND_NONBLOCK bit is set in flags.
 
-bash-4.2# cat /proc/zoneinfo
+	If the GRND_RANDOM bit is not set, then the /dev/urandom pool
+	will be used.  Unlike using read(2) to fetch data from
+	/dev/urandom, if the urandom pool has not been sufficiently
+	initialized, getrandom(2) will block or return -1 with the
+	errno set to EGAIN if the GRND_NONBLOCK bit is set in flags.
 
-Node 0, zone      DMA
-  pages free     3272
-        min      14
-        low      17
-        high     21
-        scanned  0
-        spanned  4095
-        present  3998
-        managed  3977
-    nr_free_pages 3272
-...
-  start_pfn:         1
-  inactive_ratio:    1
-Node 0, zone    DMA32
-  pages free     73548
-        min      341
-        low      426
-        high     511
-        scanned  0
-        spanned  98304
-        present  98304
-        managed  92866
-    nr_free_pages 73548
-...
-  start_pfn:         4096
-  inactive_ratio:    1
-Node 0, zone   Normal
-  pages free     32630
-        min      120
-        low      150
-        high     180
-        scanned  0
-        spanned  32768
-        present  32768
-        managed  32768
-    nr_free_pages 32630
-...
-  start_pfn:         262144
-  inactive_ratio:    1
-Node 0, zone  Movable
-  pages free     65491
-        min      241
-        low      301
-        high     361
-        scanned  0
-        spanned  98304
-        present  65536
-        managed  65536
-    nr_free_pages 65491
-...
-  start_pfn:         294912
-  inactive_ratio:    1
+	The getentropy(2) system call in OpenBSD can be emulated using
+	the following function:
 
+            int getentropy(void *buf, size_t buflen)
+            {
+                    int     ret;
+
+                    if (buflen > 256)
+                            goto failure;
+
+                    ret = getrandom(buf, buflen, 0);
+                    if (ret < 0)
+                            return ret;
+                    if (ret != buflen)
+                    failure:
+                            errno = EIO;
+                            return -1;
+                    }
+                    return 0;
+            }
+
+RETURN VALUE
+       On success, the number of bytes that was filled in the buf is
+       returned.  This may not be all the bytes requested by the
+       caller via buflen if insufficient entropy was present in the
+       /dev/random pool, or if the system call was interrupted by a
+       signal.
+
+       On error, -1 is returned, and errno is set appropriately.
+
+ERRORS
+	EINVAL		An invalid flag was passed to getrandom(2)
+
+	EFAULT		buf is outside the accessible address space.
+
+	EAGAIN		The requested entropy was not available, and the
+			getentropy(2) would have blocked if GRND_BLOCK flag
+			was set.
+
+	EINTR		While blocked waiting for entropy, the call was
+			interrupted by a signal handler; see the description
+			of how interrupted read(2) calls on "slow" devices
+			are handled with and without the SA_RESTART flag
+			in the signal(7) man page.
+
+NOTES
+	For small requests (buflen <= 256) getrandom(2) will not
+	return EINTR when reading from the urandom pool once the
+	entropy pool has been initialized, and it will return all of
+	the bytes that have been requested.  This is the recommended
+	way to use getrandom(2), and is designed for compatibility
+	with OpenBSD's getentropy() system call.
+
+	However, if you are using GRND_RANDOM, then getrandom(2) may
+	block until the entropy accounting determines that sufficient
+	environmental noise has been gathered such that getrandom(2)
+	will be operating as a NRBG instead of a DRBG for those people
+	who are working in the NIST SP 800-90 regime.  Since it may
+	block for a long time, these guarantees do *not* apply.  The
+	user may want to interrupt a hanging process using a signal,
+	so blocking until all of the requested bytes are returned
+	would be unfriendly.
+
+	For this reason, the user of getrandom(2) MUST always check
+	the return value, in case it returns some error, or if fewer
+	bytes than requested was returned.  In the case of
+	!GRND_RANDOM and small request, the latter should never
+	happen, but the careful userspace code (and all crypto code
+	should be careful) should check for this anyway!
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Zach Brown <zab@zabbo.net>
+---
+
+The change in the v3 version of the commit was to eliminate potential
+short reads and EINTR returns when reading from urandom (once the
+urandom pool is initialized).  This was based on comments and requests
+from Theo de Raadt.  See the NOTES section in the suggested man page for
+a more in-depth discussion of the issues involved.
+
+ arch/x86/syscalls/syscall_32.tbl  |  1 +
+ arch/x86/syscalls/syscall_64.tbl  |  1 +
+ drivers/char/random.c             | 42 ++++++++++++++++++++++++++++++++++++---
+ include/linux/syscalls.h          |  3 +++
+ include/uapi/asm-generic/unistd.h |  4 +++-
+ include/uapi/linux/random.h       |  9 +++++++++
+ 6 files changed, 56 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index d6b8679..f484e39 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -360,3 +360,4 @@
+ 351	i386	sched_setattr		sys_sched_setattr
+ 352	i386	sched_getattr		sys_sched_getattr
+ 353	i386	renameat2		sys_renameat2
++354	i386	getrandom		sys_getrandom
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index ec255a1..6705032 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -323,6 +323,7 @@
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
++317	common	getrandom		sys_getrandom
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index aa22fe5..91dd57e 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -258,6 +258,8 @@
+ #include <linux/kmemcheck.h>
+ #include <linux/workqueue.h>
+ #include <linux/irq.h>
++#include <linux/syscalls.h>
++#include <linux/completion.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/uaccess.h>
+@@ -469,6 +471,8 @@ static struct entropy_store nonblocking_pool = {
+ 					push_to_pool),
+ };
+ 
++static DECLARE_COMPLETION(urandom_initialized);
++
+ static __u32 const twist_table[8] = {
+ 	0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
+ 	0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 };
+@@ -657,6 +661,7 @@ retry:
+ 		r->entropy_total = 0;
+ 		if (r == &nonblocking_pool) {
+ 			prandom_reseed_late();
++			complete_all(&urandom_initialized);
+ 			pr_notice("random: %s pool is initialized\n", r->name);
+ 		}
+ 	}
+@@ -1174,13 +1179,14 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ {
+ 	ssize_t ret = 0, i;
+ 	__u8 tmp[EXTRACT_SIZE];
++	int large_request = (nbytes > 256);
+ 
+ 	trace_extract_entropy_user(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
+ 	xfer_secondary_pool(r, nbytes);
+ 	nbytes = account(r, nbytes, 0, 0);
+ 
+ 	while (nbytes) {
+-		if (need_resched()) {
++		if (large_request && need_resched()) {
+ 			if (signal_pending(current)) {
+ 				if (ret == 0)
+ 					ret = -ERESTARTSYS;
+@@ -1355,7 +1361,7 @@ static int arch_random_refill(void)
+ }
+ 
+ static ssize_t
+-random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
++_random_read(int nonblock, char __user *buf, size_t nbytes)
+ {
+ 	ssize_t n;
+ 
+@@ -1379,7 +1385,7 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 		if (arch_random_refill())
+ 			continue;
+ 
+-		if (file->f_flags & O_NONBLOCK)
++		if (nonblock)
+ 			return -EAGAIN;
+ 
+ 		wait_event_interruptible(random_read_wait,
+@@ -1391,6 +1397,12 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ }
+ 
+ static ssize_t
++random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
++{
++	return _random_read(file->f_flags & O_NONBLOCK, buf, nbytes);
++}
++
++static ssize_t
+ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ {
+ 	int ret;
+@@ -1533,6 +1545,30 @@ const struct file_operations urandom_fops = {
+ 	.llseek = noop_llseek,
+ };
+ 
++SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
++		unsigned int, flags)
++{
++	int r;
++
++	if (flags & ~(GRND_NONBLOCK|GRND_RANDOM))
++		return -EINVAL;
++
++	if (count > INT_MAX)
++		count = INT_MAX;
++
++	if (flags & GRND_RANDOM)
++		return _random_read(flags & GRND_NONBLOCK, buf, count);
++	if (flags & GRND_NONBLOCK) {
++		if (!completion_done(&urandom_initialized))
++			return -EAGAIN;
++	} else {
++		r = wait_for_completion_interruptible(&urandom_initialized);
++		if (r)
++			return r;
++	}
++	return urandom_read(NULL, buf, count, NULL);
++}
++
+ /***************************************************************
+  * Random UUID interface
+  *
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index b0881a0..cd82f72f 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -866,4 +866,7 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+ asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
++asmlinkage long sys_getrandom(char __user * buf, size_t count,
++			      unsigned int flags);
++
+ #endif
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 3336406..2926b1d 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -699,9 +699,11 @@ __SYSCALL(__NR_sched_setattr, sys_sched_setattr)
+ __SYSCALL(__NR_sched_getattr, sys_sched_getattr)
+ #define __NR_renameat2 276
+ __SYSCALL(__NR_renameat2, sys_renameat2)
++#define __NR_getrandom 277
++__SYSCALL(__NR_getrandom, sys_getrandom)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 277
++#define __NR_syscalls 278
+ 
+ /*
+  * All syscalls below here should go away really,
+diff --git a/include/uapi/linux/random.h b/include/uapi/linux/random.h
+index fff3528..3f93d16 100644
+--- a/include/uapi/linux/random.h
++++ b/include/uapi/linux/random.h
+@@ -40,4 +40,13 @@ struct rand_pool_info {
+ 	__u32	buf[0];
+ };
+ 
++/*
++ * Flags for getrandom(2)
++ *
++ * GRND_NONBLOCK	Don't block and return EAGAIN instead
++ * GRND_RANDOM		Use the /dev/random pool instead of /dev/urandom
++ */
++#define GRND_NONBLOCK	0x0001
++#define GRND_RANDOM	0x0002
++
+ #endif /* _UAPI_LINUX_RANDOM_H */
+-- 
+2.0.0
 
