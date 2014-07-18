@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761930AbaGRPGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:06:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41715 "EHLO mx2.suse.de"
+	id S1761967AbaGRPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:07:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:32908 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756661AbaGRPGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:06:38 -0400
-Date: Fri, 18 Jul 2014 17:06:30 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Richard Weinberger <richard@nod.at>,
-        akpm@linux-foundation.org, apw@canonical.com, tytso@mit.edu,
-        dwalter@google.com, neilb@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl: Remove --file option
-Message-ID: <20140718150630.GG31270@pd.tnic>
-References: <1405611268-12463-1-git-send-email-richard@nod.at>
- <53C92C86.2030408@metafoo.de>
- <20140718142459.GC31270@pd.tnic>
- <1405694126.14358.30.camel@joe-AO725>
- <20140718144920.GE31270@pd.tnic>
- <1405695433.14358.40.camel@joe-AO725>
+	id S1756617AbaGRPH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:07:26 -0400
+Date: Fri, 18 Jul 2014 11:07:19 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: use page lists for uncharge batching
+Message-ID: <20140718150719.GH29639@cmpxchg.org>
+References: <1404759358-29331-1-git-send-email-hannes@cmpxchg.org>
+ <20140717152936.GF8011@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405695433.14358.40.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140717152936.GF8011@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 07:57:13AM -0700, Joe Perches wrote:
-> I think your viewpoint is a bit tainted as you're the
-> same guy that wrote "fuck readability".
+On Thu, Jul 17, 2014 at 05:29:36PM +0200, Michal Hocko wrote:
+> On Mon 07-07-14 14:55:58, Johannes Weiner wrote:
+> > Pages are now uncharged at release time, and all sources of batched
+> > uncharges operate on lists of pages.  Directly use those lists, and
+> > get rid of the per-task batching state.
+> > 
+> > This also batches statistics accounting, in addition to the res
+> > counter charges, to reduce IRQ-disabling and re-enabling.
 > 
-> https://lkml.org/lkml/2013/11/19/116
+> It is probably worth noticing that there is a higher chance of missing
+> threshold events now when we can accumulate huge number of uncharges
+> during munmaps. I do not think this is earth shattering and the overall
+> improvement is worth it but changelog should mention it.
 
-It seems you still haven't understood what I actually meant.
+Does this actually matter, though?  We might deliver events a few
+pages later than before, but as I read the threshold code, once
+invoked it catches up from the last delivered threshold to the new
+usage.  So we shouldn't *miss* any events.
 
-If you'd tried to understand what I mean as long as you've remembered
-that mail, it might've dawned on ya, who knows...
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> With the follow up fix from
+> http://marc.info/?l=linux-mm&m=140552814228135&w=2
+> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> I suggest you try writing some documentation
-> patches instead of acrid emails.
+Thanks!
 
-I suggest you finally try fixing some real bugs. Can ya? I bet you will
-come up with some excuse again.
+> > +static void uncharge_list(struct list_head *page_list)
+> > +{
+> > +	struct mem_cgroup *memcg = NULL;
+> > +	unsigned long nr_memsw = 0;
+> > +	unsigned long nr_anon = 0;
+> > +	unsigned long nr_file = 0;
+> > +	unsigned long nr_huge = 0;
+> > +	unsigned long pgpgout = 0;
+> > +	unsigned long nr_mem = 0;
+> > +	struct list_head *next;
+> > +	struct page *page;
+> > +
+> > +	next = page_list->next;
+> > +	do {
+> 
+> I would use list_for_each_entry here which would also save list_empty
+> check in mem_cgroup_uncharge_list
 
--- 
-Regards/Gruss,
-    Boris.
+list_for_each_entry() wouldn't work for the singleton list where we
+pass in page->lru.  That's why it's a do-while that always does the
+first page before checking whether it looped back to the list head.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Do we need a comment for that?  I'm not convinced, there are only two
+callsites, and the one that passes the singleton page->lru is right
+below this function.
