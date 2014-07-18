@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946000AbaGRS2p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:28:45 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:49487 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422936AbaGRS2h (ORCPT
+	id S1422786AbaGRSbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:31:04 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:38413 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422858AbaGRS2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:28:37 -0400
+	Fri, 18 Jul 2014 14:28:43 -0400
 From: Zi Shen Lim <zlim.lnx@gmail.com>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Jiang Liu <liuj97@gmail.com>,
@@ -16,9 +16,9 @@ To: Catalin Marinas <catalin.marinas@arm.com>,
         Alexei Starovoitov <ast@plumgrid.com>
 Cc: Zi Shen Lim <zlim.lnx@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: [PATCH 04/14] arm64: introduce aarch64_insn_gen_load_store_reg()
-Date: Fri, 18 Jul 2014 11:28:10 -0700
-Message-Id: <1405708100-13604-5-git-send-email-zlim.lnx@gmail.com>
+Subject: [PATCH 08/14] arm64: introduce aarch64_insn_gen_movewide()
+Date: Fri, 18 Jul 2014 11:28:14 -0700
+Message-Id: <1405708100-13604-9-git-send-email-zlim.lnx@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
 References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
@@ -26,149 +26,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce function to generate load/store (register offset)
-instructions.
+Introduce function to generate move wide (immediate) instructions.
 
 Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
 ---
- arch/arm64/include/asm/insn.h | 20 ++++++++++++++
- arch/arm64/kernel/insn.c      | 62 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
+ arch/arm64/include/asm/insn.h | 13 +++++++++++++
+ arch/arm64/kernel/insn.c      | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+)
 
 diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index 86a8a9c..5bc1cc3 100644
+index 8fd31fc..49dec28 100644
 --- a/arch/arm64/include/asm/insn.h
 +++ b/arch/arm64/include/asm/insn.h
-@@ -72,6 +72,7 @@ enum aarch64_insn_imm_type {
- enum aarch64_insn_register_type {
- 	AARCH64_INSN_REGTYPE_RT,
- 	AARCH64_INSN_REGTYPE_RN,
-+	AARCH64_INSN_REGTYPE_RM,
+@@ -172,6 +172,12 @@ enum aarch64_insn_adsb_type {
+ 	AARCH64_INSN_ADSB_SUB_SETFLAGS
  };
  
- enum aarch64_insn_register {
-@@ -143,12 +144,26 @@ enum aarch64_insn_branch_type {
- 	AARCH64_INSN_BRANCH_COMP_NONZERO,
- };
- 
-+enum aarch64_insn_size_type {
-+	AARCH64_INSN_SIZE_8,
-+	AARCH64_INSN_SIZE_16,
-+	AARCH64_INSN_SIZE_32,
-+	AARCH64_INSN_SIZE_64,
++enum aarch64_insn_movewide_type {
++	AARCH64_INSN_MOVEWIDE_ZERO,
++	AARCH64_INSN_MOVEWIDE_KEEP,
++	AARCH64_INSN_MOVEWIDE_INVERSE
 +};
 +
-+enum aarch64_insn_ldst_type {
-+	AARCH64_INSN_LDST_LOAD_REG_OFFSET,
-+	AARCH64_INSN_LDST_STORE_REG_OFFSET,
-+};
-+
- #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
- static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
- { return (code & (mask)) == (val); } \
- static __always_inline u32 aarch64_insn_get_##abbr##_value(void) \
- { return (val); }
- 
-+__AARCH64_INSN_FUNCS(str_reg,	0x3FE0EC00, 0x38206800)
-+__AARCH64_INSN_FUNCS(ldr_reg,	0x3FE0EC00, 0x38606800)
+ enum aarch64_insn_bitfield_type {
+ 	AARCH64_INSN_BITFIELD_MOVE,
+ 	AARCH64_INSN_BITFIELD_MOVE_UNSIGNED,
+@@ -194,9 +200,12 @@ __AARCH64_INSN_FUNCS(add_imm,	0x7F000000, 0x11000000)
+ __AARCH64_INSN_FUNCS(adds_imm,	0x7F000000, 0x31000000)
+ __AARCH64_INSN_FUNCS(sub_imm,	0x7F000000, 0x51000000)
+ __AARCH64_INSN_FUNCS(subs_imm,	0x7F000000, 0x71000000)
++__AARCH64_INSN_FUNCS(movn,	0x7F800000, 0x12800000)
+ __AARCH64_INSN_FUNCS(sbfm,	0x7F800000, 0x13000000)
+ __AARCH64_INSN_FUNCS(bfm,	0x7F800000, 0x33000000)
++__AARCH64_INSN_FUNCS(movz,	0x7F800000, 0x52800000)
+ __AARCH64_INSN_FUNCS(ubfm,	0x7F800000, 0x53000000)
++__AARCH64_INSN_FUNCS(movk,	0x7F800000, 0x72800000)
  __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
  __AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
  __AARCH64_INSN_FUNCS(cbz,	0xFE000000, 0x34000000)
-@@ -184,6 +199,11 @@ u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op);
- u32 aarch64_insn_gen_nop(void);
- u32 aarch64_insn_gen_branch_reg(enum aarch64_insn_register reg,
- 				enum aarch64_insn_branch_type type);
-+u32 aarch64_insn_gen_load_store_reg(enum aarch64_insn_register reg,
-+				    enum aarch64_insn_register base,
-+				    enum aarch64_insn_register offset,
-+				    enum aarch64_insn_size_type size,
-+				    enum aarch64_insn_ldst_type type);
+@@ -252,6 +261,10 @@ u32 aarch64_insn_gen_bitfield(enum aarch64_insn_register dst,
+ 			      int immr, int imms,
+ 			      enum aarch64_insn_variant variant,
+ 			      enum aarch64_insn_bitfield_type type);
++u32 aarch64_insn_gen_movewide(enum aarch64_insn_register dst,
++			      int imm, int shift,
++			      enum aarch64_insn_variant variant,
++			      enum aarch64_insn_movewide_type type);
  
  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
  
 diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index b65edc0..b882c85 100644
+index e07d026..7aa2784 100644
 --- a/arch/arm64/kernel/insn.c
 +++ b/arch/arm64/kernel/insn.c
-@@ -286,6 +286,9 @@ static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
- 	case AARCH64_INSN_REGTYPE_RN:
- 		shift = 5;
- 		break;
-+	case AARCH64_INSN_REGTYPE_RM:
-+		shift = 16;
-+		break;
- 	default:
- 		pr_err("%s: unknown register type encoding %d\n", __func__,
- 		       type);
-@@ -298,6 +301,35 @@ static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
- 	return insn;
- }
+@@ -655,3 +655,46 @@ u32 aarch64_insn_gen_bitfield(enum aarch64_insn_register dst,
  
-+static u32 aarch64_insn_encode_ldst_size(enum aarch64_insn_size_type type,
-+					 u32 insn)
-+{
-+	u32 size;
-+
-+	switch (type) {
-+	case AARCH64_INSN_SIZE_8:
-+		size = 0;
-+		break;
-+	case AARCH64_INSN_SIZE_16:
-+		size = 1;
-+		break;
-+	case AARCH64_INSN_SIZE_32:
-+		size = 2;
-+		break;
-+	case AARCH64_INSN_SIZE_64:
-+		size = 3;
-+		break;
-+	default:
-+		pr_err("%s: unknown size encoding %d\n", __func__, type);
-+		return 0;
-+	}
-+
-+	insn &= ~GENMASK(31, 30);
-+	insn |= size << 30;
-+
-+	return insn;
-+}
-+
- static inline long branch_imm_common(unsigned long pc, unsigned long addr,
- 				     long range)
- {
-@@ -428,3 +460,33 @@ u32 aarch64_insn_gen_branch_reg(enum aarch64_insn_register reg,
- 
- 	return aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn, reg);
+ 	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_S, insn, imms);
  }
 +
-+u32 aarch64_insn_gen_load_store_reg(enum aarch64_insn_register reg,
-+				    enum aarch64_insn_register base,
-+				    enum aarch64_insn_register offset,
-+				    enum aarch64_insn_size_type size,
-+				    enum aarch64_insn_ldst_type type)
++u32 aarch64_insn_gen_movewide(enum aarch64_insn_register dst,
++			      int imm, int shift,
++			      enum aarch64_insn_variant variant,
++			      enum aarch64_insn_movewide_type type)
 +{
 +	u32 insn;
 +
 +	switch (type) {
-+	case AARCH64_INSN_LDST_LOAD_REG_OFFSET:
-+		insn = aarch64_insn_get_ldr_reg_value();
++	case AARCH64_INSN_MOVEWIDE_ZERO:
++		insn = aarch64_insn_get_movz_value();
 +		break;
-+	case AARCH64_INSN_LDST_STORE_REG_OFFSET:
-+		insn = aarch64_insn_get_str_reg_value();
++	case AARCH64_INSN_MOVEWIDE_KEEP:
++		insn = aarch64_insn_get_movk_value();
++		break;
++	case AARCH64_INSN_MOVEWIDE_INVERSE:
++		insn = aarch64_insn_get_movn_value();
 +		break;
 +	default:
 +		BUG_ON(1);
 +	}
 +
-+	insn = aarch64_insn_encode_ldst_size(size, insn);
++	BUG_ON(imm & ~(SZ_64K - 1));
 +
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RT, insn, reg);
++	switch (variant) {
++	case AARCH64_INSN_VARIANT_32BIT:
++		BUG_ON(shift != 0 && shift != 16);
++		break;
++	case AARCH64_INSN_VARIANT_64BIT:
++		insn |= AARCH64_INSN_SF_BIT;
++		BUG_ON(shift != 0 && shift != 16 && shift != 32 &&
++		       shift != 48);
++		break;
++	default:
++		BUG_ON(1);
++	}
 +
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn,
-+					    base);
++	insn |= (shift >> 4) << 21;
 +
-+	return aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RM, insn,
-+					    offset);
++	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RD, insn, dst);
++
++	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_16, insn, imm);
 +}
 -- 
 1.9.1
