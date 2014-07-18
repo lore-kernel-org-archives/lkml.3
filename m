@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761329AbaGRNSY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:24 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17953 "EHLO
+	id S935233AbaGRNXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:23:06 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17961 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1422673AbaGRNSQ (ORCPT
+	by vger.kernel.org with ESMTP id S1422681AbaGRNSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:16 -0400
+	Fri, 18 Jul 2014 09:18:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 061/170] virtio-scsi: avoid cancelling uninitialized work items
-Date: Fri, 18 Jul 2014 14:11:06 +0200
-Message-Id: <424d0d5db0ee42556f21251760b4acde41caf553.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 100/170] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
+Date: Fri, 18 Jul 2014 14:11:45 +0200
+Message-Id: <c56d55d645be041c808e1dc363a4ebbe5228025a.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,55 +26,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit cdda0e5acbb78f7b777049f8c27899e5c5bb368f upstream.
+commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
 
-Calling the workqueue interface on uninitialized work items isn't a
-good idea even if they're zeroed. It's not failing catastrophically only
-through happy accidents.
+There's a race between fork() and hugepage migration, as a result we try
+to "dereference" a swap entry as a normal pte, causing kernel panic.
+The cause of the problem is that copy_hugetlb_page_range() can't handle
+"swap entry" family (migration entry and hwpoisoned entry) so let's fix
+it.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Reviewed-by: Stefan Hajnoczi <stefanha@redhat.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/virtio_scsi.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 43 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 95a5d73e675c..57c39e1e6681 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -288,6 +288,8 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
- 	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
- };
- 
-+static void virtscsi_handle_event(struct work_struct *work);
-+
- static int virtscsi_kick_event(struct virtio_scsi *vscsi,
- 			       struct virtio_scsi_event_node *event_node)
- {
-@@ -295,6 +297,7 @@ static int virtscsi_kick_event(struct virtio_scsi *vscsi,
- 	struct scatterlist sg;
- 	unsigned long flags;
- 
-+	INIT_WORK(&event_node->work, virtscsi_handle_event);
- 	sg_init_one(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
- 
- 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-@@ -412,7 +415,6 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
- {
- 	struct virtio_scsi_event_node *event_node = buf;
- 
--	INIT_WORK(&event_node->work, virtscsi_handle_event);
- 	schedule_work(&event_node->work);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 92e103b72dcb..11c2b7fed052 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2381,6 +2381,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
+ 		update_mmu_cache(vma, address, ptep);
  }
  
++static int is_hugetlb_entry_migration(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_migration_entry(swp))
++		return 1;
++	else
++		return 0;
++}
++
++static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
++		return 1;
++	else
++		return 0;
++}
+ 
+ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 			    struct vm_area_struct *vma)
+@@ -2408,10 +2433,26 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 
+ 		spin_lock(&dst->page_table_lock);
+ 		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
+-		if (!huge_pte_none(huge_ptep_get(src_pte))) {
++		entry = huge_ptep_get(src_pte);
++		if (huge_pte_none(entry)) { /* skip none entry */
++			;
++		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
++				    is_hugetlb_entry_hwpoisoned(entry))) {
++			swp_entry_t swp_entry = pte_to_swp_entry(entry);
++
++			if (is_write_migration_entry(swp_entry) && cow) {
++				/*
++				 * COW mappings require pages in both
++				 * parent and child to be set to read.
++				 */
++				make_migration_entry_read(&swp_entry);
++				entry = swp_entry_to_pte(swp_entry);
++				set_huge_pte_at(src, addr, src_pte, entry);
++			}
++			set_huge_pte_at(dst, addr, dst_pte, entry);
++		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
+-			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+@@ -2426,32 +2467,6 @@ nomem:
+ 	return -ENOMEM;
+ }
+ 
+-static int is_hugetlb_entry_migration(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_migration_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			    unsigned long start, unsigned long end,
+ 			    struct page *ref_page)
 -- 
 2.0.0
 
