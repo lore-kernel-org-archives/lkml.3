@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317AbaGRFgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 01:36:24 -0400
-Received: from wolff.to ([98.103.208.27]:53860 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751807AbaGRFgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:36:23 -0400
-Date: Fri, 18 Jul 2014 00:34:49 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140718053449.GA2039@wolff.to>
-References: <20140716145546.GA6922@wolff.to>
- <20140716151748.GC2460@hansolo.jdub.homelinux.org>
- <53C6CFCC.2050300@arm.com>
- <20140716195414.GA16401@wolff.to>
- <53C7084C.7090104@arm.com>
- <20140717030947.GA17889@wolff.to>
- <53C79013.1020808@arm.com>
- <20140717090452.GH19379@twins.programming.kicks-ass.net>
- <53C7B247.2070309@arm.com>
- <20140717123502.GL19379@twins.programming.kicks-ass.net>
+	id S1760176AbaGRFho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 01:37:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34290 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759597AbaGRFhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 01:37:41 -0400
+Message-ID: <53C8B29F.5@ti.com>
+Date: Fri, 18 Jul 2014 11:07:35 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20140717123502.GL19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Laight <David.Laight@ACULAB.COM>, David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via Ethtool
+ Coalesce
+References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com> <20140709.164420.157865201153845876.davem@davemloft.net> <53C76990.3000304@ti.com> <063D6719AE5E284EB5DD2968C1650D6D172768B0@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D172768B0@AcuExch.aculab.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 14:35:02 +0200,
-  Peter Zijlstra <peterz@infradead.org> wrote:
+On Thursday 17 July 2014 06:23 PM, David Laight wrote:
+>> From: Mugunthan V N
+>> On Thursday 10 July 2014 05:14 AM, David Miller wrote:
+>>> From: Mugunthan V N <mugunthanvnm@ti.com>
+>>> Date: Wed, 9 Jul 2014 12:44:07 +0530
+>>>
+>>>> A system/cpu can be loaded by a hacker with flooding of broadcast or
+>>>> multicast packets, to prevent this some Ethernet controllers like CPSW
+>>>> provide a mechanism to limit the broadcast/multicast packet rate via
+>>>> hardware limiters. This patch series enables this feature via
+>>>> Ethtool Coalesce.
+>>> This is pretty bogus if you ask me.
+>>>
+>>> What is the difference from accepting a high rate of unicast packets?
+>>> I say it is no different.
+>>>
+>>> Therefore, this feature makes no sense to me at all.
+>> Any packet storm can cause an endpoint some issues. Typically packet
+>> storms will cause the system CPU to thrash resulting is very low system
+>> performance.
+>>
+>> Unicast storms only target a single destination end station, it can be
+>> easily mitigated by the host adding a blocking entry in the LUT for each
+>> aggressor.
+>>
+>> Broadcast and multicast target multiple end stations, or an entire
+>> network, not only can it cause CPU thrashing, it can result in loss of
+>> other broadcast and multicast services. The rate limiting feature allow
+>> the broadcast and or multicast traffic to be dropped if the rates are
+>> too high. This eliminates the CPU thrashing issue. It also allows the
+>> system to analyze the aggressors and block them for future transgressions.
+> Rate limiting multicast traffic will definitely cause the loss of multicast
+> services.
+
+When a system apply the rate limit, the system should expect to miss
+some of the broadcast/multicast packet depending on the rate limit it
+applies.
+
 >
->In any case, can someone who can trigger this run with the below; its
->'clean' for me, but supposedly you'll trigger a FAIL somewhere.
+> My experience of broadcast storms is that many of the ethernet switches
+> (probably especially the cheap ones) end up using a much slower software?
+> path for broadcasts. In a broadcast storm they start discarding normal
+> traffic - to point where a single ssh session becomes unusable.
+> This is true even when isolated from the storm by a 10M hub.
+>
+> Broadcast storms are probably mostly caused by network topology issues.
+> Especially is switches are sending traffic to 'all ports' while resetting
+> the spanning tree tables.
+>
 
-I got a couple of fail messages.
+This is one more example where broadcast/multicast rate limit can be used.
 
-dmesg output is available in the bug as the following attachment:
-https://bugzilla.kernel.org/attachment.cgi?id=143361
-
-The part of interest is probably:
-
-[    0.253354] build_sched_groups: got group f255b020 with cpus: 
-[    0.253436] build_sched_groups: got group f255b120 with cpus: 
-[    0.253519] build_sched_groups: got group f255b1a0 with cpus: 
-[    0.253600] build_sched_groups: got group f255b2a0 with cpus: 
-[    0.253681] build_sched_groups: got group f255b2e0 with cpus: 
-[    0.253762] build_sched_groups: got group f255b320 with cpus: 
-[    0.253843] build_sched_groups: got group f255b360 with cpus: 
-[    0.254004] build_sched_groups: got group f255b0e0 with cpus: 
-[    0.254087] build_sched_groups: got group f255b160 with cpus: 
-[    0.254170] build_sched_groups: got group f255b1e0 with cpus: 
-[    0.254252] build_sched_groups: FAIL
-[    0.254331] build_sched_groups: got group f255b1a0 with cpus: 0
-[    0.255004] build_sched_groups: FAIL
-[    0.255084] build_sched_groups: got group f255b1e0 with cpus: 1
-
-I also booted with early printk=keepsched_debug as requested by 
-Dietmar.
+Regards
+Mugunthan V N
