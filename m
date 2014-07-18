@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935067AbaGREgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 00:36:48 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:60816 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933002AbaGREgp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 00:36:45 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "waydi1@gmail.com" <waydi1@gmail.com>,
-        "swetland@google.com" <swetland@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel@ffwll.ch" <daniel@ffwll.ch>
-Subject: RE: [PATCH v2] staging: android: Fixed missing blank line
-Thread-Topic: [PATCH v2] staging: android: Fixed missing blank line
-Thread-Index: AQHPoZ3CDZtR7q1eE0SeQQ6nR2aewZuj6f0AgAFWcFA=
-Date: Fri, 18 Jul 2014 04:36:42 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE938F02FDC@EU-MBX-04.mgc.mentorg.com>
-References: <1405588407-9051-1-git-send-email-sanjeev_sharma@mentor.com>
- <20140717091046.GE25880@mwanda>
-In-Reply-To: <20140717091046.GE25880@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 18 Jul 2014 04:36:43.0643 (UTC) FILETIME=[E0481CB0:01CFA241]
+	id S1754800AbaGREkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 00:40:55 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:50110 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735AbaGREky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 00:40:54 -0400
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-kbuild@vger.kernel.org
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>, linux-ia64@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] kbuild: allow to override Python command name
+Date: Fri, 18 Jul 2014 13:40:11 +0900
+Message-Id: <1405658411-27346-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Done ! ,Please review now.
+The specification of Python 3 is largely different from that of
+Python 2.
 
-Regards
-Sanjeev Sharma
+For example, arch/ia64/scripts/unwcheck.py seems to be written
+in Python 2, not compatible with Python 3.
 
------Original Message-----
-From: Dan Carpenter [mailto:dan.carpenter@oracle.com] 
-Sent: Thursday, July 17, 2014 2:41 PM
-To: Sharma, Sanjeev
-Cc: gregkh@linuxfoundation.org; devel@driverdev.osuosl.org; waydi1@gmail.com; swetland@google.com; linux-kernel@vger.kernel.org; daniel@ffwll.ch
-Subject: Re: [PATCH v2] staging: android: Fixed missing blank line
+It is not a good idea to invoke python scripts with the hard-coded
+command name 'python'. The command 'python' could possibly be
+Python 3 on some systems.
+For that case, it is reasonable to allow to override the command name
+by giving 'PYTHON=python2' from the command line.
 
-On Thu, Jul 17, 2014 at 02:43:27PM +0530, sanjeev sharma wrote:
-> From: sanjeevs1 <sanjeev_sharma@mentor.com>
+The 'python' in arch/ia64/Makefile should be replaced with '$(PYTHON)'.
 
-Only use this if you are sending on behalf of someone else.
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: linux-ia64@vger.kernel.org
+---
 
-> 
-> This patch will add an blank line after declaration reported by 
-> checkpatch.pl script.
-> 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
-> Changes in v2:
->   - Fixed frm header
+ Makefile           | 3 ++-
+ arch/ia64/Makefile | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-Send these to yourself to test.
-
-Also look at your email.
-Bad  - From: sanjeev sharma <sanjeev_sharma@mentor.com> Good - From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-
-regards,
-dan carpenter
+diff --git a/Makefile b/Makefile
+index f3c543d..7f5f301 100644
+--- a/Makefile
++++ b/Makefile
+@@ -372,6 +372,7 @@ GENKSYMS	= scripts/genksyms/genksyms
+ INSTALLKERNEL  := installkernel
+ DEPMOD		= /sbin/depmod
+ PERL		= perl
++PYTHON		= python
+ CHECK		= sparse
+ 
+ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
+@@ -422,7 +423,7 @@ KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(S
+ export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
+ export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
+ export CPP AR NM STRIP OBJCOPY OBJDUMP
+-export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
++export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
+ export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
+ 
+ export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
+diff --git a/arch/ia64/Makefile b/arch/ia64/Makefile
+index f37238f..5441b14 100644
+--- a/arch/ia64/Makefile
++++ b/arch/ia64/Makefile
+@@ -76,7 +76,7 @@ vmlinux.gz: vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot) $@
+ 
+ unwcheck: vmlinux
+-	-$(Q)READELF=$(READELF) python $(srctree)/arch/ia64/scripts/unwcheck.py $<
++	-$(Q)READELF=$(READELF) $(PYTHON) $(srctree)/arch/ia64/scripts/unwcheck.py $<
+ 
+ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+-- 
+1.9.1
 
