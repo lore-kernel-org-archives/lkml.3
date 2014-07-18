@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030795AbaGRNOa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:14:30 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17741 "EHLO
+	id S1161025AbaGRNOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:14:42 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17760 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935041AbaGRNOZ (ORCPT
+	by vger.kernel.org with ESMTP id S935041AbaGRNOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:14:25 -0400
+	Fri, 18 Jul 2014 09:14:38 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 134/170] workqueue: zero cpumask of wq_numa_possible_cpumask on init
-Date: Fri, 18 Jul 2014 14:12:19 +0200
-Message-Id: <0abca2c33101429cda2aae2a1c8aa2e9085c2df5.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 169/170] x86, ioremap: Speed up check for RAM pages
+Date: Fri, 18 Jul 2014 14:12:54 +0200
+Message-Id: <c2e7732e2d1f83ac1edf319a87f5e60cdf189d01.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,92 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Roland Dreier <roland@purestorage.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
+commit c81c8a1eeede61e92a15103748c23d100880cc8a upstream.
 
-When hot-adding and onlining CPU, kernel panic occurs, showing following
-call trace.
+In __ioremap_caller() (the guts of ioremap), we loop over the range of
+pfns being remapped and checks each one individually with page_is_ram().
+For large ioremaps, this can be very slow.  For example, we have a
+device with a 256 GiB PCI BAR, and ioremapping this BAR can take 20+
+seconds -- sometimes long enough to trigger the soft lockup detector!
 
-  BUG: unable to handle kernel paging request at 0000000000001d08
-  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
-  PGD 0
-  Oops: 0000 [#1] SMP
-  ...
-  Call Trace:
-   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
-   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
-   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
-   [<ffffffff811926f1>] new_slab+0x91/0x300
-   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
-   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
-   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
-   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
-   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
-   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
-   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
-   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
-   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
-   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
-   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
-   [<ffffffff81086652>] kthreadd+0x2c2/0x300
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+Internally, page_is_ram() calls walk_system_ram_range() on a single
+page.  Instead, we can make a single call to walk_system_ram_range()
+from __ioremap_caller(), and do our further checks only for any RAM
+pages that we find.  For the common case of MMIO, this saves an enormous
+amount of work, since the range being ioremapped doesn't intersect
+system RAM at all.
 
-In my investigation, I found the root cause is wq_numa_possible_cpumask.
-All entries of wq_numa_possible_cpumask is allocated by
-alloc_cpumask_var_node(). And these entries are used without initializing.
-So these entries have wrong value.
+With this change, ioremap on our 256 GiB BAR takes less than 1 second.
 
-When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
-wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
-calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
-as follow:
-
-3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
-3593         if (wq_numa_enabled) {
-3594                 for_each_node(node) {
-3595                         if (cpumask_subset(pool->attrs->cpumask,
-3596                                            wq_numa_possible_cpumask[node])) {
-3597                                 pool->node = node;
-3598                                 break;
-3599                         }
-3600                 }
-3601         }
-
-But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
-node is selected. As a result, kernel panic occurs.
-
-By this patch, all entries of wq_numa_possible_cpumask are allocated by
-zalloc_cpumask_var_node to initialize them. And the panic disappeared.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Link: http://lkml.kernel.org/r/1399054721-1331-1-git-send-email-roland@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/ioremap.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index e0b695893579..3fafbbb31927 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -5029,7 +5029,7 @@ static void __init wq_numa_init(void)
- 	BUG_ON(!tbl);
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 799580cabc78..94bd24771812 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -50,6 +50,21 @@ int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 	return err;
+ }
  
- 	for_each_node(node)
--		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-+		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
- 				node_online(node) ? node : NUMA_NO_NODE));
++static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
++			       void *arg)
++{
++	unsigned long i;
++
++	for (i = 0; i < nr_pages; ++i)
++		if (pfn_valid(start_pfn + i) &&
++		    !PageReserved(pfn_to_page(start_pfn + i)))
++			return 1;
++
++	WARN_ONCE(1, "ioremap on RAM pfn 0x%lx\n", start_pfn);
++
++	return 0;
++}
++
+ /*
+  * Remap an arbitrary physical address space into the kernel virtual
+  * address space. Needed when the kernel wants to access high addresses
+@@ -93,14 +108,11 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
++	pfn      = phys_addr >> PAGE_SHIFT;
+ 	last_pfn = last_addr >> PAGE_SHIFT;
+-	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
+-		int is_ram = page_is_ram(pfn);
+-
+-		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+-			return NULL;
+-		WARN_ON_ONCE(is_ram);
+-	}
++	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
++				  __ioremap_check_ram) == 1)
++		return NULL;
  
- 	for_each_possible_cpu(cpu) {
+ 	/*
+ 	 * Mappings have to be page-aligned
 -- 
 2.0.0
 
