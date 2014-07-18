@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965912AbaGRNR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:17:56 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17931 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965878AbaGRNRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965891AbaGRNRy (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jul 2014 09:17:54 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17928 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S935223AbaGRNRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:17:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 053/170] ptrace,x86: force IRET path after a ptrace_stop()
-Date: Fri, 18 Jul 2014 14:10:58 +0200
-Message-Id: <2f1824407bf18b019d2c821881dd0956c6f0a254.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 081/170] drm/radeon/dp: fix lane/clock setup for dp 1.2 capable devices
+Date: Fri, 18 Jul 2014 14:11:26 +0200
+Message-Id: <85d9eb244713c9f0a820a9fd9d8ebe2eefc264c8.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,83 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
+commit 3b6d9fd23e015b5397c438fd3cd74147d2c805b6 upstream.
 
-The 'sysret' fastpath does not correctly restore even all regular
-registers, much less any segment registers or reflags values.  That is
-very much part of why it's faster than 'iret'.
+Only DCE5+ asics support DP 1.2.
 
-Normally that isn't a problem, because the normal ptrace() interface
-catches the process using the signal handler infrastructure, which
-always returns with an iret.
+Noticed by ArtForz on IRC.
 
-However, some paths can get caught using ptrace_event() instead of the
-signal path, and for those we need to make sure that we aren't going to
-return to user space using 'sysret'.  Otherwise the modifications that
-may have been done to the register set by the tracer wouldn't
-necessarily take effect.
-
-Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
-arch_ptrace_stop_needed() which is invoked from ptrace_stop().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/ptrace.h | 16 ++++++++++++++++
- include/linux/ptrace.h        |  3 +++
- 2 files changed, 19 insertions(+)
+ drivers/gpu/drm/radeon/atombios_dp.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 942a08623a1a..68e9f007cd4a 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -232,6 +232,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
+diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
+index 00885417ffff..4601969be373 100644
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -384,6 +384,19 @@ static int dp_get_max_dp_pix_clock(int link_rate,
  
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
+ /***** radeon specific DP functions *****/
  
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
++static int radeon_dp_get_max_link_rate(struct drm_connector *connector,
++				       u8 dpcd[DP_DPCD_SIZE])
++{
++	int max_link_rate;
 +
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 077904c8b70d..cc79eff4a1ad 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -334,6 +334,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
++	if (radeon_connector_is_dp12_capable(connector))
++		max_link_rate = min(drm_dp_max_link_rate(dpcd), 540000);
++	else
++		max_link_rate = min(drm_dp_max_link_rate(dpcd), 270000);
++
++	return max_link_rate;
++}
++
+ /* First get the min lane# when low rate is used according to pixel clock
+  * (prefer low rate), second check max lane# supported by DP panel,
+  * if the max lane# < low rate lane# then use max lane# instead.
+@@ -393,7 +406,7 @@ static int radeon_dp_get_dp_lane_number(struct drm_connector *connector,
+ 					int pix_clock)
+ {
+ 	int bpp = convert_bpc_to_bpp(radeon_get_monitor_bpc(connector));
+-	int max_link_rate = drm_dp_max_link_rate(dpcd);
++	int max_link_rate = radeon_dp_get_max_link_rate(connector, dpcd);
+ 	int max_lane_num = drm_dp_max_lane_count(dpcd);
+ 	int lane_num;
+ 	int max_dp_pix_clock;
+@@ -431,7 +444,7 @@ static int radeon_dp_get_dp_link_clock(struct drm_connector *connector,
+ 			return 540000;
+ 	}
+ 
+-	return drm_dp_max_link_rate(dpcd);
++	return radeon_dp_get_max_link_rate(connector, dpcd);
+ }
+ 
+ static u8 radeon_dp_encoder_service(struct radeon_device *rdev,
 -- 
 2.0.0
 
