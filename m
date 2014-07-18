@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762752AbaGRPfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:35:37 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40142 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762467AbaGRPfb (ORCPT
+	id S1762756AbaGRPgd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:36:33 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59880 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762610AbaGRPga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:35:31 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Cc: dcb314@hotmail.com, adrian.hunter@intel.com, dedekind1@gmail.com,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH 5/5] fs/ubifs/{sb,super}.c: drop negativity check on unsigned value
-Date: Fri, 18 Jul 2014 18:35:25 +0300
-Message-Id: <1405697725-23866-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	Fri, 18 Jul 2014 11:36:30 -0400
+Message-ID: <1405697784.10255.99.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 4/6] net/macb: add RX checksum offload feature
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+Cc: nicolas.ferre@atmel.com, davem@davemloft.net,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        soren.brinkmann@xilinx.com, linux-kernel@vger.kernel.org
+Date: Fri, 18 Jul 2014 17:36:24 +0200
+In-Reply-To: <f29965fee23dc0de99b388373017efeffa1aac10.1405689937.git.cyrille.pitchen@atmel.com>
+References: <cover.1405689937.git.cyrille.pitchen@atmel.com>
+	 <f29965fee23dc0de99b388373017efeffa1aac10.1405689937.git.cyrille.pitchen@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80581
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- fs/ubifs/sb.c    | 2 +-
- fs/ubifs/super.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Fri, 2014-07-18 at 16:21 +0200, Cyrille Pitchen wrote:
+> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+> ---
+>  drivers/net/ethernet/cadence/macb.c | 29 ++++++++++++++++++++++++++++-
+>  drivers/net/ethernet/cadence/macb.h |  2 ++
+>  2 files changed, 30 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 9bdcd1b..6acd6e2 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -766,6 +766,8 @@ static int gem_rx(struct macb *bp, int budget)
+>  
+>  		skb->protocol = eth_type_trans(skb, bp->dev);
+>  		skb_checksum_none_assert(skb);
+> +		if (bp->dev->features & NETIF_F_RXCSUM)
+> +			skb->ip_summed = CHECKSUM_UNNECESSARY;
+>  
 
-diff --git a/fs/ubifs/sb.c b/fs/ubifs/sb.c
-index 4c37607..c2c3d13 100644
---- a/fs/ubifs/sb.c
-+++ b/fs/ubifs/sb.c
-@@ -447,7 +447,7 @@ static int validate_sb(struct ubifs_info *c, struct ubifs_sb_node *sup)
- 		goto failed;
- 	}
- 
--	if (c->default_compr < 0 || c->default_compr >= UBIFS_COMPR_TYPES_CNT) {
-+	if (c->default_compr >= UBIFS_COMPR_TYPES_CNT) {
- 		err = 13;
- 		goto failed;
- 	}
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index e5bd068..9c59c10 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -75,7 +75,7 @@ static int validate_inode(struct ubifs_info *c, const struct inode *inode)
- 		return 1;
- 	}
- 
--	if (ui->compr_type < 0 || ui->compr_type >= UBIFS_COMPR_TYPES_CNT) {
-+	if (ui->compr_type >= UBIFS_COMPR_TYPES_CNT) {
- 		ubifs_err("unknown compression type %d", ui->compr_type);
- 		return 2;
- 	}
--- 
-1.8.5.5
+
+Really ?
+
+If this is what you meant, this deserves a big and fat comment.
+
+
 
