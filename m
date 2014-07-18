@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935018AbaGRNOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:14:15 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17721 "EHLO
+	id S935056AbaGRNOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:14:25 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17733 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965742AbaGRNOK (ORCPT
+	by vger.kernel.org with ESMTP id S1030759AbaGRNOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:14:10 -0400
+	Fri, 18 Jul 2014 09:14:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@ingics.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 139/170] hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
-Date: Fri, 18 Jul 2014 14:12:24 +0200
-Message-Id: <1a2ce98105c028a662abe9310a4a4b4966010ec1.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 028/170] IB/qib: Fix port in pkey change event
+Date: Fri, 18 Jul 2014 14:10:33 +0200
+Message-Id: <8bd7f7dad0838c11562fb1e0b5e4012da31ca805.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,42 +24,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
+commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
 
-Writing to fanX_div does not clear the cache. As a result, reading
-from fanX_div may return the old value for up to two seconds
-after writing a new value.
+The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
 
-This patch ensures the fan_div cache is updated in set_fan_div().
+As of the dual port qib QDR card, this is not necessarily correct.
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Change to use the port as specified in the call.
+
+Reported-by: Alex Estrin <alex.estrin@intel.com>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hwmon/adm1029.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/infiniband/hw/qib/qib_mad.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/adm1029.c b/drivers/hwmon/adm1029.c
-index 9ee5e066423b..39441e5d922c 100644
---- a/drivers/hwmon/adm1029.c
-+++ b/drivers/hwmon/adm1029.c
-@@ -232,6 +232,9 @@ static ssize_t set_fan_div(struct device *dev,
- 	/* Update the value */
- 	reg = (reg & 0x3F) | (val << 6);
+diff --git a/drivers/infiniband/hw/qib/qib_mad.c b/drivers/infiniband/hw/qib/qib_mad.c
+index ccb119143d20..1dd9fcbb7c9a 100644
+--- a/drivers/infiniband/hw/qib/qib_mad.c
++++ b/drivers/infiniband/hw/qib/qib_mad.c
+@@ -1028,7 +1028,7 @@ static int set_pkeys(struct qib_devdata *dd, u8 port, u16 *pkeys)
  
-+	/* Update the cache */
-+	data->fan_div[attr->index] = reg;
-+
- 	/* Write value */
- 	i2c_smbus_write_byte_data(client,
- 				  ADM1029_REG_FAN_DIV[attr->index], reg);
+ 		event.event = IB_EVENT_PKEY_CHANGE;
+ 		event.device = &dd->verbs_dev.ibdev;
+-		event.element.port_num = 1;
++		event.element.port_num = port;
+ 		ib_dispatch_event(&event);
+ 	}
+ 	return 0;
 -- 
 2.0.0
 
