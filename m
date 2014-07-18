@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933817AbaGRJ22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:28:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933281AbaGRJ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:28:26 -0400
-Date: Fri, 18 Jul 2014 14:57:37 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, keescook@chromium.org
-Subject: Re: [RFC PATCH 1/3] hw_random: allow RNG devices to give early
- randomness after a delay
-Message-ID: <20140718092737.GD15020@grmbl.mre>
-References: <cover.1405277045.git.amit.shah@redhat.com>
- <685be569a29015d3ee56cc3f782d81cae06d52b9.1405277045.git.amit.shah@redhat.com>
- <20140714123700.GP13108@titan.lakedaemon.net>
- <20140714124246.GA1520@grmbl.mre>
- <20140718085626.GA15020@grmbl.mre>
- <20140718091408.GA17266@gondor.apana.org.au>
+	id S1761027AbaGRJaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:30:08 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:46265 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756019AbaGRJaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:30:06 -0400
+Message-ID: <53C8E90F.1010306@daenzer.net>
+Date: Fri, 18 Jul 2014 18:29:51 +0900
+From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718091408.GA17266@gondor.apana.org.au>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Random panic in load_balance() with 3.16-rc
+References: <53C77BB8.6030804@daenzer.net> <20140717075820.GE19379@twins.programming.kicks-ass.net>
+In-Reply-To: <20140717075820.GE19379@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="MscwHF52i2lJBTMms9gFuFbHe3SMHcvgX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 18 Jul 2014 [17:14:08], Herbert Xu wrote:
-> On Fri, Jul 18, 2014 at 02:26:26PM +0530, Amit Shah wrote:
-> >
-> > > Sounds like a good idea to me.  Though, changes in core.c that
-> > > increase the time in hwrng_register() or hwrng_init() may not get
-> > > noticed by rng drivers and they may suddenly start failing for no
-> > > apparent reason.  Seems like a far stretch, though.  Does anyone else
-> > > have an opinion on this?
-> > 
-> > Herbert, do you have any preference?
-> 
-> So it's only virtio-rng that's a problem, right? How about if we
-> abuse the scan hook in virtio and move the hwrng_register there?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--MscwHF52i2lJBTMms9gFuFbHe3SMHcvgX
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Oops, I had completely missed the scan hook, and looks like it was
-added for exactly the purpose we want here (so we won't even be
-abusing it!)
+On 17.07.2014 16:58, Peter Zijlstra wrote:
+> On Thu, Jul 17, 2014 at 04:31:04PM +0900, Michel D=E4nzer wrote:
+>>
+>> I've been running into the panic captured in the attached picture (hop=
+e
+>> it's legible) randomly while running 3.16-rc4 and -rc5. I haven't
+>> noticed any pattern as to when it happens; at least once it happened
+>> while the box was basically sitting idle.
+>>
+>> dmesg, .config and /proc/cpuinfo attached as well; let me know if you
+>> need anything else.
+>=20
+> Does lkml.kernel.org/r/20140716145546.GA6922@wolff.to cure things?
 
-Thanks!
+Yes, adding back
 
-I'll post the patches when the one to revert gets an upstream commit
-id.
+               cpumask_clear(sched_group_cpus(sg));
 
-		Amit
+seems to do the trick, thanks.
+
+There's a long weekend coming up for me, but after that I'll be happy to
+test any better fix you guys come up with.
+
+
+--=20
+Earthling Michel D=E4nzer            |                  http://www.amd.co=
+m
+Libre software enthusiast          |                Mesa and X developer
+
+
+--MscwHF52i2lJBTMms9gFuFbHe3SMHcvgX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iD8DBQFTyOkQWoGvjmrbsgARAtV4AJ0bi40Kiii2x+MLXTZLLA6j6w38IQCff0sC
+G2nvJTdOx5Nwz5eGftRfins=
+=cywA
+-----END PGP SIGNATURE-----
+
+--MscwHF52i2lJBTMms9gFuFbHe3SMHcvgX--
