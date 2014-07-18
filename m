@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327AbaGRESV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 00:18:21 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43333 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750985AbaGREST (ORCPT
+	id S1759937AbaGRETE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 00:19:04 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:61532 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757217AbaGRETC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 00:18:19 -0400
-X-Sasl-enc: vjXEnJM6RRSmt/8Pz7k/r/mE0rAzyp8UT/EK3AvT8TRm 1405657097
-Date: Thu, 17 Jul 2014 21:18:16 -0700
-From: Greg KH <greg@kroah.com>
-To: Derrick Pallas <pallas@meraki.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Derrick Pallas <derrick@pallas.us>
-Subject: Re: Linux 3.4.95 breaks LZO tests (additional pull needed)
-Message-ID: <20140718041816.GB32696@kroah.com>
-References: <CAFqNYV4_yW60oKmb4edH8CQtFiyT491eWOPheBrDse9j-jCYZg@mail.gmail.com>
+	Fri, 18 Jul 2014 00:19:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFqNYV4_yW60oKmb4edH8CQtFiyT491eWOPheBrDse9j-jCYZg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53C8938F.1070706@codeaurora.org>
+References: <1405464473-3916-1-git-send-email-skannan@codeaurora.org>
+	<1405464473-3916-2-git-send-email-skannan@codeaurora.org>
+	<CAKohpok2hzwDLy77CZJ+7pHV-Nj4XTviJxVeXQYJRYtKXME00w@mail.gmail.com>
+	<53C65F03.1050609@mit.edu>
+	<53C6D8EC.1030609@codeaurora.org>
+	<CAKohpongsNtEVbHL=w1fbw5tEXK=WaMcp1N03ar9Sx_CU=1O-w@mail.gmail.com>
+	<53C8938F.1070706@codeaurora.org>
+Date: Fri, 18 Jul 2014 09:49:01 +0530
+Message-ID: <CAKohpo=puU-AifGAXMAOs1pnyvTk64u-Fkra5i=-QNn_a-isXQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Srivatsa S. Bhat" <srivatsa@mit.edu>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 08:57:56PM -0700, Derrick Pallas wrote:
-> An LZO update was backported in Linux 3.4.95 but fails to work if
-> crypto tests are enabled. It turns out that
-> 0ec7382036922be063b515b2a3f1d6
-> f7a607392c, which updates the test vectors, did not come along for the
-> ride. Thanks, ~Derrick
+On 18 July 2014 08:55, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Not really. We much never do it during hotplug. We only do it when the
+> cpufreq driver unregisters.
 
-Ah, many thanks, I'll go queue that up.
-
-greg k-h
+Oh yes.
