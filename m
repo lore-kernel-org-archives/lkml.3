@@ -1,305 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759729AbaGRDTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 23:19:22 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60467 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759563AbaGRDTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 23:19:19 -0400
-Message-ID: <53C8922B.8000506@linux.vnet.ibm.com>
-Date: Fri, 18 Jul 2014 11:19:07 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1759865AbaGRDVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:21:17 -0400
+Received: from ozlabs.org ([103.22.144.67]:51108 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759758AbaGRDVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 23:21:15 -0400
+Date: Fri, 18 Jul 2014 13:21:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anish Bhatt <anish@chelsio.com>, Karen Xie <kxie@chelsio.com>,
+        Manoj Malviya <manojmalviya@chelsio.com>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20140718132106.073aa48e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Joe Lawrence <joe.lawrence@stratus.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        james.smart@emulex.com, JBottomley@parallels.com,
-        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] lpfc: Avoid to disable pci_dev twice
-References: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com> <20140717101537.7ac4d677@jlaw-desktop.mno.stratus.com>
-In-Reply-To: <20140717101537.7ac4d677@jlaw-desktop.mno.stratus.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14071803-3568-0000-0000-000005E67E11
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/x+9o704s=k.jUivpR8zEvlH"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 10:15 PM, Joe Lawrence wrote:
-> [ +cc linux-pci and Bjorn, comments inline/below ... ]
->
-> On Thu, 17 Jul 2014 02:32:31 -0400
-> Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
->
->> In IBM Power servers, when hardware error occurs during probe
->> state, EEH subsystem will call driver's error_detected interface,
->> which will call pci_disable_device(). But driver's probe function also
->> call pci_disable_device() in this situation.
->>
->> So pci_dev will be disabled twice:
->>
->> Device lpfc disabling already-disabled device
->> ------------[ cut here ]------------
->> WARNING: at drivers/pci/pci.c:1407
->> CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W    3.10.42-2002.pkvm2_1_1.6.ppc64 #1
->> Workqueue: events .work_for_cpu_fn
->> task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
->> NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
->> REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W     (3.10.42-2002.pkvm2_1_1.6.ppc64)
->> MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 20000000
->> CFAR: c000000000879ab8 SOFTE: 1
->> ...
->> NIP .pci_disable_device+0xcc/0xe0
->> LR  .pci_disable_device+0xc8/0xe0
->> Call Trace:
->> .pci_disable_device+0xc8/0xe0 (unreliable)
->> .lpfc_disable_pci_dev+0x50/0x80 [lpfc]
->> .lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
->> .local_pci_probe+0x68/0xb0
->> .work_for_cpu_fn+0x38/0x60
->> .process_one_work+0x1a4/0x4d0
->> .worker_thread+0x37c/0x490
->> .kthread+0xf0/0x100
->> .ret_from_kernel_thread+0x5c/0x80
->>
->> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
->> ---
->>   drivers/scsi/lpfc/lpfc.h      |  1 +
->>   drivers/scsi/lpfc/lpfc_init.c | 59 +++++++++++++++++++++++++++++++++++++++----
->>   2 files changed, 55 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
->> index 434e903..0c7bad9 100644
->> --- a/drivers/scsi/lpfc/lpfc.h
->> +++ b/drivers/scsi/lpfc/lpfc.h
->> @@ -813,6 +813,7 @@ struct lpfc_hba {
->>   #define VPD_MASK            0xf         /* mask for any vpd data */
->>   
->>   	uint8_t soft_wwn_enable;
->> +	uint8_t probe_done;
->>   
->>   	struct timer_list fcp_poll_timer;
->>   	struct timer_list eratt_poll;
->> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
->> index 06f9a5b..c2e67ae 100644
->> --- a/drivers/scsi/lpfc/lpfc_init.c
->> +++ b/drivers/scsi/lpfc/lpfc_init.c
->> @@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, const struct pci_device_id *pid)
->>   		}
->>   	}
->>   
->> +	/* Set the probe flag */
->> +	phba->probe_done = 1;
->> +
->>   	/* Perform post initialization setup */
->>   	lpfc_post_init_setup(phba);
->>   
->> @@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba *phba)
->>   static void
->>   lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
->>   {
->> +	if (phba)
->> +		return;
->> +
-> Should that be "if *not* phba" like the others below?
+--Sig_/x+9o704s=k.jUivpR8zEvlH
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, should be ...
+Hi all,
 
-if (!phba)
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
->
->>   	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
->>   			"2710 PCI channel disable preparing for reset\n");
->>   
->> @@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
->>   
->>   	/* Disable interrupt and pci device */
->>   	lpfc_sli_disable_intr(phba);
->> -	pci_disable_device(phba->pcidev);
->> +	if (phba->probe_done && phba->pcidev)
->> +		pci_disable_device(phba->pcidev);
->>   }
->>   
->>   /**
->> @@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, const struct pci_device_id *pid)
->>   		goto out_disable_intr;
->>   	}
->>   
->> +	/* Set probe_done flag */
->> +	phba->probe_done = 1;
->> +
->>   	/* Log the current active interrupt mode */
->>   	phba->intr_mode = intr_mode;
->>   	lpfc_log_intr_mode(phba, intr_mode);
->> @@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct lpfc_hba *phba)
->>   static void
->>   lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
->>   {
->> +	if (!phba)
->> +		return;
->> +
->>   	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
->>   			"2826 PCI channel disable preparing for reset\n");
->>   
->> @@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
->>   	/* Disable interrupt and pci device */
->>   	lpfc_sli4_disable_intr(phba);
->>   	lpfc_sli4_queue_destroy(phba);
->> -	pci_disable_device(phba->pcidev);
->> +
->> +	if (phba->probe_done && phba->pcidev)
->> +		pci_disable_device(phba->pcidev);
->>   }
->>   
->>   /**
->> @@ -10893,9 +10908,21 @@ static pci_ers_result_t
->>   lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t state)
->>   {
->>   	struct Scsi_Host *shost = pci_get_drvdata(pdev);
->> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +	struct lpfc_hba *phba;
->>   	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
->>   
->> +	if (!shost)
->> +		/* Run here means it may during probe state and
->> +		 * Scsi_Host has not been created and We can do nothing
->> +		 * in this state so call for hotplug*/
->> +		return PCI_ERS_RESULT_NONE;
-> Is it possible to get here during device removal, ie
-> lpfc_pci_remove_one?  If so, we may have shost in hand now, but can
-> these routines race?  Same for similar instances below...
+ERROR: ".ipv6_dev_get_saddr" [drivers/scsi/cxgbi/libcxgbi.ko] undefined!
+ERROR: ".ip6_route_output" [drivers/scsi/cxgbi/libcxgbi.ko] undefined!
 
-I think so, it may race here. When error occurs during 
-lpfc_pci_remove_one().
->
->> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +
->> +	if (!phba || !phba->probe_done)
->> +		/* Run here means it may during probe state */
->> +		return PCI_ERS_RESULT_NONE;
->> +
->>   	switch (phba->pci_dev_grp) {
->>   	case LPFC_PCI_DEV_LP:
->>   		rc = lpfc_io_error_detected_s3(pdev, state);
->> @@ -10930,9 +10957,20 @@ static pci_ers_result_t
->>   lpfc_io_slot_reset(struct pci_dev *pdev)
->>   {
->>   	struct Scsi_Host *shost = pci_get_drvdata(pdev);
->> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +	struct lpfc_hba *phba;
->>   	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
->>   
->> +	if (!shost)
->> +		/* Run here means it may during probe state and
->> +		 * Scsi_Host has not been created */
->> +		return PCI_ERS_RESULT_NONE;
->> +
->> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +
->> +	if (!phba || !phba->probe_done)
->> +		/* Run here means it may during probe state */
->> +		return PCI_ERS_RESULT_NONE;
->> +
->>   	switch (phba->pci_dev_grp) {
->>   	case LPFC_PCI_DEV_LP:
->>   		rc = lpfc_io_slot_reset_s3(pdev);
->> @@ -10963,7 +11001,18 @@ static void
->>   lpfc_io_resume(struct pci_dev *pdev)
->>   {
->>   	struct Scsi_Host *shost = pci_get_drvdata(pdev);
->> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +	struct lpfc_hba *phba;
->> +
->> +	if (!shost)
->> +		/* Run here means it may during probe state and
->> +		 * Scsi_Host has not been created */
->> +		return;
->> +
->> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
->> +
->> +	if (!phba || !phba->probe_done)
->> +		/* Run here means it may during probe state */
->> +		return;
->>   
->>   	switch (phba->pci_dev_grp) {
->>   	case LPFC_PCI_DEV_LP:
-> Hi Mike and Bjorn,
->
-> We don't support Power here at Stratus, but we do a lot of hotplug
-> testing, so this change is similar to some of the things we do here to
-> harden various device drivers against surprise device removal.
->
-> I've been curious about the AER/EEH pci_error_handler callbacks and
-> what protections device drivers need to take against double device
-> removal.  In my experience, not many driver .probe routines take
+Caused by commit fc8d0590d914 ("libcxgbi: Add ipv6 api to driver").
+Presumably some missing Kconfig dependency (this build does not have
+CONFIG_IPV6 enabled) or it needs some #ifdef guarding.
 
-Yes, not all drivers do it.
+I have used the net-next tree from next-20140717 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Of course if driver can handle some hardware errors, it can call for 
-reset not hotplug.
+--Sig_/x+9o704s=k.jUivpR8zEvlH
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-> precaution against hotplug (or in this case, EEH) running concurrently
-> -- in general they were written with the assumption that device
-> resources (data structures at least) will be stable during their
-> execution.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-This assumption may be not safe, what will it be when faced hardware 
-errors during probe state.
+iQIcBAEBCAAGBQJTyJKnAAoJEMDTa8Ir7ZwVU04QAIcf3Ww4b4/jjS+TKk1HHqbV
+WtN6MQwN5R0uJ81Mrv6e886asUS2/JU1qwXBB0nuG16AeilRkFTL96hFdhD2UpEE
+u0LkV+Pli12Cw3rQg/StEWW9Q9P2pzFM3mfZfxJYxu9Y3gaPUWC/G7lilpqEFCmA
+tjbkYMSgv9fTI0di8ERc8OZK91TsC9dBNeZ10OHe5XbprfXA5nwx5lXP5eL+uESJ
+aSPT0M/G8xt3xZ53aZw28MQAtdoGinBm1yR3EA6HTjMKxEy1NcnH4iJXzGzX4Wb8
+F6zsVmtQTUeyYuRRk5Uj/ce/WF53Ix50ik6vXVbmF31fbChLizdx9DY0aKdasAPc
++f3qaCMcYet6rosJKptGyz+NTIkYIIm3Ba/e3gBgndxyNuzZxvGsn21AVo6bVESt
+XeatSLFrMCkAWiqBmf9QstzPq/ngClYatAYuyJXActofEmpdRbk55x2Sz4+O/MY4
+PKAHodBah5qYswJeKBmpLTxJo3h+O8OBL4PGJc7XBwma0AC4BlSPycmUgch5QFyB
+9ArOorpyy/xSOe3oys5Ns4x/e/V7rI3YWarb7af4gHaCwLsKqP6blUdfhwwJaEqa
+lxg859MWL0e9IfCDNeoTgPbgLlIYTe4gQGlKN/6R8PIgRI93Xo4kMM3MVLBkmpRO
+pb8P27Q1jDqzXwCIOMAS
+=sBI9
+-----END PGP SIGNATURE-----
 
-> The introduction of the pci_error_handler callbacks makes this tougher,
-> as apparently they may be invoked even during driver .probe.
-
-Yes, actually, it was not a problem before this patch:
-
-967577b0  PCI/PM: Keep runtime PM enabled for unbound PCI devices
-
-....
-+       pci_dev->driver = pci_drv;
-+       rc = pci_drv->probe(pci_dev, ddi->id);
-......
-
-
-This patch set pci_dev->driver before .probe, before, set it after probe 
-success. So it will never be  invoked during driver .probe.
-
->
-> In the hotplug area, I've encountered code from various device drivers
-> that attempt to handle PCI removal on their own, verifying PCI reads
-> against ~0:
->
->    22a8b291 "igb: add register rd/wr for surprise removal"
->    2a1a091c "ixgbe: Check register reads for adapter removal"
->    845a0e40 "mpt2sas: Better handling DEAD IOC (PCI-E LInk down) error condition"
->    f3ddac19 "qla2xxx: Disable adapter when we encounter a PCI disconnect"
->
-> and in some cases, these routines race PCI device removal.  Previous
-> Stratus products went as far as introducing a workqueue dedicated to
-> single threading and protecting against double and racing PCI removal
-> instances.
-
-Maybe we can implement one mechanism that only after probe() and before 
-removal() can pci_error_handlers works.
-
->
-> I don't mean to hijack Mike's patch review, but I'm curious if Bjorn has
-> any input on how AER/EEH, hotplug, and ordinary device removal should
-> co-exist and what drivers should do to safely operate in this space.
-
-Totally agree :), but my patch is to solve a real bug(probe with 
-hardware error).
-
-The race case is a big issue, even though it has not been reported.
-
-Now should wait Bjorn's and others' input.....
-
-Thanks
-Mike
->
-> Regards,
->
-> -- Joe
->
-
+--Sig_/x+9o704s=k.jUivpR8zEvlH--
