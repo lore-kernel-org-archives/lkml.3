@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965871AbaGRRPX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:15:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44905 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894AbaGRRPW (ORCPT
+	id S965941AbaGRRRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:17:31 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:42344 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965798AbaGRRR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:15:22 -0400
-Date: Fri, 18 Jul 2014 10:15:19 -0700
-From: "hch@infradead.org" <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Message-ID: <20140718171519.GA5984@infradead.org>
-References: <5391F801.4010107@cs.wisc.edu>
- <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>
- <539206FA.1020001@kernel.dk>
- <5b926a0a9f264edda91c7c2ab0acb7d1@BY2PR03MB299.namprd03.prod.outlook.com>
- <13807d2cc8744ae1bc374f20d8f9caec@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140718151039.GA7425@infradead.org>
- <2d43adebbc47441084d8e1284507a427@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <1405702633.30262.3.camel@dabdike.int.hansenpartnership.com>
- <7c46a791325a40fd82572fd3a09726d9@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140718171238.GA3159@infradead.org>
+	Fri, 18 Jul 2014 13:17:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718171238.GA3159@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LRH.2.11.1407181325200.15709@namei.org>
+References: <1405620518-18495-1-git-send-email-keescook@chromium.org> <alpine.LRH.2.11.1407181325200.15709@namei.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 18 Jul 2014 10:17:06 -0700
+Message-ID: <CALCETrUv3G+C3PTOD1FJGOG8AQCA30hNkUiusCnQDGq6Kt_Feg@mail.gmail.com>
+Subject: Re: [PATCH v12 11/11] seccomp: add thread sync ability
+To: James Morris <jmorris@namei.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Drysdale <drysdale@google.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 10:12:38AM -0700, hch@infradead.org wrote:
-> This is what I plan to put in after it passes basic testing:
+On Thu, Jul 17, 2014 at 8:26 PM, James Morris <jmorris@namei.org> wrote:
+> On Thu, 17 Jul 2014, Kees Cook wrote:
+>
+>> Twelfth time's the charm! :)
+>
+> Btw, there doesn't seem to be an official seccomp maintainer.  Kees, would
+> you like to volunteer for this?  If so, send in a patch for MAINTAINERS,
+> and set up a git tree for me to pull from.
 
-And that one was on top of my previous version.  One that applies
-against core-for-3.17 below:
+*snicker* :)
 
----
->From 8a79783e5f72ec034a724e16c1f46604bd97bf68 Mon Sep 17 00:00:00 2001
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-Date: Fri, 18 Jul 2014 17:11:27 +0200
-Subject: sd: fix a bug in deriving the FLUSH_TIMEOUT from the basic I/O
- timeout
+Kees, if you take on this awesome responsibility, should I send you a
+rebased version of the fastpath stuff?  If so, I think that the
+arch-neutral part should go in through your shiny new tree (once it's
+reviewed to your satisfaction), and I'll ask hpa to pick up the x86
+part.
 
-Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to derive the
-FLUSH_TIMEOUT from the basic I/O timeout. However, this patch did not use the
-basic I/O timeout of the device. Fix this bug.
+I'd volunteer to be a "R:eviewer", but I don't think that the R tag
+has made it into MAINTAINERS yet.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/sd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 377a520..9ffb393 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -880,7 +880,7 @@ static int sd_setup_flush_cmnd(struct scsi_cmnd *cmd)
- 	cmd->transfersize = 0;
- 	cmd->allowed = SD_MAX_RETRIES;
- 
--	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
-+	rq->timeout = rq->q->rq_timeout * SD_FLUSH_TIMEOUT_MULTIPLIER;
- 	return BLKPREP_OK;
- }
- 
--- 
-1.9.1
-
+--Andy
