@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760703AbaGRILq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:11:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42573 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577AbaGRIKO (ORCPT
+	id S1760093AbaGRION (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:14:13 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:58332 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871AbaGRIOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:10:14 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Mel Gorman" <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Pei Feiyue <peifeiyue@huawei.com>, <linux-mm@kvack.org>, <x86@kernel.org>,
-        <linux-ia64@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-sh@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] memory-hotplug: ia64: suitable memory should go to ZONE_MOVABLE
-Date: Fri, 18 Jul 2014 15:56:01 +0800
-Message-ID: <1405670163-53747-4-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1405670163-53747-1-git-send-email-wangnan0@huawei.com>
-References: <1405670163-53747-1-git-send-email-wangnan0@huawei.com>
+	Fri, 18 Jul 2014 04:14:03 -0400
+Message-ID: <53C8D740.80406@linux.vnet.ibm.com>
+Date: Fri, 18 Jul 2014 13:43:52 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Sam Bobroff <sam.bobroff@au1.ibm.com>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
+        Peter Zijlstra <peterz@infradead.org>, Pedro Alves <palves@redhat.com>,
+        oleg@redhat.com, akpm@linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dhowells@redhat.com, Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        davej@redhat.com, tglx@linutronix.de,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH V3 0/3] Add new PowerPC specific ELF core notes
+References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com> <53996E41.4070309@linux.vnet.ibm.com> <53C7A4FA.4030600@linux.vnet.ibm.com> <1405595380.25310.21.camel@pasglop> <CAEjGV6yK_9DS1cLQ2BH=HFi029N8rz-4Wyvwzdb_gy6PnJgbwg@mail.gmail.com> <53C85AE6.7080600@au1.ibm.com>
+In-Reply-To: <53C85AE6.7080600@au1.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071808-2000-0000-0000-000001218D41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add new memory to ZONE_MOVABLE if movable zone is setup
-and lower than newly added memory for ia64.
+On 07/18/2014 04:53 AM, Sam Bobroff wrote:
+> On 17/07/14 21:14, Michael Neuling wrote:
+>>
+>> On Jul 17, 2014 9:11 PM, "Benjamin Herrenschmidt"
+>> <benh@kernel.crashing.org <mailto:benh@kernel.crashing.org>> wrote:
+>>>
+>>>>>
+>>>>>> Outstanding Issues
+>>>>>> ==================
+>>>>>> (1) Running DSCR register value inside a transaction does not
+>> seem to be saved
+>>>>>>     at thread.dscr when the process stops for ptrace examination.
+>>>>>
+>>>>> Hey Ben,
+>>>>>
+>>>>> Any updates on this patch series ?
+>>>>
+>>>> Ben,
+>>>>
+>>>> Any updates on this patch series ?
+>>>
+>>> I haven't had a chance to review yet, I was hoping somebody else would..
+>>>
+>>> Have you made any progress vs. the DSCR outstanding issue mentioned
+>>> above ?
+>>
+>> The DSCR issue should be resolved with Sam Bobroff's recent  DSCR
+>> fixes.  I've not tested them though.
+>>
+>> Actually... Sam did you review this series?
+>>
+>> Mikey
+>>
+> 
+> I did, and applying "powerpc: Correct DSCR during TM context switch"
+> corrected the DSCR value in the test program (the one in the patch notes
+> for this series).
+> 
+> (In fact, IIRC, the reason for my patch set was the bug exposed by this
+> one ;-)
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/ia64/mm/init.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 25c3502..d81c916 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -625,6 +625,7 @@ int arch_add_memory(int nid, u64 start, u64 size)
- {
- 	pg_data_t *pgdat;
- 	struct zone *zone;
-+	struct zone *movable_zone;
- 	unsigned long start_pfn = start >> PAGE_SHIFT;
- 	unsigned long nr_pages = size >> PAGE_SHIFT;
- 	int ret;
-@@ -632,6 +633,12 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 	pgdat = NODE_DATA(nid);
- 
- 	zone = pgdat->node_zones + ZONE_NORMAL;
-+	movable_zone = pgdat->node_zones + ZONE_MOVABLE;
-+	if (!zone_is_empty(movable_zone))
-+		if (zone_spans_pfn(movable_zone, start_pfn) ||
-+				(zone_end_pfn(movable_zone) <= start_pfn))
-+			zone = movable_zone;
-+
- 	ret = __add_pages(nid, zone, start_pfn, nr_pages);
- 
- 	if (ret)
--- 
-1.8.4
+Yeah the test program worked correctly with the fix from Sam. The first patch
+is a generic code change which Pedro had reviewed before. The second and third
+patches are powerpc specific.
 
