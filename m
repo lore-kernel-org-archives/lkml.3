@@ -1,142 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760886AbaGRMs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:48:27 -0400
-Received: from mail.neotion.com ([5.39.84.84]:37295 "EHLO mail.neotion.com"
+	id S932203AbaGRMuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:50:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37843 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754685AbaGRMsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:48:25 -0400
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jul 2014 08:48:25 EDT
-Message-ID: <53C91656.7010009@neotion.com>
-Date: Fri, 18 Jul 2014 14:43:02 +0200
-From: Neil Armstrong <narmstrong@neotion.com>
-Reply-To: narmstrong@neotion.com
-Organization: Neotion
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753994AbaGRMuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 08:50:24 -0400
+Date: Fri, 18 Jul 2014 13:50:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: vmscan: rework compaction-ready signaling in
+ direct reclaim fix
+Message-ID: <20140718125018.GO10819@suse.de>
+References: <1405344049-19868-1-git-send-email-hannes@cmpxchg.org>
+ <1405344049-19868-2-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Neil Armstrong <narmstrong@neotion.com>
-Subject: [PATCH v2 1/2] net: macb: Separate rx and tx ring init function
-X-Enigmail-Version: 1.6
-OpenPGP: id=1166F485
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1405344049-19868-2-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A single method is called to initialize the TX and RX rings.
-Separate the methods into distinct ones for MACB and GEM contexts.
-Also remove the multiple assignments from the original code.
+On Mon, Jul 14, 2014 at 09:20:47AM -0400, Johannes Weiner wrote:
+> As per Mel, replace out label with breaks from the loop.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
----
- drivers/net/ethernet/cadence/macb.c |   36 ++++++++++++++++++++++++++--------
- drivers/net/ethernet/cadence/macb.h |    3 +-
- 2 files changed, 29 insertions(+), 10 deletions(-)
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index e9daa07..4d73110 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1219,7 +1219,15 @@ out_err:
- 	return -ENOMEM;
- }
- 
--static void gem_init_rings(struct macb *bp)
-+static void gem_init_rx_rings(struct macb *bp)
-+{
-+	bp->rx_tail = 0;
-+	bp->rx_prepared_head = 0;
-+
-+	gem_rx_refill(bp);
-+}
-+
-+static void gem_init_tx_rings(struct macb *bp)
- {
- 	int i;
- 
-@@ -1229,12 +1237,11 @@ static void gem_init_rings(struct macb *bp)
- 	}
- 	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
- 
--	bp->rx_tail = bp->rx_prepared_head = bp->tx_head = bp->tx_tail = 0;
--
--	gem_rx_refill(bp);
-+	bp->tx_head = 0;
-+	bp->tx_tail = 0;
- }
- 
--static void macb_init_rings(struct macb *bp)
-+static void macb_init_rx_rings(struct macb *bp)
- {
- 	int i;
- 	dma_addr_t addr;
-@@ -1247,13 +1254,21 @@ static void macb_init_rings(struct macb *bp)
- 	}
- 	bp->rx_ring[RX_RING_SIZE - 1].addr |= MACB_BIT(RX_WRAP);
- 
-+	bp->rx_tail = 0;
-+}
-+
-+static void macb_init_tx_rings(struct macb *bp)
-+{
-+	int i;
-+
- 	for (i = 0; i < TX_RING_SIZE; i++) {
- 		bp->tx_ring[i].addr = 0;
- 		bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
- 	}
- 	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
- 
--	bp->rx_tail = bp->tx_head = bp->tx_tail = 0;
-+	bp->tx_head = 0;
-+	bp->tx_tail = 0;
- }
- 
- static void macb_reset_hw(struct macb *bp)
-@@ -1554,7 +1569,8 @@ static int macb_open(struct net_device *dev)
- 
- 	napi_enable(&bp->napi);
- 
--	bp->macbgem_ops.mog_init_rings(bp);
-+	bp->macbgem_ops.mog_init_rx_rings(bp);
-+	bp->macbgem_ops.mog_init_tx_rings(bp);
- 	macb_init_hw(bp);
- 
- 	/* schedule a link state check */
-@@ -1901,12 +1917,14 @@ static int __init macb_probe(struct platform_device *pdev)
- 	if (macb_is_gem(bp)) {
- 		bp->macbgem_ops.mog_alloc_rx_buffers = gem_alloc_rx_buffers;
- 		bp->macbgem_ops.mog_free_rx_buffers = gem_free_rx_buffers;
--		bp->macbgem_ops.mog_init_rings = gem_init_rings;
-+		bp->macbgem_ops.mog_init_rx_rings = gem_init_rx_rings;
-+		bp->macbgem_ops.mog_init_tx_rings = gem_init_tx_rings;
- 		bp->macbgem_ops.mog_rx = gem_rx;
- 	} else {
- 		bp->macbgem_ops.mog_alloc_rx_buffers = macb_alloc_rx_buffers;
- 		bp->macbgem_ops.mog_free_rx_buffers = macb_free_rx_buffers;
--		bp->macbgem_ops.mog_init_rings = macb_init_rings;
-+		bp->macbgem_ops.mog_init_rx_rings = macb_init_rx_rings;
-+		bp->macbgem_ops.mog_init_tx_rings = macb_init_tx_rings;
- 		bp->macbgem_ops.mog_rx = macb_rx;
- 	}
- 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 51c0244..8016d08 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -550,7 +550,8 @@ struct macb;
- struct macb_or_gem_ops {
- 	int	(*mog_alloc_rx_buffers)(struct macb *bp);
- 	void	(*mog_free_rx_buffers)(struct macb *bp);
--	void	(*mog_init_rings)(struct macb *bp);
-+	void	(*mog_init_rx_rings)(struct macb *bp);
-+	void	(*mog_init_tx_rings)(struct macb *bp);
- 	int	(*mog_rx)(struct macb *bp, int budget);
- };
- 
 -- 
-1.7.0.4
-
+Mel Gorman
+SUSE Labs
