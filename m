@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762094AbaGRQUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:20:09 -0400
-Received: from imap.thunk.org ([74.207.234.97]:43795 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473AbaGRQUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:20:08 -0400
-Date: Fri, 18 Jul 2014 12:19:36 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Brent Cook <busterb@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] initial getrandom wrapper to provide getentropy
- for LibreSSL
-Message-ID: <20140718161936.GA4877@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Brent Cook <busterb@gmail.com>, linux-kernel@vger.kernel.org
-References: <1405666144-88053-1-git-send-email-busterb@gmail.com>
- <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com>
+	id S934932AbaGRQXT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:23:19 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:64617 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078AbaGRQXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 12:23:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <6104032.PNRl85V92G@wuerfel>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
+	<1405663186-26464-4-git-send-email-cw00.choi@samsung.com>
+	<6104032.PNRl85V92G@wuerfel>
+Date: Sat, 19 Jul 2014 01:23:15 +0900
+Message-ID: <CAGTfZH3cH-QFMbfTWJJfTPTRT-Bij2TW=6CH_Yy-GaZqZvn-Xg@mail.gmail.com>
+Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for
+ Exynos3250 ADC
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 08:09:52AM -0500, Brent Cook wrote:
-> On Jul 18, 2014, at 1:49 AM, Brent Cook <busterb@gmail.com> wrote:
-> 
-> > From: Brent Cook <bcook@openbsd.org>
-> > 
-> > This is not a kernel patch, but rather an initial test of the API to see
-> > how it might mesh LibreSSL's expectations for how getentropy works.
-> > 
-> > It is a bit more code to carefully handle the extra return values, as
-> > not reading enough bytes, because there is an unhandled EINTR, might
-> > lead to an unseeded CSPRNG.
+On Fri, Jul 18, 2014 at 6:50 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 18 July 2014 14:59:45 Chanwoo Choi wrote:
+>>                         Must be "samsung,exynos-adc-v2" for
+>>                                 future controllers.
+>
+> It would be good to change 'future controllers' to something else now.
+> Presumably that word was used before the actual products were announced,
+> but now they are publically known.
+>
+>> +                       Must be "samsung,exynos3250-adc-v2" for
+>> +                               controllers compatible with ADC of Exynos3250.
+>
+> Doesn't this version have a specific name as well? The ADC block
+> seems to use version numbers, so better put those in here to avoid
+> confusion when another Exynos7890 comes out that uses the same
+> ADC as exynos3250.
 
-Take a look at the latest patch for getrandom.  It contains a
-suggested wrapper which should be sufficient for emulation of
-OpenBSD's getentropy(), and a lot of discussion of when you don't need
-to worry about getting the EINTR.
+If don't add new compatible including specific exynos version,
+I would add new 'adc-needs-sclk' property with existing 'exynos-adc-v2'
+compatible name.
 
-   http://lists.openwall.net/linux-kernel/2014/07/18/329
 
-Again, please don't commit anything until the syscall number and
-interface is finalized.  What is out here is for review, and I already
-have in the git commit a suggested wrapper to provide getentropy(2).
-If you don't think it's good enough, please let me know what your
-concerns might be.  (And yes, I've fixed the obvious missing open
-brace already.  :-)
+Dear Naveen, Tomasz,
 
-   	      	      	  	     	      	    - Ted
+If existing exynos-adc driver add just one property for 'sclk_adc'
+as following, exynos-adc could not include the exynos version
+in compatible name.
+
+I need your opinion about it.
+
+                adc: adc@126C0000 {
+                        compatible = "samsung,exynos-adc-v2";
+                        reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+                        interrupts = <0 137 0>;
+                        clock-names = "adc", "sclk_adc";
+                        clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
++                        adc-needs-sclk;
+                        #io-channel-cells = <1>;
+                        io-channel-ranges;
+                }
+
+Thanks,
+Chanwoo Choi
