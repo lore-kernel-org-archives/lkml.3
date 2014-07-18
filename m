@@ -1,327 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762046AbaGRMbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:31:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40757 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761604AbaGRMaP (ORCPT
+	id S1762065AbaGRMb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:31:56 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39907 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1761604AbaGRMbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:30:15 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v10 4/8] ata: libahci: allow to use multiple PHYs
-Date: Fri, 18 Jul 2014 14:30:03 +0200
-Message-Id: <1405686607-8126-5-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
+	Fri, 18 Jul 2014 08:31:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19vYdAD5lovFYwWIZEXksIDCHD4kO9YfhM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 24B995AF50A
+Date: Fri, 18 Jul 2014 08:31:40 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X)
+ support
+Message-ID: <20140718123140.GD24496@titan.lakedaemon.net>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140717131854.GN13108@titan.lakedaemon.net>
+ <20140717135534.GM30313@leverpostej>
+ <20140717141235.GR13108@titan.lakedaemon.net>
+ <20140718090204.GB25180@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140718090204.GB25180@leverpostej>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation of the libahci does not allow to use multiple
-PHYs. This patch adds the support of multiple PHYs by the libahci while
-keeping the old bindings valid for device tree compatibility.
+On Fri, Jul 18, 2014 at 10:02:05AM +0100, Mark Rutland wrote:
+> On Thu, Jul 17, 2014 at 03:12:35PM +0100, Jason Cooper wrote:
+> > On Thu, Jul 17, 2014 at 02:55:34PM +0100, Mark Rutland wrote:
+> > > Hi Jason,
+> > > 
+> > > On Thu, Jul 17, 2014 at 02:18:54PM +0100, Jason Cooper wrote:
+> > > > On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
+> > > > > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > > > > 
+> > > > > This patch set introduces support for MSI(-X) in GICv2m specification,
+> > > > > which is implemented in some variation of GIC400.
+> > > > > 
+> > > > > This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+> > > > > (https://lkml.org/lkml/2014/3/14/320).
+> > > > > 
+> > > > > Changes in V3:
+> > > > >     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+> > > > >       (per Jason Cooper request)
+> > > > >     * Misc fix/clean up per Mark Rutland comments
+> > > > >     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+> > > > >     * Patch 4 is new to the series:
+> > > > >         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+> > > > >           for Multiple MSI.
+> > > > >         * Add support for Multiple MSI for GICv2m.
+> > > > > 
+> > > > > Suravee Suthikulpanit (4):
+> > > > >   irqchip: gic: Add binding probe for ARM GIC400
+> > > > >   irqchip: gic: Restructuring ARM GIC code
+> > > > >   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+> > > > >   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+> > > > 
+> > > > Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
+> > > > irqchip/gic with irqchip/urgent merged in.  To facilitate
+> > > > testing/merging, I've prepared an unsigned tag for you on the
+> > > > irqchip/gic branch:
+> > > 
+> > > I'm a little concerned that this is all going through for v3.17 without
+> > > a {Reviewed,Acked}-by from Marc or anyone working with GIC{,v2m}.
+> > 
+> > Well, that's why it's not in irqchip/core yet. ;-)  It can be undone if
+> > needed.
+> 
+> Ah, perhaps I was a litte premature. :)
+>  
+> > > While his comments on v1 have been addressed, he has not had a chance to
+> > > acknowledge the solutions. I appreciate Marc's holiday is unfortunately
+> > > timed.
+> > > 
+> > > I also have an open concern with the binding with regard to the
+> > > orthogonality of GICV GICH and the MSI registers.
+> > > 
+> > > Suravee, do you need this urgently for v3.17? I was under the impression
+> > > that we wouldn't have full PCIe support by then.
+> > 
+> > If Suravee is ok with it, I can drop them for now and he can resend for
+> > v3.18.  Since we've worked out a way to merge it all in one window, I
+> > don't think it would hurt anything to wait.
+> 
+> Ok.
+> 
+> > I'll leave these in irqchip/for-next until I hear from Suravee, then
+> > I'll drop the lot till we hear from Marc and look at the timing.
+> 
+> Keeping it in for-next for testing sounds like a good idea, but until we
+> hear from Marc I wouldn't want to see this queued for mainline. So the
+> above sounds fine to me.
 
-This introduce a new way of defining SATA ports in the device tree, with
-one port per sub-node. This as the advantage of allowing a per port
-configuration. Because some ports may be accessible but disabled in the
-device tree, the port_map mask is computed automatically when using
-this.
+Ok, here's what I did:
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- drivers/ata/ahci.h             |   3 +-
- drivers/ata/libahci_platform.c | 179 ++++++++++++++++++++++++++++++++---------
- 2 files changed, 142 insertions(+), 40 deletions(-)
+[jason@triton] $ git ldo --graph v3.16-rc1^..irqchip/gic-v2m
+* 3e44358c12cc (HEAD, irqchip/gic-v2m) irqchip: gic: Add support for ARM GICv2m MSI(-X)
+* fe7ac63fe539 irqchip: gic: Restructuring ARM GIC code
+*   6bf0be3f077e Merge branch 'irqchip/urgent' into irqchip/gic
+|\  
+| * 144cb08864ed (irqchip/urgent) irqchip: gic: Add binding probe for ARM GIC400
+| * a97e8027b1d2 irqchip: gic: Add support for cortex a7 compatible string
+| * 4f4366033945 (tag: irqchip-urgent-3.16) irqchip: spear_shirq: Fix interrupt offset
+| * 00ac20279174 irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
+| * b73842b75646 irqchip: armada-370-xp: Mask all interrupts during initialization.
+* | 021f653791ad (tag: deps-irqchip-gic-3.17, irqchip/gic) irqchip: gic-v3: Initial support for GICv3
+* | d51d0af43b30 irqchip: gic: Move some bits of GICv2 to a library-type file
+|/  
+* 7171511eaec5 (tag: v3.16-rc1) Linux 3.16-rc1
 
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index cb8d58926851..b0ea7b077d6e 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -332,7 +332,8 @@ struct ahci_host_priv {
- 	bool			got_runtime_pm; /* Did we do pm_runtime_get? */
- 	struct clk		*clks[AHCI_MAX_CLKS]; /* Optional */
- 	struct regulator	*target_pwr;	/* Optional */
--	struct phy		*phy;		/* If platform uses phy */
-+	struct phy		**phys;		/* If platform uses phys */
-+	unsigned		nphys;		/* Number of phys */
- 	void			*plat_data;	/* Other platform data */
- 	/*
- 	 * Optional ahci_start_engine override, if not set this gets set to the
-diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-index db9b90d876dd..2c2439b4101d 100644
---- a/drivers/ata/libahci_platform.c
-+++ b/drivers/ata/libahci_platform.c
-@@ -39,6 +39,61 @@ static struct scsi_host_template ahci_platform_sht = {
- };
- 
- /**
-+ * ahci_platform_enable_phys - Enable PHYs
-+ * @hpriv: host private area to store config values
-+ *
-+ * This function enables all the PHYs found in hpriv->phys, if any.
-+ * If a PHY fails to be enabled, it disables all the PHYs already
-+ * enabled in reverse order and returns an error.
-+ *
-+ * RETURNS:
-+ * 0 on success otherwise a negative error code
-+ */
-+int ahci_platform_enable_phys(struct ahci_host_priv *hpriv)
-+{
-+	int i, rc = 0;
-+
-+	for (i = 0; i < hpriv->nphys; i++) {
-+		rc = phy_init(hpriv->phys[i]);
-+		if (rc)
-+			goto disable_phys;
-+
-+		rc = phy_power_on(hpriv->phys[i]);
-+		if (rc) {
-+			phy_exit(hpriv->phys[i]);
-+			goto disable_phys;
-+		}
-+	}
-+
-+	return 0;
-+
-+disable_phys:
-+	while (--i >= 0) {
-+		phy_power_off(hpriv->phys[i]);
-+		phy_exit(hpriv->phys[i]);
-+	}
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(ahci_platform_enable_phys);
-+
-+/**
-+ * ahci_platform_disable_phys - Enable PHYs
-+ * @hpriv: host private area to store config values
-+ *
-+ * This function disables all PHYs found in hpriv->phys.
-+ */
-+void ahci_platform_disable_phys(struct ahci_host_priv *hpriv)
-+{
-+	int i;
-+
-+	for (i = 0; i < hpriv->nphys; i++) {
-+		phy_power_off(hpriv->phys[i]);
-+		phy_exit(hpriv->phys[i]);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(ahci_platform_disable_phys);
-+
-+/**
-  * ahci_platform_enable_clks - Enable platform clocks
-  * @hpriv: host private area to store config values
-  *
-@@ -92,7 +147,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_disable_clks);
-  * following order:
-  * 1) Regulator
-  * 2) Clocks (through ahci_platform_enable_clks)
-- * 3) Phy
-+ * 3) Phys
-  *
-  * If resource enabling fails at any point the previous enabled resources
-  * are disabled in reverse order.
-@@ -114,17 +169,9 @@ int ahci_platform_enable_resources(struct ahci_host_priv *hpriv)
- 	if (rc)
- 		goto disable_regulator;
- 
--	if (hpriv->phy) {
--		rc = phy_init(hpriv->phy);
--		if (rc)
--			goto disable_clks;
--
--		rc = phy_power_on(hpriv->phy);
--		if (rc) {
--			phy_exit(hpriv->phy);
--			goto disable_clks;
--		}
--	}
-+	rc = ahci_platform_enable_phys(hpriv);
-+	if (rc)
-+		goto disable_clks;
- 
- 	return 0;
- 
-@@ -144,16 +191,13 @@ EXPORT_SYMBOL_GPL(ahci_platform_enable_resources);
-  *
-  * This function disables all ahci_platform managed resources in the
-  * following order:
-- * 1) Phy
-+ * 1) Phys
-  * 2) Clocks (through ahci_platform_disable_clks)
-  * 3) Regulator
-  */
- void ahci_platform_disable_resources(struct ahci_host_priv *hpriv)
- {
--	if (hpriv->phy) {
--		phy_power_off(hpriv->phy);
--		phy_exit(hpriv->phy);
--	}
-+	ahci_platform_disable_phys(hpriv);
- 
- 	ahci_platform_disable_clks(hpriv);
- 
-@@ -187,7 +231,7 @@ static void ahci_platform_put_resources(struct device *dev, void *res)
-  * 2) regulator for controlling the targets power (optional)
-  * 3) 0 - AHCI_MAX_CLKS clocks, as specified in the devs devicetree node,
-  *    or for non devicetree enabled platforms a single clock
-- *	4) phy (optional)
-+ *	4) phys (optional)
-  *
-  * RETURNS:
-  * The allocated ahci_host_priv on success, otherwise an ERR_PTR value
-@@ -197,7 +241,9 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	struct ahci_host_priv *hpriv;
- 	struct clk *clk;
--	int i, rc = -ENOMEM;
-+	struct device_node *child;
-+	int i, nports, rc = -ENOMEM;
-+	u32 mask_port_map = 0;
- 
- 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
- 		return ERR_PTR(-ENOMEM);
-@@ -246,27 +292,82 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 		hpriv->clks[i] = clk;
- 	}
- 
--	hpriv->phy = devm_phy_get(dev, "sata-phy");
--	if (IS_ERR(hpriv->phy)) {
--		rc = PTR_ERR(hpriv->phy);
--		switch (rc) {
--		case -ENOSYS:
--			/* No PHY support. Check if PHY is required. */
--			if (of_find_property(dev->of_node, "phys", NULL)) {
--				dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-+	nports = of_get_child_count(dev->of_node);
-+
-+	if (nports) {
-+		hpriv->phys = devm_kzalloc(dev, nports * sizeof(*hpriv->phys),
-+					   GFP_KERNEL);
-+		if (!hpriv->phys) {
-+			rc = -ENOMEM;
-+			goto err_out;
-+		}
-+
-+		for_each_child_of_node(dev->of_node, child) {
-+			u32 port;
-+
-+			if (!of_device_is_available(child))
-+				continue;
-+
-+			if (of_property_read_u32(child, "reg", &port)) {
-+				rc = -EINVAL;
- 				goto err_out;
- 			}
--		case -ENODEV:
--			/* continue normally */
--			hpriv->phy = NULL;
--			break;
- 
--		case -EPROBE_DEFER:
--			goto err_out;
-+			mask_port_map |= BIT(port);
- 
--		default:
--			dev_err(dev, "couldn't get sata-phy\n");
--			goto err_out;
-+			hpriv->phys[hpriv->nphys] = devm_of_phy_get(dev, child,
-+								    NULL);
-+			if (IS_ERR(hpriv->phys[hpriv->nphys])) {
-+				rc = PTR_ERR(hpriv->phys[hpriv->nphys]);
-+				dev_err(dev,
-+					"couldn't get PHY in node %s: %d\n",
-+					child->name, rc);
-+				goto err_out;
-+			}
-+
-+			hpriv->nphys++;
-+		}
-+		if (!hpriv->nphys) {
-+			dev_warn(dev, "No port enabled\n");
-+			return ERR_PTR(-ENODEV);
-+		}
-+
-+		if (!hpriv->mask_port_map)
-+			hpriv->mask_port_map = mask_port_map;
-+	} else {
-+		/*
-+		 * If no sub-node was found, keep this for device tree
-+		 * compatibility
-+		 */
-+		struct phy *phy = devm_phy_get(dev, "sata-phy");
-+		if (!IS_ERR(phy)) {
-+			hpriv->phys = devm_kzalloc(dev, sizeof(*hpriv->phys),
-+						   GFP_KERNEL);
-+			if (!hpriv->phys) {
-+				rc = -ENOMEM;
-+				goto err_out;
-+			}
-+
-+			hpriv->phys[0] = phy;
-+			hpriv->nphys = 1;
-+		} else {
-+			rc = PTR_ERR(phy);
-+			switch (rc) {
-+				case -ENOSYS:
-+					/* No PHY support. Check if PHY is required. */
-+					if (of_find_property(dev->of_node, "phys", NULL)) {
-+						dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-+						goto err_out;
-+					}
-+				case -ENODEV:
-+					/* continue normally */
-+					hpriv->phys = NULL;
-+					break;
-+
-+				default:
-+					goto err_out;
-+
-+			}
- 		}
- 	}
- 
-@@ -291,7 +392,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
-  * @host_flags: ahci host flags used in ahci_host_priv
-  *
-  * This function does all the usual steps needed to bring up an
-- * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
-+ * ahci-platform host, note any necessary resources (ie clks, phys, etc.)
-  * must be initialized / enabled before calling this.
-  *
-  * RETURNS:
-@@ -395,7 +496,7 @@ static void ahci_host_stop(struct ata_host *host)
-  * @dev: device pointer for the host
-  *
-  * This function does all the usual steps needed to suspend an
-- * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
-+ * ahci-platform host, note any necessary resources (ie clks, phys, etc.)
-  * must be disabled after calling this.
-  *
-  * RETURNS:
-@@ -432,7 +533,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_suspend_host);
-  * @dev: device pointer for the host
-  *
-  * This function does all the usual steps needed to resume an ahci-platform
-- * host, note any necessary resources (ie clks, phy, etc.)  must be
-+ * host, note any necessary resources (ie clks, phys, etc.)  must be
-  * initialized / enabled before calling this.
-  *
-  * RETURNS:
--- 
-1.9.1
+remote branches removed for clarity.
 
+Basically, I reset irqchip/gic back to tags/deps-irqchip-gic-3.17 (The
+stable tag for GICv3 support), and made the MSI series irqchip/gic-v2m.
+
+I've also removed the dep tag for gic-v2m (tags/dep-irqchip-gic-3.17-2).
+Please consider irqchip/gic-v2m to be completely unstable and drop-able.
+It'll be in -next, but until I hear from Marc, it's not going anywhere.
+
+No commit IDs have changed during this process.  The only problem that
+may occur is if the guys depending on GICv3 pulled the branch *and*
+updated it yesterday.  If they pulled the tag as I provided, then
+they're fine.
+
+Sorry for the confusion, I hope I've made it clear above.
+
+thx,
+
+Jason.
+> 
+> Cheers,
+> Mark.
