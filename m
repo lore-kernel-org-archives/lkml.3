@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965309AbaGRLEG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:04:06 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59216 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaGRLED (ORCPT
+	id S1030213AbaGRLEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:04:38 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:44227 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164AbaGRLEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:04:03 -0400
-Message-ID: <53C8FD95.5020302@gmail.com>
-Date: Fri, 18 Jul 2014 12:57:25 +0200
-From: poma <pomidorabelisima@gmail.com>
+	Fri, 18 Jul 2014 07:04:35 -0400
+X-Greylist: delayed 21505 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jul 2014 07:04:34 EDT
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: thierry.reding@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <b9eb4356d754449dc2339e39e9a0462c>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <53C8FF38.8010506@rock-chips.com>
+Date: Fri, 18 Jul 2014 19:04:24 +0800
+From: caesar <caesar.wang@rock-chips.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: Christoph Lameter <cl@linux.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
-Subject: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
-References: <53C8DF7F.5060707@gmail.com>
-In-Reply-To: <53C8DF7F.5060707@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Beniamino Galvani <b.galvani@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cf@rock-chips.com,
+        addy.ke@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        hj@rock-chips.com
+Subject: Re: [PATCH 2/2] pwm: add this series patch to support for rk-pwm
+ and vop-pwm.
+References: <1405577294-19336-1-git-send-email-caesar.wang@rock-chips.com> <1405577294-19336-3-git-send-email-caesar.wang@rock-chips.com> <20140717192459.GA4617@gmail.com> <53C8AB34.3050102@rock-chips.com> <20140718100341.GA30497@ulmo>
+In-Reply-To: <20140718100341.GA30497@ulmo>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thierry,
 
-I guess someone working over the summertime. :)
+于 2014年07月18日 18:03, Thierry Reding 写道:
+> On Fri, Jul 18, 2014 at 01:05:56PM +0800, caesar wrote:
+>> 于 2014年07月18日 03:24, Beniamino Galvani 写道:
+>>> On Thu, Jul 17, 2014 at 02:08:14PM +0800, caesar wrote:
+> [...]
+>>>> @@ -119,9 +185,12 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
+>>>>   		return -ENOMEM;
+>>>>   	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>> -	pc->base = devm_ioremap_resource(&pdev->dev, r);
+>>>> -	if (IS_ERR(pc->base))
+>>>> -		return PTR_ERR(pc->base);
+>>>> +	pc->base = of_iomap(np, 0);
+>>>> +	if (!pc->base) {
+>>>> +		dev_err(&pdev->dev, "failed to map controller\n");
+>>>> +		ret = -ENOMEM;
+>>>> +		goto fail_map;
+>>>> +	}
+>>> I think that this change is not needed. devm_ioremap_resource()
+>>> guarantees an automatic unmapping when the device is destroyed.
+>>>
+>>> Moreover, when of_iomap() fails you don't need to call iounmap().
+>>>
+>>> Beniamino
+>> VOP-PWM base has be requested for lcdc.
+> Why?
+VOP is  a seperate controllers for rk3288 and genenation SoCs.
+The VOP contains lcdc,pwm......
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
-Modules linked in: virtio_net virtio_scsi(+) drm virtio_pci i2c_core virtio_ring ata_generic pata_acpi virtio sunrpc dm_crypt dm_round_robin linear raid10 raid456 async_raid6_recov async_memcpy async_pq async_xor xor async_tx raid6_pq raid1 raid0 iscsi_ibft iscsi_boot_sysfs floppy iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi squashfs cramfs edd dm_multipath
-CPU: 1 PID: 495 Comm: systemd-udevd Not tainted 3.16.0-0.rc5.git0.1.fc21.x86_64 #1
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-   0000000000000000 00000000bfd3b05a ffff88007f55fa40 ffffffff8171b4e3
-   0000000000000000 ffff88007f55fa78 ffffffff8108f30d ffff880079175d40
-   ffff88007f55ffd8 ffffffff81c6de08 ffff88007f55ffd8 ffff88007f55ffd8
-Call Trace:
-   [<ffffffff8171b4e3>] dump_stack+0x45/0x56
-   [<ffffffff8108f30d>] warn_slowpath_common+0x7d/0xa0
-   [<ffffffff8108f43a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff811a7c59>] kmem_cache_create+0x1a9/0x330
-   [<ffffffff814a4070>] scsi_setup_command_freelist+0x120/0x270
-   [<ffffffff814a4d90>] scsi_add_host_with_dma+0x60/0x2b0
-   [<ffffffffa017b9c9>] virtscsi_probe+0x269/0x2af [virtio_scsi]
-   [<ffffffffa01877c0>] ? vp_reset+0x90/0x90 [virtio_pci]
-   [<ffffffffa010e1d9>] virtio_dev_probe+0xe9/0x160 [virtio]
-   [<ffffffff81483d83>] driver_probe_device+0xa3/0x400
-   [<ffffffff814841ab>] __driver_attach+0x8b/0x90
-   [<ffffffff81484120>] ? __device_attach+0x40/0x40
-   [<ffffffff81481b23>] bus_for_each_dev+0x73/0xc0
-   [<ffffffff8148381e>] driver_attach+0x1e/0x20
-   [<ffffffff814833f0>] bus_add_driver+0x180/0x250
-   [<ffffffffa0180000>] ? 0xffffffffa017ffff
-   [<ffffffff81484974>] driver_register+0x64/0xf0
-   [<ffffffffa010e550>] register_virtio_driver+0x20/0x40 [virtio]
-   [<ffffffffa0180085>] init+0x85/0x1000 [virtio_scsi]
-   [<ffffffff81002148>] do_one_initcall+0xd8/0x210
-   [<ffffffff811c3952>] ? __vunmap+0xa2/0x100
-   [<ffffffff8110d951>] load_module+0x2061/0x2600
-   [<ffffffff811092f0>] ? store_uevent+0x70/0x70
-   [<ffffffff8110dfbd>] SyS_init_module+0xcd/0x120
-   [<ffffffff817223a9>] system_call_fastpath+0x16/0x1b
----[ end trace 64d7cf025fd3bf4a ]---
+For example :Rk3288 SOC address mapping
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1121092
+lcdc0: lcdc@ff930000                     vop0pwm: pwm@ff9301a0
+reg = <0xff930000 0x10000>       reg = <0xff9301a0 0x10>;
+offset = 0x10000                            offset = 0x10
 
+lcdc1: lcdc@ff940000                    vop1pwm: pwm@ff9401a0
+reg = <0xff940000 0x10000>      reg = <0xff9401a0 0x10>;
+offset = 0x10000                           offset = 0x10
 
-poma
+In a word, lcdc and vop-pwm has shared the map address.
+>> When I use devm_ioremap_resource(), the vop-pwm will request region fail.
+>>
+>> Example:.931020] rockchip-pwm ff9401a0.pwm: can't request region for
+>> resource [mem 0xff9401a0-0xff9401af] /pwm@ff9401a0.
+>> So ,I have to charge it.
+>>
+>> I will be simplyfied by having:
+>> - pc->base = devm_ioremap_resource(&pdev->dev, r);
+>> + if (!strcmp(of_id->compatible, "rockchip,vop-pwm"))
+>> + pc->base = devm_ioremap(&pdev->dev, r->start, resource_size(r));
+>> + else
+>> + pc->base = devm_ioremap_resource(&pdev->dev, r);
+>>
+>> Maybe, Could you give me better suggestions for it?
+> The right thing to do is not have two drivers access the same device.
+> Why does lcdc request the PWM register region?
+>
+> Thierry
+Ditto,
+Maybe,Could you give me a better suggestion to do it?
 
 
