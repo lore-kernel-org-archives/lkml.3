@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030236AbaGRNGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:06:34 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17172 "EHLO
+	id S1761565AbaGRNGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:06:33 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17178 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932739AbaGRNCe (ORCPT
+	by vger.kernel.org with ESMTP id S934154AbaGRNCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:02:34 -0400
+	Fri, 18 Jul 2014 09:02:38 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Christensen <pch@ordbogen.com>,
-        Simon Horman <horms@verge.net.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 052/170] ipvs: Fix panic due to non-linear skb
-Date: Fri, 18 Jul 2014 14:10:57 +0200
-Message-Id: <8391d35ef8245102821c29553fa7b5db545f9446.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, pekon gupta <pekon@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 077/170] mtd: nand: omap: fix BCHx ecc.correct to return detected bit-flips in erased-page
+Date: Fri, 18 Jul 2014 14:11:22 +0200
+Message-Id: <62874b837dc5de00f3c8de646e80b73c52d75b01.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,80 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Christensen <pch@ordbogen.com>
+From: pekon gupta <pekon@ti.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f44a5f45f544561302e855e7bd104e5f506ec01b upstream.
+commit f306e8c3b667632952f1a4a74ffb910bbc06255f upstream.
 
-Receiving a ICMP response to an IPIP packet in a non-linear skb could
-cause a kernel panic in __skb_pull.
+fixes: commit 62116e5171e00f85a8d53f76e45b84423c89ff34
+       mtd: nand: omap2: Support for hardware BCH error correction.
 
-The problem was introduced in
-commit f2edb9f7706dcb2c0d9a362b2ba849efe3a97f5e ("ipvs: implement
-passive PMTUD for IPIP packets").
+In omap_elm_correct_data(), if bitflip_count in an erased-page is within the
+correctable limit (< ecc.strength), then it is not indicated back to the caller
+ecc->read_page().
 
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+This mis-guides upper layers like MTD and UBIFS layer to assume erased-page as
+perfectly clean and use it for writing even if actual bitflip_count was
+dangerously high (bitflip_count > mtd->bitflip_threshold).
+
+This patch fixes this above issue, by returning 'stats' to caller
+ecc->read_page() under all scenarios.
+
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/netfilter/ipvs/ip_vs_core.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/mtd/nand/omap2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
-index 3581736446d5..e2d38e5318d4 100644
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1392,15 +1392,19 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index 4ecf0e5fd484..0332d0b2d73a 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1463,7 +1463,7 @@ static int omap_elm_correct_data(struct mtd_info *mtd, u_char *data,
  
- 	if (ipip) {
- 		__be32 info = ic->un.gateway;
-+		__u8 type = ic->type;
-+		__u8 code = ic->code;
+ 	/* Check if any error reported */
+ 	if (!is_error_reported)
+-		return 0;
++		return stat;
  
- 		/* Update the MTU */
- 		if (ic->type == ICMP_DEST_UNREACH &&
- 		    ic->code == ICMP_FRAG_NEEDED) {
- 			struct ip_vs_dest *dest = cp->dest;
- 			u32 mtu = ntohs(ic->un.frag.mtu);
-+			__be16 frag_off = cih->frag_off;
- 
- 			/* Strip outer IP and ICMP, go to IPIP header */
--			__skb_pull(skb, ihl + sizeof(_icmph));
-+			if (pskb_pull(skb, ihl + sizeof(_icmph)) == NULL)
-+				goto ignore_ipip;
- 			offset2 -= ihl + sizeof(_icmph);
- 			skb_reset_network_header(skb);
- 			IP_VS_DBG(12, "ICMP for IPIP %pI4->%pI4: mtu=%u\n",
-@@ -1408,7 +1412,7 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
- 			ipv4_update_pmtu(skb, dev_net(skb->dev),
- 					 mtu, 0, 0, 0, 0);
- 			/* Client uses PMTUD? */
--			if (!(cih->frag_off & htons(IP_DF)))
-+			if (!(frag_off & htons(IP_DF)))
- 				goto ignore_ipip;
- 			/* Prefer the resulting PMTU */
- 			if (dest) {
-@@ -1427,12 +1431,13 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
- 		/* Strip outer IP, ICMP and IPIP, go to IP header of
- 		 * original request.
- 		 */
--		__skb_pull(skb, offset2);
-+		if (pskb_pull(skb, offset2) == NULL)
-+			goto ignore_ipip;
- 		skb_reset_network_header(skb);
- 		IP_VS_DBG(12, "Sending ICMP for %pI4->%pI4: t=%u, c=%u, i=%u\n",
- 			&ip_hdr(skb)->saddr, &ip_hdr(skb)->daddr,
--			ic->type, ic->code, ntohl(info));
--		icmp_send(skb, ic->type, ic->code, info);
-+			type, code, ntohl(info));
-+		icmp_send(skb, type, code, info);
- 		/* ICMP can be shorter but anyways, account it */
- 		ip_vs_out_stats(cp, skb);
- 
+ 	/* Decode BCH error using ELM module */
+ 	elm_decode_bch_error_page(info->elm_dev, ecc_vec, err_vec);
 -- 
 2.0.0
 
