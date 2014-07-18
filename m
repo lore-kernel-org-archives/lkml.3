@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaGRF3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 01:29:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:58686 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069AbaGRF3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:29:46 -0400
-Message-ID: <1405661382.17297.3.camel@concordia>
-Subject: Re: [PATCH 05/11] perf, tools: Add support for reading JSON event
- files
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        acme@infradead.org, Andi Kleen <ak@linux.intel.com>
-Date: Fri, 18 Jul 2014 15:29:42 +1000
-In-Reply-To: <1405123165-22666-6-git-send-email-andi@firstfloor.org>
-References: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
-	 <1405123165-22666-6-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759578AbaGRFcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 01:32:11 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52342 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754152AbaGRFcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 01:32:10 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH ftrace/core v3 3/3] kprobes: Set IPMODIFY flag only if the probe can change regs->ip
+References: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal>
+	<20140715060035.12195.47782.stgit@kbuild-fedora.novalocal>
+Date: Fri, 18 Jul 2014 14:32:07 +0900
+In-Reply-To: <20140715060035.12195.47782.stgit@kbuild-fedora.novalocal>
+	(Masami Hiramatsu's message of "Tue, 15 Jul 2014 06:00:35 +0000")
+Message-ID: <878unrkzag.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 16:59 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a parser for Intel style JSON event files. This allows
-> to use an Intel event list directly with perf. The Intel
-> event lists can be quite large and are too big to store
-> in unswappable kernel memory.
+Hi Masami,
 
-...
-
-> diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
-> new file mode 100644
-> index 0000000..a23f57f
-> --- /dev/null
-> +++ b/tools/perf/util/jevents.c
-> @@ -0,0 +1,246 @@
-...
-> +
-> +static void fixname(char *s)
+On Tue, 15 Jul 2014 06:00:35 +0000, Masami Hiramatsu wrote:
+> +static int __ftrace_add_filter_ip(struct ftrace_ops *ops, unsigned long ip,
+> +				  int *ref)
 > +{
-> +	for (; *s; s++)
-> +		*s = tolower(*s);
+> +	int ret;
+> +
+> +	/* Try to set given ip to filter */
+> +	ret = ftrace_set_filter_ip(ops, ip, 0, 0);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	(*ref)++;
+> +	if (*ref == 1) {
+> +		ret = register_ftrace_function(ops);
+> +		if (ret < 0) {
+> +			/* Rollback refcounter and filter */
+> +			(*ref)--;
+> +			ftrace_set_filter_ip(ops, ip, 1, 0);
+> +		}
+> +	}
+> +
+> +	return ret;
 > +}
 
-On powerpc our event names are always uppercase, it would be nice if the perf
-list output honoured that.
+This function also can be changed in a similar way:
 
-Can we instead just honour whatever case is in the input JSON ?
+	if (*ref == 0) {
+		ret = register_ftrace_function(ops);
+		if (ret < 0) {
+			/* Rollback filter if failed */
+			ftrace_set_filter_ip(ops, ip, 1, 0);
+			return ret;
+		}
+	}
 
-It looks like the event lookup is already case insensitive.
+	(*ref)++;
 
-cheers
+	return 0;
 
+
+Thanks,
+Namhyung
 
