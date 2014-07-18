@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761055AbaGRJS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:18:57 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:59090 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755451AbaGRJSx (ORCPT
+	id S1761178AbaGRJVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:21:08 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:60227 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761148AbaGRJVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:18:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chung-Lin Tang <cltang@codesourcery.com>
-Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        lftan.linux@gmail.com, "Joseph S. Myers" <joseph@codesourcery.com>
-Subject: Re: [PATCH v2 22/29] nios2: Miscellaneous header files
-Date: Fri, 18 Jul 2014 11:18:44 +0200
-Message-ID: <24519153.8UnNuM8InF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53C8BB6B.5050606@codesourcery.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <4477048.XUlURsz4uq@wuerfel> <53C8BB6B.5050606@codesourcery.com>
+	Fri, 18 Jul 2014 05:21:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uMW8q9/rl3HpvYdFxeKN1/Ni5LvWMf8U9F06f/QGlEI
- +OM1Dm+T76H62AtTmRB65vah9RElVMmq8Ib0xYgDQotkSGtu7E
- 4m2sizl2EEMGkZ9lie7Zmul4hXbXRXDAJhZo9TysdgP5DBRH9G
- g96GdNc02lb30ptN3HAZyIdxFLt0PG+t2G9oO4KnoHayraPPkh
- RtYLds8FWTWyAky+RTLlIr/YEfUMJ9l9cjYSFHtgDrTb+qh9SZ
- uWWkibDxs++vldWBrjVzmbqRvir3wO1rBuPiJ3NcF0I0faB8xD
- rZ8Gkg7tPfmHNPFDH9egCMwiZFCaM/kHaxJ0pX/mP4/M1QoxUF
- ZLpGbhJONRqmS8JwoNwE=
+X-Originating-IP: [95.21.62.104]
+In-Reply-To: <CAGhQ9VwTXdCHe693PBtaVsv28-heEHY3=qbnn+mdgk3ea3u7qQ@mail.gmail.com>
+References: <1405369228-27197-1-git-send-email-marek@goldelico.com>
+	<1405369228-27197-2-git-send-email-marek@goldelico.com>
+	<CAGhQ9Vx1gm9=vda9dUVYR25JK4VSUe9Qk5_xc_bo9ZPLFCtExA@mail.gmail.com>
+	<0C2AB07A-C515-4D5E-A823-DDF7C871515A@goldelico.com>
+	<CAGhQ9VwTXdCHe693PBtaVsv28-heEHY3=qbnn+mdgk3ea3u7qQ@mail.gmail.com>
+Date: Fri, 18 Jul 2014 11:21:03 +0200
+Message-ID: <CABxcv==sj5ZZ_f1gqgREFDNoiVv71k3rjQLPq6CpZbB-643Z4g@mail.gmail.com>
+Subject: Re: [PATCH 1/5] arm: dts: omap3-gta04: Add missing nodes to fully
+ describe gta04 board
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Joachim Eastwood <manabian@gmail.com>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Marek Belisko <marek@goldelico.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 July 2014 14:15:07 Chung-Lin Tang wrote:
-> Hi Arnd,
-> Considering two other kernel interface issues that appeared earlier in
-> the context of nios2 glibc/kernel upstreaming:
-> 
-> (1) The 64-bit time_t/timespec issue.
-> (2) Dropping renameat by default in favor of renameat2
-> 
-> What's the decision for these? Are they delayed to the next release?
+Hello Marek and Dr. H. Nikolaus,
 
-For renameat2, I believe we had patches to change the generic syscall
-list. It would be nice if you could include those in your patch
-series as a prerequisite and base your patches on top.
+On Fri, Jul 18, 2014 at 8:55 AM, Joachim Eastwood <manabian@gmail.com> wrote:
+> On 16 July 2014 09:17, Dr. H. Nikolaus Schaller <hns@goldelico.com> wrote:
+>> Am 15.07.2014 um 14:45 schrieb Joachim Eastwood:
+>>
+>>> Hi Marek,
+>>>
+>>> You seem to add some DT nodes for hw that doesn't have drivers in
+>>> mainline. I think you should leave those out until the driver itself
+>>> is upstream and the bindings for it is documented.
+>> is there some policy for only having nodes for existing drivers in DT files?
+>
 
-Regarding time_t, I've spent much more time looking into what we
-need to do for the other 32-bit architectures now. My feeling now
-is that we're better off not introducing another special case for
-nios2 here, as that will have the effect of making it harder to
-move everyone else over later. We already have to deal with:
+I strongly agree with Joachim on this regard.
 
-- 32-bit architectures using 32-bit time_t
-- 64-bit architectures using 64-bit time_t
-- 64-bit architectures running 32-bit tasks with 32-bit time_t
-- 64-bit x86-64 and soon arm64 running x32 user space with 64-bit time_t
+>> If I understand the device tree concept correctly, it should not describe drivers
+>> (and hence nothing about the state of them being mainlined), but it should statically
+>> describe the given hardware in a way that kernel and drivers can read it (or ignore).
+>> And even other kernels can use it (because they run on the same hardware).
+>>
 
-and we will get in the future
+Yes, it should describe hardware but that description should be
+previously agreed and properly documented as was mentioned before.
 
-- 32-bit architectures providing both 32-bit time_t and 64-bit time64_t
-- 64-bit architectures with compat tasks running 64-bit time64_t
+>> So unless there is an important reason not to have "currently unused" nodes
+>> in the DT source/binary (loading time is IMHO neglectable), I would ask that we
+>> can keep with the complete DT instead of splitting it up artificially and getting back
+>> to the same status (because the hardware does not change over time).
+>
 
-Adding a 32-bit architecture that has a native 64-bit time_t will
-just add another special case that we will have to live with for
-a long time and that can introduce bugs for the other cases if we
-get it wrong. I vote for keeping 32-bit time_t on nios2 and fixing
-it along with arm32 and x86-32 and the others.
+I understand your motivation since it will allow you to not have to
+maintain a patch-set for your downstream DTS changes but I would like
+to ask you the opposite question. What's the benefit for the kernel
+community to keep in a mainline DTS a bunch of device nodes with DT
+bindings that have not been neither discussed nor documented?
 
-Presumably this is not a huge problem for you as I expect it's
-easier for you to do another ABI change in user space when we get
-there: once we have support for 64-bit time64_t in the kernel, you
-can change your toolchains to default to that in user space and
-rebuild everything. This is not something we can easily do in x86.
+Developers doing a board bring-up usually use the DTS in mainline as a
+reference for their boards and having non-documented/agreed DT binding
+on the upstream DTS will only bring confusion and frustration to them
+IMHO.
 
-	Arnd
+We already have some issues with Device Trees (bindings that broke
+backward compatibility, drivers implementing custom DT binding instead
+of using standard ones, bindings that don't really reflect the actual
+H/W, etc), please don't make this even more complicated to developers.
+
+Thanks a lot and best regards,
+Javier
