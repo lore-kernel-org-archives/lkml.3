@@ -1,159 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760509AbaGRHq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 03:46:29 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:36707 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbaGRHq1 (ORCPT
+	id S1756379AbaGRHui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 03:50:38 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:13474 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaGRHuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 03:46:27 -0400
-Date: Fri, 18 Jul 2014 16:46:21 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 05/13] thermal: rcar: Document SoC-specific bindings
-Message-ID: <20140718074619.GA12613@verge.net.au>
-References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
- <1404908623-909-6-git-send-email-geert+renesas@glider.be>
- <20140711091358.GK12420@verge.net.au>
- <1405435735.28592.50.camel@rzhang1-toshiba>
- <87mwcakpzw.wl%kuninori.morimoto.gx@renesas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mwcakpzw.wl%kuninori.morimoto.gx@renesas.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 18 Jul 2014 03:50:37 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-f0-53c8d1cab510
+Message-id: <53C8D1CA.9070102@samsung.com>
+Date: Fri, 18 Jul 2014 09:50:34 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?B?J+q5gOykgOyImCc=?= <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>
+Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+References: <53C8C290.90503@lge.com>
+In-reply-to: <53C8C290.90503@lge.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xa7qnLp4INri7Qtlizvo1bBYfr11g
+	t3jW9IXR4sK0hcwWqzf5Wqzsbmaz2N45g93i8q45bBb31vxntfh9sJPdYsHxFlaLZV/fs1uc
+	/3uc1YHX4/Cb98wel/t6mTx6935l9di0qpPNY9OnSeweXW+vMHmcmPGbxWPdn1dMHp83yXls
+	evKWKYArissmJTUnsyy1SN8ugStj2ROxgoeyFXeWTmZuYOwV72Lk5JAQMJF4+HgmM4QtJnHh
+	3nq2LkYuDiGBpYwSR6dPY4dwPjFKPF76lQWkildAS2LulOOMIDaLgKrEl+5lYHE2AUOJrrdd
+	bCC2qECMxJnez8wQ9YISPybfYwEZJCJwllGi81wjWBGzwAImiROHs0FsYQFfiSc9h8GGCgmo
+	SEzf8YcJxOYEWvB42gGoejOJRy3rmCFseYnNa94yT2AUmIVkxywkZbOQlC1gZF7FKJpamlxQ
+	nJSea6RXnJhbXJqXrpecn7uJERJTX3cwLj1mdYhRgINRiYd3gcmJYCHWxLLiytxDjBIczEoi
+	vNn3jwcL8aYkVlalFuXHF5XmpBYfYmTi4JRqYHTax97z1U31lk+e56Nte3gLJuXsZ7RsEHA5
+	ta/kwIInN2Jdrz5xUTVo21UZcnD/oazTYpIdk21/my4p92JIetwqmLH1jsD0o46/Uh2fO0V+
+	FBJTK2c9WS+ZdutHsrXIywKVda4JpY95heO12VU5Sr6Zn/qUcMSPdYZV6FHfaUE1fyI6DyRt
+	VWIpzkg01GIuKk4EAHQGaOmHAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 07:16:06PM -0700, Kuninori Morimoto wrote:
-> 
-> Hi
-> 
-> > > > The documentation only mentioned the generic fallback compatible property.
-> > > > Add the missing SoC-specific compatible properties, some of which are
-> > > > already in use.
-> > > > 
-> > > > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> > > > Cc: Zhang Rui <rui.zhang@intel.com>
-> > > > Cc: Eduardo Valentin <eduardo.valentin@ti.com>
-> > > > Cc: linux-pm@vger.kernel.org
-> > > 
-> > > Acked-by: Simon Horman <horms+renesas@verge.net.au>
-> > 
-> > Kuninori,
-> > 
-> > what' your opinion of this patch?
-> > 
-> > thanks,
-> > rui
-> > > 
-> > > > ---
-> > > >  .../devicetree/bindings/thermal/rcar-thermal.txt       | 18 ++++++++++++------
-> > > >  1 file changed, 12 insertions(+), 6 deletions(-)
-> > > > 
-> > > > diff --git a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
-> > > > index 28ef498a66e5..0ef00be44b01 100644
-> > > > --- a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
-> > > > +++ b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
-> > > > @@ -1,7 +1,13 @@
-> > > >  * Renesas R-Car Thermal
-> > > >  
-> > > >  Required properties:
-> > > > -- compatible		: "renesas,rcar-thermal"
-> > > > +- compatible		: "renesas,thermal-<soctype>", "renesas,rcar-thermal"
-> > > > +			  as fallback.
-> > > > +			  Examples with soctypes are:
-> > > > +			    - "renesas,thermal-r8a73a4" (R-Mobile AP6)
-> > > > +			    - "renesas,thermal-r8a7779" (R-Car H1)
-> > > > +			    - "renesas,thermal-r8a7790" (R-Car H2)
-> > > > +			    - "renesas,thermal-r8a7791" (R-Car M2)
-> > > >  - reg			: Address range of the thermal registers.
-> > > >  			  The 1st reg will be recognized as common register
-> > > >  			  if it has "interrupts".
-> > > > @@ -12,18 +18,18 @@ Option properties:
-> > > >  
-> > > >  Example (non interrupt support):
-> > > >  
-> > > > -thermal@e61f0100 {
-> > > > -	compatible = "renesas,rcar-thermal";
-> > > > -	reg = <0xe61f0100 0x38>;
-> > > > +thermal@ffc48000 {
-> > > > +	compatible = "renesas,thermal-r8a7779", "renesas,rcar-thermal";
-> > > > +	reg = <0xffc48000 0x38>;
-> > > >  };
-> > > >  
-> > > >  Example (interrupt support):
-> > > >  
-> > > >  thermal@e61f0000 {
-> > > > -	compatible = "renesas,rcar-thermal";
-> > > > +	compatible = "renesas,thermal-r8a73a4", "renesas,rcar-thermal";
-> > > >  	reg = <0xe61f0000 0x14
-> > > >  		0xe61f0100 0x38
-> > > >  		0xe61f0200 0x38
-> > > >  		0xe61f0300 0x38>;
-> > > > -	interrupts = <0 69 4>;
-> > > > +	interrupts = <0 69 IRQ_TYPE_LEVEL_HIGH>;
-> > > >  };
-> 
-> This patch and [12/13] are adding SoC-specific compatible name.
-> Of course we don't know future request,
-> and, adding SoC-specific compatible name for
-> fallbacking is nice safety for us.
-> So, I don't have strong objection about it.
-> 
-> But, thermal driver side do nothing for each
-> SoC-specific compatible name at this point.
-> This means
-> 
->  -> There is no trouble in driver/SoC
->  -> Add new (and not used) compatible name
->  -> Nothing happen in driver/SoC
-> 
-> My questions are...
->  1) How to verify this patch ?
->  2) Do we need to update example SoC "specific name" list in rcar-thermal.txt.
->     Few example codes are very enough ?
+Hello,
 
-Hi Morimoto-san,
+On 2014-07-18 08:45, Gioh Kim wrote:
+> For page migration of CMA, buffer-heads of lru should be dropped.
+> Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
+>
+> I have two solution to drop bhs.
+> One is invalidating entire lru.
+> Another is searching the lru and dropping only one bh that Laura proposed
+> at https://lkml.org/lkml/2012/8/31/313.
+>
+> I'm not sure which has better performance.
+> So I did performance test on my cortex-a7 platform with Lmbench
+> that has "File & VM system latencies" test.
+> I am attaching the results.
+> The first line is of invalidating entire lru and the second is dropping selected bh.
+>
+> File & VM system latencies in microseconds - smaller is better
+> -------------------------------------------------------------------------------
+> Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+>                          Create Delete Create Delete Latency Fault  Fault  selct
+> --------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+> 10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
+> 10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
+>
+>
+> I tried several times but the result tells that they are the same under 1% gap
+> except Protection Fault.
+> But the latency of Protection Fault is very small and I think it has little effect.
+>
+> Therefore we can choose anything but I choose invalidating entire lru.
+> The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
+> So I think inserting codes in drop_buffers() can affect the system.
+> And also we cannot distinguish migration type in drop_buffers().
+>
+> In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
+> I think alloc_contig_range() is proper to deal with bh like following patch.
+>
+> Laura, can I have you name on Acked-by line?
+> Please let me represent my thanks.
+>
+> Thanks for any feedback.
+>
+> ------------------------------- 8< ----------------------------------
+>
+> >From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
+> From: Gioh Kim <gioh.kim@lge.com>
+> Date: Fri, 18 Jul 2014 13:40:01 +0900
+> Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+>
+> The bh must be free to migrate a page at which bh is mapped.
+> The reference count of bh is increased when it is installed
+> into lru so that the bh of lru must be freed before migrating the page.
+>
+> This frees every bh of lru. We could free only bh of migrating page.
+> But searching lru costs more than invalidating entire lru.
+>
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> Acked-by: Laura Abbott <lauraa@codeaurora.org>
+> ---
+>   mm/page_alloc.c |    3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index b99643d4..3b474e0 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+>          if (ret)
+>                  return ret;
+>
+> +       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
 
-I believe that the approach taken with this patch is similar to the
-approach that has been taken for several other drivers used by Renesas
-SoCs. The implication of this approach is:
+I'm not sure if it really makes sense to check the migratetype here. 
+This check
+doesn't add any new information to the code and make false impression 
+that this
+function can be called for other migratetypes than CMA or MOVABLE. Even 
+if so,
+then invalidating bh_lrus unconditionally will make more sense, IMHO.
 
-1. That the (in this case thermal) IP on the SoC's listed is known
-   to work with the driver using the generic (in this case
-   renesas,rcar-thermal) compatibility string.
+> +               invalidate_bh_lrus();
+> +
+>          ret = __alloc_contig_migrate_range(&cc, start, end);
+>          if (ret)
+>                  goto done;
+> --
+> 1.7.9.5
+>
 
-2. That if some incompatibility is subsequently found such that the
-   IP on SoC does function correctly using the generic compatibility
-   string or some new feature is to be enabled which is not generic
-   then it the driver should be updated with code that is triggered
-   by the SoC-specific compat string.
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-3. That Soc dts(i) files should list the more specific SoC compat string
-   followed bu the generic compat string. In this way so long as the
-   driver only matches on the generic compat string it will be used. But
-   if the driver is updated match on the SoC-specific compat string
-   then it will be used instead. In this way dtbs should be forwards
-   compatible with driver updates.
-
-   I believe that this series includes patches to update the relevant
-   dtsi files accordingly.
-
-In relation to verification, I believe all the SoCs listed in this patch
-are known to work with the generic compat string. And they should continue
-to work with this change because its only an documentation change. In the
-future, if a SoC specific compat string is added to the driver code then
-verification would need to occur.
-
->From my point of view the documentation in rcar-thermal.txt is consistent
-with the documentation for other drivers that use this binding scheme
-(at least the ones that are documented :). I would not have any problems
-examples but I don't think its entirely necessary.
