@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946117AbaGRVGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:06:37 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:39674 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946095AbaGRVGf (ORCPT
+	id S1946136AbaGRVGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:06:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45790 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946095AbaGRVGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:06:35 -0400
-Date: Fri, 18 Jul 2014 23:06:31 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] asm-generic/io.h: Implement generic
- {read,write}s*()
-Message-ID: <20140718210631.GA22109@ravnborg.org>
-References: <1405508484-18303-1-git-send-email-thierry.reding@gmail.com>
- <20140718205953.GA21964@ravnborg.org>
+	Fri, 18 Jul 2014 17:06:43 -0400
+Date: Fri, 18 Jul 2014 14:06:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: devtest - new make target for build all and run
+ tests
+Message-ID: <20140718210642.GA11185@kroah.com>
+References: <1405716274-24420-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140718205953.GA21964@ravnborg.org>
+In-Reply-To: <1405716274-24420-1-git-send-email-shuah.kh@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 18, 2014 at 02:44:34PM -0600, Shuah Khan wrote:
+> Add a new devtest make target to enable developer testing. This
+> new target does full build (make all) and then runs selftests.
 > 
-> All these things are not introduced by your patch but now that
-> you show some love and care for this file maybe we could take
-> the next step and bring more order to the current semi chaos?
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 
-And I just noticed...
+Nice to see this.
 
-These are never used - and only defined a few places:
-#define inb_p(addr)     inb(addr)
-#define inw_p(addr)     inw(addr)
-#define inl_p(addr)     inl(addr)
-#define outb_p(x, addr) outb((x), (addr))
-#define outw_p(x, addr) outw((x), (addr))
-#define outl_p(x, addr) outl((x), (addr))
-
-Likewise for these:
-#define insb_p(port,to,len)     insb(port,to,len)
-#define insw_p(port,to,len)     insw(port,to,len)
-#define insl_p(port,to,len)     insl(port,to,len)
-
-#define outsb_p(port,from,len)  outsb(port,from,len)
-#define outsw_p(port,from,len)  outsw(port,from,len)
-#define outsl_p(port,from,len)  outsl(port,from,len)
-
-
-
-This set:
-#define inb_p(addr)     inb(addr)
-#define inw_p(addr)     inw(addr)
-#define inl_p(addr)     inl(addr)
-#define outb_p(x, addr) outb((x), (addr))
-#define outw_p(x, addr) outw((x), (addr))
-#define outl_p(x, addr) outl((x), (addr))
-
-Should have a comment that say they are deprecated.
-Especially the "b" variants still have many users.
-
-	Sam
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
