@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761744AbaGRNJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:09:05 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17421 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761723AbaGRNJB (ORCPT
+	id S1761023AbaGROCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:02:18 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:57859 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756335AbaGROCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:01 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Jan Kara <jack@suse.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 049/170] reiserfs: call truncate_setsize under tailpack mutex
-Date: Fri, 18 Jul 2014 14:10:54 +0200
-Message-Id: <a4424b76ff576642a98409dd587631dd34891e62.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 10:02:17 -0400
+Message-ID: <53C928EA.4000800@linaro.org>
+Date: Fri, 18 Jul 2014 09:02:18 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>
+CC: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/6] printk: insert newline in devkmsg_read()
+References: <1405606151-19875-1-git-send-email-elder@linaro.org> <1405606151-19875-6-git-send-email-elder@linaro.org> <20140718114506.GA6774@pathway.suse.cz>
+In-Reply-To: <20140718114506.GA6774@pathway.suse.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+On 07/18/2014 06:45 AM, Petr Mládek wrote:
+> On Thu 2014-07-17 09:09:10, Alex Elder wrote:
+>> If a log record has LOG_PREFIX set, its predecessor record should be
+>> terminated if it was marked LOG_CONT.  In devkmsg_read(), this
+>> condition was being ignored, which would lead to such records
+>> showing up combined when reading /dev/kmsg.  Fix this oversight.
+>>
+>> Reported-by: Petr Mládek <pmladek@suse.cz>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+>> ---
+>>  kernel/printk/printk.c | 6 +++++-
+>>  1 file changed, 5 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+>> index e5ee1cb..3174ba9 100644
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
+>> @@ -575,6 +575,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+>>  	char cont;
+>>  	size_t len;
+>>  	ssize_t ret;
+>> +	bool insert_newline;
+>>  
+>>  	if (!user)
+>>  		return -EBADF;
+>> @@ -626,7 +627,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+>>  	else
+>>  		cont = '-';
+>>  
+>> -	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+>> +	/* Insert a newline if we're terminating the previous record
+>> early */
+> 
+> More correct description would be:
+> 
+> 	/* Insert a newline if the previous line was not terminated properly */
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I will change it as you suggest.
 
-===============
+> 
+>> +	insert_newline = (user->prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
+>> +	len = sprintf(user->buf, "%s%u,%llu,%llu,%c;",
+>> +		      insert_newline ? "\n" : "",
+>>  		      (msg->facility << 3) | msg->level,
+>>  		      user->seq, ts_usec, cont);
+>>  	user->prev = msg->flags;
+> 
+> Please, do similar change also in msg_print_text() that would fix also
+> syslog(). Note that syslog is the place where we stopped to disable
+> prefix when there was continuous line before.
 
-commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
+I will do this, as you will see in v3 which I plan to post in a
+few hours.  (Note that this touches a spot where I have yet another
+minor bug fix that I have not yet posted...  Oh well.)
 
-Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
-truncates serialized on i_mutex. They mostly still do, with the exception
-of reiserfs_file_release. That blocks out other writers via the tailpack
-mutex and the inode openers counter adjusted in reiserfs_file_open.
+					-Alex
 
-However, NFS will call reiserfs_setattr without having called ->open, so
-we end up with a race when nfs is calling ->setattr while another
-process is releasing the file. Ultimately, it triggers the
-BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
-
-The solution is to pull the lock into reiserfs_setattr to encompass the
-truncate_setsize call as well.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/reiserfs/inode.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index ad62bdbb451e..1e4cf9d73130 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3220,8 +3220,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
- 	    attr->ia_size != i_size_read(inode)) {
- 		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (!error) {
-+			/*
-+			 * Could race against reiserfs_file_release
-+			 * if called from NFS, so take tailpack mutex.
-+			 */
-+			mutex_lock(&REISERFS_I(inode)->tailpack);
- 			truncate_setsize(inode, attr->ia_size);
--			reiserfs_vfs_truncate_file(inode);
-+			reiserfs_truncate_file(inode, 1);
-+			mutex_unlock(&REISERFS_I(inode)->tailpack);
- 		}
- 	}
- 
--- 
-2.0.0
+> Best Regards.
+> Petr
+> 
 
