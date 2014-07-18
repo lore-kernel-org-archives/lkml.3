@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933873AbaGRFU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 01:20:59 -0400
+	id S932739AbaGRFUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 01:20:35 -0400
 Received: from relais.videotron.ca ([24.201.245.36]:62580 "EHLO
 	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932868AbaGRFUg (ORCPT
+	with ESMTP id S1760193AbaGRFUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:20:36 -0400
+	Fri, 18 Jul 2014 01:20:34 -0400
 Content-transfer-encoding: 7BIT
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
@@ -15,100 +15,30 @@ To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
         Catalin Marinas <catalin.marinas@arm.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 4/4] (RFC) X86: add IPI tracepoints
-Date: Fri, 18 Jul 2014 01:18:55 -0400
-Message-id: <1405660735-13408-5-git-send-email-nicolas.pitre@linaro.org>
+Subject: [PATCH 0/4] basic IPI tracing
+Date: Fri, 18 Jul 2014 01:18:51 -0400
+Message-id: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
 X-Mailer: git-send-email 1.8.4.108.g55ea5f6
-In-reply-to: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
-References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On X86 there are already tracepoints for IRQ vectors through which IPIs
-are handled.  However this is highly X86 specific, and the IPI signaling
-is not currently traced.
+Part of the energy aware scheduler work is concerned by test and
+measurement tools such as idlestat[1].  This relies on the ability to
+trace wake-up events, mainly IRQs and IPIs.
 
-This is an attempt at adding generic IPI tracepoints to X86.
+While IRQs are already well instrumented with tracepoints, IPIs are rather
+lacking on that front, and completely invisible on ARM.
 
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
----
- arch/x86/kernel/smp.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+This series defines generic IPI tracepoints and adds them to ARM and
+ARM64. An attempt at adding them to X86 is also included for comments.
 
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index be8e1bde07..e154d176cf 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -31,6 +31,12 @@
- #include <asm/apic.h>
- #include <asm/nmi.h>
- #include <asm/trace/irq_vectors.h>
-+
-+#define CREATE_TRACE_POINTS
-+#undef TRACE_INCLUDE_PATH
-+#undef TRACE_INCLUDE_FILE
-+#include <trace/events/ipi.h>
-+
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -124,11 +130,13 @@ static void native_smp_send_reschedule(int cpu)
- 		WARN_ON(1);
- 		return;
- 	}
-+	trace_ipi_raise(cpumask_of(cpu), tracepoint_string("RESCHEDULE"));
- 	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
- }
- 
- void native_send_call_func_single_ipi(int cpu)
- {
-+	trace_ipi_raise(cpumask_of(cpu), tracepoint_string("CALL_FUNCTION_SINGLE"));
- 	apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
- }
- 
-@@ -136,6 +144,8 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- {
- 	cpumask_var_t allbutself;
- 
-+	trace_ipi_raise(mask, tracepoint_string("CALL_FUNCTION"));
-+
- 	if (!alloc_cpumask_var(&allbutself, GFP_ATOMIC)) {
- 		apic->send_IPI_mask(mask, CALL_FUNCTION_VECTOR);
- 		return;
-@@ -252,8 +262,10 @@ finish:
-  */
- static inline void __smp_reschedule_interrupt(void)
- {
-+	trace_ipi_entry(tracepoint_string("RESCHEDULE"));
- 	inc_irq_stat(irq_resched_count);
- 	scheduler_ipi();
-+	trace_ipi_exit(tracepoint_string("RESCHEDULE"));
- }
- 
- __visible void smp_reschedule_interrupt(struct pt_regs *regs)
-@@ -291,8 +303,10 @@ __visible void smp_trace_reschedule_interrupt(struct pt_regs *regs)
- 
- static inline void __smp_call_function_interrupt(void)
- {
-+	trace_ipi_entry(tracepoint_string("CALL_FUNCTION"));
- 	generic_smp_call_function_interrupt();
- 	inc_irq_stat(irq_call_count);
-+	trace_ipi_exit(tracepoint_string("CALL_FUNCTION"));
- }
- 
- __visible void smp_call_function_interrupt(struct pt_regs *regs)
-@@ -313,8 +327,10 @@ __visible void smp_trace_call_function_interrupt(struct pt_regs *regs)
- 
- static inline void __smp_call_function_single_interrupt(void)
- {
-+	trace_ipi_entry(tracepoint_string("CALL_FUNCTION_SINGLE"));
- 	generic_smp_call_function_single_interrupt();
- 	inc_irq_stat(irq_call_count);
-+	trace_ipi_exit(tracepoint_string("CALL_FUNCTION_SINGLE"));
- }
- 
- __visible void smp_call_function_single_interrupt(struct pt_regs *regs)
--- 
-1.8.4.108.g55ea5f6
+[1] https://wiki.linaro.org/WorkingGroups/PowerManagement/Resources/Tools/Idlestat
 
+diffstat:
+
+ arch/arm/kernel/smp.c      | 72 ++++++++++++++++++++------------
+ arch/arm64/kernel/smp.c    | 67 +++++++++++++++++++-----------
+ arch/x86/kernel/smp.c      | 16 ++++++++
+ include/trace/events/ipi.h | 89 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 192 insertions(+), 52 deletions(-)
