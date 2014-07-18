@@ -1,116 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762336AbaGRN4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:56:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30404 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762317AbaGRN4j (ORCPT
+	id S1762358AbaGRN44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:56:56 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17453 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761325AbaGRNJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:56:39 -0400
-Date: Fri, 18 Jul 2014 09:56:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/4] xen PVonHVM: use E820_Reserved area for
- shared_info
-Message-ID: <20140718135627.GF24044@laptop.dumpdata.com>
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
- <1405431640-649-2-git-send-email-vkuznets@redhat.com>
- <20140715150652.GN3403@laptop.dumpdata.com>
- <87vbqytyp6.fsf@vitty.brq.redhat.com>
- <20140715155045.GB7792@laptop.dumpdata.com>
- <871ttjorjp.fsf@vitty.brq.redhat.com>
+	Fri, 18 Jul 2014 09:09:42 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 119/170] mm: page_alloc: fix CMA area initialisation when pageblock > MAX_ORDER
+Date: Fri, 18 Jul 2014 14:12:04 +0200
+Message-Id: <842d2aecf2d282bfd42372a1d8f9b6ce2701b637.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871ttjorjp.fsf@vitty.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 01:05:46PM +0200, Vitaly Kuznetsov wrote:
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-> 
-> > On Tue, Jul 15, 2014 at 05:43:17PM +0200, Vitaly Kuznetsov wrote:
-> >> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-> >> 
-> >> > On Tue, Jul 15, 2014 at 03:40:37PM +0200, Vitaly Kuznetsov wrote:
-> >> >> From: Olaf Hering <olaf@aepfle.de>
-> >> >> 
-> >> >> This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
-> >> >> ("xen PVonHVM: move shared_info to MMIO before kexec").
-> >> >> 
-> >> >> Currently kexec in a PVonHVM guest fails with a triple fault because the
-> >> >> new kernel overwrites the shared info page. The exact failure depends on
-> >> >> the size of the kernel image. This patch moves the pfn from RAM into an
-> >> >> E820 reserved memory area.
-> >> >> 
-> >> >> The pfn containing the shared_info is located somewhere in RAM. This will
-> >> >> cause trouble if the current kernel is doing a kexec boot into a new
-> >> >> kernel. The new kernel (and its startup code) can not know where the pfn
-> >> >> is, so it can not reserve the page. The hypervisor will continue to update
-> >> >> the pfn, and as a result memory corruption occours in the new kernel.
-> >> >> 
-> >> >> The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
-> >> >> E820 map. Within that range newer toolstacks (4.3+) will keep 1MB
-> >> >> starting from FE700000 as reserved for guest use. Older Xen4 toolstacks
-> >> >> will usually not allocate areas up to FE700000, so FE700000 is expected
-> >> >> to work also with older toolstacks.
-> >> >> 
-> >> >> In Xen3 there is no reserved area at a fixed location. If the guest is
-> >> >> started on such old hosts the shared_info page will be placed in RAM. As
-> >> >> a result kexec can not be used.
-> >> >
-> >> > So this looks right, the one thing that we really need to check 
-> >> > is e9daff24a266307943457086533041bd971d0ef9
-> >> >
-> >> >    This reverts commit 9d02b43dee0d7fb18dfb13a00915550b1a3daa9f.
-> >> >
-> >> >     We are doing this b/c on 32-bit PVonHVM with older hypervisors
-> >> >     (Xen 4.1) it ends up bothing up the start_info. This is bad b/c
-> >> >     we use it for the time keeping, and the timekeeping code loops
-> >> >     forever - as the version field never changes. Olaf says to
-> >> >     revert it, so lets do that.
-> >> >
-> >> > Could you kindly test that the migration on 32-bit PVHVM guests
-> >> > on older hypervisors works?
-> >> >
-> >> 
-> >> Sure, will do! Was there anything special about the setup or any 32-bit
-> >> pvhvm guest migration (on 64-bit hypervisor I suppose) would fail? I can
-> >> try checking both current and old versions to make sure the issue was
-> >> acutually fixed.
-> >
-> > Nothing fancy (well, it was SMP, so 4 CPUs). I did the 'save'/'restore' and the
-> > guest would not restore properly.
-> >
-> 
-> The symptoms you saw were: after the resume guest appears to be frozen,
-> all vcpus except for the first one spin at 100%? I was able to reproduce
+From: Michal Nazarewicz <mina86@mina86.com>
 
-Yes, that is it.
-> that on old patch version and everything works fine with your fix
-> (calling xen_hvm_set_shared_info() in addition to
-> xen_hvm_connect_shared_info() on resume). We're probably safe to apply
-> it now, thanks!
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Woot!  Could you include that tidbit of information in
-the commit please?
+===============
 
-> 
-> However I'd like to suggest we remove '__init' from
-> xen_hvm_set_shared_info() as now we call it on resume.
+commit dc78327c0ea7da5186d8cbc1647bd6088c5c9fa5 upstream.
 
-Good idea.
+With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
+the following is triggered at early boot:
 
-Lets wait until Stefano responds (for the MSI PIRQ one), and
-if he does not have anything special to say, then repost the
-whole patchset including this tiny __init fix and the updated
-comment?
+  SMP: Total of 8 processors activated.
+  devtmpfs: initialized
+  Unable to handle kernel NULL pointer dereference at virtual address 00000008
+  pgd = fffffe0000050000
+  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
+  Internal error: Oops: 96000006 [#1] SMP
+  Modules linked in:
+  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
+  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
+  PC is at __list_add+0x10/0xd4
+  LR is at free_one_page+0x270/0x638
+  ...
+  Call trace:
+    __list_add+0x10/0xd4
+    free_one_page+0x26c/0x638
+    __free_pages_ok.part.52+0x84/0xbc
+    __free_pages+0x74/0xbc
+    init_cma_reserved_pageblock+0xe8/0x104
+    cma_init_reserved_areas+0x190/0x1e4
+    do_one_initcall+0xc4/0x154
+    kernel_init_freeable+0x204/0x2a8
+    kernel_init+0xc/0xd4
+
+This happens because init_cma_reserved_pageblock() calls
+__free_one_page() with pageblock_order as page order but it is bigger
+than MAX_ORDER.  This in turn causes accesses past zone->free_list[].
+
+Fix the problem by changing init_cma_reserved_pageblock() such that it
+splits pageblock into individual MAX_ORDER pages if pageblock is bigger
+than a MAX_ORDER page.
+
+In cases where !CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which is all
+architectures expect for ia64, powerpc and tile at the moment, the
+âpageblock_order > MAX_ORDERâ condition will be optimised out since both
+sides of the operator are constants.  In cases where pageblock size is
+variable, the performance degradation should not be significant anyway
+since init_cma_reserved_pageblock() is called only at boot time at most
+MAX_CMA_AREAS times which by default is eight.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Reported-by: Mark Salter <msalter@redhat.com>
+Tested-by: Mark Salter <msalter@redhat.com>
+Tested-by: Christopher Covington <cov@codeaurora.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ mm/page_alloc.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 83aaa49bcba7..6e0a9cf8d02a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -785,9 +785,21 @@ void __init init_cma_reserved_pageblock(struct page *page)
+ 		set_page_count(p, 0);
+ 	} while (++p, --i);
+ 
+-	set_page_refcounted(page);
+ 	set_pageblock_migratetype(page, MIGRATE_CMA);
+-	__free_pages(page, pageblock_order);
++
++	if (pageblock_order >= MAX_ORDER) {
++		i = pageblock_nr_pages;
++		p = page;
++		do {
++			set_page_refcounted(p);
++			__free_pages(p, MAX_ORDER - 1);
++			p += MAX_ORDER_NR_PAGES;
++		} while (i -= MAX_ORDER_NR_PAGES);
++	} else {
++		set_page_refcounted(page);
++		__free_pages(page, pageblock_order);
++	}
++
+ 	adjust_managed_page_count(page, pageblock_nr_pages);
+ }
+ #endif
+-- 
+2.0.0
 
