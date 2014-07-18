@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759382AbaGRGyt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:54:49 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:65230 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758919AbaGRGyr (ORCPT
+	id S933976AbaGRGzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:55:06 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:64603 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759400AbaGRGzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:54:47 -0400
-Date: Fri, 18 Jul 2014 08:54:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, writeback: prevent race when calculating dirty limits
-Message-ID: <20140718065444.GA21453@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1407161733200.23892@chino.kir.corp.google.com>
+	Fri, 18 Jul 2014 02:55:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407161733200.23892@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.10.1407171555580.24854@nanos>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<1405413956-2772-13-git-send-email-lftan@altera.com>
+	<alpine.DEB.2.10.1407151147540.24854@nanos>
+	<CAFiDJ58oEfFN5CgLZxqTLSiGfuxNH2t3OFAaSUWLJ_P_B_QRBQ@mail.gmail.com>
+	<alpine.DEB.2.10.1407171555580.24854@nanos>
+Date: Fri, 18 Jul 2014 14:55:01 +0800
+X-Google-Sender-Auth: zLUuzEE7O5Dz89UPHQXB3ZkHCxE
+Message-ID: <CAFiDJ5-U-Ce1kX59xEzAe9w8pbah=pZkO15pYNV_YgjQnEPkrw@mail.gmail.com>
+Subject: Re: [PATCH v2 12/29] nios2: Interrupt handling
+From: Ley Foon Tan <lftan@altera.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 16-07-14 17:36:49, David Rientjes wrote:
-> Setting vm_dirty_bytes and dirty_background_bytes is not protected by any 
-> serialization.
-> 
-> Therefore, it's possible for either variable to change value after the 
-> test in global_dirty_limits() to determine whether available_memory needs 
-> to be initialized or not.
-> 
-> Always ensure that available_memory is properly initialized.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: David Rientjes <rientjes@google.com>
+On Thu, Jul 17, 2014 at 9:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 17 Jul 2014, Ley Foon Tan wrote:
+>
+>> On Tue, Jul 15, 2014 at 5:51 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Tue, 15 Jul 2014, Ley Foon Tan wrote:
 
-Makes sense to me
-Acked-by: Michal Hocko <mhocko@suse.cz>
+>> >> +static void chip_unmask(struct irq_data *d)
+>> >> +{
+>> >> +     u32 ien;
+>> >> +     ien = RDCTL(CTL_IENABLE);
+>> >> +     ien |= (1 << d->hwirq);
+>> >> +     WRCTL(CTL_IENABLE, ien);
+>> >
+>> > So this is UP only, right?
+>> Yes, this is to enable one interrupt.
+>
+> The question was, whether this is always a UniProcessor machine.
+Yes, it is UP.
+>
+>> > Also why don't you cache the register content so spare the extra read
+>> > from the hardware?
+>> Need to make sure nobody modify the register if we cache the register content.
+>> Will keep as it is.
+>
+> Sigh.
+>
+> If this is a uniprocessor only design, then nothing can modify the
+> cached values as all these functions are always called with interrupts
+> disabled.
+>
+> If this should be SMP safe, then you'd need serialization of the
+> register access as well becasue the read/modify/write sequence is not
+> atomic.
+Okay, we can cache the value.
+Thanks.
 
-> ---
->  mm/page-writeback.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -261,14 +261,11 @@ static unsigned long global_dirtyable_memory(void)
->   */
->  void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
->  {
-> +	const unsigned long available_memory = global_dirtyable_memory();
->  	unsigned long background;
->  	unsigned long dirty;
-> -	unsigned long uninitialized_var(available_memory);
->  	struct task_struct *tsk;
->  
-> -	if (!vm_dirty_bytes || !dirty_background_bytes)
-> -		available_memory = global_dirtyable_memory();
-> -
->  	if (vm_dirty_bytes)
->  		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
->  	else
-
--- 
-Michal Hocko
-SUSE Labs
+Regards
+Ley Foon
