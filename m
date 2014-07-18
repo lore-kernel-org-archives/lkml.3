@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030544AbaGRNKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:10:30 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17496 "EHLO
+	id S1030607AbaGRNK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:10:58 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17518 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030524AbaGRNKY (ORCPT
+	by vger.kernel.org with ESMTP id S1030524AbaGRNKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:10:24 -0400
+	Fri, 18 Jul 2014 09:10:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sander Eikelenboom <linux@eikelenboom.it>,
-        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 124/170] ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while DEBUG not defined
-Date: Fri, 18 Jul 2014 14:12:09 +0200
-Message-Id: <1a1f70e6a5e3ee078abc55189f6d585644aab619.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 086/170] drm/radeon/cik: fix typo in EOP packet
+Date: Fri, 18 Jul 2014 14:11:31 +0200
+Message-Id: <74c6eb737eb3509c7ec23b98b84c7ac4d9eceb14.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,55 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sander Eikelenboom <linux@eikelenboom.it>
+From: Alex Deucher <alexander.deucher@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b7a7723513dc89f83d6df13206df55d4dc26e825 upstream.
+commit b397207b7475afa9df2f94541f978100ff1ea47e upstream.
 
-This (widely used) construction:
+Volatile bit was in the wrong location.  This bit is
+not used at the moment.
 
-if(printk_ratelimit())
-	dev_dbg()
-
-Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
-message below, even while the dev_dbg it is supposed to rate limit wouldn't
-print anything because DEBUG is not defined for this device.
-
-[  533.803964] retire_playback_urb: 852 callbacks suppressed
-[  538.807930] retire_playback_urb: 852 callbacks suppressed
-[  543.811897] retire_playback_urb: 852 callbacks suppressed
-[  548.815745] retire_playback_urb: 852 callbacks suppressed
-[  553.819826] retire_playback_urb: 852 callbacks suppressed
-
-So use dev_dbg_ratelimited() instead of this construction.
-
-Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/pcm.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/cikd.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
-index d59e0c1a3e20..98ca3540514f 100644
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -1491,9 +1491,9 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
- 	 * The error should be lower than 2ms since the estimate relies
- 	 * on two reads of a counter updated every ms.
- 	 */
--	if (printk_ratelimit() &&
--	    abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
--		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
-+	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
-+		dev_dbg_ratelimited(&subs->dev->dev,
-+			"delay: estimated %d, actual %d\n",
- 			est_delay, subs->last_delay);
- 
- 	if (!subs->running) {
+diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
+index 70e88498a1fd..9c8ef204a3cb 100644
+--- a/drivers/gpu/drm/radeon/cikd.h
++++ b/drivers/gpu/drm/radeon/cikd.h
+@@ -1695,12 +1695,12 @@
+ #define		EOP_TC_WB_ACTION_EN                     (1 << 15) /* L2 */
+ #define		EOP_TCL1_ACTION_EN                      (1 << 16)
+ #define		EOP_TC_ACTION_EN                        (1 << 17) /* L2 */
++#define		EOP_TCL2_VOLATILE                       (1 << 24)
+ #define		EOP_CACHE_POLICY(x)                     ((x) << 25)
+                 /* 0 - LRU
+ 		 * 1 - Stream
+ 		 * 2 - Bypass
+ 		 */
+-#define		EOP_TCL2_VOLATILE                       (1 << 27)
+ #define		DATA_SEL(x)                             ((x) << 29)
+                 /* 0 - discard
+ 		 * 1 - send low 32bit data
 -- 
 2.0.0
 
