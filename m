@@ -1,172 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762137AbaGRQ0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:26:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43448 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761787AbaGRQ0N (ORCPT
+	id S934945AbaGRQ3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:29:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46007 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756009AbaGRQ3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:26:13 -0400
-Date: Fri, 18 Jul 2014 17:18:03 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] ARM: dts: add CPU nodes for Exynos4 SoCs
-Message-ID: <20140718161803.GC16376@leverpostej>
-References: <1863399.9O2S91ZvEO@amdc1032>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1863399.9O2S91ZvEO@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Jul 2014 12:29:06 -0400
+Message-ID: <1405700934.605.31.camel@jarvis.lan>
+Subject: Re: [PATCH 0/25] Replace DEFINE_PCI_DEVICE_TABLE macro use
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Benoit Taine <benoit.taine@lip6.fr>
+Cc: linux-pci@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net, linux-hippi@sunsite.dk,
+        dri-devel@lists.freedesktop.org, linux-acenic@sunsite.dk,
+        wil6210@qca.qualcomm.com, platform-driver-x86@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-mips@linux-mips.org, users@rt2x00.serialmonkey.com,
+        linux-rdma@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        industrypack-devel@lists.sourceforge.net, linux-can@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-crypto@vger.kernel.org,
+        MPT-FusionLinux.pdl@avagotech.com, devel@linuxdriverproject.org,
+        xen-devel@lists.xenproject.org, linux-pcmcia@lists.infradead.org,
+        e1000-devel@lists.sourceforge.net
+Date: Fri, 18 Jul 2014 09:28:54 -0700
+In-Reply-To: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 05:00:02PM +0100, Bartlomiej Zolnierkiewicz wrote:
-> Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
-> when topology is read from DT") fixed GIC driver to filter cluster ID
-> from values returned by cpu_logical_map() for SoCs having registers
-> mapped without per-CPU banking making it is possible to add CPU nodes
-> for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
-> required by future changes adding initialization of cpuidle states in
-> Exynos cpuidle driver through DT.
-> 
-> Tested on Origen board (Exynos4210 SoC) and Trats2 (Exynos4412 SoC).
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
-> Based on next-20140717 branch of linux-next tree +
-> - [PATCH 2/6] ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
->   http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32811.html
-> - [PATCH] irqchip: gic: Fix core ID calculation when topology is read from DT
->   http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34277.html
-> 
->  arch/arm/boot/dts/exynos4210.dtsi | 17 +++++++++++++++++
->  arch/arm/boot/dts/exynos4212.dtsi | 17 +++++++++++++++++
->  arch/arm/boot/dts/exynos4412.dtsi | 29 +++++++++++++++++++++++++++++
->  3 files changed, 63 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-> index ee3001f..b99fc83 100644
-> --- a/arch/arm/boot/dts/exynos4210.dtsi
-> +++ b/arch/arm/boot/dts/exynos4210.dtsi
-> @@ -31,6 +31,23 @@
->  		pinctrl2 = &pinctrl_2;
->  	};
->  
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@0 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0x900>;
-> +		};
+On Fri, 2014-07-18 at 17:26 +0200, Benoit Taine wrote:
+> We should prefer `const struct pci_device_id` over
+> `DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
+> This issue was reported by checkpatch.
 
-Please match the unit-address with the reg (e.g. this should be
-cpu@900).
+What kernel coding style?  checkpatch isn't the arbiter of style, if
+that's the only problem.
 
-Please do this for all the other CPU nodes.
+The DEFINE_PCI macro was a well reasoned addition when it was added in
+2008.  The problem was most people were getting the definition wrong.
+When we converted away from CONFIG_HOTPLUG, having this DEFINE_ meant
+that only one place needed changing instead of hundreds for PCI tables.
 
-Thanks,
-Mark.
+The reason people were getting the PCI table wrong was mostly the init
+section specifiers which are now gone, but it has enough underlying
+utility (mostly constification) that I don't think we'd want to churn
+the kernel hugely to make a change to struct pci_table and then have to
+start detecting and fixing misuses.
 
-> +
-> +		cpu@1 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0x901>;
-> +		};
-> +	};
-> +
->  	sysram@02020000 {
->  		compatible = "mmio-sram";
->  		reg = <0x02020000 0x20000>;
-> diff --git a/arch/arm/boot/dts/exynos4212.dtsi b/arch/arm/boot/dts/exynos4212.dtsi
-> index 3c00e6e..484a2da 100644
-> --- a/arch/arm/boot/dts/exynos4212.dtsi
-> +++ b/arch/arm/boot/dts/exynos4212.dtsi
-> @@ -22,6 +22,23 @@
->  / {
->  	compatible = "samsung,exynos4212", "samsung,exynos4";
->  
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@0 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0xA00>;
-> +		};
-> +
-> +		cpu@1 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0xA01>;
-> +		};
-> +	};
-> +
->  	combiner: interrupt-controller@10440000 {
->  		samsung,combiner-nr = <18>;
->  	};
-> diff --git a/arch/arm/boot/dts/exynos4412.dtsi b/arch/arm/boot/dts/exynos4412.dtsi
-> index c42a3e1..89f4743 100644
-> --- a/arch/arm/boot/dts/exynos4412.dtsi
-> +++ b/arch/arm/boot/dts/exynos4412.dtsi
-> @@ -22,6 +22,35 @@
->  / {
->  	compatible = "samsung,exynos4412", "samsung,exynos4";
->  
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@0 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0xA00>;
-> +		};
-> +
-> +		cpu@1 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0xA01>;
-> +		};
-> +
-> +		cpu@2 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0xA02>;
-> +		};
-> +
-> +		cpu@3 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg = <0xA03>;
-> +		};
-> +	};
-> +
->  	combiner: interrupt-controller@10440000 {
->  		samsung,combiner-nr = <20>;
->  	};
-> -- 
-> 1.8.2.3
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+James
+
+
