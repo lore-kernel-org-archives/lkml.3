@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965673AbaGRQN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:13:58 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:45619 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932384AbaGRQN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:13:56 -0400
-Message-ID: <53C947C0.5020604@mm-sol.com>
-Date: Fri, 18 Jul 2014 19:13:52 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1761507AbaGRQQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:16:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45768 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaGRQQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 12:16:06 -0400
+Date: Fri, 18 Jul 2014 18:16:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bruno Wolff III <bruno@wolff.to>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140718161602.GH12054@laptop.lan>
+References: <20140717030947.GA17889@wolff.to>
+ <53C79013.1020808@arm.com>
+ <20140717090452.GH19379@twins.programming.kicks-ass.net>
+ <53C7B247.2070309@arm.com>
+ <20140717123502.GL19379@twins.programming.kicks-ass.net>
+ <20140718053449.GA2039@wolff.to>
+ <20140718101633.GP9918@twins.programming.kicks-ass.net>
+ <20140718130126.GA2401@wolff.to>
+ <20140718141648.GE20603@laptop.programming.kicks-ass.net>
+ <20140718145040.GG12054@laptop.lan>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [PATCH v2 0/4] Support for Qualcomm QPNP PMIC's
-References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com> <53C857DE.7030507@codeaurora.org>
-In-Reply-To: <53C857DE.7030507@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140718145040.GG12054@laptop.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 02:10 AM, Stephen Boyd wrote:
-> On 07/17/14 09:17, Stanimir Varbanov wrote:
->> Hello everyone,
->>
->> Here is the continuation of patch sets sent recently about Qualcomm
->> QPNP SPMI PMICs.
->>
->> The previous version of the patch set can be found at [1].
->>
->> Changes since v1:
->>  - removed completely custom *of* parser
->>  - renamed the mfd driver from qpnp-spmi to pm8xxx-spmi
->>  - now MFD_PM8XXX_SPMI Kconfig option depends on SPMI
->>
->> Removing of the custom *of* parser leads to that that the *reg* devicetree
->> property cannot exist and therefore cannot be parsed to get PMIC peripheral
->> resources. I took this step aside because no one from mfd drivers does this
->> parsing. This will lead to inconvenience in the peripheral drivers to define
->> internally the SPMI base addresses depending on the compatible property
->> i.e. PMIC version. 
+On Fri, Jul 18, 2014 at 04:50:40PM +0200, Peter Zijlstra wrote:
+> On Fri, Jul 18, 2014 at 04:16:48PM +0200, Peter Zijlstra wrote:
+> > On Fri, Jul 18, 2014 at 08:01:26AM -0500, Bruno Wolff III wrote:
+> > > build_sched_domain: cpu: 0 level: SMT cpu_map: 0-3 tl->mask: 0,2
+> > > [    0.254433] build_sched_domain: cpu: 0 level: MC cpu_map: 0-3 tl->mask: 0
+> > > [    0.254516] build_sched_domain: cpu: 0 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> > > [    0.254600] build_sched_domain: cpu: 1 level: SMT cpu_map: 0-3 tl->mask: 1,3
+> > > [    0.254683] build_sched_domain: cpu: 1 level: MC cpu_map: 0-3 tl->mask: 1
+> > > [    0.254766] build_sched_domain: cpu: 1 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> > > [    0.254850] build_sched_domain: cpu: 2 level: SMT cpu_map: 0-3 tl->mask: 0,2
+> > > [    0.254932] build_sched_domain: cpu: 2 level: MC cpu_map: 0-3 tl->mask: 2
+> > > [    0.255005] build_sched_domain: cpu: 2 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> > > [    0.255091] build_sched_domain: cpu: 3 level: SMT cpu_map: 0-3 tl->mask: 1,3
+> > > [    0.255176] build_sched_domain: cpu: 3 level: MC cpu_map: 0-3 tl->mask: 3
+> > > [    0.255260] build_sched_domain: cpu: 3 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> > 
+> > *blink*...
+> > 
+> > That's, shall we say, unexpected. Let me ponder that a bit. HPA any clue
+> > why a machine might report such a weird topology? AFAIK threads _always_
+> > share cache.  So how can cpu_coregroup_mask be a subset (instead of a
+> > superset) of topology_thread_cpumask?
+> > 
+> > Let me go stare at the x86 topology mask setup code.
 > 
-> We should teach the of platform layer to translate reg properties up
-> until the point that they can't be translated anymore. If they can't be
-> translated all the way back to cpu addresses we can make the resource
-> have IORESOURCE_REG instead of IORESOURCE_MEM and then said pmic
-> platform drivers can use platform_get_resource() with IORESOURCE_REG
-> instead of IORESOURCE_MEM to get the addresses.
-> 
+> Possibly something like so, but I'm not too sure. Anybody?
 
-I considered this as an option, if it is acceptable by OF maintainers it
-will be awesome.
+OK, Borislav says topoext is AMD only, so that's not the problem. In
+which case the problem must be that cpu_llc_id is wrong.
 
-Rob, Grant, is that feasible?
-
--- 
-regards,
-Stan
+This gets set in init_intel_cacheinfo() but that's hurting my brain for
+the moment. There's plenty P4 specific cruft in there though.
