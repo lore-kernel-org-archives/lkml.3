@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761316AbaGRJjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:39:33 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:55253 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761066AbaGRJja (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:39:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        ch.naveen@samsung.com, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, kgene.kim@samsung.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
-        t.figa@samsung.com, rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org
-Subject: Re: [PATCHv6 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and code clean
-Date: Fri, 18 Jul 2014 11:38:27 +0200
-Message-ID: <59765980.V0Hsx6tyKd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
+	id S1761339AbaGRJjx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:39:53 -0400
+Received: from mail1.skidata.com ([91.230.2.99]:38107 "EHLO mail1.skidata.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761234AbaGRJjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:39:51 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugEAAXryFOsEApK/2dsb2JhbABZg2BXBMRqh0eBH3aEMRM/KBQ0TgENBYhHCMN5EwSNO4IQhE0Fmx+HPpA1aoFF
+X-IPAS-Result: AugEAAXryFOsEApK/2dsb2JhbABZg2BXBMRqh0eBH3aEMRM/KBQ0TgENBYhHCMN5EwSNO4IQhE0Fmx+HPpA1aoFF
+Date: Fri, 18 Jul 2014 11:39:46 +0200
+From: Richard Leitner <richard.leitner@skidata.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [RFC] usb: gadget: serial: remove PREFIX macro
+Message-ID: <20140718113946.0e70c0cb@lxbuild.skidata.net>
+Organization: SKIDATA AG
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:jNnSoEbHlzmfSLEDh9P0sfEHpway0dW3NY+zr5Mck69
- bhVVx8O+G6FOffjAJ3mbkafj4YbdFeonHdUxIHOPiBtHAJGRyn
- V2RMQW+Lb5zNM/PFnbdEstpcodOJZPTLH7QDbpfSXZFoWkhvyG
- APqKq7Kp38C3voNbuqa3v+FeBKeAcpLYkH0wbE3tmWbCo9Yola
- ChKySBvGP7osDFRn8dPXWmBghT3h0cWADe8mvBU9my4mmaUBO2
- txdw9HMmq36q/TNJ3D7cimtQX8C4uhG/8APNd3USvLcatgDRPz
- jESddJnnaHK3FGZUy9tOyvKQRp6qfNgJsoRKknWV/SGPXLZrA5
- IK/PZxLlbyMGLyrCSjvs=
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.16.60.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 July 2014 14:59:42 Chanwoo Choi wrote:
-> This patchset support Exynos3250 ADC (Analog Digital Converter) because
-> Exynos3250 has additional special clock for ADC IP.
-> 
+Remove the ttyGS PREFIX macro from u_serial.c and replace all occurences with
+the hardcoded ttyGS string.
 
-by coincidence, I have just looked at the same driver in order to
-add support for s3c24xx and s3c64xx, so we can remove the plat-samsung
-adc framework they still use.  Those changes would naturally conflict
-with yours, but I think it makes sense for your patches to come first.
+This macro was mostly used in a few debug/warning messages and a lot of
+hardcoded ttyGS existed beneath. It may have been used for renaming the
+tty, but if done so most debug messages would have ignored this because
+of the hardcoded strings.
 
-I'll comment a bit more on the individual patches. I didn't have
-interest in them earlier, so I didn't comment so far.
+Due to the fact the usage of this PREFIX instead of the hardcoded strings
+in all debug calls would have resulted in a hard to read/grep code it
+is removed completely.
 
-Another aspect that came up is the touchscreen support. Right now,
-there is drivers/input/touchscreen/s3c2410_ts.c which is intimately
-tied to arch/arm/plat-samsung/adc.c. The best way forward (as discussed
-on IRC as few days ago) seems to be to integrate support for that into
-the exynos_adc driver. Can you comment on which parts actually support
-touchscreen? Did touchscreen support get dropped in the exynos hardware,
-or is the driver just missing at the moment?
+Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+---
+note: previous discussion was at https://lkml.org/lkml/2014/6/27/193
+---
+ drivers/usb/gadget/u_serial.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
-	Arnd
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index ad0aca8..7e7a6b0 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -55,11 +55,8 @@
+  * for a telephone or fax link.  And ttyGS2 might be something that just
+  * needs a simple byte stream interface for some messaging protocol that
+  * is managed in userspace ... OBEX, PTP, and MTP have been mentioned.
+- */
+-
+-#define PREFIX	"ttyGS"
+-
+-/*
++ *
++ *
+  * gserial is the lifecycle interface, used by USB functions
+  * gs_port is the I/O nexus, used by the tty driver
+  * tty_struct links to the tty/filesystem framework
+@@ -385,7 +382,7 @@ __acquires(&port->port_lock)
+ 		list_del(&req->list);
+ 		req->zero = (gs_buf_data_avail(&port->port_write_buf) == 0);
+ 
+-		pr_vdebug(PREFIX "%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
++		pr_vdebug("ttyGS%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
+ 				port->port_num, len, *((u8 *)req->buf),
+ 				*((u8 *)req->buf+1), *((u8 *)req->buf+2));
+ 
+@@ -503,12 +500,12 @@ static void gs_rx_push(unsigned long _port)
+ 		switch (req->status) {
+ 		case -ESHUTDOWN:
+ 			disconnect = true;
+-			pr_vdebug(PREFIX "%d: shutdown\n", port->port_num);
++			pr_vdebug("ttyGS%d: shutdown\n", port->port_num);
+ 			break;
+ 
+ 		default:
+ 			/* presumably a transient fault */
+-			pr_warning(PREFIX "%d: unexpected RX status %d\n",
++			pr_warn("ttyGS%d: unexpected RX status %d\n",
+ 					port->port_num, req->status);
+ 			/* FALLTHROUGH */
+ 		case 0:
+@@ -537,7 +534,7 @@ static void gs_rx_push(unsigned long _port)
+ 			if (count != size) {
+ 				/* stop pushing; TTY layer can't handle more */
+ 				port->n_read += count;
+-				pr_vdebug(PREFIX "%d: rx block %d/%d\n",
++				pr_vdebug("ttyGS%d: rx block %d/%d\n",
+ 						port->port_num,
+ 						count, req->actual);
+ 				break;
+@@ -569,7 +566,7 @@ static void gs_rx_push(unsigned long _port)
+ 			if (do_push)
+ 				tasklet_schedule(&port->push);
+ 			else
+-				pr_warning(PREFIX "%d: RX not scheduled?\n",
++				pr_warn("ttyGS%d: RX not scheduled?\n",
+ 					port->port_num);
+ 		}
+ 	}
+@@ -985,7 +982,7 @@ static void gs_unthrottle(struct tty_struct *tty)
+ 		 * read queue backs up enough we'll be NAKing OUT packets.
+ 		 */
+ 		tasklet_schedule(&port->push);
+-		pr_vdebug(PREFIX "%d: unthrottle\n", port->port_num);
++		pr_vdebug("ttyGS%d: unthrottle\n", port->port_num);
+ 	}
+ 	spin_unlock_irqrestore(&port->port_lock, flags);
+ }
+@@ -1295,7 +1292,7 @@ static int userial_init(void)
+ 		return -ENOMEM;
+ 
+ 	gs_tty_driver->driver_name = "g_serial";
+-	gs_tty_driver->name = PREFIX;
++	gs_tty_driver->name = "ttyGS";
+ 	/* uses dynamically assigned dev_t values */
+ 
+ 	gs_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
+-- 
+1.7.10.4
