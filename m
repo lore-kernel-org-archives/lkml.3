@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945978AbaGRN6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:58:06 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:42238 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161152AbaGRN6D (ORCPT
+	id S1762458AbaGRN54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:57:56 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63785 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762437AbaGRN5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:58:03 -0400
-Date: Fri, 18 Jul 2014 09:57:58 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH v10 0/8] ARM: berlin: add AHCI support
-Message-ID: <20140718135758.GB13012@htj.dyndns.org>
-References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
+	Fri, 18 Jul 2014 09:57:54 -0400
+Date: Fri, 18 Jul 2014 06:57:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.16-rc6
+Message-ID: <20140718135751.GB18432@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Hans who's now maintaining libahci-platform.)
 
-On Fri, Jul 18, 2014 at 02:29:59PM +0200, Antoine Ténart wrote:
-> Tejun, Kishon, Sebastian,
-> 
-> I looked into the AHCI framework to see how to map PHYs and ports
-> information. I see two ways of doing this:
->   - We can attach the ahci_port_priv to the ahci_host_priv structure,
->     but that would require quite a lot of changes since the
->     ahci_port_priv is initialized at the very end (in port_start()) and
->     because ahci_port_priv is currently retrieved from the ata_port
->     structure in libahci functions. We do want to parse the dt ports
->     early in the AHCI initialization to be able to generate the right
->     port_map mask. Tests would be needed to ensure nothing is broken.
->   - We can move the PHY handling to where the ports are handled, moving
->     PHYs from ahci_host_priv to ahci_port_priv. This also would require
->     to perform some tests as PHY operations would be moved from
->     libahci_platform to libahci.
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't get the last part.  Why would it have to be moved from
-libahci_platform to libahci?  Can't we break up the init steps so that
-PHY handling can be put inbetween?  The last time I suggested that,
-Hans seemed to agree.
+Hi Linus,
 
-> In both cases we do not have time to do this for the next release, as
-> the request popped up quite late.
-> 
-> So as of now:
->   - Either the series is merged as is and changes to the AHCI framework
->     can be made for 3.18, as it's not particularly linked to this
->     series.
->   - Or you really do not want it. Then that would be great if patches
->     1-2 and 7-8 could be merged so that we do not end up with this big
->     series going for yet another cycle... I think Kishon already took
->     patches 1-2.
+Please pull hwmon fixes for Linux 3.16-rc6 from signed tag:
 
-I don't wanna take in code which isn't in the shape that it should be.
-Things like this accumulate to become a large maintenance burden over
-time.  Sure, urgent things can slip in and then later be fixed up but
-who are gonna do that here?  You guys already seem to be under time
-pressure as it is.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-If you guys can figure something out with Hans regarding how to
-proceed on this, I'll be happy take the code as is.
+Thanks,
+Guenter
+------
 
-Thanks.
+The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
 
--- 
-tejun
+  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to de12d6f4b10b21854441f5242dcb29ea96181e58:
+
+  hwmon: (adt7470) Fix writes to temperature limit registers (2014-07-16 21:18:47 -0700)
+
+----------------------------------------------------------------
+More fallout from module tests and code inspection.
+
+Fixes to temperature limit write operations in adt7470 driver.
+Also, dashes are not allowed in hwmon 'name' attributes.
+Fix drivers where necessary.
+
+----------------------------------------------------------------
+Axel Lin (2):
+      hwmon: (da9052) Don't use dash in the name attribute
+      hwmon: (da9055) Don't use dash in the name attribute
+
+Guenter Roeck (1):
+      hwmon: (adt7470) Fix writes to temperature limit registers
+
+ drivers/hwmon/adt7470.c      | 6 +++---
+ drivers/hwmon/da9052-hwmon.c | 2 +-
+ drivers/hwmon/da9055-hwmon.c | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTySffAAoJEMsfJm/On5mBYvMP/2tSsN3lUKVuOuUFj//xaBix
+HH131fzj8sinMXiMrVe253IIbDDWwwsqY6TQxJLhAhL3C/opjzsJMSdwKntg7mzi
+OJgd3bJUgoqOb1iCVSzVXavJtZI+fMeNHscVJsZ4vEmMA0xVneZqY5dlS4Yso4Nu
+cXChwUAcLJSTwU1gScJqvxgRaUV5/dOV0qUgGnX2i4u87HBmfDeU9NETYFZgbR2h
+N213K+m8YQXSSw3SI1FTukyVVjoN+fi9PKlgliPEIcvMoSp0O4c1GGlvOdWCyIhh
+eNoL7uDjs+4dD5XyzXFZsrI7BQBnWftDsSsf7yngtpG9C1x/wrMGdlEtXu7PC1rp
+m87z9Uka8Fj9q1LazfbVjOkzldgDCvHyuLXeMGpDPI+tlM0A0ce8OMvkSD3fmSMF
+M+dW6I/AxYHmmcR5Qq9lqHzeAwetAxkKyYfJ3nigomPasFIHKvebgQIyWM/OFQH+
+Xkim3dL6ZMZe4KGVIkig78OKlQ41B0QGvQRLlav5CJFlw2Pi2LegUNYPnACl8LYs
+5r4ftOPMibN9vxSodcQP7dgeDhw9JangeYqw0UE2qKSlNAJg0Jy8rZoPZEcc4dPY
+wmees2kjdXHiTWn3Woxc+FFbEN/HgzqfQ/U0GkJPC1zJQNg8nFA1An7YwVv/J6hQ
+MCYOPMi8gE60o6pHIOB+
+=boB9
+-----END PGP SIGNATURE-----
+
+--huq684BweRXVnRxX--
