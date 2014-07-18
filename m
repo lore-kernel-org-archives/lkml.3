@@ -1,82 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030254AbaGRKNp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:13:45 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:41535 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932679AbaGRKNl (ORCPT
+	id S965430AbaGRKOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:14:05 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:35580 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965378AbaGRKNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:13:41 -0400
+	Fri, 18 Jul 2014 06:13:36 -0400
+Message-ID: <53C8F34D.9090503@gmail.com>
+Date: Fri, 18 Jul 2014 12:13:33 +0200
+From: Neil Armstrong <superna9999@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <59765980.V0Hsx6tyKd@wuerfel>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <59765980.V0Hsx6tyKd@wuerfel>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 18 Jul 2014 15:43:18 +0530
-Message-ID: <CAHfPSqBiDZXxSVaK3PHrGhDQxi4TU=szKA06Odm9yeB8a5rDFw@mail.gmail.com>
-Subject: Re: [PATCHv6 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and
- code clean
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        My self <ch.naveen@samsung.com>, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        linux-iio@vger.kernel.org, t.figa@samsung.com, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org
-Content-Type: text/plain; charset=UTF-8
+To: Varka Bhadram <varkabhadram@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] net: macb: Separate rx and tx ring init function
+References: <53C8EE60.8020707@gmail.com> <53C8F280.9040507@gmail.com>
+In-Reply-To: <53C8F280.9040507@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
-
-On 18 July 2014 15:08, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 July 2014 14:59:42 Chanwoo Choi wrote:
->> This patchset support Exynos3250 ADC (Analog Digital Converter) because
->> Exynos3250 has additional special clock for ADC IP.
+Le 18/07/2014 12:10, Varka Bhadram a écrit :
+> On 07/18/2014 03:22 PM, Neil Armstrong wrote:
+>> A single method is called to initialize the TX and RX
+>> rings. Separate the methods into distinct ones for
+>> MACB and GEM context.
 >>
->
-> by coincidence, I have just looked at the same driver in order to
-> add support for s3c24xx and s3c64xx, so we can remove the plat-samsung
-> adc framework they still use.  Those changes would naturally conflict
-> with yours, but I think it makes sense for your patches to come first.
->
-> I'll comment a bit more on the individual patches. I didn't have
-> interest in them earlier, so I didn't comment so far.
->
-> Another aspect that came up is the touchscreen support. Right now,
-> there is drivers/input/touchscreen/s3c2410_ts.c which is intimately
-> tied to arch/arm/plat-samsung/adc.c. The best way forward (as discussed
-> on IRC as few days ago) seems to be to integrate support for that into
-> the exynos_adc driver. Can you comment on which parts actually support
-> touchscreen? Did touchscreen support get dropped in the exynos hardware,
-> or is the driver just missing at the moment?
+>> Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
+>> ---
+>>   drivers/net/ethernet/cadence/macb.c |   33 ++++++++++++++++++++++++---------
+>>   drivers/net/ethernet/cadence/macb.h |    3 ++-
+>>   2 files changed, 26 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+>> index e9daa07..20ad483 100644
+>> --- a/drivers/net/ethernet/cadence/macb.c
+>> +++ b/drivers/net/ethernet/cadence/macb.c
+>> @@ -1219,7 +1219,14 @@ out_err:
+>>   	return -ENOMEM;
+>>   }
+>>   
+>> -static void gem_init_rings(struct macb *bp)
+>> +static void gem_init_rx_rings(struct macb *bp)
+>> +{
+>> +	bp->rx_tail = bp->rx_prepared_head = 0;
+>> +
+>> +	gem_rx_refill(bp);
+>> +}
+>> +
+>> +static void gem_init_tx_rings(struct macb *bp)
+>>   {
+>>   	int i;
+>>   
+>> @@ -1229,12 +1236,10 @@ static void gem_init_rings(struct macb *bp)
+>>   	}
+>>   	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
+>>   
+>> -	bp->rx_tail = bp->rx_prepared_head = bp->tx_head = bp->tx_tail = 0;
+>> -
+>> -	gem_rx_refill(bp);
+>> +	bp->tx_head = bp->tx_tail = 0;
+> 
+> This is not the preferred way of doing it....
+> 
+> multiple assignments should be avoided
+Should I change it ? I only moved the lines, the logic hasn't changed.
+> 
+>>   }
+>>   
+>> -static void macb_init_rings(struct macb *bp)
+>> +static void macb_init_rx_rings(struct macb *bp)
+>>   {
+>>   	int i;
+>>   	dma_addr_t addr;
+>> @@ -1247,13 +1252,20 @@ static void macb_init_rings(struct macb *bp)
+>>   	}
+>>   	bp->rx_ring[RX_RING_SIZE - 1].addr |= MACB_BIT(RX_WRAP);
+>>   
+>> +	bp->rx_tail = 0;
+>> +}
+>> +
+>> +static void macb_init_tx_rings(struct macb *bp)
+>> +{
+>> +	int i;
+>> +
+>>   	for (i = 0; i < TX_RING_SIZE; i++) {
+>>   		bp->tx_ring[i].addr = 0;
+>>   		bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
+>>   	}
+>>   	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
+>>   
+>> -	bp->rx_tail = bp->tx_head = bp->tx_tail = 0;
+>> +	bp->tx_head = bp->tx_tail = 0;
+> 
+> Dto...
+Idem, it was like this before.
+> 
+>>   }
+>>   
+>>   static void macb_reset_hw(struct macb *bp)
+>> @@ -1554,7 +1566,8 @@ static int macb_open(struct net_device *dev)
+>>   
+>>   	napi_enable(&bp->napi);
+>>   
+>> -	bp->macbgem_ops.mog_init_rings(bp);
+>> +	bp->macbgem_ops.mog_init_rx_rings(bp);
+>> +	bp->macbgem_ops.mog_init_tx_rings(bp);
+>>   	macb_init_hw(bp);
+>>   
+>>   	/* schedule a link state check */
+>> @@ -1901,12 +1914,14 @@ static int __init macb_probe(struct platform_device *pdev)
+>>   	if (macb_is_gem(bp)) {
+>>   		bp->macbgem_ops.mog_alloc_rx_buffers = gem_alloc_rx_buffers;
+>>   		bp->macbgem_ops.mog_free_rx_buffers = gem_free_rx_buffers;
+>> -		bp->macbgem_ops.mog_init_rings = gem_init_rings;
+>> +		bp->macbgem_ops.mog_init_rx_rings = gem_init_rx_rings;
+>> +		bp->macbgem_ops.mog_init_tx_rings = gem_init_tx_rings;
+>>   		bp->macbgem_ops.mog_rx = gem_rx;
+>>   	} else {
+>>   		bp->macbgem_ops.mog_alloc_rx_buffers = macb_alloc_rx_buffers;
+>>   		bp->macbgem_ops.mog_free_rx_buffers = macb_free_rx_buffers;
+>> -		bp->macbgem_ops.mog_init_rings = macb_init_rings;
+>> +		bp->macbgem_ops.mog_init_rx_rings = macb_init_rx_rings;
+>> +		bp->macbgem_ops.mog_init_tx_rings = macb_init_tx_rings;
+>>   		bp->macbgem_ops.mog_rx = macb_rx;
+>>   	}
+>>   
+>> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+>> index 51c0244..8016d08 100644
+>> --- a/drivers/net/ethernet/cadence/macb.h
+>> +++ b/drivers/net/ethernet/cadence/macb.h
+>> @@ -550,7 +550,8 @@ struct macb;
+>>   struct macb_or_gem_ops {
+>>   	int	(*mog_alloc_rx_buffers)(struct macb *bp);
+>>   	void	(*mog_free_rx_buffers)(struct macb *bp);
+>> -	void	(*mog_init_rings)(struct macb *bp);
+>> +	void	(*mog_init_rx_rings)(struct macb *bp);
+>> +	void	(*mog_init_tx_rings)(struct macb *bp);
+>>   	int	(*mog_rx)(struct macb *bp, int budget);
+>>   };
+>>   
+> 
+> 
 
-SoCs from Samsung before Exynos4 had and ADC based Touch screen
-and the driver under arch/arm/plat-samsung/adc.c and
-drivers/input/touchscreen/s3c2410_ts.c used to work together.
-
-Infact, the interrupt routine and priorities in plat-samsung/adc.c
-driver as written keeping the Touchscreen in mind.
-
-After Exynos4, ADC IP remained. But, the touch screen was removed in hardware.
-
-As per suggestion from Doug Anderson, I've implemented IIO based ADC
-driver started to support from exynos5250.
-
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Shine bright,
-(: Nav :)
+Do I need to make a corrective patch for multiple assignments before ?
