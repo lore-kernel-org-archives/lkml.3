@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759747AbaGRFjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 01:39:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57618 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436AbaGRFja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:39:30 -0400
-Date: Fri, 18 Jul 2014 15:39:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH] stating/lustre: fix misuse of current->parent.
-Message-ID: <20140718153919.58e0164d@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S932241AbaGRFoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 01:44:11 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:37764 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaGRFoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 01:44:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/JXZQuo/IDBpNtsy8VeQ13Bo"; protocol="application/pgp-signature"
+In-Reply-To: <20140717172526.GC4844@arm.com>
+References: <1405405512-4423-1-git-send-email-zlim.lnx@gmail.com>
+	<1405405512-4423-2-git-send-email-zlim.lnx@gmail.com>
+	<20140716160450.GT29414@arm.com>
+	<20140716211931.GA18109@gup76>
+	<20140717091931.GC21153@arm.com>
+	<CAMEtUux1NRqz-Bqi_H8kJe8x9u+1Q12Sg4a-92cE6OsePEBLxg@mail.gmail.com>
+	<20140717172526.GC4844@arm.com>
+Date: Thu, 17 Jul 2014 22:44:08 -0700
+Message-ID: <CABg9mcs0Dz1NCL3TkZA7QcFdxJdnuf=hXn8za9Yo2uQ2SyKkQg@mail.gmail.com>
+Subject: Re: [PATCH RFCv3 01/14] arm64: introduce aarch64_insn_gen_comp_branch_imm()
+From: Z Lim <zlim.lnx@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/JXZQuo/IDBpNtsy8VeQ13Bo
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+(resending this email in case the first one got caught in your spam
+filter. sorry.)
 
+On Thu, Jul 17, 2014 at 06:25:26PM +0100, Will Deacon wrote:
+> On Thu, Jul 17, 2014 at 04:59:10PM +0100, Alexei Starovoitov wrote:
+> > On Thu, Jul 17, 2014 at 2:19 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > > On Wed, Jul 16, 2014 at 10:19:31PM +0100, Zi Shen Lim wrote:
+> > >> >
+> > >> > Is a BUG_ON justifiable here? Is there not a nicer way to fail?
+> > >>
+> > >> In general, it'd be nice if we returned something like -EINVAL and
+> > >> have all callers handle failures. Today all code gen functions return
+> > >> the u32 instruction and there's no error handling by callers.
+> > >> I think following the precedence (aarch64_insn_gen_branch_imm())
+> > >> of failing with BUG_ON is a reasonable tradeoff.
+> > >
+> > > Well, I don't necessarily agree with that BUG_ON, either :)
+> > > I take it eBPF doesn't have a `trap' instruction or similar? Otherwise, we
+> > > could generate that and avoid having to propagate errors directly to the
+> > > caller.
+> > >
+> > >> In this case here, when we hit the default (failure) case, that means
+> > >> there's a serious error of attempting to use an unsupported
+> > >> variant. I think we're better off failing hard here than trying to
+> > >> arbitrarily "fallback" on a default choice.
+> > >
+> > > It might be a serious error for BPF, but a BUG_ON brings down the entire
+> > > machine, which I think is unfortunate.
+> >
+> > There is some misunderstanding here. Here BUG_ON will trigger
+> > only on actual bug in JIT implementation, it cannot be triggered by user.
+> > eBPF program is verified before it reaches JIT, so all instructions are
+> > valid and input to JIT is proper. Two instruction are not yet
+> > implemented in this JIT and they trigger pr_.._once().
+> > So I don't see any issue with this usage of BUG_ON
+> > imo living with silent bugs in JIT is more dangerous.
+> >
+> > For the same reason there is no 'trap' instruction in eBPF.
+> > Static verifier checks that program is valid. If there was a 'trap'
+> > insn the program would be rejected. Like programs with
+> > 'div by zero' are rejected. There is normal 'bpf_exit' insn to
+> > return from the program.
+>
+> Ok, so assuming that BPF doesn't have any issues, I take your point.
+> However, we could very easily re-use these functions for things like SMP
+> alternatives and kprobes, where simply failing the instruction generation
+> might be acceptable.
+>
+> It just feels like a bit hammer to me, when the machine is probably happily
+> scheduling user tasks, responding to interrupts, writing data to disk etc.
 
+Yes I agree with you Will, it'd be truly unfortunate if we inadvertently
+allow the entire system to be brought down.
 
-current->parent is used by ptrace to redirect some signal delivery
-to the ptracer.  It should only be used by 'ptrace' or 'signal' code.
-All other users should  use current->real_parent, which is the real
-parent.
+Alexei accurately pointed out that if we ever hit such a case, it'd be a bug
+in the BPF JIT implementation (or bug in other in-kernel implementations).
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Our BPF JIT implementation actually handles this, making sure that input
+to the codegen function is valid, or gracefully fail by not JITing and
+falling back on the core BPF interpreter. This way our JIT will not trigger
+the BUG_ON.
 
-diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/st=
-aging/lustre/lustre/llite/lproc_llite.c
-index 77ee9e58cf87..5c5d2d6470f1 100644
---- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
-+++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
-@@ -909,7 +909,7 @@ void ll_stats_ops_tally(struct ll_sb_info *sbi, int op,=
- int count)
- 		 sbi->ll_stats_track_id =3D=3D current->pid)
- 		lprocfs_counter_add(sbi->ll_stats, op, count);
- 	else if (sbi->ll_stats_track_type =3D=3D STATS_TRACK_PPID &&
--		 sbi->ll_stats_track_id =3D=3D current->parent->pid)
-+		 sbi->ll_stats_track_id =3D=3D current->real_parent->pid)
- 		lprocfs_counter_add(sbi->ll_stats, op, count);
- 	else if (sbi->ll_stats_track_type =3D=3D STATS_TRACK_GID &&
- 		 sbi->ll_stats_track_id =3D=3D
+IMO, other future users of these codegen functions should do the same.
 
---Sig_/JXZQuo/IDBpNtsy8VeQ13Bo
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+An alternative would be to throw away all the BUG_ON and have callers
+check for and handle error conditions. I think this is actually more
+dangerous as callers who don't handle the error conditions properly may
+end up causing system crash later with subtle (and quite possibly hard to
+debug) bugs.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU8izBznsnt1WYoG5AQIiqQ/+OfwkYQLgz+oigq6qZbIUtjn/vLhyZG2d
-oa2i2YaZPiwTw3ZoSAj7chrLZBReMoVq/n4wNw5feApsLkkRGGqmlbwxyECoWVHV
-66mSwtrCRMAfIMe2gtbb/osZjYstQt4hch3v6motUlOebWzV8lVJqkVOaVT+NkwQ
-wGBUvXOc7iKvQyQ3zIF+jFZiU/6RxZAlprtkwEuqx3ClvKltnvW+KnCd2birUVqq
-h1ipskpaW93ScCe+rrqamnrSk04RX+CdNe+lKDJ2Gk5mGx4/nwLH5XiQeEwgThRD
-0RGu+onLP2HRId1dyDhGJ4BP+lrpl5y//eBIEBjdw0Hz9eruo5XtswVMYFLevw6v
-Ym6GZeUXumC/h1EueAk/g9bNWEjgvOXY6lWgWmaOpZeYFsVKxEHrDXGWmTmle6YH
-gdIKScVSJSG/TPI21G9fUKh6XHROi7RNCu1BA+SzXkfSwp66U9O7Cesuci4wBrHo
-0UMGrIUCHdAQWcHumQmtxOgySrDQ0tzTFO0eJJST/fjvv9oWNosb9ugXqUiQfE5q
-44Jnqt9uZSIoolMr00+pCA448DsR7ROTaD/pJaH2rDlqiIX0pyzjy/jHQYnoHZQ7
-Bf8NMnP2X5Z1vb9pl1u0nZTKSyqTkSfyxePOKUVS7tF4T39+2w9gtg3WnHOsnB8Y
-YZH11CPeHqo=
-=FVGF
------END PGP SIGNATURE-----
-
---Sig_/JXZQuo/IDBpNtsy8VeQ13Bo--
+>
+> Will
