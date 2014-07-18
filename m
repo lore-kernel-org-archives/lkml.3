@@ -1,96 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195AbaGRS4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:56:15 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:53119 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825AbaGRS4N (ORCPT
+	id S1422905AbaGRS5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:57:45 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:42721 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020AbaGRS5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:56:13 -0400
-Message-ID: <53C96DC7.10203@linaro.org>
-Date: Fri, 18 Jul 2014 20:56:07 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 18 Jul 2014 14:57:44 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko.stuebner@bq.com>
-CC: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        grant.likely@linaro.org, thierry.reding@gmail.com,
-        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
-        andrew@lunn.ch, silvio.fricke@gmail.com, olof@lixom.net,
-        sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
-        gregory.clement@free-electrons.com, arnd@arndb.de,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
-        ak@linux.intel.com, hpa@linux.intel.com, akpm@linux-foundation.org,
-        u.kleine-koenig@pengutronix.de, gregkh@linuxfoundation.org,
-        fabf@skynet.be, rostedt@goodmis.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v10 5/7] arm: add basic support for Mediatek MT6589 boards
-References: <1404745988-32558-1-git-send-email-matthias.bgg@gmail.com> <1404745988-32558-6-git-send-email-matthias.bgg@gmail.com> <53C8ED0B.5080802@linaro.org> <127793649.dTvqVjg5LM@diego>
-In-Reply-To: <127793649.dTvqVjg5LM@diego>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGr1F2GwZvZLPGLWKPPOt3vREwwVNbVPrgE6YJ01bACKejbc4Q@mail.gmail.com>
+References: <1405626731-12220-1-git-send-email-adityakali@google.com>
+ <1405626731-12220-6-git-send-email-adityakali@google.com> <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
+ <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
+ <CALCETrW6YpyJBmr3sZC6KL03GP4dcGYavQF5DFZfys6Cok-vpw@mail.gmail.com> <CAGr1F2GwZvZLPGLWKPPOt3vREwwVNbVPrgE6YJ01bACKejbc4Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 18 Jul 2014 11:57:22 -0700
+Message-ID: <CALCETrVeeL71sfVdbzRx0FpGrvQKbviEmUcMEosbUU+UJNQu9w@mail.gmail.com>
+Subject: Re: [PATCH 5/5] cgroup: introduce cgroup namespaces
+To: Aditya Kali <adityakali@google.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Linux API <linux-api@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 12:47 PM, Heiko Stübner wrote:
-> Hi Daniel,
->
-> Am Freitag, 18. Juli 2014, 11:46:51 schrieb Daniel Lezcano:
->> On 07/07/2014 05:13 PM, Matthias Brugger wrote:
->>> This adds a generic devicetree board file and a dtsi for boards
->>> based on MT6589 SoCs from Mediatek.
+On Fri, Jul 18, 2014 at 11:51 AM, Aditya Kali <adityakali@google.com> wrote:
+> On Fri, Jul 18, 2014 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Jul 17, 2014 1:56 PM, "Aditya Kali" <adityakali@google.com> wrote:
 >>>
->>> Apart from the generic parts (gic, clocks) the only component
->>> currently supported are the timers.
+>>> On Thu, Jul 17, 2014 at 12:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> > What happens if someone moves a task in a cgroup namespace outside of
+>>> > the namespace root cgroup?
+>>> >
 >>>
->>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->>> --
+>>> Attempt to move a task outside of cgroupns root will fail with EPERM.
+>>> This is true irrespective of the privileges of the process attempting
+>>> this. Once cgroupns is created, the task will be confined to the
+>>> cgroup hierarchy under its cgroupns root until it dies.
 >>
->> I will take this patchset through my tree but this patch touches an area
->> I am not handling.
+>> Can a task in a non-init userns create a cgroupns?  If not, that's
+>> unusual.  If so, is it problematic if they can prevent themselves from
+>> being moved?
 >>
->> Olof, Arnd, do you mind to ack this patch ?
 >
-> wouldn't it be easier to just take patches 1,2,3,4 through your tree and let
-> patches 5,6,7 go through arm-soc?
->
-> There is no compile-time dependency between the two parts, so they will come
-> together nicely in linux-next and during the merge-window.
->
->
-> Also in [0] Olof wrote:
->
-> ----------
-> Traditionally we usually take the DT changes through arm-soc, but as
-> long as we share the branch we might be ok. We tend to stick them in
-> different branches in our tree though, so rockchip will be a little
-> mis-sorted this release. Not a big deal, and we can deal with it.
-> -----------
->
-> So I'd assume splitting the patchset this way might be a nice solution?
->
->
-> Heiko
->
->
-> [0] http://www.spinics.net/lists/arm-kernel/msg347053.html
+> Currently, only a task with CAP_SYS_ADMIN in the init-userns can
+> create cgroupns. It is stricter than for other namespaces, yes.
 
-Indeed.
+I'm slightly hesitant to have unshare(CLONE_NEWUSER |
+CLONE_NEWCGROUPNS | ...) start having weird side effects that are
+visible outside the namespace, especially when those side effects
+don't happen (because the call fails entirely) if
+unshare(CLONE_NEWUSER) happens first.  I don't see a real problem with
+it, but it's weird.
 
-Olof, Arnd ? Will you take the patches 5-6-7 ?
+>
+>> I hate to say it, but it might be worth requiring explicit permission
+>> from the cgroup manager for this.  For example, there could be a new
+>> cgroup attribute may_unshare, and any attempt to unshare the cgroup ns
+>> will fail with -EPERM unless the caller is in a may_share=1 cgroup.
+>> may_unshare in a parent cgroup would not give child cgroups the
+>> ability to unshare.
+>>
+>
+> What you suggest can be done. The current patch-set punts the problem
+> of permission checking by only allowing unshare from a
+> capable(CAP_SYS_ADMIN) process. This can be implemented as a follow-up
+> improvement to cgroupns feature if we want to open it to non-init
+> userns.
+>
+> Being said that, I would argue that even if we don't have this
+> explicit permission and relax the check to non-init userns, it should
+> be 'OK' to let ns_capable(current_user_ns(), CAP_SYS_ADMIN) tasks to
+> unshare cgroupns (basically, if you can "create" a cgroup hierarchy,
+> you should probably be allowed to unshare() it).
 
+But non-init-userns tasks can't create cgroup hierarchies, unless I
+misunderstand the current code.  And, if they can, I bet I can find
+three or four serious security issues in an hour or two. :)
 
+> By unsharing
+> cgroupns, the tasks can only confine themselves further under its
+> cgroupns-root. As long as it cannot escape that hierarchy, it should
+> be fine.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+But they can also *lock* their hierarchy.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> In my experience, there is seldom a need to move tasks out of their
+> cgroup. At most, we create a sub-cgroup and move the task there (which
+> is allowed in their cgroupns). Even for a cgroup manager, I can't
+> think of a case where it will be useful to move a task from one cgroup
+> hierarchy to another. Such move seems overly complicated (even without
+> cgroup namespaces). The cgroup manager can just modify the settings of
+> the task's cgroup as needed or simply kill & restart the task in a new
+> container.
+>
 
+I do this all the time.  Maybe my new systemd overlords will make me
+stop doing it, at which point my current production setup will blow
+up.
+
+--Andy
