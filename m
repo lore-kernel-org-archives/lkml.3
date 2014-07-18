@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030603AbaGRQ5R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:57:17 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:53016 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaGRQ5P convert rfc822-to-8bit (ORCPT
+	id S965737AbaGRRAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:00:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53880 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687AbaGRRAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:57:15 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "kys@microsoft.com" <kys@microsoft.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
+	Fri, 18 Jul 2014 13:00:33 -0400
+Date: Fri, 18 Jul 2014 10:00:30 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org, apw@canonical.com, jasowang@redhat.com
 Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
  the basic I/O timeout
-Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
- from the basic I/O timeout
-Thread-Index: AQHPgAuS4RnOBmJ/q0aQf1y8l+Zt2ZthLVSAgAABPoCAAh+9gIAAFcfQgADyoICAAAl2AIAACGQAgBY2XeCAKpUUYIABAMeAgAAYEBCAAHsOgA==
-Date: Fri, 18 Jul 2014 16:57:13 +0000
-Message-ID: <1405702633.30262.3.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <20140718170030.GA31769@infradead.org>
 References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-	 <1401901323.17510.23.camel@dabdike>
-	 <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <53911A35.7010805@cs.wisc.edu>
-	 <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <5391F801.4010107@cs.wisc.edu>
-	 <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>
-	 <539206FA.1020001@kernel.dk>
-	 <5b926a0a9f264edda91c7c2ab0acb7d1@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <13807d2cc8744ae1bc374f20d8f9caec@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	 <20140718151039.GA7425@infradead.org>
-	 <2d43adebbc47441084d8e1284507a427@BY2PR0301MB0711.namprd03.prod.outlook.com>
-In-Reply-To: <2d43adebbc47441084d8e1284507a427@BY2PR0301MB0711.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <503EC725F3047844911389C893181E0F@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401899623-24194-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-18 at 16:44 +0000, KY Srinivasan wrote:
+On Wed, Jun 04, 2014 at 09:33:43AM -0700, K. Y. Srinivasan wrote:
+> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to derive the
+> FLUSH_TIMEOUT from the basic I/O timeout. However, this patch did not use the
+> basic I/O timeout of the device. Fix this bug.
 > 
-> > -----Original Message-----
-> > From: Christoph Hellwig (hch@infradead.org) [mailto:hch@infradead.org]
-> > Sent: Friday, July 18, 2014 8:11 AM
-> > To: KY Srinivasan
-> > Cc: Jens Axboe; James Bottomley; michaelc@cs.wisc.edu; Christoph Hellwig
-> > (hch@infradead.org); linux-scsi@vger.kernel.org;
-> > gregkh@linuxfoundation.org; jasowang@redhat.com; linux-
-> > kernel@vger.kernel.org; ohering@suse.com; apw@canonical.com;
-> > devel@linuxdriverproject.org
-> > Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
-> > from the basic I/O timeout
-> > 
-> > On Thu, Jul 17, 2014 at 11:53:33PM +0000, KY Srinivasan wrote:
-> > > I still see this problem. There was talk of fixing it elsewhere.
-> > 
-> > Well, what we have right not is entirely broken, given that the block layer
-> > doesn't initialize ->timeout on TYPE_FS requeuests.
-> > 
-> > We either need to revert that initial commit or apply something like the
-> > attached patch as a quick fix.
-> I had sent this exact patch sometime back:
-> 
-> http://www.spinics.net/lists/linux-scsi/msg75385.html
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Actually, no you didn't.  The difference is in the derivation of the
-timeout.  Christoph's patch is absolute in terms of SD_TIMEOUT; yours is
-relative to the queue timeout setting ... I thought there was a reason
-for preferring the relative version.
+Looks good to me,
 
-James
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+
+(it will need some changes to apply to my tree, but I'm happy to do that
+if I can get another review).
+
+James, does this look fine to you?
 
