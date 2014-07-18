@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762199AbaGRUGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:06:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43341 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035AbaGRUGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:06:14 -0400
-Message-ID: <53C97E0F.6090601@zytor.com>
-Date: Fri, 18 Jul 2014 13:05:35 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warning after merge of the tip tree
-References: <20140718150005.73db8eb9@canb.auug.org.au> <53C97287.5020509@zytor.com> <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com>
-In-Reply-To: <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1762233AbaGRUH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:07:29 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47067 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755035AbaGRUH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 16:07:27 -0400
+Message-ID: <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
+ kmem_cache_create+0x1a9/0x330()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: poma <pomidorabelisima@gmail.com>
+Cc: Christoph Hellwig <hch@lst.de>, Vladimir Davydov <vdavydov@parallels.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+Date: Fri, 18 Jul 2014 13:07:26 -0700
+In-Reply-To: <53C97D34.5040707@gmail.com>
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com>
+	 <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de>
+	 <53C97D34.5040707@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 12:57 PM, Andy Lutomirski wrote:
+On Fri, 2014-07-18 at 22:01 +0200, poma wrote:
+> On 18.07.2014 16:17, Christoph Hellwig wrote:
+> > On Fri, Jul 18, 2014 at 05:21:04PM +0400, Vladimir Davydov wrote:
+> >> Slab warns, because the name of the cache being created contains spaces.
+> >> The "bad" cache is created by scsi_get_host_cmd_pool. Its name
+> >> (pool->cmd_name) is initialized by scsi_alloc_host_cmd_pool as follows:
+> >>
+> >> 	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+> >>
+> >> So, if hostt->name contains spaces, the cache name will also contain
+> >> spaces and we'll get the warning. And hostt->name can contain spaces,
+> >> e.g. virtscsi_host_template_single.name="Virtio SCSI HBA".
+> >
+> > Or might not even be present.  I'll send a patch to replace it with
+> > ->proc_name, which must not contain spaces and is generally shorter
+> > as well.
+> >
 > 
-> This particular warning is IMO in a particularly dumb category: GCC
-> optimizes some code and then warns about a construct that wasn't there
-> in the original code.  In this case, I think it unrolled a loop and
-> discovered that one iteration contained a test that was always true.
-> Big deal.
-> 
-> (OTOH, the code in question was buggy, but not all for the reason that
-> GCC thought it was.)
-> 
+> Is this what you thought?
 
-		if (syms[sym_vvar_start] > syms[i] + 4096)
-			fail("%s underruns begin_vvar\n",
-			     required_syms[i].name);
+No, he means this, if you want to try it.
 
-if i == sym_vvar_start then this is at least a valid warning.  It could
-easily be quieted by chaning syms[] to an unsigned array.
+James
 
-	-hpa
+---
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 88d46fe..eb07a9b 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -368,8 +368,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
+ 	if (!pool)
+ 		return NULL;
+ 
+-	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+-	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
++	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
++	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
+ 	if (!pool->cmd_name || !pool->sense_name) {
+ 		scsi_free_host_cmd_pool(pool);
+ 		return NULL;
+
 
