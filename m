@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759563AbaGRDED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 23:04:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56110 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152AbaGRDEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 23:04:01 -0400
-Date: Thu, 17 Jul 2014 23:03:58 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [git pull] device mapper fixes for 3.16-rc6
-Message-ID: <20140718030358.GA22198@redhat.com>
+	id S1759609AbaGRDFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:05:15 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:61922 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676AbaGRDFN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 23:05:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPDOMVjb_JxnGSTf5mW_RQ58h4-7fS6HywARpPV3XgWA33SybQ@mail.gmail.com>
+References: <CAPDOMVjTxTNTfgPJMz6eNfabXuvtJ43YMpEeDEQ236EtF168Cg@mail.gmail.com>
+	<20140717075204.GA15569@ravnborg.org>
+	<CAPDOMVjb_JxnGSTf5mW_RQ58h4-7fS6HywARpPV3XgWA33SybQ@mail.gmail.com>
+Date: Thu, 17 Jul 2014 23:05:12 -0400
+Message-ID: <CAPDOMVj9GcoC26Sp6sOmwZf39mfOn=Wy87AnfzDguthcFOTXhg@mail.gmail.com>
+Subject: Re: Sparc: Fix Mes in highmem.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-The following changes since commit 7a7a3b45fed9a144dbf766ee842a4c5d0632b81d:
-
-  dm mpath: fix IO hang due to logic bug in multipath_busy (2014-07-10 16:44:15 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.16-fixes-2
-
-for you to fetch changes up to 048e5a07f282c57815b3901d4a68a77fa131ce0a:
-
-  dm cache metadata: do not allow the data block size to change (2014-07-15 14:07:50 -0400)
-
-Please pull, thanks.
-Mike
-
-----------------------------------------------------------------
-Fix the dm-thinp and dm-cache targets to disallow changing the data
-device's block size.
-
-----------------------------------------------------------------
-Mike Snitzer (2):
-      dm thin metadata: do not allow the data block size to change
-      dm cache metadata: do not allow the data block size to change
-
- drivers/md/dm-cache-metadata.c | 9 +++++++++
- drivers/md/dm-thin-metadata.c  | 9 +++++++++
- 2 files changed, 18 insertions(+)
+On Thu, Jul 17, 2014 at 1:38 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Thu, Jul 17, 2014 at 3:52 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> On Wed, Jul 16, 2014 at 10:25:30PM -0400, Nick Krause wrote:
+>>> I am hitting three Fix mes in this file and am wondering as the
+>>> maintainer how you would like
+>>> to clean them up.
+>>
+>> They may be addressed if we one day decide to give the sparc32 highmem
+>> support a big overhaul. Until then they are left as is.
+>>
+>>         Sam
+>  Very well then I will just not touch it until we are going to
+> overhaul the highmem  for
+> sparc32.
+> Cheers Nick
+If you want I can fix the sparc32 highmem area with your help. I am new
+to the kernel so a little help if needed would be great when doing this work
+for you:).
+Cheers Nick
