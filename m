@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760894AbaGRHgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 03:36:05 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65278 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760593AbaGRHgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 03:36:02 -0400
-Message-ID: <53C8CE59.3060103@nod.at>
-Date: Fri, 18 Jul 2014 09:35:53 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1760925AbaGRHgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 03:36:22 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:47802 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164AbaGRHgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 03:36:19 -0400
+Date: Fri, 18 Jul 2014 09:36:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [RFC Patch V1 09/30] mm, memcg: Use cpu_to_mem()/numa_mem_id()
+ to support memoryless node
+Message-ID: <20140718073614.GC21453@dhcp22.suse.cz>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lars-Peter Clausen <lars@metafoo.de>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
-        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7A819.40403@metafoo.de> <6485666.LVFO2YCEQx@wuerfel> <53C8114D.30601@nod.at> <53C86C10.2000608@gmail.com>
-In-Reply-To: <53C86C10.2000608@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.07.2014 02:36, schrieb Chen Gang:
+On Fri 11-07-14 15:37:26, Jiang Liu wrote:
+> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> may return a node without memory, and later cause system failure/panic
+> when calling kmalloc_node() and friends with returned node id.
+> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+> memory for the/current cpu.
 > 
-> On 07/18/2014 02:09 AM, Richard Weinberger wrote:
->> Am 17.07.2014 12:48, schrieb Arnd Bergmann:
->>> AFAICT, NO_IOMEM only has a real purpose on UML these days. Could we take
->>> a shortcut here and make COMPILE_TEST depend on !UML? Getting random stuff
->>> to build on UML seems pointless to me and we special-case it in a number of
->>> places already.
->>
->> If UML is the only arch without io memory the dependency on !UML seems
->> reasonable to me. :-)
->>
+> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+> is the same as cpu_to_node()/numa_node_id().
+
+The change makes difference only for really tiny memcgs. If we really
+have all pages on unevictable list or anon with no swap allowed and that
+is the reason why no node is set in scan_nodes mask then reclaiming
+memoryless node or any arbitrary close one doesn't make any difference.
+The current memcg might not have any memory on that node at all.
+
+So the change doesn't make any practical difference and the changelog is
+misleading.
+
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> For me, if only uml left, I suggest to implement dummy functions within
-> uml instead of let CONFIG_UML appear in generic include directory. And
-> then remove all HAS_IOMEM and NO_IOMEM from kernel.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a2c7bcb0e6eb..d6c4b7255ca9 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1933,7 +1933,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+>  	 * we use curret node.
+>  	 */
+>  	if (unlikely(node == MAX_NUMNODES))
+> -		node = numa_node_id();
+> +		node = numa_mem_id();
+>  
+>  	memcg->last_scanned_node = node;
+>  	return node;
+> -- 
+> 1.7.10.4
+> 
 
-Erm, this is something completely different.
-I thought we're focusing on COMPILE_TEST?
-
-Thanks,
-//richard
+-- 
+Michal Hocko
+SUSE Labs
