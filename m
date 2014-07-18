@@ -1,55 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030808AbaGRNyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:54:14 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:43446 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030649AbaGRNyL (ORCPT
+	id S1030831AbaGRNyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:54:53 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17465 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030336AbaGRNJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:54:11 -0400
-Date: Fri, 18 Jul 2014 14:53:49 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping
- functions
-Message-ID: <20140718135349.GB4608@arm.com>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
- <1404324218-4743-4-git-send-email-lauraa@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404324218-4743-4-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Jul 2014 09:09:54 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Alex Elder <elder@linaro.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 093/170] rbd: use reference counts for image requests
+Date: Fri, 18 Jul 2014 14:11:38 +0200
+Message-Id: <1ef3eb2867700888172aec631f89275d44d583f8.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 07:03:36PM +0100, Laura Abbott wrote:
-> +void *dma_common_pages_remap(struct page **pages, size_t size,
-> +			unsigned long vm_flags, pgprot_t prot,
-> +			const void *caller)
-> +{
-> +	struct vm_struct *area;
-> +
-> +	area = get_vm_area_caller(size, vm_flags, caller);
-> +	if (!area)
-> +		return NULL;
-> +
-> +	if (map_vm_area(area, prot, &pages)) {
-> +		vunmap(area->addr);
-> +		return NULL;
-> +	}
-> +
-> +	return area->addr;
-> +}
+From: Alex Elder <elder@linaro.org>
 
-Why not just replace this function with vmap()? It is nearly identical.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
+===============
+
+commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
+
+Each image request contains a reference count, but to date it has
+not actually been used.  (I think this was just an oversight.) A
+recent report involving rbd failing an assertion shed light on why
+and where we need to use these reference counts.
+
+Every OSD request associated with an object request uses
+rbd_osd_req_callback() as its callback function.  That function will
+call a helper function (dependent on the type of OSD request) that
+will set the object request's "done" flag if the object request if
+appropriate.  If that "done" flag is set, the object request is
+passed to rbd_obj_request_complete().
+
+In rbd_obj_request_complete(), requests are processed in sequential
+order.  So if an object request completes before one of its
+predecessors in the image request, the completion is deferred.
+Otherwise, if it's a completing object's "turn" to be completed, it
+is passed to rbd_img_obj_end_request(), which records the result of
+the operation, accumulates transferred bytes, and so on.  Next, the
+successor to this request is checked and if it is marked "done",
+(deferred) completion processing is performed on that request, and
+so on.  If the last object request in an image request is completed,
+rbd_img_request_complete() is called, which (typically) destroys
+the image request.
+
+There is a race here, however.  The instant an object request is
+marked "done" it can be provided (by a thread handling completion of
+one of its predecessor operations) to rbd_img_obj_end_request(),
+which (for the last request) can then lead to the image request
+getting torn down.  And this can happen *before* that object has
+itself entered rbd_img_obj_end_request().  As a result, once it
+*does* enter that function, the image request (and even the object
+request itself) may have been freed and become invalid.
+
+All that's necessary to avoid this is to properly count references
+to the image requests.  We tear down an image request's object
+requests all at once--only when the entire image request has
+completed.  So there's no need for an image request to count
+references for its object requests.  However, we don't want an
+image request to go away until the last of its object requests
+has passed through rbd_img_obj_callback().  In other words,
+we don't want rbd_img_request_complete() to necessarily
+result in the image request being destroyed, because it may
+get called before we've finished processing on all of its
+object requests.
+
+So the fix is to add a reference to an image request for
+each of its object requests.  The reference can be viewed
+as representing an object request that has not yet finished
+its call to rbd_img_obj_callback().  That is emphasized by
+getting the reference right after assigning that as the image
+object's callback function.  The corresponding release of that
+reference is done at the end of rbd_img_obj_callback(), which
+every image object request passes through exactly once.
+
+Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/block/rbd.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index db60c91804c3..af7b44ffd190 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1395,6 +1395,13 @@ static void rbd_obj_request_put(struct rbd_obj_request *obj_request)
+ 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
+ }
+ 
++static void rbd_img_request_get(struct rbd_img_request *img_request)
++{
++	dout("%s: img %p (was %d)\n", __func__, img_request,
++	     atomic_read(&img_request->kref.refcount));
++	kref_get(&img_request->kref);
++}
++
+ static bool img_request_child_test(struct rbd_img_request *img_request);
+ static void rbd_parent_request_destroy(struct kref *kref);
+ static void rbd_img_request_destroy(struct kref *kref);
+@@ -2148,6 +2155,7 @@ static void rbd_img_obj_callback(struct rbd_obj_request *obj_request)
+ 	img_request->next_completion = which;
+ out:
+ 	spin_unlock_irq(&img_request->completion_lock);
++	rbd_img_request_put(img_request);
+ 
+ 	if (!more)
+ 		rbd_img_request_complete(img_request);
+@@ -2244,6 +2252,7 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
+ 			goto out_partial;
+ 		obj_request->osd_req = osd_req;
+ 		obj_request->callback = rbd_img_obj_callback;
++		rbd_img_request_get(img_request);
+ 
+ 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
+ 						0, 0);
 -- 
-Catalin
+2.0.0
+
