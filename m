@@ -1,91 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422847AbaGRNuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:50:06 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17500 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030534AbaGRNK3 (ORCPT
+	id S1422860AbaGRNuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:50:39 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:36708 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030526AbaGRNK1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:10:29 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Smith <alex.smith@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 019/170] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
-Date: Fri, 18 Jul 2014 14:10:24 +0200
-Message-Id: <98eab24734a44d94e8ae53d8486c8e1751bccd8e.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 09:10:27 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] [RFC] initial getrandom wrapper to provide getentropy for LibreSSL
+From: Brent Cook <busterb@gmail.com>
+In-Reply-To: <1405666144-88053-1-git-send-email-busterb@gmail.com>
+Date: Fri, 18 Jul 2014 08:09:52 -0500
+Cc: tytso@mit.edu
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com>
+References: <1405666144-88053-1-git-send-email-busterb@gmail.com>
+To: linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Smith <alex.smith@imgtec.com>
+On Jul 18, 2014, at 1:49 AM, Brent Cook <busterb@gmail.com> wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> From: Brent Cook <bcook@openbsd.org>
+> 
+> This is not a kernel patch, but rather an initial test of the API to see
+> how it might mesh LibreSSL's expectations for how getentropy works.
+> 
+> It is a bit more code to carefully handle the extra return values, as
+> not reading enough bytes, because there is an unhandled EINTR, might
+> lead to an unseeded CSPRNG.
+> 
+> The syscall may return EAGAIN depending on the version of getrandom(2)
+> (this will go away later), but this should give a good example of what
+> its use would look like in practice.
 
-===============
+While I think we can wrap the currently-proposed getrandom() interface to provide a safe emulation of getentropy()’s semantics, I would not be surprised to eventually find software that gets it wrong.
 
-commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
+I am a little concerned that the interface is evolving into a Bradley Fighting Vehicle :)
 
-On MIPS calls to _mcount in modules generate 2 instructions to load
-the _mcount address (and therefore 2 relocations). The mcount_loc
-table should only reference the first of these, so the second is
-filtered out by checking the relocation offset and ignoring ones that
-immediately follow the previous one seen.
+https://www.youtube.com/watch?v=aXQ2lO3ieBA
 
-However if a module has an _mcount call at offset 0, the second
-relocation would not be filtered out due to old_r_offset == 0
-being taken to mean that the current relocation is the first one
-seen, and both would end up in the mcount_loc table.
 
-This results in ftrace_make_nop() patching both (adjacent)
-instructions to branches over the _mcount call sequence like so:
-
-  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
-  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
-  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
-  ...
-
-The second branch is in the delay slot of the first, which is
-defined to be unpredictable - on the platform on which this bug was
-encountered, it triggers a reserved instruction exception.
-
-Fix by initializing old_r_offset to ~0 and using that instead of 0
-to determine whether the current relocation is the first seen.
-
-Signed-off-by: Alex Smith <alex.smith@imgtec.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7098/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- scripts/recordmcount.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 9d1421e63ff8..49b582a225b0 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
- 
- static int MIPS_is_fake_mcount(Elf_Rel const *rp)
- {
--	static Elf_Addr old_r_offset;
-+	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
- 	Elf_Addr current_r_offset = _w(rp->r_offset);
- 	int is_fake;
- 
--	is_fake = old_r_offset &&
-+	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
- 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
- 	old_r_offset = current_r_offset;
- 
--- 
-2.0.0
+> ---
+> src/lib/libcrypto/crypto/getentropy_linux.c | 42 ++++++++++++++++++++++++++++-
+> 1 file changed, 41 insertions(+), 1 deletion(-)
+> 
+> diff --git a/src/lib/libcrypto/crypto/getentropy_linux.c b/src/lib/libcrypto/crypto/getentropy_linux.c
+> index c16b289..b717d91 100644
+> --- a/src/lib/libcrypto/crypto/getentropy_linux.c
+> +++ b/src/lib/libcrypto/crypto/getentropy_linux.c
+> @@ -1,4 +1,4 @@
+> -/*	$OpenBSD: getentropy_linux.c,v 1.24 2014/07/13 13:37:38 deraadt Exp $	*/
+> +/*	$OpenBSD: getentropy_linux.c,v 1.25 2014/07/16 14:26:47 kettenis Exp $	*/
+> 
+> /*
+>  * Copyright (c) 2014 Theo de Raadt <deraadt@openbsd.org>
+> @@ -73,10 +73,21 @@
+> 
+> int	getentropy(void *buf, size_t len);
+> 
+> +#ifndef SYS__getrandom
+> +#ifdef __LP64__
+> +#define SYS__getrandom 317
+> +#else
+> +#define SYS__getrandom 354
+> +#endif
+> +#endif
+> +
+> #if 0
+> extern int main(int, char *argv[]);
+> #endif
+> static int gotdata(char *buf, size_t len);
+> +#ifdef SYS__getrandom
+> +static int getentropy_getrandom(void *buf, size_t len);
+> +#endif
+> static int getentropy_urandom(void *buf, size_t len);
+> #ifdef CTL_MAXNAME
+> static int getentropy_sysctl(void *buf, size_t len);
+> @@ -95,6 +106,13 @@ getentropy(void *buf, size_t len)
+> 	}
+> 
+> 	/*
+> +	 * Brand new system call in Linux.  Interface not yet settled.
+> +	 */
+> +	ret = getentropy_getrandom(buf, len);
+> +	if (ret != -1)
+> +		return (ret);
+> +
+> +	/*
+> 	 * Try to get entropy with /dev/urandom
+> 	 *
+> 	 * This can fail if the process is inside a chroot or if file
+> @@ -180,6 +198,28 @@ gotdata(char *buf, size_t len)
+> }
+> 
+> static int
+> +getentropy_getrandom(void *buf, size_t len)
+> +{
+> +	size_t i = 0;
+> +
+> +#ifdef SYS__getrandom
+> +	ssize_t ret;
+> +
+> +	for (i = 0; i < len; ) {
+> +		size_t wanted = len - i;
+> +		ret = syscall(SYS__getrandom, (char *)buf + i, wanted, 0);
+> +		if (ret == -1) {
+> +			if (errno == EAGAIN || errno == EINTR)
+> +				continue;
+> +			return (-1);
+> +		}
+> +		i += ret;
+> +	}
+> +#endif
+> +	return (i == len ? 0 : -1);
+> +}
+> +
+> +static int
+> getentropy_urandom(void *buf, size_t len)
+> {
+> 	struct stat st;
+> -- 
+> 2.0.1
+> 
 
