@@ -1,92 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760499AbaGRGBT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:01:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:33985 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283AbaGRF7y (ORCPT
+	id S1759917AbaGRGFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:05:22 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:53602 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaGRGFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:59:54 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-1a-53c8b7d8ba56
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: jic23@kernel.org, ch.naveen@samsung.com
-Cc: kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, kyungmin.park@samsung.com,
-        t.figa@samsung.com, linux-iio@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv6 4/4] ARM: dts: Fix wrong compatible string for Exynos3250 ADC
-Date: Fri, 18 Jul 2014 14:59:46 +0900
-Message-id: <1405663186-26464-5-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsWyRsSkSPfG9hPBBjvui1rcfX6Y0eL6l+es
-	FvOPnGO16H+zkNXi3KuVjBYPmlYxWfQuuMpmcbbpDbvFpsfXWC0Wti1hsZh35B2LxeVdc9gs
-	Zpzfx2Sx9PpFJosJ09eyWLy9M53FonXvEXaL9TNeszgIeayZt4bR43JfL5PHyuVf2Dw2r9Dy
-	2LSqE8hYUu/Rt2UVo8fnTXIBHFFcNimpOZllqUX6dglcGQ2LH7IUHOSs6G0Pa2D8xN7FyMkh
-	IWAi8fXvc1YIW0ziwr31bF2MXBxCAksZJfYdfsIGUzTvZTMzRGIRo8S31Z1QThOTxOHZm5lA
-	qtgEtCT2v7gB1iEioC0xYWEH2Chmgb3MEtvXv2cGSQgL+Euc3HYQyObgYBFQlTjy2AwkzCvg
-	KtHTeJAZYpucxIc9j8DO4xRwk/jXexXsPCGgmkl955lAZkoI/GSXmHb0OlgRi4CAxLfJh1hA
-	ZkoIyEpsOgA1R1Li4IobLBMYhRcwMqxiFE0tSC4oTkovMtUrTswtLs1L10vOz93ECIy30/+e
-	TdzBeP+A9SHGZKBxE5mlRJPzgfGaVxJvaGxmZGFqYmpsZG5pRpqwkjhv+qOkICGB9MSS1OzU
-	1ILUovii0pzU4kOMTBycUg2MzGVRM1rz1HXP8/5yy1d2sJ+i2uDh8rtmb3LA7lwOQS62NZ8Y
-	BHcbTV7okcPFnTalkbE7dg7bs8N3r79jUwsx298nekzRd3qtGxO7y5e/GlP2spyXSa5cbKXZ
-	zCbwUeF+/d4ppZETDq0Tu3ptx7VZGfusboX1XpX/opsVdUZzbdiaD/Xpl/mUWIozEg21mIuK
-	EwH9AXW5zQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t9jAd0b208EG6zZz2tx9/lhRovrX56z
-	Wsw/co7Vov/NQlaLc69WMlo8aFrFZNG74CqbxdmmN+wWmx5fY7VY2LaExWLekXcsFpd3zWGz
-	mHF+H5PF0usXmSwmTF/LYvH2znQWi9a9R9gt1s94zeIg5LFm3hpGj8t9vUweK5d/YfPYvELL
-	Y9OqTiBjSb1H35ZVjB6fN8kFcEQ1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqY
-	KynkJeam2iq5+AToumXmAP2ipFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSs
-	YcxoWPyQpeAgZ0Vve1gD4yf2LkZODgkBE4l5L5uZIWwxiQv31rN1MXJxCAksYpT4trqTGcJp
-	YpI4PHszE0gVm4CWxP4XN9hAbBEBbYkJCzvAOpgF9jJLbF//HmyUsIC/xMltB4FsDg4WAVWJ
-	I4/NQMK8Aq4SPY0HobbJSXzY8wjsCk4BN4l/vVdZQWwhoJpJfeeZJjDyLmBkWMUomlqQXFCc
-	lJ5rpFecmFtcmpeul5yfu4kRHM3PpHcwrmqwOMQowMGoxMNrcfN4sBBrYllxZe4hRgkOZiUR
-	3uz7QCHelMTKqtSi/Pii0pzU4kOMpkBHTWSWEk3OByaavJJ4Q2MTMyNLI3NDCyNjcyVx3oOt
-	1oFCAumJJanZqakFqUUwfUwcnFINjD5v1iQvffXu+LG4+D1njdd8EP5X9NbMg7PVmF+r7bad
-	sl3VbpMZz9UdVc/zHjumek7JzXLJPSVZ1dKHHVwOMu/PRbl7vozI+5rFnuzR5ij6Xkj8qZNP
-	OsNnrndcE7P49j868LH6d1qIRT9Dz6Ul3Kbs7VIdTGdt5/DuVPtWEnF9Oa9WQNFVJZbijERD
-	Leai4kQA5+AfwPwCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 18 Jul 2014 02:05:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <53C898E7.5080204@gmail.com>
+References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>
+	<53C898E7.5080204@gmail.com>
+Date: Fri, 18 Jul 2014 14:05:19 +0800
+Message-ID: <CABawtvOpER3yEqmLigSDt8Wy5_9X0QA2e0zJ+KByhOy7du2gVQ@mail.gmail.com>
+Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool get_ethtool_stats()
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: Ethan Zhao <ethan.zhao@oracle.com>, manish.chopra@qlogic.com,
+        sony.chacko@qlogic.com, rajesh.borundia@qlogic.com,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset fix wrong compatible string for Exynos3250 ADC. Exynos3250 SoC
-need to control only special clock for ADC. Exynos SoC except for Exynos3250
-has not included special clock for ADC. The exynos ADC driver can control
-special clock if compatible string is 'exynos3250-adc-v2'.
+On Fri, Jul 18, 2014 at 11:47 AM, Varka Bhadram <varkabhadram@gmail.com> wrote:
+> On 07/18/2014 09:13 AM, Ethan Zhao wrote:
+>>
+>> netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
+>> but it doesn't collect stats.rxdropped in driver, so we will get
+>> different rx_dropped statistic information while using ifconfig and
+>> ethtool.
+>> this patch fills stats.rxdropped field with data from net core
+>> with dev_get_stats() just as ixgbe driver did for some of its stats.
+>>
+>> Tested with last netxen 4.0.82
+>> Compiled with stable 3.15.6
+>>
+>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
+>> ---
+>> -v2 only fix rx_dropped field, not all.
+>> -v3 workaround checkpatch.pl bug according to suggestion from Joe Perches
+>> <joe@perches.com>
+>>   .../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   59
+>> +++++++++++++++-----
+>>   1 files changed, 45 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>> index 87e073c..2753f00 100644
+>> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>> @@ -31,28 +31,43 @@
+>>   #include "netxen_nic.h"
+>>   #include "netxen_nic_hw.h"
+>>   +enum {NETDEV_STATS, NETXEN_STATS};
+>> +
+>>   struct netxen_nic_stats {
+>>         char stat_string[ETH_GSTRING_LEN];
+>> +       int type;
+>>         int sizeof_stat;
+>>         int stat_offset;
+>>   };
+>>   -#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
+>> -                       offsetof(struct netxen_adapter, m)
+>> +#define NETXEN_NIC_STAT(name, m)                                       \
+>> +{                                                                      \
+>> +       .stat_string = name,                                            \
+>> +       .type = NETXEN_STATS,                                           \
+>> +       .sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),          \
+>> +       .stat_offset = offsetof(struct netxen_adapter, m)               \
+>> +}
+>> +
+>> +#define NETXEN_NETDEV_STAT(name, m)                                    \
+>> +{      .stat_string = name,                                            \
+>> +       .type = NETDEV_STATS,                                           \
+>> +       .sizeof_stat = FIELD_SIZEOF(struct rtnl_link_stats64, m),       \
+>> +       .stat_offset = offsetof(struct rtnl_link_stats64, m)            \
+>> +}
+>>     #define NETXEN_NIC_PORT_WINDOW 0x10000
+>>   #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
+>>     static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
+>> -       {"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
+>> -       {"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
+>> -       {"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
+>> -       {"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
+>> -       {"csummed", NETXEN_NIC_STAT(stats.csummed)},
+>> -       {"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)},
+>> -       {"lro_pkts", NETXEN_NIC_STAT(stats.lro_pkts)},
+>> -       {"rx_bytes", NETXEN_NIC_STAT(stats.rxbytes)},
+>> -       {"tx_bytes", NETXEN_NIC_STAT(stats.txbytes)},
+>> +       NETXEN_NIC_STAT("xmit_called", stats.xmitcalled),
+>> +       NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
+>> +       NETXEN_NETDEV_STAT("rx_dropped", rx_dropped),
+>> +       NETXEN_NIC_STAT("tx_dropped", stats.txdropped),
+>> +       NETXEN_NIC_STAT("csummed", stats.csummed),
+>> +       NETXEN_NIC_STAT("rx_pkts", stats.rx_pkts),
+>> +       NETXEN_NIC_STAT("lro_pkts", stats.lro_pkts),
+>> +       NETXEN_NIC_STAT("rx_bytes", stats.rxbytes),
+>> +       NETXEN_NIC_STAT("tx_bytes", stats.txbytes),
+>>   };
+>>     #define NETXEN_NIC_STATS_LEN
+>> ARRAY_SIZE(netxen_nic_gstrings_stats)
+>> @@ -677,11 +692,27 @@ netxen_nic_get_ethtool_stats(struct net_device *dev,
+>>   {
+>>         struct netxen_adapter *adapter = netdev_priv(dev);
+>>         int index;
+>> +       struct rtnl_link_stats64 temp;
+>> +       const struct rtnl_link_stats64 *net_stats;
+>> +       char *p = NULL;
+>>   +     net_stats = dev_get_stats(dev, &temp);
+>>         for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
+>> -               char *p =
+>> -                   (char *)adapter +
+>> -                   netxen_nic_gstrings_stats[index].stat_offset;
+>> +
+>> +               switch (netxen_nic_gstrings_stats[index].type) {
+>> +               case NETDEV_STATS:
+>> +                       p = (char *)net_stats +
+>> +
+>> netxen_nic_gstrings_stats[index].stat_offset;
+>> +                       break;
+>> +               case NETXEN_STATS:
+>> +                       p = (char *)adapter +
+>> +
+>> netxen_nic_gstrings_stats[index].stat_offset;
+>> +                       break;
+>> +               default:
+>> +                       data[index] = 0;
+>> +                       continue;
+>
+>
+> If there is a chance of default case, then it will be always in switch case
+> ...?
+  It is possible that hit the default case, but will not stay in swich case.
+  try this little case
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
----
- arch/arm/boot/dts/exynos3250.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ #include <stdio.h>
+#include <stdlib.h>
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index 3d3c45b..e039818 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -391,10 +391,10 @@
- 		};
- 
- 		adc: adc@126C0000 {
--			compatible = "samsung,exynos-adc-v3";
-+			compatible = "samsung,exynos3250-adc-v2";
- 			reg = <0x126C0000 0x100>, <0x10020718 0x4>;
- 			interrupts = <0 137 0>;
--			clock-names = "adc", "sclk_tsadc";
-+			clock-names = "adc", "sclk_adc";
- 			clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
- 			#io-channel-cells = <1>;
- 			io-channel-ranges;
--- 
-1.8.0
+main()
+{
+        int i,j;
+        for (i=0; i<16; i++) {
+                j=i%3;
 
+        switch(j) {
+        case 1:
+                printf("i=%d\n",i);
+                break;
+        case 2:
+                printf("i=%d\n",i);
+                break;
+        default:
+                printf("i=%d,j=%d\n",i,j);
+                continue;
+        }
+        }
+}
+
+
+
+  Thanks,
+  Ethan
+>
+>
+>> +               }
+>> +
+>>                 data[index] =
+>>                     (netxen_nic_gstrings_stats[index].sizeof_stat ==
+>>                      sizeof(u64)) ? *(u64 *) p : *(u32 *) p;
+>
+>
+>
+> --
+> Regards,
+> Varka Bhadram.
+>
