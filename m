@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422659AbaGRNRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:17:42 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17923 "EHLO
+	id S965912AbaGRNR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:17:56 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17931 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933858AbaGRNRj (ORCPT
+	by vger.kernel.org with ESMTP id S965878AbaGRNRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:17:39 -0400
+	Fri, 18 Jul 2014 09:17:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Steve French <smfrench@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 107/170] CIFS: fix mount failure with broken pathnames when smb3 mount with mapchars option
-Date: Fri, 18 Jul 2014 14:11:52 +0200
-Message-Id: <ae8c79f81f3b3e10a688a8980e70965a3a07b857.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 053/170] ptrace,x86: force IRET path after a ptrace_stop()
+Date: Fri, 18 Jul 2014 14:10:58 +0200
+Message-Id: <2f1824407bf18b019d2c821881dd0956c6f0a254.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,64 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve French <smfrench@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ce36d9ab3bab06b7b5522f5c8b68fac231b76ffb upstream.
+commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
 
-When we SMB3 mounted with mapchars (to allow reserved characters : \ / > < * ?
-via the Unicode Windows to POSIX remap range) empty paths
-(eg when we open "" to query the root of the SMB3 directory on mount) were not
-null terminated so we sent garbarge as a path name on empty paths which caused
-SMB2/SMB2.1/SMB3 mounts to fail when mapchars was specified.  mapchars is
-particularly important since Unix Extensions for SMB3 are not supported (yet)
+The 'sysret' fastpath does not correctly restore even all regular
+registers, much less any segment registers or reflags values.  That is
+very much part of why it's faster than 'iret'.
 
-Signed-off-by: Steve French <smfrench@gmail.com>
-Reviewed-by: David Disseldorp <ddiss@suse.de>
+Normally that isn't a problem, because the normal ptrace() interface
+catches the process using the signal handler infrastructure, which
+always returns with an iret.
+
+However, some paths can get caught using ptrace_event() instead of the
+signal path, and for those we need to make sure that we aren't going to
+return to user space using 'sysret'.  Otherwise the modifications that
+may have been done to the register set by the tracer wouldn't
+necessarily take effect.
+
+Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
+arch_ptrace_stop_needed() which is invoked from ptrace_stop().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/cifs/cifs_unicode.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/ptrace.h | 16 ++++++++++++++++
+ include/linux/ptrace.h        |  3 +++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
-index 0227b45ef00a..15e9505aa35f 100644
---- a/fs/cifs/cifs_unicode.c
-+++ b/fs/cifs/cifs_unicode.c
-@@ -290,7 +290,8 @@ int
- cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
- 		 const struct nls_table *cp, int mapChars)
- {
--	int i, j, charlen;
-+	int i, charlen;
-+	int j = 0;
- 	char src_char;
- 	__le16 dst_char;
- 	wchar_t tmp;
-@@ -298,12 +299,11 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
- 	if (!mapChars)
- 		return cifs_strtoUTF16(target, source, PATH_MAX, cp);
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index 942a08623a1a..68e9f007cd4a 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -232,6 +232,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
  
--	for (i = 0, j = 0; i < srclen; j++) {
-+	for (i = 0; i < srclen; j++) {
- 		src_char = source[i];
- 		charlen = 1;
- 		switch (src_char) {
- 		case 0:
--			put_unaligned(0, &target[j]);
- 			goto ctoUTF16_out;
- 		case ':':
- 			dst_char = cpu_to_le16(UNI_COLON);
-@@ -350,6 +350,7 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
- 	}
+ #define ARCH_HAS_USER_SINGLE_STEP_INFO
  
- ctoUTF16_out:
-+	put_unaligned(0, &target[j]); /* Null terminate target unicode string */
- 	return j;
- }
- 
++/*
++ * When hitting ptrace_stop(), we cannot return using SYSRET because
++ * that does not restore the full CPU state, only a minimal set.  The
++ * ptracer can change arbitrary register values, which is usually okay
++ * because the usual ptrace stops run off the signal delivery path which
++ * forces IRET; however, ptrace_event() stops happen in arbitrary places
++ * in the kernel and don't force IRET path.
++ *
++ * So force IRET path after a ptrace stop.
++ */
++#define arch_ptrace_stop_needed(code, info)				\
++({									\
++	set_thread_flag(TIF_NOTIFY_RESUME);				\
++	false;								\
++})
++
+ struct user_desc;
+ extern int do_get_thread_area(struct task_struct *p, int idx,
+ 			      struct user_desc __user *info);
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 077904c8b70d..cc79eff4a1ad 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -334,6 +334,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
+  * calling arch_ptrace_stop() when it would be superfluous.  For example,
+  * if the thread has not been back to user mode since the last stop, the
+  * thread state might indicate that nothing needs to be done.
++ *
++ * This is guaranteed to be invoked once before a task stops for ptrace and
++ * may include arch-specific operations necessary prior to a ptrace stop.
+  */
+ #define arch_ptrace_stop_needed(code, info)	(0)
+ #endif
 -- 
 2.0.0
 
