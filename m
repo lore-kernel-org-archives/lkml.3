@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030839AbaGRNSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:15 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17948 "EHLO
+	id S1030821AbaGRNSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:18:11 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17939 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030817AbaGRNSM (ORCPT
+	by vger.kernel.org with ESMTP id S1422673AbaGRNSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:12 -0400
+	Fri, 18 Jul 2014 09:18:03 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: linux-kernel@vger.kernel.org, Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 047/170] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
-Date: Fri, 18 Jul 2014 14:10:52 +0200
-Message-Id: <9994e2c2687395f69e86e744f0143a9eb540df1e.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 148/170] cpufreq: Makefile: fix compilation for davinci platform
+Date: Fri, 18 Jul 2014 14:12:33 +0200
+Message-Id: <e3a192bd0b56eb15e9a0376f7921c68d15cf2016.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,51 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
+commit 5a90af67c2126fe1d04ebccc1f8177e6ca70d3a9 upstream.
 
-The Vector Crypto category instructions are supported by current POWER8
-chips, advertise them to userspace using a specific bit to properly
-differentiate with chips of the same architecture level that might not
-have them.
+Since commtit 8a7b1227e303 (cpufreq: davinci: move cpufreq driver to
+drivers/cpufreq) this added dependancy only for CONFIG_ARCH_DAVINCI_DA850
+where as davinci_cpufreq_init() call is used by all davinci platform.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This patch fixes following build error:
+
+arch/arm/mach-davinci/built-in.o: In function `davinci_init_late':
+:(.init.text+0x928): undefined reference to `davinci_cpufreq_init'
+make: *** [vmlinux] Error 1
+
+Fixes: 8a7b1227e303 (cpufreq: davinci: move cpufreq driver to drivers/cpufreq)
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/include/uapi/asm/cputable.h | 1 +
- arch/powerpc/kernel/cputable.c           | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/cpufreq/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/uapi/asm/cputable.h b/arch/powerpc/include/uapi/asm/cputable.h
-index 5b7657959faa..de2c0e4ee1aa 100644
---- a/arch/powerpc/include/uapi/asm/cputable.h
-+++ b/arch/powerpc/include/uapi/asm/cputable.h
-@@ -41,5 +41,6 @@
- #define PPC_FEATURE2_EBB		0x10000000
- #define PPC_FEATURE2_ISEL		0x08000000
- #define PPC_FEATURE2_TAR		0x04000000
-+#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index ad5866c2ada0..c2df33ba23c2 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -50,7 +50,7 @@ obj-$(CONFIG_ARM_BIG_LITTLE_CPUFREQ)	+= arm_big_little.o
+ # LITTLE drivers, so that it is probed last.
+ obj-$(CONFIG_ARM_DT_BL_CPUFREQ)		+= arm_big_little_dt.o
  
- #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
-diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
-index 597d954e5860..c5d3d023363a 100644
---- a/arch/powerpc/kernel/cputable.c
-+++ b/arch/powerpc/kernel/cputable.c
-@@ -105,7 +105,8 @@ extern void __restore_cpu_e6500(void);
- 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
- #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
- 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
--				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
-+				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
-+				 PPC_FEATURE2_VEC_CRYPTO)
- #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
- 				 PPC_FEATURE_TRUE_LE | \
- 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
+-obj-$(CONFIG_ARCH_DAVINCI_DA850)	+= davinci-cpufreq.o
++obj-$(CONFIG_ARCH_DAVINCI)		+= davinci-cpufreq.o
+ obj-$(CONFIG_UX500_SOC_DB8500)		+= dbx500-cpufreq.o
+ obj-$(CONFIG_ARM_EXYNOS_CPUFREQ)	+= exynos-cpufreq.o
+ obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
 -- 
 2.0.0
 
