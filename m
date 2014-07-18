@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761656AbaGRLkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:40:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:25735 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761618AbaGRLkJ (ORCPT
+	id S1761677AbaGRLkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:40:20 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45048 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761658AbaGRLkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:40:09 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-ec-53c9079818b2
+	Fri, 18 Jul 2014 07:40:16 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-fa-53c9079f9d9b
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
         andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v3 06/12] usb: dwc2/gadget: ensure that all fifos have correct
- memory buffers
-Date: Fri, 18 Jul 2014 13:39:31 +0200
-Message-id: <1405683577-11226-7-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v3 08/12] usb: dwc2/gadget: do not call disconnect method in
+ pullup
+Date: Fri, 18 Jul 2014 13:39:33 +0200
+Message-id: <1405683577-11226-9-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
 References: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jAd0Z7CeDDRa/FbOY9bKdxeLg/XqL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jAd357CeDDf6dFLKY9bKdxeLg/XqL
 	5sXr2Swu75rDZrFoWSuzxdojd9kttk+ZzmTx4PBOdgcOj/1z17B79G1ZxeixZf9nRo/jN7Yz
-	eXzeJBfAGsVlk5Kak1mWWqRvl8CV8WFOF1vBROGKvwsnMTUwbuLvYuTkkBAwkTh74jkLhC0m
-	ceHeerYuRi4OIYFFjBJ7Vr9jhXDamSQuNn1hA6liE9CR2PJ9AiOILSIgILH+xSV2kCJmgROM
-	Eh3/L4AVCQvES8w/fARsLIuAqsTNlVOYuxg5OHgFXCXOnjWE2CYncfLYZFYQm1PATaLt0X8W
-	kBIhoJJpX/knMPIuYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcXM+kdjCubLA4xCjA
-	wajEw2tx83iwEGtiWXFl7iFGCQ5mJRHe7PtAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0D
-	hQTSE0tSs1NTC1KLYLJMHJxSDYxdErJnIj8Yqt5S6OW+eMBt14TMusXOCwR/mQQXcgpaPEjl
-	/i1y7sF2g0LjUo4zG869uGCyQqevME+whVH95qbELeI9qowT+Q+f//d/QkiqxTflo5r1DS7a
-	u5nzS6+IMbBvMjr+O6hOmyFRdgrjZm/9y6+rzz6/49UUFjr1gtGklK9trnyu85RYijMSDbWY
-	i4oTAXLifhQqAgAA
+	eXzeJBfAGsVlk5Kak1mWWqRvl8CVcebmQZaCeWwVV5qusjQwLmLtYuTkkBAwkZh4YzUzhC0m
+	ceHeerYuRi4OIYFFjBIn3m1lAUkICbQzSbROcgGx2QR0JLZ8n8AIYosICEisf3GJHaSBWeAE
+	o0TH/wtsIAlhgVCJs5/7wKayCKhKXNs7hR3E5hVwlfjfswxqs5zEyWOTwWxOATeJtkf/gZZx
+	AC1zlZj2lX8CI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHB9UxqB+PKBotDjAIc
+	jEo8vBY3jwcLsSaWFVfmHmKU4GBWEuHNvg8U4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQ
+	SCA9sSQ1OzW1ILUIJsvEwSnVwCgQfXaCRqvwh4PBi3UeKX12P99/+vcfZvbTvrE2eddjH0Yz
+	rFiqVbe2fcPmBU891V79T+EVnTVP0mrp624htRs3f6/OLj6yvzV8N0P43r1rD1jcVHqttmj6
+	ry/cnzff7dW52DXz7L4LXOuiq56qRR1Ori0LFbS+ZGT5qihum8+3Liv+AxuFclyUWIozEg21
+	mIuKEwHMCcAHKgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Print warning if FIFOs are configured in such a way that they don't fit
-into the SPRAM available on the s3c hsotg module.
+This leads to potential spinlock recursion in composite framework, other
+udc drivers also don't call it directly from pullup method.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/core.h   |  1 +
- drivers/usb/dwc2/gadget.c | 15 ++++++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/usb/dwc2/gadget.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
-index 1efd10c..067390e 100644
---- a/drivers/usb/dwc2/core.h
-+++ b/drivers/usb/dwc2/core.h
-@@ -194,6 +194,7 @@ struct s3c_hsotg {
- 	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
- 
- 	u32                     phyif;
-+	int			fifo_mem;
- 	unsigned int            dedicated_fifos:1;
- 	unsigned char           num_of_eps;
- 
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 95b6dcb..21d21de 100644
+index 2220882..def4900 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -194,6 +194,8 @@ static void s3c_hsotg_init_fifo(struct s3c_hsotg *hsotg)
- 	for (ep = 1; ep <= 15; ep++) {
- 		val = addr;
- 		val |= size << FIFOSIZE_DEPTH_SHIFT;
-+		WARN_ONCE(addr + size > hsotg->fifo_mem,
-+			  "insufficient fifo memory");
- 		addr += size;
- 
- 		writel(val, hsotg->regs + DPTXFSIZN(ep));
-@@ -3030,19 +3032,22 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
-  */
- static void s3c_hsotg_hw_cfg(struct s3c_hsotg *hsotg)
- {
--	u32 cfg2, cfg4;
-+	u32 cfg2, cfg3, cfg4;
- 	/* check hardware configuration */
- 
- 	cfg2 = readl(hsotg->regs + 0x48);
- 	hsotg->num_of_eps = (cfg2 >> 10) & 0xF;
- 
--	dev_info(hsotg->dev, "EPs:%d\n", hsotg->num_of_eps);
-+	cfg3 = readl(hsotg->regs + 0x4C);
-+	hsotg->fifo_mem = (cfg3 >> 16);
- 
- 	cfg4 = readl(hsotg->regs + 0x50);
- 	hsotg->dedicated_fifos = (cfg4 >> 25) & 1;
- 
--	dev_info(hsotg->dev, "%s fifos\n",
--		 hsotg->dedicated_fifos ? "dedicated" : "shared");
-+	dev_info(hsotg->dev, "EPs: %d, %s fifos, %d entries in SPRAM\n",
-+		 hsotg->num_of_eps,
-+		 hsotg->dedicated_fifos ? "dedicated" : "shared",
-+		 hsotg->fifo_mem);
- }
- 
- /**
-@@ -3495,8 +3500,8 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 	s3c_hsotg_phy_enable(hsotg);
- 
- 	s3c_hsotg_corereset(hsotg);
--	s3c_hsotg_init(hsotg);
- 	s3c_hsotg_hw_cfg(hsotg);
-+	s3c_hsotg_init(hsotg);
- 
- 	/* hsotg->num_of_eps holds number of EPs other than ep0 */
+@@ -2945,7 +2945,6 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
+ 		s3c_hsotg_phy_enable(hsotg);
+ 		s3c_hsotg_core_init(hsotg);
+ 	} else {
+-		s3c_hsotg_disconnect(hsotg);
+ 		s3c_hsotg_phy_disable(hsotg);
+ 	}
  
 -- 
 1.9.1
