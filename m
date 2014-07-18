@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761922AbaGRORo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:17:44 -0400
-Received: from smtp-out-181.synserver.de ([212.40.185.181]:1085 "EHLO
-	smtp-out-181.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362AbaGRORm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:17:42 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 836
-Message-ID: <53C92C86.2030408@metafoo.de>
-Date: Fri, 18 Jul 2014 16:17:42 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1761945AbaGRORy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:17:54 -0400
+Received: from verein.lst.de ([213.95.11.211]:49624 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964864AbaGRORw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 10:17:52 -0400
+Date: Fri, 18 Jul 2014 16:17:47 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: poma <pomidorabelisima@gmail.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Christoph Hellwig <hch@lst.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
+	kmem_cache_create+0x1a9/0x330()
+Message-ID: <20140718141747.GA23272@lst.de>
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <20140718132104.GK27940@esperanza>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org
-CC: apw@canonical.com, joe@perches.com, tytso@mit.edu, dwalter@google.com,
-        bp@suse.de, neilb@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl: Remove --file option
-References: <1405611268-12463-1-git-send-email-richard@nod.at>
-In-Reply-To: <1405611268-12463-1-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140718132104.GK27940@esperanza>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 05:34 PM, Richard Weinberger wrote:
-[...]
-> In order to deal with that bad habit let's remove the --file option
-> and bring checkpatch.pl back to its original purpose.
+On Fri, Jul 18, 2014 at 05:21:04PM +0400, Vladimir Davydov wrote:
+> Slab warns, because the name of the cache being created contains spaces.
+> The "bad" cache is created by scsi_get_host_cmd_pool. Its name
+> (pool->cmd_name) is initialized by scsi_alloc_host_cmd_pool as follows:
+> 
+> 	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+> 
+> So, if hostt->name contains spaces, the cache name will also contain
+> spaces and we'll get the warning. And hostt->name can contain spaces,
+> e.g. virtscsi_host_template_single.name="Virtio SCSI HBA".
 
-I don't think this is a good solution the problem and I'm not sure how 
-successful it will actually be at fixing the problem. How about instead 
-properly documenting that single line trivial style cleanup patches are not 
-really helpful and people should not send them? (Maybe add a check to 
-checkpatch.pl that emits a warning if the patch is a trivial style cleanup ;))
+Or might not even be present.  I'll send a patch to replace it with
+->proc_name, which must not contain spaces and is generally shorter
+as well.
 
---file is a in my opinion useful option and at least I use it on a regular 
-basis.
-
-- Lars
