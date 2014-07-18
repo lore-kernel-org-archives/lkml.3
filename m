@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762063AbaGRQRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:17:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60429 "EHLO mail.skyhub.de"
+	id S1762094AbaGRQUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:20:09 -0400
+Received: from imap.thunk.org ([74.207.234.97]:43795 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762012AbaGRQRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:17:48 -0400
-Date: Fri, 18 Jul 2014 18:17:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>
-Subject: Re: [PATCH v3 2/6] acerhdf: Adding support for new models
-Message-ID: <20140718161740.GA29366@pd.tnic>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1399139966-10625-1-git-send-email-peter@piie.net>
- <1399139966-10625-3-git-send-email-peter@piie.net>
- <20140717094648.GB23869@pd.tnic>
- <cone.1405699613.361414.1043.1000@galar>
+	id S1754473AbaGRQUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 12:20:08 -0400
+Date: Fri, 18 Jul 2014 12:19:36 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Brent Cook <busterb@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] initial getrandom wrapper to provide getentropy
+ for LibreSSL
+Message-ID: <20140718161936.GA4877@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Brent Cook <busterb@gmail.com>, linux-kernel@vger.kernel.org
+References: <1405666144-88053-1-git-send-email-busterb@gmail.com>
+ <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cone.1405699613.361414.1043.1000@galar>
+In-Reply-To: <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 06:06:53PM +0200, Peter Feuerer wrote:
-> Everytime I send out a modified version of acerhdf.c to someone in the
-> internet for trying out some changes, I increment the second minor
-> version number. And from time to time I push things to Mainline, then
-> I need to catch up with the numbering ;)
-
-Right, that's a good way to know which version people are testing when
-you're staring at dmesg.
-
-> The major 0 is just from the ages, when all cool projects used to have a 0
-> in front.
+On Fri, Jul 18, 2014 at 08:09:52AM -0500, Brent Cook wrote:
+> On Jul 18, 2014, at 1:49 AM, Brent Cook <busterb@gmail.com> wrote:
 > 
-> Maybe it would be a good idea to go for 1.0 when I implemented a better
-> handling for the huge bios table.
+> > From: Brent Cook <bcook@openbsd.org>
+> > 
+> > This is not a kernel patch, but rather an initial test of the API to see
+> > how it might mesh LibreSSL's expectations for how getentropy works.
+> > 
+> > It is a bit more code to carefully handle the extra return values, as
+> > not reading enough bytes, because there is an unhandled EINTR, might
+> > lead to an unseeded CSPRNG.
 
-Probably. You could at least increment it to 0.6 when you switch to the
-bang-bang governor :-)
+Take a look at the latest patch for getrandom.  It contains a
+suggested wrapper which should be sufficient for emulation of
+OpenBSD's getentropy(), and a lot of discussion of when you don't need
+to worry about getting the EINTR.
 
--- 
-Regards/Gruss,
-    Boris.
+   http://lists.openwall.net/linux-kernel/2014/07/18/329
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Again, please don't commit anything until the syscall number and
+interface is finalized.  What is out here is for review, and I already
+have in the git commit a suggested wrapper to provide getentropy(2).
+If you don't think it's good enough, please let me know what your
+concerns might be.  (And yes, I've fixed the obvious missing open
+brace already.  :-)
+
+   	      	      	  	     	      	    - Ted
