@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934311AbaGRNCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:02:40 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17175 "EHLO
+	id S965267AbaGRNCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:02:49 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17189 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758618AbaGRNCg (ORCPT
+	by vger.kernel.org with ESMTP id S965133AbaGRNCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:02:36 -0400
+	Fri, 18 Jul 2014 09:02:45 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 105/170] net: allwinner: emac: Add missing free_irq
-Date: Fri, 18 Jul 2014 14:11:50 +0200
-Message-Id: <95718f155906684dd0d9a16d8bda93783534fbd4.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 084/170] drm/radeon/dpm: fix typo in vddci setup for eg/btc
+Date: Fri, 18 Jul 2014 14:11:29 +0200
+Message-Id: <af8f13889227e79bd7709836ab667b88db562c7f.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,38 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b91113282bf44df46aba374a0b8f88a75bfd4b3f upstream.
+commit e07929810f0a19ddd756558290c7d72827cbfcd9 upstream.
 
-If the mdio probe function fails in emac_open, the interrupt we just requested
-isn't freed. If emac_open is called again, for example because we try to set up
-the interface again, the kernel will oops because the interrupt wasn't properly
-released.
+We were using the vddc mask rather than the vddci mask.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=79071
+
+Possibly also fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=68571
+
+Noticed-by:  Jonathan Howard <jonathan@unbiased.name>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/allwinner/sun4i-emac.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/cypress_dpm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
-index 46dfb1378c17..81576c6c31e0 100644
---- a/drivers/net/ethernet/allwinner/sun4i-emac.c
-+++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
-@@ -726,6 +726,7 @@ static int emac_open(struct net_device *dev)
+diff --git a/drivers/gpu/drm/radeon/cypress_dpm.c b/drivers/gpu/drm/radeon/cypress_dpm.c
+index 91bb470de0a3..7143783fb237 100644
+--- a/drivers/gpu/drm/radeon/cypress_dpm.c
++++ b/drivers/gpu/drm/radeon/cypress_dpm.c
+@@ -1549,7 +1549,7 @@ int cypress_populate_smc_voltage_tables(struct radeon_device *rdev,
  
- 	ret = emac_mdio_probe(dev);
- 	if (ret < 0) {
-+		free_irq(dev->irq, dev);
- 		netdev_err(dev, "cannot probe MDIO bus\n");
- 		return ret;
+ 		table->voltageMaskTable.highMask[RV770_SMC_VOLTAGEMASK_VDDCI] = 0;
+ 		table->voltageMaskTable.lowMask[RV770_SMC_VOLTAGEMASK_VDDCI] =
+-			cpu_to_be32(eg_pi->vddc_voltage_table.mask_low);
++			cpu_to_be32(eg_pi->vddci_voltage_table.mask_low);
  	}
+ 
+ 	return 0;
 -- 
 2.0.0
 
