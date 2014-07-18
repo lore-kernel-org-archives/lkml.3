@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762169AbaGRNly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:41:54 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17630 "EHLO
+	id S1762196AbaGRNm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:42:26 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17623 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934818AbaGRNMV (ORCPT
+	by vger.kernel.org with ESMTP id S934880AbaGRNMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:12:21 -0400
+	Fri, 18 Jul 2014 09:12:16 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Bernd Wachter <bernd.wachter@jolla.com>,
-        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 127/170] usb: option: Add ID for Telewell TW-LTE 4G v2
-Date: Fri, 18 Jul 2014 14:12:12 +0200
-Message-Id: <b56ef44a38aa8725cdd328c0c3c2b4d3dbb54b56.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 102/170] arm64: mm: Make icache synchronisation logic huge page aware
+Date: Fri, 18 Jul 2014 14:11:47 +0200
+Message-Id: <9bc36a69453aa869f5a9ef444b9c194e7408bde7.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,37 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernd Wachter <bernd.wachter@jolla.com>
+From: Steve Capper <steve.capper@linaro.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3d28bd840b2d3981cd28caf5fe1df38f1344dd60 upstream.
+commit 923b8f5044da753e4985ab15c1374ced2cdf616c upstream.
 
-Add ID of the Telewell 4G v2 hardware to option driver to get legacy
-serial interface working
+The __sync_icache_dcache routine will only flush the dcache for the
+first page of a compound page, potentially leading to stale icache
+data residing further on in a hugetlb page.
 
-Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This patch addresses this issue by taking into consideration the
+order of the page when flushing the dcache.
+
+Reported-by: Mark Brown <broonie@linaro.org>
+Tested-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm64/mm/flush.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index e25e8ca09fe2..9da566a3f5c8 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1487,6 +1487,8 @@ static const struct usb_device_id option_ids[] = {
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1428, 0xff, 0xff, 0xff),  /* Telewell TW-LTE 4G v2 */
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
+diff --git a/arch/arm64/mm/flush.c b/arch/arm64/mm/flush.c
+index e4193e3adc7f..0d64089d28b5 100644
+--- a/arch/arm64/mm/flush.c
++++ b/arch/arm64/mm/flush.c
+@@ -79,7 +79,8 @@ void __sync_icache_dcache(pte_t pte, unsigned long addr)
+ 		return;
+ 
+ 	if (!test_and_set_bit(PG_dcache_clean, &page->flags)) {
+-		__flush_dcache_area(page_address(page), PAGE_SIZE);
++		__flush_dcache_area(page_address(page),
++				PAGE_SIZE << compound_order(page));
+ 		__flush_icache_all();
+ 	} else if (icache_is_aivivt()) {
+ 		__flush_icache_all();
 -- 
 2.0.0
 
