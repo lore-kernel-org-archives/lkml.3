@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030903AbaGRNSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:54 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17989 "EHLO
+	id S1761625AbaGRNS7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:18:59 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17997 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030582AbaGRNSu (ORCPT
+	by vger.kernel.org with ESMTP id S1030902AbaGRNSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:50 -0400
+	Fri, 18 Jul 2014 09:18:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 137/170] hwmon: (emc2103) Clamp limits instead of bailing out
-Date: Fri, 18 Jul 2014 14:12:22 +0200
-Message-Id: <cd4da31a80bd9e3b71a62af0029de98897f38171.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 051/170] MIPS: KVM: Fix memory leak on VCPU
+Date: Fri, 18 Jul 2014 14:10:56 +0200
+Message-Id: <e7f46b90acc0848bfc2d1906e2be285c7d81afbc.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,71 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
+commit 8c9eb041cf76038eb3b62ee259607eec9b89f48d upstream.
 
-It is customary to clamp limits instead of bailing out with an error
-if a configured limit is out of the range supported by the driver.
-This simplifies limit configuration, since the user will not typically
-know chip and/or driver specific limits.
+kvm_arch_vcpu_free() is called in 2 code paths:
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+1) kvm_vm_ioctl()
+       kvm_vm_ioctl_create_vcpu()
+           kvm_arch_vcpu_destroy()
+               kvm_arch_vcpu_free()
+2) kvm_put_kvm()
+       kvm_destroy_vm()
+           kvm_arch_destroy_vm()
+               kvm_mips_free_vcpus()
+                   kvm_arch_vcpu_free()
+
+Neither of the paths handles VCPU free. We need to do it in
+kvm_arch_vcpu_free() corresponding to the memory allocation in
+kvm_arch_vcpu_create().
+
+Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hwmon/emc2103.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ arch/mips/kvm/kvm_mips.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/hwmon/emc2103.c b/drivers/hwmon/emc2103.c
-index 2c137b26acb4..5790246a7e1d 100644
---- a/drivers/hwmon/emc2103.c
-+++ b/drivers/hwmon/emc2103.c
-@@ -250,9 +250,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *da,
- 	if (result < 0)
- 		return result;
+diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
+index 8b900e987338..3f3e5b2b2f38 100644
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -388,6 +388,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
  
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
+ 	kfree(vcpu->arch.guest_ebase);
+ 	kfree(vcpu->arch.kseg0_commpage);
++	kfree(vcpu);
+ }
  
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = val;
-@@ -274,9 +272,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *da,
- 	if (result < 0)
- 		return result;
- 
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = val;
-@@ -390,15 +386,14 @@ static ssize_t set_fan_target(struct device *dev, struct device_attribute *da,
- {
- 	struct emc2103_data *data = emc2103_update_device(dev);
- 	struct i2c_client *client = to_i2c_client(dev);
--	long rpm_target;
-+	unsigned long rpm_target;
- 
--	int result = kstrtol(buf, 10, &rpm_target);
-+	int result = kstrtoul(buf, 10, &rpm_target);
- 	if (result < 0)
- 		return result;
- 
- 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
--	if ((rpm_target < 0) || (rpm_target > 16384))
--		return -EINVAL;
-+	rpm_target = clamp_val(rpm_target, 0, 16384);
- 
- 	mutex_lock(&data->update_lock);
- 
+ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 -- 
 2.0.0
 
