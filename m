@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762733AbaGRPbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:31:08 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39877 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762058AbaGRPbE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:31:04 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Cc: dcb314@hotmail.com, rafael.j.wysocki@intel.com, trenn@suse.de,
-        linux@dominikbrodowski.net,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH 1/5] tools/power/cpupower/utils/helpers/sysfs.c: drop negativity check on unsigned value
-Date: Fri, 18 Jul 2014 18:30:45 +0300
-Message-Id: <1405697445-23620-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	id S1762249AbaGRP0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:26:18 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:55214 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762217AbaGRP0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:26:16 -0400
+X-pt: isis.lip6.fr
+From: Benoit Taine <benoit.taine@lip6.fr>
+To: Sathya Perla <sathya.perla@emulex.com>
+Cc: benoit.taine@lip6.fr, Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 16/25] be2net: Replace DEFINE_PCI_DEVICE_TABLE macro use
+Date: Fri, 18 Jul 2014 17:27:03 +0200
+Message-Id: <1405697232-11785-17-git-send-email-benoit.taine@lip6.fr>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:12 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80621
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+We should prefer `struct pci_device_id` over `DEFINE_PCI_DEVICE_TABLE` to meet
+kernel coding style guidelines. This issue was reported by checkpatch.
+
+Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+
 ---
- tools/power/cpupower/utils/helpers/sysfs.c | 2 +-
+Tested by compilation without errors.
+
+ drivers/net/ethernet/emulex/benet/be_main.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/power/cpupower/utils/helpers/sysfs.c b/tools/power/cpupower/utils/helpers/sysfs.c
-index 851c7a1..09afe5d 100644
---- a/tools/power/cpupower/utils/helpers/sysfs.c
-+++ b/tools/power/cpupower/utils/helpers/sysfs.c
-@@ -81,7 +81,7 @@ int sysfs_is_cpu_online(unsigned int cpu)
- 	close(fd);
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index 9bced68..04f2348 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -39,7 +39,7 @@ static ushort rx_frag_size = 2048;
+ module_param(rx_frag_size, ushort, S_IRUGO);
+ MODULE_PARM_DESC(rx_frag_size, "Size of a fragment that holds rcvd data.");
  
- 	value = strtoull(linebuf, &endp, 0);
--	if (value > 1 || value < 0)
-+	if (value > 1)
- 		return -EINVAL;
- 
- 	return value;
--- 
-1.8.5.5
+-static DEFINE_PCI_DEVICE_TABLE(be_dev_ids) = {
++static const struct pci_device_id be_dev_ids[] = {
+ 	{ PCI_DEVICE(BE_VENDOR_ID, BE_DEVICE_ID1) },
+ 	{ PCI_DEVICE(BE_VENDOR_ID, BE_DEVICE_ID2) },
+ 	{ PCI_DEVICE(BE_VENDOR_ID, OC_DEVICE_ID1) },
 
