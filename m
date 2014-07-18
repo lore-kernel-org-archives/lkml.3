@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373AbaGRGw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:52:57 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:56631 "EHLO
+	id S1758455AbaGRGws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:52:48 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:56532 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108AbaGRGwx (ORCPT
+	with ESMTP id S1756409AbaGRGwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:52:53 -0400
+	Fri, 18 Jul 2014 02:52:46 -0400
 X-Original-SENDERIP: 10.177.222.156
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -20,14 +20,13 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Minchan Kim <minchan@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v13 7/8] arm64: add pmd_[dirty|mkclean] for THP
-Date: Fri, 18 Jul 2014 15:53:05 +0900
-Message-Id: <1405666386-15095-8-git-send-email-minchan@kernel.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v13 4/8] powerpc: add pmd_[dirty|mkclean] for THP
+Date: Fri, 18 Jul 2014 15:53:02 +0900
+Message-Id: <1405666386-15095-5-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1405666386-15095-1-git-send-email-minchan@kernel.org>
 References: <1405666386-15095-1-git-send-email-minchan@kernel.org>
@@ -42,34 +41,31 @@ THP page.
 This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
 support.
 
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Steve Capper <steve.capper@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/arm64/include/asm/pgtable.h | 2 ++
+ arch/powerpc/include/asm/pgtable-ppc64.h | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index e0ccceb317d9..41dfe3c7260c 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -240,10 +240,12 @@ static inline pmd_t pte_pmd(pte_t pte)
- #endif
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
+index eb9261024f51..c9a4bbe8e179 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+@@ -468,9 +468,11 @@ static inline pte_t *pmdp_ptep(pmd_t *pmd)
  
+ #define pmd_pfn(pmd)		pte_pfn(pmd_pte(pmd))
  #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
 +#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
- #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
- #define pmd_mksplitting(pmd)	pte_pmd(pte_mkspecial(pmd_pte(pmd)))
  #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
- #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
-+#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+ #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
  #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
++#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
  #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
- #define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
+ 
 -- 
 2.0.0
 
