@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030853AbaGRNSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:31 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17967 "EHLO
+	id S1030884AbaGRNSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:18:47 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17983 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761530AbaGRNS1 (ORCPT
+	by vger.kernel.org with ESMTP id S1030582AbaGRNSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:27 -0400
+	Fri, 18 Jul 2014 09:18:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 095/170] hwmon: (ina2xx) Cast to s16 on shunt and current regs
-Date: Fri, 18 Jul 2014 14:11:40 +0200
-Message-Id: <d9f8ab9c7c5e29b630816bd2be3d9c90c98c75ba.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Tim Gardner <tim.gardner@canonical.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Eldad Zack <eldad@fogrefinery.com>, Daniel Mack <zonque@gmail.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 123/170] ALSA: usb-audio: Suppress repetitive debug messages from retire_playback_urb()
+Date: Fri, 18 Jul 2014 14:12:08 +0200
+Message-Id: <0606474195abb007a1b74fb636b1770d61f393e6.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,55 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
+From: Tim Gardner <tim.gardner@canonical.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c0214f98943b1fe43f7be61b7782b0c8f0836f28 upstream.
+commit a5065eb6da55b226661456e6a7435f605df98111 upstream.
 
-All devices supported by ina2xx are bidirectional and report the
-measured shunt voltage and power values as a signed 16 bit, but the
-current driver implementation caches all registers as u16, leading
-to an incorrect sign extension when reporting to userspace in
-ina2xx_get_value().
+BugLink: http://bugs.launchpad.net/bugs/1305133
 
-This patch fixes the problem by casting the signed registers to s16.
-Tested on an INA219.
+Malfunctioning or slow devices can cause a flood of dmesg SPAM.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+I've ignored checkpatch.pl complaints about the use of printk_ratelimit() in favour
+of prior art in sound/usb/pcm.c.
+
+WARNING: Prefer printk_ratelimited or pr_<level>_ratelimited to printk_ratelimit
++	if (printk_ratelimit() &&
+
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Eldad Zack <eldad@fogrefinery.com>
+Cc: Daniel Mack <zonque@gmail.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hwmon/ina2xx.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ sound/usb/pcm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index 70a39a8ac016..554f5c3fe5c4 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -148,7 +148,8 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+index b375d58871e7..d59e0c1a3e20 100644
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -1491,7 +1491,8 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
+ 	 * The error should be lower than 2ms since the estimate relies
+ 	 * on two reads of a counter updated every ms.
+ 	 */
+-	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
++	if (printk_ratelimit() &&
++	    abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
+ 		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
+ 			est_delay, subs->last_delay);
  
- 	switch (reg) {
- 	case INA2XX_SHUNT_VOLTAGE:
--		val = DIV_ROUND_CLOSEST(data->regs[reg],
-+		/* signed register */
-+		val = DIV_ROUND_CLOSEST((s16)data->regs[reg],
- 					data->config->shunt_div);
- 		break;
- 	case INA2XX_BUS_VOLTAGE:
-@@ -160,8 +161,8 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
- 		val = data->regs[reg] * data->config->power_lsb;
- 		break;
- 	case INA2XX_CURRENT:
--		/* LSB=1mA (selected). Is in mA */
--		val = data->regs[reg];
-+		/* signed register, LSB=1mA (selected), in mA */
-+		val = (s16)data->regs[reg];
- 		break;
- 	default:
- 		/* programmer goofed */
 -- 
 2.0.0
 
