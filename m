@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030884AbaGRNSr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:47 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17983 "EHLO
+	id S1030868AbaGRNSi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:18:38 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17975 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030582AbaGRNSo (ORCPT
+	by vger.kernel.org with ESMTP id S1761530AbaGRNSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:44 -0400
+	Fri, 18 Jul 2014 09:18:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tim Gardner <tim.gardner@canonical.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Eldad Zack <eldad@fogrefinery.com>, Daniel Mack <zonque@gmail.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 123/170] ALSA: usb-audio: Suppress repetitive debug messages from retire_playback_urb()
-Date: Fri, 18 Jul 2014 14:12:08 +0200
-Message-Id: <0606474195abb007a1b74fb636b1770d61f393e6.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 040/170] powerpc/mm: Check paca psize is up to date for huge mappings
+Date: Fri, 18 Jul 2014 14:10:45 +0200
+Message-Id: <0ddc881b680a5e71352003e1777ca79ea9ff0f21.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -25,50 +24,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Gardner <tim.gardner@canonical.com>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a5065eb6da55b226661456e6a7435f605df98111 upstream.
+commit 09567e7fd44291bfc08accfdd67ad8f467842332 upstream.
 
-BugLink: http://bugs.launchpad.net/bugs/1305133
+We have a bug in our hugepage handling which exhibits as an infinite
+loop of hash faults. If the fault is being taken in the kernel it will
+typically trigger the softlockup detector, or the RCU stall detector.
 
-Malfunctioning or slow devices can cause a flood of dmesg SPAM.
+The bug is as follows:
 
-I've ignored checkpatch.pl complaints about the use of printk_ratelimit() in favour
-of prior art in sound/usb/pcm.c.
+ 1. mmap(0xa0000000, ..., MAP_FIXED | MAP_HUGE_TLB | MAP_ANONYMOUS ..)
+ 2. Slice code converts the slice psize to 16M.
+ 3. The code on lines 539-540 of slice.c in slice_get_unmapped_area()
+    synchronises the mm->context with the paca->context. So the paca slice
+    mask is updated to include the 16M slice.
+ 3. Either:
+    * mmap() fails because there are no huge pages available.
+    * mmap() succeeds and the mapping is then munmapped.
+    In both cases the slice psize remains at 16M in both the paca & mm.
+ 4. mmap(0xa0000000, ..., MAP_FIXED | MAP_ANONYMOUS ..)
+ 5. The slice psize is converted back to 64K. Because of the check on line 539
+    of slice.c we DO NOT update the paca->context. The paca slice mask is now
+    out of sync with the mm slice mask.
+ 6. User/kernel accesses 0xa0000000.
+ 7. The SLB miss handler slb_allocate_realmode() **uses the paca slice mask**
+    to create an SLB entry and inserts it in the SLB.
+18. With the 16M SLB entry in place the hardware does a hash lookup, no entry
+    is found so a data access exception is generated.
+19. The data access handler calls do_page_fault() -> handle_mm_fault().
+10. __handle_mm_fault() creates a THP mapping with do_huge_pmd_anonymous_page().
+11. The hardware retries the access, there is still nothing in the hash table
+    so once again a data access exception is generated.
+12. hash_page() calls into __hash_page_thp() and inserts a mapping in the
+    hash. Although the THP mapping maps 16M the hashing is done using 64K
+    as the segment page size.
+13. hash_page() returns immediately after calling __hash_page_thp(), skipping
+    over the code at line 1125. Resulting in the mismatch between the
+    paca->context and mm->context not being detected.
+14. The hardware retries the access, the hash it generates using the 16M
+    SLB entry does NOT match the hash we inserted.
+15. We take another data access and go into __hash_page_thp().
+16. We see a valid entry in the hpte_slot_array and so we call updatepp()
+    which succeeds.
+17. Goto 14.
 
-WARNING: Prefer printk_ratelimited or pr_<level>_ratelimited to printk_ratelimit
-+	if (printk_ratelimit() &&
+We could fix this in two ways. The first would be to remove or modify
+the check on line 539 of slice.c.
 
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Eldad Zack <eldad@fogrefinery.com>
-Cc: Daniel Mack <zonque@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The second option is to cause the check of paca psize in hash_page() on
+line 1125 to also be done for THP pages.
+
+We prefer the latter, because the check & update of the paca psize is
+not done until we know it's necessary. It's also done only on the
+current cpu, so we don't need to IPI all other cpus.
+
+Without further rearranging the code, the simplest fix is to pull out
+the code that checks paca psize and call it in two places. Firstly for
+THP/hugetlb, and secondly for other mappings as before.
+
+Thanks to Dave Jones for trinity, which originally found this bug.
+
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/pcm.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/mm/hash_utils_64.c | 31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
-diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
-index b375d58871e7..d59e0c1a3e20 100644
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -1491,7 +1491,8 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
- 	 * The error should be lower than 2ms since the estimate relies
- 	 * on two reads of a counter updated every ms.
- 	 */
--	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
-+	if (printk_ratelimit() &&
-+	    abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
- 		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
- 			est_delay, subs->last_delay);
+diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+index bde8b5589755..503a5d005622 100644
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -947,6 +947,22 @@ void hash_failure_debug(unsigned long ea, unsigned long access,
+ 		trap, vsid, ssize, psize, lpsize, pte);
+ }
  
++static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
++			     int psize, bool user_region)
++{
++	if (user_region) {
++		if (psize != get_paca_psize(ea)) {
++			get_paca()->context = mm->context;
++			slb_flush_and_rebolt();
++		}
++	} else if (get_paca()->vmalloc_sllp !=
++		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
++		get_paca()->vmalloc_sllp =
++			mmu_psize_defs[mmu_vmalloc_psize].sllp;
++		slb_vmalloc_update();
++	}
++}
++
+ /* Result code is:
+  *  0 - handled
+  *  1 - normal page fault
+@@ -1068,6 +1084,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 			WARN_ON(1);
+ 		}
+ #endif
++		check_paca_psize(ea, mm, psize, user_region);
++
+ 		goto bail;
+ 	}
+ 
+@@ -1108,17 +1126,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ #endif
+ 		}
+ 	}
+-	if (user_region) {
+-		if (psize != get_paca_psize(ea)) {
+-			get_paca()->context = mm->context;
+-			slb_flush_and_rebolt();
+-		}
+-	} else if (get_paca()->vmalloc_sllp !=
+-		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
+-		get_paca()->vmalloc_sllp =
+-			mmu_psize_defs[mmu_vmalloc_psize].sllp;
+-		slb_vmalloc_update();
+-	}
++
++	check_paca_psize(ea, mm, psize, user_region);
+ #endif /* CONFIG_PPC_64K_PAGES */
+ 
+ #ifdef CONFIG_PPC_HAS_HASH_64K
 -- 
 2.0.0
 
