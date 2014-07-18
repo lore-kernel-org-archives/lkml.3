@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758835AbaGRBhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 21:37:42 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:55852 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184AbaGRBhl (ORCPT
+	id S1759275AbaGRBmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 21:42:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37402 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184AbaGRBmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 21:37:41 -0400
+	Thu, 17 Jul 2014 21:42:49 -0400
+Date: Thu, 17 Jul 2014 18:37:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: Re: [char-misc-next 4/5] mei: nfc: clean nfc internal struct on host
+ exit
+Message-ID: <20140718013758.GA31846@kroah.com>
+References: <1405583618-8229-1-git-send-email-tomas.winkler@intel.com>
+ <1405583618-8229-5-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1405619953-5475-1-git-send-email-elder@linaro.org>
-References: <1405619953-5475-1-git-send-email-elder@linaro.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 18 Jul 2014 03:37:19 +0200
-Message-ID: <CAPXgP13LZQTu7-LQp4Amj6YmEh7X+Jk3e27D-wUz60qmSYfOwQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] printk: more log flag simplification
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, pmladek@suse.cz, bp@suse.de,
-        john.stultz@linaro.org, jack@suse.cz,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405583618-8229-5-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 7:59 PM, Alex Elder <elder@linaro.org> wrote:
-> This series rearranges the log code in such a way that the LOG_CONT
-> and LOG_PREFIX log record flags can be eliminated entirely.  The
-> result should be considerably easier to understand than before.  It
-> builds on another recently-posted series of patches:
->     https://lkml.org/lkml/2014/7/17/363
->
-> The first patch exploits the fact that LOG_CONT and LOG_NEWLINE
-> are inverses, and uses LOG_NEWLINE (or its negation) anywhere
-> LOG_CONT is used.  As a result, LOG_CONT is no longer needed, so
-> it's eliminated.
->
-> The next three patches together eliminate LOG_PREFIX.  The effect
-> of LOG_PREFIX is to complete the previous log entry before recording
-> a new one.  Patch 2 arranges to do this directly, marking the previous
-> log record with LOG_NEWLINE whenever a new record is presented with
-> LOG_PREFIX set.  Patch 3 stops saving LOG_PREFIX in any log records,
-> and patch 4 finally gets rid of LOG_PREFIX.
->
-> The last patch is just some cleanup of the code now that it's gone
-> through this transformation.
+On Thu, Jul 17, 2014 at 10:53:37AM +0300, Tomas Winkler wrote:
+> From: Alexander Usyskin <alexander.usyskin@intel.com>
+> 
+> NFC internal structure cleaning was dropped by commit
+> 
+> commit 5ad1550a15cd5b75ed8aa3009e162822f720375e
+> Author: Tomas Winkler <tomas.winkler@intel.com>
+> Date:   Sun Jan 26 11:53:06 2014 +0200
+> 
+>     mei: Remove all bus devices from the mei_dev list when stopping the MEI
+> 
+> Bring back cleaning of structure only, because it broke
+> host init after host exit scenario (like after S3):
+> mei_nfc_host_init checks ndev->cl_info and does nothing if it's dirty.
+> 
+> Cc: stable@vger.kernel.org # 3.15+
+> Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+>  drivers/misc/mei/nfc.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+> index 3095fc5..257f01f 100644
+> --- a/drivers/misc/mei/nfc.c
+> +++ b/drivers/misc/mei/nfc.c
+> @@ -553,6 +553,7 @@ void mei_nfc_host_exit(struct mei_device *dev)
+>  {
+>  	struct mei_nfc_dev *ndev = &nfc_dev;
+>  	cancel_work_sync(&ndev->init_work);
+> +	memset(ndev, 0, sizeof(struct mei_nfc_dev));
 
-Continuation lines are racy and unreliable by definition, they create
-a problem that cannot be solved properly, so we need to try to make
-the best out of it. The idea of the record buffer flags was to record
-what actually happened when things race against each other. A line
-without a newline is recorded as a line without a newline.
+This implies that something is using a "static" device structure, which
+isn't allowed by the driver core.  So please fix the root cause here,
+don't paper over the bug.
 
-Your simplifying patches changes the code to store how things will
-*look* like when exported, not what actually *happened*; like it
-pretends the earlier line had a newline, while that might not have
-been the case.
+thanks,
 
-Maybe your simplified logic is "good enough" for the common use cases,
-I haven't thought it through, but it sounds a bit strange to pretend
-things in the flags of a record which actually did not happen for this
-record that way, just to save a bit in a flag field.
-
-Thanks,
-Kay
+greg k-h
