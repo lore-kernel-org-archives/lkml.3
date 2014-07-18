@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759652AbaGRDHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 23:07:49 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:34397 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676AbaGRDHs (ORCPT
+	id S1759722AbaGRDIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:08:45 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58604 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754731AbaGRDIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 23:07:48 -0400
-Message-ID: <1405652857.21735.7.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [tip:locking/urgent] locking/mutex: Disable optimistic spinning
- on some architectures
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org, torvalds@linux-foundation.org, catalin.marinas@arm.com,
-        peterz@infradead.org, cmetcalf@tilera.com, jason.low2@hp.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, dave.anglin@bell.net,
-        James.Bottomley@hansenpartnership.com, will.deacon@arm.com,
-        waiman.long@hp.com, james.hogan@imgtec.com, mpatocka@redhat.com,
-        davem@davemloft.net, paulmck@linux.vnet.ibm.com, vgupta@synopsys.com,
-        benh@kernel.crashing.org, jejb@parisc-linux.org
-Cc: linux-tip-commits@vger.kernel.org, stable@kernel.org
-Date: Thu, 17 Jul 2014 20:07:37 -0700
-In-Reply-To: <tip-4badad352a6bb202ec68afa7a574c0bb961e5ebc@git.kernel.org>
-References: <20140606175316.GV13930@laptop.programming.kicks-ass.net>
-	 <tip-4badad352a6bb202ec68afa7a574c0bb961e5ebc@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jul 2014 23:08:43 -0400
+X-Sasl-enc: mrK+WTNVSyU86m7Hoa7UvexjSD2cN5QEXDAqZjn4kSyK 1405652922
+Date: Thu, 17 Jul 2014 20:08:41 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Alexander Kolesnikov <akolesni@codeaurora.org>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>
+Subject: Re: char interface to sdio, chdio.c
+Message-ID: <20140718030841.GB13619@kroah.com>
+References: <20140716032655.GB30412@kroah.com>
+ <53C705DB.3040700@codeaurora.org>
+ <20140717053347.GB22970@kroah.com>
+ <7228146.FsqiNq1Vpj@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7228146.FsqiNq1Vpj@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 12:24 -0700, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  4badad352a6bb202ec68afa7a574c0bb961e5ebc
-> Gitweb:     http://git.kernel.org/tip/4badad352a6bb202ec68afa7a574c0bb961e5ebc
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Fri, 6 Jun 2014 19:53:16 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 16 Jul 2014 14:57:07 +0200
+On Thu, Jul 17, 2014 at 12:17:00PM +0200, Arnd Bergmann wrote:
+> On Wednesday 16 July 2014 22:33:47 Greg KH wrote:
+> > + mmc: Char SDIO Device Driver
 > 
-> locking/mutex: Disable optimistic spinning on some architectures
-> 
-> The optimistic spin code assumes regular stores and cmpxchg() play nice;
-> this is found to not be true for at least: parisc, sparc32, tile32,
-> metag-lock1, arc-!llsc and hexagon.
-> 
-> There is further wreckage, but this in particular seemed easy to
-> trigger, so blacklist this.
-> 
-> Opt in for known good archs.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Jason Low <jason.low2@hp.com>
-> Cc: Waiman Long <waiman.long@hp.com>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: John David Anglin <dave.anglin@bell.net>
-> Cc: James Hogan <james.hogan@imgtec.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: stable@vger.kernel.org
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: sparclinux@vger.kernel.org
-> Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> A few comments on the ioctl interface, since I suppose we'll have
+> to live with that once it gets merged.
 
-Cc'ing stable: this issue was reported to begin after commit fb0527bd,
-so since v3.13.
+Thanks for the review comments.  I'll come back to this in a week or so
+when I get more cycles to spend on the driver, it's _way_ down my list
+of priorities at the moment.
 
-Thanks,
-Davidlohr
-
+greg k-h
