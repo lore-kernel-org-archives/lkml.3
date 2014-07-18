@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935070AbaGROnZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:43:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756009AbaGROnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:43:24 -0400
-Date: Fri, 18 Jul 2014 16:42:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "Sahasrabudhe, Sheetal" <sheetals@quicinc.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: perf: child events not killed on release paths, survive
- indefinitely
-Message-ID: <20140718144248.GA29768@krava.redhat.com>
-References: <20140718123238.GF25180@leverpostej>
- <20140718140343.GC20603@laptop.programming.kicks-ass.net>
- <20140718143157.GB17328@leverpostej>
+	id S1761707AbaGROoA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:44:00 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55235 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759330AbaGROn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 10:43:59 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53C932AD.8050701@roeck-us.net>
+Date: Fri, 18 Jul 2014 07:43:57 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718143157.GB17328@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@suse.de>, Christoph Hellwig <hch@infradead.org>
+CC: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
+        apw@canonical.com, joe@perches.com, tytso@mit.edu, dwalter@google.com,
+        neilb@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+References: <1405611268-12463-1-git-send-email-richard@nod.at> <53C8CCE1.4000105@roeck-us.net> <20140718082324.GA31270@pd.tnic> <53C92332.5010807@roeck-us.net> <53C92535.2010605@nod.at> <20140718142114.GA10475@infradead.org> <20140718142733.GD31270@pd.tnic>
+In-Reply-To: <20140718142733.GD31270@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 03:31:57PM +0100, Mark Rutland wrote:
+On 07/18/2014 07:27 AM, Borislav Petkov wrote:
+> On Fri, Jul 18, 2014 at 07:21:14AM -0700, Christoph Hellwig wrote:
+>> Or he could just use the existing -f flag.
+>
+> If you mean the -f flag to checkpatch, he's removing them both.
+>
+Two different 'he'.
 
-SNIP
+>> I really don't understand why you're trying to educate people by
+>> taking their toy away. They'll find another one in no time anyway.
+>
+> Maybe we should stop accepting patches created from running
+> checkpatch...?
+>
 
-> > > I'm not sure what the best way of handling this is. We need to clean up
-> > > the children when the last possible user of the event is gone, but it
-> > > looks to me like we'd need to have a separate child_refcount or
-> > > reader_refcount to be able to tell when the events are still useful and
-> > > when the only references which remain are internal.
-> > > 
-> > > Any ideas?
-> > 
-> > Jiri was recently poking at that:
-> > 
-> > lkml.kernel.org/r/1405079782-8139-3-git-send-email-jolsa@kernel.org
-> 
-> Ah. I hadn't spotted that, thanks for the link.
-> 
-> That approach (closing child events when the owner exits) doesn't seem
-> to fix the general case, as long running tasks (think interactive
-> debugger/profiler) could open and close many events before exiting, if
-> nothing else wasting memory until it does so.
-> 
-> My test case triggers with said patch applied (before hanging, probably
-> due to the AB-BA deadlock).
+Thinking about it, Linux itself can be abused as well. We should
+take it away to prevent that abuse from happening. That would
+solve your checkpatch problem quite nicely and forever.
 
-yep, peter already found that
-http://marc.info/?l=linux-kernel&m=140541548218652&w=2
+Guenter
 
-> 
-> Jiri, could you add me to Cc for future versions of that series?
-> 
-> I'll have a look and see if I can come up with something; otherwise I'm
-> happy to test/review. :)
-
-sure, and vice versa ;-)
-
-jirka
