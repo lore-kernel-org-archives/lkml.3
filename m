@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030684AbaGRRDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:03:51 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:38584 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030643AbaGRRDt convert rfc822-to-8bit (ORCPT
+	id S1030706AbaGRRFD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:05:03 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:32878 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030432AbaGRRFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:03:49 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "hch@infradead.org" <hch@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "kys@microsoft.com" <kys@microsoft.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
- from the basic I/O timeout
-Thread-Index: AQHPoqnH4RnOBmJ/q0aQf1y8l+Zt2ZumhH4A
-Date: Fri, 18 Jul 2014 17:03:47 +0000
-Message-ID: <1405703026.30262.4.camel@dabdike.int.hansenpartnership.com>
-References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-	 <20140718170030.GA31769@infradead.org>
-In-Reply-To: <20140718170030.GA31769@infradead.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <2943970F8F8607439B3B7338ECD5C698@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Fri, 18 Jul 2014 13:05:01 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140717220849.735bec65@gandalf.local.home>
+References: <20140630144017.2abc48ba@gandalf.local.home>
+	<b29c17f74d39d1b9240385e7479f63f44c988b8b.1404160039.git.tony.luck@intel.com>
+	<CA+8MBbKgHqwzLbY17-6o_Y-EULatnXgTdgn2kUhhOabELYGV6w@mail.gmail.com>
+	<20140717220849.735bec65@gandalf.local.home>
+Date: Fri, 18 Jul 2014 10:05:00 -0700
+Message-ID: <CA+8MBb++z4px4wBCh6EzfgO6rQeLdBWNY+j8Aub352v5ONQiAw@mail.gmail.com>
+Subject: Re: [PATCH-v2] tracing: Fix wraparound problems in "uptime" tracer
+From: Tony Luck <tony.luck@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        "<m.chehab@samsung.com> Xie XiuQi" <xiexiuqi@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-18 at 10:00 -0700, Christoph Hellwig wrote:
-> On Wed, Jun 04, 2014 at 09:33:43AM -0700, K. Y. Srinivasan wrote:
-> > Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to derive the
-> > FLUSH_TIMEOUT from the basic I/O timeout. However, this patch did not use the
-> > basic I/O timeout of the device. Fix this bug.
-> > 
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> 
-> Looks good to me,
-> 
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
-> 
-> (it will need some changes to apply to my tree, but I'm happy to do that
-> if I can get another review).
-> 
-> James, does this look fine to you?
+On Thu, Jul 17, 2014 at 7:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> Do we really need to convert to nanoseconds? Couldn't we just return
+>> jiffies:
+>
+> Sure, and we can make it a "counter". That is, the counters don't hide
+> 1000 counts on output.
 
-Yes:
+Can you explain that a bit more ... how do we mark it as a "counter"?
 
-Reviewed-by: James Bottomley <JBottomley@Parallels.com>
+>> u64 notrace trace_clock_jiffies(void)
+>> {
+>>        return jiffies_64 - INITIAL_JIFFIES;
+>> }
 
-James
+Hmm it seems that we make it hard for applications to see what HZ
+value the kernel is actually using. All user-facing interfaces should
+convert to USER_HZ (100).  So we should say:
 
+u64 notrace trace_clock_jiffies(void)
+{
+        return jiffies_64_to_clock_t(jiffies_64 - INITIAL_JIFFIES);
+}
+
+Do we need to change anything in Documentation/trace/ftrace.txt?
+
+Currently it says:
+
+          uptime: This uses the jiffies counter and the time stamp
+                  is relative to the time since boot up.
+
+-Tony
