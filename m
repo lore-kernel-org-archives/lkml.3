@@ -1,83 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425AbaGRIsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:48:53 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37617 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754154AbaGRIsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:48:50 -0400
-Date: Fri, 18 Jul 2014 09:48:47 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v13 6/8] arm: add pmd_[dirty|mkclean] for THP
-Message-ID: <20140718084847.GC9548@arm.com>
-References: <1405666386-15095-1-git-send-email-minchan@kernel.org>
- <1405666386-15095-7-git-send-email-minchan@kernel.org>
+	id S933182AbaGRItN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:49:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932563AbaGRItI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 04:49:08 -0400
+Date: Fri, 18 Jul 2014 10:49:06 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Alex Elder <elder@linaro.org>
+Cc: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org
+Subject: Re: [PATCH 1/4] printk: LOG_CONT and LOG_NEWLINE are separate
+Message-ID: <20140718084905.GU6774@pathway.suse.cz>
+References: <1405531620-9983-1-git-send-email-elder@linaro.org>
+ <1405531620-9983-2-git-send-email-elder@linaro.org>
+ <20140717083918.GP6774@pathway.suse.cz>
+ <53C7BD7B.50007@linaro.org>
+ <20140717144648.GT6774@pathway.suse.cz>
+ <53C7F783.8040303@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1405666386-15095-7-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C7F783.8040303@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 07:53:04AM +0100, Minchan Kim wrote:
-> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
-> overwrite of the contents since MADV_FREE syscall is called for
-> THP page.
+On Thu 2014-07-17 11:19:15, Alex Elder wrote:
+> On 07/17/2014 09:46 AM, Petr Mládek wrote:
+> > On Thu 2014-07-17 07:11:39, Alex Elder wrote:
+> >> On 07/17/2014 03:39 AM, Petr Mládek wrote:
+> >>> On Wed 2014-07-16 12:26:57, Alex Elder wrote:
+> >>>> Two log record flags--LOG_CONT and LOG_NEWLINE--are never both set
+> >>>> at the same time in a log record flags field.  What follows is a
+> >>>> great deal of explanation that aims to prove this assertion.
+> >>
+> >> Thank you so much for reviewing these patches.
+> >>
+> >> Your confirmation of the fact that LOG_CONT and LOG_NEWLINE
+> >> should not go together is very valuable to me.  I have a set
+> >> of follow-on patches that rely on this, and I didn't want to
+> >> go ahead with proposing them until I knew this was right.
+> > 
+> > To be honest. My statement was based on a common sense. I simply
+> > cannot imagine situatiuon when a text ends with "\n" and is continuous
+> > at the same time. IMHO, it is against any logic.
 > 
-> This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
-> support.
+> Well, I thought so too, but it was hard to see that by
+> just looking at the code.
 > 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Steve Capper <steve.capper@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  arch/arm/include/asm/pgtable-3level.h | 3 +++
->  1 file changed, 3 insertions(+)
+> > IMHO, it would make sense to have only one flag, either LOG_NEWLINE or
+> > LOG_CONT. Well, I am not sure if we could remove it easily. AFAIK, the
+> > ring buffer is read also by external tools, e.g. crash.
 > 
-> diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-> index 85c60adc8b60..830f84f2d277 100644
-> --- a/arch/arm/include/asm/pgtable-3level.h
-> +++ b/arch/arm/include/asm/pgtable-3level.h
-> @@ -220,6 +220,8 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
->  #define pmd_trans_splitting(pmd) (pmd_val(pmd) & PMD_SECT_SPLITTING)
->  #endif
->  
-> +#define pmd_dirty(pmd)		(pmd_val(pmd) & PMD_SECT_DIRTY)
-> +
->  #define PMD_BIT_FUNC(fn,op) \
->  static inline pmd_t pmd_##fn(pmd_t pmd) { pmd_val(pmd) op; return pmd; }
->  
-> @@ -228,6 +230,7 @@ PMD_BIT_FUNC(mkold,	&= ~PMD_SECT_AF);
->  PMD_BIT_FUNC(mksplitting, |= PMD_SECT_SPLITTING);
->  PMD_BIT_FUNC(mkwrite,   &= ~PMD_SECT_RDONLY);
->  PMD_BIT_FUNC(mkdirty,   |= PMD_SECT_DIRTY);
-> +PMD_BIT_FUNC(mkclean,   &= ~PMD_SECT_DIRTY);
->  PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
->  
->  #define pmd_mkhuge(pmd)		(__pmd(pmd_val(pmd) & ~PMD_TABLE_BIT))
+> I took a very quick look at crash-7.0.7 and see dump_log_entry(),
+> which seems to dump the contents of a log record but does not
+> interpret any of the flags.
 
-Looks fine to me, but again, it would be great if Steve can take a look too.
+Good to know.
 
-Will
+> This is a really important point, so if anybody knows of other
+> utilities outside the kernel that interpret the log record flags
+> I'd like to know about it.
+
+AFAIK, also makedumpfile tool somehow access the private data.
+See the comments for log_buf_kexec_setup()
+
+[...]
+ 
+> >> Thanks again for the review.  If you're willing after reading my
+> >> explanations, please offer an ACK or Reviewed-by (or further
+> >> questions and suggestions).  I'll have responses to your others
+> >> shortly.
+> > 
+> > I would like to see the bigger picture before :-)
+> 
+> OK, the big picture for this is that I have a set of about
+> 5 more patches, which have the end result of eliminating
+> LOG_CONT and LOG_PREFIX.  The only thing that matters is
+> LOG_NEWLINE, which indicates the log entry completes a
+> sequence of one or more.  Most records will have that set;
+> any that do not will be "continuation" records, which should
+> be taken along with one or more successor records to make
+> up a single logical log entry.  There is no need for
+> LOG_PREFIX, because that is implied by the presence of
+> LOG_NEWLINE in the previous log entry.  We're already tracking
+> the previous record state where that's needed.
+
+I wanted to think about this over night. And Kay actually confirmed my
+doubts. There are various situations when the messages could get mixed
+either when writing or when reading.
+
+We do not care much about whole lines. Users are usually able to put
+the right lines together by context.
+
+Most of the hackery seems to be done for the continuous lines. The
+following problematic situations come to my mind:
+
+
+1. More tasks are printing at the same time. It is solved by flushing
+   the cont buffer with newline when message from another task comes.
+
+2. Someone prints continuous lines and forgets to put '\n' at the end.
+   This is solved by flushing the cont buffer with newline when
+   the same tasks prints new message with prefix.
+
+3. Task is interrupted and the handler prints something. It is not
+   currently detected. It is fine because it usually looks like
+   the second scenario. The handler prints the first message with
+   prefix...
+
+4. There is a flood of messages. The readers, e.g. console, syslog,
+   are not able to handle everything. They copy a continuous line and
+   miss the rest. This is currently solved by resetting the flags
+   for the previous message. I think that it is handled as if
+   the previous line was newline.
+
+
+The question is how many flags we need to handle the situations
+reasonable way. We are discussing the three flags:
+
+	   LOG_CONT
+	   LOG_NEWLINE
+	   LOG_PREFIX
+
+Let's start with CONT and NEWLINE. The only situation when they
+have the same value is when readers miss a message and reset the flag
+for the previous message. It has the meaning: "we do not know".
+
+IMHO, we do not need both CONT and NEWLINE flags. If we do not know
+what was the last message, we need to decide somehow. It seems that we
+currently do nothing special and expect that the last message ended
+with newline. It means that the we could omit LOG_CONT flag and
+simplify the code.
+
+
+What about LOG_PREFIX? IMHO, we need it because the following
+situations:
+
+a) printk() could not modify flags of the previous messages. They
+might be already proceed by readers, .e.g console, syslog. We could
+not add LOG_NEWLINE flag to the previous message if suddenly new
+message with prefix comes and the previous was already flushed
+without newline.
+
+b) Readers might miss messages. We might want to print '\n' if
+the previous message was proceed without newline and the current
+one has prefix.
+
+
+What are the expectations from any changes?
+
+The code is already too complex. IMHO, nobody wants to make it worse
+just to fix the few remaining corner cases.
+
+Any simplification is great if it keeps the output reasonable.
+
+Best Regards,
+Petr
