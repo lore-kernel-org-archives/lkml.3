@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760432AbaGRHiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 03:38:19 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:51209 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaGRHiR (ORCPT
+	id S1759781AbaGRHl7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 03:41:59 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:56939 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaGRHl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 03:38:17 -0400
-Date: Fri, 18 Jul 2014 09:37:59 +0200
+	Fri, 18 Jul 2014 03:41:57 -0400
+Date: Fri, 18 Jul 2014 09:41:44 +0200
 From: Sam Ravnborg <sam@ravnborg.org>
 To: Nick Krause <xerofoify@gmail.com>
 Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Sparc: Fix Mes in highmem.c
-Message-ID: <20140718073758.GA20028@ravnborg.org>
-References: <CAPDOMVjTxTNTfgPJMz6eNfabXuvtJ43YMpEeDEQ236EtF168Cg@mail.gmail.com>
- <20140717075204.GA15569@ravnborg.org>
- <CAPDOMVjb_JxnGSTf5mW_RQ58h4-7fS6HywARpPV3XgWA33SybQ@mail.gmail.com>
- <CAPDOMVj9GcoC26Sp6sOmwZf39mfOn=Wy87AnfzDguthcFOTXhg@mail.gmail.com>
+Subject: Re: Sparc Allmodconfig Fails
+Message-ID: <20140718074143.GB20028@ravnborg.org>
+References: <CAPDOMViDWF93xDQ=OYWFEu=9ih6cwcEKv4P+nOihcnRrDXiAww@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDOMVj9GcoC26Sp6sOmwZf39mfOn=Wy87AnfzDguthcFOTXhg@mail.gmail.com>
+In-Reply-To: <CAPDOMViDWF93xDQ=OYWFEu=9ih6cwcEKv4P+nOihcnRrDXiAww@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 11:05:12PM -0400, Nick Krause wrote:
-> On Thu, Jul 17, 2014 at 1:38 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> > On Thu, Jul 17, 2014 at 3:52 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> >> On Wed, Jul 16, 2014 at 10:25:30PM -0400, Nick Krause wrote:
-> >>> I am hitting three Fix mes in this file and am wondering as the
-> >>> maintainer how you would like
-> >>> to clean them up.
-> >>
-> >> They may be addressed if we one day decide to give the sparc32 highmem
-> >> support a big overhaul. Until then they are left as is.
-> >>
-> >>         Sam
-> >  Very well then I will just not touch it until we are going to
-> > overhaul the highmem  for
-> > sparc32.
-> > Cheers Nick
-> If you want I can fix the sparc32 highmem area with your help.
+On Fri, Jul 18, 2014 at 12:21:04AM -0400, Nick Krause wrote:
+> The build for sparc allmodconfig is still failing for the main branch
+> of the linux kernel.
+> I would recommend fixing these issues. I am attaching my build
+> warnings and errors
+> logs for the failing build test I did today.
 
-This is not just something that one can jump on fixing.
+Did you actually look into the log yourself?
+
+This should give you a hint:
+
+make[1]: *** No rule to make target `/media/nick/Nick's', needed by
++`kernel/x509_certificate_list'.  Stop.
+
+
+All the rest are random warnings that may or may not be specific for sparc64.
 
 	Sam
