@@ -1,91 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965246AbaGRKLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:11:53 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:63126 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934026AbaGRKLt (ORCPT
+	id S965059AbaGRKLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:11:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44314 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934455AbaGRKLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:11:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <6186153.TIYp5NXPIq@wuerfel>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
- <1405663186-26464-2-git-send-email-cw00.choi@samsung.com> <6186153.TIYp5NXPIq@wuerfel>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 18 Jul 2014 15:41:27 +0530
-Message-ID: <CAHfPSqBDOEH5HurG=rECV=d+MM_YjTEpsiwuTgtNgFgCQ0P2bw@mail.gmail.com>
-Subject: Re: [PATCHv6 1/4] iio: adc: exynos_adc: Add exynos_adc_data structure
- to improve readability
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        My self <ch.naveen@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, kyungmin.park@samsung.com, t.figa@samsung.com,
-        linux-iio@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 06:11:16 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 11/14] scsi: unwind blk_end_request_all and blk_end_request_err calls
+Date: Fri, 18 Jul 2014 12:13:10 +0200
+Message-Id: <1405678393-11497-12-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405678393-11497-1-git-send-email-hch@lst.de>
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
+Replace the calls to the various blk_end_request variants with opencode
+equivalents.  Blk-mq is using a model that gives the driver control
+between the bio updates and the actual completion, and making the old
+code follow that same model allows us to keep the code more similar for
+both paths.
 
-On 18 July 2014 15:12, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 July 2014 14:59:43 Chanwoo Choi wrote:
->> This patchset add 'exynos_adc_data' structure which includes some functions
->> to control ADC operation and specific data according to ADC version (v1 or v2).
->>
->
-> This new structure makes a lot of sense for covering the exynos specific
-> versions, but it will likely give a little more complexity for the
-> older models. We'll have to deal with that later then, no need to
-> hold up your patch. Interestingly, the version numbers seem weird. The
-> old driver uses
->
->         {
->                 .name           = "s3c24xx-adc",
->                 .driver_data    = TYPE_ADCV1,
->         }, {
->                 .name           = "s3c2443-adc",
->                 .driver_data    = TYPE_ADCV11,
->         }, {
->                 .name           = "s3c2416-adc",
->                 .driver_data    = TYPE_ADCV12,
->         }, {
->                 .name           = "s3c64xx-adc",
->                 .driver_data    = TYPE_ADCV2,
->         }, {
->                 .name           = "samsung-adc-v3",
->                 .driver_data    = TYPE_ADCV3,
->         }
->
-> Where TYPE_ADCV3 seems to be the same as the new ADC_V1 used in this
-> driver. Do you have an explanation for that?
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Webb Scales <webbnh@hp.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Tested-by: Bart Van Assche <bvanassche@acm.org>
+Tested-by: Robert Elliott <elliott@hp.com>
+---
+ drivers/scsi/scsi_lib.c | 61 ++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 42 insertions(+), 19 deletions(-)
 
-As per suggestion from Doug Anderson,
-I've implemented IIO based ADC driver to work with Exynos5250.
-keeping the plat-samsung/adc.c unchanged.
-
-Assuming Exynos5250 is the one using the driver for the first time.
-i've named it v1 and so on.
-
-Now, This seems to cause a lot of confusion.
-
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index a643353..8723abe 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -621,6 +621,37 @@ static void scsi_release_bidi_buffers(struct scsi_cmnd *cmd)
+ 	cmd->request->next_rq->special = NULL;
+ }
+ 
++static bool scsi_end_request(struct request *req, int error,
++		unsigned int bytes, unsigned int bidi_bytes)
++{
++	struct scsi_cmnd *cmd = req->special;
++	struct scsi_device *sdev = cmd->device;
++	struct request_queue *q = sdev->request_queue;
++	unsigned long flags;
++
++
++	if (blk_update_request(req, error, bytes))
++		return true;
++
++	/* Bidi request must be completed as a whole */
++	if (unlikely(bidi_bytes) &&
++	    blk_update_request(req->next_rq, error, bidi_bytes))
++		return true;
++
++	if (blk_queue_add_random(q))
++		add_disk_randomness(req->rq_disk);
++
++	spin_lock_irqsave(q->queue_lock, flags);
++	blk_finish_request(req, error);
++	spin_unlock_irqrestore(q->queue_lock, flags);
++
++	if (bidi_bytes)
++		scsi_release_bidi_buffers(cmd);
++	scsi_release_buffers(cmd);
++	scsi_next_command(cmd);
++	return false;
++}
++
+ /**
+  * __scsi_error_from_host_byte - translate SCSI error code into errno
+  * @cmd:	SCSI command (unused)
+@@ -693,7 +724,7 @@ static int __scsi_error_from_host_byte(struct scsi_cmnd *cmd, int result)
+  *		   be put back on the queue and retried using the same
+  *		   command as before, possibly after a delay.
+  *
+- *		c) We can call blk_end_request() with -EIO to fail
++ *		c) We can call scsi_end_request() with -EIO to fail
+  *		   the remainder of the request.
+  */
+ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+@@ -744,13 +775,9 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 			 * both sides at once.
+ 			 */
+ 			req->next_rq->resid_len = scsi_in(cmd)->resid;
+-
+-			scsi_release_buffers(cmd);
+-			scsi_release_bidi_buffers(cmd);
+-
+-			blk_end_request_all(req, 0);
+-
+-			scsi_next_command(cmd);
++			if (scsi_end_request(req, 0, blk_rq_bytes(req),
++					blk_rq_bytes(req->next_rq)))
++				BUG();
+ 			return;
+ 		}
+ 	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
+@@ -797,15 +824,16 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 	/*
+ 	 * If we finished all bytes in the request we are done now.
+ 	 */
+-	if (!blk_end_request(req, error, good_bytes))
+-		goto next_command;
++	if (!scsi_end_request(req, error, good_bytes, 0))
++		return;
+ 
+ 	/*
+ 	 * Kill remainder if no retrys.
+ 	 */
+ 	if (error && scsi_noretry_cmd(cmd)) {
+-		blk_end_request_all(req, error);
+-		goto next_command;
++		if (scsi_end_request(req, error, blk_rq_bytes(req), 0))
++			BUG();
++		return;
+ 	}
+ 
+ 	/*
+@@ -919,8 +947,8 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 				scsi_print_sense("", cmd);
+ 			scsi_print_command(cmd);
+ 		}
+-		if (!blk_end_request_err(req, error))
+-			goto next_command;
++		if (!scsi_end_request(req, error, blk_rq_err_bytes(req), 0))
++			return;
+ 		/*FALLTHRU*/
+ 	case ACTION_REPREP:
+ 	requeue:
+@@ -939,11 +967,6 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 		__scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY, 0);
+ 		break;
+ 	}
+-	return;
+-
+-next_command:
+-	scsi_release_buffers(cmd);
+-	scsi_next_command(cmd);
+ }
+ 
+ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
 -- 
-Shine bright,
-(: Nav :)
+1.9.1
+
