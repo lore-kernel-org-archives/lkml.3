@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161406AbaGRNaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:30:00 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17840 "EHLO
+	id S965860AbaGRNa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:30:29 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17836 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161129AbaGRNPs (ORCPT
+	by vger.kernel.org with ESMTP id S1161131AbaGRNPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:15:48 -0400
+	Fri, 18 Jul 2014 09:15:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 099/170] iwlwifi: pcie: try to get ownership several times
-Date: Fri, 18 Jul 2014 14:11:44 +0200
-Message-Id: <78a97b52b5c8dceaf68bc5129b95c71bb60f7199.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 066/170] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
+Date: Fri, 18 Jul 2014 14:11:11 +0200
+Message-Id: <245fbe911b4a92eb631ed77519cf8935665c7544.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,70 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Oliver Neukum <oneukum@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 501fd9895c1d7d8161ed56698ae2fccb10ef14f5 upstream.
+commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
 
-Some races with the hardware can happen when we take
-ownership of the device. Don't give up after the first try.
+Reported by Alif Mubarak Ahmad:
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+This device vendor and product id is 1c9e:9800
+It is working as serial interface with generic usbserial driver.
+I thought it is more suitable to use usbserial option driver, which has
+better capability distinguishing between modem serial interface and
+micro sd storage interface.
+
+[ johan: style changes ]
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/iwlwifi/pcie/trans.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ drivers/usb/serial/option.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
-index 7bdaf06b8f5a..dc875f4befef 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -345,6 +345,7 @@ static int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
- {
- 	int ret;
- 	int t = 0;
-+	int iter;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 70ede84f4f6b..909bb77544b5 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -352,6 +352,9 @@ static void option_instat_callback(struct urb *urb);
+ /* Zoom */
+ #define ZOOM_PRODUCT_4597			0x9607
  
- 	IWL_DEBUG_INFO(trans, "iwl_trans_prepare_card_hw enter\n");
- 
-@@ -353,18 +354,23 @@ static int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
- 	if (ret >= 0)
- 		return 0;
- 
--	/* If HW is not ready, prepare the conditions to check again */
--	iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
--		    CSR_HW_IF_CONFIG_REG_PREPARE);
-+	for (iter = 0; iter < 10; iter++) {
-+		/* If HW is not ready, prepare the conditions to check again */
-+		iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
-+			    CSR_HW_IF_CONFIG_REG_PREPARE);
++/* SpeedUp SU9800 usb 3g modem */
++#define SPEEDUP_PRODUCT_SU9800			0x9800
 +
-+		do {
-+			ret = iwl_pcie_set_hw_ready(trans);
-+			if (ret >= 0)
-+				return 0;
- 
--	do {
--		ret = iwl_pcie_set_hw_ready(trans);
--		if (ret >= 0)
--			return 0;
-+			usleep_range(200, 1000);
-+			t += 200;
-+		} while (t < 150000);
-+		msleep(25);
-+	}
- 
--		usleep_range(200, 1000);
--		t += 200;
--	} while (t < 150000);
-+	IWL_DEBUG_INFO(trans, "got NIC after %d iterations\n", iter);
- 
- 	return ret;
- }
+ /* Haier products */
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
+@@ -1577,6 +1580,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
+   	},
++	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
+ 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 -- 
 2.0.0
 
