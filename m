@@ -1,114 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaGRGtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:49:12 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:52547 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561AbaGRGtL (ORCPT
+	id S1757271AbaGRGwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:52:37 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:56371 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409AbaGRGwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:49:11 -0400
-From: Brent Cook <busterb@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Brent Cook <bcook@openbsd.org>
-Subject: [PATCH] [RFC] initial getrandom wrapper to provide getentropy for LibreSSL
-Date: Fri, 18 Jul 2014 01:49:04 -0500
-Message-Id: <1405666144-88053-1-git-send-email-busterb@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Fri, 18 Jul 2014 02:52:35 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v13 0/8] MADV_FREE support
+Date: Fri, 18 Jul 2014 15:52:58 +0900
+Message-Id: <1405666386-15095-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brent Cook <bcook@openbsd.org>
+This patch enable MADV_FREE hint for madvise syscall, which have
+been supported by other OSes. [PATCH 1] includes the details.
 
-This is not a kernel patch, but rather an initial test of the API to see
-how it might mesh LibreSSL's expectations for how getentropy works.
+[1] support MADVISE_FREE for !THP page so if VM encounter
+THP page in syscall context, it splits THP page.
+[2-7] is to preparing to call madvise syscall without THP plitting
+[8] enable THP page support for MADV_FREE.
 
-It is a bit more code to carefully handle the extra return values, as
-not reading enough bytes, because there is an unhandled EINTR, might
-lead to an unseeded CSPRNG.
+* from v12
+ * Fix - skip to mark free pte on try_to_free_swap failed page - Kirill
+ * Add more Acked-by from arch maintainers and Kirill
 
-The syscall may return EAGAIN depending on the version of getrandom(2)
-(this will go away later), but this should give a good example of what
-its use would look like in practice.
----
- src/lib/libcrypto/crypto/getentropy_linux.c | 42 ++++++++++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+* From v11
+ * Fix arm build - Steve
+ * Separate patch for arm and arm64 - Steve
+ * Remove unnecessary check - Kirill
+ * Skip non-vm_normal page - Kirill
+ * Add Acked-by - Zhang
+ * Sparc64 build fix
+ * Pagetable walker THP handling fix
 
-diff --git a/src/lib/libcrypto/crypto/getentropy_linux.c b/src/lib/libcrypto/crypto/getentropy_linux.c
-index c16b289..b717d91 100644
---- a/src/lib/libcrypto/crypto/getentropy_linux.c
-+++ b/src/lib/libcrypto/crypto/getentropy_linux.c
-@@ -1,4 +1,4 @@
--/*	$OpenBSD: getentropy_linux.c,v 1.24 2014/07/13 13:37:38 deraadt Exp $	*/
-+/*	$OpenBSD: getentropy_linux.c,v 1.25 2014/07/16 14:26:47 kettenis Exp $	*/
- 
- /*
-  * Copyright (c) 2014 Theo de Raadt <deraadt@openbsd.org>
-@@ -73,10 +73,21 @@
- 
- int	getentropy(void *buf, size_t len);
- 
-+#ifndef SYS__getrandom
-+#ifdef __LP64__
-+#define SYS__getrandom 317
-+#else
-+#define SYS__getrandom 354
-+#endif
-+#endif
-+
- #if 0
- extern int main(int, char *argv[]);
- #endif
- static int gotdata(char *buf, size_t len);
-+#ifdef SYS__getrandom
-+static int getentropy_getrandom(void *buf, size_t len);
-+#endif
- static int getentropy_urandom(void *buf, size_t len);
- #ifdef CTL_MAXNAME
- static int getentropy_sysctl(void *buf, size_t len);
-@@ -95,6 +106,13 @@ getentropy(void *buf, size_t len)
- 	}
- 
- 	/*
-+	 * Brand new system call in Linux.  Interface not yet settled.
-+	 */
-+	ret = getentropy_getrandom(buf, len);
-+	if (ret != -1)
-+		return (ret);
-+
-+	/*
- 	 * Try to get entropy with /dev/urandom
- 	 *
- 	 * This can fail if the process is inside a chroot or if file
-@@ -180,6 +198,28 @@ gotdata(char *buf, size_t len)
- }
- 
- static int
-+getentropy_getrandom(void *buf, size_t len)
-+{
-+	size_t i = 0;
-+
-+#ifdef SYS__getrandom
-+	ssize_t ret;
-+
-+	for (i = 0; i < len; ) {
-+		size_t wanted = len - i;
-+		ret = syscall(SYS__getrandom, (char *)buf + i, wanted, 0);
-+		if (ret == -1) {
-+			if (errno == EAGAIN || errno == EINTR)
-+				continue;
-+			return (-1);
-+		}
-+		i += ret;
-+	}
-+#endif
-+	return (i == len ? 0 : -1);
-+}
-+
-+static int
- getentropy_urandom(void *buf, size_t len)
- {
- 	struct stat st;
+* From v10
+ * Add Acked-by from arch stuff(x86, s390)
+ * Pagewalker based pagetable working - Kirill
+ * Fix try_to_unmap_one broken with hwpoison - Kirill
+ * Use VM_BUG_ON_PAGE in madvise_free_pmd - Kirill
+ * Fix pgtable-3level.h for arm - Steve
+
+* From v9
+ * Add Acked-by - Rik
+ * Add THP page support - Kirill
+
+* From v8
+ * Rebased-on v3.16-rc2-mmotm-2014-06-25-16-44
+
+* From v7
+ * Rebased-on next-20140613
+
+* From v6
+ * Remove page from swapcache in syscal time
+ * Move utility functions from memory.c to madvise.c - Johannes
+ * Rename untilify functtions - Johannes
+ * Remove unnecessary checks from vmscan.c - Johannes
+ * Rebased-on v3.15-rc5-mmotm-2014-05-16-16-56
+ * Drop Reviewe-by because there was some changes since then.
+
+* From v5
+ * Fix PPC problem which don't flush TLB - Rik
+ * Remove unnecessary lazyfree_range stub function - Rik
+ * Rebased on v3.15-rc5
+
+* From v4
+ * Add Reviewed-by: Zhang Yanfei
+ * Rebase on v3.15-rc1-mmotm-2014-04-15-16-14
+
+* From v3
+ * Add "how to work part" in description - Zhang
+ * Add page_discardable utility function - Zhang
+ * Clean up
+
+* From v2
+ * Remove forceful dirty marking of swap-readed page - Johannes
+ * Remove deactivation logic of lazyfreed page
+ * Rebased on 3.14
+ * Remove RFC tag
+
+* From v1
+ * Use custom page table walker for madvise_free - Johannes
+ * Remove PG_lazypage flag - Johannes
+ * Do madvise_dontneed instead of madvise_freein swapless system
+
+Minchan Kim (8):
+  [1] mm: support madvise(MADV_FREE)
+  [2] x86: add pmd_[dirty|mkclean] for THP
+  [3] sparc: add pmd_[dirty|mkclean] for THP
+  [4] powerpc: add pmd_[dirty|mkclean] for THP
+  [5] s390: add pmd_[dirty|mkclean] for THP
+  [6] arm: add pmd_[dirty|mkclean] for THP
+  [7] arm64: add pmd_[dirty|mkclean] for THP
+  [8] mm: Don't split THP page when syscall is called
+
+ arch/arm/include/asm/pgtable-3level.h    |   3 +
+ arch/arm64/include/asm/pgtable.h         |   2 +
+ arch/powerpc/include/asm/pgtable-ppc64.h |   2 +
+ arch/s390/include/asm/pgtable.h          |  12 +++
+ arch/sparc/include/asm/pgtable_64.h      |  16 ++++
+ arch/x86/include/asm/pgtable.h           |  10 ++
+ include/linux/huge_mm.h                  |   4 +
+ include/linux/rmap.h                     |   9 +-
+ include/linux/vm_event_item.h            |   1 +
+ include/uapi/asm-generic/mman-common.h   |   1 +
+ mm/huge_memory.c                         |  35 +++++++
+ mm/madvise.c                             | 159 +++++++++++++++++++++++++++++++
+ mm/rmap.c                                |  46 ++++++++-
+ mm/vmscan.c                              |  64 +++++++++----
+ mm/vmstat.c                              |   1 +
+ 15 files changed, 345 insertions(+), 20 deletions(-)
+
 -- 
-2.0.1
+2.0.0
 
