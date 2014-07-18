@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161361AbaGRN0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:26:30 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17910 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935220AbaGRNRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S935219AbaGRNRJ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jul 2014 09:17:09 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17903 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965069AbaGRNQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:16:59 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 027/170] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
-Date: Fri, 18 Jul 2014 14:10:32 +0200
-Message-Id: <35d693c3e44aa97471f17439beda93c070fcb0de.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 046/170] powerpc: Don't setup CPUs with bad status
+Date: Fri, 18 Jul 2014 14:10:51 +0200
+Message-Id: <c5aee1fa7700baa30a466e2b9deff50fc0ac0f03.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,125 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Michael Neuling <mikey@neuling.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
+commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
 
-The i386 ABI disagrees with most other ABIs regarding alignment of
-data type larger than 4 bytes: on most ABIs a padding must be added at
-end of the structures, while it is not required on i386.
+OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
+node.
 
-So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
-aligned on a 8 bytes multiple, while for i386, such padding is not
-added.
+Unfortunatley Linux doesn't check this property and will put the bad CPU in the
+present map.  This has caused hangs on booting when we try to unsplit the core.
 
-Tool pahole could be used to find such implicit padding:
+This patch checks the CPU is avaliable via this status property before putting
+it in the present map.
 
-  $ pahole --anon_include \
-           --nested_anon_include \
-           --recursive \
-           --class_name mlx5_ib_create_srq \
-           drivers/infiniband/hw/mlx5/mlx5_ib.o
-
-Then, structure layout can be compared between i386 and x86_64:
-
-#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
-#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
-#  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
-#          __u64                      db_addr;              /*     8     8 */
-#          __u32                      flags;                /*    16     4 */
-#
-#  -       /* size: 20, cachelines: 1, members: 3 */
-#  -       /* last cacheline: 20 bytes */
-#  +       /* size: 24, cachelines: 1, members: 3 */
-#  +       /* padding: 4 */
-#  +       /* last cacheline: 24 bytes */
-#   };
-
-ABI disagreement will make an x86_64 kernel try to read past
-the buffer provided by an i386 binary.
-
-When boundary check will be implemented, the x86_64 kernel will
-refuse to read past the i386 userspace provided buffer and the
-uverb will fail.
-
-Anyway, if the structure lay in memory on a page boundary and
-next page is not mapped, ib_copy_from_udata() will fail and the
-uverb will fail.
-
-This patch makes create_srq_user() takes care of the input
-data size to handle the case where no padding was provided.
-
-This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
-as sent by unpatched and patched i386 libmlx5.
-
-Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
-Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Tested-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/hw/mlx5/srq.c  | 14 +++++++++++++-
- drivers/infiniband/hw/mlx5/user.h |  1 +
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/setup-common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/mlx5/srq.c b/drivers/infiniband/hw/mlx5/srq.c
-index 0aa478bc291a..47a1f0a9c926 100644
---- a/drivers/infiniband/hw/mlx5/srq.c
-+++ b/drivers/infiniband/hw/mlx5/srq.c
-@@ -35,6 +35,7 @@
- #include <linux/mlx5/srq.h>
- #include <linux/slab.h>
- #include <rdma/ib_umem.h>
-+#include <rdma/ib_user_verbs.h>
- 
- #include "mlx5_ib.h"
- #include "user.h"
-@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd *pd, struct mlx5_ib_srq *srq,
- {
- 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
- 	struct mlx5_ib_create_srq ucmd;
-+	size_t ucmdlen;
- 	int err;
- 	int npages;
- 	int page_shift;
- 	int ncont;
- 	u32 offset;
- 
--	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
-+	ucmdlen =
-+		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
-+		 sizeof(ucmd)) ? (sizeof(ucmd) -
-+				  sizeof(ucmd.reserved)) : sizeof(ucmd);
-+
-+	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
- 		mlx5_ib_dbg(dev, "failed copy udata\n");
- 		return -EFAULT;
- 	}
-+
-+	if (ucmdlen == sizeof(ucmd) &&
-+	    ucmd.reserved != 0)
-+		return -EINVAL;
-+
- 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
- 
- 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
-diff --git a/drivers/infiniband/hw/mlx5/user.h b/drivers/infiniband/hw/mlx5/user.h
-index e7da977e2548..84fea5d00cd2 100644
---- a/drivers/infiniband/hw/mlx5/user.h
-+++ b/drivers/infiniband/hw/mlx5/user.h
-@@ -100,6 +100,7 @@ struct mlx5_ib_create_srq {
- 	__u64	buf_addr;
- 	__u64	db_addr;
- 	__u32	flags;
-+	__u32	reserved; /* explicit padding (optional on i386) */
- };
- 
- struct mlx5_ib_create_srq_resp {
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index 3d261c071fc8..0623cf3f8a61 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -460,7 +460,7 @@ void __init smp_setup_cpu_maps(void)
+ 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
+ 			DBG("    thread %d -> cpu %d (hard id %d)\n",
+ 			    j, cpu, be32_to_cpu(intserv[j]));
+-			set_cpu_present(cpu, true);
++			set_cpu_present(cpu, of_device_is_available(dn));
+ 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
+ 			set_cpu_possible(cpu, true);
+ 			cpu++;
 -- 
 2.0.0
 
