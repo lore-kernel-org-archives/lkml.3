@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762192AbaGRVWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:22:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:32740 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932280AbaGRVWa (ORCPT
+	id S935204AbaGRVXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:23:07 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:58559 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280AbaGRVXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:22:30 -0400
-Date: Fri, 18 Jul 2014 17:22:21 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/4] ARM: add IPI tracepoints
-Message-ID: <20140718172221.6dbe83e4@gandalf.local.home>
-In-Reply-To: <alpine.LFD.2.11.1407181652080.3647@knanqh.ubzr>
-References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
-	<1405660735-13408-3-git-send-email-nicolas.pitre@linaro.org>
-	<20140718160418.54d11f6a@gandalf.local.home>
-	<alpine.LFD.2.11.1407181652080.3647@knanqh.ubzr>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Fri, 18 Jul 2014 17:23:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140717105025.GA22549@pd.tnic>
+References: <1404925766-32253-5-git-send-email-hskinnemoen@google.com>
+	<20140710164151.GA5603@pd.tnic>
+	<CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
+	<20140710184416.GE5603@pd.tnic>
+	<CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
+	<20140710191224.GF5603@pd.tnic>
+	<20140711092454.GA17083@pd.tnic>
+	<CA+8MBbKYo_Tmb3Zk4W9gBZmZqBpCu4uLUu9M5C2MZAYZEb16Vg@mail.gmail.com>
+	<20140711195200.GA18246@pd.tnic>
+	<CAFQmdRZ7d6Mgxob2A0nuJP09oAWW=BykL_bH7DeWo_8CM3YywA@mail.gmail.com>
+	<20140717105025.GA22549@pd.tnic>
+Date: Fri, 18 Jul 2014 14:23:04 -0700
+Message-ID: <CA+8MBbLdD=MHVjQpUAsVhMJEfa3nxsnja6hDAytP_esRotF=Vg@mail.gmail.com>
+Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
+ CMCI reports.
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Havard Skinnemoen <hskinnemoen@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ewout van Bekkum <ewout@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 16:55:42 -0400 (EDT)
-Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+On Thu, Jul 17, 2014 at 3:50 AM, Borislav Petkov <bp@alien8.de> wrote:
+> Well, maybe it is about time we tracked shared banks.
 
-> 
-> Here's the patch I have at the head of the series now, with the above
-> ugliness changed to an unconditional __tracepoint_string attribute.
-> 
+For cpus that support CMCI and the MCi_CTL2 registers we do track
+sharing. Only one cpu gets to be the "owner" of a bank that supports
+CMCI (the first one to find it and set bit 30 in the CTL2 register).
 
-I was thinking of something like this. Feel free to add this to your
-series.
+The test_bit()  at the top of the loop in machine_check_poll() makes
+sure only the owner of a bank actually looks at it.
 
--- Steve
+        for (i = 0; i < mca_cfg.banks; i++) {
+                if (!mce_banks[i].ctl || !test_bit(i, *b))
+                        continue;
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] tracing: Do not do anything special with tracepoint_string when tracing is disabled
+If we don't have CMCI, then we don't have the CTL2 registers, and
+so have no way to find out which banks are shared.
 
-When CONFIG_TRACING is not enabled, there's no reason to save the trace
-strings either by the linker or as a static variable that can be
-referenced later. Simply pass back the string that is given to
-tracepoint_string().
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index cff3106..b296363 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -574,6 +574,7 @@ do {									\
- 		__trace_printk(ip, fmt, ##args);			\
- } while (0)
- 
-+#ifdef CONFIG_TRACING
- /**
-  * tracepoint_string - register constant persistent string to trace system
-  * @str - a constant persistent string that will be referenced in tracepoints
-@@ -607,6 +608,15 @@ do {									\
- 		___tp_str;						\
- 	})
- #define __tracepoint_string	__attribute__((section("__tracepoint_str")))
-+#else
-+/*
-+ * tracepoint_string() is used to save the string address for userspace
-+ * tracing tools. When tracing isn't configured, there's no need to save
-+ * anything.
-+ */
-+# define tracepoint_string(str) str
-+# define __tracepoint_string
-+#endif
- 
- #ifdef CONFIG_PERF_EVENTS
- struct perf_event;
+> We can evaluate later if the IRQs disabling is too heavy after all.
 
+I'd be surprised if it was a problem in practice. If we have  CMCI,
+then we limit the banks that we look at (and if we see a high rate
+of interrupts, then we turn off interrupts an poll).
+
+If we don't have CMCI, then we are polling at a pretty low rate
+(current code adjusts the rate higher if we are finding errors to
+log, but we don't let that rate rise forever ... cap is ~ 1HZ).
+
+-Tony
