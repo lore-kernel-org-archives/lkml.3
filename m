@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762672AbaGRP3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:29:11 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:55174 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762301AbaGRP0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:26:23 -0400
-X-pt: isis.lip6.fr
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: benoit.taine@lip6.fr, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/25] adm8211: Replace DEFINE_PCI_DEVICE_TABLE macro use
-Date: Fri, 18 Jul 2014 17:27:01 +0200
-Message-Id: <1405697232-11785-15-git-send-email-benoit.taine@lip6.fr>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:10 +0200 (CEST)
+	id S1762688AbaGRP3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:29:20 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:50228 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762301AbaGRP3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:29:17 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <1405365496-58404-3-git-send-email-seth.forshee@canonical.com>
+References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+	<1405365496-58404-3-git-send-email-seth.forshee@canonical.com>
+Date: Fri, 18 Jul 2014 17:29:16 +0200
+Message-ID: <CAJfpegsknFCRRksUZ8-4MjqAoxNgB4-gq=cBdKadVR2K3HJacw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] fuse: Translate pid making a request into the
+ server's pid namespace
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        lxc-devel@lists.linuxcontainers.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should prefer `struct pci_device_id` over `DEFINE_PCI_DEVICE_TABLE` to meet
-kernel coding style guidelines. This issue was reported by checkpatch.
+On Mon, Jul 14, 2014 at 9:18 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> If the server is executing in a pid namespace then then giving it
+> the global pid of the process making the request is useless.
+> Translate the pid into the server's pid namespace.
+>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  fs/fuse/dev.c    | 9 +++++----
+>  fs/fuse/fuse_i.h | 4 ++++
+>  fs/fuse/inode.c  | 2 ++
+>  3 files changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index 219d1e685183..db781ff6392b 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/swap.h>
+>  #include <linux/splice.h>
+>  #include <linux/aio.h>
+> +#include <linux/sched.h>
+>
+>  MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+>  MODULE_ALIAS("devname:fuse");
+> @@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+>         atomic_dec(&req->count);
+>  }
+>
+> -static void fuse_req_init_context(struct fuse_req *req)
+> +static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+>  {
+>         req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+>         req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+> -       req->in.h.pid = current->pid;
+> +       req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
 
-Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+I think this is wrong.  We should store struct pid* in req->in and
+translate into the server's pid in fuse_dev_do_read() before we copy
+in.h.
 
----
-Tested by compilation without errors.
-
- drivers/net/wireless/adm8211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/adm8211.c b/drivers/net/wireless/adm8211.c
-index f35f93c..17fcaab 100644
---- a/drivers/net/wireless/adm8211.c
-+++ b/drivers/net/wireless/adm8211.c
-@@ -41,7 +41,7 @@ static unsigned int rx_ring_size __read_mostly = 16;
- module_param(tx_ring_size, uint, 0);
- module_param(rx_ring_size, uint, 0);
- 
--static DEFINE_PCI_DEVICE_TABLE(adm8211_pci_id_table) = {
-+static const struct pci_device_id adm8211_pci_id_table[] = {
- 	/* ADMtek ADM8211 */
- 	{ PCI_DEVICE(0x10B7, 0x6000) }, /* 3Com 3CRSHPW796 */
- 	{ PCI_DEVICE(0x1200, 0x8201) }, /* ? */
-
+Thanks,
+Miklos
