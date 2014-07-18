@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762272AbaGRNol (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:44:41 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17580 "EHLO
+	id S1761731AbaGRNLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:11:43 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17573 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757854AbaGRNLp (ORCPT
+	by vger.kernel.org with ESMTP id S1757854AbaGRNLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:45 -0400
+	Fri, 18 Jul 2014 09:11:39 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@fb.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 108/170] blkcg: fix use-after-free in __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
-Date: Fri, 18 Jul 2014 14:11:53 +0200
-Message-Id: <e68605c92e6988eca2e565945746e850cc381cf8.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Wang, Yu" <yu.y.wang@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 065/170] xhci: Fix runtime suspended xhci from blocking system suspend.
+Date: Fri, 18 Jul 2014 14:11:10 +0200
+Message-Id: <f9b96e0f652471baae2bb58547c413002841a655.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,177 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: "Wang, Yu" <yu.y.wang@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a5049a8ae34950249a7ae94c385d7c5c98914412 upstream.
+commit d6236f6d1d885aa19d1cd7317346fe795227a3cc upstream.
 
-Hello,
+The system suspend flow as following:
+1, Freeze all user processes and kenrel threads.
 
-So, this patch should do.  Joe, Vivek, can one of you guys please
-verify that the oops goes away with this patch?
+2, Try to suspend all devices.
 
-Jens, the original thread can be read at
+2.1, If pci device is in RPM suspended state, then pci driver will try
+to resume it to RPM active state in the prepare stage.
 
-  http://thread.gmane.org/gmane.linux.kernel/1720729
+2.2, xhci_resume function calls usb_hcd_resume_root_hub to queue two
+workqueue items to resume usb2&usb3 roothub devices.
 
-The fix converts blkg->refcnt from int to atomic_t.  It does some
-overhead but it should be minute compared to everything else which is
-going on and the involved cacheline bouncing, so I think it's highly
-unlikely to cause any noticeable difference.  Also, the refcnt in
-question should be converted to a perpcu_ref for blk-mq anyway, so the
-atomic_t is likely to go away pretty soon anyway.
+2.3, Call suspend callbacks of devices.
 
-Thanks.
+2.3.1, All suspend callbacks of all hcd's children, including
+roothub devices are called.
 
-------- 8< -------
-__blkg_release_rcu() may be invoked after the associated request_queue
-is released with a RCU grace period inbetween.  As such, the function
-and callbacks invoked from it must not dereference the associated
-request_queue.  This is clearly indicated in the comment above the
-function.
+2.3.2, Finally, hcd_pci_suspend callback is called.
 
-Unfortunately, while trying to fix a different issue, 2a4fd070ee85
-("blkcg: move bulk of blkcg_gq release operations to the RCU
-callback") ignored this and added [un]locking of @blkg->q->queue_lock
-to __blkg_release_rcu().  This of course can cause oops as the
-request_queue may be long gone by the time this code gets executed.
+Due to workqueue threads were already frozen in step 1, the workqueue
+items can't be scheduled, and the roothub devices can't be resumed in
+this flow. The HCD_FLAG_WAKEUP_PENDING flag which is set in
+usb_hcd_resume_root_hub won't be cleared. Finally,
+hcd_pci_suspend will return -EBUSY, and system suspend fails.
 
-  general protection fault: 0000 [#1] SMP
-  CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
-  Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
-  task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
-  RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
-  RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
-  RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
-  RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
-  RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
-  R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
-  R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
-  FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
-  Stack:
-   ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
-   ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
-   ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
-  Call Trace:
-   [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
-   [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
-   [<ffffffff81091d81>] kthread+0xe1/0x100
-   [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
-  Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
-  +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
-  +b7
-  RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
-   RSP <ffff88085403fdf0>
+The reason why this issue doesn't show up very often is due to that
+choose_wakeup will be called in step 2.3.1. In step 2.3.1, if
+udev->do_remote_wakeup is not equal to device_may_wakeup(&udev->dev), then
+udev will resume to RPM active for changing the wakeup settings. This
+has been a lucky hit which hides this issue.
 
-The request_queue locking was added because blkcg_gq->refcnt is an int
-protected with the queue lock and __blkg_release_rcu() needs to put
-the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
-dropping queue locking in the function.
+For some special xHCI controllers which have no USB2 port, then roothub
+will not match hub driver due to probe failed. Then its
+do_remote_wakeup will be set to zero, and we won't be as lucky.
 
-Given the general heavy weight of the current request_queue and blkcg
-operations, this is unlikely to cause any noticeable overhead.
-Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
-the near future, so whatever (most likely negligible) overhead it may
-add is temporary.
+xhci driver doesn't need to resume roothub devices everytime like in
+the above case. It's only needed when there are pending event TRBs.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
-Signed-off-by: Jens Axboe <axboe@fb.com>
+This patch should be back-ported to kernels as old as 3.2, that
+contains the commit f69e3120df82391a0ee8118e0a156239a06b2afb
+"USB: XHCI: resume root hubs when the controller resumes"
+
+Signed-off-by: Wang, Yu <yu.y.wang@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+[use readl() instead of removed xhci_readl(), reword commit message -Mathias]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- block/blk-cgroup.c |  7 ++-----
- block/blk-cgroup.h | 17 +++++++----------
- 2 files changed, 9 insertions(+), 15 deletions(-)
+ drivers/usb/host/xhci.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 4e491d9b5292..dd0dd2d4ceca 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
- 	blkg->q = q;
- 	INIT_LIST_HEAD(&blkg->q_node);
- 	blkg->blkcg = blkcg;
--	blkg->refcnt = 1;
-+	atomic_set(&blkg->refcnt, 1);
- 
- 	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
- 	if (blkcg != &blkcg_root) {
-@@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head *rcu_head)
- 
- 	/* release the blkcg and parent blkg refs this blkg has been holding */
- 	css_put(&blkg->blkcg->css);
--	if (blkg->parent) {
--		spin_lock_irq(blkg->q->queue_lock);
-+	if (blkg->parent)
- 		blkg_put(blkg->parent);
--		spin_unlock_irq(blkg->q->queue_lock);
--	}
- 
- 	blkg_free(blkg);
- }
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 2e34c386d760..f1c1cfc92f41 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -18,6 +18,7 @@
- #include <linux/seq_file.h>
- #include <linux/radix-tree.h>
- #include <linux/blkdev.h>
-+#include <linux/atomic.h>
- 
- /* Max limits for throttle policy */
- #define THROTL_IOPS_MAX		UINT_MAX
-@@ -104,7 +105,7 @@ struct blkcg_gq {
- 	struct request_list		rl;
- 
- 	/* reference count */
--	int				refcnt;
-+	atomic_t			refcnt;
- 
- 	/* is this blkg online? protected by both blkcg and q locks */
- 	bool				online;
-@@ -253,13 +254,12 @@ static inline int blkg_path(struct blkcg_gq *blkg, char *buf, int buflen)
-  * blkg_get - get a blkg reference
-  * @blkg: blkg to get
-  *
-- * The caller should be holding queue_lock and an existing reference.
-+ * The caller should be holding an existing reference.
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 01aa4c9fa558..e3d12f164430 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -926,7 +926,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
   */
- static inline void blkg_get(struct blkcg_gq *blkg)
+ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
  {
--	lockdep_assert_held(blkg->q->queue_lock);
--	WARN_ON_ONCE(!blkg->refcnt);
--	blkg->refcnt++;
-+	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
-+	atomic_inc(&blkg->refcnt);
- }
+-	u32			command, temp = 0;
++	u32			command, temp = 0, status;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	struct usb_hcd		*secondary_hcd;
+ 	int			retval = 0;
+@@ -1045,8 +1045,12 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
  
- void __blkg_release_rcu(struct rcu_head *rcu);
-@@ -267,14 +267,11 @@ void __blkg_release_rcu(struct rcu_head *rcu);
- /**
-  * blkg_put - put a blkg reference
-  * @blkg: blkg to put
-- *
-- * The caller should be holding queue_lock.
-  */
- static inline void blkg_put(struct blkcg_gq *blkg)
- {
--	lockdep_assert_held(blkg->q->queue_lock);
--	WARN_ON_ONCE(blkg->refcnt <= 0);
--	if (!--blkg->refcnt)
-+	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
-+	if (atomic_dec_and_test(&blkg->refcnt))
- 		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
- }
+  done:
+ 	if (retval == 0) {
+-		usb_hcd_resume_root_hub(hcd);
+-		usb_hcd_resume_root_hub(xhci->shared_hcd);
++		/* Resume root hubs only when have pending events. */
++		status = readl(&xhci->op_regs->status);
++		if (status & STS_EINT) {
++			usb_hcd_resume_root_hub(hcd);
++			usb_hcd_resume_root_hub(xhci->shared_hcd);
++		}
+ 	}
  
+ 	/*
 -- 
 2.0.0
 
