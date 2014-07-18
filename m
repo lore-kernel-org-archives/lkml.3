@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761298AbaGRJxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:53:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36341 "EHLO
+	id S934863AbaGRJwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:52:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36321 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761232AbaGRJw5 (ORCPT
+	with ESMTP id S934730AbaGRJwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:52:57 -0400
-Date: Fri, 18 Jul 2014 02:52:34 -0700
+	Fri, 18 Jul 2014 05:52:34 -0400
+Date: Fri, 18 Jul 2014 02:52:22 -0700
 From: tip-bot for Cyrill Gorcunov <tipbot@zytor.com>
-Message-ID: <tip-5442e9fbd7c23172a1c9bc736629cd123a9923f0@git.kernel.org>
+Message-ID: <tip-854d06d9fc350130617debdd9e9f49d1c4ba5206@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         gorcunov@openvz.org, xemul@parallels.com, avagin@openvz.org,
-        cov@codeaurora.org, arnd@arndb.de, akpm@linux-foundation.org,
-        tglx@linutronix.de, vdavydov@parallels.com, mtk.manpages@gmail.com
+        akpm@linux-foundation.org, tglx@linutronix.de, vdavydov@parallels.com,
+        mtk.manpages@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         gorcunov@openvz.org, xemul@parallels.com, avagin@openvz.org,
-        cov@codeaurora.org, arnd@arndb.de, akpm@linux-foundation.org,
-        tglx@linutronix.de, vdavydov@parallels.com, mtk.manpages@gmail.com
-In-Reply-To: <20140715215703.285617923@openvz.org>
-References: <20140715215703.285617923@openvz.org>
+        akpm@linux-foundation.org, tglx@linutronix.de, vdavydov@parallels.com,
+        mtk.manpages@gmail.com
+In-Reply-To: <20140715215703.199905126@openvz.org>
+References: <20140715215703.199905126@openvz.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timerfd:
-  Implement timerfd_ioctl method to restore timerfd_ctx::ticks, v3
-Git-Commit-ID: 5442e9fbd7c23172a1c9bc736629cd123a9923f0
+Subject: [tip:timers/core] docs: Procfs -- Document timerfd output
+Git-Commit-ID: 854d06d9fc350130617debdd9e9f49d1c4ba5206
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,123 +35,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5442e9fbd7c23172a1c9bc736629cd123a9923f0
-Gitweb:     http://git.kernel.org/tip/5442e9fbd7c23172a1c9bc736629cd123a9923f0
+Commit-ID:  854d06d9fc350130617debdd9e9f49d1c4ba5206
+Gitweb:     http://git.kernel.org/tip/854d06d9fc350130617debdd9e9f49d1c4ba5206
 Author:     Cyrill Gorcunov <gorcunov@openvz.org>
-AuthorDate: Wed, 16 Jul 2014 01:54:54 +0400
+AuthorDate: Wed, 16 Jul 2014 01:54:53 +0400
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 18 Jul 2014 11:49:57 +0200
 
-timerfd: Implement timerfd_ioctl method to restore timerfd_ctx::ticks, v3
-
-The read() of timerfd files allows to fetch the number of timer ticks
-while there is no way to set it back from userspace.
-
-To restore the timer's state as it was at checkpoint moment we need
-a path to bring @ticks back. Initially I thought about writing ticks
-back via write() interface but it seems such API is somehow obscure.
-
-Instead implement timerfd_ioctl() method with TFD_IOC_SET_TICKS
-command which allows to adjust @ticks into non-zero value waking
-up the waiters.
-
-I wrapped code with CONFIG_CHECKPOINT_RESTORE which can be
-dropped off if there users except c/r camp appear.
-
-v2 (by akpm@):
- - Use define timerfd_ioctl NULL for non c/r config
-
-v3:
- - Use copy_from_user for @ticks fetching since
-   not all arch support get_user for 8 byte argument
+docs: Procfs -- Document timerfd output
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>
 Cc: Andrey Vagin <avagin@openvz.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Christopher Covington <cov@codeaurora.org>
 Cc: Pavel Emelyanov <xemul@parallels.com>
 Cc: Vladimir Davydov <vdavydov@parallels.com>
-Link: http://lkml.kernel.org/r/20140715215703.285617923@openvz.org
+Link: http://lkml.kernel.org/r/20140715215703.199905126@openvz.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- fs/timerfd.c            | 37 +++++++++++++++++++++++++++++++++++++
- include/linux/timerfd.h |  5 +++++
- 2 files changed, 42 insertions(+)
+ Documentation/filesystems/proc.txt | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index 77183f0..709603c 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -315,12 +315,49 @@ static int timerfd_show(struct seq_file *m, struct file *file)
- #define timerfd_show NULL
- #endif
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index ddc531a..eb8a10e 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1743,6 +1743,25 @@ pair provide additional information particular to the objects they represent.
+ 	While the first three lines are mandatory and always printed, the rest is
+ 	optional and may be omitted if no marks created yet.
  
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+static long timerfd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct timerfd_ctx *ctx = file->private_data;
-+	int ret = 0;
++	Timerfd files
++	~~~~~~~~~~~~~
 +
-+	switch (cmd) {
-+	case TFD_IOC_SET_TICKS: {
-+		u64 ticks;
++	pos:	0
++	flags:	02
++	mnt_id:	9
++	clockid: 0
++	ticks: 0
++	settime flags: 01
++	it_value: (0, 49406829)
++	it_interval: (1, 0)
 +
-+		if (copy_from_user(&ticks, (u64 __user *)arg, sizeof(ticks)))
-+			return -EFAULT;
-+		if (!ticks)
-+			return -EINVAL;
-+
-+		spin_lock_irq(&ctx->wqh.lock);
-+		if (!timerfd_canceled(ctx)) {
-+			ctx->ticks = ticks;
-+			if (ticks)
-+				wake_up_locked(&ctx->wqh);
-+		} else
-+			ret = -ECANCELED;
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		break;
-+	}
-+	default:
-+		ret = -ENOTTY;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+#else
-+#define timerfd_ioctl NULL
-+#endif
-+
- static const struct file_operations timerfd_fops = {
- 	.release	= timerfd_release,
- 	.poll		= timerfd_poll,
- 	.read		= timerfd_read,
- 	.llseek		= noop_llseek,
- 	.show_fdinfo	= timerfd_show,
-+	.unlocked_ioctl	= timerfd_ioctl,
- };
++	where 'clockid' is the clock type and 'ticks' is the number of the timer expirations
++	that have occurred [see timerfd_create(2) for details]. 'settime flags' are
++	flags in octal form been used to setup the timer [see timerfd_settime(2) for
++	details]. 'it_value' is remaining time until the timer exiration.
++	'it_interval' is the interval for the timer. Note the timer might be set up
++	with TIMER_ABSTIME option which will be shown in 'settime flags', but 'it_value'
++	still exhibits timer's remaining time.
  
- static int timerfd_fget(int fd, struct fd *p)
-diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
-index d3b57fa..bd36ce4 100644
---- a/include/linux/timerfd.h
-+++ b/include/linux/timerfd.h
-@@ -11,6 +11,9 @@
- /* For O_CLOEXEC and O_NONBLOCK */
- #include <linux/fcntl.h>
- 
-+/* For _IO helpers */
-+#include <linux/ioctl.h>
-+
- /*
-  * CAREFUL: Check include/asm-generic/fcntl.h when defining
-  * new flags, since they might collide with O_* ones. We want
-@@ -29,4 +32,6 @@
- /* Flags for timerfd_settime.  */
- #define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET)
- 
-+#define TFD_IOC_SET_TICKS	_IOW('T', 0, u64)
-+
- #endif /* _LINUX_TIMERFD_H */
+ ------------------------------------------------------------------------------
+ Configuring procfs
