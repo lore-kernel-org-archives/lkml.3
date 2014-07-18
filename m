@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762509AbaGRW0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 18:26:37 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56344 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932AbaGRW0f (ORCPT
+	id S1762447AbaGRWca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 18:32:30 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:41654 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756607AbaGRWc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 18:26:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jLsnSujJdZmA=nzHw1_K3eYhSiUEnntJ3S2hCZ8DFVYpg@mail.gmail.com>
-References: <cover.1405717901.git.luto@amacapital.net> <ce65e0e8be18ae8fab437899db44ca41c912b506.1405717901.git.luto@amacapital.net>
- <CAGXu5jLsnSujJdZmA=nzHw1_K3eYhSiUEnntJ3S2hCZ8DFVYpg@mail.gmail.com>
+	Fri, 18 Jul 2014 18:32:28 -0400
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 18 Jul 2014 15:26:13 -0700
-Message-ID: <CALCETrX=hN1yKh=cfcOHffMprjP74PdeRfhTFOYCK7oPhURV_Q@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] seccomp: Allow arch code to provide seccomp_data
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v2 8/7] seccomp: Document two-phase seccomp and arch-provided seccomp_data
+Date: Fri, 18 Jul 2014 15:32:00 -0700
+Message-Id: <0a79fe55572054ac3b533548481ad1d2b6104eb6.1405722642.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1405717901.git.luto@amacapital.net>
+References: <cover.1405717901.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 3:16 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Jul 18, 2014 at 2:18 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> populate_seccomp_data is expensive: it works by inspecting
->> task_pt_regs and various other bits to piece together all the
->> information, and it's does so in multiple partially redundant steps.
->>
->> Arch-specific code in the syscall entry path can do much better.
->>
->> Admittedly this adds a bit of additional room for error, but the
->> speedup should be worth it.
->
-> I still think we should gain either a note in the
-> HAVE_ARCH_SECCOMP_FILTER help text in arch/Kconfig, or possibly a new
-> section in Documentation/prctl/seccomp.txt (or similar) on how do
-> implement filter support for an architecture, that mentions the
-> arch-supplied seccomp_data and how two-phase can be done.
+The description of how arches should implement seccomp filters was
+still strictly correct, but it failed to describe the newly
+available optimizations.
 
-I would have sworn I did that.  I distinctly remember typing that
-text.  I must have failed to commit it.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-I'll send a followup patch.
+I lost this somehow.  Here it as an an extra patch.  If I end up sending
+a v3, I'll fold it in.
 
---Andy
+ arch/Kconfig | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
->
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
-
-
-
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 0eae9df..05d7a8a 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -323,6 +323,17 @@ config HAVE_ARCH_SECCOMP_FILTER
+ 	    results in the system call being skipped immediately.
+ 	  - seccomp syscall wired up
+ 
++	  For best performance, an arch should use seccomp_phase1 and
++	  seccomp_phase2 directly.  It should call seccomp_phase1 for all
++	  syscalls if TIF_SECCOMP is set, but seccomp_phase1 does not
++	  need to be called from a ptrace-safe context.  It must then
++	  call seccomp_phase2 if seccomp_phase1 returns anything other
++	  than SECCOMP_PHASE1_OK or SECCOMP_PHASE1_SKIP.
++
++	  As an additional optimization, an arch may provide seccomp_data
++	  directly to seccomp_phase1; this avoids multiple calls
++	  to the syscall_xyz helpers for every syscall.
++
+ config SECCOMP_FILTER
+ 	def_bool y
+ 	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.3
+
