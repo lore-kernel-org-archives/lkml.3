@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030490AbaGRQjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:39:44 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:51844 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030388AbaGRQji convert rfc822-to-8bit (ORCPT
+	id S1030518AbaGRQoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:44:14 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50774 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756865AbaGRQoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:39:38 -0400
+	Fri, 18 Jul 2014 12:44:07 -0400
+X-Sasl-enc: K0ewJdu6/GdZugJhfMaVsREYxgf/5MPe1vpqc2hPjrdS 1405701844
+Date: Fri, 18 Jul 2014 09:43:40 -0700
+From: Greg KH <greg@kroah.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Benoit Taine <benoit.taine@lip6.fr>, linux-mips@linux-mips.org,
+        linux-fbdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, linux-acenic@sunsite.dk,
+        linux-scsi@vger.kernel.org, linux-rdma@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-hippi@sunsite.dk,
+        industrypack-devel@lists.sourceforge.net, linux-mmc@vger.kernel.org,
+        MPT-FusionLinux.pdl@avagotech.com,
+        virtualization@lists.linux-foundation.org,
+        ath9k-devel@venema.h4ckr.net, wil6210@qca.qualcomm.com,
+        linux-pcmcia@lists.infradead.org, linux-can@vger.kernel.org,
+        xen-devel@lists.xenproject.org, platform-driver-x86@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, e1000-devel@lists.sourceforge.net,
+        linux-crypto@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [PATCH 0/25] Replace DEFINE_PCI_DEVICE_TABLE macro use
+Message-ID: <20140718164340.GA24960@kroah.com>
+References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+ <20140718162213.GC31114@tuxdriver.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] [RFC] initial getrandom wrapper to provide getentropy for LibreSSL
-From: Brent Cook <busterb@gmail.com>
-In-Reply-To: <20140718161936.GA4877@thunk.org>
-Date: Fri, 18 Jul 2014 11:33:25 -0500
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <15B9444D-C18A-41AC-BE81-30B43AA3384C@gmail.com>
-References: <1405666144-88053-1-git-send-email-busterb@gmail.com> <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com> <20140718161936.GA4877@thunk.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Disposition: inline
+In-Reply-To: <20140718162213.GC31114@tuxdriver.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 18, 2014, at 11:19 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-
-> On Fri, Jul 18, 2014 at 08:09:52AM -0500, Brent Cook wrote:
->> On Jul 18, 2014, at 1:49 AM, Brent Cook <busterb@gmail.com> wrote:
->> 
->>> From: Brent Cook <bcook@openbsd.org>
->>> 
->>> This is not a kernel patch, but rather an initial test of the API to see
->>> how it might mesh LibreSSL's expectations for how getentropy works.
->>> 
->>> It is a bit more code to carefully handle the extra return values, as
->>> not reading enough bytes, because there is an unhandled EINTR, might
->>> lead to an unseeded CSPRNG.
+On Fri, Jul 18, 2014 at 12:22:13PM -0400, John W. Linville wrote:
+> On Fri, Jul 18, 2014 at 05:26:47PM +0200, Benoit Taine wrote:
+> > We should prefer `const struct pci_device_id` over
+> > `DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
+> > This issue was reported by checkpatch.
 > 
-> Take a look at the latest patch for getrandom.  It contains a
-> suggested wrapper which should be sufficient for emulation of
-> OpenBSD's getentropy(), and a lot of discussion of when you don't need
-> to worry about getting the EINTR.
-> 
->   http://lists.openwall.net/linux-kernel/2014/07/18/329
-> 
-> Again, please don't commit anything until the syscall number and
-> interface is finalized.  What is out here is for review, and I already
-> have in the git commit a suggested wrapper to provide getentropy(2).
-> If you don't think it's good enough, please let me know what your
-> concerns might be.  (And yes, I've fixed the obvious missing open
-> brace already.  :-)
-> 
->   	      	      	  	     	      	    - Ted
+> Honestly, I prefer the macro -- it stands-out more.  Maybe the style
+> guidelines and/or checkpatch should change instead?
 
-Ah, that looks good to me.
+The macro is horrid, no other bus has this type of thing just to save a
+few characters in typing, so why should PCI be "special" in this regard
+anymore?
 
-I had just stubbed in the placeholder numbers for local testing purposes, no problem holding until it is finalized.
+thanks,
 
- Thanks!
-
- - Brent
-
+greg k-h
