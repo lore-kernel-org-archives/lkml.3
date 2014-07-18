@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422813AbaGRSTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:19:53 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:60186 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030567AbaGRSTv (ORCPT
+	id S1422901AbaGRSUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:20:49 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:57718 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030567AbaGRSUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:19:51 -0400
-Date: Fri, 18 Jul 2014 14:19:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Nish Aravamudan <nish.aravamudan@gmail.com>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linuxppc-dev@lists.ozlabs.org,
+	Fri, 18 Jul 2014 14:20:47 -0400
+Date: Fri, 18 Jul 2014 20:20:29 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Miller <davem@davemloft.net>,
+        sparclinux@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] Memoryless nodes and kworker
-Message-ID: <20140718181947.GE13012@htj.dyndns.org>
-References: <20140717230923.GA32660@linux.vnet.ibm.com>
- <20140718112039.GA8383@htj.dyndns.org>
- <CAOhV88PyBK3WxDjG1H0hUbRhRYzPOzV8eim5DuOcgObe-FtFYg@mail.gmail.com>
- <20140718180008.GC13012@htj.dyndns.org>
- <CAOhV88O03zCsv_3eadEKNv1D1RoBmjWRFNhPjEHawF9s71U0JA@mail.gmail.com>
+Subject: Re: Sparc: Fix Mes in highmem.c
+Message-ID: <20140718182028.GA21570@ravnborg.org>
+References: <CAPDOMVjTxTNTfgPJMz6eNfabXuvtJ43YMpEeDEQ236EtF168Cg@mail.gmail.com>
+ <20140717075204.GA15569@ravnborg.org>
+ <CAPDOMVjb_JxnGSTf5mW_RQ58h4-7fS6HywARpPV3XgWA33SybQ@mail.gmail.com>
+ <CAPDOMVj9GcoC26Sp6sOmwZf39mfOn=Wy87AnfzDguthcFOTXhg@mail.gmail.com>
+ <20140718140812.GB23985@home.goodmis.org>
+ <CAPDOMVji-rOr4OT0M+RX0XaKLsscH_PJ8Q0BEw3xyp34KjHOKA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOhV88O03zCsv_3eadEKNv1D1RoBmjWRFNhPjEHawF9s71U0JA@mail.gmail.com>
+In-Reply-To: <CAPDOMVji-rOr4OT0M+RX0XaKLsscH_PJ8Q0BEw3xyp34KjHOKA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jul 18, 2014 at 01:06:41PM -0400, Nick Krause wrote:
+> On Fri, Jul 18, 2014 at 10:08 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Thu, Jul 17, 2014 at 11:05:12PM -0400, Nick Krause wrote:
+> >> On Thu, Jul 17, 2014 at 1:38 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> >> > On Thu, Jul 17, 2014 at 3:52 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> >> >> On Wed, Jul 16, 2014 at 10:25:30PM -0400, Nick Krause wrote:
+> >> >>> I am hitting three Fix mes in this file and am wondering as the
+> >> >>> maintainer how you would like
+> >> >>> to clean them up.
+> >> >>
+> >> >> They may be addressed if we one day decide to give the sparc32 highmem
+> >> >> support a big overhaul. Until then they are left as is.
+> >> >>
+> >> >>         Sam
+> >> >  Very well then I will just not touch it until we are going to
+> >> > overhaul the highmem  for
+> >> > sparc32.
+> >> > Cheers Nick
+> >> If you want I can fix the sparc32 highmem area with your help. I am new
+> >> to the kernel so a little help if needed would be great when doing this work
+> >> for you:).
+> >
+> > It will take a bit more than a "little help" to do such a task. Among other
+> > things, owning a sparc32 box is one of them. Do you happen to have one?
+> > Or do you have access to one?
+> >
+> > -- Steve
+> >
+> 
+> I understand that I don't have a sparc32 box , however if someone can
+> test my fixes for me this
+> may work.
+No it will not work.
+This is as many other areas something that require some knowledge plus
+some trial-and-error to do.
 
-On Fri, Jul 18, 2014 at 11:12:01AM -0700, Nish Aravamudan wrote:
-> why aren't these callers using kthread_create_on_cpu()? That API was
+You should understand that things takes time to learn before you can go hacking
+around in stuff. And highmem support in sparc32 is one such area.
+Time are in some areas counted in months and in other areas counted in years.
+This is not some simple userspace program - please try to understand this.
 
-It is using that.  There just are other data structures too.
-
-> already change to use cpu_to_mem() [so one change, rather than of all over
-> the kernel source]. We could change it back to cpu_to_node and push down
-> the knowledge about the fallback.
-
-And once it's properly solved, please convert back kthread to use
-cpu_to_node() too.  We really shouldn't be sprinkling the new subtly
-different variant across the kernel.  It's wrong and confusing.
-
-> Yes, this is a good point. But honestly, we're not really even to the point
-> of talking about fallback here, at least in my testing, going off-node at
-> all causes SLUB-configured slabs to deactivate, which then leads to an
-> explosion in the unreclaimable slab.
-
-I don't think moving the logic inside allocator proper is a huge
-amount of work and this isn't the first spillage of this subtlety out
-of allocator proper.  Fortunately, it hasn't spread too much yet.
-Let's please stop it here.  I'm not saying you shouldn't or can't fix
-the off-node allocation.
-
-Thanks.
-
--- 
-tejun
+	Sam
