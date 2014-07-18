@@ -1,67 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761146AbaGRJwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:52:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:35942 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934416AbaGRJw1 (ORCPT
+	id S934926AbaGRJwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:52:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36317 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933929AbaGRJwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:52:27 -0400
-Message-ID: <53C8EE4C.1000204@huawei.com>
-Date: Fri, 18 Jul 2014 17:52:12 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 18 Jul 2014 05:52:34 -0400
+Date: Fri, 18 Jul 2014 02:52:09 -0700
+From: tip-bot for Cyrill Gorcunov <tipbot@zytor.com>
+Message-ID: <tip-af9c4957cf212ad9cf0bee34c95cb11de5426e85@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        gorcunov@openvz.org, xemul@parallels.com, avagin@openvz.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, vdavydov@parallels.com,
+        mtk.manpages@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        gorcunov@openvz.org, xemul@parallels.com, avagin@openvz.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, vdavydov@parallels.com,
+        mtk.manpages@gmail.com
+In-Reply-To: <20140715215703.114365649@openvz.org>
+References: <20140715215703.114365649@openvz.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] timerfd: Implement show_fdinfo method
+Git-Commit-ID: af9c4957cf212ad9cf0bee34c95cb11de5426e85
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Mel Gorman" <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Pei Feiyue <peifeiyue@huawei.com>, <linux-mm@kvack.org>, <x86@kernel.org>,
-        <linux-ia64@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-sh@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] memory-hotplug: x86_32: suitable memory should go
- to ZONE_MOVABLE
-References: <1405670163-53747-1-git-send-email-wangnan0@huawei.com> <1405670163-53747-3-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1405670163-53747-3-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/18 15:56, Wang Nan wrote:
-> This patch add new memory to ZONE_MOVABLE if movable zone is setup
-> and lower than newly added memory for x86_32.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> ---
->  arch/x86/mm/init_32.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-> index e395048..dd69833 100644
-> --- a/arch/x86/mm/init_32.c
-> +++ b/arch/x86/mm/init_32.c
-> @@ -826,9 +826,15 @@ int arch_add_memory(int nid, u64 start, u64 size)
->  {
->  	struct pglist_data *pgdata = NODE_DATA(nid);
->  	struct zone *zone = pgdata->node_zones + ZONE_HIGHMEM;
-> +	struct zone *movable_zone = pgdat->node_zones + ZONE_MOVABLE;
+Commit-ID:  af9c4957cf212ad9cf0bee34c95cb11de5426e85
+Gitweb:     http://git.kernel.org/tip/af9c4957cf212ad9cf0bee34c95cb11de5426e85
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Wed, 16 Jul 2014 01:54:52 +0400
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 18 Jul 2014 11:49:57 +0200
 
-Sorry. pgdat should be pgdata.
+timerfd: Implement show_fdinfo method
 
->  	unsigned long start_pfn = start >> PAGE_SHIFT;
->  	unsigned long nr_pages = size >> PAGE_SHIFT;
->  
-> +	if (!zone_is_empty(movable_zone))
-> +		if (zone_spans_pfn(movable_zone, start_pfn) ||
-> +				(zone_end_pfn(movable_zone) <= start_pfn))
-> +			zone = movable_zone;
-> +
->  	return __add_pages(nid, zone, start_pfn, nr_pages);
->  }
->  
-> 
+For checkpoint/restore of timerfd files we need to know how exactly
+the timer were armed, to be able to recreate it on restore stage.
+Thus implement show_fdinfo method which provides enough information
+for that.
 
+One of significant changes I think is the addition of @settime_flags
+member. Currently there are two flags TFD_TIMER_ABSTIME and
+TFD_TIMER_CANCEL_ON_SET, and the second can be found from
+@might_cancel variable but in case if the flags will be extended
+in future we most probably will have to somehow remember them
+explicitly anyway so I guss doing that right now won't hurt.
 
+To not bloat the timerfd_ctx structure I've converted @expired
+to short integer and defined @settime_flags as short too.
+
+v2 (by avagin@, vdavydov@ and tglx@):
+
+ - Add it_value/it_interval fields
+ - Save flags being used in timerfd_setup in context
+
+v3 (by tglx@):
+ - don't forget to use CONFIG_PROC_FS
+
+v4 (by akpm@):
+ -Use define timerfd_show NULL for non c/r config
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
+Link: http://lkml.kernel.org/r/20140715215703.114365649@openvz.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ fs/timerfd.c | 34 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 0013142..77183f0 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -35,8 +35,9 @@ struct timerfd_ctx {
+ 	ktime_t moffs;
+ 	wait_queue_head_t wqh;
+ 	u64 ticks;
+-	int expired;
+ 	int clockid;
++	short unsigned expired;
++	short unsigned settime_flags;	/* to show in fdinfo */
+ 	struct rcu_head rcu;
+ 	struct list_head clist;
+ 	bool might_cancel;
+@@ -196,6 +197,8 @@ static int timerfd_setup(struct timerfd_ctx *ctx, int flags,
+ 		if (timerfd_canceled(ctx))
+ 			return -ECANCELED;
+ 	}
++
++	ctx->settime_flags = flags & TFD_SETTIME_FLAGS;
+ 	return 0;
+ }
+ 
+@@ -284,11 +287,40 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 	return res;
+ }
+ 
++#ifdef CONFIG_PROC_FS
++static int timerfd_show(struct seq_file *m, struct file *file)
++{
++	struct timerfd_ctx *ctx = file->private_data;
++	struct itimerspec t;
++
++	spin_lock_irq(&ctx->wqh.lock);
++	t.it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
++	t.it_interval = ktime_to_timespec(ctx->tintv);
++	spin_unlock_irq(&ctx->wqh.lock);
++
++	return seq_printf(m,
++			  "clockid: %d\n"
++			  "ticks: %llu\n"
++			  "settime flags: 0%o\n"
++			  "it_value: (%llu, %llu)\n"
++			  "it_interval: (%llu, %llu)\n",
++			  ctx->clockid, (unsigned long long)ctx->ticks,
++			  ctx->settime_flags,
++			  (unsigned long long)t.it_value.tv_sec,
++			  (unsigned long long)t.it_value.tv_nsec,
++			  (unsigned long long)t.it_interval.tv_sec,
++			  (unsigned long long)t.it_interval.tv_nsec);
++}
++#else
++#define timerfd_show NULL
++#endif
++
+ static const struct file_operations timerfd_fops = {
+ 	.release	= timerfd_release,
+ 	.poll		= timerfd_poll,
+ 	.read		= timerfd_read,
+ 	.llseek		= noop_llseek,
++	.show_fdinfo	= timerfd_show,
+ };
+ 
+ static int timerfd_fget(int fd, struct fd *p)
