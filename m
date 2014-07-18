@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935111AbaGRQbx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:31:53 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:52948 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaGRQbv (ORCPT
+	id S935141AbaGRQcP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:32:15 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:42603 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756009AbaGRQcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:31:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chanwoo Choi <cwchoi00@gmail.com>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        galak@codeaurora.org, naveen krishna <ch.naveen@samsung.com>,
-        jic23@kernel.org
-Subject: Re: [PATCHv6 2/4] iio: adc: exynos_adc: Control special clock of ADC to support Exynos3250 ADC
-Date: Fri, 18 Jul 2014 18:31:40 +0200
-Message-ID: <10264770.8SXiIS8qhq@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGTfZH3vz9MLN+1fPM22zKE64oMNDgcib3is0nfzZhhLkmdNvw@mail.gmail.com>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <32226622.5gSmvBRKvZ@wuerfel> <CAGTfZH3vz9MLN+1fPM22zKE64oMNDgcib3is0nfzZhhLkmdNvw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:dl75VlJUepIMnpfzA5SFy87pVStdHBrN4T8H8mQM1OK
- wAJrvnTjIBEw6bQatU+Ggs4LFj10rbJVeBbGMNUtPytcpPoHUD
- 0KEblw6YDBQdFHmZuGveyVvp5Kj9W0QzX+yKa93eRAEZRUk6zL
- vZKqAMVhSJIkZFxxHI9vz69LA/n5Oe9jvvdAdeU3EwtOVSUV/8
- /ywwGoJi/C/PxvQNA/YRNOgkfRg0ojoBiMQqEfrG7ZfCcS1/Ej
- G++6bro9AKGpljpDYkXpRePGy0kqsMf1aSEMExW22+UqExmXWy
- E+Ev5RA9lsm9gqbggbEvxYt4/aiJSPI3HrnZPmpc3PXu40V+Wu
- OnRvfqpu7fYOqxiifHi0=
+	Fri, 18 Jul 2014 12:32:12 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: Hans Verkuil <hans.verkuil@cisco.com>, LMML <linux-media@vger.kernel.org>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] media: davinci: vpif: fix array out of bound warnings
+Date: Fri, 18 Jul 2014 17:31:51 +0100
+Message-Id: <1405701111-26983-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 July 2014 01:11:53 Chanwoo Choi wrote:
-> 
->   Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
->   - 'adc' clock: bus clock for ADC
-> 
->   Exynos3250 has additional 'sclk_adc' clock as following:
->   - 'sclk_adc' clock: special clock for ADC which provide clock to internal ADC
+This patch fixes following array out of bound warnings,
 
-The bus clock is often named "apb_pclk", but it's too late to change
-that now, and it's not clear if the device is actually on APB.
+drivers/media/platform/davinci/vpif_display.c: In function 'vpif_remove':
+drivers/media/platform/davinci/vpif_display.c:1389:36: warning: iteration
+1u invokes undefined behavior [-Waggressive-loop-optimizations]
+   vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+                                    ^
+drivers/media/platform/davinci/vpif_display.c:1385:2: note: containing loop
+  for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
+  ^
+drivers/media/platform/davinci/vpif_capture.c: In function 'vpif_remove':
+drivers/media/platform/davinci/vpif_capture.c:1581:36: warning: iteration
+1u invokes undefined behavior [-Waggressive-loop-optimizations]
+   vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+                                    ^
+drivers/media/platform/davinci/vpif_capture.c:1577:2: note: containing loop
+  for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+  ^
+drivers/media/platform/davinci/vpif_capture.c:1580:23: warning: array subscript
+is above array bounds [-Warray-bounds]
+   common = &ch->common[i];
 
-The problem with "sclk_adc" is that it's very close to the name used
-in the clock provider, with is CLK_SCLK_TSADC. Please try to avoid
-the ambiguity here and make it clear that they are not referring
-to the same thing. "internal" or "special" might be good if you want
-to avoid "sclk".
+Reported-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/media/platform/davinci/vpif_capture.c | 2 +-
+ drivers/media/platform/davinci/vpif_display.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-	Arnd
+diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+index 2f90f0d..3a85238 100644
+--- a/drivers/media/platform/davinci/vpif_capture.c
++++ b/drivers/media/platform/davinci/vpif_capture.c
+@@ -1577,7 +1577,7 @@ static int vpif_remove(struct platform_device *device)
+ 	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+ 		/* Get the pointer to the channel object */
+ 		ch = vpif_obj.dev[i];
+-		common = &ch->common[i];
++		common = &ch->common[VPIF_VIDEO_INDEX];
+ 		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+ 		/* Unregister video device */
+ 		video_unregister_device(ch->video_dev);
+diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+index 0bd6dcb..6c6bd6b 100644
+--- a/drivers/media/platform/davinci/vpif_display.c
++++ b/drivers/media/platform/davinci/vpif_display.c
+@@ -1385,7 +1385,7 @@ static int vpif_remove(struct platform_device *device)
+ 	for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
+ 		/* Get the pointer to the channel object */
+ 		ch = vpif_obj.dev[i];
+-		common = &ch->common[i];
++		common = &ch->common[VPIF_VIDEO_INDEX];
+ 		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+ 		/* Unregister video device */
+ 		video_unregister_device(ch->video_dev);
+-- 
+1.9.1
+
