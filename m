@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422738AbaGRRrS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:47:18 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:52724 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030534AbaGRRrP (ORCPT
+	id S1422789AbaGRRr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:47:59 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:48695 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030518AbaGRRr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:47:15 -0400
-Date: Fri, 18 Jul 2014 10:47:12 -0700
-From: Patrik Fimml <patrikf@chromium.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Dmitry Torokhov <dtor@google.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Bastien Nocera <hadess@hadess.net>,
-        Patrik Fimml <patrikf@chromium.org>, linux-pm@vger.kernel.org,
-        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Power-managing devices that are not of interest at some point in
- time
-Message-ID: <20140718174712.GA3156@google.com>
-References: <Pine.LNX.4.44L0.1407171029210.1517-100000@iolanthe.rowland.org>
- <3088260.XkiUM6Vtxh@dtor-glaptop>
- <8587268.sIIBz6Y2QN@vostro.rjw.lan>
+	Fri, 18 Jul 2014 13:47:58 -0400
+X-IronPort-AV: E=Sophos;i="5.01,686,1400025600"; 
+   d="scan'208";a="154173356"
+Message-ID: <53C95DCB.90806@citrix.com>
+Date: Fri, 18 Jul 2014 18:47:55 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8587268.sIIBz6Y2QN@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wei Liu <wei.liu2@citrix.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH net 1/4] xen-netback: Fix handling frag_list on grant
+ op error path
+References: <1405624192-21722-1-git-send-email-zoltan.kiss@citrix.com> <1405624192-21722-2-git-send-email-zoltan.kiss@citrix.com> <20140718152435.GN7142@zion.uk.xensource.com>
+In-Reply-To: <20140718152435.GN7142@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 02:43:02AM +0200, Rafael J. Wysocki wrote:
-> From past discussions on similar topics it followed that there really was
-> no generic way for individual drivers to quiesce devices on demand as long as
-> user space was running.  Everything we could come up with was racy, this way or
-> another.  That is the reason for using the freezer during system suspend.  In
-> other words, if you want drivers to quiesce devices by force, you need to quiesce
-> user space by force to start with - for example by freezing it.
+On 18/07/14 16:24, Wei Liu wrote:
+> On Thu, Jul 17, 2014 at 08:09:49PM +0100, Zoltan Kiss wrote:
+>> The error handling for skb's with frag_list was completely wrong, it caused
+>> double unmap attempts to happen if the error was on the first skb. Move it to
+>> the right place in the loop.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> Reported-by: Armin Zentai <armin.zentai@ezit.hu>
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: xen-devel@lists.xenproject.org
+>> ---
+>> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+>> index 1844a47..604ff71 100644
+>> --- a/drivers/net/xen-netback/netback.c
+>> +++ b/drivers/net/xen-netback/netback.c
+>> @@ -1030,10 +1030,16 @@ static int xenvif_tx_check_gop(struct xenvif_queue *queue,
+>>   {
+>>   	struct gnttab_map_grant_ref *gop_map = *gopp_map;
+>>   	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+>> +	/* This points to the shinfo of the actually checked skb, which could be
+>> +	 * either the first or the one on the frag_list
+>> +	 */
+>
+> I think "checked skb" should be "skb being checked". Feel free to
+> disagree as I'm not native English speaker. :-/
+>
+>>   	struct skb_shared_info *shinfo = skb_shinfo(skb);
+>> +	/* If this is non-NULL, we are currently checking the frag_list skb, and
+>> +	 * this points to the shinfo of the first one
+>> +	 */
+>> +	struct skb_shared_info *first_shinfo = NULL;
+>>   	int nr_frags = shinfo->nr_frags;
+>>   	int i, err;
+>> -	struct sk_buff *first_skb = NULL;
+>>
+>>   	/* Check status of header. */
+>>   	err = (*gopp_copy)->status;
+>> @@ -1086,31 +1092,28 @@ check_frags:
+>>   			xenvif_idx_unmap(queue, pending_idx);
+>>   		}
+>>
+>> +		/* And if we found the error while checking the frag_list, unmap
+>> +		 * the first skb's frags
+>> +		 */
+>> +		if (first_shinfo) {
+>> +			for (j = 0; j < first_shinfo->nr_frags; j++) {
+>> +				pending_idx = frag_get_pending_idx(&first_shinfo->frags[j]);
+>> +				xenvif_idx_unmap(queue, pending_idx);
+>> +			}
+>> +		}
+>> +
+>>   		/* Remember the error: invalidate all subsequent fragments. */
+>>   		err = newerr;
+>>   	}
+>>
+>> -	if (skb_has_frag_list(skb)) {
+>> -		first_skb = skb;
+>> -		skb = shinfo->frag_list;
+>> -		shinfo = skb_shinfo(skb);
+>> +	if (skb_has_frag_list(skb) && !first_shinfo) {
+>
+> Will it ever come to the point that we have another skb in this skb's
+> frag list? Is there any reason prevents you from looping over the
+> (possible) subsequent skbs? I guess if the error is deep in the list
+> it's a bit hard to bookkeep...
+>
+>> +		first_shinfo = skb_shinfo(skb);
+>> +		shinfo = skb_shinfo(skb_shinfo(skb)->frag_list);
+>
+> In that case I would suggest you add
+> BUG_ON(skb_has_frag_list(skb_shinfo(skb)->frag_list)). I think having
+> more nested frag_list should be a bug in current design.
 
-Can you give me some pointers?
-
-> For runtime PM, on the other hand, the underlying observation is that drivers
-> should be able to detect when devices are already quiescent and initialize power
-> transitions at those points.  It's role is to help with that, but not with quiescing
-> things.
-> 
-> That said, in the "laptop lid closed" scenario (assuming that the system is not
-> supposed to suspend in response to that, which in my opinion is the best approach)
-> the problem really seems to be that drivers are not aggressive enough with starting
-> PM transitions (using runtime PM) when they see no activity.  Thus it seems that
-> when the lid is closed, it'll be good to switch the drivers into a "more aggressive
-> runtime PM mode" in which they will use any opportunity to start a power transition
-> without worrying about extra latencies resulting from that.  In that mode they
-> should also disable remote wakeup.  I think this should be sufficient to address
-> the use case at hand.
-
-Let me try to clear things up a little.
-
-Of course, in most cases, a laptop would enter suspend after closing the
-lid. But you can think of scenarios where the laptop would stay on:
-- Your laptop is docked, and you use an external monitor, but you don't
-  want to have your laptop open (maybe due to lack of space).
-- You have your laptop in your backpack and use it as a music player.
-
-In those scenarios, you wouldn't want to see bogus input (our worst-case
-example is the mouse pointer being over the 1-Click Buy button on
-Amazon - stray clicks that result from the laptop lid interfering with
-the touchpad wouldn't be a good thing).
-
-Now there are basically two approaches with pros and cons:
-
- 1. Get userspace to close handles to all such devices while the lid is
-    closed, and
-1a. Have drivers with sufficiently aggressive PM so that devices are
-    actually going to a low-power/off state when userspace doesn't have
-    any handles open.
-
-This can be done with the infrastructure that we have in the kernel
-today, although drivers might have to be improved in order to actually
-get devices to power off.
-
- 2. Give userspace a way of quiescing a device. Handles to the device
-    stay open, but the device will no longer perform its function and,
-    if possible, power down.
-
-For input devices, this makes a lot of sense in my opinion.
-
-The notable difference to runtime PM as we have it today is that with
-runtime PM, a device typically goes to a low-power state because it is
-idle. In our scenario, we want to forcibly quiesce it even if it is not
-idle (and if it continues to provide events in a low-power mode, we
-want to ignore them instead of passing them on). So maybe integration
-with runtime PM is not the best fit.
-
-Perhaps the best way to go forward would be to add a new property for
-all devices that support quiescing so userspace has a uniform way of
-doing things, but have subsystems (and potentially the device driver)
-decide what action is appropriate to quiesce a device. Some subsystems
-might be able to provide a default implementation (e.g. input could just
-skip all events that are reported from the device driver).
-
-Regards,
-Patrik
+There are already 3 things which prevents this
+- in count_requests we drop the packet if it has more than 
+XEN_NETBK_LEGACY_SLOTS_MAX slots
+- in get_requests there is a BUG_ON(frag_overflow > MAX_SKB_FRAGS), 
+which shouldn't really due to the prev point
+- in the same funciont we create a frag_list skb exactly once
