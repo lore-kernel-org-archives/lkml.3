@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761524AbaGRPV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:21:58 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:47315 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756009AbaGRPV5 (ORCPT
+	id S1761729AbaGRPXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:23:41 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:57457 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756778AbaGRPXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:21:57 -0400
+	Fri, 18 Jul 2014 11:23:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Chanwoo Choi <cwchoi00@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>, rdunlap@infradead.org,
+        linux-doc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        galak@codeaurora.org, naveen krishna <ch.naveen@samsung.com>,
+        jic23@kernel.org
+Subject: Re: [PATCHv6 2/4] iio: adc: exynos_adc: Control special clock of ADC to support Exynos3250 ADC
+Date: Fri, 18 Jul 2014 17:23:30 +0200
+Message-ID: <32226622.5gSmvBRKvZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGTfZH1EHiTpo2Abua=+kDfNoOQx+ydPHU51=+qW8mgCL4Lwvg@mail.gmail.com>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <6917971.QKItNU3coA@wuerfel> <CAGTfZH1EHiTpo2Abua=+kDfNoOQx+ydPHU51=+qW8mgCL4Lwvg@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <1405365496-58404-2-git-send-email-seth.forshee@canonical.com>
-References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
-	<1405365496-58404-2-git-send-email-seth.forshee@canonical.com>
-Date: Fri, 18 Jul 2014 17:21:55 +0200
-Message-ID: <CAJfpegt7BRgnHZWR8TbgnXx7+Xey3CS98i1UUdjm4C2G1u6RGg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] fuse/dev: Fix unbalanced calls to kunmap_atomic()
- during splice I/O
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        lxc-devel@lists.linuxcontainers.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Michael H. Warfield" <mhw@wittsend.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:4+yXVWtRlBIweQLkIDWGG+X/F/NhD6vucUV74NekY4K
+ CEpyMj/Tj44WLs9vHNq6XpzFXo7+3Jept4xVFCCMXopxFqnGwZ
+ 9r5/Ed1PX1huLSHBQfTQ8STAIx/LH4o0f72Wqvc07abuYJ1pBT
+ bCmfzj1tKBz4wzBW0IWnarlxMv7uaSuAr+HisrTgTGpwO+mJZ9
+ j97KDZBdD7PbaDdcsCJ2attojiYrVF/yCR7WKIz+G2rPH5Rtup
+ OJ2Jw3gngrqwgX7sPob2qlOYx+zeaxKbcF5ndwaOH1SU67h+4D
+ 8TIRKg6fysQhd4PDbsjcm/x/4I702WHQG/gVeFgQReakFTDFAY
+ rZ6t4Qxa4V2RSXJPDbXA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 9:18 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> fuse_copy_finish() assumes that mapaddr in fuse_copy_state refers
-> to a valid mapping if currbuf is non-NULL, but this isn't always
-> true when moving pages for splice I/O. This results in an
-> unbalanced call to kunmap_atomic() and thus an unbalanced
-> decrement of the preempt count. Avoid this by checking that
-> mapaddr is non-NULL before calling kunmap_atomic().
+On Saturday 19 July 2014 00:15:35 Chanwoo Choi wrote:
+> On Fri, Jul 18, 2014 at 8:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 18 July 2014 19:00:48 Chanwoo Choi wrote:
+> >> On 07/18/2014 06:47 PM, Arnd Bergmann wrote:
+> >> >
+> >> > Further, why is it called "sclk_adc" rather than just "sclk"?
+> >>
+> >> The sclk means 'special clock' in Exynos TRM. Exynos SoC has varisou sclk clocks.
+> >> 'sclk_adc' is only used for ADC IP.
+> >
+> > But that sounds like sclk_adc is the name of the global name
+> > of the clock signal coming out of the clock controller.
+> >
+> > I still think it would be best to name it 'sclk' as the input
+> > for the adc. It shouldn't rely on a particular name of the
+> > clock controller.
+> 
+> I think 'sclk' is too common name. 'sclk' don't include specific device name.
+> As I know, usual clock name includes the name of IP or includes the
+> specific meaning for each IP.
 
-I guess this is obsoleted by:
+No, normally it does not include the name of the IP, that's my whole point.
+Including the name of the IP is completely pointless because that is
+implied by the fact that it's being used by that particular IP.
 
-  c55a01d360af  fuse: avoid scheduling while atomic
+Ideally you would find the data sheet for the ADC IP block and figure
+out what this clock is used for, then find the right name for that.
+In a lot of cases, we are actually better off not naming the clocks
+at all but simply enumerating them if nobody knows what they are good
+for. In that case, you would simply have the first clock and the second
+clock of the ADC part and enable them both.
 
-which moves the kmap/kunmap closer to the actual use of the mapping.
-
-Can you please verify?
-
-Thanks,
-Miklos
+	Arnd
