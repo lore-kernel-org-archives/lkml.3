@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761812AbaGROQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:16:13 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:64638 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935097AbaGROOV (ORCPT
+	id S1761867AbaGROQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:16:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45257 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761778AbaGROQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:14:21 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/7] printk: initialize syslog_prev and console_prev
-Date: Fri, 18 Jul 2014 09:14:14 -0500
-Message-Id: <1405692859-32500-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405692859-32500-1-git-send-email-elder@linaro.org>
-References: <1405692859-32500-1-git-send-email-elder@linaro.org>
+	Fri, 18 Jul 2014 10:16:47 -0400
+Date: Fri, 18 Jul 2014 16:16:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bruno Wolff III <bruno@wolff.to>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140718141648.GE20603@laptop.programming.kicks-ass.net>
+References: <20140716195414.GA16401@wolff.to>
+ <53C7084C.7090104@arm.com>
+ <20140717030947.GA17889@wolff.to>
+ <53C79013.1020808@arm.com>
+ <20140717090452.GH19379@twins.programming.kicks-ass.net>
+ <53C7B247.2070309@arm.com>
+ <20140717123502.GL19379@twins.programming.kicks-ass.net>
+ <20140718053449.GA2039@wolff.to>
+ <20140718101633.GP9918@twins.programming.kicks-ass.net>
+ <20140718130126.GA2401@wolff.to>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140718130126.GA2401@wolff.to>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two global variables, "syslog_prev" and "console_prev", maintain a
-copy of the flags value used in the log record most recently
-formatted for syslog or the console, respectively.
+On Fri, Jul 18, 2014 at 08:01:26AM -0500, Bruno Wolff III wrote:
+> build_sched_domain: cpu: 0 level: SMT cpu_map: 0-3 tl->mask: 0,2
+> [    0.254433] build_sched_domain: cpu: 0 level: MC cpu_map: 0-3 tl->mask: 0
+> [    0.254516] build_sched_domain: cpu: 0 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> [    0.254600] build_sched_domain: cpu: 1 level: SMT cpu_map: 0-3 tl->mask: 1,3
+> [    0.254683] build_sched_domain: cpu: 1 level: MC cpu_map: 0-3 tl->mask: 1
+> [    0.254766] build_sched_domain: cpu: 1 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> [    0.254850] build_sched_domain: cpu: 2 level: SMT cpu_map: 0-3 tl->mask: 0,2
+> [    0.254932] build_sched_domain: cpu: 2 level: MC cpu_map: 0-3 tl->mask: 2
+> [    0.255005] build_sched_domain: cpu: 2 level: DIE cpu_map: 0-3 tl->mask: 0-3
+> [    0.255091] build_sched_domain: cpu: 3 level: SMT cpu_map: 0-3 tl->mask: 1,3
+> [    0.255176] build_sched_domain: cpu: 3 level: MC cpu_map: 0-3 tl->mask: 3
+> [    0.255260] build_sched_domain: cpu: 3 level: DIE cpu_map: 0-3 tl->mask: 0-3
 
-Initially there is no previous formatted log record, and these
-variables simply have an initial value 0.  And occasionally log
-records can get consumed at a rate such that syslog or the console
-can't keep up, in which case those variables (along with their
-corresponding position variables) must be reset.  Here too, they're
-reset to 0.
+*blink*...
 
-This patch changes it so the initial value used is LOG_NEWLINE.
-That is, if we know nothing about the prevously-formatted log
-record, we can assume it was complete, and ended with a newline.
+That's, shall we say, unexpected. Let me ponder that a bit. HPA any clue
+why a machine might report such a weird topology? AFAIK threads _always_
+share cache.  So how can cpu_coregroup_mask be a subset (instead of a
+superset) of topology_thread_cpumask?
 
-This is being done to support the next patch.  Initializing
-these variables this way makes LOG_NEWLINE and LOG_CONT be
-mutually exclusive, and the next patch uses that fact to simplify
-some logic.
-
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mládek <pmladek@suse.cz>
----
- kernel/printk/printk.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index bed8f09..f2a069e 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -236,7 +236,7 @@ DECLARE_WAIT_QUEUE_HEAD(log_wait);
- /* the next printk record to read by syslog(READ) or /proc/kmsg */
- static u64 syslog_seq;
- static u32 syslog_idx;
--static enum log_flags syslog_prev;
-+static enum log_flags syslog_prev = LOG_NEWLINE;
- static size_t syslog_partial;
- 
- /* index and sequence number of the first record stored in the buffer */
-@@ -250,7 +250,7 @@ static u32 log_next_idx;
- /* the next printk record to write to the console */
- static u64 console_seq;
- static u32 console_idx;
--static enum log_flags console_prev;
-+static enum log_flags console_prev = LOG_NEWLINE;
- 
- /* the next printk record to read after the last 'clear' command */
- static u64 clear_seq;
-@@ -1071,7 +1071,7 @@ static int syslog_print(char __user *buf, int size)
- 			/* messages are gone, move to first one */
- 			syslog_seq = log_first_seq;
- 			syslog_idx = log_first_idx;
--			syslog_prev = 0;
-+			syslog_prev = LOG_NEWLINE;
- 			syslog_partial = 0;
- 		}
- 		if (syslog_seq == log_next_seq) {
-@@ -1301,7 +1301,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 			/* messages are gone, move to first one */
- 			syslog_seq = log_first_seq;
- 			syslog_idx = log_first_idx;
--			syslog_prev = 0;
-+			syslog_prev = LOG_NEWLINE;
- 			syslog_partial = 0;
- 		}
- 		if (from_file) {
-@@ -2149,7 +2149,7 @@ again:
- 			/* messages are gone, move to first one */
- 			console_seq = log_first_seq;
- 			console_idx = log_first_idx;
--			console_prev = 0;
-+			console_prev = LOG_NEWLINE;
- 		} else {
- 			len = 0;
- 		}
--- 
-1.9.1
-
+Let me go stare at the x86 topology mask setup code.
