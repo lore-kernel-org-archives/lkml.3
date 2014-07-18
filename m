@@ -1,244 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793AbaGRAAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 20:00:18 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:20290 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758247AbaGRAAP (ORCPT
+	id S1758681AbaGRAEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 20:04:25 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50388 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554AbaGRAEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 20:00:15 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-5f-53c8638b4950
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: rui.zhang@intel.com, eduardo.valentin@ti.com
-Cc: kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, galak@codeaurora.org, amit.daniel@samsung.com,
-        ch.naveen@samsung.com, kyungmin.park@samsung.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [RESEND PATCH] thermal: samsung: Add TMU support for Exynos3250 SoC
-Date: Fri, 18 Jul 2014 09:00:05 +0900
-Message-id: <1405641605-3370-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsWyRsSkQLcn+USwwcWVTBYNV0Ms7j4/zGhx
-	/ctzVov5R86xWqzZ/5PJov/NQlaLzrNPmC16F1xlszjb9IbdYtPja6wWl3fNYbP43HuE0WLG
-	+X1MFkuvX2SymDB9LYtF694j7BZPHvaxOQh6rJm3htHjcl8vk8fiPS+ZPDat6mTz2Lyk3qNv
-	yypGj+M3tjN5fN4kF8ARxWWTkpqTWZZapG+XwJWx7sAr1oKF5hVbrn1hb2Bs1+9i5OSQEDCR
-	2PttIwuELSZx4d56ti5GLg4hgaWMEpOPfGOFKTq88QYTRGIRo8TFV//ZQRJCAk1MEk374kFs
-	NgEtif0vbrCB2CICBhIdV2Ywg9jMAmuZJb4v8gWxhQV8JBq+9IENZRFQlVjw6xRQDQcHr4CL
-	RNsjZYhdchIf9jxiB9klIXCPXeLU8QtQ9QIS3yYfYgGplxCQldh0gBmiXlLi4IobLBMYBRcw
-	MqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECIyZ0/+e9e1gvHnA+hBjMtC4icxSosn5wJjL
-	K4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MxhvW
-	q6up+rcf7F4925PDRSRilXJGOXPXuxKJj1ufhJ0Re2oSuzj97L7bjT/tw07w1/T1M+YdbH+3
-	zuRXMWPfFa0mka7mqdu0zVZpnJwksevsWs9dPsbTp27Mfh6Ssv+Q+9b9nQ0p3Hy//n+fzvp+
-	xysNzzRPRf+157o4HBasncV+MWzl/6BcJZbijERDLeai4kQAoBREMK8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t9jAd3u5BPBBntemVg0XA2xuPv8MKPF
-	9S/PWS3mHznHarFm/08mi/43C1ktOs8+YbboXXCVzeJs0xt2i02Pr7FaXN41h83ic+8RRosZ
-	5/cxWSy9fpHJYsL0tSwWrXuPsFs8edjH5iDosWbeGkaPy329TB6L97xk8ti0qpPNY/OSeo++
-	LasYPY7f2M7k8XmTXABHVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
-	bqqtkotPgK5bZg7QG0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjHUH
-	XrEWLDSv2HLtC3sDY7t+FyMnh4SAicThjTeYIGwxiQv31rN1MXJxCAksYpS4+Oo/O0hCSKCJ
-	SaJpXzyIzSagJbH/xQ02EFtEwECi48oMZhCbWWAts8T3Rb4gtrCAj0TDlz5WEJtFQFViwa9T
-	QDUcHLwCLhJtj5QhdslJfNjziH0CI/cCRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMER
-	+Ux6B+OqBotDjAIcjEo8vBY3jwcLsSaWFVfmHmKU4GBWEuHNvg8U4k1JrKxKLcqPLyrNSS0+
-	xGgKtHwis5Rocj4wWeSVxBsam5gZWRqZG1oYGZsrifMebLUOFBJITyxJzU5NLUgtgulj4uCU
-	amCctswzQ5Pda8HupSl3+Pyun7zxour1xs9bHcOWTv03bYnpR0flE0WKKYsO6qzuYQi7mMZy
-	9eKeTzcray+1Xwjeu/3+r80LOBZPjn586+2jM2GafpGzGsRlTXfd43dT1vrr9tVtr7140uQf
-	81867tnPyOGXt/aeqk7ighPXvGrYXIr3nlvHvEbmrxJLcUaioRZzUXEiAM/Ha5zeAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 17 Jul 2014 20:04:24 -0400
+Date: Thu, 17 Jul 2014 17:04:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: bobby.prani@gmail.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu,
+        linux-rt-users@vger.kernel.org
+Subject: Re: [PATCH RFC tip/core/rcu 1/2] rcu: Rationalize kthread spawning
+Message-ID: <20140718000413.GF8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140714100604.GA9905@linux.vnet.ibm.com>
+ <1405332404-10094-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <53C73BA3.1070303@oracle.com>
+ <20140717053334.GL8690@linux.vnet.ibm.com>
+ <53C7F37D.1060100@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C7F37D.1060100@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071800-7164-0000-0000-000003367925
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the registers, bit fields and compatible strings
-required to support for the 1 TMU channels on Exynos3250.
+On Thu, Jul 17, 2014 at 12:02:05PM -0400, Sasha Levin wrote:
+> On 07/17/2014 01:33 AM, Paul E. McKenney wrote:
+> > On Wed, Jul 16, 2014 at 10:57:39PM -0400, Sasha Levin wrote:
+> >> On 07/14/2014 06:06 AM, Paul E. McKenney wrote:
+> >>> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >>>
+> >>> Currently, RCU spawns kthreads from several different early_initcall()
+> >>> functions.  Although this has served RCU well for quite some time,
+> >>> as more kthreads are added a more deterministic approach is required.
+> >>> This commit therefore causes all of RCU's early-boot kthreads to be
+> >>> spawned from a single early_initcall() function.
+> >>>
+> >>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>
+> >> Hey Paul,
+> >>
+> >> I've updated to today's -next and my VM started hanging on boot. Bisect
+> >> pointed out this patch.
+> >>
+> >> I don't have any further info right now, but can provide whatever you'll
+> >> find useful.
+> > 
+> > Could you please add initcall_debug to qemu's -append list?  If sysrq-T
+> > works that early, its output would be helpful as well.
+> > 
+> > Your .config would also be helpful.
+> 
+> Hi Pranith, Paul,
+> 
+> I've attached my boot log with initcall_debug, as well as the .config.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-[Add MUX address setting bits by Jonghwa Lee]
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Amit Daniel Kachhap<amit.daniel@samsung.com>
----
- .../devicetree/bindings/thermal/exynos-thermal.txt |  1 +
- drivers/thermal/samsung/exynos_tmu.c               |  7 +-
- drivers/thermal/samsung/exynos_tmu.h               |  3 +-
- drivers/thermal/samsung/exynos_tmu_data.c          | 89 ++++++++++++++++++++++
- drivers/thermal/samsung/exynos_tmu_data.h          |  7 ++
- 5 files changed, 105 insertions(+), 2 deletions(-)
+Hello, Sasha,
 
-diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-index c949092..ae738f5 100644
---- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -3,6 +3,7 @@
- ** Required properties:
+Looks like you might have run into the same thing that Ingo ran into.
+Could you please try the following patch?  (Or wait for it to show up
+in the next -next, if you prefer.)
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Allow for NULL tick_nohz_full_mask when nohz_full= missing
+
+If there isn't a nohz_full= kernel parameter specified, then
+tick_nohz_full_mask can legitimately be NULL.  This can cause
+problems when RCU's boot code tries to cpumask_or() this value into
+rcu_nocb_mask.  In addition, if NO_HZ_FULL_ALL=y, there is no point
+in doing the cpumask_or() in the first place because this will cause
+RCU_NOCB_CPU_ALL=y, which in turn will have all bits already set in
+rcu_nocb_mask.
+
+This commit therefore avoids the cpumask_or() if NO_HZ_FULL_ALL=y
+and checks for !tick_nohz_full_running otherwise, this latter check
+catching cases when there was no nohz_full= kernel parameter specified.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index f62b7f2f6abd..00dc411e9676 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2479,9 +2479,10 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
  
- - compatible : One of the following:
-+	       "samsung,exynos3250-tmu"
- 	       "samsung,exynos4412-tmu"
- 	       "samsung,exynos4210-tmu"
- 	       "samsung,exynos5250-tmu"
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index d7ca9f4..a2a08ea 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -505,6 +505,10 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
- 
- static const struct of_device_id exynos_tmu_match[] = {
- 	{
-+		.compatible = "samsung,exynos3250-tmu",
-+		.data = (void *)EXYNOS3250_TMU_DRV_DATA,
-+	},
-+	{
- 		.compatible = "samsung,exynos4210-tmu",
- 		.data = (void *)EXYNOS4210_TMU_DRV_DATA,
- 	},
-@@ -677,7 +681,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 		goto err_clk_sec;
- 	}
- 
--	if (pdata->type == SOC_ARCH_EXYNOS4210 ||
-+	if (pdata->type == SOC_ARCH_EXYNOS3250 ||
-+	    pdata->type == SOC_ARCH_EXYNOS4210 ||
- 	    pdata->type == SOC_ARCH_EXYNOS4412 ||
- 	    pdata->type == SOC_ARCH_EXYNOS5250 ||
- 	    pdata->type == SOC_ARCH_EXYNOS5260 ||
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index edd08cf..1b4a644 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -40,7 +40,8 @@ enum calibration_mode {
- };
- 
- enum soc_type {
--	SOC_ARCH_EXYNOS4210 = 1,
-+	SOC_ARCH_EXYNOS3250 = 1,
-+	SOC_ARCH_EXYNOS4210,
- 	SOC_ARCH_EXYNOS4412,
- 	SOC_ARCH_EXYNOS5250,
- 	SOC_ARCH_EXYNOS5260,
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index c1d81dc..aa8e0de 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -90,6 +90,95 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
- };
- #endif
- 
-+#if defined(CONFIG_SOC_EXYNOS3250)
-+static const struct exynos_tmu_registers exynos3250_tmu_registers = {
-+	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-+	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-+	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-+	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
-+	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
-+	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
-+	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-+	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
-+	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
-+	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
-+	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
-+	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
-+	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
-+	.tmu_status = EXYNOS_TMU_REG_STATUS,
-+	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
-+	.threshold_th0 = EXYNOS_THD_TEMP_RISE,
-+	.threshold_th1 = EXYNOS_THD_TEMP_FALL,
-+	.tmu_inten = EXYNOS_TMU_REG_INTEN,
-+	.inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
-+	.inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
-+	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
-+	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
-+	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
-+	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
-+	.intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
-+	.intclr_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
-+	.intclr_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
-+	.intclr_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
-+	.emul_con = EXYNOS_EMUL_CON,
-+	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
-+	.emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
-+	.emul_time_mask = EXYNOS_EMUL_TIME_MASK,
-+};
-+
-+#define EXYNOS3250_TMU_DATA \
-+	.threshold_falling = 10, \
-+	.trigger_levels[0] = 70, \
-+	.trigger_levels[1] = 95, \
-+	.trigger_levels[2] = 110, \
-+	.trigger_levels[3] = 120, \
-+	.trigger_enable[0] = true, \
-+	.trigger_enable[1] = true, \
-+	.trigger_enable[2] = true, \
-+	.trigger_enable[3] = false, \
-+	.trigger_type[0] = THROTTLE_ACTIVE, \
-+	.trigger_type[1] = THROTTLE_ACTIVE, \
-+	.trigger_type[2] = SW_TRIP, \
-+	.trigger_type[3] = HW_TRIP, \
-+	.max_trigger_level = 4, \
-+	.gain = 8, \
-+	.reference_voltage = 16, \
-+	.noise_cancel_mode = 4, \
-+	.cal_type = TYPE_TWO_POINT_TRIMMING, \
-+	.efuse_value = 55, \
-+	.min_efuse_value = 40, \
-+	.max_efuse_value = 100, \
-+	.first_point_trim = 25, \
-+	.second_point_trim = 85, \
-+	.default_temp_offset = 50, \
-+	.freq_tab[0] = { \
-+		.freq_clip_max = 800 * 1000, \
-+		.temp_level = 70, \
-+	}, \
-+	.freq_tab[1] = { \
-+		.freq_clip_max = 400 * 1000, \
-+		.temp_level = 95, \
-+	}, \
-+	.freq_tab_count = 2, \
-+	.registers = &exynos3250_tmu_registers, \
-+	.features = (TMU_SUPPORT_EMULATION | \
-+			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-+			TMU_SUPPORT_EMUL_TIME)
-+#endif
-+
-+#if defined(CONFIG_SOC_EXYNOS3250)
-+struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
-+	.tmu_data = {
-+		{
-+			EXYNOS3250_TMU_DATA,
-+			.type = SOC_ARCH_EXYNOS3250,
-+			.test_mux = EXYNOS4412_MUX_ADDR_VALUE,
-+		},
-+	},
-+	.tmu_count = 1,
-+};
-+#endif
-+
- #if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
- static const struct exynos_tmu_registers exynos4412_tmu_registers = {
- 	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index d268981..f0979e5 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.h
-+++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -148,6 +148,13 @@
- #define EXYNOS5440_TMU_TH_RISE4_SHIFT		24
- #define EXYNOS5440_EFUSE_SWAP_OFFSET		8
- 
-+#if defined(CONFIG_SOC_EXYNOS3250)
-+extern struct exynos_tmu_init_data const exynos3250_default_tmu_data;
-+#define EXYNOS3250_TMU_DRV_DATA (&exynos3250_default_tmu_data)
-+#else
-+#define EXYNOS3250_TMU_DRV_DATA (NULL)
-+#endif
-+
- #if defined(CONFIG_CPU_EXYNOS4210)
- extern struct exynos_tmu_init_data const exynos4210_default_tmu_data;
- #define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
--- 
-1.8.0
+ 	if (rcu_nocb_mask == NULL)
+ 		return;
+-#ifdef CONFIG_NO_HZ_FULL
+-	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
+-#endif /* #ifdef CONFIG_NO_HZ_FULL */
++#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
++	if (tick_nohz_full_running)
++		cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
++#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
+ 	if (ls == -1) {
+ 		ls = int_sqrt(nr_cpu_ids);
+ 		rcu_nocb_leader_stride = ls;
 
