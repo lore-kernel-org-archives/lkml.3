@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422925AbaGRNvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:51:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60175 "EHLO bear.ext.ti.com"
+	id S1161108AbaGRNvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:51:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60185 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422892AbaGRNvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:51:10 -0400
-Message-ID: <53C92643.9050406@ti.com>
-Date: Fri, 18 Jul 2014 09:50:59 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1030613AbaGRNvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:51:41 -0400
+Date: Fri, 18 Jul 2014 08:50:55 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        George Cherian <george.cherian@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 5/9] usb: musb: print error message with dev_err()
+ instead of dev_dbg()
+Message-ID: <20140718135055.GE24914@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-2-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-3-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-4-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-6-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, <ivan.khoronzhuk@ti.com>,
-        <m-karicheri2@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] irqchip: add keystone irq controller ip driver
-References: <1405351677-12108-1-git-send-email-grygorii.strashko@ti.com> <20140718125953.GF24496@titan.lakedaemon.net>
-In-Reply-To: <20140718125953.GF24496@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9crTWz/Z+Zyzu20v"
+Content-Disposition: inline
+In-Reply-To: <1405675890-8802-6-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+--9crTWz/Z+Zyzu20v
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Friday 18 July 2014 08:59 AM, Jason Cooper wrote:
-> Grygorii,
-> 
-> On Mon, Jul 14, 2014 at 06:27:57PM +0300, Grygorii Strashko wrote:
->> On Keystone SOCs, DSP cores can send interrupts to ARM
->> host using the IRQ controller IP. It provides 28 IRQ
->> signals to ARM. The IRQ handler running on HOST OS can
->> identify DSP signal source by analyzing SRCCx bits in
->> IPCARx registers. This is one of the component used by
->> the IPC mechanism used on Keystone SOCs.
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
->>  .../interrupt-controller/ti,keystone-irq.txt       |   36 +++
->>  drivers/irqchip/Kconfig                            |    7 +
->>  drivers/irqchip/Makefile                           |    1 +
->>  drivers/irqchip/irq-keystone.c                     |  235 ++++++++++++++++++++
->>  4 files changed, 279 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/ti,keystone-irq.txt
->>  create mode 100644 drivers/irqchip/irq-keystone.c
->>
+On Fri, Jul 18, 2014 at 11:31:26AM +0200, Lothar Wa=DFmann wrote:
+>=20
 
+no commit log. Not a bug fix.
 
-[..]
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
+> ---
+>  drivers/usb/musb/musb_core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+> index 8623112..f867b44 100644
+> --- a/drivers/usb/musb/musb_core.c
+> +++ b/drivers/usb/musb/musb_core.c
+> @@ -1878,7 +1878,7 @@ musb_init_controller(struct device *dev, int nIrq, =
+void __iomem *ctrl)
+>  	 * Fail when the board needs a feature that's not enabled.
+>  	 */
+>  	if (!plat) {
+> -		dev_dbg(dev, "no platform_data?\n");
+> +		dev_err(dev, "no platform_data?\n");
+>  		status =3D -ENODEV;
+>  		goto fail0;
+>  	}
+> --=20
+> 1.7.10.4
+>=20
 
->> +
->> +static const struct of_device_id keystone_irq_dt_ids[] = {
->> +	{ .compatible = "ti,keystone-irq", },
->> +	{},
->> +};
->> +MODULE_DEVICE_TABLE(of, keystone_irq_dt_ids);
->> +
->> +static struct platform_driver keystone_irq_device_driver = {
->> +	.probe		= keystone_irq_probe,
->> +	.remove		= keystone_irq_remove,
->> +	.driver		= {
->> +		.name	= "keystone_irq",
->> +		.owner	= THIS_MODULE,
->> +		.of_match_table	= of_match_ptr(keystone_irq_dt_ids),
->> +	}
->> +};
->> +
->> +module_platform_driver(keystone_irq_device_driver);
-> 
-> My understanding of DSP use-cases is a little sparse, are there
-> legitimate scenarios where you might remove this driver during runtime?
-> Perhaps IRQCHIP_DECLARE() might be better?
-> 
-There is no scenario where driver needs to hotpluged out. Usecase is
-simple. Its really any other IRQCHIP. The difference is really the
-source of interrupts. Instead of peripherals interrupting the host
-OS9linux), here the DSP cores can send interrupts to Host OS.
+--=20
+balbi
 
-Hope this clarifies.
+--9crTWz/Z+Zyzu20v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
-Santosh
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTySY/AAoJEIaOsuA1yqREgdUQAIIpoy6VK8hJTJDNiFSs+qfB
+VQgMNYMyZLRX/ymceS+5wGTxGxaFpkhlshZVxJXBtZRpNwMCs4709cb7R9UHSlmB
+7F4MNvax98vKFV9cc/J37LI6nAdGrhIVZUhiDFPQXo9CdyTiRdW+t5VE2NWmy9VT
+c+Ol6I0xuPa2/vcvHBN/IS/2M9KsScyD2B5qLeIL/Y0i6lckH6DW2gPQj3EJL46Z
+7a9Dlo9WL+0tqQp8nyq0Bsc116d/537+aThWFXrBM131R88UBJo0x70MnMUke0X3
+8+afcWKyvCqti7iUsbc/LtjTLHdAaawwzcnLXC1MWDiag7P3LQzF6xStYJxC/7mc
+h70B3OCm6iIAgEsScrO4+bKU5FcWz6X+JU5sSN4j6AO5TZx2wWn49N0cofvwM9Zr
+gOEeN/KjSj6KzroQbFiI1RgHRnd09IEjD+c08faBojQfMJ3xBZAPVCsYr2eT9sSl
+MEGZmj9bdryHGqDv43HXaACkRN/Kx0+jlXmeXk6cyEJM8yJebh5KKUcXCIYnXtO3
+D8+/DGQlY9t/eap9jOM3jUVmtbNJoDWEkqRGWFN/FicBBsZHcK6oybRyoVgCXi37
+N5FfI/fgvSnSREfibes6rW1vzFUSN04OV+bZJbQFkY69cQCWk1PUCnKySCJ/egQX
+MdF5Z3/yLwcEB6r1isca
+=4C12
+-----END PGP SIGNATURE-----
+
+--9crTWz/Z+Zyzu20v--
