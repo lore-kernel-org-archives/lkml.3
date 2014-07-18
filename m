@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946152AbaGRV3B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:29:01 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:33592 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946008AbaGRV2N (ORCPT
+	id S1946184AbaGRV3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:29:31 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:42210 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935238AbaGRV2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:28:13 -0400
+	Fri, 18 Jul 2014 17:28:12 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
         jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 4/7] printk: honor LOG_PREFIX in devkmsg_read()
-Date: Fri, 18 Jul 2014 16:28:02 -0500
-Message-Id: <1405718885-11227-5-git-send-email-elder@linaro.org>
+Subject: [PATCH v4 2/7] printk: initialize syslog_prev and console_prev
+Date: Fri, 18 Jul 2014 16:28:00 -0500
+Message-Id: <1405718885-11227-3-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405718885-11227-1-git-send-email-elder@linaro.org>
 References: <1405718885-11227-1-git-send-email-elder@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In devkmsg_read(), a variable "cont" holds a character that's used
-to indicate whether a given log line is a "continuation", that is,
-whether a log record should be merged with the one before or after
-it.  If a record should be merged with its successor (but not its
-predecessor) that character is 'c'.  And the line following such a
-'c' log record is normally marked with a '+' to show it is continues
-its predecessor.  Any other cases are marked '-', indicating the
-log record stands on its own.
+Two global variables, "syslog_prev" and "console_prev", maintain a
+copy of the flags value used in the log record most recently
+formatted for syslog or the console, respectively.
 
-There is an exception.  If a log record is marked LOG_PREFIX, it
-indicates that this record represents a new log entry, implicitly
-terminating the predecessor--even if the predecessor would otherwise
-have been continued.  So a record marked LOG_PREFIX (that is not
-also marked LOG_CONT) should have '-' for its "cont" variable.
+Initially there is no previous formatted log record, and these
+variables simply have an initial value 0.  And occasionally log
+records can get consumed at a rate such that syslog or the console
+can't keep up, in which case those variables (along with their
+corresponding position variables) must be reset.  Here too, they're
+reset to 0.
 
-The logic that determines this "continuation" character has a bug
-that gets that exceptional case wrong.
+This patch changes it so the initial value used is LOG_NEWLINE.
+That is, if we know nothing about the prevously-formatted log
+record, we can assume it was complete, and ended with a newline.
 
-The specific case that produces the wrong result is when all of
-these conditions are non-zero:
-    user->prev & LOG_CONT
-    msg->flags & LOG_PREFIX
-    msg->flags & LOG_CONT
-The bug is that despite the message's LOG_PREFIX flag, the
-"cont" character is getting set to '+' rather than 'c'.
-
-The problem is that the message's LOG_PREFIX flag is getting
-ignored if its LOG_CONT flag is also set.  Rearrange the logic
-here to produce the correct result.
-
-The following table concisely defines the problem:
-
-     prev | msg  | msg  ||"cont"
-     CONT |PREFIX| CONT || char
-    ------+------+------++------
-     clear| clear| clear||  '-'
-     clear| clear|  set ||  'c'
-     clear|  set | clear||  '-'
-     clear|  set |  set ||  'c'
-      set | clear| clear||  '+'
-      set | clear|  set ||  '+'
-      set |  set | clear||  '-'
-      set |  set |  set ||  '+'     <-- should be 'c'
+This is being done to support the next patch.  Initializing
+these variables this way makes LOG_NEWLINE and LOG_CONT be
+mutually exclusive, and the next patch uses that fact to simplify
+some logic.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Reviewed-by: Petr Mládek <pmladek@suse.cz>
 ---
- kernel/printk/printk.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ kernel/printk/printk.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ad644b3..f8ab63c 100644
+index ffc9928..4034a88 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -572,7 +572,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	struct printk_log *msg;
- 	u64 ts_usec;
- 	size_t i;
--	char cont = '-';
-+	char cont;
- 	size_t len;
- 	ssize_t ret;
+@@ -236,7 +236,7 @@ DECLARE_WAIT_QUEUE_HEAD(log_wait);
+ /* the next printk record to read by syslog(READ) or /proc/kmsg */
+ static u64 syslog_seq;
+ static u32 syslog_idx;
+-static enum log_flags syslog_prev;
++static enum log_flags syslog_prev = LOG_NEWLINE;
+ static size_t syslog_partial;
  
-@@ -619,11 +619,12 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	 * better readable output. 'c' in the record flags mark the first
- 	 * fragment of a line, '+' the following.
- 	 */
--	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
--		cont = 'c';
--	else if ((msg->flags & LOG_CONT) ||
--		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
-+	if ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
- 		cont = '+';
-+	else if (msg->flags & LOG_CONT)
-+		cont = 'c';
-+	else
-+		cont = '-';
+ /* index and sequence number of the first record stored in the buffer */
+@@ -250,7 +250,7 @@ static u32 log_next_idx;
+ /* the next printk record to write to the console */
+ static u64 console_seq;
+ static u32 console_idx;
+-static enum log_flags console_prev;
++static enum log_flags console_prev = LOG_NEWLINE;
  
- 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
- 		      (msg->facility << 3) | msg->level,
+ /* the next printk record to read after the last 'clear' command */
+ static u64 clear_seq;
+@@ -1071,7 +1071,7 @@ static int syslog_print(char __user *buf, int size)
+ 			/* messages are gone, move to first one */
+ 			syslog_seq = log_first_seq;
+ 			syslog_idx = log_first_idx;
+-			syslog_prev = 0;
++			syslog_prev = LOG_NEWLINE;
+ 			syslog_partial = 0;
+ 		}
+ 		if (syslog_seq == log_next_seq) {
+@@ -1301,7 +1301,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 			/* messages are gone, move to first one */
+ 			syslog_seq = log_first_seq;
+ 			syslog_idx = log_first_idx;
+-			syslog_prev = 0;
++			syslog_prev = LOG_NEWLINE;
+ 			syslog_partial = 0;
+ 		}
+ 		if (from_file) {
+@@ -2149,7 +2149,7 @@ again:
+ 			/* messages are gone, move to first one */
+ 			console_seq = log_first_seq;
+ 			console_idx = log_first_idx;
+-			console_prev = 0;
++			console_prev = LOG_NEWLINE;
+ 		} else {
+ 			len = 0;
+ 		}
 -- 
 1.9.1
 
