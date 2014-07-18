@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965808AbaGRPR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:17:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35825 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965465AbaGRPP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:15:56 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+	id S1030454AbaGRPTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:19:09 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54838 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756009AbaGRPTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:19:08 -0400
+Date: Fri, 18 Jul 2014 11:19:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Dmitry Torokhov <dtor@google.com>, Bastien Nocera <hadess@hadess.net>,
+        Patrik Fimml <patrikf@chromium.org>, <linux-pm@vger.kernel.org>,
+        Benson Leung <bleung@google.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v6 1/5] PCI: designware: add rd[wr]_other_conf API
-Date: Fri, 18 Jul 2014 11:14:25 -0400
-Message-ID: <1405696469-7172-2-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405696469-7172-1-git-send-email-m-karicheri2@ti.com>
-References: <1405696469-7172-1-git-send-email-m-karicheri2@ti.com>
+Subject: Re: Power-managing devices that are not of interest at some point
+ in time
+In-Reply-To: <2674541.jV2qHCZlHf@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1407181107450.979-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3.65 version of the designware h/w, requires application space
-registers to be configured to access the remote EP config space.
-To support this, add rd[wr]_other_conf API in the pcie_host_opts
+On Fri, 18 Jul 2014, Rafael J. Wysocki wrote:
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-Reviewed-by: Pratyush Anand <pratyush.anand@st.com>
-Acked-by: Mohit Kumar <mohit.kumar@st.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > > the problem really seems to be that drivers are not
+> > > aggressive enough with starting PM transitions (using runtime PM) when they
+> > > see no activity.  Thus it seems that when the lid is closed, it'll be good
+> > > to switch the drivers into a "more aggressive runtime PM mode" in which
+> > > they will use any opportunity to start a power transition without worrying
+> > > about extra latencies resulting from that.  In that mode they should also
+> > > disable remote wakeup.  I think this should be sufficient to address the
+> > > use case at hand.
+> > 
+> > OK, so how do we let the drivers know that they should start being aggressive 
+> > with PM and that they should disable remote wakeup? I'd rather not add 
+> > subsystem-specific interface for this, that is why we are reaching out in the 
+> > first place.
+> 
+> For disabling remote wakeup we have a PM QoS flag that I'm not entirely happy
+> with, so I guess we can replace it with something saner (I talked about that
+> with Alan during the last year's LinuxCon, but then didn't have the time to
+> get to that).
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Richard Zhu <r65037@freescale.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Marek Vasut <marex@denx.de>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Pawel Moll <pawel.moll@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: Kumar Gala <galak@codeaurora.org>
-CC: Randy Dunlap <rdunlap@infradead.org>
-CC: Grant Likely <grant.likely@linaro.org> 
+Right.  We discussed changing .../power/wakeup so that it could contain
+"enabled", "disabled", or "off", where "off" would mean remote wakeup
+should be disabled even during runtime suspend.
 
----
- drivers/pci/host/pcie-designware.c |   12 ++++++++++--
- drivers/pci/host/pcie-designware.h |    4 ++++
- 2 files changed, 14 insertions(+), 2 deletions(-)
+> For the whole thing I guess we can add a sysfs attribute under devices/.../power
+> that will need to be exposed by drivers supporting that feature.  I'm not sure
+> how to call it, though.
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index 1eaf4df..d8f3af7 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -656,7 +656,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
- 	}
- 
- 	if (bus->number != pp->root_bus_nr)
--		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
-+		if (pp->ops->rd_other_conf)
-+			ret = pp->ops->rd_other_conf(pp, bus, devfn,
-+						where, size, val);
-+		else
-+			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
- 						where, size, val);
- 	else
- 		ret = dw_pcie_rd_own_conf(pp, where, size, val);
-@@ -679,7 +683,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
- 		return PCIBIOS_DEVICE_NOT_FOUND;
- 
- 	if (bus->number != pp->root_bus_nr)
--		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
-+		if (pp->ops->wr_other_conf)
-+			ret = pp->ops->wr_other_conf(pp, bus, devfn,
-+						where, size, val);
-+		else
-+			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
- 						where, size, val);
- 	else
- 		ret = dw_pcie_wr_own_conf(pp, where, size, val);
-diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-index 77f592f..8121901 100644
---- a/drivers/pci/host/pcie-designware.h
-+++ b/drivers/pci/host/pcie-designware.h
-@@ -61,6 +61,10 @@ struct pcie_host_ops {
- 			u32 val, void __iomem *dbi_base);
- 	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32 *val);
- 	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32 val);
-+	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
-+			unsigned int devfn, int where, int size, u32 *val);
-+	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
-+			unsigned int devfn, int where, int size, u32 val);
- 	int (*link_up)(struct pcie_port *pp);
- 	void (*host_init)(struct pcie_port *pp);
- };
--- 
-1.7.9.5
+"runtime_mode"?
+
+Will this really be capable of doing what Dmitry wants?  I don't know
+how the drivers in question work.  But if a driver increments the
+runtime usage count each time the device file is opened, forcibly
+setting the usage count back to 0 won't be easy.
+
+Also, would putting the camera into runtime suspend prevent it from
+showing up on a list of available video devices?  I doubt it.  More
+likely, the video driver would have to unregister the class device
+while remaining bound to the physical device.  Probably other drivers
+would have to do the same sort of thing.  (I don't know whether doing
+this would retain the settings as Oliver wants, though.)
+
+Alan Stern
 
