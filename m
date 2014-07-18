@@ -1,101 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422905AbaGRSri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:47:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:43859 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030665AbaGRSrh (ORCPT
+	id S1945926AbaGRSuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:50:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:51598 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422770AbaGRSt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:47:37 -0400
-Date: Fri, 18 Jul 2014 14:47:33 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, <fweisbec@gmail.com>,
-        <m.chehab@samsung.com>, "Xie XiuQi" <xiexiuqi@huawei.com>
-Subject: Re: [PATCH] tracing: Fix wraparound problems in "uptime" tracer
-Message-ID: <20140718144733.5ef33d64@gandalf.local.home>
-In-Reply-To: <99d63c5bfe9b320a3b428d773825a37095bf6a51.1405708254.git.tony.luck@intel.com>
-References: <20140718133609.3125e72d@gandalf.local.home>
-	<99d63c5bfe9b320a3b428d773825a37095bf6a51.1405708254.git.tony.luck@intel.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Fri, 18 Jul 2014 14:49:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chanwoo Choi <cwchoi00@gmail.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for Exynos3250 ADC
+Date: Fri, 18 Jul 2014 20:48:43 +0200
+Message-ID: <5381273.c6GzlyQ7Ea@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGTfZH3mnPJ72wi7aFYoChe_OeuRVsUVo3KGRRLTV5scwPbO4g@mail.gmail.com>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <5835825.JtcDoyOP8b@wuerfel> <CAGTfZH3mnPJ72wi7aFYoChe_OeuRVsUVo3KGRRLTV5scwPbO4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:hXwdosXp8syRQGoFCMsRuanJhh3md895VvLYV3SD6vb
+ k5eMq2hBPh35G7/1Lz1Ni81G9t2TA+0G3U7TGGa6J4bAL+2JYg
+ r0shWPt3wJOqn2vQQ8CNi+eybK8QLV7vufoA4Ib9gwjUhw2ldw
+ C7bRMMqEXADWUpKVhd/38CGaPBNApnR2g/8PirAM6LVPL7YlFp
+ k7idEZjX9yWuKZ0SDbLZ7/2QBoyITscGIen6rlSJayP1PiJizM
+ iVDtTgaYdiuGWJ23b2lcd3SnJ95KtLo+cieKdvX3sxNQrj1PhO
+ HQLLNR2H+gD8KRAjnAxXqa9AGFmLlpQ7pknAmNXkw+8FR6QM96
+ kFiK7GgrU/z2gQMZ67NU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 11:43:01 -0700
-Tony Luck <tony.luck@intel.com> wrote:
+On Saturday 19 July 2014 02:02:09 Chanwoo Choi wrote:
+> On Sat, Jul 19, 2014 at 1:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Saturday 19 July 2014 01:23:15 Chanwoo Choi wrote:
+> >> If don't add new compatible including specific exynos version,
+> >> I would add new 'adc-needs-sclk' property with existing 'exynos-adc-v2'
+> >> compatible name.
 
-> The "uptime" tracer added in:
-> 
->     commit 8aacf017b065a805d27467843490c976835eb4a5
->     tracing: Add "uptime" trace clock that uses jiffies
-> 
-> has wraparound problems when the system has been up more
-> than 1 hour 11 minutes and 34 seconds. It converts jiffies
-> to nanoseconds using:
->         (u64)jiffies_to_usecs(jiffy) * 1000ULL
-> but since jiffies_to_usecs() only returns a 32-bit value, it
-> truncates at 2^32 microseconds.  An additional problem on 32-bit
-> systems is that the argument is "unsigned long", so fixing the
-> return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
-> system).
-> 
-> Avoid these problems by using jiffies_64 as our basis, and
-> not converting to nanoseconds (we do convert to clock_t because
-> user facing API must not be dependent on internal kernel
-> HZ values).
-> 
+What I actually meant is using compatible="exynos-adc-v2.1" or similar
+rather than "exynos3250-adc". However, as you already explained, the
+version numbers are apparently just made up, so using "exynos3250-adc"
+is actually better here. If a future exynos7890 uses the same clocks
+as exynos3250, it can simply use the same "exynos3250-adc" string here.
 
-Do you think this is worthy of stable and 3.16 material?
-
--- Steve
-
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  kernel/trace/trace.c       | 2 +-
->  kernel/trace/trace_clock.c | 9 +++++----
->  2 files changed, 6 insertions(+), 5 deletions(-)
+> >> Dear Naveen, Tomasz,
+> >>
+> >> If existing exynos-adc driver add just one property for 'sclk_adc'
+> >> as following, exynos-adc could not include the exynos version
+> >> in compatible name.
+> >>
+> >> I need your opinion about it.
+> >>
+> >>                 adc: adc@126C0000 {
+> >>                         compatible = "samsung,exynos-adc-v2";
+> >>                         reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+> >>                         interrupts = <0 137 0>;
+> >>                         clock-names = "adc", "sclk_adc";
+> >>                         clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+> >> +                        adc-needs-sclk;
+> >>                         #io-channel-cells = <1>;
+> >>                         io-channel-ranges;
+> >>                 }
+> >
+> > How about just making it an optional clock? That would be much
+> > easier because then you can simply see if the clock itself is
+> > there and use it, or otherwise ignore it.
 > 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 384ede311717..eb7d56480545 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -809,7 +809,7 @@ static struct {
->  	{ trace_clock_local,	"local",	1 },
->  	{ trace_clock_global,	"global",	1 },
->  	{ trace_clock_counter,	"counter",	0 },
-> -	{ trace_clock_jiffies,	"uptime",	1 },
-> +	{ trace_clock_jiffies,	"uptime",	0 },
->  	{ trace_clock,		"perf",		1 },
->  	ARCH_TRACE_CLOCKS
->  };
-> diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-> index 26dc348332b7..57b67b1f24d1 100644
-> --- a/kernel/trace/trace_clock.c
-> +++ b/kernel/trace/trace_clock.c
-> @@ -59,13 +59,14 @@ u64 notrace trace_clock(void)
->  
->  /*
->   * trace_jiffy_clock(): Simply use jiffies as a clock counter.
-> + * Note that this use of jiffies_64 is not completely safe on
-> + * 32-bit systems. But the window is tiny, and the effect if
-> + * we are affected is that we will have an obviously bogus
-> + * timestamp on a trace event - i.e. not life threatening.
->   */
->  u64 notrace trace_clock_jiffies(void)
->  {
-> -	u64 jiffy = jiffies - INITIAL_JIFFIES;
-> -
-> -	/* Return nsecs */
-> -	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
-> +	return jiffies_64_to_clock_t(jiffies_64 - INITIAL_JIFFIES);
->  }
->  
->  /*
+> The v1 of this patchset[1] got the clock of 'sclk_adc'  but if the dt node
+> of ADC in dtsi file didn't include 'sclk_adc', print just warning message
+> without stopping probe as following:
+> 
+>  [1] https://lkml.org/lkml/2014/4/10/710
+> 
+> +       info->sclk = devm_clk_get(&pdev->dev, "sclk_adc");
+> +       if (IS_ERR(info->sclk)) {
+> +               dev_warn(&pdev->dev, "failed getting sclk clock, err = %ld\n",
+> +                                                       PTR_ERR(info->sclk));
+> +               info->sclk = NULL;
+> +       }
+> 
+> But, Tomasz Figa suggested the method[2] of this patchset(v6).
+>  [2] https://lkml.org/lkml/2014/4/11/189
 
+Yes, your current version is certainly better than this, but another way
+to address Tomasz' comment would be to change the binding to list the "sclk"
+as optional for any device and make the code silently ignore missing sclk
+entries, like:
+
+
+	info->sclk = devm_clk_get(&pdev->dev, "sclk");
+	if (IS_ERR(info->sclk)) {
+		switch (PTR_ERR(info->sclk)) {
+		case -EPROBE_DEFER:
+			/* silently return error so we can retry */
+			return -EPROBE_DEFER:
+		case -ENOENT:
+			/* silently ignore missing optional clk */
+			info->sclk = NULL;
+			break;
+		default:
+			/* any other error: clk is defined by doesn't work  */
+			dev_err(&pdev->dev, "failed getting sclk clock, err = %ld\n",
+				PTR_ERR(info->sclk));
+			return PTR_ERR(info->sclk));
+		}
+	}
+
+One more comment about the name: Both in the code you use "sclk" as the
+name, so presumably that is the actual name of the clk as known to this
+driver, and it makes sense to use clock-names="sclk" as well, if you want
+to have any name.
+
+	Arnd
