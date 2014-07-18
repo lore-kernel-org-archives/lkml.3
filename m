@@ -1,47 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761398AbaGRJqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:46:52 -0400
-Received: from verein.lst.de ([213.95.11.211]:48726 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761228AbaGRJqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:46:51 -0400
-Date: Fri, 18 Jul 2014 11:46:49 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Robert Elliott <elliott@hp.com>
-Cc: axboe@kernel.dk, abhijit.mahajan@avagotech.com, kmo@datarainc.com,
-        nagalakshmi.nandigama@avagotech.com, asamymuthupa@micron.com,
-        snitzer@redhat.com, JBottomley@parallels.com,
-        relliott@beardog.cce.hp.com, sreekanth.reddy@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, agordeev@redhat.com,
-        scameron@beardog.cce.hp.com, tom.leiming@gmail.com,
-        sbradshaw@micron.com, hch@lst.de, m@bjorling.me,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3/3] mpt3sas, mpt2sas: fix scsi_add_host error handling
-	problems in _scsih_probe
-Message-ID: <20140718094649.GC2121@lst.de>
-References: <20140717193707.1924.87867.stgit@beardog.cce.hp.com> <20140717193926.1924.21344.stgit@beardog.cce.hp.com>
+	id S1761413AbaGRJrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:47:03 -0400
+Received: from [180.250.215.189] ([180.250.215.189]:65082 "EHLO
+	kolombengi.gorontaloprov.go.id" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761268AbaGRJrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:47:00 -0400
+X-Greylist: delayed 529 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jul 2014 05:46:59 EDT
+Date: Fri, 18 Jul 2014 17:36:44 +0800 (CIT)
+From: Tracking Limited <bkpad@gorontaloprov.go.id>
+Reply-To: Tracking Limited <hu_huimin005@yahoo.com.hk>
+Message-ID: <483771505.6135.1405676204370.JavaMail.zimbra@gorontaloprov.go.id>
+Subject: Contact Me Urgently.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717193926.1924.21344.stgit@beardog.cce.hp.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.0.1]
+X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
+Thread-Topic: Contact Me Urgently.
+Thread-Index: kRBedPtoWdBPMUbFGgf+udSDMVRH/w==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 02:39:30PM -0500, Robert Elliott wrote:
-> In _scsih_probe, propagate the return value from scsi_add_host.
-> In mpt3sas, avoid calling list_del twice if that returns an
-> error, which causes list_del corruption warnings if an error
-> is returned.
-> 
-> Tested with blk-mq and scsi-mq patches to properly cleanup
-> from and propagate blk_mq_init_rq_map errors.
-> 
-> Signed-off-by: Robert Elliott <elliott@hp.com>
 
-Looks good.  It would be even better if we'd have proper error values
-returned from mpt2/3sas_base_attach as well.
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+I work with One Tracking limited affiliated to a prestigious bank, we are conducting a standard investigation involving a customer who shares the same name with you. Kindly confirm if this email is valid for you so I can brief further.My email: hu_huimin005@yahoo.com.hk  Huimin Hu
