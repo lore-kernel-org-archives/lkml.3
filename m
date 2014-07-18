@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761153AbaGRJp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:45:26 -0400
-Received: from verein.lst.de ([213.95.11.211]:48705 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756077AbaGRJpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:45:25 -0400
-Date: Fri, 18 Jul 2014 11:45:18 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Robert Elliott <elliott@hp.com>
-Cc: axboe@kernel.dk, abhijit.mahajan@avagotech.com, kmo@datarainc.com,
-        nagalakshmi.nandigama@avagotech.com, asamymuthupa@micron.com,
-        snitzer@redhat.com, JBottomley@parallels.com,
-        relliott@beardog.cce.hp.com, sreekanth.reddy@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, agordeev@redhat.com,
-        scameron@beardog.cce.hp.com, tom.leiming@gmail.com,
-        sbradshaw@micron.com, hch@lst.de, m@bjorling.me,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/3] blk-mq: cleanup after blk_mq_init_rq_map failures
-Message-ID: <20140718094518.GA2121@lst.de>
-References: <20140717193707.1924.87867.stgit@beardog.cce.hp.com> <20140717193904.1924.84206.stgit@beardog.cce.hp.com>
+	id S1761362AbaGRJpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:45:39 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:43762 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761296AbaGRJph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:45:37 -0400
+Message-ID: <53C8ECBD.5080700@imgtec.com>
+Date: Fri, 18 Jul 2014 10:45:33 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717193904.1924.84206.stgit@beardog.cce.hp.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        <linux-metag@vger.kernel.org>
+CC: <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] arch/metag/kernel/cachepart.c: fix failure check
+References: <20140717145811.GI25880@mwanda> <1405612686-3554-1-git-send-email-andrey.krieger.utkin@gmail.com>
+In-Reply-To: <1405612686-3554-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 02:39:09PM -0500, Robert Elliott wrote:
-> In blk-mq.c blk_mq_alloc_tag_set, if:
-> 	set->tags = kmalloc_node()
-> succeeds, but one of the blk_mq_init_rq_map() calls fails,
-> 	goto out_unwind;
-> needs to free set->tags so the caller is not obligated
-> to do so.  None of the current callers (null_blk,
-> virtio_blk, virtio_blk, or the forthcoming scsi-mq)
-> do so.
+On 17/07/14 16:58, Andrey Utkin wrote:
+> [linux-3.16-rc5/arch/metag/kernel/cachepart.c:102]: (style) Checking if
+> unsigned variable 'thread_cache_size' is less than zero.
 > 
-> set->tags needs to be set to NULL after doing so,
-> so other tag cleanup logic doesn't try to free
-> a stale pointer later.  Also set it to NULL
-> in blk_mq_free_tag_set.
+> Source code is
 > 
-> Tested with error injection on the forthcoming
-> scsi-mq + hpsa combination.
+>         if (thread_cache_size < 0)
+>             pr_emerg("Can't read %s cache size\n",
+>                  cache_type ? "DCACHE" : "ICACHE");
 > 
-> Signed-off-by: Robert Elliott <elliott@hp.com>
+> but
+> 
+>     unsigned int thread_cache_size;
+> 
+> Function get_thread_cache_size returns an error code
+> as (unsigned int) -1.
+> 
+> Changed get_thread_cache_size() to return signed int, and its result is stored
+> into signed int variable.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80361
+> Reported-by: David Binderman <dcb314@hotmail.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-Looks good,
+Thanks, applied!
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Cheers
+James
+
+> ---
+>  arch/metag/kernel/cachepart.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/metag/kernel/cachepart.c b/arch/metag/kernel/cachepart.c
+> index 0a2385f..04b7d4f 100644
+> --- a/arch/metag/kernel/cachepart.c
+> +++ b/arch/metag/kernel/cachepart.c
+> @@ -55,7 +55,7 @@ unsigned int get_global_icache_size(void)
+>  	return (get_icache_size() * ((temp >> SYSC_xCPARTG_AND_S) + 1)) >> 4;
+>  }
+>  
+> -static unsigned int get_thread_cache_size(unsigned int cache, int thread_id)
+> +static int get_thread_cache_size(unsigned int cache, int thread_id)
+>  {
+>  	unsigned int cache_size;
+>  	unsigned int t_cache_part;
+> @@ -94,7 +94,7 @@ static unsigned int get_thread_cache_size(unsigned int cache, int thread_id)
+>  
+>  void check_for_cache_aliasing(int thread_id)
+>  {
+> -	unsigned int thread_cache_size;
+> +	int thread_cache_size;
+>  	unsigned int cache_type;
+>  	for (cache_type = ICACHE; cache_type <= DCACHE; cache_type++) {
+>  		thread_cache_size =
+> 
