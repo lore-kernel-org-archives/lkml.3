@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946032AbaGRUQC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:16:02 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:45119 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945957AbaGRUP7 (ORCPT
+	id S1946054AbaGRUQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:16:22 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:45410 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755044AbaGRUQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:15:59 -0400
+	Fri, 18 Jul 2014 16:16:19 -0400
+Message-ID: <53C9808F.5040906@gmail.com>
+Date: Fri, 18 Jul 2014 22:16:15 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVj81Sv2aJK-Tgi0iRL0xs3E4BSYp6HEcmMSBT4c=hbPVQ@mail.gmail.com>
-References: <CAPDOMVgf0jfUVCycZBWMB4X5NobVqn7vU_6eh-9vi3LbzDZ=bQ@mail.gmail.com>
-	<CAPDOMVgOHAs93VFUWFn3jQ3zJ0BWf2QDNQiFsggf+YJbof55jg@mail.gmail.com>
-	<CAMk6uBmfjrPSz1Ds8u_YSmKhSF8GnSvNR49DLQ8LnMv8hExAkg@mail.gmail.com>
-	<CAPDOMVj81Sv2aJK-Tgi0iRL0xs3E4BSYp6HEcmMSBT4c=hbPVQ@mail.gmail.com>
-Date: Fri, 18 Jul 2014 16:15:58 -0400
-Message-ID: <CAPDOMVgUBEyBHoEYQSBrdGQXnev27rVYkRpZtuiWOVvruqWMiQ@mail.gmail.com>
-Subject: Re: Blackfin Build fixs
-From: Nick Krause <xerofoify@gmail.com>
-To: Steven Miao <realmz6@gmail.com>
-Cc: bfin <adi-buildroot-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Christoph Hellwig <hch@lst.de>, Vladimir Davydov <vdavydov@parallels.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com>	 <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de>	 <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 8:40 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> On Wed, Jul 16, 2014 at 3:12 AM, Steven Miao <realmz6@gmail.com> wrote:
->> Hi Nick,
->>
->> On Sun, Jul 13, 2014 at 6:18 AM, Nick Krause <xerofoify@gmail.com> wrote:
->>> On Fri, Jul 11, 2014 at 12:18 PM, Nick Krause <xerofoify@gmail.com> wrote:
->>>> Hey Steven,
->>>> I having been testing what builds are still failing from Steven
->>>> Rothwell's tests and there seem to be two failing
->>>> still for blackfin. I am tracing the issues to make it easier for you
->>>> as a maintainer.  BF561-ACVILON_defconfig
->>>> is failing in acvlion.c due to BFIN_NAND_PLAT_READY not being defined
->>>> when calling gpio request in
->>>> bfin_plat_nand_init. I would recommend defining it to the correct
->>>> value to initialize nand on this board.
->>>> There also seems to be some undefined syscalls for this board I would
->>>> can either remove them or you can
->>>> tell me how to clean them up.
+On 18.07.2014 22:07, James Bottomley wrote:
+> On Fri, 2014-07-18 at 22:01 +0200, poma wrote:
+>> On 18.07.2014 16:17, Christoph Hellwig wrote:
+>>> On Fri, Jul 18, 2014 at 05:21:04PM +0400, Vladimir Davydov wrote:
+>>>> Slab warns, because the name of the cache being created contains spaces.
+>>>> The "bad" cache is created by scsi_get_host_cmd_pool. Its name
+>>>> (pool->cmd_name) is initialized by scsi_alloc_host_cmd_pool as follows:
 >>>>
->>>> I also am hitting a build failure still for blackstamp defconfig. The
->>>> issue seems to be that when calling functions
->>>> that need GPIO_PF0 that it's undefined as it fails whenc calling
->>>> gpio_request that needs it be defined on line 318
->>>> of file , arch/blackfin/mach-bf533/boards/blackstamp.c on line 480 and
->>>> again on line 481 when calling gpio_free.
->>>> Like the other build there seems to be undefined syscalls and they
->>>> need to be either removed or cleaned up. I
->>>> would like recommendations or how you want to clean up these system calls.
+>>>> 	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
 >>>>
->>>> I am also attaching the log files for these failing builds.
->> I have fixed BF561-ACVILON, BF533-BLACKSTAMP and some other board
->> build for missing <linux/gpio.h>. Thanks for you build test.
->> This build fix patch has applied to the next blackfin git tree, and
->> will send for next rc.
->> http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git
->> for-linux
+>>>> So, if hostt->name contains spaces, the cache name will also contain
+>>>> spaces and we'll get the warning. And hostt->name can contain spaces,
+>>>> e.g. virtscsi_host_template_single.name="Virtio SCSI HBA".
+>>>
+>>> Or might not even be present.  I'll send a patch to replace it with
+>>> ->proc_name, which must not contain spaces and is generally shorter
+>>> as well.
+>>>
 >>
->>>>
->>>> Cheers Nick
->>> Sorry about my grammar. I attached the same file twice. I will attach
->>> my build log for Blackstamp
->>> defconfig.
->>> Cheers Nick
->>
->> -steven
+>> Is this what you thought?
 >
-> Steven ,
-> They seem to still be open as of July 16.
-> I have tried using this link http://kisskb.ellerman.id.au/kisskb/branch/9/
-> to track failing builds. Perhaps it's outdated. Thanks for  your help
-> through :).
-> Cheers Nick
-I was wrong they are closed now on Linus's branch.
-Cheers Nick
+> No, he means this, if you want to try it.
+>
+> James
+>
+> ---
+>
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index 88d46fe..eb07a9b 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -368,8 +368,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
+>   	if (!pool)
+>   		return NULL;
+>
+> -	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+> -	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
+> +	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
+> +	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
+>   	if (!pool->cmd_name || !pool->sense_name) {
+>   		scsi_free_host_cmd_pool(pool);
+>   		return NULL;
+>
+>
+
+Man, I just now read it correctly - "So, if hostt->name contains spaces".
+Thanks.
+
+I'll be back.
+
+
+
