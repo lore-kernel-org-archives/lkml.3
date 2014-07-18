@@ -1,125 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945926AbaGRSuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:50:00 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:51598 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422770AbaGRSt5 (ORCPT
+	id S1945957AbaGRSu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:50:28 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46660 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422758AbaGRSuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:49:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chanwoo Choi <cwchoi00@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        naveen krishna <ch.naveen@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for Exynos3250 ADC
-Date: Fri, 18 Jul 2014 20:48:43 +0200
-Message-ID: <5381273.c6GzlyQ7Ea@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGTfZH3mnPJ72wi7aFYoChe_OeuRVsUVo3KGRRLTV5scwPbO4g@mail.gmail.com>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <5835825.JtcDoyOP8b@wuerfel> <CAGTfZH3mnPJ72wi7aFYoChe_OeuRVsUVo3KGRRLTV5scwPbO4g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:hXwdosXp8syRQGoFCMsRuanJhh3md895VvLYV3SD6vb
- k5eMq2hBPh35G7/1Lz1Ni81G9t2TA+0G3U7TGGa6J4bAL+2JYg
- r0shWPt3wJOqn2vQQ8CNi+eybK8QLV7vufoA4Ib9gwjUhw2ldw
- C7bRMMqEXADWUpKVhd/38CGaPBNApnR2g/8PirAM6LVPL7YlFp
- k7idEZjX9yWuKZ0SDbLZ7/2QBoyITscGIen6rlSJayP1PiJizM
- iVDtTgaYdiuGWJ23b2lcd3SnJ95KtLo+cieKdvX3sxNQrj1PhO
- HQLLNR2H+gD8KRAjnAxXqa9AGFmLlpQ7pknAmNXkw+8FR6QM96
- kFiK7GgrU/z2gQMZ67NU=
+	Fri, 18 Jul 2014 14:50:25 -0400
+Message-ID: <1405709421.30262.8.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 0/25] Replace DEFINE_PCI_DEVICE_TABLE macro use
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Greg KH <greg@kroah.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Benoit Taine <benoit.taine@lip6.fr>, linux-mips@linux-mips.org,
+        linux-fbdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, linux-acenic@sunsite.dk,
+        linux-scsi@vger.kernel.org, linux-rdma@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-hippi@sunsite.dk,
+        industrypack-devel@lists.sourceforge.net, linux-mmc@vger.kernel.org,
+        MPT-FusionLinux.pdl@avagotech.com,
+        virtualization@lists.linux-foundation.org,
+        ath9k-devel@venema.h4ckr.net, wil6210@qca.qualcomm.com,
+        linux-pcmcia@lists.infradead.org, linux-can@vger.kernel.org,
+        xen-devel@lists.xenproject.org, platform-driver-x86@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, e1000-devel@lists.sourceforge.net,
+        linux-crypto@vger.kernel.org, devel@linuxdriverproject.org
+Date: Fri, 18 Jul 2014 11:50:21 -0700
+In-Reply-To: <20140718181759.GB2193@kroah.com>
+References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+	 <20140718162213.GC31114@tuxdriver.com> <20140718164340.GA24960@kroah.com>
+	 <1405702472.30262.1.camel@dabdike.int.hansenpartnership.com>
+	 <20140718181759.GB2193@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 July 2014 02:02:09 Chanwoo Choi wrote:
-> On Sat, Jul 19, 2014 at 1:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Saturday 19 July 2014 01:23:15 Chanwoo Choi wrote:
-> >> If don't add new compatible including specific exynos version,
-> >> I would add new 'adc-needs-sclk' property with existing 'exynos-adc-v2'
-> >> compatible name.
-
-What I actually meant is using compatible="exynos-adc-v2.1" or similar
-rather than "exynos3250-adc". However, as you already explained, the
-version numbers are apparently just made up, so using "exynos3250-adc"
-is actually better here. If a future exynos7890 uses the same clocks
-as exynos3250, it can simply use the same "exynos3250-adc" string here.
-
-> >> Dear Naveen, Tomasz,
-> >>
-> >> If existing exynos-adc driver add just one property for 'sclk_adc'
-> >> as following, exynos-adc could not include the exynos version
-> >> in compatible name.
-> >>
-> >> I need your opinion about it.
-> >>
-> >>                 adc: adc@126C0000 {
-> >>                         compatible = "samsung,exynos-adc-v2";
-> >>                         reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-> >>                         interrupts = <0 137 0>;
-> >>                         clock-names = "adc", "sclk_adc";
-> >>                         clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
-> >> +                        adc-needs-sclk;
-> >>                         #io-channel-cells = <1>;
-> >>                         io-channel-ranges;
-> >>                 }
-> >
-> > How about just making it an optional clock? That would be much
-> > easier because then you can simply see if the clock itself is
-> > there and use it, or otherwise ignore it.
+On Fri, 2014-07-18 at 11:17 -0700, Greg KH wrote:
+> On Fri, Jul 18, 2014 at 09:54:32AM -0700, James Bottomley wrote:
+> > On Fri, 2014-07-18 at 09:43 -0700, Greg KH wrote:
+> > > On Fri, Jul 18, 2014 at 12:22:13PM -0400, John W. Linville wrote:
+> > > > On Fri, Jul 18, 2014 at 05:26:47PM +0200, Benoit Taine wrote:
+> > > > > We should prefer `const struct pci_device_id` over
+> > > > > `DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
+> > > > > This issue was reported by checkpatch.
+> > > > 
+> > > > Honestly, I prefer the macro -- it stands-out more.  Maybe the style
+> > > > guidelines and/or checkpatch should change instead?
+> > > 
+> > > The macro is horrid, no other bus has this type of thing just to save a
+> > > few characters in typing
+> > 
+> > OK, so this is the macro:
+> > 
+> > #define DEFINE_PCI_DEVICE_TABLE(_table) \
+> > 	const struct pci_device_id _table[]
+> > 
+> > Could you explain what's so horrible?
+> > 
+> > The reason it's useful today is that people forget the const (and
+> > sometimes the [] making it a true table instead of a pointer).  If you
+> > use the DEFINE_PCI_DEVICE_TABLE macro, the compile breaks if you use it
+> > wrongly (good) and you automatically get the correct annotations.
 > 
-> The v1 of this patchset[1] got the clock of 'sclk_adc'  but if the dt node
-> of ADC in dtsi file didn't include 'sclk_adc', print just warning message
-> without stopping probe as following:
+> We have almost 1000 more uses of the non-macro version than the "macro"
+> version in the kernel today:
+> $ git grep -w DEFINE_PCI_DEVICE_TABLE | wc -l
+> 262
+> $ git grep "const struct pci_device_id" | wc -l
+> 1254
 > 
->  [1] https://lkml.org/lkml/2014/4/10/710
+> My big complaint is that we need to be consistant, either pick one or
+> the other and stick to it.  As the macro is the least used, it's easiest
+> to fix up, and it also is more consistant with all other kernel
+> subsystems which do not have such a macro.
+
+I've a weak preference for consistency, but not at the expense of
+hundreds of patches churning the kernel to remove an innocuous macro.
+Churn costs time and effort.
+
+> As there is no need for the __init macro mess anymore, there's no real
+> need for the DEFINE_PCI_DEVICE_TABLE macro either.  I think checkpatch
+> will catch the use of non-const users for the id table already today, it
+> catches lots of other uses like this already.
 > 
-> +       info->sclk = devm_clk_get(&pdev->dev, "sclk_adc");
-> +       if (IS_ERR(info->sclk)) {
-> +               dev_warn(&pdev->dev, "failed getting sclk clock, err = %ld\n",
-> +                                                       PTR_ERR(info->sclk));
-> +               info->sclk = NULL;
-> +       }
+> > > , so why should PCI be "special" in this regard
+> > > anymore?
+> > 
+> > I think the PCI usage dwarfs most other bus types now, so you could turn
+> > the question around.  However, I don't think majority voting is a good
+> > guide to best practise; lets debate the merits for their own sake.
 > 
-> But, Tomasz Figa suggested the method[2] of this patchset(v6).
->  [2] https://lkml.org/lkml/2014/4/11/189
+> Not really "dwarf", USB is close with over 700 such structures:
+> $ git grep "const struct usb_device_id" | wc -l
+> 725
+> 
+> And i2c is almost just as big as PCI:
+> $ git grep "const struct i2c_device_id" | wc -l
+> 1223
+> 
+> So again, this macro is not consistent with the majority of PCI drivers,
+> nor with any other type of "device id" declaration in the kernel, which
+> is why I feel it should be removed.
+> 
+> And finally, the PCI documentation itself says to not use this macro, so
+> this isn't a "new" thing.  From Documentation/PCI/pci.txt:
+> 
+> 	The ID table is an array of struct pci_device_id entries ending with an
+> 	all-zero entry.  Definitions with static const are generally preferred.
+> 	Use of the deprecated macro DEFINE_PCI_DEVICE_TABLE should be avoided.
+> 
+> That wording went into the file last December, when we last talked about
+> this and everyone in that discussion agreed to remove the macro for the
+> above reasons.
+> 
+> Consistency matters.
 
-Yes, your current version is certainly better than this, but another way
-to address Tomasz' comment would be to change the binding to list the "sclk"
-as optional for any device and make the code silently ignore missing sclk
-entries, like:
+In this case, I don't think it does that much ... a cut and paste either
+way (from a macro or non-macro based driver) yields correct code.  Since
+there's no bug here and no apparent way to misuse the macro, why bother?
+
+Anyway, it's PCI code ... let the PCI maintainer decide.  However, if he
+does want this do it as one big bang patch via either the PCI or Trivial
+tree (latter because Jiří has experience doing this, but the former
+might be useful so the decider feels the pain ...)
+
+James
 
 
-	info->sclk = devm_clk_get(&pdev->dev, "sclk");
-	if (IS_ERR(info->sclk)) {
-		switch (PTR_ERR(info->sclk)) {
-		case -EPROBE_DEFER:
-			/* silently return error so we can retry */
-			return -EPROBE_DEFER:
-		case -ENOENT:
-			/* silently ignore missing optional clk */
-			info->sclk = NULL;
-			break;
-		default:
-			/* any other error: clk is defined by doesn't work  */
-			dev_err(&pdev->dev, "failed getting sclk clock, err = %ld\n",
-				PTR_ERR(info->sclk));
-			return PTR_ERR(info->sclk));
-		}
-	}
-
-One more comment about the name: Both in the code you use "sclk" as the
-name, so presumably that is the actual name of the clk as known to this
-driver, and it makes sense to use clock-names="sclk" as well, if you want
-to have any name.
-
-	Arnd
