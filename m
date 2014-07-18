@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998AbaGRITM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:19:12 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:64256 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522AbaGRITH (ORCPT
+	id S1760874AbaGRIS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:18:26 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:60086 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759457AbaGRISW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:19:07 -0400
-Message-ID: <53C8D874.9090601@monstr.eu>
-Date: Fri, 18 Jul 2014 10:19:00 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 04:18:22 -0400
+Date: Fri, 18 Jul 2014 09:18:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 05/24] mfd: max77686: Return correct error when pdata
+ isn't found
+Message-ID: <20140718081815.GO30888@lee--X1>
+References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404505467-26526-6-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>
-Subject: Re: [RFA][PATCH 06/27] microblaze: ftrace: Add call to ftrace_graph_is_dead()
- in function graph code
-References: <20140626165221.736847419@goodmis.org>	<20140626165849.119568888@goodmis.org> <20140709100310.3c3b25ff@gandalf.local.home>
-In-Reply-To: <20140709100310.3c3b25ff@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="jotGSWd0QMuNBtdMKqdovla59LUAjOFIV"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404505467-26526-6-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---jotGSWd0QMuNBtdMKqdovla59LUAjOFIV
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, 04 Jul 2014, Javier Martinez Canillas wrote:
 
-Hi Steve,
+> When platform data is not found an -EIO (I/O error) code is returned.
+> This doesn't seem to be the correct error so better return -EINVAL
+> (Invalid argument) which is what most drivers do in this case.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  drivers/mfd/max77686.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-On 07/09/2014 04:03 PM, Steven Rostedt wrote:
-> Michal,
->=20
-> Can you ack this please?
->=20
-> -- Steve
->=20
->=20
-> On Thu, 26 Jun 2014 12:52:27 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
->=20
->> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
->>
->> ftrace_stop() is going away as it disables parts of function tracing
->> that affects users that should not be affected. But ftrace_graph_stop(=
-)
->> is built on ftrace_stop(). Here's another example of killing all of
->> function tracing because something went wrong with function graph
->> tracing.
->>
->> Instead of disabling all users of function tracing on function graph
->> error, disable only function graph tracing. To do this, the arch code
->> must call ftrace_graph_is_dead() before it implements function graph.
->>
->> Cc: Michal Simek <monstr@monstr.eu>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->> ---
->>  arch/microblaze/kernel/ftrace.c | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/=
-ftrace.c
->> index bbcd2533766c..fc7b48a52cd5 100644
->> --- a/arch/microblaze/kernel/ftrace.c
->> +++ b/arch/microblaze/kernel/ftrace.c
->> @@ -27,6 +27,9 @@ void prepare_ftrace_return(unsigned long *parent, un=
-signed long self_addr)
->>  	unsigned long return_hooker =3D (unsigned long)
->>  				&return_to_handler;
->> =20
->> +	if (unlikely(ftrace_graph_is_dead()))
->> +		return;
->> +
->>  	if (unlikely(atomic_read(&current->tracing_graph_pause)))
->>  		return;
->> =20
->=20
+Applied now, thanks.
 
-sorry for delay. Here is mine.
+> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> index 12d4c17..ada4976 100644
+> --- a/drivers/mfd/max77686.c
+> +++ b/drivers/mfd/max77686.c
+> @@ -129,7 +129,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  
+>  	if (!pdata) {
+>  		dev_err(&i2c->dev, "No platform data found.\n");
+> -		return -EIO;
+> +		return -EINVAL;
+>  	}
+>  
+>  	max77686 = devm_kzalloc(&i2c->dev,
 
-Tested-by: Michal Simek <monstr@monstr.eu>
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---jotGSWd0QMuNBtdMKqdovla59LUAjOFIV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlPI2HQACgkQykllyylKDCGjVwCfUPgO2lm0Cn0pyUjgmc+Gv4pu
-tQEAni/St935oBXwqaMYVGeuUIPyltIz
-=phGk
------END PGP SIGNATURE-----
-
---jotGSWd0QMuNBtdMKqdovla59LUAjOFIV--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
