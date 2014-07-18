@@ -1,111 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935208AbaGRVRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:17:18 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39815 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932143AbaGRVRR (ORCPT
+	id S1762255AbaGRVSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:18:37 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:37973 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762192AbaGRVSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:17:17 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18xcFYNZSbytx6HMgsTXPMjPyYHfhuR4Z4=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8A3C75AFC6C
-Date: Fri, 18 Jul 2014 17:17:14 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: Core changes for v3.17 (round 3)
-Message-ID: <20140718211714.GK24496@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 Jul 2014 17:18:35 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v2 0/7] Two-phase seccomp and x86 tracing changes
+Date: Fri, 18 Jul 2014 14:18:08 -0700
+Message-Id: <cover.1405717901.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+This is both a cleanup and a speedup.  It reduces overhead due to
+installing a trivial seccomp filter by 87%.  The speedup comes from
+avoiding the full syscall tracing mechanism for filters that don't
+return SECCOMP_RET_TRACE.
 
-Here are the core changes I've gathered so far for v3.17.  irq-gic.c has
-been a little adventuresome this cycle.  There's still the possibility
-of some more code making it in for gic (assuming we don't run out of
-time), which is why I merged a tag into core instead of the branch.
+This series works by splitting the seccomp hooks into two phases.
+The first phase evaluates the filter; it can skip syscalls, allow
+them, kill the calling task, or pass a u32 to the second phase.  The
+second phase requires a full tracing context, and it sends ptrace
+events if necessary.
 
-As usual, this is an incremental pull from tags/irqchip-core-3.17-2 up
-to tags/irqchip-core-3.17-3 of the irqchip/core branch.
+Once this is done, I implemented a similar split for the x86 syscall
+entry work.  The C callback is invoked in two phases: the first has
+only a partial frame, and it can request phase 2 processing with a
+full frame.
 
-Please pull.
+Finally, I switch the 64-bit system_call code to use the new split
+entry work.  This is a net deletion of assembly code: it replaces
+all of the audit entry muck.
 
-thx,
+In the process, I fixed some bugs.
 
-Jason.
+If this is acceptable, someone can do the same tweak for the
+ia32entry and entry_32 code.
 
-The following changes since commit 885d078bfe92abfd5965a4f8846a3e72648ac9a6:
+This passes all seccomp tests that I know of.  Now that it's properly
+rebased, even the previously expected failures are gone.
 
-  Merge branch 'irqchip/crossbar' into irqchip/core (2014-07-01 12:16:10 +0000)
+Kees, if you like this version, can you create a branch with patches
+1-3?  I think that the rest should go into tip/x86 once everyone's happy
+with it.
 
-are available in the git repository at:
+Changes from v1:
+ - Rebased on top of Kees' shiny new seccomp tree (no effect on the x86
+   part).
+ - Improved patch 6 vs patch 7 split (thanks Alexei!)
+ - Fixed bogus -ENOSYS in patch 5 (thanks Kees!)
+ - Improved changelog message in patch 6.
 
+Changes from RFC version:
+ - The first three patches are more or less the same
+ - The rest is more or less a rewrite
 
-  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-core-3.17-3
+Andy Lutomirski (7):
+  seccomp,x86,arm,mips,s390: Remove nr parameter from secure_computing
+  seccomp: Refactor the filter callback and the API
+  seccomp: Allow arch code to provide seccomp_data
+  x86,x32,audit: Fix x32's AUDIT_ARCH wrt audit
+  x86: Split syscall_trace_enter into two phases
+  x86_64,entry: Treat regs->ax the same in fastpath and slowpath
+    syscalls
+  x86_64,entry: Use split-phase syscall_trace_enter for 64-bit syscalls
 
-for you to fetch changes up to f0cf9d2facbe3aa93b302058c013729cbc1bca22:
+ arch/arm/kernel/ptrace.c       |   7 +-
+ arch/mips/kernel/ptrace.c      |   2 +-
+ arch/s390/kernel/ptrace.c      |   2 +-
+ arch/x86/include/asm/calling.h |   6 +-
+ arch/x86/include/asm/ptrace.h  |   5 +
+ arch/x86/kernel/entry_64.S     |  51 ++++-----
+ arch/x86/kernel/ptrace.c       | 146 +++++++++++++++++++-----
+ arch/x86/kernel/vsyscall_64.c  |   2 +-
+ include/linux/seccomp.h        |  25 ++--
+ kernel/seccomp.c               | 252 ++++++++++++++++++++++++++++-------------
+ 10 files changed, 344 insertions(+), 154 deletions(-)
 
-  Merge branch 'irqchip/atmel-aic' into irqchip/core (2014-07-18 20:58:34 +0000)
+-- 
+1.9.3
 
-----------------------------------------------------------------
-
-irqchip core changes for v3.17 (round #3)
-
- - gic
-   - Add GICv3 driver
-
- - atmel
-   - Move atmel aic driver from arch code to irqchip/
-
-----------------------------------------------------------------
-Boris BREZILLON (6):
-      genirq: generic chip: Export irq_map_generic_chip function
-      irqchip: atmel-aic: Move binding doc to interrupt-controller directory
-      irqchip: atmel-aic: Add atmel AIC/AIC5 drivers
-      irqchip: atmel-aic: Add irq fixup infrastructure
-      irqchip: atmel-aic: Implement RTC irq fixup
-      irqchip: atmel-aic: Define irq fixups for atmel SoCs
-
-Jason Cooper (2):
-      Merge tag 'tags/deps-irqchip-gic-3.17' into irqchip/core
-      Merge branch 'irqchip/atmel-aic' into irqchip/core
-
-Marc Zyngier (2):
-      irqchip: gic: Move some bits of GICv2 to a library-type file
-      irqchip: gic-v3: Initial support for GICv3
-
- .../atmel,aic.txt}                                 |   0
- arch/arm64/Kconfig                                 |   1 +
- arch/arm64/kernel/head.S                           |  18 +
- arch/arm64/kernel/hyp-stub.S                       |   1 +
- drivers/irqchip/Kconfig                            |  19 +
- drivers/irqchip/Makefile                           |   5 +-
- drivers/irqchip/irq-atmel-aic-common.c             | 254 ++++++++
- drivers/irqchip/irq-atmel-aic-common.h             |  39 ++
- drivers/irqchip/irq-atmel-aic.c                    | 262 ++++++++
- drivers/irqchip/irq-atmel-aic5.c                   | 353 +++++++++++
- drivers/irqchip/irq-gic-common.c                   | 115 ++++
- drivers/irqchip/irq-gic-common.h                   |  29 +
- drivers/irqchip/irq-gic-v3.c                       | 692 +++++++++++++++++++++
- drivers/irqchip/irq-gic.c                          |  59 +-
- include/linux/irq.h                                |   2 +
- include/linux/irqchip/arm-gic-v3.h                 | 198 ++++++
- kernel/irq/generic-chip.c                          |   5 +-
- 17 files changed, 1994 insertions(+), 58 deletions(-)
- rename Documentation/devicetree/bindings/{arm/atmel-aic.txt => interrupt-controller/atmel,aic.txt} (100%)
- create mode 100644 drivers/irqchip/irq-atmel-aic-common.c
- create mode 100644 drivers/irqchip/irq-atmel-aic-common.h
- create mode 100644 drivers/irqchip/irq-atmel-aic.c
- create mode 100644 drivers/irqchip/irq-atmel-aic5.c
- create mode 100644 drivers/irqchip/irq-gic-common.c
- create mode 100644 drivers/irqchip/irq-gic-common.h
- create mode 100644 drivers/irqchip/irq-gic-v3.c
- create mode 100644 include/linux/irqchip/arm-gic-v3.h
