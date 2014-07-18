@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760812AbaGRIXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:23:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60494 "EHLO mx2.suse.de"
+	id S1760908AbaGRIYU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:24:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60509 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760655AbaGRIXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:23:32 -0400
-Date: Fri, 18 Jul 2014 10:23:24 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
-        apw@canonical.com, joe@perches.com, tytso@mit.edu, dwalter@google.com,
-        bp@suse.de, neilb@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl: Remove --file option
-Message-ID: <20140718082324.GA31270@pd.tnic>
-References: <1405611268-12463-1-git-send-email-richard@nod.at>
- <53C8CCE1.4000105@roeck-us.net>
+	id S1759704AbaGRIYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 04:24:18 -0400
+Message-ID: <53C8D9AE.8030902@suse.cz>
+Date: Fri, 18 Jul 2014 10:24:14 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53C8CCE1.4000105@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>, linux-kbuild@vger.kernel.org
+CC: linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: allow to override Python command name
+References: <1405658411-27346-1-git-send-email-yamada.m@jp.panasonic.com>
+In-Reply-To: <1405658411-27346-1-git-send-email-yamada.m@jp.panasonic.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 12:29:37AM -0700, Guenter Roeck wrote:
-> First, 'abuse' is a relative term. It describes a use you
-> (and possibly many others) may find objectionable, but that
-> does not mean all uses are objectionable.
+Dne 18.7.2014 06:40, Masahiro Yamada napsal(a):
+> The specification of Python 3 is largely different from that of
+> Python 2.
+> 
+> For example, arch/ia64/scripts/unwcheck.py seems to be written
+> in Python 2, not compatible with Python 3.
+> 
+> It is not a good idea to invoke python scripts with the hard-coded
+> command name 'python'. The command 'python' could possibly be
+> Python 3 on some systems.
+> For that case, it is reasonable to allow to override the command name
+> by giving 'PYTHON=python2' from the command line.
+> 
+> The 'python' in arch/ia64/Makefile should be replaced with '$(PYTHON)'.
+> 
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+> Cc: linux-ia64@vger.kernel.org
 
-Do you actually have a valid use case for keeping the cmdline switch ...
+Thanks, applied to kbuild.git#kbuild.
 
-> Second, just because something is abused doesn't mean it would be
-> a good idea to take it away. Many of the amendmends to the US
-> Constitution can be abused. Should freedom of speech be taken away
-> because it can be abused ?
+Michal
 
-... or do you feel political and want to do some waste-of-time debating
-today just because its Friday?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
