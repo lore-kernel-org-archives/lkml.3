@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161039AbaGRO1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:27:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40703 "EHLO mx2.suse.de"
+	id S1030481AbaGRObu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:31:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40919 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944AbaGRO1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:27:40 -0400
-Date: Fri, 18 Jul 2014 16:27:33 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Richard Weinberger <richard@nod.at>, Guenter Roeck <linux@roeck-us.net>,
-        akpm@linux-foundation.org, apw@canonical.com, joe@perches.com,
-        tytso@mit.edu, dwalter@google.com, neilb@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl: Remove --file option
-Message-ID: <20140718142733.GD31270@pd.tnic>
-References: <1405611268-12463-1-git-send-email-richard@nod.at>
- <53C8CCE1.4000105@roeck-us.net>
- <20140718082324.GA31270@pd.tnic>
- <53C92332.5010807@roeck-us.net>
- <53C92535.2010605@nod.at>
- <20140718142114.GA10475@infradead.org>
+	id S934407AbaGRObs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 10:31:48 -0400
+Message-ID: <53C92F8E.5000906@redhat.com>
+Date: Fri, 18 Jul 2014 16:30:38 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140718142114.GA10475@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 5/8] ata: ahci_platform: add a generic AHCI compatible
+References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com> <1405686607-8126-6-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1405686607-8126-6-git-send-email-antoine.tenart@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 07:21:14AM -0700, Christoph Hellwig wrote:
-> Or he could just use the existing -f flag.
+Hi,
 
-If you mean the -f flag to checkpatch, he's removing them both.
+On 07/18/2014 02:30 PM, Antoine Ténart wrote:
+> The ahci_platform driver is a generic driver using the libahci_platform
+> functions. Add a generic compatible to avoid having an endless list of
+> compatibles with no differences for the same driver.
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/ata/ahci_platform.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+> index 95f9ca82082a..61b15e784020 100644
+> --- a/drivers/ata/ahci_platform.c
+> +++ b/drivers/ata/ahci_platform.c
+> @@ -77,6 +77,8 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_platform_suspend,
+>  			 ahci_platform_resume);
+>  
+>  static const struct of_device_id ahci_of_match[] = {
+> +	{ .compatible = "generic-ahci", },
+> +	/* Keep the following compatibles for device tree compatibility */
+>  	{ .compatible = "snps,spear-ahci", },
+>  	{ .compatible = "snps,exynos5440-ahci", },
+>  	{ .compatible = "ibm,476gtr-ahci", },
+> 
 
-> I really don't understand why you're trying to educate people by
-> taking their toy away. They'll find another one in no time anyway.
+I'm not against this, I've introduced the same for the ehci / uhci platform
+driver after all, but this should be documented in Documentation/devicetree,
+and please make sure to mention in the docs that the correct way to use this
+inside a dts file is:
 
-Maybe we should stop accepting patches created from running
-checkpatch...?
+	compatible = "manufacturer,soc-model-ahci", "generic-ahci";
 
--- 
-Regards/Gruss,
-    Boris.
+So that we can later add quirks for the specific soc if necessary without
+needing to change the dts.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Regards,
+
+Hans
