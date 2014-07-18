@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbaGRWFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 18:05:20 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:61406 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685AbaGRWFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 18:05:18 -0400
-Date: Fri, 18 Jul 2014 18:05:14 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] workqueue: remove unneeded test before wake up next
- worker
-Message-ID: <20140718220514.GC1819@htj.dyndns.org>
-References: <1405505409-12058-1-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405505409-12058-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1762215AbaGRWH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 18:07:29 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44387 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754379AbaGRWH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 18:07:28 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org
+Cc: hannes@stressinduktion.org, davej@redhat.com, price@mit.edu,
+        Greg Price <price@mit.edu>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH] random: check for increase of entropy_count because of signed conversion
+Date: Fri, 18 Jul 2014 18:07:19 -0400
+Message-Id: <1405721239-2630-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140718215054.GD18775@thunk.org>
+References: <20140718215054.GD18775@thunk.org>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 06:09:58PM +0800, Lai Jiangshan wrote:
-> In this code:
-> 	if ((worker->flags & WORKER_UNBOUND) && need_more_worker(pool))
-> 		wake_up_worker(pool);
-> 
-> the first test is unneeded. Even the first test is removed, it doesn't affect
-> the wake-up logic when WORKER_UNBOUND. And it will not introduce any useless
-> wake-up when !WORKER_UNBOUND since the nr_running >= 1 except only one case.
-> It will introduce useless/redundant wake-up when cpu_intensive, but this
-> case is rare and next patch will also remove this redundant wake-up.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  kernel/workqueue.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index f8d54c1..6d11b9a 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2047,11 +2047,8 @@ __acquires(&pool->lock)
->  	if (unlikely(cpu_intensive))
->  		worker_set_flags(worker, WORKER_CPU_INTENSIVE, true);
->  
-> -	/*
-> -	 * Unbound pool isn't concurrency managed and work items should be
-> -	 * executed ASAP.  Wake up another worker if necessary.
-> -	 */
-> -	if ((worker->flags & WORKER_UNBOUND) && need_more_worker(pool))
-> +	/* Wake up another worker if necessary. */
-> +	if (need_more_worker(pool))
->  		wake_up_worker(pool);
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-What does this buy us?  Sure, it may achieve about the same operation
-but it's a lot more confusing.  need_more_worker() is specifically for
-concurrency management.  Applying it to unmanaged workers could lead
-to okay behavior but conflating the two to save one test on worker
-flags doesn't seem like a good trade-off to me.
+The expression entropy_count -= ibytes << (ENTROPY_SHIFT + 3) could
+actually increase entropy_count if during assignment of the unsigned
+expression on the RHS (mind the -=) we reduce the value modulo
+2^width(int) and assign it to entropy_count. Trinity found this.
 
-Thanks.
+[ Commit modified by tytso to add an additional safety check for a
+  negative entropy_count -- which should never happen, and to also add
+  an additional paranoia check to prevent overly large count values to
+  be passed into urandom_read().  ]
 
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Greg Price <price@mit.edu>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+---
+ drivers/char/random.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 0a7ac0a..003f744 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -641,7 +641,7 @@ retry:
+ 		} while (unlikely(entropy_count < pool_size-2 && pnfrac));
+ 	}
+ 
+-	if (entropy_count < 0) {
++	if (unlikely(entropy_count < 0)) {
+ 		pr_warn("random: negative entropy/overflow: pool %s count %d\n",
+ 			r->name, entropy_count);
+ 		WARN_ON(1);
+@@ -981,7 +981,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		      int reserved)
+ {
+ 	int entropy_count, orig;
+-	size_t ibytes;
++	size_t ibytes, nfrac;
+ 
+ 	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
+ 
+@@ -999,7 +999,17 @@ retry:
+ 	}
+ 	if (ibytes < min)
+ 		ibytes = 0;
+-	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
++
++	nfrac = ibytes << (ENTROPY_SHIFT + 3);
++	if (entropy_count < 0) {
++		pr_warn("random: negative entropy count: pool %s count %d\n",
++			r->name, entropy_count);
++		WARN_ON(1);
++		entropy_count = 0;
++	}
++	if ((unsigned) entropy_count > nfrac)
++		entropy_count -= nfrac;
++	else
+ 		entropy_count = 0;
+ 
+ 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+@@ -1376,6 +1386,7 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 			    "with %d bits of entropy available\n",
+ 			    current->comm, nonblocking_pool.entropy_total);
+ 
++	nbytes = min_t(size_t, nbytes, INT_MAX >> ENTROPY_SHIFT);
+ 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
+ 
+ 	trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
 -- 
-tejun
+2.0.0
+
