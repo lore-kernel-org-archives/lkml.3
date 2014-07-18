@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762693AbaGRWut (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 18:50:49 -0400
-Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:49534 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1762400AbaGRWur (ORCPT
+	id S1762653AbaGRWwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 18:52:05 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:58339 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756279AbaGRWwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 18:50:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3868:3871:3874:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: swing85_75c537d5f9556
-X-Filterd-Recvd-Size: 1287
-Message-ID: <1405723807.14358.100.camel@joe-AO725>
-Subject: Re: How to automate checkpatch && get_maintainers && git send-email
- of commits range?
-From: Joe Perches <joe@perches.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        kernelnewbies@kernelnewbies.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Date: Fri, 18 Jul 2014 15:50:07 -0700
-In-Reply-To: <1405723664.14358.98.camel@joe-AO725>
-References: <CANZNk81LiTM9vY0dRV=T0BCT9k-BxU45Ojw_PyOcpdmtXHKM2Q@mail.gmail.com>
-	 <20140718222215.GF18775@thunk.org> <1405723664.14358.98.camel@joe-AO725>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jul 2014 18:52:03 -0400
+Date: Fri, 18 Jul 2014 18:51:59 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: detach rescuer from pool until the last
+Message-ID: <20140718225159.GB5739@htj.dyndns.org>
+References: <1405493811-26203-1-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405493811-26203-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-18 at 15:47 -0700, Joe Perches wrote:
-> On Fri, 2014-07-18 at 18:22 -0400, Theodore Ts'o wrote:
-> >  and get_maintainers.pl.
-> I think checkpatch
+Hello,
 
-Umm, make that get_maintainer...
+On Wed, Jul 16, 2014 at 02:56:50PM +0800, Lai Jiangshan wrote:
+> @@ -2300,11 +2300,6 @@ repeat:
+>  				move_linked_works(work, scheduled, &n);
+>  
+>  		process_scheduled_works(rescuer);
+> -		spin_unlock_irq(&pool->lock);
+> -
+> -		worker_detach_from_pool(rescuer, pool);
+> -
+> -		spin_lock_irq(&pool->lock);
+>  
+>  		/*
+>  		 * Put the reference grabbed by send_mayday().  @pool won't
+> @@ -2322,8 +2317,11 @@ repeat:
+>  			wake_up_worker(pool);
+>  
+>  		rescuer->pool = NULL;
+> -		spin_unlock(&pool->lock);
+> -		spin_lock(&wq_mayday_lock);
+> +		spin_unlock_irq(&pool->lock);
+> +
+> +		worker_detach_from_pool(rescuer, pool);
+> +
+> +		spin_lock_irq(&wq_mayday_lock);
 
-> is pretty good about cc'ing mostly the
-> right folk by default.
+Can you please also update the comment above put_pwq() and explain
+above detach that @pool will stay around till detach is complete?
 
+Thanks.
 
+-- 
+tejun
