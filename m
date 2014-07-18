@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030868AbaGRNSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:38 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17975 "EHLO
+	id S1030903AbaGRNSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:18:54 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17989 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761530AbaGRNSc (ORCPT
+	by vger.kernel.org with ESMTP id S1030582AbaGRNSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:32 -0400
+	Fri, 18 Jul 2014 09:18:50 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 040/170] powerpc/mm: Check paca psize is up to date for huge mappings
-Date: Fri, 18 Jul 2014 14:10:45 +0200
-Message-Id: <0ddc881b680a5e71352003e1777ca79ea9ff0f21.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 137/170] hwmon: (emc2103) Clamp limits instead of bailing out
+Date: Fri, 18 Jul 2014 14:12:22 +0200
+Message-Id: <cd4da31a80bd9e3b71a62af0029de98897f38171.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,135 +23,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: Guenter Roeck <linux@roeck-us.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 09567e7fd44291bfc08accfdd67ad8f467842332 upstream.
+commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
 
-We have a bug in our hugepage handling which exhibits as an infinite
-loop of hash faults. If the fault is being taken in the kernel it will
-typically trigger the softlockup detector, or the RCU stall detector.
+It is customary to clamp limits instead of bailing out with an error
+if a configured limit is out of the range supported by the driver.
+This simplifies limit configuration, since the user will not typically
+know chip and/or driver specific limits.
 
-The bug is as follows:
-
- 1. mmap(0xa0000000, ..., MAP_FIXED | MAP_HUGE_TLB | MAP_ANONYMOUS ..)
- 2. Slice code converts the slice psize to 16M.
- 3. The code on lines 539-540 of slice.c in slice_get_unmapped_area()
-    synchronises the mm->context with the paca->context. So the paca slice
-    mask is updated to include the 16M slice.
- 3. Either:
-    * mmap() fails because there are no huge pages available.
-    * mmap() succeeds and the mapping is then munmapped.
-    In both cases the slice psize remains at 16M in both the paca & mm.
- 4. mmap(0xa0000000, ..., MAP_FIXED | MAP_ANONYMOUS ..)
- 5. The slice psize is converted back to 64K. Because of the check on line 539
-    of slice.c we DO NOT update the paca->context. The paca slice mask is now
-    out of sync with the mm slice mask.
- 6. User/kernel accesses 0xa0000000.
- 7. The SLB miss handler slb_allocate_realmode() **uses the paca slice mask**
-    to create an SLB entry and inserts it in the SLB.
-18. With the 16M SLB entry in place the hardware does a hash lookup, no entry
-    is found so a data access exception is generated.
-19. The data access handler calls do_page_fault() -> handle_mm_fault().
-10. __handle_mm_fault() creates a THP mapping with do_huge_pmd_anonymous_page().
-11. The hardware retries the access, there is still nothing in the hash table
-    so once again a data access exception is generated.
-12. hash_page() calls into __hash_page_thp() and inserts a mapping in the
-    hash. Although the THP mapping maps 16M the hashing is done using 64K
-    as the segment page size.
-13. hash_page() returns immediately after calling __hash_page_thp(), skipping
-    over the code at line 1125. Resulting in the mismatch between the
-    paca->context and mm->context not being detected.
-14. The hardware retries the access, the hash it generates using the 16M
-    SLB entry does NOT match the hash we inserted.
-15. We take another data access and go into __hash_page_thp().
-16. We see a valid entry in the hpte_slot_array and so we call updatepp()
-    which succeeds.
-17. Goto 14.
-
-We could fix this in two ways. The first would be to remove or modify
-the check on line 539 of slice.c.
-
-The second option is to cause the check of paca psize in hash_page() on
-line 1125 to also be done for THP pages.
-
-We prefer the latter, because the check & update of the paca psize is
-not done until we know it's necessary. It's also done only on the
-current cpu, so we don't need to IPI all other cpus.
-
-Without further rearranging the code, the simplest fix is to pull out
-the code that checks paca psize and call it in two places. Firstly for
-THP/hugetlb, and secondly for other mappings as before.
-
-Thanks to Dave Jones for trinity, which originally found this bug.
-
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/mm/hash_utils_64.c | 31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+ drivers/hwmon/emc2103.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index bde8b5589755..503a5d005622 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -947,6 +947,22 @@ void hash_failure_debug(unsigned long ea, unsigned long access,
- 		trap, vsid, ssize, psize, lpsize, pte);
- }
+diff --git a/drivers/hwmon/emc2103.c b/drivers/hwmon/emc2103.c
+index 2c137b26acb4..5790246a7e1d 100644
+--- a/drivers/hwmon/emc2103.c
++++ b/drivers/hwmon/emc2103.c
+@@ -250,9 +250,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *da,
+ 	if (result < 0)
+ 		return result;
  
-+static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
-+			     int psize, bool user_region)
-+{
-+	if (user_region) {
-+		if (psize != get_paca_psize(ea)) {
-+			get_paca()->context = mm->context;
-+			slb_flush_and_rebolt();
-+		}
-+	} else if (get_paca()->vmalloc_sllp !=
-+		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
-+		get_paca()->vmalloc_sllp =
-+			mmu_psize_defs[mmu_vmalloc_psize].sllp;
-+		slb_vmalloc_update();
-+	}
-+}
-+
- /* Result code is:
-  *  0 - handled
-  *  1 - normal page fault
-@@ -1068,6 +1084,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
- 			WARN_ON(1);
- 		}
- #endif
-+		check_paca_psize(ea, mm, psize, user_region);
-+
- 		goto bail;
- 	}
+-	val = DIV_ROUND_CLOSEST(val, 1000);
+-	if ((val < -63) || (val > 127))
+-		return -EINVAL;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
  
-@@ -1108,17 +1126,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
- #endif
- 		}
- 	}
--	if (user_region) {
--		if (psize != get_paca_psize(ea)) {
--			get_paca()->context = mm->context;
--			slb_flush_and_rebolt();
--		}
--	} else if (get_paca()->vmalloc_sllp !=
--		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
--		get_paca()->vmalloc_sllp =
--			mmu_psize_defs[mmu_vmalloc_psize].sllp;
--		slb_vmalloc_update();
--	}
-+
-+	check_paca_psize(ea, mm, psize, user_region);
- #endif /* CONFIG_PPC_64K_PAGES */
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = val;
+@@ -274,9 +272,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *da,
+ 	if (result < 0)
+ 		return result;
  
- #ifdef CONFIG_PPC_HAS_HASH_64K
+-	val = DIV_ROUND_CLOSEST(val, 1000);
+-	if ((val < -63) || (val > 127))
+-		return -EINVAL;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
+ 
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = val;
+@@ -390,15 +386,14 @@ static ssize_t set_fan_target(struct device *dev, struct device_attribute *da,
+ {
+ 	struct emc2103_data *data = emc2103_update_device(dev);
+ 	struct i2c_client *client = to_i2c_client(dev);
+-	long rpm_target;
++	unsigned long rpm_target;
+ 
+-	int result = kstrtol(buf, 10, &rpm_target);
++	int result = kstrtoul(buf, 10, &rpm_target);
+ 	if (result < 0)
+ 		return result;
+ 
+ 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
+-	if ((rpm_target < 0) || (rpm_target > 16384))
+-		return -EINVAL;
++	rpm_target = clamp_val(rpm_target, 0, 16384);
+ 
+ 	mutex_lock(&data->update_lock);
+ 
 -- 
 2.0.0
 
