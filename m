@@ -1,62 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965069AbaGRPPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:15:38 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:63626 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944AbaGRPPg (ORCPT
+	id S965446AbaGRPPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:15:52 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:44072 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965092AbaGRPPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:15:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <6917971.QKItNU3coA@wuerfel>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
-	<6485839.CnzmD0SeQj@wuerfel>
-	<53C8F050.6060104@samsung.com>
-	<6917971.QKItNU3coA@wuerfel>
-Date: Sat, 19 Jul 2014 00:15:35 +0900
-Message-ID: <CAGTfZH1EHiTpo2Abua=+kDfNoOQx+ydPHU51=+qW8mgCL4Lwvg@mail.gmail.com>
-Subject: Re: [PATCHv6 2/4] iio: adc: exynos_adc: Control special clock of ADC
- to support Exynos3250 ADC
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        jic23@kernel.org, naveen krishna <ch.naveen@samsung.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, galak@codeaurora.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 11:15:50 -0400
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: davem@davemloft.net, sam@ravnborg.org
+Cc: Khalid Aziz <khalid.aziz@oracle.com>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] sparc: Add support for seek and shorter read to /dev/mdesc
+Date: Fri, 18 Jul 2014 09:15:40 -0600
+Message-Id: <1405696541-25189-1-git-send-email-khalid.aziz@oracle.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 8:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 July 2014 19:00:48 Chanwoo Choi wrote:
->> On 07/18/2014 06:47 PM, Arnd Bergmann wrote:
->> >
->> > Further, why is it called "sclk_adc" rather than just "sclk"?
->>
->> The sclk means 'special clock' in Exynos TRM. Exynos SoC has varisou sclk clocks.
->> 'sclk_adc' is only used for ADC IP.
->
-> But that sounds like sclk_adc is the name of the global name
-> of the clock signal coming out of the clock controller.
->
-> I still think it would be best to name it 'sclk' as the input
-> for the adc. It shouldn't rely on a particular name of the
-> clock controller.
+/dev/mdesc on Linux does not support reading arbitrary number
+of bytes and seeking while /dev/mdesc on Solaris does. This
+causes tools that work on Solaris to break on Linux. This patch
+adds these two capabilities to /dev/mdesc.
 
-I think 'sclk' is too common name. 'sclk' don't include specific device name.
-As I know, usual clock name includes the name of IP or includes the
-specific meaning for each IP.
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+---
+v3:
+	- Whitespace cleanup
 
-In my opinion, I think sclk_adc is better than 'sclk'.
+v2:
+	- Cleaned up code in mdesc_read() and mdesc_llseek() to be
+	  more readable
 
-Thanks,
-Chanwoo Choi
+ arch/sparc/kernel/mdesc.c | 82 +++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 69 insertions(+), 13 deletions(-)
+
+diff --git a/arch/sparc/kernel/mdesc.c b/arch/sparc/kernel/mdesc.c
+index a1a4400..99632a8 100644
+--- a/arch/sparc/kernel/mdesc.c
++++ b/arch/sparc/kernel/mdesc.c
+@@ -906,29 +906,85 @@ void mdesc_fill_in_cpu_data(cpumask_t *mask)
+ 	smp_fill_in_sib_core_maps();
+ }
+ 
+-static ssize_t mdesc_read(struct file *file, char __user *buf,
+-			  size_t len, loff_t *offp)
++/* mdesc_open() - Grab a reference to mdesc_handle when /dev/mdesc is
++ * opened. Hold this reference until /dev/mdesc is closed to ensure
++ * mdesc data structure is not released underneath us. Store the
++ * pointer to mdesc structure in private_data for read and seek to use
++ */
++static int mdesc_open(struct inode *inode, struct file *file)
+ {
+ 	struct mdesc_handle *hp = mdesc_grab();
+-	int err;
+ 
+ 	if (!hp)
+ 		return -ENODEV;
+ 
+-	err = hp->handle_size;
+-	if (len < hp->handle_size)
+-		err = -EMSGSIZE;
+-	else if (copy_to_user(buf, &hp->mdesc, hp->handle_size))
+-		err = -EFAULT;
+-	mdesc_release(hp);
++	file->private_data = hp;
++
++	return 0;
++}
++
++static ssize_t mdesc_read(struct file *file, char __user *buf,
++			  size_t len, loff_t *offp)
++{
++	struct mdesc_handle *hp = file->private_data;
++	unsigned char *mdesc;
++	int bytes_left, count = len;
++
++	if (*offp >= hp->handle_size)
++		return 0;
++
++	bytes_left = hp->handle_size - *offp;
++	if (count > bytes_left)
++		count = bytes_left;
++
++	mdesc = (unsigned char *)&hp->mdesc;
++	mdesc += *offp;
++	if (!copy_to_user(buf, mdesc, count)) {
++		*offp += count;
++		return count;
++	} else {
++		return -EFAULT;
++	}
++}
+ 
+-	return err;
++static loff_t mdesc_llseek(struct file *file, loff_t offset, int whence)
++{
++	struct mdesc_handle *hp;
++
++	switch (whence) {
++	case SEEK_CUR:
++		offset += file->f_pos;
++		break;
++	case SEEK_SET:
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	hp = file->private_data;
++	if (offset > hp->handle_size)
++		return -EINVAL;
++	else
++		file->f_pos = offset;
++
++	return offset;
++}
++
++/* mdesc_close() - /dev/mdesc is being closed, release the reference to
++ * mdesc structure.
++ */
++static int mdesc_close(struct inode *inode, struct file *file)
++{
++	mdesc_release(file->private_data);
++	return 0;
+ }
+ 
+ static const struct file_operations mdesc_fops = {
+-	.read	= mdesc_read,
+-	.owner	= THIS_MODULE,
+-	.llseek = noop_llseek,
++	.open    = mdesc_open,
++	.read	 = mdesc_read,
++	.llseek  = mdesc_llseek,
++	.release = mdesc_close,
++	.owner	 = THIS_MODULE,
+ };
+ 
+ static struct miscdevice mdesc_misc = {
+-- 
+1.9.1
+
