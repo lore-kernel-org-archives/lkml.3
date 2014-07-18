@@ -1,84 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761570AbaGRLjz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:39:55 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:25702 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759501AbaGRLjw (ORCPT
+	id S1761604AbaGRLkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:40:00 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42882 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761571AbaGRLj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:39:52 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-c3-53c907862e5d
+	Fri, 18 Jul 2014 07:39:56 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-00-53c9078afdb9
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
         andrzej.p@samsung.com, Kamil Debski <k.debski@samsung.com>,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v3 01/12] usb: dwc2/gadget: fix phy disable sequence
-Date: Fri, 18 Jul 2014 13:39:26 +0200
-Message-id: <1405683577-11226-2-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v3 02/12] usb: dwc2/gadget: fix phy initialization sequence
+Date: Fri, 18 Jul 2014 13:39:27 +0200
+Message-id: <1405683577-11226-3-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
 References: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t9jAd029pPBBhMumFnMetnOYnHwfr1F
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAd0u9pPBBpd/qljMetnOYnHwfr1F
 	8+L1bBY/Xl9gs7i8aw6bxaJlrcwWa4/cZbfYPmU6k8WDwzvZHTg99s9dw+7Rt2UVo8eW/Z8Z
-	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGzBt/mQrec1dMfXaCuYGxmauLkZNDQsBE4vmb
-	Y0wQtpjEhXvr2boYuTiEBBYxSiw4upcJwmlnkjh5fhkzSBWbgI7Elu8TGEFsEQEBifUvLrGD
-	FDELvGWUmHbuGwtIQljAReL0h0tgRSwCqhK3O36ANfMKuErsXnCIFWKdnMTJY5PBbE4BN4m2
-	R/+BejmAtrlKTPvKP4GRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4EB7JrWDcWWD
-	xSFGAQ5GJR5ei5vHg4VYE8uKK3MPMUpwMCuJ8GbfBwrxpiRWVqUW5ccXleakFh9ilOZgURLn
-	PdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgXH/4rIYZQ/OOwrPzax+kro60PG4kosCS/cJ4nu32
-	Cn3RRqnLvypX2x0TWJ8vrplZJxAgHV18xVvrP/eyjI2ye6b4XS2eMIVxTdbCnyFf3m47fyjo
-	hc3Enab97f/dRVPuzgyvbQm6uqUnrqFk4p47Zz6IrlkuJCm5a2XistmbOnUib/7O6vliqsRS
-	nJFoqMVcVJwIAO+AimUwAgAA
+	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGnS7egjnCFQfnrmFtYPzN38XIySEhYCIx7fdn
+	VghbTOLCvfVsXYxcHEICixgldt2fxgjhtDNJTHvxkB2kik1AR2LL9wmMILaIgIDE+heX2EGK
+	mAXeMkpMO/eNBSQhLOAtsf1BG9hYFgFViQ3H94A18wq4Smw7+pkNYp2cxMljk8FqOAXcJNoe
+	/Qfq5QDa5iox7Sv/BEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCw+yZ9A7GVQ0W
+	hxgFOBiVeHgtbh4PFmJNLCuuzD3EKMHBrCTCm30fKMSbklhZlVqUH19UmpNafIhRmoNFSZz3
+	YKt1oJBAemJJanZqakFqEUyWiYNTqoHRY9XiOk8Wj/ucoimdBZoRyzim/vh3fs7VXpF/Lczp
+	oke+VpnryK0S3xhwVaZw4tLFFYxsPyYLz39j/DOizp/t4Pt1z5eeWyacJ/S88OW1Wr4lQhsC
+	/yz20VugsXLjziq2udybf3v8u2Bfe9Nx1vZ67YrlJxlfrU47pFr13fXK2RWeuoJe8nYmSizF
+	GYmGWsxFxYkA0OX04y8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kamil Debski <k.debski@samsung.com>
 
-When the driver is removed s3c_hsotg_phy_disable is called three times
-instead of once. This results in decreasing of the phy reference counter
-below zero and thus consecutive inserts of the module fails.
+In the Generic PHY Framework a NULL phy is considered to be a valid phy
+thus the "if (hsotg->phy)" check does not give us the information whether
+the Generic PHY Framework is used.
 
-This patch removes calls to s3c_hsotg_phy_disable from s3c_hsotg_remove
-and s3c_hsotg_udc_stop.
-
-s3c_hsotg_udc_stop is called from udc-core.c only after
-usb_gadget_disconnect, which in turn calls s3c_hsotg_pullup, which
-already calls s3c_hsotg_phy_disable.
-
-s3c_hsotg_remove must be called only after udc_stop, so there is no
-point in disabling phy once again there.
+In addition to the above this patch also removes phy_init from probe and
+phy_exit from remove. This is not necessary when init/exit is done in the
+s3c_hsotg_phy_enable/disable functions.
 
 Signed-off-by: Kamil Debski <k.debski@samsung.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/gadget.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/dwc2/gadget.c | 27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index f3c56a2..ccef3a7 100644
+index ccef3a7..70eab95 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -2898,8 +2898,6 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
+@@ -2748,13 +2748,14 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
  
- 	spin_lock_irqsave(&hsotg->lock, flags);
+ 	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
  
--	s3c_hsotg_phy_disable(hsotg);
+-	if (hsotg->phy) {
+-		phy_init(hsotg->phy);
+-		phy_power_on(hsotg->phy);
+-	} else if (hsotg->uphy)
++	if (hsotg->uphy)
+ 		usb_phy_init(hsotg->uphy);
+-	else if (hsotg->plat->phy_init)
++	else if (hsotg->plat && hsotg->plat->phy_init)
+ 		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
++	else {
++		phy_init(hsotg->phy);
++		phy_power_on(hsotg->phy);
++	}
+ }
+ 
+ /**
+@@ -2768,13 +2769,14 @@ static void s3c_hsotg_phy_disable(struct s3c_hsotg *hsotg)
+ {
+ 	struct platform_device *pdev = to_platform_device(hsotg->dev);
+ 
+-	if (hsotg->phy) {
+-		phy_power_off(hsotg->phy);
+-		phy_exit(hsotg->phy);
+-	} else if (hsotg->uphy)
++	if (hsotg->uphy)
+ 		usb_phy_shutdown(hsotg->uphy);
+-	else if (hsotg->plat->phy_exit)
++	else if (hsotg->plat && hsotg->plat->phy_exit)
+ 		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);
++	else {
++		phy_power_off(hsotg->phy);
++		phy_exit(hsotg->phy);
++	}
+ }
+ 
+ /**
+@@ -3489,9 +3491,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
+ 		hsotg->phyif = GUSBCFG_PHYIF8;
+ 
+-	if (hsotg->phy)
+-		phy_init(hsotg->phy);
 -
- 	if (!driver)
- 		hsotg->driver = NULL;
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
  
-@@ -3586,7 +3584,6 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+@@ -3584,8 +3583,6 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
  		usb_gadget_unregister_driver(hsotg->driver);
  	}
  
--	s3c_hsotg_phy_disable(hsotg);
- 	if (hsotg->phy)
- 		phy_exit(hsotg->phy);
+-	if (hsotg->phy)
+-		phy_exit(hsotg->phy);
  	clk_disable_unprepare(hsotg->clk);
+ 
+ 	return 0;
 -- 
 1.9.1
 
