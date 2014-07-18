@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946011AbaGRTTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 15:19:21 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:59415 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757007AbaGRTTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 15:19:18 -0400
-Date: Fri, 18 Jul 2014 12:19:08 -0700
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        David Drysdale <drysdale@google.com>
-Subject: [PULL] seccomp update (3.17)
-Message-ID: <20140718191908.GA20534@www.outflux.net>
+	id S1946017AbaGRTV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 15:21:27 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:60603 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422795AbaGRTV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 15:21:26 -0400
+Message-ID: <53C973B8.9060900@linaro.org>
+Date: Fri, 18 Jul 2014 14:21:28 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: akpm@linux-foundation.org
+CC: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/7] printk: report dropped messages on separate line
+References: <1405692859-32500-1-git-send-email-elder@linaro.org> <1405692859-32500-2-git-send-email-elder@linaro.org>
+In-Reply-To: <1405692859-32500-2-git-send-email-elder@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On 07/18/2014 09:14 AM, Alex Elder wrote:
+> It is possible for the log to be filled too quickly for the consoles
+> to be able to keep up.  This is detected in console_unlock(), and
+> when it occurs, a message is printed on the console.  When reviewing
+> some nearby code, Petr Mládek suggested it might be nicer if this
+> message were placed on a separate line.  This patch implements that
+> suggestion.
+> 
+> Suggested-by: Petr Mládek <pmladek@suse.cz>
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> ---
+>  kernel/printk/printk.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index 13e839d..bed8f09 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -2142,9 +2142,10 @@ again:
+>  		}
+>  
+>  		if (console_seq < log_first_seq) {
+> -			len = sprintf(text, "** %u printk messages dropped ** ",
+> +			len = sprintf(text,
+> +				      "%s** %llu printk messages dropped **\n",
+                                             ^^^
+This is wrong, an artifact I didn't clean up.
+It should still just be "%u".  Sorry about that.
 
-Please pull these seccomp changes for 3.17.
+					-Alex
 
-(And if I should base off something other than security-next, please
-let me know. Or if there are any things I should be doing differently
-with this tree.)
+> +				      (console_prev & LOG_CONT) ? "\n" : "",
+>  				      (unsigned)(log_first_seq - console_seq));
+> -
+>  			/* messages are gone, move to first one */
+>  			console_seq = log_first_seq;
+>  			console_idx = log_first_idx;
+> 
 
-Thanks!
-
--Kees
-
-The following changes since commit 32c2e6752ff0f48fe03b9e1c7c64bde580a840d2:
-
-  ima: provide double buffering for hash calculation (2014-07-17 09:35:11 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/seccomp-3.17
-
-for you to fetch changes up to c2e1f2e30daa551db3c670c0ccfeab20a540b9e1:
-
-  seccomp: implement SECCOMP_FILTER_FLAG_TSYNC (2014-07-18 12:13:40 -0700)
-
-----------------------------------------------------------------
-seccomp TSYNC support for 3.17
-
-----------------------------------------------------------------
-Kees Cook (12):
-      MAINTAINERS: create seccomp entry
-      seccomp: create internal mode-setting function
-      seccomp: extract check/assign mode helpers
-      seccomp: split mode setting routines
-      seccomp: add "seccomp" syscall
-      ARM: add seccomp syscall
-      MIPS: add seccomp syscall
-      sched: move no_new_privs into new atomic flags
-      seccomp: split filter prep from check and apply
-      seccomp: introduce writer locking
-      seccomp: allow mode setting across threads
-      seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-
- MAINTAINERS                         |   10 +
- arch/Kconfig                        |    1 +
- arch/arm/include/uapi/asm/unistd.h  |    1 +
- arch/arm/kernel/calls.S             |    1 +
- arch/mips/include/uapi/asm/unistd.h |   15 +-
- arch/mips/kernel/scall32-o32.S      |    1 +
- arch/mips/kernel/scall64-64.S       |    1 +
- arch/mips/kernel/scall64-n32.S      |    1 +
- arch/mips/kernel/scall64-o32.S      |    1 +
- arch/x86/syscalls/syscall_32.tbl    |    1 +
- arch/x86/syscalls/syscall_64.tbl    |    1 +
- fs/exec.c                           |    6 +-
- include/linux/sched.h               |   18 +-
- include/linux/seccomp.h             |    8 +-
- include/linux/syscalls.h            |    2 +
- include/uapi/asm-generic/unistd.h   |    4 +-
- include/uapi/linux/seccomp.h        |    7 +
- kernel/fork.c                       |   49 ++++-
- kernel/seccomp.c                    |  412 ++++++++++++++++++++++++++++++-----
- kernel/sys.c                        |    4 +-
- kernel/sys_ni.c                     |    3 +
- security/apparmor/domain.c          |    4 +-
- 22 files changed, 471 insertions(+), 80 deletions(-)
-
--- 
-Kees Cook
-Chrome OS Security
