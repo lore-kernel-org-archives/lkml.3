@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030465AbaGRNSD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:18:03 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17935 "EHLO
+	id S1030839AbaGRNSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:18:15 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17948 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965878AbaGRNR6 (ORCPT
+	by vger.kernel.org with ESMTP id S1030817AbaGRNSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:17:58 -0400
+	Fri, 18 Jul 2014 09:18:12 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 150/170] arm64: implement TASK_SIZE_OF
-Date: Fri, 18 Jul 2014 14:12:35 +0200
-Message-Id: <a9565f3e5e5e6d1e6755863dfcfdc6d920d2aaf0.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 047/170] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
+Date: Fri, 18 Jul 2014 14:10:52 +0200
+Message-Id: <9994e2c2687395f69e86e744f0143a9eb540df1e.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,45 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit fa2ec3ea10bd377f9d55772b1dab65178425a1a2 upstream.
+commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
 
-include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
-is not set by the architecture headers.  TASK_SIZE uses the
-current task to determine the size of the virtual address space.
-On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
-64-bit process from a 32-bit process to return EOF when it reads
-past 0xffffffff.
+The Vector Crypto category instructions are supported by current POWER8
+chips, advertise them to userspace using a specific bit to properly
+differentiate with chips of the same architecture level that might not
+have them.
 
-Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
-test_tsk_thread_flag instead of test_thread_flag.
-
-Signed-off-by: Colin Cross <ccross@android.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm64/include/asm/memory.h | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/include/uapi/asm/cputable.h | 1 +
+ arch/powerpc/kernel/cputable.c           | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index 20925bcf4e2a..e1134d04e07e 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -51,6 +51,8 @@
- #define TASK_SIZE_32		UL(0x100000000)
- #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
- 				TASK_SIZE_32 : TASK_SIZE_64)
-+#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
-+				TASK_SIZE_32 : TASK_SIZE_64)
- #else
- #define TASK_SIZE		TASK_SIZE_64
- #endif /* CONFIG_COMPAT */
+diff --git a/arch/powerpc/include/uapi/asm/cputable.h b/arch/powerpc/include/uapi/asm/cputable.h
+index 5b7657959faa..de2c0e4ee1aa 100644
+--- a/arch/powerpc/include/uapi/asm/cputable.h
++++ b/arch/powerpc/include/uapi/asm/cputable.h
+@@ -41,5 +41,6 @@
+ #define PPC_FEATURE2_EBB		0x10000000
+ #define PPC_FEATURE2_ISEL		0x08000000
+ #define PPC_FEATURE2_TAR		0x04000000
++#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
+ 
+ #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
+diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
+index 597d954e5860..c5d3d023363a 100644
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -105,7 +105,8 @@ extern void __restore_cpu_e6500(void);
+ 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
+ #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
+ 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
+-				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
++				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
++				 PPC_FEATURE2_VEC_CRYPTO)
+ #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
+ 				 PPC_FEATURE_TRUE_LE | \
+ 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
 -- 
 2.0.0
 
