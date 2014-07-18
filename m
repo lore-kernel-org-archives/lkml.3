@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762420AbaGRP0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:26:35 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:55127 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762390AbaGRP0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:26:32 -0400
-X-pt: isis.lip6.fr
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: Jouni Malinen <j@w1.fi>
-Cc: benoit.taine@lip6.fr, "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 21/25] hostap: Replace DEFINE_PCI_DEVICE_TABLE macro use
-Date: Fri, 18 Jul 2014 17:27:08 +0200
-Message-Id: <1405697232-11785-22-git-send-email-benoit.taine@lip6.fr>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:13 +0200 (CEST)
+	id S1762525AbaGRP1J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:27:09 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:46815 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762497AbaGRP1E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:27:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140718014713.GA32594@kroah.com>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+	<1405373897-31671-3-git-send-email-keescook@chromium.org>
+	<20140718014713.GA32594@kroah.com>
+Date: Fri, 18 Jul 2014 08:27:04 -0700
+X-Google-Sender-Auth: PysA9RrRzEnMFAGIscSyfkdGE1U
+Message-ID: <CAGXu5jJA6dGyJud2hEMY=ToxKbCqcsJeXYDVjivrUdhO=eSHCA@mail.gmail.com>
+Subject: Re: [PATCH 2/7] test: add firmware_class loader test
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should prefer `struct pci_device_id` over `DEFINE_PCI_DEVICE_TABLE` to meet
-kernel coding style guidelines. This issue was reported by checkpatch.
+On Thu, Jul 17, 2014 at 6:47 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Jul 14, 2014 at 02:38:12PM -0700, Kees Cook wrote:
+>> This provides a simple interface to trigger the firmware_class loader
+>> to test built-in, filesystem, and user helper modes. Additionally adds
+>> tests via the new interface to the selftests tree.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  lib/Kconfig.debug                                 |   13 +++
+>>  lib/Makefile                                      |    1 +
+>>  lib/test_firmware.c                               |  117 +++++++++++++++++++++
+>
+> Side note, I find it odd that in-kernel test modules are in lib/.
+>
+> But whatever, you aren't the one that did this first, so I'm not going
+> to object here, I'll apply this, nice work.
 
-Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+Yeah, with each new selftest, I become less and less happy with the
+lack of an intentional layout and execution framework. I've been
+pondering some ideas on cleaning it up, but I have nothing solid yet.
 
----
-Tested by compilation without errors.
+The main reason for things living lib/ is because of how the
+Kconfig.debug stuff is layed out. I think separating the concept of
+"debug" from "test" is needed, and then the selftests make targets
+need to be sorted out so that there's some common reporting method of
+success vs failure, and that failures don't abort the whole thing,
+etc, etc.
 
- drivers/net/wireless/hostap/hostap_pci.c |    2 +-
- drivers/net/wireless/hostap/hostap_plx.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+-Kees
 
-diff --git a/drivers/net/wireless/hostap/hostap_pci.c b/drivers/net/wireless/hostap/hostap_pci.c
-index 91158e2..c864ef4 100644
---- a/drivers/net/wireless/hostap/hostap_pci.c
-+++ b/drivers/net/wireless/hostap/hostap_pci.c
-@@ -39,7 +39,7 @@ struct hostap_pci_priv {
- /* FIX: do we need mb/wmb/rmb with memory operations? */
- 
- 
--static DEFINE_PCI_DEVICE_TABLE(prism2_pci_id_table) = {
-+static const struct pci_device_id prism2_pci_id_table[] = {
- 	/* Intersil Prism3 ISL3872 11Mb/s WLAN Controller */
- 	{ 0x1260, 0x3872, PCI_ANY_ID, PCI_ANY_ID },
- 	/* Intersil Prism2.5 ISL3874 11Mb/s WLAN Controller */
-diff --git a/drivers/net/wireless/hostap/hostap_plx.c b/drivers/net/wireless/hostap/hostap_plx.c
-index 3bf530d..4901a99 100644
---- a/drivers/net/wireless/hostap/hostap_plx.c
-+++ b/drivers/net/wireless/hostap/hostap_plx.c
-@@ -60,7 +60,7 @@ struct hostap_plx_priv {
- 
- #define PLXDEV(vendor,dev,str) { vendor, dev, PCI_ANY_ID, PCI_ANY_ID }
- 
--static DEFINE_PCI_DEVICE_TABLE(prism2_plx_id_table) = {
-+static const struct pci_device_id prism2_plx_id_table[] = {
- 	PLXDEV(0x10b7, 0x7770, "3Com AirConnect PCI 777A"),
- 	PLXDEV(0x111a, 0x1023, "Siemens SpeedStream SS1023"),
- 	PLXDEV(0x126c, 0x8030, "Nortel emobility"),
-
+-- 
+Kees Cook
+Chrome OS Security
