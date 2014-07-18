@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946121AbaGRVT5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:19:57 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33699 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935263AbaGRVTJ (ORCPT
+	id S935259AbaGRVTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:19:07 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:36207 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422824AbaGRVS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:19:09 -0400
+	Fri, 18 Jul 2014 17:18:57 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
         Will Drewry <wad@chromium.org>
@@ -15,9 +15,9 @@ Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
         linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
         Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 5/7] x86: Split syscall_trace_enter into two phases
-Date: Fri, 18 Jul 2014 14:18:13 -0700
-Message-Id: <fad2f02e6be7a07bbdf34b6f42168f0f71d2cc8f.1405717901.git.luto@amacapital.net>
+Subject: [PATCH v2 3/7] seccomp: Allow arch code to provide seccomp_data
+Date: Fri, 18 Jul 2014 14:18:11 -0700
+Message-Id: <ce65e0e8be18ae8fab437899db44ca41c912b506.1405717901.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1405717901.git.luto@amacapital.net>
 References: <cover.1405717901.git.luto@amacapital.net>
@@ -27,214 +27,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This splits syscall_trace_enter into syscall_trace_enter_phase1 and
-syscall_trace_enter_phase2.  Only phase 2 has full pt_regs, and only
-phase 2 is permitted to modify any of pt_regs except for orig_ax.
+populate_seccomp_data is expensive: it works by inspecting
+task_pt_regs and various other bits to piece together all the
+information, and it's does so in multiple partially redundant steps.
 
-The intent is that phase 1 can be called from the syscall fast path.
+Arch-specific code in the syscall entry path can do much better.
+
+Admittedly this adds a bit of additional room for error, but the
+speedup should be worth it.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/ptrace.h |   5 ++
- arch/x86/kernel/ptrace.c      | 139 ++++++++++++++++++++++++++++++++++++------
- 2 files changed, 125 insertions(+), 19 deletions(-)
+ include/linux/seccomp.h |  2 +-
+ kernel/seccomp.c        | 32 +++++++++++++++++++-------------
+ 2 files changed, 20 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 6205f0c..86fc2bb 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -75,6 +75,11 @@ convert_ip_to_linear(struct task_struct *child, struct pt_regs *regs);
- extern void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 			 int error_code, int si_code);
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index 3885108..a19ddac 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -39,7 +39,7 @@ static inline int secure_computing(void)
+ #define SECCOMP_PHASE1_OK	0
+ #define SECCOMP_PHASE1_SKIP	1
  
-+
-+extern unsigned long syscall_trace_enter_phase1(struct pt_regs *, u32 arch);
-+extern long syscall_trace_enter_phase2(struct pt_regs *, u32 arch,
-+				       unsigned long phase1_result);
-+
- extern long syscall_trace_enter(struct pt_regs *);
- extern void syscall_trace_leave(struct pt_regs *);
- 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 39296d2..dc8c251 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1441,13 +1441,111 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 	force_sig_info(SIGTRAP, &info, tsk);
- }
- 
-+static void do_audit_syscall_entry(struct pt_regs *regs, u32 arch)
-+{
-+	if (arch == AUDIT_ARCH_X86_64) {
-+		audit_syscall_entry(arch, regs->orig_ax, regs->di,
-+				    regs->si, regs->dx, regs->r10);
-+	} else {
-+		audit_syscall_entry(arch, regs->orig_ax, regs->bx,
-+				    regs->cx, regs->dx, regs->si);
-+	}
-+}
-+
- /*
-- * We must return the syscall number to actually look up in the table.
-- * This can be -1L to skip running any syscall at all.
-+ * We can return 0 to resume the syscall or anything else to go to phase
-+ * 2.  If we resume the syscall, we need to put something appropriate in
-+ * regs->orig_ax.
-+ *
-+ * NB: We don't have full pt_regs here, but regs->orig_ax and regs->ax
-+ * are fully functional.
-+ *
-+ * For phase 2's benefit, our return value is:
-+ * 0: resume the syscall
-+ * 1: go to phase 2; no seccomp phase 2 needed
-+ * 2: go to phase 2; pass return value to seccomp
+-extern u32 seccomp_phase1(void);
++extern u32 seccomp_phase1(struct seccomp_data *sd);
+ int seccomp_phase2(u32 phase1_result);
+ #else
+ extern void secure_computing_strict(int this_syscall);
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 0088d29..80115b0 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -173,10 +173,10 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+  *
+  * Returns valid seccomp BPF response codes.
   */
--long syscall_trace_enter(struct pt_regs *regs)
-+unsigned long syscall_trace_enter_phase1(struct pt_regs *regs, u32 arch)
-+{
-+	unsigned long ret = 0;
-+	u32 work;
-+
-+	BUG_ON(regs != task_pt_regs(current));
-+
-+	work = ACCESS_ONCE(current_thread_info()->flags) &
-+		_TIF_WORK_SYSCALL_ENTRY;
-+
-+#ifdef CONFIG_SECCOMP
-+	/*
-+	 * Do seccomp first -- it should minimize exposure of other
-+	 * code, and keeping seccomp fast is probably more valuable
-+	 * than the rest of this.
-+	 */
-+	if (work & _TIF_SECCOMP) {
-+		struct seccomp_data sd;
-+
-+		sd.arch = arch;
-+		sd.nr = regs->orig_ax;
-+		sd.instruction_pointer = regs->ip;
-+		if (arch == AUDIT_ARCH_X86_64) {
-+			sd.args[0] = regs->di;
-+			sd.args[1] = regs->si;
-+			sd.args[2] = regs->dx;
-+			sd.args[3] = regs->r10;
-+			sd.args[4] = regs->r8;
-+			sd.args[5] = regs->r9;
-+		} else {
-+			sd.args[0] = regs->bx;
-+			sd.args[1] = regs->cx;
-+			sd.args[2] = regs->dx;
-+			sd.args[3] = regs->si;
-+			sd.args[4] = regs->di;
-+			sd.args[5] = regs->bp;
-+		}
-+
-+		BUILD_BUG_ON(SECCOMP_PHASE1_OK != 0);
-+		BUILD_BUG_ON(SECCOMP_PHASE1_SKIP != 1);
-+
-+		ret = seccomp_phase1(&sd);
-+		if (ret == SECCOMP_PHASE1_SKIP) {
-+			regs->orig_ax = -1;
-+			ret = 0;
-+		} else if (ret != SECCOMP_PHASE1_OK) {
-+			return ret;  /* Go directly to phase 2 */
-+		}
-+
-+		work &= ~_TIF_SECCOMP;
-+	}
-+#endif
-+
-+	/* Do our best to finish without phase 2. */
-+	if (work == 0)
-+		return ret;  /* seccomp only (ret == 0 here) */
-+
-+#ifdef CONFIG_AUDITSYSCALL
-+	if (work == _TIF_SYSCALL_AUDIT) {
-+		/*
-+		 * If there is no more work to be done except auditing,
-+		 * then audit in phase 1.  Phase 2 always audits, so, if
-+		 * we audit here, then we can't go on to phase 2.
-+		 */
-+		do_audit_syscall_entry(regs, arch);
-+		return 0;
-+	}
-+#endif
-+
-+	return 1;  /* Something is enabled that we can't handle in phase 1 */
-+}
-+
-+/* Returns the syscall nr to run (which should match regs->orig_ax). */
-+long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
-+				unsigned long phase1_result)
+-static u32 seccomp_run_filters(void)
++static u32 seccomp_run_filters(struct seccomp_data *sd)
  {
- 	long ret = 0;
-+	u32 work = ACCESS_ONCE(current_thread_info()->flags) &
-+		_TIF_WORK_SYSCALL_ENTRY;
-+
-+	BUG_ON(regs != task_pt_regs(current));
+ 	struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
+-	struct seccomp_data sd;
++	struct seccomp_data sd_local;
+ 	u32 ret = SECCOMP_RET_ALLOW;
  
- 	user_exit();
+ 	/* Ensure unexpected behavior doesn't result in failing open. */
+@@ -186,14 +186,17 @@ static u32 seccomp_run_filters(void)
+ 	/* Make sure cross-thread synced filter points somewhere sane. */
+ 	smp_read_barrier_depends();
  
-@@ -1458,17 +1556,20 @@ long syscall_trace_enter(struct pt_regs *regs)
- 	 * do_debug() and we need to set it again to restore the user
- 	 * state.  If we entered on the slow path, TF was already set.
+-	populate_seccomp_data(&sd);
++	if (!sd) {
++		populate_seccomp_data(&sd_local);
++		sd = &sd_local;
++	}
+ 
+ 	/*
+ 	 * All filters in the list are evaluated and the lowest BPF return
+ 	 * value always takes priority (ignoring the DATA).
  	 */
--	if (test_thread_flag(TIF_SINGLESTEP))
-+	if (work & _TIF_SINGLESTEP)
- 		regs->flags |= X86_EFLAGS_TF;
+ 	for (; f; f = f->prev) {
+-		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
++		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)sd);
  
--	/* do the secure computing check first */
--	if (secure_computing()) {
-+	/*
-+	 * Call seccomp_phase2 before running the other hooks so that
-+	 * they can see any changes made by a seccomp tracer.
-+	 */
-+	if (phase1_result > 1 && seccomp_phase2(phase1_result)) {
- 		/* seccomp failures shouldn't expose any additional code. */
- 		ret = -1L;
- 		goto out;
- 	}
+ 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+ 			ret = cur_ret;
+@@ -599,7 +602,7 @@ void secure_computing_strict(int this_syscall)
+ #else
+ int __secure_computing(void)
+ {
+-	u32 phase1_result = seccomp_phase1();
++	u32 phase1_result = seccomp_phase1(NULL);
  
--	if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
-+	if (unlikely(work & _TIF_SYSCALL_EMU))
- 		ret = -1L;
- 
- 	if ((ret || test_thread_flag(TIF_SYSCALL_TRACE)) &&
-@@ -1478,23 +1579,23 @@ long syscall_trace_enter(struct pt_regs *regs)
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->orig_ax);
- 
--	if (is_ia32_task())
--		audit_syscall_entry(AUDIT_ARCH_I386,
--				    regs->orig_ax,
--				    regs->bx, regs->cx,
--				    regs->dx, regs->si);
--#ifdef CONFIG_X86_64
--	else
--		audit_syscall_entry(AUDIT_ARCH_X86_64,
--				    regs->orig_ax,
--				    regs->di, regs->si,
--				    regs->dx, regs->r10);
--#endif
-+	do_audit_syscall_entry(regs, arch);
- 
- out:
- 	return ret ?: regs->orig_ax;
+ 	if (likely(phase1_result == SECCOMP_PHASE1_OK))
+ 		return 0;
+@@ -610,7 +613,7 @@ int __secure_computing(void)
  }
  
-+long syscall_trace_enter(struct pt_regs *regs)
-+{
-+	u32 arch = is_ia32_task() ? AUDIT_ARCH_I386 : AUDIT_ARCH_X86_64;
-+	unsigned long phase1_result = syscall_trace_enter_phase1(regs, arch);
-+
-+	if (phase1_result == 0)
-+		return regs->orig_ax;
-+	else
-+		return syscall_trace_enter_phase2(regs, arch, phase1_result);
-+}
-+
- void syscall_trace_leave(struct pt_regs *regs)
+ #ifdef CONFIG_SECCOMP_FILTER
+-static u32 __seccomp_phase1_filter(int this_syscall, struct pt_regs *regs)
++static u32 __seccomp_phase1_filter(int this_syscall, struct seccomp_data *sd)
  {
- 	bool step;
+ 	u32 filter_ret, action;
+ 	int data;
+@@ -621,20 +624,20 @@ static u32 __seccomp_phase1_filter(int this_syscall, struct pt_regs *regs)
+ 	 */
+ 	rmb();
+ 
+-	filter_ret = seccomp_run_filters();
++	filter_ret = seccomp_run_filters(sd);
+ 	data = filter_ret & SECCOMP_RET_DATA;
+ 	action = filter_ret & SECCOMP_RET_ACTION;
+ 
+ 	switch (action) {
+ 	case SECCOMP_RET_ERRNO:
+ 		/* Set the low-order 16-bits as a errno. */
+-		syscall_set_return_value(current, regs,
++		syscall_set_return_value(current, task_pt_regs(current),
+ 					 -data, 0);
+ 		goto skip;
+ 
+ 	case SECCOMP_RET_TRAP:
+ 		/* Show the handler the original registers. */
+-		syscall_rollback(current, regs);
++		syscall_rollback(current, task_pt_regs(current));
+ 		/* Let the filter pass back 16 bits of data. */
+ 		seccomp_send_sigsys(this_syscall, data);
+ 		goto skip;
+@@ -661,11 +664,14 @@ skip:
+ 
+ /**
+  * seccomp_phase1() - run fast path seccomp checks on the current syscall
++ * @arg sd: The seccomp_data or NULL
+  *
+  * This only reads pt_regs via the syscall_xyz helpers.  The only change
+  * it will make to pt_regs is via syscall_set_return_value, and it will
+  * only do that if it returns SECCOMP_PHASE1_SKIP.
+  *
++ * If sd is provided, it will not read pt_regs at all.
++ *
+  * It may also call do_exit or force a signal; these actions must be
+  * safe.
+  *
+@@ -679,11 +685,11 @@ skip:
+  * If it returns anything else, then the return value should be passed
+  * to seccomp_phase2 from a context in which ptrace hooks are safe.
+  */
+-u32 seccomp_phase1(void)
++u32 seccomp_phase1(struct seccomp_data *sd)
+ {
+ 	int mode = current->seccomp.mode;
+-	struct pt_regs *regs = task_pt_regs(current);
+-	int this_syscall = syscall_get_nr(current, regs);
++	int this_syscall = sd ? sd->nr :
++		syscall_get_nr(current, task_pt_regs(current));
+ 
+ 	switch (mode) {
+ 	case SECCOMP_MODE_STRICT:
+@@ -691,7 +697,7 @@ u32 seccomp_phase1(void)
+ 		return SECCOMP_PHASE1_OK;
+ #ifdef CONFIG_SECCOMP_FILTER
+ 	case SECCOMP_MODE_FILTER:
+-		return __seccomp_phase1_filter(this_syscall, regs);
++		return __seccomp_phase1_filter(this_syscall, sd);
+ #endif
+ 	default:
+ 		BUG();
 -- 
 1.9.3
 
