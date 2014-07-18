@@ -1,139 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965513AbaGRKOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:14:51 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:39733 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934338AbaGRKOr (ORCPT
+	id S965547AbaGRKPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:15:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44281 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761312AbaGRKLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:14:47 -0400
-Message-ID: <53C8F395.6050600@gmail.com>
-Date: Fri, 18 Jul 2014 12:14:45 +0200
-From: Neil Armstrong <superna9999@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
+	Fri, 18 Jul 2014 06:11:12 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2 v2] net: macb: Handle errors in RX path
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 08/14] scsi: convert device_busy to atomic_t
+Date: Fri, 18 Jul 2014 12:13:07 +0200
+Message-Id: <1405678393-11497-9-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405678393-11497-1-git-send-email-hch@lst.de>
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In certain circumstances, the MACB fails to write correct RX ring
-descriptor, and lead to actually managed by BUG_ON() error cases.
+Avoid taking the queue_lock to check the per-device queue limit.  Instead
+we do an atomic_inc_return early on to grab our slot in the queue,
+and if necessary decrement it after finishing all checks.
 
-Handle these two cases by returning error values, while resetting
-the RX ring and RX HW path in the poll methos.
+Unlike the host and target busy counters this doesn't allow us to avoid the
+queue_lock in the request_fn due to the way the interface works, but it'll
+allow us to prepare for using the blk-mq code, which doesn't use the
+queue_lock at all, and it at least avoids a queue_lock round trip in
+scsi_device_unbusy, which is still important given how busy the queue_lock
+is.
 
-In the same time, check and handle BNA and OVR into poll method
-by using the same error management.
-
-Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Webb Scales <webbnh@hp.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Tested-by: Bart Van Assche <bvanassche@acm.org>
+Tested-by: Robert Elliott <elliott@hp.com>
 ---
- drivers/net/ethernet/cadence/macb.c |   54 +++++++++++++++++++++++++++++++---
- 1 files changed, 49 insertions(+), 5 deletions(-)
+ drivers/message/fusion/mptsas.c |  2 +-
+ drivers/scsi/scsi_lib.c         | 50 +++++++++++++++++++++++------------------
+ drivers/scsi/scsi_sysfs.c       | 10 ++++++++-
+ drivers/scsi/sg.c               |  2 +-
+ include/scsi/scsi_device.h      |  4 +---
+ 5 files changed, 40 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 20ad483..f88ebc9 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -755,6 +755,17 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
- 		macb_rx_ring_wrap(first_frag),
- 		macb_rx_ring_wrap(last_frag), len);
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 711fcb5..d636dbe 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -3763,7 +3763,7 @@ mptsas_send_link_status_event(struct fw_event_work *fw_event)
+ 						printk(MYIOC_s_DEBUG_FMT
+ 						"SDEV OUTSTANDING CMDS"
+ 						"%d\n", ioc->name,
+-						sdev->device_busy));
++						atomic_read(&sdev->device_busy)));
+ 				}
  
-+	if (!(desc->ctrl & MACB_BIT(RX_EOF))) {
-+		netdev_vdbg(bp->dev, "macb_rx_frame missing EOF\n");
-+		return -EIO;
-+	}
-+
-+	desc = macb_rx_desc(bp, first_frag);
-+	if (!(desc->ctrl & MACB_BIT(RX_SOF))) {
-+		netdev_vdbg(bp->dev, "macb_rx_frame missing SOF\n");
-+		return -EIO;
-+	}
-+
- 	/*
- 	 * The ethernet header starts NET_IP_ALIGN bytes into the
- 	 * first buffer. Since the header is 14 bytes, this makes the
-@@ -789,7 +800,10 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
- 		unsigned int frag_len = bp->rx_buffer_size;
- 
- 		if (offset + frag_len > len) {
--			BUG_ON(frag != last_frag);
-+			if (frag != last_frag) {
-+				dev_kfree_skb_any(skb);
-+				return -EIO;
-+			}
- 			frag_len = len - offset;
- 		}
- 		skb_copy_to_linear_data_offset(skb, offset,
-@@ -844,9 +858,13 @@ static int macb_rx(struct macb *bp, int budget)
- 
- 		if (ctrl & MACB_BIT(RX_EOF)) {
- 			int dropped;
--			BUG_ON(first_frag == -1);
-+			if (first_frag == -1)
-+				return -EIO;
- 
- 			dropped = macb_rx_frame(bp, first_frag, tail);
-+			if (dropped < 0)
-+				return dropped;
-+
- 			first_frag = -1;
- 			if (!dropped) {
- 				received++;
-@@ -872,12 +890,22 @@ static int macb_poll(struct napi_struct *napi, int budget)
- 	status = macb_readl(bp, RSR);
- 	macb_writel(bp, RSR, status);
- 
--	work_done = 0;
-+	work_done = -EIO;
- 
- 	netdev_vdbg(bp->dev, "poll: status = %08lx, budget = %d\n",
--		   (unsigned long)status, budget);
-+			(unsigned long)status, budget);
-+
-+	if (status & (MACB_BIT(OVR) | MACB_BIT(BNA)) ||
-+	    !(status & MACB_BIT(REC))) {
-+		netdev_err(bp->dev, "RX error, status = %02lx\n",
-+			   (unsigned long)status);
-+		goto rx_out;
-+	}
- 
- 	work_done = bp->macbgem_ops.mog_rx(bp, budget);
-+	if (work_done < 0)
-+		goto rx_out;
-+
- 	if (work_done < budget) {
- 		napi_complete(napi);
- 
-@@ -892,7 +920,23 @@ static int macb_poll(struct napi_struct *napi, int budget)
- 		}
+ 			}
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index d0bd7e0..1ddf0fb 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -302,9 +302,7 @@ void scsi_device_unbusy(struct scsi_device *sdev)
+ 		spin_unlock_irqrestore(shost->host_lock, flags);
  	}
  
--	/* TODO: Handle errors */
-+	return work_done;
-+
-+rx_out:
-+	/* In case of error, disable RX and reset
-+	 * the descriptor ring before re-enabling RX.
-+	 */
-+	macb_writel(bp, NCR, macb_readl(bp, NCR) & ~MACB_BIT(RE));
-+
-+	bp->macbgem_ops.mog_init_rx_rings(bp);
-+	macb_writel(bp, RBQP, bp->rx_ring_dma);
-+
-+	/* Re-enable RX and get notified for new packets */
-+	macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(RE));
-+
-+	napi_complete(napi);
-+
-+	macb_writel(bp, IER, MACB_RX_INT_FLAGS);
- 
- 	return work_done;
+-	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+-	sdev->device_busy--;
+-	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
++	atomic_dec(&sdev->device_busy);
  }
+ 
+ /*
+@@ -355,9 +353,9 @@ static void scsi_single_lun_run(struct scsi_device *current_sdev)
+ 
+ static inline int scsi_device_is_busy(struct scsi_device *sdev)
+ {
+-	if (sdev->device_busy >= sdev->queue_depth || sdev->device_blocked)
++	if (atomic_read(&sdev->device_busy) >= sdev->queue_depth ||
++	    sdev->device_blocked)
+ 		return 1;
+-
+ 	return 0;
+ }
+ 
+@@ -1204,7 +1202,7 @@ scsi_prep_return(struct request_queue *q, struct request *req, int ret)
+ 		 * queue must be restarted, so we schedule a callback to happen
+ 		 * shortly.
+ 		 */
+-		if (sdev->device_busy == 0)
++		if (atomic_read(&sdev->device_busy) == 0)
+ 			blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ 		break;
+ 	default:
+@@ -1255,26 +1253,33 @@ static void scsi_unprep_fn(struct request_queue *q, struct request *req)
+ static inline int scsi_dev_queue_ready(struct request_queue *q,
+ 				  struct scsi_device *sdev)
+ {
+-	if (sdev->device_busy == 0 && sdev->device_blocked) {
++	unsigned int busy;
++
++	busy = atomic_inc_return(&sdev->device_busy) - 1;
++	if (sdev->device_blocked) {
++		if (busy)
++			goto out_dec;
++
+ 		/*
+ 		 * unblock after device_blocked iterates to zero
+ 		 */
+-		if (--sdev->device_blocked == 0) {
+-			SCSI_LOG_MLQUEUE(3,
+-				   sdev_printk(KERN_INFO, sdev,
+-				   "unblocking device at zero depth\n"));
+-		} else {
++		if (--sdev->device_blocked != 0) {
+ 			blk_delay_queue(q, SCSI_QUEUE_DELAY);
+-			return 0;
++			goto out_dec;
+ 		}
++		SCSI_LOG_MLQUEUE(3, sdev_printk(KERN_INFO, sdev,
++				   "unblocking device at zero depth\n"));
+ 	}
+-	if (scsi_device_is_busy(sdev))
+-		return 0;
++
++	if (busy >= sdev->queue_depth)
++		goto out_dec;
+ 
+ 	return 1;
++out_dec:
++	atomic_dec(&sdev->device_busy);
++	return 0;
+ }
+ 
+-
+ /*
+  * scsi_target_queue_ready: checks if there we can send commands to target
+  * @sdev: scsi device on starget to check.
+@@ -1448,7 +1453,7 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
+ 	 * bump busy counts.  To bump the counters, we need to dance
+ 	 * with the locks as normal issue path does.
+ 	 */
+-	sdev->device_busy++;
++	atomic_inc(&sdev->device_busy);
+ 	atomic_inc(&shost->host_busy);
+ 	atomic_inc(&starget->target_busy);
+ 
+@@ -1544,7 +1549,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 		 * accept it.
+ 		 */
+ 		req = blk_peek_request(q);
+-		if (!req || !scsi_dev_queue_ready(q, sdev))
++		if (!req)
+ 			break;
+ 
+ 		if (unlikely(!scsi_device_online(sdev))) {
+@@ -1554,13 +1559,14 @@ static void scsi_request_fn(struct request_queue *q)
+ 			continue;
+ 		}
+ 
++		if (!scsi_dev_queue_ready(q, sdev))
++			break;
+ 
+ 		/*
+ 		 * Remove the request from the request list.
+ 		 */
+ 		if (!(blk_queue_tagged(q) && !blk_queue_start_tag(q, req)))
+ 			blk_start_request(req);
+-		sdev->device_busy++;
+ 
+ 		spin_unlock_irq(q->queue_lock);
+ 		cmd = req->special;
+@@ -1630,9 +1636,9 @@ static void scsi_request_fn(struct request_queue *q)
+ 	 */
+ 	spin_lock_irq(q->queue_lock);
+ 	blk_requeue_request(q, req);
+-	sdev->device_busy--;
++	atomic_dec(&sdev->device_busy);
+ out_delay:
+-	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
++	if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+ 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ }
+ 
+@@ -2371,7 +2377,7 @@ scsi_device_quiesce(struct scsi_device *sdev)
+ 		return err;
+ 
+ 	scsi_run_queue(sdev->request_queue);
+-	while (sdev->device_busy) {
++	while (atomic_read(&sdev->device_busy)) {
+ 		msleep_interruptible(200);
+ 		scsi_run_queue(sdev->request_queue);
+ 	}
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 7ec5e06..54e3dac 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -585,13 +585,21 @@ static int scsi_sdev_check_buf_bit(const char *buf)
+  * Create the actual show/store functions and data structures.
+  */
+ sdev_rd_attr (device_blocked, "%d\n");
+-sdev_rd_attr (device_busy, "%d\n");
+ sdev_rd_attr (type, "%d\n");
+ sdev_rd_attr (scsi_level, "%d\n");
+ sdev_rd_attr (vendor, "%.8s\n");
+ sdev_rd_attr (model, "%.16s\n");
+ sdev_rd_attr (rev, "%.4s\n");
+ 
++static ssize_t
++sdev_show_device_busy(struct device *dev, struct device_attribute *attr,
++		char *buf)
++{
++	struct scsi_device *sdev = to_scsi_device(dev);
++	return snprintf(buf, 20, "%d\n", atomic_read(&sdev->device_busy));
++}
++static DEVICE_ATTR(device_busy, S_IRUGO, sdev_show_device_busy, NULL);
++
+ /*
+  * TODO: can we make these symlinks to the block layer ones?
+  */
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 7a291f5..01cf888 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -2574,7 +2574,7 @@ static int sg_proc_seq_show_dev(struct seq_file *s, void *v)
+ 			      scsidp->id, scsidp->lun, (int) scsidp->type,
+ 			      1,
+ 			      (int) scsidp->queue_depth,
+-			      (int) scsidp->device_busy,
++			      (int) atomic_read(&scsidp->device_busy),
+ 			      (int) scsi_device_online(scsidp));
+ 	}
+ 	read_unlock_irqrestore(&sg_index_lock, iflags);
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 4e078b6..3329901 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -81,9 +81,7 @@ struct scsi_device {
+ 	struct list_head    siblings;   /* list of all devices on this host */
+ 	struct list_head    same_target_siblings; /* just the devices sharing same target id */
+ 
+-	/* this is now protected by the request_queue->queue_lock */
+-	unsigned int device_busy;	/* commands actually active on
+-					 * low-level. protected by queue_lock. */
++	atomic_t device_busy;		/* commands actually active on LLDD */
+ 	spinlock_t list_lock;
+ 	struct list_head cmd_list;	/* queue of in use SCSI Command structures */
+ 	struct list_head starved_entry;
 -- 
-1.7.0.4
+1.9.1
 
