@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935159AbaGRNQo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:16:44 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17879 "EHLO
+	id S1030739AbaGRN24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:28:56 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17864 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934422AbaGRNQm (ORCPT
+	by vger.kernel.org with ESMTP id S935107AbaGRNQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:16:42 -0400
+	Fri, 18 Jul 2014 09:16:06 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 098/170] mac80211: fix a memory leak on sta rate selection table
-Date: Fri, 18 Jul 2014 14:11:43 +0200
-Message-Id: <2cee62888af61f9786994e8662b267a9de6cb88d.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 106/170] b43: fix frequency reported on G-PHY with /new/ firmware
+Date: Fri, 18 Jul 2014 14:11:51 +0200
+Message-Id: <c8708e6036357a1bd85fc25be12096609ab04891.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -26,39 +28,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Rafał Miłecki <zajec5@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 53d045258ee2e38b1e882617cb0799a04d05f5fa upstream.
+commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
 
-If the rate control algorithm uses a selection table, it
-is leaked when the station is destroyed - fix that.
+Support for firmware rev 508+ was added years ago, but we never noticed
+it reports channel in a different way for G-PHY devices. Instead of
+offset from 2400 MHz it simply passes channel id (AKA hw_value).
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Reported-by: Christophe Prévotaux <cprevotaux@nltinc.com>
-Fixes: 0d528d85c519 ("mac80211: improve the rate control API")
-[add commit log entry, remove pointless NULL check]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+So far it was (most probably) affecting monitor mode users only, but
+the following recent commit made it noticeable for quite everybody:
+
+commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
+Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Date:   Tue Mar 4 16:50:13 2014 +0200
+
+    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
+
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/mac80211/sta_info.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/b43/xmit.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
-index db41c190e76d..37025725c369 100644
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -271,6 +271,7 @@ void sta_info_free(struct ieee80211_local *local, struct sta_info *sta)
- 
- 	sta_dbg(sta->sdata, "Destroyed STA %pM\n", sta->sta.addr);
- 
-+	kfree(rcu_dereference_raw(sta->sta.rates));
- 	kfree(sta);
- }
- 
+diff --git a/drivers/net/wireless/b43/xmit.c b/drivers/net/wireless/b43/xmit.c
+index e85d34b76039..ebcce00ce067 100644
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -810,9 +810,13 @@ void b43_rx(struct b43_wldev *dev, struct sk_buff *skb, const void *_rxhdr)
+ 		break;
+ 	case B43_PHYTYPE_G:
+ 		status.band = IEEE80211_BAND_2GHZ;
+-		/* chanid is the radio channel cookie value as used
+-		 * to tune the radio. */
+-		status.freq = chanid + 2400;
++		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
++		 * has been modified to be compatible with N-PHY and others.
++		 */
++		if (dev->fw.rev >= 508)
++			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
++		else
++			status.freq = chanid + 2400;
+ 		break;
+ 	case B43_PHYTYPE_N:
+ 	case B43_PHYTYPE_LP:
 -- 
 2.0.0
 
