@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760819AbaGRJCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:02:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33341 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755180AbaGRJCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:02:53 -0400
-Date: Fri, 18 Jul 2014 11:02:52 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, kay@vrfy.org, bp@suse.de,
-        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] printk: update previous message for LOG_PREFIX
-Message-ID: <20140718090251.GV6774@pathway.suse.cz>
-References: <1405619953-5475-1-git-send-email-elder@linaro.org>
- <1405619953-5475-3-git-send-email-elder@linaro.org>
+	id S1760957AbaGRJDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:03:06 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37861 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760842AbaGRJDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:03:02 -0400
+Date: Fri, 18 Jul 2014 10:02:05 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X) support
+Message-ID: <20140718090204.GB25180@leverpostej>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140717131854.GN13108@titan.lakedaemon.net>
+ <20140717135534.GM30313@leverpostej>
+ <20140717141235.GR13108@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405619953-5475-3-git-send-email-elder@linaro.org>
+In-Reply-To: <20140717141235.GR13108@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-07-17 12:59:10, Alex Elder wrote:
-> If log_store() gets flags containing LOG_PREFIX, it indicates the
-> record getting stored should implicitly complete the previous log
-> record and start a new one.
+On Thu, Jul 17, 2014 at 03:12:35PM +0100, Jason Cooper wrote:
+> On Thu, Jul 17, 2014 at 02:55:34PM +0100, Mark Rutland wrote:
+> > Hi Jason,
+> > 
+> > On Thu, Jul 17, 2014 at 02:18:54PM +0100, Jason Cooper wrote:
+> > > On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
+> > > > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > > > 
+> > > > This patch set introduces support for MSI(-X) in GICv2m specification,
+> > > > which is implemented in some variation of GIC400.
+> > > > 
+> > > > This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+> > > > (https://lkml.org/lkml/2014/3/14/320).
+> > > > 
+> > > > Changes in V3:
+> > > >     * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+> > > >       (per Jason Cooper request)
+> > > >     * Misc fix/clean up per Mark Rutland comments
+> > > >     * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+> > > >     * Patch 4 is new to the series:
+> > > >         * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+> > > >           for Multiple MSI.
+> > > >         * Add support for Multiple MSI for GICv2m.
+> > > > 
+> > > > Suravee Suthikulpanit (4):
+> > > >   irqchip: gic: Add binding probe for ARM GIC400
+> > > >   irqchip: gic: Restructuring ARM GIC code
+> > > >   irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+> > > >   irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+> > > 
+> > > Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
+> > > irqchip/gic with irqchip/urgent merged in.  To facilitate
+> > > testing/merging, I've prepared an unsigned tag for you on the
+> > > irqchip/gic branch:
+> > 
+> > I'm a little concerned that this is all going through for v3.17 without
+> > a {Reviewed,Acked}-by from Marc or anyone working with GIC{,v2m}.
 > 
-> We can also ensure the previous record is completed by keeping
-> track of the previously-logged record, and adding the LOG_NEWLINE
-> flag to it when log_store() sees a LOG_PREFIX flag.
+> Well, that's why it's not in irqchip/core yet. ;-)  It can be undone if
+> needed.
+
+Ah, perhaps I was a litte premature. :)
+ 
+> > While his comments on v1 have been addressed, he has not had a chance to
+> > acknowledge the solutions. I appreciate Marc's holiday is unfortunately
+> > timed.
+> > 
+> > I also have an open concern with the binding with regard to the
+> > orthogonality of GICV GICH and the MSI registers.
+> > 
+> > Suravee, do you need this urgently for v3.17? I was under the impression
+> > that we wouldn't have full PCIe support by then.
 > 
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> ---
->  kernel/printk/printk.c | 14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index e35d91a..6b72a77 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -242,6 +242,9 @@ static size_t syslog_partial;
->  static u64 log_first_seq;
->  static u32 log_first_idx;
->  
-> +/* Pointer to the last record written into the log */
-> +static struct printk_log *log_last_msg;
-> +
->  /* index and sequence number of the next record to store in the buffer */
->  static u64 log_next_seq;
->  static u32 log_next_idx;
-> @@ -425,7 +428,13 @@ static int log_store(int facility, int level,
->  		log_next_idx = 0;
->  	}
->  
-> -	/* fill message */
-> +	/*
-> +	 * If we're forcing a new log record, update the flags for
-> +	 * the previous one to mark it complete.
-> +	 */
-> +	if (flags & LOG_PREFIX && log_last_msg)
-> +		log_last_msg->flags |= LOG_NEWLINE;
+> If Suravee is ok with it, I can drop them for now and he can resend for
+> v3.18.  Since we've worked out a way to merge it all in one window, I
+> don't think it would hurt anything to wait.
 
-You are not allowed to do this. The previous message might already be
-proceed by readers (console, syslog, kmsg).
+Ok.
 
-IMHO, you will not be able to make this safe without adding extra
-complexity into the readers. So, I am afraid that there is no win
-in vanishing the LOG_PREFIX flag.
+> I'll leave these in irqchip/for-next until I hear from Suravee, then
+> I'll drop the lot till we hear from Marc and look at the timing.
 
-Best Regards,
-Petr
+Keeping it in for-next for testing sounds like a good idea, but until we
+hear from Marc I wouldn't want to see this queued for mainline. So the
+above sounds fine to me.
 
->  	msg = (struct printk_log *)(log_buf + log_next_idx);
->  	memcpy(log_text(msg), text, text_len);
->  	msg->text_len = text_len;
-> @@ -449,6 +458,9 @@ static int log_store(int facility, int level,
->  	log_next_idx += msg->len;
->  	log_next_seq++;
->  
-> +	/* Save our previous record address for next time. */
-> +	log_last_msg = msg;
-> +
->  	return msg->text_len;
->  }
->  
-> -- 
-> 1.9.1
-> 
+Cheers,
+Mark.
