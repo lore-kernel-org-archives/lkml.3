@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964886AbaGRKDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:03:38 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57177 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934383AbaGRKDf (ORCPT
+	id S965011AbaGRKDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:03:51 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:42963 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934842AbaGRKDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:03:35 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v3 2/3] ACPI: Don't use acpi_lapic in ACPI core code
-Date: Fri, 18 Jul 2014 18:02:53 +0800
-Message-Id: <1405677774-16787-3-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405677774-16787-1-git-send-email-hanjun.guo@linaro.org>
-References: <1405677774-16787-1-git-send-email-hanjun.guo@linaro.org>
+	Fri, 18 Jul 2014 06:03:48 -0400
+Date: Fri, 18 Jul 2014 12:03:42 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: caesar <caesar.wang@rock-chips.com>
+Cc: Beniamino Galvani <b.galvani@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cf@rock-chips.com,
+        addy.ke@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        hj@rock-chips.com
+Subject: Re: [PATCH 2/2] pwm: add this series patch to support for rk-pwm and
+ vop-pwm.
+Message-ID: <20140718100341.GA30497@ulmo>
+References: <1405577294-19336-1-git-send-email-caesar.wang@rock-chips.com>
+ <1405577294-19336-3-git-send-email-caesar.wang@rock-chips.com>
+ <20140717192459.GA4617@gmail.com>
+ <53C8AB34.3050102@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <53C8AB34.3050102@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <graeme.gregory@linaro.org>
 
-Now ARM64 support is being added to ACPI so architecture specific
-values can not be used in core ACPI code.
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Following on the patch "ACPI / processor: Check if LAPIC is present
-during initialization" which uses acpi_lapic in acpi_processor.c,
-on ARM64 platform, GIC is used instead of local APIC, so acpi_lapic
-is not a suitable value for ARM64.
+On Fri, Jul 18, 2014 at 01:05:56PM +0800, caesar wrote:
+> =E4=BA=8E 2014=E5=B9=B407=E6=9C=8818=E6=97=A5 03:24, Beniamino Galvani =
+=E5=86=99=E9=81=93:
+> >On Thu, Jul 17, 2014 at 02:08:14PM +0800, caesar wrote:
+[...]
+> >>@@ -119,9 +185,12 @@ static int rockchip_pwm_probe(struct platform_devi=
+ce *pdev)
+> >>  		return -ENOMEM;
+> >>  	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >>-	pc->base =3D devm_ioremap_resource(&pdev->dev, r);
+> >>-	if (IS_ERR(pc->base))
+> >>-		return PTR_ERR(pc->base);
+> >>+	pc->base =3D of_iomap(np, 0);
+> >>+	if (!pc->base) {
+> >>+		dev_err(&pdev->dev, "failed to map controller\n");
+> >>+		ret =3D -ENOMEM;
+> >>+		goto fail_map;
+> >>+	}
+> >I think that this change is not needed. devm_ioremap_resource()
+> >guarantees an automatic unmapping when the device is destroyed.
+> >
+> >Moreover, when of_iomap() fails you don't need to call iounmap().
+> >
+> >Beniamino
+> VOP-PWM base has be requested for lcdc.
 
-What is actually important at this point is if there is/are CPU
-entry/entries (Local APIC/SAPIC, GICC) in MADT, so introduce
-acpi_has_cpu_in_madt() to be arch specific and generic.
+Why?
 
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/ia64/include/asm/acpi.h  |    5 +++++
- arch/x86/include/asm/acpi.h   |    5 +++++
- drivers/acpi/acpi_processor.c |    2 +-
- 3 files changed, 11 insertions(+), 1 deletion(-)
+> When I use devm_ioremap_resource(), the vop-pwm will request region fail.
+>=20
+> Example:.931020] rockchip-pwm ff9401a0.pwm: can't request region for
+> resource [mem 0xff9401a0-0xff9401af] /pwm@ff9401a0.
+> So ,I have to charge it.
+>=20
+> I will be simplyfied by having:
+> - pc->base =3D devm_ioremap_resource(&pdev->dev, r);
+> + if (!strcmp(of_id->compatible, "rockchip,vop-pwm"))
+> + pc->base =3D devm_ioremap(&pdev->dev, r->start, resource_size(r));
+> + else
+> + pc->base =3D devm_ioremap_resource(&pdev->dev, r);
+>=20
+> Maybe, Could you give me better suggestions for it?
 
-diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
-index 75dc59a..a1d91ab 100644
---- a/arch/ia64/include/asm/acpi.h
-+++ b/arch/ia64/include/asm/acpi.h
-@@ -40,6 +40,11 @@ extern int acpi_lapic;
- #define acpi_noirq 0	/* ACPI always enabled on IA64 */
- #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
- #define acpi_strict 1	/* no ACPI spec workarounds on IA64 */
-+
-+static inline bool acpi_has_cpu_in_madt(void)
-+{
-+	return !!acpi_lapic;
-+}
- #endif
- #define acpi_processor_cstate_check(x) (x) /* no idle limits on IA64 :) */
- static inline void disable_acpi(void) { }
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index e06225e..0ab4f9f 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -121,6 +121,11 @@ static inline void arch_acpi_set_pdc_bits(u32 *buf)
- 		buf[2] &= ~(ACPI_PDC_C_C2C3_FFH);
- }
- 
-+static inline bool acpi_has_cpu_in_madt(void)
-+{
-+	return !!acpi_lapic;
-+}
-+
- #else /* !CONFIG_ACPI */
- 
- #define acpi_lapic 0
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index 1c08574..1fdf5e0 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -268,7 +268,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 	pr->apic_id = apic_id;
- 
- 	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
--	if (!cpu0_initialized && !acpi_lapic) {
-+	if (!cpu0_initialized && !acpi_has_cpu_in_madt()) {
- 		cpu0_initialized = 1;
- 		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
- 		if ((cpu_index == -1) && (num_online_cpus() == 1))
--- 
-1.7.9.5
+The right thing to do is not have two drivers access the same device.
+Why does lcdc request the PWM register region?
 
+Thierry
+
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTyPD9AAoJEN0jrNd/PrOhvSIQAKDzpV/VZlECy5eDVCbH0Lyr
+xrQOsIpVSibRNX70vj7GA05XwNXlyaBd6ysHawBA8Q1lVhiCzo5BTqKXK3vLlD/F
+sc2s0+0E1pxyjc8OsenfUzppTvpXYlkdLpZMqYqadg2ZEWfPAR+wGdPdHv1odyWi
+H3HQQmEoPHEz7de0svfFwxKEUlWCnIKBe7jxrjPgQfzAttohWBgD/038Gu6h5C3K
+pW3uDPNEwSbRSrSXQ7LOP/NXlLj8dvRlvhaIZszQFR5U8tSHJ7QW6TLCxr3NFrkF
+HB03xkhztj7qptVasTng8wdjcF1XqP0egtWiGvVHThsFWvI35kqAotC8XJcuAH3l
+/khEKBvHpxxTSb9cDI+QDdBIe/HvncMC8KSdkKldbfBTKOqNEdJLtvYpiWaMmKqp
+MmNXUSTxvpPOPOiambvr5+P0MiWlATalmCaBQ5DN0CuDJL43HcghCGdKugc5Xd3t
+rJTW10KOdpsbIpTnLlbokjdhAzu+WUh/eXRXTOGwfyqI0kLhZE5CVQqd6YwPQFU9
+qLo9qIaRFlcJgo93DlCzxyNN8oFuEplhEXXpH6waHhWVBr+pFBasB9QeSbb3sKGa
+QZH6eNCCf702MTczzhqurk1whfzkMowP6U9/q3+/bMc6pldwKE1MJ5NjBNcYrOZ+
+ATpOyk+6eFgf98lYulcx
+=qZs/
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
