@@ -1,115 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761731AbaGRNLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:11:43 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17573 "EHLO
+	id S1762295AbaGRNpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:45:14 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17575 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757854AbaGRNLj (ORCPT
+	by vger.kernel.org with ESMTP id S1759258AbaGRNLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:39 -0400
+	Fri, 18 Jul 2014 09:11:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Wang, Yu" <yu.y.wang@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 065/170] xhci: Fix runtime suspended xhci from blocking system suspend.
-Date: Fri, 18 Jul 2014 14:11:10 +0200
-Message-Id: <f9b96e0f652471baae2bb58547c413002841a655.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 165/170] drm/i915: Don't clobber the GTT when it's within stolen memory
+Date: Fri, 18 Jul 2014 14:12:50 +0200
+Message-Id: <3798ff9878a7b2ba57ef68373c17ecb6faf4a669.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
 References: <cover.1405685481.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Wang, Yu" <yu.y.wang@intel.com>
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d6236f6d1d885aa19d1cd7317346fe795227a3cc upstream.
+commit f1e1c2129b79cfdaf07bca37c5a10569fe021abe upstream.
 
-The system suspend flow as following:
-1, Freeze all user processes and kenrel threads.
+On most gen2-4 platforms the GTT can be (or maybe always is?)
+inside the stolen memory region. If that's the case, reduce the
+size of the stolen memory appropriately to make make sure we
+don't clobber the GTT.
 
-2, Try to suspend all devices.
+v2: Deal with gen4 36 bit physical address
 
-2.1, If pci device is in RPM suspended state, then pci driver will try
-to resume it to RPM active state in the prepare stage.
-
-2.2, xhci_resume function calls usb_hcd_resume_root_hub to queue two
-workqueue items to resume usb2&usb3 roothub devices.
-
-2.3, Call suspend callbacks of devices.
-
-2.3.1, All suspend callbacks of all hcd's children, including
-roothub devices are called.
-
-2.3.2, Finally, hcd_pci_suspend callback is called.
-
-Due to workqueue threads were already frozen in step 1, the workqueue
-items can't be scheduled, and the roothub devices can't be resumed in
-this flow. The HCD_FLAG_WAKEUP_PENDING flag which is set in
-usb_hcd_resume_root_hub won't be cleared. Finally,
-hcd_pci_suspend will return -EBUSY, and system suspend fails.
-
-The reason why this issue doesn't show up very often is due to that
-choose_wakeup will be called in step 2.3.1. In step 2.3.1, if
-udev->do_remote_wakeup is not equal to device_may_wakeup(&udev->dev), then
-udev will resume to RPM active for changing the wakeup settings. This
-has been a lucky hit which hides this issue.
-
-For some special xHCI controllers which have no USB2 port, then roothub
-will not match hub driver due to probe failed. Then its
-do_remote_wakeup will be set to zero, and we won't be as lucky.
-
-xhci driver doesn't need to resume roothub devices everytime like in
-the above case. It's only needed when there are pending event TRBs.
-
-This patch should be back-ported to kernels as old as 3.2, that
-contains the commit f69e3120df82391a0ee8118e0a156239a06b2afb
-"USB: XHCI: resume root hubs when the controller resumes"
-
-Signed-off-by: Wang, Yu <yu.y.wang@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-[use readl() instead of removed xhci_readl(), reword commit message -Mathias]
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=80151
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/host/xhci.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c | 44 ++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/i915_reg.h        |  3 +++
+ 2 files changed, 47 insertions(+)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 01aa4c9fa558..e3d12f164430 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -926,7 +926,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
-  */
- int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- {
--	u32			command, temp = 0;
-+	u32			command, temp = 0, status;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
- 	int			retval = 0;
-@@ -1045,8 +1045,12 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index c60cdf9e581e..5cd69a7cc241 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -74,6 +74,50 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
+ 	if (base == 0)
+ 		return 0;
  
-  done:
- 	if (retval == 0) {
--		usb_hcd_resume_root_hub(hcd);
--		usb_hcd_resume_root_hub(xhci->shared_hcd);
-+		/* Resume root hubs only when have pending events. */
-+		status = readl(&xhci->op_regs->status);
-+		if (status & STS_EINT) {
-+			usb_hcd_resume_root_hub(hcd);
-+			usb_hcd_resume_root_hub(xhci->shared_hcd);
++	/* make sure we don't clobber the GTT if it's within stolen memory */
++	if (INTEL_INFO(dev)->gen <= 4 && !IS_G33(dev) && !IS_G4X(dev)) {
++		struct {
++			u32 start, end;
++		} stolen[2] = {
++			{ .start = base, .end = base + dev_priv->gtt.stolen_size, },
++			{ .start = base, .end = base + dev_priv->gtt.stolen_size, },
++		};
++		u64 gtt_start, gtt_end;
++
++		gtt_start = I915_READ(PGTBL_CTL);
++		if (IS_GEN4(dev))
++			gtt_start = (gtt_start & PGTBL_ADDRESS_LO_MASK) |
++				(gtt_start & PGTBL_ADDRESS_HI_MASK) << 28;
++		else
++			gtt_start &= PGTBL_ADDRESS_LO_MASK;
++		gtt_end = gtt_start + gtt_total_entries(dev_priv->gtt) * 4;
++
++		if (gtt_start >= stolen[0].start && gtt_start < stolen[0].end)
++			stolen[0].end = gtt_start;
++		if (gtt_end > stolen[1].start && gtt_end <= stolen[1].end)
++			stolen[1].start = gtt_end;
++
++		/* pick the larger of the two chunks */
++		if (stolen[0].end - stolen[0].start >
++		    stolen[1].end - stolen[1].start) {
++			base = stolen[0].start;
++			dev_priv->gtt.stolen_size = stolen[0].end - stolen[0].start;
++		} else {
++			base = stolen[1].start;
++			dev_priv->gtt.stolen_size = stolen[1].end - stolen[1].start;
 +		}
- 	}
- 
- 	/*
++
++		if (stolen[0].start != stolen[1].start ||
++		    stolen[0].end != stolen[1].end) {
++			DRM_DEBUG_KMS("GTT within stolen memory at 0x%llx-0x%llx\n",
++				      (unsigned long long) gtt_start,
++				      (unsigned long long) gtt_end - 1);
++			DRM_DEBUG_KMS("Stolen memory adjusted to 0x%x-0x%x\n",
++				      base, base + (u32) dev_priv->gtt.stolen_size - 1);
++		}
++	}
++
++
+ 	/* Verify that nothing else uses this physical address. Stolen
+ 	 * memory should be reserved by the BIOS and hidden from the
+ 	 * kernel. So if the region is already marked as busy, something
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 375abe708268..998f774b5fff 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -570,6 +570,9 @@
+ /*
+  * Instruction and interrupt control regs
+  */
++#define PGTBL_CTL	0x02020
++#define   PGTBL_ADDRESS_LO_MASK	0xfffff000 /* bits [31:12] */
++#define   PGTBL_ADDRESS_HI_MASK	0x000000f0 /* bits [35:32] (gen4) */
+ #define PGTBL_ER	0x02024
+ #define RENDER_RING_BASE	0x02000
+ #define BSD_RING_BASE		0x04000
 -- 
 2.0.0
 
