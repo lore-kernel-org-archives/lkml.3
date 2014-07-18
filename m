@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030553AbaGRPcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:32:14 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:39723 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030485AbaGRPcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:32:11 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: dcb314@hotmail.com, nwf@cs.jhu.edu, dhowells@redhat.com,
-        davem@davemloft.net, Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH 2/5] net/rxrpc/ar-key.c: drop negativity check on unsigned value
-Date: Fri, 18 Jul 2014 18:31:57 +0300
-Message-Id: <1405697517-23673-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	id S1030612AbaGRPcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:32:21 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:54850 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030536AbaGRPcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:32:17 -0400
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jul 2014 11:32:14 EDT
+X-pt: isis.lip6.fr
+From: Benoit Taine <benoit.taine@lip6.fr>
+To: linux-pci@vger.kernel.org
+Cc: benoit.taine@lip6.fr, ath5k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net, linux-hippi@sunsite.dk,
+        dri-devel@lists.freedesktop.org, linux-acenic@sunsite.dk,
+        wil6210@qca.qualcomm.com, platform-driver-x86@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-mips@linux-mips.org, users@rt2x00.serialmonkey.com,
+        linux-rdma@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        industrypack-devel@lists.sourceforge.net, linux-can@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-crypto@vger.kernel.org,
+        MPT-FusionLinux.pdl@avagotech.com, devel@linuxdriverproject.org,
+        xen-devel@lists.xenproject.org, linux-pcmcia@lists.infradead.org,
+        e1000-devel@lists.sourceforge.net
+Subject: [PATCH 0/25] Replace DEFINE_PCI_DEVICE_TABLE macro use
+Date: Fri, 18 Jul 2014 17:26:47 +0200
+Message-Id: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+X-Mailer: git-send-email 2.0.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:11 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80611
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- net/rxrpc/ar-key.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+We should prefer `const struct pci_device_id` over
+`DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
+This issue was reported by checkpatch.
 
-diff --git a/net/rxrpc/ar-key.c b/net/rxrpc/ar-key.c
-index 0ad0807..eec998e 100644
---- a/net/rxrpc/ar-key.c
-+++ b/net/rxrpc/ar-key.c
-@@ -346,7 +346,7 @@ static int rxrpc_krb5_decode_tagged_array(struct krb5_tagged_data **_td,
- 
- 	n_elem = ntohl(*xdr++);
- 	toklen -= 4;
--	if (n_elem < 0 || n_elem > max_n_elem)
-+	if (n_elem > max_n_elem)
- 		return -EINVAL;
- 	*_n_elem = n_elem;
- 	if (n_elem > 0) {
--- 
-1.8.5.5
+A simplified version of the semantic patch that makes this change is as
+follows (http://coccinelle.lip6.fr/):
 
+// <smpl>
+
+@@
+identifier i;
+declarer name DEFINE_PCI_DEVICE_TABLE;
+initializer z;
+@@
+
+- DEFINE_PCI_DEVICE_TABLE(i)
++ const struct pci_device_id i[]
+= z;
+
+// </smpl>
+
+I have 103 patches ready, and will only send a few for you to judge if
+it is useful enough, and to prevent from spamming too much.
+
+Thanks.
