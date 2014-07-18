@@ -1,125 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030432AbaGRNJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:09:59 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17467 "EHLO
+	id S1030476AbaGRNKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:10:11 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17481 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030335AbaGRNJ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1030451AbaGRNKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:56 -0400
+	Fri, 18 Jul 2014 09:10:08 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 135/170] thermal: hwmon: Make the check for critical temp valid consistent
-Date: Fri, 18 Jul 2014 14:12:20 +0200
-Message-Id: <87af4aae4913304aee9b6b8cad477f78db1b041a.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Benjamin LaHaise <bcrl@kvack.org>, Mateusz Guzik <mguzik@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 3.12 001/170] Revert "aio: fix kernel memory disclosure in io_getevents() introduced in v3.10"
+Date: Fri, 18 Jul 2014 14:10:06 +0200
+Message-Id: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
 References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@intel.com>
-
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
+This reverts commit 0e2e24e5dc6eb6f0698e9dc97e652f132b885624, which
+was applied twice mistakenly. The first one is
+bee3f7b8188d4b2a5dfaeb2eb4a68d99f67daecf.
 
-On 05/21/2014 04:22 PM, Aaron Lu wrote:
-> On 05/21/2014 01:57 PM, Kui Zhang wrote:
->> Hello,
->>
->> I get following error when rmmod thermal.
->>
->> rmmod  thermal
->> Killed
-
-While dealing with this problem, I found another problem that also
-results in a kernel crash on thermal module removal:
-
-From: Aaron Lu <aaron.lu@intel.com>
-Date: Wed, 21 May 2014 16:05:38 +0800
-Subject: thermal: hwmon: Make the check for critical temp valid consistent
-
-We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
-to decide if we need to create the temp_crit attribute file but we just
-check if tz->ops->get_crit_temp exists to decide if we need to remove
-that attribute file. Some ACPI thermal zone doesn't have a valid critical
-trip point and that would result in removing a non-existent device file
-on thermal module unload.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 ---
- drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
- 1 file changed, 18 insertions(+), 15 deletions(-)
+ fs/aio.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
-index fdb07199d9c2..1967bee4f076 100644
---- a/drivers/thermal/thermal_hwmon.c
-+++ b/drivers/thermal/thermal_hwmon.c
-@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
- 	return NULL;
- }
+diff --git a/fs/aio.c b/fs/aio.c
+index 0abde33de70e..e609e15f36b9 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1066,9 +1066,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	head %= ctx->nr_events;
+ 	tail %= ctx->nr_events;
  
-+static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
-+{
-+	unsigned long temp;
-+	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
-+}
-+
- int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- {
- 	struct thermal_hwmon_device *hwmon;
-@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- 	if (result)
- 		goto free_temp_mem;
- 
--	if (tz->ops->get_crit_temp) {
--		unsigned long temperature;
--		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(temp->temp_crit.name,
--				 sizeof(temp->temp_crit.name),
-+	if (thermal_zone_crit_temp_valid(tz)) {
-+		snprintf(temp->temp_crit.name,
-+				sizeof(temp->temp_crit.name),
- 				"temp%d_crit", hwmon->count);
--			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
--			temp->temp_crit.attr.attr.mode = 0444;
--			temp->temp_crit.attr.show = temp_crit_show;
--			sysfs_attr_init(&temp->temp_crit.attr.attr);
--			result = device_create_file(hwmon->device,
--						    &temp->temp_crit.attr);
--			if (result)
--				goto unregister_input;
--		}
-+		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-+		temp->temp_crit.attr.attr.mode = 0444;
-+		temp->temp_crit.attr.show = temp_crit_show;
-+		sysfs_attr_init(&temp->temp_crit.attr.attr);
-+		result = device_create_file(hwmon->device,
-+					    &temp->temp_crit.attr);
-+		if (result)
-+			goto unregister_input;
- 	}
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
-@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
- 	}
- 
- 	device_remove_file(hwmon->device, &temp->temp_input.attr);
--	if (tz->ops->get_crit_temp)
-+	if (thermal_zone_crit_temp_valid(tz))
- 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
+-	head %= ctx->nr_events;
+-	tail %= ctx->nr_events;
+-
+ 	while (ret < nr) {
+ 		long avail;
+ 		struct io_event *ev;
 -- 
 2.0.0
 
