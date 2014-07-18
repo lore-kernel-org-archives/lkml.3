@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030607AbaGRNK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:10:58 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17518 "EHLO
+	id S1030569AbaGRNKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:10:35 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17502 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030524AbaGRNKz (ORCPT
+	by vger.kernel.org with ESMTP id S1030524AbaGRNKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:10:55 -0400
+	Fri, 18 Jul 2014 09:10:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 086/170] drm/radeon/cik: fix typo in EOP packet
-Date: Fri, 18 Jul 2014 14:11:31 +0200
-Message-Id: <74c6eb737eb3509c7ec23b98b84c7ac4d9eceb14.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@ingics.com>,
+        Guenter Roeck <linux@roeck-us.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 136/170] hwmon: (amc6821) Fix permissions for temp2_input
+Date: Fri, 18 Jul 2014 14:12:21 +0200
+Message-Id: <a0850fd50911cc40563704eefc32a34e6d8cd44e.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,41 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Axel Lin <axel.lin@ingics.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b397207b7475afa9df2f94541f978100ff1ea47e upstream.
+commit df86754b746e9a0ff6f863f690b1c01d408e3cdc upstream.
 
-Volatile bit was in the wrong location.  This bit is
-not used at the moment.
+temp2_input should not be writable, fix it.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/cikd.h | 2 +-
+ drivers/hwmon/amc6821.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
-index 70e88498a1fd..9c8ef204a3cb 100644
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -1695,12 +1695,12 @@
- #define		EOP_TC_WB_ACTION_EN                     (1 << 15) /* L2 */
- #define		EOP_TCL1_ACTION_EN                      (1 << 16)
- #define		EOP_TC_ACTION_EN                        (1 << 17) /* L2 */
-+#define		EOP_TCL2_VOLATILE                       (1 << 24)
- #define		EOP_CACHE_POLICY(x)                     ((x) << 25)
-                 /* 0 - LRU
- 		 * 1 - Stream
- 		 * 2 - Bypass
- 		 */
--#define		EOP_TCL2_VOLATILE                       (1 << 27)
- #define		DATA_SEL(x)                             ((x) << 29)
-                 /* 0 - discard
- 		 * 1 - send low 32bit data
+diff --git a/drivers/hwmon/amc6821.c b/drivers/hwmon/amc6821.c
+index eea817296513..9f2be3dd28f3 100644
+--- a/drivers/hwmon/amc6821.c
++++ b/drivers/hwmon/amc6821.c
+@@ -704,7 +704,7 @@ static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO,
+ 	get_temp_alarm, NULL, IDX_TEMP1_MAX);
+ static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO,
+ 	get_temp_alarm, NULL, IDX_TEMP1_CRIT);
+-static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO | S_IWUSR,
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
+ 	get_temp, NULL, IDX_TEMP2_INPUT);
+ static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO | S_IWUSR, get_temp,
+ 	set_temp, IDX_TEMP2_MIN);
 -- 
 2.0.0
 
