@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965554AbaGRLpK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:45:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36014 "EHLO mx2.suse.de"
+	id S1761588AbaGRLqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:46:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36019 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755971AbaGRLpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:45:09 -0400
-Date: Fri, 18 Jul 2014 13:45:06 +0200
+	id S1755605AbaGRLqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 07:46:24 -0400
+Date: Fri, 18 Jul 2014 13:46:22 +0200
 From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
 To: Alex Elder <elder@linaro.org>
 Cc: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
         jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/6] printk: insert newline in devkmsg_read()
-Message-ID: <20140718114506.GA6774@pathway.suse.cz>
+Subject: Re: [PATCH v2 6/6] printk: correct some more typos
+Message-ID: <20140718114621.GB6774@pathway.suse.cz>
 References: <1405606151-19875-1-git-send-email-elder@linaro.org>
- <1405606151-19875-6-git-send-email-elder@linaro.org>
+ <1405606151-19875-7-git-send-email-elder@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405606151-19875-6-git-send-email-elder@linaro.org>
+In-Reply-To: <1405606151-19875-7-git-send-email-elder@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-07-17 09:09:10, Alex Elder wrote:
-> If a log record has LOG_PREFIX set, its predecessor record should be
-> terminated if it was marked LOG_CONT.  In devkmsg_read(), this
-> condition was being ignored, which would lead to such records
-> showing up combined when reading /dev/kmsg.  Fix this oversight.
->
-> Reported-by: Petr Mládek <pmladek@suse.cz>
+On Thu 2014-07-17 09:09:11, Alex Elder wrote:
+> This patch corrects a few more typographical errors in "printk.c".
+> 
 > Signed-off-by: Alex Elder <elder@linaro.org>
+
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+
+Best Regards,
+Petr
+
 > ---
->  kernel/printk/printk.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
+>  kernel/printk/printk.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 > 
 > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index e5ee1cb..3174ba9 100644
+> index 3174ba9..eff68a4 100644
 > --- a/kernel/printk/printk.c
 > +++ b/kernel/printk/printk.c
-> @@ -575,6 +575,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->  	char cont;
->  	size_t len;
->  	ssize_t ret;
-> +	bool insert_newline;
+> @@ -201,7 +201,7 @@ static int console_may_schedule;
+>   *
+>   * The optional key/value pairs are attached as continuation lines starting
+>   * with a space character and terminated by a newline. All possible
+> - * non-prinatable characters are escaped in the "\xff" notation.
+> + * non-printable characters are escaped in the "\xff" notation.
+>   *
+>   * Users of the export format should ignore possible additional values
+>   * separated by ',', and find the message after the ';' character.
+> @@ -615,7 +615,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+>  	/*
+>  	 * If we couldn't merge continuation line fragments during the print,
+>  	 * export the stored flags to allow an optional external merge of the
+> -	 * records. Merging the records isn't always neccessarily correct, like
+> +	 * records. Merging the records isn't always necessarily correct, like
+>  	 * when we hit a race during printing. In most cases though, it produces
+>  	 * better readable output. 'c' in the record flags mark the first
+>  	 * fragment of a line, '+' the following.
+> @@ -2890,7 +2890,7 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
+>  		prev = msg->flags;
+>  	}
 >  
->  	if (!user)
->  		return -EBADF;
-> @@ -626,7 +627,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->  	else
->  		cont = '-';
+> -	/* last message in next interation */
+> +	/* last message in next iteration */
+>  	next_seq = seq;
+>  	next_idx = idx;
 >  
-> -	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
-> +	/* Insert a newline if we're terminating the previous record
-> early */
-
-More correct description would be:
-
-	/* Insert a newline if the previous line was not terminated properly */
-
-> +	insert_newline = (user->prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
-> +	len = sprintf(user->buf, "%s%u,%llu,%llu,%c;",
-> +		      insert_newline ? "\n" : "",
->  		      (msg->facility << 3) | msg->level,
->  		      user->seq, ts_usec, cont);
->  	user->prev = msg->flags;
-
-Please, do similar change also in msg_print_text() that would fix also
-syslog(). Note that syslog is the place where we stopped to disable
-prefix when there was continuous line before.
-
-Best Regards.
-Petr
+> @@ -2916,7 +2916,7 @@ out:
+>  EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
+>  
+>  /**
+> - * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
+> + * kmsg_dump_rewind_nolock - reset the iterator (unlocked version)
+>   * @dumper: registered kmsg dumper
+>   *
+>   * Reset the dumper's iterator so that kmsg_dump_get_line() and
+> @@ -2934,7 +2934,7 @@ void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
+>  }
+>  
+>  /**
+> - * kmsg_dump_rewind - reset the interator
+> + * kmsg_dump_rewind - reset the iterator
+>   * @dumper: registered kmsg dumper
+>   *
+>   * Reset the dumper's iterator so that kmsg_dump_get_line() and
+> -- 
+> 1.9.1
+> 
