@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761507AbaGRTGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 15:06:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40494 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757AbaGRTGS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 15:06:18 -0400
-Date: Fri, 18 Jul 2014 21:06:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sched_clock: Track monotonic raw clock
-Message-ID: <20140718190602.GE3935@laptop>
-References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
- <53C95E97.2020805@linaro.org>
+	id S1422888AbaGRTIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 15:08:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755377AbaGRTIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 15:08:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140718092203.3bab9fba@canb.auug.org.au>
+References: <20140718092203.3bab9fba@canb.auug.org.au> <23717.1405636445@warthog.procyon.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, mimi.e.zohar@gmail.com,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, vgoyal@redhat.com,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings and asymmetric keys patches for 3.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C95E97.2020805@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <21813.1405710467.1@warthog.procyon.org.uk>
+Date: Fri, 18 Jul 2014 20:07:47 +0100
+Message-ID: <21814.1405710467@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 10:51:19AM -0700, John Stultz wrote:
-> Very cool work! I've not been able to review it carefully, but one good
-> stress test would be to pick a system where the hardware used for
-> sched_clock is different from the hardware used for timekeeping.
-> 
-> Probably easily done on x86 hardware that normally uses the TSC, but has
-> HPET/ACPI PM hardware available. After the system boots, change the
-> clocksource via:
-> /sys/devices/system/clocksource/clocksource0/current_clocksource
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Note that x86 uses none of the code patched.
+> I hate to be a pest, but this whole branch has only your signed off by
+> and no indication that any of it has been reviewed/tested by anyone
+> else ...
+
+Okay, I've got at least one review for most of the patches.  I'll try and get
+some more, but it probably won't be till next week.
+
+Anyway, I've updated the keys-preparse-1 branch and tagged it anew with
+keys-preparse-1-20140718.  There was a spelling fix in the docs and the
+patches have been rebased on the updated security/next.
+
+I've also rebuilt the keys-next branch, basing it on the updated
+security/next, and tagged it with keys-next-20140718.
+
+	warthog>git diff keys-next-20140717 keys-next-20140718 | diffstat
+	 keys.txt |    2 +-
+	 1 file changed, 1 insertion(+), 1 deletion(-)
+
+David
