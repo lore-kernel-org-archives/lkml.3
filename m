@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598AbaGRXPc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:15:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46898 "EHLO
+	id S1759450AbaGRXQM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:16:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaGRXPb (ORCPT
+	with ESMTP id S1753158AbaGRXQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:15:31 -0400
-Date: Fri, 18 Jul 2014 16:15:31 -0700
+	Fri, 18 Jul 2014 19:16:11 -0400
+Date: Fri, 18 Jul 2014 16:16:10 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Igor Bezukh <igbzkh@gmail.com>
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vt6655: apply kernel coding style to
- wCommandTimerWait function
-Message-ID: <20140718231531.GA29920@kroah.com>
-References: <1405708513-27831-1-git-send-email-igbzkh@gmail.com>
+To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+Cc: devel@driverdev.osuosl.org, waydi1@gmail.com, swetland@google.com,
+        linux-kernel@vger.kernel.org, daniel@ffwll.ch
+Subject: Re: [PATCH] staging: android: Fixed missing blank line
+Message-ID: <20140718231610.GA29987@kroah.com>
+References: <1405658874-24448-1-git-send-email-sanjeev_sharma@mentor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405708513-27831-1-git-send-email-igbzkh@gmail.com>
+In-Reply-To: <1405658874-24448-1-git-send-email-sanjeev_sharma@mentor.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 09:35:13PM +0300, Igor Bezukh wrote:
-> Since there is a lot of stuff that need to be changed in order to meet the kernel
-> coding style in wcmd.c file, I've decided to fix function-per-patch.
-> The following changes were made in vCommandTimerWait function:
+On Fri, Jul 18, 2014 at 10:17:54AM +0530, Sanjeev Sharma wrote:
+> This patch will add an blank line after
+> declaration reported by checkpatch.pl script.
 > 
-> - Camel case change:
->    - MSecond ---> msec
->    - hDdeviceContext ---> private
->    - pDevice ---> priv
-> - Removed redundant return
-> - Removed redndant comment
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+>  drivers/staging/android/sw_sync.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> In future patches, I will also change the function name itself.
+> diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
+> index a76db3f..863d4b1 100644
+> --- a/drivers/staging/android/sw_sync.c
+> +++ b/drivers/staging/android/sw_sync.c
+> @@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
+>  				       char *str, int size)
+>  {
+>  	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
+> +
+>  	snprintf(str, size, "%d", pt->value);
+>  }
+>  
+> @@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
+>  static int sw_sync_release(struct inode *inode, struct file *file)
+>  {
+>  	struct sw_sync_timeline *obj = file->private_data;
+> +
+>  	sync_timeline_destroy(&obj->obj);
+>  	return 0;
+>  }
 
-A better way to do this, that is easier to review, is to do, on a
-per-file basis, one thing, like "remove redundant return", or "remove
-unneeded comments".
-
-Having to review all of these changes at once, even for something as
-"small" as a single function, is much harder than making sure you only
-do one thing, and do it all at once.
-
-So, can you break it up in this way instead?
-
-thanks,
-
-greg k-h
+I already applied a previous version of this patch, with your gmail
+address :(
