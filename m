@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161227AbaGRNRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:17:17 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17912 "EHLO
+	id S965871AbaGRNR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:17:27 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17917 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161208AbaGRNRM (ORCPT
+	by vger.kernel.org with ESMTP id S1030293AbaGRNRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:17:12 -0400
+	Fri, 18 Jul 2014 09:17:17 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joel Stanley <joel@jms.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 147/170] powerpc/perf: Clear MMCR2 when enabling PMU
-Date: Fri, 18 Jul 2014 14:12:32 +0200
-Message-Id: <d970168796096985b654b70507dfe6003d46fe1e.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 007/170] rtmutex: Plug slow unlock race
+Date: Fri, 18 Jul 2014 14:10:12 +0200
+Message-Id: <0c57bb135d3cc97273d7dd8c58d6dbb6b0078cc3.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,80 +24,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joel Stanley <joel@jms.id.au>
+From: Thomas Gleixner <tglx@linutronix.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
+commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
 
-On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
-the PMU counters. Aside from on boot they are then never reset,
-resulting in stuck perf counters for any user in the guest or host.
+When the rtmutex fast path is enabled the slow unlock function can
+create the following situation:
 
-We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
-state for perf to use the PMU counters under either the guest or the
-host.
+spin_lock(foo->m->wait_lock);
+foo->m->owner = NULL;
+	    			rt_mutex_lock(foo->m); <-- fast path
+				free = atomic_dec_and_test(foo->refcnt);
+				rt_mutex_unlock(foo->m); <-- fast path
+				if (free)
+				   kfree(foo);
 
-This was manifesting as a bug with ppc64_cpu --frequency:
+spin_unlock(foo->m->wait_lock); <--- Use after free.
 
-    $ sudo ppc64_cpu --frequency
-    WARNING: couldn't run on cpu 0
-    WARNING: couldn't run on cpu 8
-      ...
-    WARNING: couldn't run on cpu 144
-    WARNING: couldn't run on cpu 152
-    min:    18446744073.710 GHz (cpu -1)
-    max:    0.000 GHz (cpu -1)
-    avg:    0.000 GHz
+Plug the race by changing the slow unlock to the following scheme:
 
-The command uses a perf counter to measure CPU cycles over a fixed
-amount of time, in order to approximate the frequency of the machine.
-The counters were returning zero once a guest was started, regardless of
-weather it was still running or had been shut down.
+     while (!rt_mutex_has_waiters(m)) {
+     	    /* Clear the waiters bit in m->owner */
+	    clear_rt_mutex_waiters(m);
+      	    owner = rt_mutex_owner(m);
+      	    spin_unlock(m->wait_lock);
+      	    if (cmpxchg(m->owner, owner, 0) == owner)
+      	       return;
+      	    spin_lock(m->wait_lock);
+     }
 
-By dumping the value of MMCR2, it was observed that once a guest is
-running MMCR2 is set to 1s - which stops counters from running:
+So in case of a new waiter incoming while the owner tries the slow
+path unlock we have two situations:
 
-    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
-    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
-    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
-    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
-    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
-    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
-    EBBRR: 0000000000000000 BESCR: 0000000000000000
-    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
+ unlock(wait_lock);
+					lock(wait_lock);
+ cmpxchg(p, owner, 0) == owner
+ 	    	   			mark_rt_mutex_waiters(lock);
+	 				acquire(lock);
 
-This is done unconditionally in book3s_hv_interrupts.S upon entering the
-guest, and the original value is only save/restored if the host has
-indicated it was using the PMU. This is okay, however the user of the
-PMU needs to ensure that it is in a defined state when it starts using
-it.
+Or:
 
-Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
-Signed-off-by: Joel Stanley <joel@jms.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+ unlock(wait_lock);
+					lock(wait_lock);
+	 				mark_rt_mutex_waiters(lock);
+ cmpxchg(p, owner, 0) != owner
+					enqueue_waiter();
+					unlock(wait_lock);
+ lock(wait_lock);
+ wakeup_next waiter();
+ unlock(wait_lock);
+					lock(wait_lock);
+					acquire(lock);
+
+If the fast path is disabled, then the simple
+
+   m->owner = NULL;
+   unlock(m->wait_lock);
+
+is sufficient as all access to m->owner is serialized via
+m->wait_lock;
+
+Also document and clarify the wakeup_next_waiter function as suggested
+by Oleg Nesterov.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/perf/core-book3s.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 109 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 53cf36206ec6..57a8ff90ed60 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1164,6 +1164,9 @@ static void power_pmu_enable(struct pmu *pmu)
- 	mb();
- 	write_mmcr0(cpuhw, mmcr0);
- 
-+	if (ppmu->flags & PPMU_ARCH_207S)
-+		mtspr(SPRN_MMCR2, 0);
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index ff24a43f192f..51a83343df68 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -82,6 +82,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ 		owner = *p;
+ 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
+ }
 +
- 	/*
- 	 * Enable instruction sampling if necessary
++/*
++ * Safe fastpath aware unlock:
++ * 1) Clear the waiters bit
++ * 2) Drop lock->wait_lock
++ * 3) Try to unlock the lock with cmpxchg
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	struct task_struct *owner = rt_mutex_owner(lock);
++
++	clear_rt_mutex_waiters(lock);
++	raw_spin_unlock(&lock->wait_lock);
++	/*
++	 * If a new waiter comes in between the unlock and the cmpxchg
++	 * we have two situations:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 * cmpxchg(p, owner, 0) == owner
++	 *					mark_rt_mutex_waiters(lock);
++	 *					acquire(lock);
++	 * or:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					mark_rt_mutex_waiters(lock);
++	 *
++	 * cmpxchg(p, owner, 0) != owner
++	 *					enqueue_waiter();
++	 *					unlock(wait_lock);
++	 * lock(wait_lock);
++	 * wake waiter();
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					acquire(lock);
++	 */
++	return rt_mutex_cmpxchg(lock, owner, NULL);
++}
++
+ #else
+ # define rt_mutex_cmpxchg(l,c,n)	(0)
+ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+@@ -89,6 +130,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ 	lock->owner = (struct task_struct *)
+ 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
+ }
++
++/*
++ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	lock->owner = NULL;
++	raw_spin_unlock(&lock->wait_lock);
++	return true;
++}
+ #endif
+ 
+ /*
+@@ -536,7 +588,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ /*
+  * Wake up the next waiter on the lock.
+  *
+- * Remove the top waiter from the current tasks waiter list and wake it up.
++ * Remove the top waiter from the current tasks pi waiter list and
++ * wake it up.
+  *
+  * Called with lock->wait_lock held.
+  */
+@@ -557,10 +610,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
  	 */
+ 	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
+ 
+-	rt_mutex_set_owner(lock, NULL);
++	/*
++	 * As we are waking up the top waiter, and the waiter stays
++	 * queued on the lock until it gets the lock, this lock
++	 * obviously has waiters. Just set the bit here and this has
++	 * the added benefit of forcing all new tasks into the
++	 * slow path making sure no task of lower priority than
++	 * the top waiter can steal this lock.
++	 */
++	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
+ 
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
++	/*
++	 * It's safe to dereference waiter as it cannot go away as
++	 * long as we hold lock->wait_lock. The waiter task needs to
++	 * acquire it in order to dequeue the waiter.
++	 */
+ 	wake_up_process(waiter->task);
+ }
+ 
+@@ -813,12 +879,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
+ 
+ 	rt_mutex_deadlock_account_unlock(current);
+ 
+-	if (!rt_mutex_has_waiters(lock)) {
+-		lock->owner = NULL;
+-		raw_spin_unlock(&lock->wait_lock);
+-		return;
++	/*
++	 * We must be careful here if the fast path is enabled. If we
++	 * have no waiters queued we cannot set owner to NULL here
++	 * because of:
++	 *
++	 * foo->lock->owner = NULL;
++	 *			rtmutex_lock(foo->lock);   <- fast path
++	 *			free = atomic_dec_and_test(foo->refcnt);
++	 *			rtmutex_unlock(foo->lock); <- fast path
++	 *			if (free)
++	 *				kfree(foo);
++	 * raw_spin_unlock(foo->lock->wait_lock);
++	 *
++	 * So for the fastpath enabled kernel:
++	 *
++	 * Nothing can set the waiters bit as long as we hold
++	 * lock->wait_lock. So we do the following sequence:
++	 *
++	 *	owner = rt_mutex_owner(lock);
++	 *	clear_rt_mutex_waiters(lock);
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
++	 *		return;
++	 *	goto retry;
++	 *
++	 * The fastpath disabled variant is simple as all access to
++	 * lock->owner is serialized by lock->wait_lock:
++	 *
++	 *	lock->owner = NULL;
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 */
++	while (!rt_mutex_has_waiters(lock)) {
++		/* Drops lock->wait_lock ! */
++		if (unlock_rt_mutex_safe(lock) == true)
++			return;
++		/* Relock the rtmutex and try again */
++		raw_spin_lock(&lock->wait_lock);
+ 	}
+ 
++	/*
++	 * The wakeup next waiter path does not suffer from the above
++	 * race. See the comments there.
++	 */
+ 	wakeup_next_waiter(lock);
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
 -- 
 2.0.0
 
