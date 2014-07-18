@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945944AbaGRUP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:15:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43440 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757110AbaGRUP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:15:56 -0400
-Message-ID: <53C98055.5070301@zytor.com>
-Date: Fri, 18 Jul 2014 13:15:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1946032AbaGRUQC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:16:02 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:45119 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945957AbaGRUP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 16:15:59 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warning after merge of the tip tree
-References: <20140718150005.73db8eb9@canb.auug.org.au> <53C97287.5020509@zytor.com> <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com> <53C97E0F.6090601@zytor.com> <CALCETrXP+Rz8wi_N2G7WLwnGuFMC8zeo5o+jgGmvpZkndrM+2Q@mail.gmail.com>
-In-Reply-To: <CALCETrXP+Rz8wi_N2G7WLwnGuFMC8zeo5o+jgGmvpZkndrM+2Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <CAPDOMVj81Sv2aJK-Tgi0iRL0xs3E4BSYp6HEcmMSBT4c=hbPVQ@mail.gmail.com>
+References: <CAPDOMVgf0jfUVCycZBWMB4X5NobVqn7vU_6eh-9vi3LbzDZ=bQ@mail.gmail.com>
+	<CAPDOMVgOHAs93VFUWFn3jQ3zJ0BWf2QDNQiFsggf+YJbof55jg@mail.gmail.com>
+	<CAMk6uBmfjrPSz1Ds8u_YSmKhSF8GnSvNR49DLQ8LnMv8hExAkg@mail.gmail.com>
+	<CAPDOMVj81Sv2aJK-Tgi0iRL0xs3E4BSYp6HEcmMSBT4c=hbPVQ@mail.gmail.com>
+Date: Fri, 18 Jul 2014 16:15:58 -0400
+Message-ID: <CAPDOMVgUBEyBHoEYQSBrdGQXnev27rVYkRpZtuiWOVvruqWMiQ@mail.gmail.com>
+Subject: Re: Blackfin Build fixs
+From: Nick Krause <xerofoify@gmail.com>
+To: Steven Miao <realmz6@gmail.com>
+Cc: bfin <adi-buildroot-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 01:08 PM, Andy Lutomirski wrote:
-> 
-> i isn't an index in to the syms array at all.  This code is completely
-> wrong.  See the patch I sent in reply to Stephen's original email.
-> 
-> But, to your earlier point, presumably this could warn:
-> 
-> for (int i = 0; i < 10; i++)
->   if (array[i] > array[5] + 1)
->     fail();
-> 
-> I think that's absurd.  There's nothing wrong with that code.  A given
-> test should have to be always true or always false on *all* loop
-> iterations to be flagged, I think.
-> 
-
-No, the issue is that gcc is telling you that the code will do the wrong
-thing in this case.  Yes, only for one iteration, but still.
-
-The reason this is a concern is that: (x > x + n) and its variants is
-often used to mean (x > INT_MAX - n) without the type knowledge, but
-that is actually invalid standard C because signed types are not
-guaranteed to wrap.
-
-	-hpa
-
+On Wed, Jul 16, 2014 at 8:40 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Wed, Jul 16, 2014 at 3:12 AM, Steven Miao <realmz6@gmail.com> wrote:
+>> Hi Nick,
+>>
+>> On Sun, Jul 13, 2014 at 6:18 AM, Nick Krause <xerofoify@gmail.com> wrote:
+>>> On Fri, Jul 11, 2014 at 12:18 PM, Nick Krause <xerofoify@gmail.com> wrote:
+>>>> Hey Steven,
+>>>> I having been testing what builds are still failing from Steven
+>>>> Rothwell's tests and there seem to be two failing
+>>>> still for blackfin. I am tracing the issues to make it easier for you
+>>>> as a maintainer.  BF561-ACVILON_defconfig
+>>>> is failing in acvlion.c due to BFIN_NAND_PLAT_READY not being defined
+>>>> when calling gpio request in
+>>>> bfin_plat_nand_init. I would recommend defining it to the correct
+>>>> value to initialize nand on this board.
+>>>> There also seems to be some undefined syscalls for this board I would
+>>>> can either remove them or you can
+>>>> tell me how to clean them up.
+>>>>
+>>>> I also am hitting a build failure still for blackstamp defconfig. The
+>>>> issue seems to be that when calling functions
+>>>> that need GPIO_PF0 that it's undefined as it fails whenc calling
+>>>> gpio_request that needs it be defined on line 318
+>>>> of file , arch/blackfin/mach-bf533/boards/blackstamp.c on line 480 and
+>>>> again on line 481 when calling gpio_free.
+>>>> Like the other build there seems to be undefined syscalls and they
+>>>> need to be either removed or cleaned up. I
+>>>> would like recommendations or how you want to clean up these system calls.
+>>>>
+>>>> I am also attaching the log files for these failing builds.
+>> I have fixed BF561-ACVILON, BF533-BLACKSTAMP and some other board
+>> build for missing <linux/gpio.h>. Thanks for you build test.
+>> This build fix patch has applied to the next blackfin git tree, and
+>> will send for next rc.
+>> http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git
+>> for-linux
+>>
+>>>>
+>>>> Cheers Nick
+>>> Sorry about my grammar. I attached the same file twice. I will attach
+>>> my build log for Blackstamp
+>>> defconfig.
+>>> Cheers Nick
+>>
+>> -steven
+>
+> Steven ,
+> They seem to still be open as of July 16.
+> I have tried using this link http://kisskb.ellerman.id.au/kisskb/branch/9/
+> to track failing builds. Perhaps it's outdated. Thanks for  your help
+> through :).
+> Cheers Nick
+I was wrong they are closed now on Linus's branch.
+Cheers Nick
