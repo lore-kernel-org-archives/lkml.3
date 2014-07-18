@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965975AbaGRRgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:36:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22648 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965869AbaGRRgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:36:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,686,1400050800"; 
-   d="scan'208";a="575297803"
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH 09/13] perf tools: Add perf download to download event files
-References: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
-	<1405540969-18975-10-git-send-email-jolsa@kernel.org>
-	<20140717104704.GB9571@gmail.com>
-Date: Fri, 18 Jul 2014 10:35:59 -0700
-In-Reply-To: <20140717104704.GB9571@gmail.com> (Ingo Molnar's message of "Thu,
-	17 Jul 2014 12:47:04 +0200")
-Message-ID: <87ha2e4lj4.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S966006AbaGRRgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:36:19 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:45175 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965869AbaGRRgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 13:36:17 -0400
+Date: Fri, 18 Jul 2014 13:36:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        =?ISO-8859-1?B?RnLpZOlyaWM=?= Weisbecker <fweisbec@gmail.com>,
+        "<m.chehab@samsung.com> Xie XiuQi" <xiexiuqi@huawei.com>
+Subject: Re: [PATCH-v2] tracing: Fix wraparound problems in "uptime" tracer
+Message-ID: <20140718133609.3125e72d@gandalf.local.home>
+In-Reply-To: <CA+8MBb++z4px4wBCh6EzfgO6rQeLdBWNY+j8Aub352v5ONQiAw@mail.gmail.com>
+References: <20140630144017.2abc48ba@gandalf.local.home>
+	<b29c17f74d39d1b9240385e7479f63f44c988b8b.1404160039.git.tony.luck@intel.com>
+	<CA+8MBbKgHqwzLbY17-6o_Y-EULatnXgTdgn2kUhhOabELYGV6w@mail.gmail.com>
+	<20140717220849.735bec65@gandalf.local.home>
+	<CA+8MBb++z4px4wBCh6EzfgO6rQeLdBWNY+j8Aub352v5ONQiAw@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@kernel.org> writes:
->
-> We want these description files to be in the perf source code, 
-> somewhere in tools/perf/live-config/arch/x86/ or so, and installed 
-> during 'make install' - i.e. part of perf project and installed in 
-> ~/.debug or ~/.perf or so.
+On Fri, 18 Jul 2014 10:05:00 -0700
+Tony Luck <tony.luck@gmail.com> wrote:
 
-I don't think that's a good idea. It would recreate all the 
-problems oprofile has with out of date event lists. Already
-proven to not work well.
+> On Thu, Jul 17, 2014 at 7:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >> Do we really need to convert to nanoseconds? Couldn't we just return
+> >> jiffies:
+> >
+> > Sure, and we can make it a "counter". That is, the counters don't hide
+> > 1000 counts on output.
+> 
+> Can you explain that a bit more ... how do we mark it as a "counter"?
 
->
-> Those files could be refreshed via 'perf download' and could be 
-> accessible via kernel.org as well, 'perf download' should pick up 
-> these files from Linus's latest git repository (via the HTTP 
-> namespace).
+My mistake, I should have said, mark it as not "in_ns"...
 
-I have doubts a gitweb server is a good way to distribute potentially
-high volume / high access data.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index bda9621..291397e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -823,7 +823,7 @@ static struct {
+ 	{ trace_clock_local,	"local",	1 },
+ 	{ trace_clock_global,	"global",	1 },
+ 	{ trace_clock_counter,	"counter",	0 },
+-	{ trace_clock_jiffies,	"uptime",	1 },
++	{ trace_clock_jiffies,	"uptime",	0 },
+ 	{ trace_clock,		"perf",		1 },
+ 	ARCH_TRACE_CLOCKS
+ };
 
-However getting a more neutral space is fine.
+> 
+> >> u64 notrace trace_clock_jiffies(void)
+> >> {
+> >>        return jiffies_64 - INITIAL_JIFFIES;
+> >> }
+> 
+> Hmm it seems that we make it hard for applications to see what HZ
+> value the kernel is actually using. All user-facing interfaces should
+> convert to USER_HZ (100).  So we should say:
 
-It would be fine to put it elsewhere on kernel.org.
-I can ask for a space.
+Yeah, I remember theses conversations in the past. Basically, HZ is an
+internal kernel operation and userspace shouldn't know what it is,
+otherwise you may have tools doing whacky things based on it.
 
-Otherwise I will just remove the auto URL from the tool, 
-so the perf project does not need to endorse any particular
-event lists.
+Which is a good thing when we eventually get rid of the HZ idea.
 
-Let me know what you prefer. I'll assume the "remove the URL"
-variant is the default option.
+> 
+> u64 notrace trace_clock_jiffies(void)
+> {
+>         return jiffies_64_to_clock_t(jiffies_64 - INITIAL_JIFFIES);
+> }
+> 
+> Do we need to change anything in Documentation/trace/ftrace.txt?
+> 
+> Currently it says:
+> 
+>           uptime: This uses the jiffies counter and the time stamp
+>                   is relative to the time since boot up.
 
--Andi
+Yeah, and even if we change it to be converted, I believe that comment
+is still correct. It does use the jiffies counter, and the time stamp
+is still relative to system boot up.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+-- Steve
