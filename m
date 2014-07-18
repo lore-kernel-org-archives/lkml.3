@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761325AbaGRKnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:43:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34965 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755496AbaGRKnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:43:41 -0400
-Date: Fri, 18 Jul 2014 12:43:38 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] printk: initialize syslog_prev and console_prev
-Message-ID: <20140718104338.GX6774@pathway.suse.cz>
-References: <1405606151-19875-1-git-send-email-elder@linaro.org>
- <1405606151-19875-2-git-send-email-elder@linaro.org>
+	id S1761484AbaGRKoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:44:25 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:62228 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761271AbaGRKoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 06:44:22 -0400
+Message-ID: <53C8FA78.1020501@gmail.com>
+Date: Fri, 18 Jul 2014 18:44:08 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405606151-19875-2-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>, Arnd Bergmann <arnd@arndb.de>,
+        Lars-Peter Clausen <lars@metafoo.de>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>, msalter@redhat.com,
+        linux-pwm@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-watchdog@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7A819.40403@metafoo.de> <6485666.LVFO2YCEQx@wuerfel> <53C8114D.30601@nod.at> <53C86C10.2000608@gmail.com> <53C8CE59.3060103@nod.at>
+In-Reply-To: <53C8CE59.3060103@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-07-17 09:09:06, Alex Elder wrote:
-> Two global variables, "syslog_prev" and "console_prev", maintain a
-> copy of the flags value used in the log record most recently
-> formatted for syslog or the console, respectively.
+On 07/18/2014 03:35 PM, Richard Weinberger wrote:
+> Am 18.07.2014 02:36, schrieb Chen Gang:
+>>
+>> On 07/18/2014 02:09 AM, Richard Weinberger wrote:
+>>> Am 17.07.2014 12:48, schrieb Arnd Bergmann:
+>>>> AFAICT, NO_IOMEM only has a real purpose on UML these days. Could we take
+>>>> a shortcut here and make COMPILE_TEST depend on !UML? Getting random stuff
+>>>> to build on UML seems pointless to me and we special-case it in a number of
+>>>> places already.
+>>>
+>>> If UML is the only arch without io memory the dependency on !UML seems
+>>> reasonable to me. :-)
+>>>
+>>
+>> For me, if only uml left, I suggest to implement dummy functions within
+>> uml instead of let CONFIG_UML appear in generic include directory. And
+>> then remove all HAS_IOMEM and NO_IOMEM from kernel.
 > 
-> Initially there is no previous formatted log record, and these
-> variables simply have an initial value 0.  And occasionally log
-> records can get consumed at a rate such that syslog or the console
-> can't keep up, in which case those variables (along with their
-> corresponding position variables) must be reset.  Here too, they're
-> reset to 0.
+> Erm, this is something completely different.
+> I thought we're focusing on COMPILE_TEST?
 > 
-> This patch changes it so the initial value used is LOG_NEWLINE.
-> That is, if we know nothing about the prevously-formatted log
-> record, we can assume it was complete, and ended with a newline.
-> 
-> This is being done to support the next patch.  Initializing
-> these variables this way makes LOG_NEWLINE and LOG_CONT be
-> mutually exclusive, and the next patch uses that fact to simplify
-> some logic.
-> 
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> ---
->  kernel/printk/printk.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index 13e839d..ff1c7ad 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -236,7 +236,7 @@ DECLARE_WAIT_QUEUE_HEAD(log_wait);
->  /* the next printk record to read by syslog(READ) or /proc/kmsg */
->  static u64 syslog_seq;
->  static u32 syslog_idx;
-> -static enum log_flags syslog_prev;
-> +static enum log_flags syslog_prev = LOG_NEWLINE;
->  static size_t syslog_partial;
->  
->  /* index and sequence number of the first record stored in the buffer */
-> @@ -250,7 +250,7 @@ static u32 log_next_idx;
->  /* the next printk record to write to the console */
->  static u64 console_seq;
->  static u32 console_idx;
-> -static enum log_flags console_prev;
-> +static enum log_flags console_prev = LOG_NEWLINE;
 
-The above makes sense.
+COMPILE_TEST is none-architecture specific, but UML is. So in generic
+include folder, if we're focusing on choosing whether COMPILE_TEST or
+UML, for me, I will choose COMPILE_TEST.
 
->  /* the next printk record to read after the last 'clear' command */
->  static u64 clear_seq;
-> @@ -1071,7 +1071,7 @@ static int syslog_print(char __user *buf, int size)
->  			/* messages are gone, move to first one */
->  			syslog_seq = log_first_seq;
->  			syslog_idx = log_first_idx;
-> -			syslog_prev = 0;
-> +			syslog_prev = LOG_NEWLINE;
->  			syslog_partial = 0;
->  		}
->  		if (syslog_seq == log_next_seq) {
-> @@ -1301,7 +1301,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
->  			/* messages are gone, move to first one */
->  			syslog_seq = log_first_seq;
->  			syslog_idx = log_first_idx;
-> -			syslog_prev = 0;
-> +			syslog_prev = LOG_NEWLINE;
->  			syslog_partial = 0;
->  		}
->  		if (from_file) {
-> @@ -2148,7 +2148,7 @@ again:
->  			/* messages are gone, move to first one */
->  			console_seq = log_first_seq;
->  			console_idx = log_first_idx;
-> -			console_prev = 0;
-> +			console_prev = LOG_NEWLINE;
->  		} else {
->  			len = 0;
->  		}
+If we're not only focusing on COMPILE_TEST, for me, if something only
+depend on one architecture, I'd like to put them under "arch/*/" folder.
 
-It would make sense to add '\n' if we skip something and the previous
-copied line was continuous. This would change the behavior, so we
-should do this in separate patch.
+Especially, after that, we can remove all HAS_IOMEM and NO_IOMEM, nobody
+has to think of them again. :-)
 
-Anyway, it makes sense to reset the flag to LOG_NEWLINE.
 
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Thanks.
+-- 
+Chen Gang
 
-> -- 
-> 1.9.1
-> 
+Open, share, and attitude like air, water, and life which God blessed
