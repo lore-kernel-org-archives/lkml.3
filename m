@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422869AbaGRPjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:39:40 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:55628 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422840AbaGRPjh (ORCPT
+	id S1422903AbaGRPjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:39:44 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13410 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1422874AbaGRPjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:39:37 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "Elliott@hp.com" <Elliott@hp.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>,
-        "kys@microsoft.com" <kys@microsoft.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
- from the basic I/O timeout
-Thread-Index: AQHPop5zpnJziWUcaUmHYJv2pf72HA==
-Date: Fri, 18 Jul 2014 15:39:25 +0000
-Message-ID: <1405697964.605.27.camel@jarvis.lan>
-References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-	 <1401901323.17510.23.camel@dabdike>
-	 <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <53911A35.7010805@cs.wisc.edu>
-	 <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <5391F801.4010107@cs.wisc.edu>
-	 <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>
-	 <539206FA.1020001@kernel.dk>
-	 <5b926a0a9f264edda91c7c2ab0acb7d1@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <13807d2cc8744ae1bc374f20d8f9caec@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	 <94D0CD8314A33A4D9D801C0FE68B402958BAC6DC@G9W0745.americas.hpqcorp.net>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958BAC6DC@G9W0745.americas.hpqcorp.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <2F1C3D1BA5238844975A36DC2D078972@sw.swsoft.com>
+	Fri, 18 Jul 2014 11:39:40 -0400
+Date: Fri, 18 Jul 2014 16:39:31 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140718153931.GJ8700@e103034-lin>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6IFdjOn016988
 
-On Fri, 2014-07-18 at 00:51 +0000, Elliott, Robert (Server Storage)
-wrote:
-> In sd_sync_cache:
-> 	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
+On Fri, Jul 18, 2014 at 12:26:04AM +0100, Yuyang Du wrote:
+> Thanks to Morten, Ben, and Fengguang.
 > 
-> Regardless of the baseline for the multiplication, a magic 
-> number of 2 is too arbitrary.  That might work for an
-> individual drive, but could be far too short for a RAID
-> controller that runs into worst case error handling for
-> the drives to which it is flushing (e.g., if its cache
-> is volatile and the drives all have recoverable errors
-> during writes).  That time goes up with a bigger cache and 
-> with more fragmented write data in the cache requiring
-> more individual WRITE commands.
-
-RAID devices with gigabytes of cache are usually battery backed and lie
-about their cache type (they usually claim write through).  This
-behaviour is exactly what we want because the flush is used to enforce
-write barriers for filesystem consistency, so we only want to flush
-volatile caches.
-
-The rare case you cite, where the RAID device is volatile and having
-difficulty flushing, we do want a failure because otherwise the
-filesystem will become unusable and the system will live lock ...
-barriers are sent down frequently under normal filesystem operation.
-
-The SCSI standards committees have been struggling with defining and
-detecting the difference between volatile and non-volatile cache and the
-heuristics we'd have to use to avoid annoying USB devices with detecting
-this don't look pretty.  We always zero the SYNC_NV bit anyway, so even
-if the devices stopped lying, we'd be safe.
-
-> A better value would be the Recommended Command Timeout field 
-> value reported in the REPORT SUPPORTED OPERATION CODES command,
-> if reported by the device server.  That is supposed to account
-> for the worst case.
+> v4 changes:
 > 
-> For cases where that is not reported, exposing the multiplier
-> in sysfs would let the timeout for simple devices be set to
-> smaller values than complex devices.
-> 
-> Also, in both sd_setup_flush_cmnd and sd_sync_cache:
->       cmd->cmnd[0] = SYNCHRONIZE_CACHE;
->       cmd->cmd_len = 10;
-> 
-> SYNCHRONIZE CACHE (16) should be favored over SYNCHRONIZE 
-> CACHE (10) unless SYNCHRONIZE CACHE (10) is not supported.
+> - Insert memory barrier before writing cfs_rq->load_last_update_copy.
+> - Fix typos.
 
-For what reason.  We usually go for the safe alternatives, which is 10
-byte commands because they have the widest testing and greatest level of
-support.  We don't do range flushes currently, so there doesn't seem to
-be a practical different.  If we did support range flushes, we'd likely
-only use SC(16) on >2TB devices.
+It is quite a challenge keeping up with your revisions :) Three
+revisions in five days. It takes time to go through all the changes to
+understand the implications of your proposed changes.
 
-James
+I still haven't gotten to the bottom of everything, but this is my view
+so far.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1. runnable_avg_period is removed
+
+load_avg_contrib used to be runnable_avg_sum/runnable_avg_period scaled
+by the task load weight (priority). The runnable_avg_period is replaced
+by a constant in this patch set. The effect of that change is that task
+load tracking no longer is more sensitive early life of the task until
+it has built up some history. Task are now initialized to start out as
+if they have been runnable forever (>345ms). If this assumption about
+the task behavior is wrong it will take longer to converge to the true
+average than it did before. The upside is that is more stable.
+
+2. runnable_load_avg and blocked_load_avg are combined
+
+runnable_load_avg currently represents the sum of load_avg_contrib of
+all tasks on the rq, while blocked_load_avg is the sum of those tasks
+not on a runqueue. It makes perfect sense to consider the sum of both
+when calculating the load of a cpu, but we currently don't include
+blocked_load_avg. The reason for that is the priority scaling of the
+task load_avg_contrib may lead to under-utilization of cpus that
+occasionally have tiny high priority task running. You can easily have a
+task that takes 5% of cpu time but has a load_avg_contrib several times
+larger than a default priority task runnable 100% of the time.
+
+Another thing that might be an issue is that the blocked of a terminated
+task lives on for quite a while until has decayed away.
+
+I'm all for taking the blocked load into consideration, but this issue
+has to be resolved first. Which leads me on to the next thing.
+
+Most of the work going on around energy awareness is based on the load
+tracking to estimate task and cpu utilization. It seems that most of the
+involved parties think that we need an unweighted variant of the tracked
+load as well as tracking the running time of a task. The latter was part
+of the original proposal by pjt and Ben, but wasn't used. It seems that
+unweighted runnable tracking should be fairly easy to add to your
+proposal, but I don't have an overview of whether it is possible to add
+running tracking. Do you think that is possible?
+
+Morten
