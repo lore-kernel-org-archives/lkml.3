@@ -1,71 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935073AbaGRODx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:03:53 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34580 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454AbaGRODw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:03:52 -0400
-Date: Fri, 18 Jul 2014 16:03:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "Sahasrabudhe, Sheetal" <sheetals@quicinc.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com
-Subject: Re: perf: child events not killed on release paths, survive
- indefinitely
-Message-ID: <20140718140343.GC20603@laptop.programming.kicks-ass.net>
-References: <20140718123238.GF25180@leverpostej>
+	id S1761329AbaGROEu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:04:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52644 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751376AbaGROEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 10:04:47 -0400
+Date: Fri, 18 Jul 2014 09:04:03 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        George Cherian <george.cherian@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 9/9] usb: musb: musb_am335x: reinstate module
+ loading/unloading support
+Message-ID: <20140718140403.GI24914@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-2-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-3-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-4-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-6-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-7-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-8-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-9-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-10-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tSiBuZsJmMXpnp7T"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140718123238.GF25180@leverpostej>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1405675890-8802-10-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 01:32:39PM +0100, Mark Rutland wrote:
-> Hi all,
-> 
-> Sheetal reported a weird issue on arm where events which have been
-> closed seem to stay around and compete for HW counters if an application
-> has forked between the events being opened and them being closed.
-> 
-> I've reproduced this in mainline and linux-next and this seems to be a
-> generic issue; the below test case fires on my x86-64 workstation as
-> well as on arm and arm64.
-> 
-> The problem is the way we (don't) handle child events when releasing a
-> parent in perf_release and perf_event_release_kernel. We call put_event
-> on the parent when it is released, but this will exit early having done
-> nothing because each child will have incremented the parent refcount
-> when initialised from perf_event_init_task. We don't seem to do anything
-> about the children in this case.
-> 
-> Thus the parent event can't be killed until all the children have first
-> been killed. As the only places references to them exist are the
-> parent's child_list and their respective tasks' hardware
-> perf_event_context, they'll only get killed when their respective tasks
-> exit (I confirmed this with some printks in hw_perf_event_destroy and
-> put_event). Until that happens they remain in their respective contexts
-> and continue to compete for HW counters, adversely affecting events
-> opened later.
-> 
-> I'm not sure what the best way of handling this is. We need to clean up
-> the children when the last possible user of the event is gone, but it
-> looks to me like we'd need to have a separate child_refcount or
-> reader_refcount to be able to tell when the events are still useful and
-> when the only references which remain are internal.
-> 
-> Any ideas?
+--tSiBuZsJmMXpnp7T
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Jiri was recently poking at that:
+On Fri, Jul 18, 2014 at 11:31:30AM +0200, Lothar Wa=DFmann wrote:
+> There is no need to throw the baby out with the bath due to a bad
+> failure analysis. The commit:
+> 7adb5c876e9c usb: musb: Fix panic upon musb_am335x module removal
+> came to a wrong conclusion about the cause of the crash it was
+> "fixing". The real culprit was the phy-am335x module that was removed
+> from underneath its users that were still referencing data from it.
+> After having fixed this in a previous patch, module unloading can be
+> reinstated.
+>=20
+> Another bug with module loading/unloading was the fact, that after
+> removing the devices instantiated from DT their 'OF_POPULATED' flag
+> was still set, so that re-loading the module after an unload had no
+> effect. This is also fixed in this patch.
 
-lkml.kernel.org/r/1405079782-8139-3-git-send-email-jolsa@kernel.org
+now this is a good commit log. I still can't see the need for the other
+patch adding try_module_get(), though. Another thing, this needs to be
+reviewed by DT folks too.
 
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
+> ---
+>  drivers/usb/musb/musb_am335x.c |   23 ++++++++++++++++++-----
+>  1 file changed, 18 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/usb/musb/musb_am335x.c b/drivers/usb/musb/musb_am335=
+x.c
+> index 164c868..152a6f5 100644
+> --- a/drivers/usb/musb/musb_am335x.c
+> +++ b/drivers/usb/musb/musb_am335x.c
+> @@ -19,6 +19,22 @@ err:
+>  	return ret;
+>  }
+> =20
+> +static int of_remove_populated_child(struct device *dev, void *d)
+> +{
+> +	struct platform_device *pdev =3D to_platform_device(dev);
+> +
+> +	of_device_unregister(pdev);
+> +	of_node_clear_flag(pdev->dev.of_node, OF_POPULATED);
+
+I don't think this should be called by drivers; rather by the bus.
+
+> +	return 0;
+> +}
+> +
+> +static int am335x_child_remove(struct platform_device *pdev)
+> +{
+> +	device_for_each_child(&pdev->dev, NULL, of_remove_populated_child);
+> +	pm_runtime_disable(&pdev->dev);
+> +	return 0;
+> +}
+> +
+>  static const struct of_device_id am335x_child_of_match[] =3D {
+>  	{ .compatible =3D "ti,am33xx-usb" },
+>  	{  }
+> @@ -27,17 +43,14 @@ MODULE_DEVICE_TABLE(of, am335x_child_of_match);
+> =20
+>  static struct platform_driver am335x_child_driver =3D {
+>  	.probe		=3D am335x_child_probe,
+> +	.remove		=3D am335x_child_remove,
+>  	.driver		=3D {
+>  		.name	=3D "am335x-usb-childs",
+>  		.of_match_table	=3D am335x_child_of_match,
+>  	},
+>  };
+> =20
+> -static int __init am335x_child_init(void)
+> -{
+> -	return platform_driver_register(&am335x_child_driver);
+> -}
+> -module_init(am335x_child_init);
+> +module_platform_driver(am335x_child_driver);
+> =20
+>  MODULE_DESCRIPTION("AM33xx child devices");
+>  MODULE_LICENSE("GPL v2");
+> --=20
+> 1.7.10.4
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--=20
+balbi
+
+--tSiBuZsJmMXpnp7T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTySlTAAoJEIaOsuA1yqRENfUQAIeEqA+cN3yL6drRJJMzavxb
+i1PBpj4ow0gHN6Lvwb3PgQ8xbfMrXjGzAE8W4MsSB6h+/QhJUsYu4BqjGLHz0Uej
+VI7ASMU3acdFdcYO41hwomn13hbsGh1zXS5ypqej7g9PcX2n4w2Af7/zBQ9jlMW3
+/p7VsPp7MHNubDwb28/QSEZqJk1Ow37pisEZL/tSpqEtuHzhOoYgZ554eG3IeqDM
+tSU/yWK1bBNcUrkyyFJTviMm8b+VFmQOYYu7WkyfQ3VlQqWDeT6ynva2BQn9hc9P
+e8uaPdzGIR90pNPtej34LK1vWSQwc1UbhaZxMDNmndeh025AjYagcrivI+5ADKhP
+4pBDSyN5g0j3lZETVOX6pp33vJtJnjkKyKZ0Hl+vwzuDK3F7/rf+sygwU8I7DETd
+8sfVvbtnkKpEPm58W1HG0LZIVWmRvUMb3ZopTPhMDz7itaPE7Mu+p+k6b2mhk+cg
+qHzskrytitcOTad2z7W+iXfiU82dDjFtCKpVJTuWnU9EwZBQuok/rep+dyQ7IpsF
+VkVH3lrVxuaQSUcznPKOWPZdfeIw6gG+wYUMxAI9U+oQafotawBfXfghjZbLcxmU
+vfp0TtVyWVpRDq1Ag+oQQZsgcVzCQCNYFpXeeD/HQV2umXGKOTZftCLiGb1+kAEo
+Ax9qnJQZJkFDM4Md4MeD
+=tuPn
+-----END PGP SIGNATURE-----
+
+--tSiBuZsJmMXpnp7T--
