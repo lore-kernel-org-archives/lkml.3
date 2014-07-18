@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965666AbaGRNMb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:12:31 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17635 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965634AbaGRNMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933454AbaGRNMY (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jul 2014 09:12:24 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17626 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934950AbaGRNMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:12:18 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 111/170] KVM: x86: Increase the number of fixed MTRR regs to 10
-Date: Fri, 18 Jul 2014 14:11:56 +0200
-Message-Id: <8c94324979563d69cf4729e15d4730392c8f5c53.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 029/170] IB/ipath: Translate legacy diagpkt into newer extended diagpkt
+Date: Fri, 18 Jul 2014 14:10:34 +0200
+Message-Id: <aef0a9699424f94d75119862606a66b246d76572.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,39 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Dennis Dalessandro <dennis.dalessandro@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 682367c494869008eb89ef733f196e99415ae862 upstream.
+commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 upstream.
 
-Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
-sometime make assumptions on CPUs while they ignore capability MSRs, it is
-better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
-actually supported has no functional implications.
+This patch addresses an issue where the legacy diagpacket is sent in
+from the user, but the driver operates on only the extended
+diagpkt. This patch specifically initializes the extended diagpkt
+based on the legacy packet.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reported-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/kvm_host.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/hw/ipath/ipath_diag.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c76ff74a98f2..792206c8e555 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -92,7 +92,7 @@
- #define KVM_REFILL_PAGES 25
- #define KVM_MAX_CPUID_ENTRIES 80
- #define KVM_NR_FIXED_MTRR_REGION 88
--#define KVM_NR_VAR_MTRR 8
-+#define KVM_NR_VAR_MTRR 10
- 
- #define ASYNC_PF_PER_VCPU 64
- 
+diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
+index e2f9a51f4a38..45802e97332e 100644
+--- a/drivers/infiniband/hw/ipath/ipath_diag.c
++++ b/drivers/infiniband/hw/ipath/ipath_diag.c
+@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 			ret = -EFAULT;
+ 			goto bail;
+ 		}
++		dp.len = odp.len;
++		dp.unit = odp.unit;
++		dp.data = odp.data;
++		dp.pbc_wd = 0;
+ 	} else {
+ 		ret = -EINVAL;
+ 		goto bail;
 -- 
 2.0.0
 
