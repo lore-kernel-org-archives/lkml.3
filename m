@@ -1,81 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176AbaGRFTi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 01:19:38 -0400
-Received: from ozlabs.org ([103.22.144.67]:51000 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436AbaGRFTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:19:37 -0400
-Date: Fri, 18 Jul 2014 15:19:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Cooper <jason@lakedaemon.net>,
+	id S933673AbaGRFUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 01:20:38 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:62580 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932768AbaGRFUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 01:20:35 -0400
+Content-transfer-encoding: 7BIT
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: linux-next: manual merge of the irqchip tree with the arm64 tree
-Message-ID: <20140718151930.54d5347c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/6SxFWciqwSaop==+iWfDZ9T"; protocol="application/pgp-signature"
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH 3/4] ARM64: add IPI tracepoints
+Date: Fri, 18 Jul 2014 01:18:54 -0400
+Message-id: <1405660735-13408-4-git-send-email-nicolas.pitre@linaro.org>
+X-Mailer: git-send-email 1.8.4.108.g55ea5f6
+In-reply-to: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
+References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6SxFWciqwSaop==+iWfDZ9T
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The strings used to list IPIs in /proc/interrupts are reused for tracing
+purposes.
 
-Hi Jason,
+While at it, the code is slightly cleaned up so the ipi_types array
+indices are no longer offset by IPI_RESCHEDULE whose value is 0 anyway.
 
-Today's linux-next merge of the irqchip tree got a conflict in
-arch/arm64/Kconfig between commit 875cbf3e4614 ("arm64: Add audit
-support") from the arm64 tree and commit 3e44358c12cc ("irqchip: gic:
-Add support for ARM GICv2m MSI(-X)") from the irqchip tree.
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+---
+ arch/arm64/kernel/smp.c | 67 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 42 insertions(+), 25 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 40f38f46c8..78a5904994 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -50,6 +50,9 @@
+ #include <asm/tlbflush.h>
+ #include <asm/ptrace.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/ipi.h>
++
+ /*
+  * as from 2.5, kernels no longer have an init_tasks structure
+  * so we need some other way of telling a new secondary core
+@@ -307,8 +310,6 @@ void __init smp_prepare_boot_cpu(void)
+ 	set_my_cpu_offset(per_cpu_offset(smp_processor_id()));
+ }
+ 
+-static void (*smp_cross_call)(const struct cpumask *, unsigned int);
+-
+ /*
+  * Enumerate the possible CPU set from the device tree and build the
+  * cpu logical map array containing MPIDR values related to logical
+@@ -463,32 +464,19 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ }
+ 
++static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+ 
+ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+ {
+-	smp_cross_call = fn;
+-}
+-
+-void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+-{
+-	smp_cross_call(mask, IPI_CALL_FUNC);
+-}
+-
+-void arch_send_call_function_single_ipi(int cpu)
+-{
+-	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++	__smp_cross_call = fn;
+ }
+ 
+-#ifdef CONFIG_IRQ_WORK
+-void arch_irq_work_raise(void)
+-{
+-	if (smp_cross_call)
+-		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+-}
++static const char *ipi_types[NR_IPI] 
++#ifdef CONFIG_TRACING
++__tracepoint_string
+ #endif
+-
+-static const char *ipi_types[NR_IPI] = {
+-#define S(x,s)	[x - IPI_RESCHEDULE] = s
++= {
++#define S(x,s)	[x] = s
+ 	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
+ 	S(IPI_CALL_FUNC, "Function call interrupts"),
+ 	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
+@@ -497,12 +485,18 @@ static const char *ipi_types[NR_IPI] = {
+ 	S(IPI_IRQ_WORK, "IRQ work interrupts"),
+ };
+ 
++static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
++{
++	trace_ipi_raise(target, ipi_types[ipinr]);
++	__smp_cross_call(target, ipinr);
++}
++
+ void show_ipi_list(struct seq_file *p, int prec)
+ {
+ 	unsigned int cpu, i;
+ 
+ 	for (i = 0; i < NR_IPI; i++) {
+-		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i + IPI_RESCHEDULE,
++		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i,
+ 			   prec >= 4 ? " " : "");
+ 		for_each_online_cpu(cpu)
+ 			seq_printf(p, "%10u ",
+@@ -522,6 +516,24 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+ 	return sum;
+ }
+ 
++void arch_send_call_function_ipi_mask(const struct cpumask *mask)
++{
++	smp_cross_call(mask, IPI_CALL_FUNC);
++}
++
++void arch_send_call_function_single_ipi(int cpu)
++{
++	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++}
++
++#ifdef CONFIG_IRQ_WORK
++void arch_irq_work_raise(void)
++{
++	if (__smp_cross_call)
++		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
++}
++#endif
++
+ static DEFINE_RAW_SPINLOCK(stop_lock);
+ 
+ /*
+@@ -553,8 +565,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 	unsigned int cpu = smp_processor_id();
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
+-	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
+-		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
++	if ((unsigned)ipinr < NR_IPI) {
++		trace_ipi_entry(ipi_types[ipinr]);
++		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
++	}
+ 
+ 	switch (ipinr) {
+ 	case IPI_RESCHEDULE:
+@@ -599,6 +613,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
+ 		break;
+ 	}
++
++	if ((unsigned)ipinr < NR_IPI)
++		trace_ipi_exit(ipi_types[ipinr]);
+ 	set_irq_regs(old_regs);
+ }
+ 
+-- 
+1.8.4.108.g55ea5f6
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm64/Kconfig
-index 27bbdb7a5b83,0f9b11de7816..000000000000
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@@ -11,7 -9,8 +11,9 @@@ config ARM6
-  	select ARM_AMBA
-  	select ARM_ARCH_TIMER
-  	select ARM_GIC
-+ 	select ARM_GIC_V2M if (PCI && PCI_MSI)
-+ 	select ARM_GIC_V3
- +	select AUDIT_ARCH_COMPAT_GENERIC
-  	select BUILDTIME_EXTABLE_SORT
-  	select CLONE_BACKWARDS
-  	select COMMON_CLK
-
---Sig_/6SxFWciqwSaop==+iWfDZ9T
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTyK5mAAoJEMDTa8Ir7ZwV8cMP/2hTO5jleE62Zq1mXdl9Xh0a
-ZXzvrW1WO5GiFFo4NOQzl2cV7+ldutUT4+0Dx8ES2Cbc1yKs63sRi5P1Et0rZQdS
-RVQjkDX5sV1cgKxB63+1OCB7RNx87sQRYsOD/UmkAWySygpliMFShrQnFH+k4mKl
-U/7DScKqPOekVfSVwMjoZHMslL1AAMr2BD6+MLQghOgYkfgIFSTV2vI4cJ+j1geO
-EdPAuoroWD+xoVmBri4KDJVRESaRSJIPvYuzdu/AAAjtkhpjiRQ6yYqJY6ylVQBD
-9VGiPTQJHn+RdrOHvGBihBsxdU4SSRjjnWDu8p6hAcKMeIdUmBmSeRwDt73cfa5w
-yEC/rCJGyclljHHOg3Gi84ElmXPD9hOhLYdk8ahm2VzBzyDCu4hoAA3LjHS766xV
-cb/L42LQD8euygpCKgD/48mqgX4cv/sdmLcm9bm7JAzk/o9RrDZhRoqiIwBwTl+L
-K8rt2Y6xPUHhpKC98ixuhoV4okMiIyVIFq14mBH30SGdvUOOkvhgmIuJxMLY0Gno
-KrR5yD19zJ2I+7Mwuc3hTNC8WGaj77UCTjm/NxccrvnUXqF0uW9JLjdnxR/C5nFD
-5WuWhYdOasKcbA7vBhL3DSCxIM2S3yceeZDzLr0NWCj9KH84cj7I0xEVsFd3Bmz3
-CPjWWI1n0T5sdOUptFMo
-=x42p
------END PGP SIGNATURE-----
-
---Sig_/6SxFWciqwSaop==+iWfDZ9T--
