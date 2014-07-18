@@ -1,152 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965724AbaGRNYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:24:50 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17937 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965914AbaGRNSA (ORCPT
+	id S965851AbaGRNRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:17:25 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28650 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161208AbaGRNRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:00 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Jens Axboe <axboe@fb.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 017/170] mtip32xx: Increase timeout for STANDBY IMMEDIATE command
-Date: Fri, 18 Jul 2014 14:10:22 +0200
-Message-Id: <a44da38f73befbd7889c81049b5c6a1143ec8402.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 09:17:19 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+gY25cX/aiwl6qCSdasRzNoLSB9ZW4hNY=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 1C44C5AF66B
+Date: Fri, 18 Jul 2014 09:17:04 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH] irqchip: gic: Fix core ID calculation when topology is
+ read from DT
+Message-ID: <20140718131704.GG24496@titan.lakedaemon.net>
+References: <1405610624-18722-1-git-send-email-t.figa@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405610624-18722-1-git-send-email-t.figa@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Asai Thambi S P <asamymuthupa@micron.com>
+On Thu, Jul 17, 2014 at 05:23:44PM +0200, Tomasz Figa wrote:
+> Certain GIC implementation, namely those found on earlier, single
+> cluster, Exynos SoCs, have registers mapped without per-CPU banking,
+> which means that the driver needs to use different offset for each CPU.
+> 
+> Currently the driver calculates the offset by multiplying value returned
+> by cpu_logical_map() by CPU offset parsed from DT. This is correct when
+> CPU topology is not specified in DT and aforementioned function returns
+> core ID alone. However when DT contains CPU topology, the function
+> changes to return cluster ID as well, which is non-zero on mentioned
+> SoCs and so breaks the calculation in GIC driver.
+> 
+> This patch fixes this by masking out cluster ID in CPU offset
+> calculation so that only core ID is considered. Multi-cluster Exynos
+> SoCs already have banked GIC implementations, so this simple fix should
+> be enough.
+> 
+> Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  drivers/irqchip/irq-gic.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index ddee133..5c15a09 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -40,6 +40,7 @@
+>  #include <linux/irqchip/chained_irq.h>
+>  #include <linux/irqchip/arm-gic.h>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Applied to irqchip/urgent and Cc'd to stable for v3.3+
 
-===============
+thx,
 
-commit 670a641420a3d9586eebe7429dfeec4e7ed447aa upstream.
-
-Increased timeout for STANDBY IMMEDIATE command to 2 minutes.
-
-Signed-off-by: Selvan Mani <smani@micron.com>
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/block/mtip32xx/mtip32xx.c | 66 +++++++++++++++++++++------------------
- 1 file changed, 35 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 2e98df1a5c93..6fc6beb86493 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -1493,6 +1493,37 @@ static inline void ata_swap_string(u16 *buf, unsigned int len)
- 		be16_to_cpus(&buf[i]);
- }
- 
-+static void mtip_set_timeout(struct driver_data *dd,
-+					struct host_to_dev_fis *fis,
-+					unsigned int *timeout, u8 erasemode)
-+{
-+	switch (fis->command) {
-+	case ATA_CMD_DOWNLOAD_MICRO:
-+		*timeout = 120000; /* 2 minutes */
-+		break;
-+	case ATA_CMD_SEC_ERASE_UNIT:
-+	case 0xFC:
-+		if (erasemode)
-+			*timeout = ((*(dd->port->identify + 90) * 2) * 60000);
-+		else
-+			*timeout = ((*(dd->port->identify + 89) * 2) * 60000);
-+		break;
-+	case ATA_CMD_STANDBYNOW1:
-+		*timeout = 120000;  /* 2 minutes */
-+		break;
-+	case 0xF7:
-+	case 0xFA:
-+		*timeout = 60000;  /* 60 seconds */
-+		break;
-+	case ATA_CMD_SMART:
-+		*timeout = 15000;  /* 15 seconds */
-+		break;
-+	default:
-+		*timeout = MTIP_IOCTL_COMMAND_TIMEOUT_MS;
-+		break;
-+	}
-+}
-+
- /*
-  * Request the device identity information.
-  *
-@@ -1602,6 +1633,7 @@ static int mtip_standby_immediate(struct mtip_port *port)
- 	int rv;
- 	struct host_to_dev_fis	fis;
- 	unsigned long start;
-+	unsigned int timeout;
- 
- 	/* Build the FIS. */
- 	memset(&fis, 0, sizeof(struct host_to_dev_fis));
-@@ -1609,6 +1641,8 @@ static int mtip_standby_immediate(struct mtip_port *port)
- 	fis.opts	= 1 << 7;
- 	fis.command	= ATA_CMD_STANDBYNOW1;
- 
-+	mtip_set_timeout(port->dd, &fis, &timeout, 0);
-+
- 	start = jiffies;
- 	rv = mtip_exec_internal_command(port,
- 					&fis,
-@@ -1617,7 +1651,7 @@ static int mtip_standby_immediate(struct mtip_port *port)
- 					0,
- 					0,
- 					GFP_ATOMIC,
--					15000);
-+					timeout);
- 	dbg_printk(MTIP_DRV_NAME "Time taken to complete standby cmd: %d ms\n",
- 			jiffies_to_msecs(jiffies - start));
- 	if (rv)
-@@ -2156,36 +2190,6 @@ static unsigned int implicit_sector(unsigned char command,
- 	}
- 	return rv;
- }
--static void mtip_set_timeout(struct driver_data *dd,
--					struct host_to_dev_fis *fis,
--					unsigned int *timeout, u8 erasemode)
--{
--	switch (fis->command) {
--	case ATA_CMD_DOWNLOAD_MICRO:
--		*timeout = 120000; /* 2 minutes */
--		break;
--	case ATA_CMD_SEC_ERASE_UNIT:
--	case 0xFC:
--		if (erasemode)
--			*timeout = ((*(dd->port->identify + 90) * 2) * 60000);
--		else
--			*timeout = ((*(dd->port->identify + 89) * 2) * 60000);
--		break;
--	case ATA_CMD_STANDBYNOW1:
--		*timeout = 120000;  /* 2 minutes */
--		break;
--	case 0xF7:
--	case 0xFA:
--		*timeout = 60000;  /* 60 seconds */
--		break;
--	case ATA_CMD_SMART:
--		*timeout = 15000;  /* 15 seconds */
--		break;
--	default:
--		*timeout = MTIP_IOCTL_COMMAND_TIMEOUT_MS;
--		break;
--	}
--}
- 
- /*
-  * Executes a taskfile
--- 
-2.0.0
-
+Jason.
