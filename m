@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549AbaGRHLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 03:11:49 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17031 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800AbaGRHLr (ORCPT
+	id S1758961AbaGRHMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 03:12:52 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35667 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaGRHMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 03:11:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 18 Jul 2014 00:00:20 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
-        <hdegoede@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v5 1/8] of: Add NVIDIA Tegra SATA controller binding
-Date: Fri, 18 Jul 2014 10:11:40 +0300
-Message-ID: <1405667500-7402-1-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com>
-References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 18 Jul 2014 03:12:49 -0400
+Date: Fri, 18 Jul 2014 09:12:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140718071246.GA21565@dhcp22.suse.cz>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+ <20140715082545.GA9366@dhcp22.suse.cz>
+ <20140715121935.GB9366@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715121935.GB9366@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding documentation for the SATA
-controller found on NVIDIA Tegra SoCs.
+On Tue 15-07-14 14:19:35, Michal Hocko wrote:
+> [...]
+> > +/**
+> > + * mem_cgroup_migrate - migrate a charge to another page
+> > + * @oldpage: currently charged page
+> > + * @newpage: page to transfer the charge to
+> > + * @lrucare: page might be on LRU already
+> 
+> which one? I guess the newpage?
+> 
+> > + *
+> > + * Migrate the charge from @oldpage to @newpage.
+> > + *
+> > + * Both pages must be locked, @newpage->mapping must be set up.
+> > + */
+> > +void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+> > +			bool lrucare)
+> > +{
+> > +	unsigned int nr_pages = 1;
+> > +	struct page_cgroup *pc;
+> > +
+> > +	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
+> > +	VM_BUG_ON_PAGE(!PageLocked(newpage), newpage);
+> > +	VM_BUG_ON_PAGE(PageLRU(oldpage), oldpage);
+> > +	VM_BUG_ON_PAGE(PageLRU(newpage), newpage);
+> 
+> 	VM_BUG_ON_PAGE(PageLRU(newpage) && !lruvec, newpage);
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
-v5: remove ordering requirement again
+I guess everything except these two notes got addressed.
 
- .../devicetree/bindings/ata/tegra-sata.txt         | 30 ++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
-
-diff --git a/Documentation/devicetree/bindings/ata/tegra-sata.txt b/Documentation/devicetree/bindings/ata/tegra-sata.txt
-new file mode 100644
-index 0000000..946f207
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/tegra-sata.txt
-@@ -0,0 +1,30 @@
-+Tegra124 SoC SATA AHCI controller
-+
-+Required properties :
-+- compatible : "nvidia,tegra124-ahci".
-+- reg : Should contain 2 entries:
-+  - AHCI register set (SATA BAR5)
-+  - SATA register set
-+- interrupts : Defines the interrupt used by SATA
-+- clocks : Must contain an entry for each entry in clock-names.
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names : Must include the following entries:
-+  - sata
-+  - sata-oob
-+  - cml1
-+  - pll_e
-+- resets : Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names : Must include the following entries:
-+  - sata
-+  - sata-oob
-+  - sata-cold
-+- phys : Must contain an entry for each entry in phy-names.
-+  See ../phy/phy-bindings.txt for details.
-+- phy-names : Must include the following entries:
-+  - sata-phy : XUSB PADCTL SATA PHY
-+- hvdd-supply : Defines the SATA HVDD regulator
-+- vddio-supply : Defines the SATA VDDIO regulator
-+- avdd-supply : Defines the SATA AVDD regulator
-+- target-5v-supply : Defines the SATA 5V power regulator
-+- target-12v-supply : Defines the SATA 12V power regulator
 -- 
-1.8.1.5
-
+Michal Hocko
+SUSE Labs
