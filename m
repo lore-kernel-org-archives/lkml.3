@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762469AbaGRUML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:12:11 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:51941 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855AbaGRUMJ (ORCPT
+	id S1762415AbaGRUNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:13:18 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:46172 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464AbaGRUNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:12:09 -0400
-Date: Fri, 18 Jul 2014 23:12:05 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 04/10] proc: convert /proc/$PID/cmdline to seq_file
- interface
-Message-ID: <20140718201205.GB26857@p183.telecom.by>
-References: <20140716213247.GC21290@p183.telecom.by>
- <20140717155346.afadf6243dc6c0ebfda95853@linux-foundation.org>
- <20140718201059.GA26857@p183.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718201059.GA26857@p183.telecom.by>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 18 Jul 2014 16:13:17 -0400
+From: Sam Asadi <asadi.samuel@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sam Asadi <asadi.samuel@gmail.com>
+Subject: [PATCH 1/2] Staging: comedi: adl_pci9118: commenting style issue fixed
+Date: Fri, 18 Jul 2014 23:13:07 +0300
+Message-Id: <1405714388-13375-1-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+A 'quoted string split across lines' issue fixed, while a better use of
+language applied to the comment.
+
+Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
 ---
+ drivers/staging/comedi/drivers/adl_pci9118.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
- fs/proc/base.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 93bd9ee..7365f31 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -418,8 +418,7 @@ static int check_channel_list(struct comedi_device *dev,
+ 			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
+ 			    (bipolar)) {
+ 				comedi_error(dev,
+-					     "Bipolar and unipolar ranges "
+-							"can't be mixtured!");
++					     "Bipolar and unipolar ranges can't be mixed!");
+ 				return 0;
+ 			}
+ 			if (!devpriv->usemux && differencial &&
+-- 
+1.7.10.4
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -200,9 +200,16 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
- 	return result;
- }
- 
--static int proc_pid_cmdline(struct task_struct *task, char *buffer)
-+static int proc_pid_cmdline(struct seq_file *m, struct pid_namespace *ns,
-+			    struct pid *pid, struct task_struct *task)
- {
--	return get_cmdline(task, buffer, PAGE_SIZE);
-+	/*
-+	 * Rely on struct seq_operations::show() being called once
-+	 * per internal buffer allocation. See single_open(), traverse().
-+	 */
-+	BUG_ON(m->size < PAGE_SIZE);
-+	m->count += get_cmdline(task, m->buf, PAGE_SIZE);
-+	return 0;
- }
- 
- static int proc_pid_auxv(struct seq_file *m, struct pid_namespace *ns,
-@@ -2567,7 +2574,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
- 	ONE("syscall",    S_IRUSR, proc_pid_syscall),
- #endif
--	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
-+	ONE("cmdline",    S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
- 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
-@@ -2903,7 +2910,7 @@ static const struct pid_entry tid_base_stuff[] = {
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
- 	ONE("syscall",   S_IRUSR, proc_pid_syscall),
- #endif
--	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
-+	ONE("cmdline",   S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_tid_maps_operations),
