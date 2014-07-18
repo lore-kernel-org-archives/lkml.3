@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422829AbaGRXby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:31:54 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:60992 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422733AbaGRXbw (ORCPT
+	id S1030742AbaGRXcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:32:22 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:36617 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030715AbaGRXcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:31:52 -0400
-Date: Fri, 18 Jul 2014 19:31:49 -0400
+	Fri, 18 Jul 2014 19:32:20 -0400
+Date: Fri, 18 Jul 2014 19:32:17 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Christoph Lameter <cl@linux.com>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 20/31] mips: Replace __get_cpu_var uses
-Message-ID: <20140718233149.GZ5739@htj.dyndns.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 21/31] s390: Replace __get_cpu_var uses
+Message-ID: <20140718233217.GA5739@htj.dyndns.org>
 References: <20140620193115.547427118@linux.com>
- <20140620193127.251548626@linux.com>
+ <20140620193127.364545956@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140620193127.251548626@linux.com>
+In-Reply-To: <20140620193127.364545956@linux.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
