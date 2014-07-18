@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030476AbaGRNKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:10:11 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17481 "EHLO
+	id S1030521AbaGRNKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:10:22 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17490 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030451AbaGRNKI (ORCPT
+	by vger.kernel.org with ESMTP id S1030501AbaGRNKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:10:08 -0400
+	Fri, 18 Jul 2014 09:10:18 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Benjamin LaHaise <bcrl@kvack.org>, Mateusz Guzik <mguzik@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 3.12 001/170] Revert "aio: fix kernel memory disclosure in io_getevents() introduced in v3.10"
-Date: Fri, 18 Jul 2014 14:10:06 +0200
-Message-Id: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 073/170] usb: gadget: f_fs: fix NULL pointer dereference when there are no strings
+Date: Fri, 18 Jul 2014 14:11:18 +0200
+Message-Id: <6e73e2919e887d9ee07e9283db14a13d5001317d.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
 References: <cover.1405685481.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From: Michal Nazarewicz <mina86@mina86.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-This reverts commit 0e2e24e5dc6eb6f0698e9dc97e652f132b885624, which
-was applied twice mistakenly. The first one is
-bee3f7b8188d4b2a5dfaeb2eb4a68d99f67daecf.
+commit f0688c8b81d2ea239c3fb0b848f623b579238d99 upstream.
 
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+If the descriptors do not need any strings and user space sends empty
+set of strings, the ffs->stringtabs field remains NULL.  Thus
+*ffs->stringtabs in functionfs_bind leads to a NULL pointer
+dereferenece.
+
+The bug was introduced by commit [fd7c9a007f: “use usb_string_ids_n()”].
+
+While at it, remove double initialisation of lang local variable in
+that function.
+
+ffs->strings_count does not need to be checked in any way since in
+the above scenario it will remain zero and usb_string_ids_n() is
+a no-operation when colled with 0 argument.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
 ---
- fs/aio.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/gadget/f_fs.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 0abde33de70e..e609e15f36b9 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1066,9 +1066,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	head %= ctx->nr_events;
- 	tail %= ctx->nr_events;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 44cf775a8627..c3067f4f213a 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1389,11 +1389,13 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 	ffs->ep0req->context = ffs;
  
--	head %= ctx->nr_events;
--	tail %= ctx->nr_events;
--
- 	while (ret < nr) {
- 		long avail;
- 		struct io_event *ev;
+ 	lang = ffs->stringtabs;
+-	for (lang = ffs->stringtabs; *lang; ++lang) {
+-		struct usb_string *str = (*lang)->strings;
+-		int id = first_id;
+-		for (; str->s; ++id, ++str)
+-			str->id = id;
++	if (lang) {
++		for (; *lang; ++lang) {
++			struct usb_string *str = (*lang)->strings;
++			int id = first_id;
++			for (; str->s; ++id, ++str)
++				str->id = id;
++		}
+ 	}
+ 
+ 	ffs->gadget = cdev->gadget;
 -- 
 2.0.0
 
