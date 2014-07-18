@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935056AbaGRNOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:14:25 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17733 "EHLO
+	id S1030795AbaGRNOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:14:30 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17741 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030759AbaGRNOV (ORCPT
+	by vger.kernel.org with ESMTP id S935041AbaGRNOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:14:21 -0400
+	Fri, 18 Jul 2014 09:14:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 028/170] IB/qib: Fix port in pkey change event
-Date: Fri, 18 Jul 2014 14:10:33 +0200
-Message-Id: <8bd7f7dad0838c11562fb1e0b5e4012da31ca805.1405685481.git.jslaby@suse.cz>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 134/170] workqueue: zero cpumask of wq_numa_possible_cpumask on init
+Date: Fri, 18 Jul 2014 14:12:19 +0200
+Message-Id: <0abca2c33101429cda2aae2a1c8aa2e9085c2df5.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,42 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
+commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
 
-The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
+When hot-adding and onlining CPU, kernel panic occurs, showing following
+call trace.
 
-As of the dual port qib QDR card, this is not necessarily correct.
+  BUG: unable to handle kernel paging request at 0000000000001d08
+  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
+  PGD 0
+  Oops: 0000 [#1] SMP
+  ...
+  Call Trace:
+   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
+   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
+   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
+   [<ffffffff811926f1>] new_slab+0x91/0x300
+   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
+   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
+   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
+   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
+   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
+   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
+   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
+   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
+   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
+   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
+   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
+   [<ffffffff81086652>] kthreadd+0x2c2/0x300
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
 
-Change to use the port as specified in the call.
+In my investigation, I found the root cause is wq_numa_possible_cpumask.
+All entries of wq_numa_possible_cpumask is allocated by
+alloc_cpumask_var_node(). And these entries are used without initializing.
+So these entries have wrong value.
 
-Reported-by: Alex Estrin <alex.estrin@intel.com>
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
+wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
+calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
+as follow:
+
+3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
+3593         if (wq_numa_enabled) {
+3594                 for_each_node(node) {
+3595                         if (cpumask_subset(pool->attrs->cpumask,
+3596                                            wq_numa_possible_cpumask[node])) {
+3597                                 pool->node = node;
+3598                                 break;
+3599                         }
+3600                 }
+3601         }
+
+But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
+node is selected. As a result, kernel panic occurs.
+
+By this patch, all entries of wq_numa_possible_cpumask are allocated by
+zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/hw/qib/qib_mad.c | 2 +-
+ kernel/workqueue.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/qib/qib_mad.c b/drivers/infiniband/hw/qib/qib_mad.c
-index ccb119143d20..1dd9fcbb7c9a 100644
---- a/drivers/infiniband/hw/qib/qib_mad.c
-+++ b/drivers/infiniband/hw/qib/qib_mad.c
-@@ -1028,7 +1028,7 @@ static int set_pkeys(struct qib_devdata *dd, u8 port, u16 *pkeys)
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index e0b695893579..3fafbbb31927 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -5029,7 +5029,7 @@ static void __init wq_numa_init(void)
+ 	BUG_ON(!tbl);
  
- 		event.event = IB_EVENT_PKEY_CHANGE;
- 		event.device = &dd->verbs_dev.ibdev;
--		event.element.port_num = 1;
-+		event.element.port_num = port;
- 		ib_dispatch_event(&event);
- 	}
- 	return 0;
+ 	for_each_node(node)
+-		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
++		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+ 				node_online(node) ? node : NUMA_NO_NODE));
+ 
+ 	for_each_possible_cpu(cpu) {
 -- 
 2.0.0
 
