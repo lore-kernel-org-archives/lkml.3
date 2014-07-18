@@ -1,131 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030831AbaGRNyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:54:53 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17465 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030336AbaGRNJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Elder <elder@linaro.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 093/170] rbd: use reference counts for image requests
-Date: Fri, 18 Jul 2014 14:11:38 +0200
-Message-Id: <1ef3eb2867700888172aec631f89275d44d583f8.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	id S1030855AbaGRNzD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:55:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60325 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030336AbaGRNy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:54:59 -0400
+Date: Fri, 18 Jul 2014 08:54:20 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        George Cherian <george.cherian@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 7/9] usb: phy: am335x: setup the gen_phy function
+ pointers _before_ adding the phy
+Message-ID: <20140718135419.GG24914@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-2-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-3-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-4-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-6-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-7-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-8-git-send-email-LW@KARO-electronics.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B8ONY/mu/bqBak9m"
+Content-Disposition: inline
+In-Reply-To: <1405675890-8802-8-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Elder <elder@linaro.org>
+--B8ONY/mu/bqBak9m
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 18, 2014 at 11:31:28AM +0200, Lothar Wa=DFmann wrote:
+> Make sure all parameters are correctly set up before registering the
+> PHY with the USB framework.
+>=20
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
+> ---
+>  drivers/usb/phy/phy-am335x.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/usb/phy/phy-am335x.c b/drivers/usb/phy/phy-am335x.c
+> index 91c71ab..6522fa7 100644
+> --- a/drivers/usb/phy/phy-am335x.c
+> +++ b/drivers/usb/phy/phy-am335x.c
+> @@ -56,11 +56,12 @@ static int am335x_phy_probe(struct platform_device *p=
+dev)
+>  	if (ret)
+>  		return ret;
+> =20
+> +	am_phy->usb_phy_gen.phy.init =3D am335x_init;
+> +	am_phy->usb_phy_gen.phy.shutdown =3D am335x_shutdown;
+> +
+>  	ret =3D usb_add_phy_dev(&am_phy->usb_phy_gen.phy);
+>  	if (ret)
+>  		return ret;
+> -	am_phy->usb_phy_gen.phy.init =3D am335x_init;
+> -	am_phy->usb_phy_gen.phy.shutdown =3D am335x_shutdown;
+> =20
+>  	platform_set_drvdata(pdev, am_phy);
+>  	device_init_wakeup(dev, true);
 
-===============
+both of these need to be done before registering the PHY too.
 
-commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
+--=20
+balbi
 
-Each image request contains a reference count, but to date it has
-not actually been used.  (I think this was just an oversight.) A
-recent report involving rbd failing an assertion shed light on why
-and where we need to use these reference counts.
+--B8ONY/mu/bqBak9m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Every OSD request associated with an object request uses
-rbd_osd_req_callback() as its callback function.  That function will
-call a helper function (dependent on the type of OSD request) that
-will set the object request's "done" flag if the object request if
-appropriate.  If that "done" flag is set, the object request is
-passed to rbd_obj_request_complete().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-In rbd_obj_request_complete(), requests are processed in sequential
-order.  So if an object request completes before one of its
-predecessors in the image request, the completion is deferred.
-Otherwise, if it's a completing object's "turn" to be completed, it
-is passed to rbd_img_obj_end_request(), which records the result of
-the operation, accumulates transferred bytes, and so on.  Next, the
-successor to this request is checked and if it is marked "done",
-(deferred) completion processing is performed on that request, and
-so on.  If the last object request in an image request is completed,
-rbd_img_request_complete() is called, which (typically) destroys
-the image request.
+iQIcBAEBAgAGBQJTyScLAAoJEIaOsuA1yqREZqQQAKgSvQw8TMe5swcW8WyTF7R0
+4CDG4vSrNX3Mq6V9XWO/xSodgNN6UvudgfKeDLRFvWcBNL9mNdi9brDwvLDQJJAt
+DWf77APCDk2Y2sg+4i9i8b+O7AWMCzF61ewRdNuKMSiH3KVEnmRJlk0oZh33xmZf
+X9KrNHJ7gOKoHMxiLlX8e9RZjg5CTCV1cg44qb9WMB5PiD3O/iZZyDpOnBXIVC3i
+yR8B2iWPkXS08DrXAI1k6wejWoQhEfGjPJS1VM78T+kw4ZfwMDOjLBUbWwNo0KVH
+Q7E3KNKlduHsXQ3rbZRcEhfakmqBfPR+ESzW8sdmI3PzdZXbTmm9hWdUf0Z0V8kj
+eZaQ7uJ+jeDWv0+pKCJzzYCUeY5eCZZrZZLwdT1us4/AdPWN1AaAjIl4/If+Jl6w
+ipTdpgsHluzbo7fji/84Psb2XzaFe8hOJM+amqInbdoS2OQa0AblAbnjTrvyj7+m
+dPhihDh7fJBhRVlvWHp8eZfn0TNVkkbn8wUPMMTWHXju9iOP948iqcuHdjRYFjfN
+yRWU9P6nbugyljCbCFwztBB70jsaZ8EckkDuTL9VSb2anUYAbAZxpC2kmNfumM7M
+u5l0B7Vcy1nAjrW3rhKIlstupgryS5J2iWQEqisq956/UKra5eoxK9Kae7O7ZK6P
+hBgCqPAECeqr2gnd5eU+
+=a/qr
+-----END PGP SIGNATURE-----
 
-There is a race here, however.  The instant an object request is
-marked "done" it can be provided (by a thread handling completion of
-one of its predecessor operations) to rbd_img_obj_end_request(),
-which (for the last request) can then lead to the image request
-getting torn down.  And this can happen *before* that object has
-itself entered rbd_img_obj_end_request().  As a result, once it
-*does* enter that function, the image request (and even the object
-request itself) may have been freed and become invalid.
-
-All that's necessary to avoid this is to properly count references
-to the image requests.  We tear down an image request's object
-requests all at once--only when the entire image request has
-completed.  So there's no need for an image request to count
-references for its object requests.  However, we don't want an
-image request to go away until the last of its object requests
-has passed through rbd_img_obj_callback().  In other words,
-we don't want rbd_img_request_complete() to necessarily
-result in the image request being destroyed, because it may
-get called before we've finished processing on all of its
-object requests.
-
-So the fix is to add a reference to an image request for
-each of its object requests.  The reference can be viewed
-as representing an object request that has not yet finished
-its call to rbd_img_obj_callback().  That is emphasized by
-getting the reference right after assigning that as the image
-object's callback function.  The corresponding release of that
-reference is done at the end of rbd_img_obj_callback(), which
-every image object request passes through exactly once.
-
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/block/rbd.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index db60c91804c3..af7b44ffd190 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1395,6 +1395,13 @@ static void rbd_obj_request_put(struct rbd_obj_request *obj_request)
- 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
- }
- 
-+static void rbd_img_request_get(struct rbd_img_request *img_request)
-+{
-+	dout("%s: img %p (was %d)\n", __func__, img_request,
-+	     atomic_read(&img_request->kref.refcount));
-+	kref_get(&img_request->kref);
-+}
-+
- static bool img_request_child_test(struct rbd_img_request *img_request);
- static void rbd_parent_request_destroy(struct kref *kref);
- static void rbd_img_request_destroy(struct kref *kref);
-@@ -2148,6 +2155,7 @@ static void rbd_img_obj_callback(struct rbd_obj_request *obj_request)
- 	img_request->next_completion = which;
- out:
- 	spin_unlock_irq(&img_request->completion_lock);
-+	rbd_img_request_put(img_request);
- 
- 	if (!more)
- 		rbd_img_request_complete(img_request);
-@@ -2244,6 +2252,7 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
- 			goto out_partial;
- 		obj_request->osd_req = osd_req;
- 		obj_request->callback = rbd_img_obj_callback;
-+		rbd_img_request_get(img_request);
- 
- 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
- 						0, 0);
--- 
-2.0.0
-
+--B8ONY/mu/bqBak9m--
