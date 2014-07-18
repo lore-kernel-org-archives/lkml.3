@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935122AbaGRRWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:22:17 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:59479 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935058AbaGRRWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:22:14 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86, vdso: Fix vdso2c's special_pages error checking
-Date: Fri, 18 Jul 2014 10:21:59 -0700
-Message-Id: <eb12efa0eda2ffc23e800b5a5a1c84afc09a4a1e.1405703989.git.luto@amacapital.net>
+	id S1422748AbaGRRVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:21:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44161 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030449AbaGRRVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 13:21:40 -0400
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: linux-samsung-soc@vger.kernel.org
+Cc: Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/SAMSUNG ARM
+	A...),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2 2/4] ARM: dts: exynos5250: cypress,cyapa trackpad is Snow only
+Date: Fri, 18 Jul 2014 19:20:07 +0200
+Message-Id: <1405704009-8430-3-git-send-email-afaerber@suse.de>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <20140718150005.73db8eb9@canb.auug.org.au>
-References: <20140718150005.73db8eb9@canb.auug.org.au>
+In-Reply-To: <1405704009-8430-1-git-send-email-afaerber@suse.de>
+References: <1405704009-8430-1-git-send-email-afaerber@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell's compiler did something amazing: it unrolled a
-loop, discovered that one iteration of that loop contained an
-always-true test, and emitted a warning that will IMO only serve to
-convince people to disable the warning.
+Move it from exynos5250-cros-common.dtsi to exynos5250-snow.dts.
+Spring does not need it, it uses an Atmel maXTouch instead.
 
-That bogus warning caused me to wonder what prompted such an
-absurdity from his compiler, and I discovered that the code in
-question was, in fact, completely wrong -- I was looking things up
-in the wrong array.
-
-This affects 3.16 as well, but the only effect is to screw up the
-error checking a bit.  vdso2c's output is unaffected.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
- arch/x86/vdso/vdso2c.h | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ v2: New (Doug Anderson)
 
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index fd57829..0224987 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -109,16 +109,18 @@ static void BITSFUNC(go)(void *raw_addr, size_t raw_len,
+ arch/arm/boot/dts/exynos5250-cros-common.dtsi |  8 --------
+ arch/arm/boot/dts/exynos5250-snow.dts         | 10 ++++++++++
+ 2 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/exynos5250-cros-common.dtsi b/arch/arm/boot/dts/exynos5250-cros-common.dtsi
+index 61128d1..e603e9c 100644
+--- a/arch/arm/boot/dts/exynos5250-cros-common.dtsi
++++ b/arch/arm/boot/dts/exynos5250-cros-common.dtsi
+@@ -39,14 +39,6 @@
+ 		status = "okay";
+ 		samsung,i2c-sda-delay = <100>;
+ 		samsung,i2c-max-bus-freq = <378000>;
+-
+-		trackpad {
+-			reg = <0x67>;
+-			compatible = "cypress,cyapa";
+-			interrupts = <2 0>;
+-			interrupt-parent = <&gpx1>;
+-			wakeup-source;
+-		};
+ 	};
  
- 	/* Validate mapping addresses. */
- 	for (i = 0; i < sizeof(special_pages) / sizeof(special_pages[0]); i++) {
--		if (!syms[i])
-+		INT_BITS symval = syms[special_pages[i]];
+ 	i2c@12C80000 {
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index 0f867a3..f2b8c41 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -490,6 +490,16 @@
+ 	};
+ };
+ 
++&i2c_1 {
++	trackpad {
++		reg = <0x67>;
++		compatible = "cypress,cyapa";
++		interrupts = <2 0>;
++		interrupt-parent = <&gpx1>;
++		wakeup-source;
++	};
++};
 +
-+		if (!symval)
- 			continue;  /* The mapping isn't used; ignore it. */
- 
--		if (syms[i] % 4096)
-+		if (symval % 4096)
- 			fail("%s must be a multiple of 4096\n",
- 			     required_syms[i].name);
--		if (syms[sym_vvar_start] > syms[i] + 4096)
--			fail("%s underruns begin_vvar\n",
-+		if (symval + 4096 < syms[sym_vvar_start])
-+			fail("%s underruns vvar_start\n",
- 			     required_syms[i].name);
--		if (syms[i] + 4096 > 0)
-+		if (symval + 4096 > 0)
- 			fail("%s is on the wrong side of the vdso text\n",
- 			     required_syms[i].name);
- 	}
+ &pinctrl_0 {
+ 	max77686_irq: max77686-irq {
+ 		samsung,pins = "gpx3-2";
 -- 
 1.9.3
 
