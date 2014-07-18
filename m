@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966054AbaGRNe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:34:26 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17764 "EHLO
+	id S1030784AbaGRNOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:14:22 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17728 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935080AbaGRNOk (ORCPT
+	by vger.kernel.org with ESMTP id S935023AbaGRNOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:14:40 -0400
+	Fri, 18 Jul 2014 09:14:17 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kardell <jan.kardell@telliq.com>,
-        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 131/170] iio: ti_am335x_adc: Fix: Use same step id at FIFOs both ends
-Date: Fri, 18 Jul 2014 14:12:16 +0200
-Message-Id: <6cbd85608fa0e6b2cd6d14935424e1d988caa130.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 030/170] IB/srp: Fix a sporadic crash triggered by cable pulling
+Date: Fri, 18 Jul 2014 14:10:35 +0200
+Message-Id: <237de203cc2ebaccc8c023fe9e2599bba967941a.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,40 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kardell <jan.kardell@telliq.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit baa3c65298c089a9014b4e523a14ec2885cca1bc upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-Since AI lines could be selected at will (linux-3.11) the sending
-and receiving ends of the FIFO does not agree about what step is used
-for a line. It only works if the last lines are used, like 5,6,7,
-and fails if ie 2,4,6 is selected in DT.
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
-Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
-Tested-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/iio/adc/ti_am335x_adc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/srp/ib_srp.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index a952538a1a8b..b9ed661293a7 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -155,7 +155,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 		if (time_after(jiffies, timeout))
- 			return -EAGAIN;
- 		}
--	map_val = chan->channel + TOTAL_CHANNELS;
-+	map_val = adc_dev->channel_step[chan->scan_index];
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index 17b58f4f0681..024fa025a7ab 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1412,6 +1412,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
- 	/*
- 	 * When the sub-system is first enabled,
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
++
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
+ 
 -- 
 2.0.0
 
