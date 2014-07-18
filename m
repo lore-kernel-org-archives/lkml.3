@@ -1,129 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761347AbaGRJxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:53:24 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:61267 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761249AbaGRJxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:53:18 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-28-53c8ee8bcad3
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/2] clk: samsung: exynos3250: Enable ARMCLK down feature
-Date: Fri, 18 Jul 2014 11:53:06 +0200
-Message-id: <1405677186-18678-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1405677186-18678-1-git-send-email-k.kozlowski@samsung.com>
-References: <1405677186-18678-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4Vd3udyeCDS7slLbYOGM9q8XrF4YW
-	vQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8li7ZG77BZPJ1xks1g/4zWLA5fHnWt72Dw2L6n3
-	6NuyitHj8ya5AJYoLpuU1JzMstQifbsEroxV/T1sBVclKw7+WcLewLhVtIuRk0NCwETiztq5
-	rBC2mMSFe+vZuhi5OIQEljJKbH8ymRnC6WOSOPnnIxNIFZuAscTm5UvAqkQEbjNKXD5ygx3E
-	YRY4yigxvfctWJWwgKfEjsXPmUFsFgFViR9b9oLZvALuEqfX3IDaJydx8thkMJtTwENi1+97
-	YL1CQDXz3z1lnsDIu4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSKh92cG4+JjVIUYB
-	DkYlHl6OCSeChVgTy4orcw8xSnAwK4nwZt8/HizEm5JYWZValB9fVJqTWnyIkYmDU6qB0XyS
-	XFmh2LbciX4Kz/iuStaoplo4R3DPuCTMNUVv+ZEGlwqr29vOP9l0x5Nb5rH7lNVl30VCLI0f
-	zA++N0ct4McTy5u3Tx/+vq/addr2eVIfbHfUxQRs3XTS/VKAgZ7j139r/r75zhvWp6eS0JG0
-	47KrffDtln1vjh+d85vhYt/plzphOvt55JVYijMSDbWYi4oTAbrB/hoTAgAA
+	id S1761377AbaGRJyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:54:10 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:58967
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761355AbaGRJyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:54:07 -0400
+x-originating-ip: 72.167.245.219
+From: Yue Zhang <yuezha@microsoft.com>
+To: netdev@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        olaf@aepfle.de, jasowang@redhat.com, davem@davemloft.net
+Cc: haiyangz@microsoft.com, kys@microsoft.com, huishao@microsoft.com,
+        decui@microsoft.com
+Subject: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Date: Fri, 18 Jul 2014 03:55:03 -0700
+Message-Id: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable ARMCLK down and up features on Exynos3250 SoC. The
-frequency of ARMCLK will be reduced upon entering idle mode (WFI or
-WFE).  Additionally upon exiting from idle mode the divider for ARMCLK
-will be brought back to 1.
+From: Yue Zhang <yuezha@microsoft.com>
 
-These are exactly the same settings as for Exynos5250
-(clk-exynos5250.c).
+This patch addresses the comment from Olaf Hering and Greg KH
+for a previous commit 3a494e710367 ("hyperv: Add handler for
+RNDIS_STATUS_NETWORK_CHANGE event")
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+In previous solution, the driver calls "network restart" to
+force a DHCP renew when the host is back from hibernation.
+
+In this fix, the driver will keep network carrier offline for
+10 seconds and then bring it back. So that ifplugd daemon will
+notice this change and refresh DHCP lease.
+
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+
+Signed-off-by: Yue Zhang <yuezha@microsoft.com>
 ---
- drivers/clk/samsung/clk-exynos3250.c | 50 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ drivers/net/hyperv/netvsc_drv.c | 21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/clk/samsung/clk-exynos3250.c b/drivers/clk/samsung/clk-exynos3250.c
-index 7a17bd40d1dd..c80140270931 100644
---- a/drivers/clk/samsung/clk-exynos3250.c
-+++ b/drivers/clk/samsung/clk-exynos3250.c
-@@ -87,6 +87,29 @@
- #define SRC_CPU			0x14200
- #define DIV_CPU0		0x14500
- #define DIV_CPU1		0x14504
-+#define PWR_CTRL1		0x15020
-+#define PWR_CTRL2		0x15024
-+
-+/* Below definitions are used for PWR_CTRL settings */
-+#define PWR_CTRL1_CORE2_DOWN_RATIO		(7 << 28)
-+#define PWR_CTRL1_CORE1_DOWN_RATIO		(7 << 16)
-+#define PWR_CTRL1_DIV2_DOWN_EN			(1 << 9)
-+#define PWR_CTRL1_DIV1_DOWN_EN			(1 << 8)
-+#define PWR_CTRL1_USE_CORE3_WFE			(1 << 7)
-+#define PWR_CTRL1_USE_CORE2_WFE			(1 << 6)
-+#define PWR_CTRL1_USE_CORE1_WFE			(1 << 5)
-+#define PWR_CTRL1_USE_CORE0_WFE			(1 << 4)
-+#define PWR_CTRL1_USE_CORE3_WFI			(1 << 3)
-+#define PWR_CTRL1_USE_CORE2_WFI			(1 << 2)
-+#define PWR_CTRL1_USE_CORE1_WFI			(1 << 1)
-+#define PWR_CTRL1_USE_CORE0_WFI			(1 << 0)
-+
-+#define PWR_CTRL2_DIV2_UP_EN			(1 << 25)
-+#define PWR_CTRL2_DIV1_UP_EN			(1 << 24)
-+#define PWR_CTRL2_DUR_STANDBY2_VAL		(1 << 16)
-+#define PWR_CTRL2_DUR_STANDBY1_VAL		(1 << 8)
-+#define PWR_CTRL2_CORE2_UP_RATIO		(1 << 4)
-+#define PWR_CTRL2_CORE1_UP_RATIO		(1 << 0)
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index a9c5eaa..559c97d 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -33,6 +33,7 @@
+ #include <linux/if_vlan.h>
+ #include <linux/in.h>
+ #include <linux/slab.h>
++#include <linux/delay.h>
+ #include <net/arp.h>
+ #include <net/route.h>
+ #include <net/sock.h>
+@@ -792,8 +793,7 @@ static void netvsc_link_change(struct work_struct *w)
+ 	struct netvsc_device *net_device;
+ 	struct rndis_device *rdev;
+ 	bool notify, refresh = false;
+-	char *argv[] = { "/etc/init.d/network", "restart", NULL };
+-	char *envp[] = { "HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
++	int delay;
  
- /* list of PLLs to be registered */
- enum exynos3250_plls {
-@@ -748,6 +771,31 @@ static struct samsung_pll_clock exynos3250_plls[nr_plls] __initdata = {
- 			UPLL_LOCK, UPLL_CON0, NULL),
- };
+ 	rtnl_lock();
  
-+static void __init exynos3_core_down_clock(void)
-+{
-+	unsigned int tmp;
-+
-+	/*
-+	 * Enable arm clock down (in idle) and set arm divider
-+	 * ratios in WFI/WFE state.
-+	 */
-+	tmp = (PWR_CTRL1_CORE2_DOWN_RATIO | PWR_CTRL1_CORE1_DOWN_RATIO |
-+		PWR_CTRL1_DIV2_DOWN_EN | PWR_CTRL1_DIV1_DOWN_EN |
-+		PWR_CTRL1_USE_CORE1_WFE | PWR_CTRL1_USE_CORE0_WFE |
-+		PWR_CTRL1_USE_CORE1_WFI | PWR_CTRL1_USE_CORE0_WFI);
-+	__raw_writel(tmp, reg_base + PWR_CTRL1);
-+
-+	/*
-+	 * Enable arm clock up (on exiting idle). Set arm divider
-+	 * ratios when not in idle along with the standby duration
-+	 * ratios.
-+	 */
-+	tmp = (PWR_CTRL2_DIV2_UP_EN | PWR_CTRL2_DIV1_UP_EN |
-+		PWR_CTRL2_DUR_STANDBY2_VAL | PWR_CTRL2_DUR_STANDBY1_VAL |
-+		PWR_CTRL2_CORE2_UP_RATIO | PWR_CTRL2_CORE1_UP_RATIO);
-+	__raw_writel(tmp, reg_base + PWR_CTRL2);
-+}
-+
- static void __init exynos3250_cmu_init(struct device_node *np)
- {
- 	struct samsung_clk_provider *ctx;
-@@ -775,6 +823,8 @@ static void __init exynos3250_cmu_init(struct device_node *np)
- 	samsung_clk_register_div(ctx, div_clks, ARRAY_SIZE(div_clks));
- 	samsung_clk_register_gate(ctx, gate_clks, ARRAY_SIZE(gate_clks));
+@@ -816,8 +816,21 @@ static void netvsc_link_change(struct work_struct *w)
  
-+	exynos3_core_down_clock();
-+
- 	exynos3250_clk_sleep_init();
- }
- CLK_OF_DECLARE(exynos3250_cmu, "samsung,exynos3250-cmu", exynos3250_cmu_init);
+ 	rtnl_unlock();
+ 
+-	if (refresh)
+-		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
++	if (refresh) {
++		/*
++		 * Keep the carrier offline for 10 seconds
++		 * to notify ifplugd daemon network change
++		 */
++		for (delay = 0; delay < 10; delay++) {
++			rtnl_lock();
++			netif_carrier_off(net);
++			rtnl_unlock();
++			ssleep(1);
++		}
++		rtnl_lock();
++		netif_carrier_on(net);
++		rtnl_unlock();
++	}
+ 
+ 	if (notify)
+ 		netdev_notify_peers(net);
 -- 
 1.9.1
 
