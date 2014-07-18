@@ -1,70 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422832AbaGRSOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:14:03 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:45059 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030663AbaGRSOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:14:00 -0400
+	id S1422852AbaGRSRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:17:00 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:59203 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030597AbaGRSQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 14:16:58 -0400
+Message-ID: <53C9648E.5040005@interlog.com>
+Date: Fri, 18 Jul 2014 08:16:46 -1000
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUv3G+C3PTOD1FJGOG8AQCA30hNkUiusCnQDGq6Kt_Feg@mail.gmail.com>
-References: <1405620518-18495-1-git-send-email-keescook@chromium.org>
-	<alpine.LRH.2.11.1407181325200.15709@namei.org>
-	<CALCETrUv3G+C3PTOD1FJGOG8AQCA30hNkUiusCnQDGq6Kt_Feg@mail.gmail.com>
-Date: Fri, 18 Jul 2014 11:13:59 -0700
-X-Google-Sender-Auth: xxAQnTZ2fv-l92gae79uUzqDbDk
-Message-ID: <CAGXu5jL9wQ4ZJ1kDRx_Y_cyGQEjO_Ugmcc--Q71x32_x1q9ScA@mail.gmail.com>
-Subject: Re: [PATCH v12 11/11] seccomp: add thread sync ability
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: James Bottomley <jbottomley@parallels.com>,
+        "Elliott@hp.com" <Elliott@hp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>,
+        "kys@microsoft.com" <kys@microsoft.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
+ the basic I/O timeout
+References: <1401899623-24194-1-git-send-email-kys@microsoft.com>	 <1401901323.17510.23.camel@dabdike>	 <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>	 <53911A35.7010805@cs.wisc.edu>	 <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>	 <5391F801.4010107@cs.wisc.edu>	 <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>	 <539206FA.1020001@kernel.dk>	 <5b926a0a9f264edda91c7c2ab0acb7d1@BY2PR03MB299.namprd03.prod.outlook.com>	 <13807d2cc8744ae1bc374f20d8f9caec@BY2PR0301MB0711.namprd03.prod.outlook.com>	 <94D0CD8314A33A4D9D801C0FE68B402958BAC6DC@G9W0745.americas.hpqcorp.net>	 <1405697964.605.27.camel@jarvis.lan>	 <94D0CD8314A33A4D9D801C0FE68B402958BB2E3D@G9W0745.americas.hpqcorp.net> <1405705265.30262.6.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1405705265.30262.6.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 10:17 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Jul 17, 2014 at 8:26 PM, James Morris <jmorris@namei.org> wrote:
->> On Thu, 17 Jul 2014, Kees Cook wrote:
+On 14-07-18 07:41 AM, James Bottomley wrote:
+> On Fri, 2014-07-18 at 17:17 +0000, Elliott, Robert (Server Storage)
+> wrote:
 >>
->>> Twelfth time's the charm! :)
 >>
->> Btw, there doesn't seem to be an official seccomp maintainer.  Kees, would
->> you like to volunteer for this?  If so, send in a patch for MAINTAINERS,
->> and set up a git tree for me to pull from.
-
-Sure thing, I'll get this set up now. I wonder if I should include the
-glob "arch/*/kernel/ptrace.c" in the MAINTAINERS entry. :P
-
-> *snicker* :)
+>>> From: James Bottomley [mailto:jbottomley@parallels.com]
+>>>
+>>> On Fri, 2014-07-18 at 00:51 +0000, Elliott, Robert (Server Storage)
+>>> wrote:
+>> ...
+>>>>
+>>>> Also, in both sd_setup_flush_cmnd and sd_sync_cache:
+>>>>        cmd->cmnd[0] = SYNCHRONIZE_CACHE;
+>>>>        cmd->cmd_len = 10;
+>>>>
+>>>> SYNCHRONIZE CACHE (16) should be favored over SYNCHRONIZE
+>>>> CACHE (10) unless SYNCHRONIZE CACHE (10) is not supported.
+>>
+>> (sorry - meant "unless ... 16 is not supported")
 >
-> Kees, if you take on this awesome responsibility, should I send you a
-> rebased version of the fastpath stuff?  If so, I think that the
-> arch-neutral part should go in through your shiny new tree (once it's
-> reviewed to your satisfaction), and I'll ask hpa to pick up the x86
-> part.
+> Yes, I guessed that?
+>
+>>> For what reason.  We usually go for the safe alternatives, which is 10
+>>> byte commands because they have the widest testing and greatest level of
+>>> support.  We don't do range flushes currently, so there doesn't seem to
+>>> be a practical different.  If we did support range flushes, we'd likely
+>>> only use SC(16) on >2TB devices.
+>>>
+>>> James
+>>
+>> A goal of the simplified SCSI feature set idea is to drop all the
+>> short CDBs that have larger, more capable equivalents - don't carry
+>> READ 6/10/12/16 and SYNCHRONIZE CACHE 10/16, just keep the 16-byte
+>> versions.  With modern serial IU-based protocols, short CDBs don't
+>> save any transfer time.  This will simplify design and testing on
+>> both initiator and target sides. Competing command sets like NVMe
+>> rightly point out that SCSI has too much legacy baggage - all you
+>> need for IO is one READ, one WRITE, and one FLUSH command.
+>
+> But that's not relevant to us.  This is the problem of practical vs
+> standards approaches.  We have to support older and buggy devices.  Most
+> small USB storage sticks die if they see 16 byte CDB commands because
+> their interpreters.  The more "legacy baggage" the standards committee
+> dumps, the greater the number of heuristics OSs have to have to cope
+> with the plethora of odd devices.
+>
+>> That's why SBC-3 ended up with these warning notes for all the
+>> non-16 byte CDBs:
+>>
+>> 	NOTE 15 - Migration from the SYNCHRONIZE CACHE (10) command to
+>> 	the SYNCHRONIZE CACHE (16) command is recommended for all
+>> 	implementations.
+>>
+>> If the LBA field in SYNCHRONIZE CACHE went obsolete, then maybe
+>> SYNCHRONIZE CACHE (10) would be kept instead of (16), but that
+>> field is still present.  So, (16) is the likely survivor.
+>
+> OK, but look at it from our point of view:  The reply above justifies
+> why we prefer 10 byte CDBs over 16.  If the standards body ever did
+> remove SC(10) completely, then we'd have to have yet another heuristic
+> to recognise devices that don't support SC(10), but until that day,
+> using SC(10) alone works in all cases, so is the better path for the OS.
+>
+> If you could, please get the standards body to recognise that the more
+> command churn they introduce (in the name of rationalisation or
+> whatever), the more problems they introduce for Operating Systems and
+> the more likelihood (because of different people reading different
+> revisions of standards) that we end up with compliance bugs in devices.
 
-Yeah, that sounds perfect.
+ From the term: "feature sets" I'm guessing T10 will follow what T13
+does and have something like a VPD page with descriptors of feature
+sets supported. Each set has mandatory and optional commands,
+perhaps a similar categorization of mode and VPD pages as well. Such
+a "clean slate" for SCSI would make it simpler in the future, at
+least for what to put on the fast path. Perhaps some legacy
+support could be pushed to the user space.
 
-> I'd volunteer to be a "R:eviewer", but I don't think that the R tag
-> has made it into MAINTAINERS yet.
+For many technical areas "legacy" is a derogatory term, but
+not necessarily for storage!
 
-I'd love to have you listed. :)
+Doug Gilbert
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
