@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294AbaGRMfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:35:23 -0400
-Received: from sauhun.de ([89.238.76.85]:46825 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063AbaGRMfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:35:22 -0400
-Date: Fri, 18 Jul 2014 14:35:17 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Suneel G <suneelgarapati@gmail.com>
-Cc: Jagan Teki <jagannadh.teki@gmail.com>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: I2C Slave monitor mode support
-Message-ID: <20140718123517.GB2731@katana>
-References: <CAD6G_RRa9C0umBrR6CUF3zb5cSKKfZO7y7UPUKHjJOx41A0aJQ@mail.gmail.com>
- <20140617121912.GA2683@katana>
- <CAOZ77ogXPwXPtUxROJKT2wX=2wkZeHeWPZaBhyCnoP0zMxi8mw@mail.gmail.com>
+	id S1760552AbaGRMlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:41:03 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11191 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465AbaGRMlB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 08:41:01 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX185Affh87QrfQ+x2LuO2VzaJpR7bVotymw=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 0613C5AF559
+Date: Fri, 18 Jul 2014 08:40:38 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shiyan <shc_work@mail.ru>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC Patch V1 21/30] mm, irqchip: Use
+ cpu_to_mem()/numa_mem_id() to support memoryless node
+Message-ID: <20140718124038.GE24496@titan.lakedaemon.net>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-22-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xgyAXRrhYN0wYx8y"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOZ77ogXPwXPtUxROJKT2wX=2wkZeHeWPZaBhyCnoP0zMxi8mw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405064267-11678-22-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 11, 2014 at 03:37:38PM +0800, Jiang Liu wrote:
+> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> may return a node without memory, and later cause system failure/panic
+> when calling kmalloc_node() and friends with returned node id.
+> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+> memory for the/current cpu.
+> 
+> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+> is the same as cpu_to_node()/numa_node_id().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/irqchip/irq-clps711x.c |    2 +-
+>  drivers/irqchip/irq-gic.c      |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 
---xgyAXRrhYN0wYx8y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Do you have anything depending on this?  Can apply it to irqchip?  If
+you need to keep it with other changes,
 
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-> Currently, one would have to put a loop on the address transfer waiting an ack
-> is received in user space.
+But please do let me know if I can take it.
 
-This is what most i2c master drivers would need to do anyhow. I have
-never heard of hardware support for that. Do you know an IP core which
-does that? And how are timeouts defined/handled?
+thx,
 
-> This helps the app or the user software to not busy wait considering the slow
-> clk of i2c.
-
-Currently, this is not supported in Linux I2C. It probably could be
-using another I2C_M_* flag, but a number of details need to be designed
-and implemented first. Would you be interested?
-
-Kind regards,
-
-   Wolfram
-
-
---xgyAXRrhYN0wYx8y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTyRSFAAoJEBQN5MwUoCm2B3EP/3xJ/p83LP2eI3dlxXT90ZLf
-x96emSpiPMwWSkO6GhTuP96D45lCeam5CIiXSohi49WnJVaAo+LMij5VruN+fMFT
-Ky6bZ83+iJIzXg7b/T45hwgqhly3WnN38Ebx1coXINoCuJVzD7kxvcg8eRRJnN/P
-U+UZ2vHevsNtYSqvLAHeteLnprVG4U8gCDyZWjThTectDGTdSS1biALOkxDYdWPj
-pRGvnI5pzPsja/thFdMP9KfBd62XEennWpa6HimOxdqnq+0IZh/E7T0f1r9llbp6
-fGRUoR2LEVfQjoyAcyDvWRdvocP9Y2ANf3aQQQSEZPjXA6e3k1OMSKm9dvzXbcJB
-OpIgyn/Kqcp3CuQVJInOAwi5HoVHuo0uUlWyEnRKxUin1giTeFR1mgLTuZD8tGb4
-Adf953D22+gMxgDyV9BrGS3FDVBy2ls9Y4UekHtNQw6VfD/r0PRraezlynYH0bks
-sdCPT8qvo0gzOBeHRSaukDA3rwpeO5495cSjZqhSp4BOpnFrlC/x4v9b0w2fYjrd
-M2UW4W9490M2Fv1EYZ1SjjI5ugxZk9XMGA/wxTVg8nzu06qW2cG403NbQtlRtb+Y
-3bg658ZYKuuxMkdPGlCeyh/Ra32WiAUGCcVYMNjeisulsEMJRlHh3bIw/LY0R5xz
-KbfW2P29oAR0M/YTVldU
-=l9SZ
------END PGP SIGNATURE-----
-
---xgyAXRrhYN0wYx8y--
+Jason.
