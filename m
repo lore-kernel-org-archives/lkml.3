@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761697AbaGRLkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:40:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:25764 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761672AbaGRLkU (ORCPT
+	id S965082AbaGRLkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:40:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45078 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761660AbaGRLk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:40:20 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-50-53c907a34300
+	Fri, 18 Jul 2014 07:40:27 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-65-53c907a98652
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
         andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v3 09/12] usb: dwc2/gadget: delay enabling irq once hardware is
- configured properly
-Date: Fri, 18 Jul 2014 13:39:34 +0200
-Message-id: <1405683577-11226-10-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v3 11/12] usb: dwc2/gadget: disable clock when it's not needed
+Date: Fri, 18 Jul 2014 13:39:36 +0200
+Message-id: <1405683577-11226-12-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
 References: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jAd3F7CeDDaa0S1jMetnOYnHwfr1F
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jAd1V7CeDDd71sljMetnOYnHwfr1F
 	8+L1bBaXd81hs1i0rJXZYu2Ru+wW26dMZ7J4cHgnuwOHx/65a9g9+rasYvTYsv8zo8fxG9uZ
-	PD5vkgtgjeKySUnNySxLLdK3S+DKWLf2FUvBc56K4wfeMDUwXuDqYuTkkBAwkVh+7wIjhC0m
-	ceHeerYuRi4OIYFFjBJ92w+wQjjtTBKH1txgAqliE9CR2PJ9AliHiICAxPoXl9hBipgFTjBK
-	dPy/wAaSEBZIlbgzdyOYzSKgKnFs0RZWEJtXwE2i88B0Voh1chInj00GszmB4m2P/rN0MXIA
-	bXOVmPaVfwIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYweH1THoH46oGi0OMAhyM
-	Sjy8FjePBwuxJpYVV+YeYpTgYFYS4c2+DxTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBI
-	ID2xJDU7NbUgtQgmy8TBKdXAuPHhhCcFk91Nqpae6/zLwdyg7bP9+iSJ018yltrcWez+/MVk
-	a/8EBuXd4Q3pgVInqhkkdrRncc2MF2y7vnnrg2fa+t83fWh8c2wKh0UpzzvGBTxrCvyuCT0y
-	/7daw/Roi3LVk9vL1T3jJBdYXy572bl676R5SUmu09M/L+Nn+vez2sTstBebsBJLcUaioRZz
-	UXEiAM+2eSMrAgAA
+	PD5vkgtgjeKySUnNySxLLdK3S+DKOL7mAUvBUr6Kw7/vszQw3uXuYuTkkBAwkei7fYoNwhaT
+	uHBvPZgtJLCIUeLmwoAuRi4gu51J4vS2D0wgCTYBHYkt3ycwgtgiAgIS619cYgcpYhY4wSjR
+	8f8CWLewgJ/EieZXYDaLgKrE5L7pzCA2r4CbxKbOiUwQ2+QkTh6bzApicwLF2x79Z+li5ADa
+	5iox7Sv/BEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCg+uZ9A7GVQ0WhxgFOBiV
+	eHgtbh4PFmJNLCuuzD3EKMHBrCTCm30fKMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBA
+	emJJanZqakFqEUyWiYNTqoFR9AvbjRmBGr9OLxSVC/8142OtlbSJz8GXaxrTs/73vhK+b+U2
+	yXaLWkrrchdp9Uf57502VygcXGDyX2rWeTfFXbN8F8z0nlXoMkdeTJSzPmPhqxdTMhfXvz97
+	O2JPAOPrBhPxvP2+hQnBN7vUjhSpFz27/lnqjoV99O2v680Wl+sK2XdeE9mmxFKckWioxVxU
+	nAgAEJyciioCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+When device is stopped or suspended clock is not needed so we
+can disable it for this time.
 
-This patch fixes kernel panic/interrupt storm/etc issues if bootloader
-left s3c-hsotg module in enabled state. Now interrupt handler is enabled
-only after proper configuration of hardware registers.
-
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/gadget.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/usb/dwc2/gadget.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index def4900..3435711 100644
+index e74094a..11f038e 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -3459,13 +3459,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+@@ -2894,6 +2894,8 @@ static int s3c_hsotg_udc_start(struct usb_gadget *gadget,
+ 	hsotg->gadget.dev.of_node = hsotg->dev->of_node;
+ 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
  
- 	hsotg->irq = ret;
- 
--	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
--				dev_name(dev), hsotg);
--	if (ret < 0) {
--		dev_err(dev, "cannot claim IRQ\n");
--		goto err_clk;
--	}
--
- 	dev_info(dev, "regs %p, irq %d\n", hsotg->regs, hsotg->irq);
- 
- 	hsotg->gadget.max_speed = USB_SPEED_HIGH;
-@@ -3503,6 +3496,17 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 	s3c_hsotg_hw_cfg(hsotg);
- 	s3c_hsotg_init(hsotg);
- 
-+	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
-+				dev_name(dev), hsotg);
-+	if (ret < 0) {
-+		s3c_hsotg_phy_disable(hsotg);
-+		clk_disable_unprepare(hsotg->clk);
-+		regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
-+				       hsotg->supplies);
-+		dev_err(dev, "cannot claim IRQ\n");
-+		goto err_clk;
-+	}
++	clk_enable(hsotg->clk);
 +
- 	/* hsotg->num_of_eps holds number of EPs other than ep0 */
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+ 				    hsotg->supplies);
+ 	if (ret) {
+@@ -2942,6 +2944,8 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
  
- 	if (hsotg->num_of_eps == 0) {
+ 	regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies), hsotg->supplies);
+ 
++	clk_disable(hsotg->clk);
++
+ 	return 0;
+ }
+ 
+@@ -2973,8 +2977,10 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
+ 	spin_lock_irqsave(&hsotg->lock, flags);
+ 	if (is_on) {
+ 		s3c_hsotg_phy_enable(hsotg);
++		clk_enable(hsotg->clk);
+ 		s3c_hsotg_core_init(hsotg);
+ 	} else {
++		clk_disable(hsotg->clk);
+ 		s3c_hsotg_phy_disable(hsotg);
+ 	}
+ 
+@@ -3640,6 +3646,7 @@ static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
+ 
+ 		ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
+ 					     hsotg->supplies);
++		clk_disable(hsotg->clk);
+ 	}
+ 
+ 	return ret;
+@@ -3654,6 +3661,8 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
+ 	if (hsotg->driver) {
+ 		dev_info(hsotg->dev, "resuming usb gadget %s\n",
+ 			 hsotg->driver->driver.name);
++
++		clk_enable(hsotg->clk);
+ 		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+ 				      hsotg->supplies);
+ 	}
 -- 
 1.9.1
 
