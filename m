@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762000AbaGRMbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:31:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40768 "EHLO
+	id S1762031AbaGRMbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:31:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40762 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761719AbaGRMaQ (ORCPT
+	with ESMTP id S1761631AbaGRMaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:30:16 -0400
+	Fri, 18 Jul 2014 08:30:15 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
@@ -17,9 +17,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v10 7/8] ARM: berlin: add the AHCI node for the BG2Q
-Date: Fri, 18 Jul 2014 14:30:06 +0200
-Message-Id: <1405686607-8126-8-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v10 5/8] ata: ahci_platform: add a generic AHCI compatible
+Date: Fri, 18 Jul 2014 14:30:04 +0200
+Message-Id: <1405686607-8126-6-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -30,64 +30,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BG2Q has an AHCI SATA controller. Add the corresponding nodes
-(AHCI, PHY) into its device tree.
+The ahci_platform driver is a generic driver using the libahci_platform
+functions. Add a generic compatible to avoid having an endless list of
+compatibles with no differences for the same driver.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ drivers/ata/ahci_platform.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 635a16a64cb4..fa34ae6657ac 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -303,6 +303,45 @@
- 			clock-names = "refclk";
- 		};
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 95f9ca82082a..61b15e784020 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -77,6 +77,8 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_platform_suspend,
+ 			 ahci_platform_resume);
  
-+		ahci: sata@e90000 {
-+			compatible = "generic-ahci";
-+			reg = <0xe90000 0x1000>;
-+			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_SATA>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			sata0: sata-port@0 {
-+				reg = <0>;
-+				phys = <&sata_phy 0>;
-+				status = "disabled";
-+			};
-+
-+			sata1: sata-port@1 {
-+				reg = <1>;
-+				phys = <&sata_phy 1>;
-+				status = "disabled";
-+			};
-+		};
-+
-+		sata_phy: phy@e900a0 {
-+			compatible = "marvell,berlin2q-sata-phy";
-+			reg = <0xe900a0 0x200>;
-+			clocks = <&chip CLKID_SATA>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			#phy-cells = <1>;
-+			status = "disabled";
-+
-+			sata-phy@0 {
-+				reg = <0>;
-+			};
-+
-+			sata-phy@1 {
-+				reg = <1>;
-+			};
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
+ static const struct of_device_id ahci_of_match[] = {
++	{ .compatible = "generic-ahci", },
++	/* Keep the following compatibles for device tree compatibility */
+ 	{ .compatible = "snps,spear-ahci", },
+ 	{ .compatible = "snps,exynos5440-ahci", },
+ 	{ .compatible = "ibm,476gtr-ahci", },
 -- 
 1.9.1
 
