@@ -1,172 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762097AbaGRMdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:33:07 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40260 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761556AbaGRMdE (ORCPT
+	id S1762104AbaGRMeR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:34:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47510 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380AbaGRMeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:33:04 -0400
-Date: Fri, 18 Jul 2014 13:32:39 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "Sahasrabudhe, Sheetal" <sheetals@quicinc.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: perf: child events not killed on release paths, survive indefinitely
-Message-ID: <20140718123238.GF25180@leverpostej>
+	Fri, 18 Jul 2014 08:34:15 -0400
+Message-ID: <53C9143C.1060905@linutronix.de>
+Date: Fri, 18 Jul 2014 14:34:04 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Thread-Topic: Child events live forever after a fork, penalizing new events
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>, acme@kernel.org,
+        namhyung.kim@lge.com, tzanussi@gmail.com
+Subject: Re: [RFC] perf to ctf converter
+References: <20140603163640.GA16279@linutronix.de> <20140714141533.GD17761@krava.redhat.com>
+In-Reply-To: <20140714141533.GD17761@krava.redhat.com>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 07/14/2014 04:15 PM, Jiri Olsa wrote:
+>> for more data while reading the "events" traces. The latter will be
+>> probably replaced by https://lkml.org/lkml/2014/4/3/217.
+>> Babeltrace needs only
+>>     "ctf-writer: Add support for the cpu_id field"
+>>     https://www.mail-archive.com/lttng-dev@lists.lttng.org/msg06057.html
+> 
+> any idea when this one will land in babeltrace git tree?
 
-Sheetal reported a weird issue on arm where events which have been
-closed seem to stay around and compete for HW counters if an application
-has forked between the events being opened and them being closed.
+Need to re-do them the way they asked. Could take some time. However I
+wanted first to make sure it make sense to continue that approach.
 
-I've reproduced this in mainline and linux-next and this seems to be a
-generic issue; the below test case fires on my x86-64 workstation as
-well as on arm and arm64.
+>>
+>> for the assignment of the CPU number.
+>>
+>> The pickle step is nice because I see all type of events before I
+>> start writing the CTF trace and can create the necessary objects. On
+>> the other hand it eats a lot of memory for huge traces so I will try to
+>> replace it with something that saves the data in a streaming like
+>> fashion.
+>> The other limitation is that babeltrace doesn't seem to work with
+>> python2 while perf doesn't compile against python3.
+>>
+>> What I haven't figured out yet is how to pass to the meta environment
+>> informations that is displayed by "perf script --header-only -I" and if
+>> that information is really important. Probably an optional python
+>> callback will do it.
+>>
+>> The required steps:
+>> |   perf record -e raw_syscalls:* w
+>> |   perf script -s ./to-pickle.py
+>> |   ./ctf_writer
+> 
+> I made similar effort in C:
+> 
+> ---
+> I made some *VERY* early perf convert example, mostly to try the ctf-writer
+> interface.. you can check in here:
+>   https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/log/?h=perf/ctf_2
 
-The problem is the way we (don't) handle child events when releasing a
-parent in perf_release and perf_event_release_kernel. We call put_event
-on the parent when it is released, but this will exit early having done
-nothing because each child will have incremented the parent refcount
-when initialised from perf_event_init_task. We don't seem to do anything
-about the children in this case.
+Let me try it, maybe I can migrate my effort into one code basis.
 
-Thus the parent event can't be killed until all the children have first
-been killed. As the only places references to them exist are the
-parent's child_list and their respective tasks' hardware
-perf_event_context, they'll only get killed when their respective tasks
-exit (I confirmed this with some printks in hw_perf_event_destroy and
-put_event). Until that happens they remain in their respective contexts
-and continue to compete for HW counters, adversely affecting events
-opened later.
+> It's able to convert single event (HW type) perf.data file into CTF data,
+> by adding just one integer field "period" and single stream, like:
+> 
+>   [jolsa@krava perf]$ LD_LIBRARY_PATH=/opt/libbabeltrace/lib/ ./perf data convert --to-ctf=./ctf-data
+>   ...
+>   [jolsa@krava babeltrace]$ /opt/libbabeltrace/bin/babeltrace /home/jolsa/kernel.org/linux-perf/tools/perf/ctf-data
+>   [08:14:45.814456098] (+?.?????????) cycles: { }, { period = 1 }
+>   [08:14:45.814459237] (+0.000003139) cycles: { }, { period = 1 }
+>   [08:14:45.814460684] (+0.000001447) cycles: { }, { period = 9 }
+>   [08:14:45.814462073] (+0.000001389) cycles: { }, { period = 182 }
+>   [08:14:45.814463491] (+0.000001418) cycles: { }, { period = 4263 }
+>   [08:14:45.814465874] (+0.000002383) cycles: { }, { period = 97878 }
+>   [08:14:45.814506385] (+0.000040511) cycles: { }, { period = 1365965 }
+>   [08:14:45.815056528] (+0.000550143) cycles: { }, { period = 2250012 }
+> ---
+> 
+> the goals for me is to have a convert tool, like in above example
+> perf data command and support in perf record/report to directl
+> write/read ctf data
+> 
+> Using python for this seems nice.. I'm not experienced python coder,
+> so just small comments/questions
 
-I'm not sure what the best way of handling this is. We need to clean up
-the children when the last possible user of the event is gone, but it
-looks to me like we'd need to have a separate child_refcount or
-reader_refcount to be able to tell when the events are still useful and
-when the only references which remain are internal.
+python looked nice because I saw libraries / interfaces on both sides.
 
-Any ideas?
+> SNIP
+> 
+>> +list_type_h_uint64 = [ "addr" ]
+>> +
+>> +int32_type = CTFWriter.IntegerFieldDeclaration(32)
+>> +int32_type.signed = True
+>> +
+>> +uint64_type = CTFWriter.IntegerFieldDeclaration(64)
+>> +uint64_type.signed = False
+>> +
+>> +hex_uint64_type = CTFWriter.IntegerFieldDeclaration(64)
+>> +hex_uint64_type.signed = False
+>> +hex_uint64_type.base = 16
+>> +
+>> +string_type = CTFWriter.StringFieldDeclaration()
+>> +
+>> +events = {}
+>> +last_cpu = -1
+>> +
+>> +list_ev_entry_ignore = [ "common_s", "common_ns", "common_cpu" ]
+>> +
+>> +# First create all possible event class-es
+> 
+> this first iteration could be handled in the to-pickle step,
+> which could gather events description and store/pickle it
+> before the trace data
 
-Cheers,
-Mark.
+yes.
 
----->8----
-/*
- * It looks like events which we close are hanging around in
- * kernel-space, and remain schedulable unexpectedly, penalizing events
- * we later open. Let's try to detect that...
- */
-#include <pthread.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+>> +for entry in trace:
+>> +    event_name = entry[0]
+>> +    event_record = entry[1]
+>> +
+>> +    try:
+>> +        event_class = events[event_name]
+>> +    except:
+>> +        event_class = CTFWriter.EventClass(event_name);
+>> +        for ev_entry in sorted(event_record):
+>> +            if ev_entry in list_ev_entry_ignore:
+>> +                continue
+>> +            val = event_record[ev_entry]
+>> +            if isinstance(val, int):
+>> +                if ev_entry in list_type_h_uint64:
+>> +                    event_class.add_field(hex_uint64_type, ev_entry)
+>> +                else:
+>> +                    event_class.add_field(int32_type, ev_entry)
+>> +            elif isinstance(val, str):
+>> +                event_class.add_field(string_type, ev_entry)
+> 
+> 
+> SNIP
+> 
+>> +
+>> +def process_event(event_fields_dict):
+>> +    entry = []
+>> +    entry.append(str(event_fields_dict["ev_name"]))
+>> +    fields = {}
+>> +    fields["common_s"] = event_fields_dict["s"]
+>> +    fields["common_ns"] = event_fields_dict["ns"]
+>> +    fields["common_comm"] = event_fields_dict["comm"]
+>> +    fields["common_pid"] = event_fields_dict["pid"]
+>> +    fields["addr"] = event_fields_dict["addr"]
+>> +
+>> +    dso = ""
+>> +    symbol = ""
+>> +    try:
+>> +        dso = event_fields_dict["dso"]
+>> +    except:
+>> +        pass
+>> +    try:
+>> +        symbol = event_fields_dict["symbol"]
+>> +    except:
+>> +        pass
+> 
+> I understand this is just a early stage, but we want here
+> detection of the all event arguments, right?
 
-#include <linux/perf_event.h>
+Yes. The CTF writer is stupid and takes all arguments as-is and passes
+it over the babeltrace part of CTF writer. This works well for the
+ftrace events (handled by trace_unhandled()).
 
-#include <asm/unistd.h>
 
-/*
- * Something the children can block on indefinitely without wasting CPU time.
- */
-int pipefd[2];
+> I wonder we could add separated python callback for that
 
-void *block_forever(void *unused)
-{
-	read(pipefd[0], NULL, 1);
-	return NULL;
-}
+This (the to pickle part) tries come up with the common basis for the
+CPU events. Therefore it renames the first few arguments (like s to
+common_s) to make it consistent with the ftrace events.
+The dso and symbol members look optional depending whether or not this
+data was available at trace time. I *think* those may change within a
+stream say if one library has debug symbols available and the other
+does not. So I have no idea how you plan specific callbacks for those.
 
-void create_child(void)
-{
-	pthread_t child;
-	if (pthread_create(&child,  NULL, block_forever, NULL) == 0)
-		return;
+> thanks,
+> jirka
 
-	printf("Unable to create child thread.\n");
-	exit(1);
-}
-
-/* There's no libc wrapper... */
-int perf_event_open(struct perf_event_attr *attr,
-		    pid_t pid, int cpu, int group_fd,
-		    unsigned long flags)
-{
-	return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
-}
-
-struct perf_event_attr attr = {
-	.type = PERF_TYPE_HARDWARE,
-	.size = sizeof(attr),
-	.config = PERF_COUNT_HW_INSTRUCTIONS,
-	.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
-		       PERF_FORMAT_TOTAL_TIME_RUNNING,
-	.inherit = 1,
-};
-
-int create_event(void)
-{
-	int event_fd = perf_event_open(&attr, 0, -1, -1, 0);
-	if (event_fd >= 0)
-		return event_fd;
-
-	printf("Unable to open event\n");
-	exit(1);
-}
-
-void validate_event(int fd)
-{
-	struct read_format {
-		uint64_t value;
-		uint64_t enabled;
-		uint64_t running;
-	} data;
-
-	if (read(fd, &data, sizeof(data)) != sizeof(data)) {
-		printf("Unable to read event.\n");
-		exit(1);
-	}
-
-	/*
-	 * When there's no competition for counters, eligible events should
-	 * always be scheduled. Given we closed all prior events, there should
-	 * be no contention in the absence of events owned by other tasks.
-	 */
-	if (data.enabled != data.running) {
-		printf("HW counter contention detected\n");
-		exit(1);
-	}
-}
-
-int main(int argc, char *argv[])
-{
-	if (pipe(pipefd) != 0) {
-		printf("Unable to open pipe\n");
-		exit(1);
-	}
-
-	for (;;) {
-		int event_fd = create_event();
-		create_child();
-		validate_event(event_fd);
-		close(event_fd);
-		printf(".");
-	};
-
-	return 0;
-}
+Sebastian
