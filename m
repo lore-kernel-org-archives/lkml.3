@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760289AbaGRHQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 03:16:21 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1110 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760166AbaGRHQR (ORCPT
+	id S1753577AbaGRHZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 03:25:44 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:35335 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaGRHZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 03:16:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 18 Jul 2014 00:08:43 -0700
-Message-ID: <53C8C9BD.3070709@nvidia.com>
-Date: Fri, 18 Jul 2014 10:16:13 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 18 Jul 2014 03:25:42 -0400
+Date: Fri, 18 Jul 2014 08:25:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, cooloney@gmail.com,
+        rpurdie@rpsys.net, linux-leds@vger.kernel.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+Message-ID: <20140718072536.GI30888@lee--X1>
+References: <cover.1405602280.git.andreas.werner@men.de>
+ <e035a8a5211769e610a1337dc786f2fcc8dfd14d.1405602280.git.andreas.werner@men.de>
+ <20140717124156.GF30888@lee--X1>
+ <20140717140653.GA8468@awelinux>
 MIME-Version: 1.0
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "hdegoede@redhat.com" <hdegoede@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v5 1/8] of: Add NVIDIA Tegra SATA controller binding
-References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <1405667500-7402-1-git-send-email-mperttunen@nvidia.com>
-In-Reply-To: <1405667500-7402-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140717140653.GA8468@awelinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So here's v5: this time, as suggested, I handle the sata clock myself 
-and let ahci_platform handle it too, leading it to be prepared+enabled 
-twice. This works fine, and allows us to remove the DT ordering requirement.
+On Thu, 17 Jul 2014, Andreas Werner wrote:
+> On Thu, Jul 17, 2014 at 01:41:56PM +0100, Lee Jones wrote:
+> > On Thu, 17 Jul 2014, Andreas Werner wrote:
+> > > The MEN 14F021P00 Board Management Controller provides an
+> > > I2C interface to the host to access the feature implemented in the BMC.
+> > > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> > > and on a few Box/Display Computer.
+> > > 
+> > > Added MFD Core driver, supporting the I2C communication to the device.
+> > > 
+> > > The MFD driver currently supports the following features:
+> > >  	- Watchdog
+> > >  	- LEDs
+> > > 
+> > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > > ---
+> > >  drivers/mfd/Kconfig     |  12 +++++
+> > >  drivers/mfd/Makefile    |   1 +
+> > >  drivers/mfd/menf21bmc.c | 136 ++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 149 insertions(+)
+> > >  create mode 100644 drivers/mfd/menf21bmc.c
+> > > 
+> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > > index b8d9ca0..6e2cd14 100644
+> > > --- a/drivers/mfd/Kconfig
+> > > +++ b/drivers/mfd/Kconfig
+> > > @@ -453,6 +453,18 @@ config MFD_MAX8998
+> > >  	  additional drivers must be enabled in order to use the functionality
+> > >  	  of the device.
+> > >  
+> > > +config MFD_MENF21BMC
+> > > +	tristate "MEN 14F021P00 Board Management Controller Support"
+> > > +	depends on I2C=y
+> > > +	select MFD_CORE
+> > > +	help
+> > > +	  Say yes here to add support for the MEN 14F021P00 BMC
+> > > +	  which is a Board Management Controller connected to the I2C bus.
+> > > +	  The device supports multiple sub-devices like LED and WDT.
+> > > +	  This driver provides common support for accessing the devices;
+> > > +	  additional drivers must be enabled in order to use the
+> > > +	  functionality of the BMC device.
+> > 
+> > Can you mention what those devices are here in the help text?
+> >
+> 
+> I've mentioned the sub-devices "LED" and "WDT" but i can also write
+> the name to the help text like "menf21bmc_wdt" and "leds-menf21bmc".
 
-I also have in the works a patchset that adds the name-based 
-ahci_platform_get_resources function, but that is not quite ready yet, 
-even if it is quite far along. Also, I am going on vacation and 
-returning on 28.7., so if this v5 is acceptable maybe it could be merged 
-for 3.17 and I could work on the new get_resources scheme after I get 
-back from vacation?
+Scrap this comment, I was being silly and didn't see "LED and WDT".
 
-Thanks, Mikko
+[...]
 
-On 18/07/14 10:11, Mikko Perttunen wrote:
-> This patch adds device tree binding documentation for the SATA
-> controller found on NVIDIA Tegra SoCs.
->
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> ---
-> v5: remove ordering requirement again
->
->   .../devicetree/bindings/ata/tegra-sata.txt         | 30 ++++++++++++++++++++++
->   1 file changed, 30 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
->
-> diff --git a/Documentation/devicetree/bindings/ata/tegra-sata.txt b/Documentation/devicetree/bindings/ata/tegra-sata.txt
-> new file mode 100644
-> index 0000000..946f207
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/tegra-sata.txt
-> @@ -0,0 +1,30 @@
-> +Tegra124 SoC SATA AHCI controller
-> +
-> +Required properties :
-> +- compatible : "nvidia,tegra124-ahci".
-> +- reg : Should contain 2 entries:
-> +  - AHCI register set (SATA BAR5)
-> +  - SATA register set
-> +- interrupts : Defines the interrupt used by SATA
-> +- clocks : Must contain an entry for each entry in clock-names.
-> +  See ../clocks/clock-bindings.txt for details.
-> +- clock-names : Must include the following entries:
-> +  - sata
-> +  - sata-oob
-> +  - cml1
-> +  - pll_e
-> +- resets : Must contain an entry for each entry in reset-names.
-> +  See ../reset/reset.txt for details.
-> +- reset-names : Must include the following entries:
-> +  - sata
-> +  - sata-oob
-> +  - sata-cold
-> +- phys : Must contain an entry for each entry in phy-names.
-> +  See ../phy/phy-bindings.txt for details.
-> +- phy-names : Must include the following entries:
-> +  - sata-phy : XUSB PADCTL SATA PHY
-> +- hvdd-supply : Defines the SATA HVDD regulator
-> +- vddio-supply : Defines the SATA VDDIO regulator
-> +- avdd-supply : Defines the SATA AVDD regulator
-> +- target-5v-supply : Defines the SATA 5V power regulator
-> +- target-12v-supply : Defines the SATA 12V power regulator
->
+> > > +MODULE_DEVICE_TABLE(i2c, menf21bmc_id_table);
+> > > +
+> > > +static struct i2c_driver menf21bmc_driver = {
+> > > +	.driver		= {
+> > > +		.name	= "menf21bmc",
+> > > +		.owner	= THIS_MODULE,
+> > 
+> > Remove this line, it's handled elsewhere.
+> 
+> Which line? the ".owner" line?
+
+Yeah.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
