@@ -1,98 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030692AbaGRNLw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:11:52 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17583 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761806AbaGRNLs (ORCPT
+	id S1762203AbaGRNoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:44:16 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24013 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761981AbaGRNoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:48 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 094/170] rbd: handle parent_overlap on writes correctly
-Date: Fri, 18 Jul 2014 14:11:39 +0200
-Message-Id: <a355e863488c27d3afcad4eaf805ebdd5f6a6752.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 09:44:11 -0400
+Date: Fri, 18 Jul 2014 14:43:43 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 5/5] arm64: Add atomic pool for non-coherent and CMA
+ allocations.
+Message-ID: <20140718134343.GA4608@arm.com>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+ <1404324218-4743-6-git-send-email-lauraa@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404324218-4743-6-git-send-email-lauraa@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+On Wed, Jul 02, 2014 at 07:03:38PM +0100, Laura Abbott wrote:
+> diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+> index 4164c5a..a2487f1 100644
+> --- a/arch/arm64/mm/dma-mapping.c
+> +++ b/arch/arm64/mm/dma-mapping.c
+[...]
+>  static void *__dma_alloc_coherent(struct device *dev, size_t size,
+>  				  dma_addr_t *dma_handle, gfp_t flags,
+>  				  struct dma_attrs *attrs)
+> @@ -53,7 +103,8 @@ static void *__dma_alloc_coherent(struct device *dev, size_t size,
+>  	if (IS_ENABLED(CONFIG_ZONE_DMA) &&
+>  	    dev->coherent_dma_mask <= DMA_BIT_MASK(32))
+>  		flags |= GFP_DMA;
+> -	if (IS_ENABLED(CONFIG_DMA_CMA)) {
+> +
+> +	if (!(flags & __GFP_WAIT) && IS_ENABLED(CONFIG_DMA_CMA)) {
+>  		struct page *page;
+>  
+>  		size = PAGE_ALIGN(size);
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I think that's the wrong condition here. You want to use CMA if
+(flags & __GFP_WAIT). CMA does not support atomic allocations so it can
+fall back to swiotlb_alloc_coherent().
 
-===============
+> @@ -73,50 +124,56 @@ static void __dma_free_coherent(struct device *dev, size_t size,
+>  				void *vaddr, dma_addr_t dma_handle,
+>  				struct dma_attrs *attrs)
+>  {
+> +	bool freed;
+> +	phys_addr_t paddr = dma_to_phys(dev, dma_handle);
+> +
+>  	if (dev == NULL) {
+>  		WARN_ONCE(1, "Use an actual device structure for DMA allocation\n");
+>  		return;
+>  	}
+>  
+> -	if (IS_ENABLED(CONFIG_DMA_CMA)) {
+> -		phys_addr_t paddr = dma_to_phys(dev, dma_handle);
+>  
+> -		dma_release_from_contiguous(dev,
+> +	freed = dma_release_from_contiguous(dev,
+>  					phys_to_page(paddr),
+>  					size >> PAGE_SHIFT);
+> -	} else {
+> +	if (!freed)
+>  		swiotlb_free_coherent(dev, size, vaddr, dma_handle);
+> -	}
+>  }
 
-commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
+Is __dma_free_coherent() ever called in atomic context? If yes, the
+dma_release_from_contiguous() may not like it since it tries to acquire
+a mutex. But since we don't have the gfp flags here, we don't have an
+easy way to know what to call.
 
-The following check in rbd_img_obj_request_submit()
+So the initial idea of always calling __alloc_from_pool() for both
+coherent/non-coherent cases would work better (but still with a single
+shared pool, see below).
 
-    rbd_dev->parent_overlap <= obj_request->img_offset
+>  static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
+>  				     dma_addr_t *dma_handle, gfp_t flags,
+>  				     struct dma_attrs *attrs)
+>  {
+> -	struct page *page, **map;
+> +	struct page *page;
+>  	void *ptr, *coherent_ptr;
+> -	int order, i;
+>  
+>  	size = PAGE_ALIGN(size);
+> -	order = get_order(size);
+> +
+> +	if (!(flags & __GFP_WAIT)) {
+> +		struct page *page = NULL;
+> +		void *addr = __alloc_from_pool(size, &page);
+> +
+> +		if (addr)
+> +			*dma_handle = phys_to_dma(dev, page_to_phys(page));
+> +
+> +		return addr;
+> +
+> +	}
 
-allows the fall through to the non-layered write case even if both
-parent_overlap and obj_request->img_offset belong to the same RADOS
-object.  This leads to data corruption, because the area to the left of
-parent_overlap ends up unconditionally zero-filled instead of being
-populated with parent data.  Suppose we want to write 1M to offset 6M
-of image bar, which is a clone of foo@snap; object_size is 4M,
-parent_overlap is 5M:
+If we do the above for the __dma_alloc_coherent() case, we could use the
+same pool but instead of returning addr it could just return
+page_address(page). The downside of sharing the pool is that you need
+cache flushing for every allocation (which we already do for the
+non-atomic case).
 
-    rbd_data.<id>.0000000000000001
-     ---------------------|----------------------|------------
-    | should be copyup'ed | should be zeroed out | write ...
-     ---------------------|----------------------|------------
-   4M                    5M                     6M
-                    parent_overlap    obj_request->img_offset
+> @@ -332,6 +391,67 @@ static struct notifier_block amba_bus_nb = {
+>  
+>  extern int swiotlb_late_init_with_default_size(size_t default_size);
+>  
+> +static int __init atomic_pool_init(void)
+> +{
+> +	pgprot_t prot = __pgprot(PROT_NORMAL_NC);
+> +	unsigned long nr_pages = atomic_pool_size >> PAGE_SHIFT;
+> +	struct page *page;
+> +	void *addr;
+> +
+> +
+> +	if (dev_get_cma_area(NULL))
 
-4..5M should be copyup'ed from foo, yet it is zero-filled, just like
-5..6M is.
+Is it worth using this condition for other places where we check
+IS_ENABLED(CONFIG_DMA_CMA) (maybe as a separate patch).
 
-Given that the only striping mode kernel client currently supports is
-chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
-parent_overlap up to the next object boundary for the purposes of the
-overlap check.
+> +		page = dma_alloc_from_contiguous(NULL, nr_pages,
+> +					get_order(atomic_pool_size));
+> +	else
+> +		page = alloc_pages(GFP_KERNEL, get_order(atomic_pool_size));
 
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/block/rbd.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+One problem here is that the atomic pool wouldn't be able to honour
+GFP_DMA (in the latest kernel, CMA is by default in ZONE_DMA). You
+should probably pass GFP_KERNEL|GFP_DMA here. You could also use the
+swiotlb_alloc_coherent() which, with a NULL dev, assumes 32-bit DMA mask
+but it still expects GFP_DMA to be passed.
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index af7b44ffd190..aeeb62e0981a 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1379,6 +1379,14 @@ static bool obj_request_exists_test(struct rbd_obj_request *obj_request)
- 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
- }
- 
-+static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
-+{
-+	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
-+
-+	return obj_request->img_offset <
-+	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
-+}
-+
- static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
- {
- 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
-@@ -2675,7 +2683,7 @@ static int rbd_img_obj_request_submit(struct rbd_obj_request *obj_request)
- 	 */
- 	if (!img_request_write_test(img_request) ||
- 		!img_request_layered_test(img_request) ||
--		rbd_dev->parent_overlap <= obj_request->img_offset ||
-+		!obj_request_overlaps_parent(obj_request) ||
- 		((known = obj_request_known_test(obj_request)) &&
- 			obj_request_exists_test(obj_request))) {
- 
+> +	if (page) {
+> +		int ret;
+> +
+> +		atomic_pool = gen_pool_create(PAGE_SHIFT, -1);
+> +		if (!atomic_pool)
+> +			goto free_page;
+> +
+> +		addr = dma_common_contiguous_remap(page, atomic_pool_size,
+> +					VM_USERMAP, prot, atomic_pool_init);
+> +
+> +		if (!addr)
+> +			goto destroy_genpool;
+> +
+> +		memset(addr, 0, atomic_pool_size);
+> +		__dma_flush_range(addr, addr + atomic_pool_size);
+
+If you add the flushing in the __dma_alloc_noncoherent(), it won't be
+needed here (of course, more efficient here but it would not work if we
+share the pool).
+
+> +postcore_initcall(atomic_pool_init);
+
+Why not arch_initcall? Or even better, we could have a common DMA init
+function that calls swiotlb_late_init() and atomic_pool_init() (in this
+order if you decide to use swiotlb allocation above).
+
 -- 
-2.0.0
-
+Catalin
