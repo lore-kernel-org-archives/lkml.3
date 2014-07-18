@@ -1,112 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaGRGpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:45:44 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:35934 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaGRGpn (ORCPT
+	id S1755983AbaGRGtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:49:12 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:52547 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561AbaGRGtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:45:43 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53C8C290.90503@lge.com>
-Date: Fri, 18 Jul 2014 15:45:36 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        =?EUC-KR?B?J7Howdi89ic=?= <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>
-CC: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>
-Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jul 2014 02:49:11 -0400
+From: Brent Cook <busterb@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Brent Cook <bcook@openbsd.org>
+Subject: [PATCH] [RFC] initial getrandom wrapper to provide getentropy for LibreSSL
+Date: Fri, 18 Jul 2014 01:49:04 -0500
+Message-Id: <1405666144-88053-1-git-send-email-busterb@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Brent Cook <bcook@openbsd.org>
 
-Hi,
+This is not a kernel patch, but rather an initial test of the API to see
+how it might mesh LibreSSL's expectations for how getentropy works.
 
-For page migration of CMA, buffer-heads of lru should be dropped.
-Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
+It is a bit more code to carefully handle the extra return values, as
+not reading enough bytes, because there is an unhandled EINTR, might
+lead to an unseeded CSPRNG.
 
-I have two solution to drop bhs.
-One is invalidating entire lru.
-Another is searching the lru and dropping only one bh that Laura proposed
-at https://lkml.org/lkml/2012/8/31/313.
-
-I'm not sure which has better performance.
-So I did performance test on my cortex-a7 platform with Lmbench
-that has "File & VM system latencies" test.
-I am attaching the results.
-The first line is of invalidating entire lru and the second is dropping selected bh.
-
-File & VM system latencies in microseconds - smaller is better
--------------------------------------------------------------------------------
-Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
-                        Create Delete Create Delete Latency Fault  Fault  selct
---------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
-10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
-10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
-
-
-I tried several times but the result tells that they are the same under 1% gap
-except Protection Fault.
-But the latency of Protection Fault is very small and I think it has little effect.
-
-Therefore we can choose anything but I choose invalidating entire lru.
-The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
-So I think inserting codes in drop_buffers() can affect the system.
-And also we cannot distinguish migration type in drop_buffers().
-
-In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
-I think alloc_contig_range() is proper to deal with bh like following patch.
-
-Laura, can I have you name on Acked-by line?
-Please let me represent my thanks.
-
-Thanks for any feedback.
-
-------------------------------- 8< ----------------------------------
-
->From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Fri, 18 Jul 2014 13:40:01 +0900
-Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-
-The bh must be free to migrate a page at which bh is mapped.
-The reference count of bh is increased when it is installed
-into lru so that the bh of lru must be freed before migrating the page.
-
-This frees every bh of lru. We could free only bh of migrating page.
-But searching lru costs more than invalidating entire lru.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Acked-by: Laura Abbott <lauraa@codeaurora.org>
+The syscall may return EAGAIN depending on the version of getrandom(2)
+(this will go away later), but this should give a good example of what
+its use would look like in practice.
 ---
- mm/page_alloc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ src/lib/libcrypto/crypto/getentropy_linux.c | 42 ++++++++++++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b99643d4..3b474e0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
-        if (ret)
-                return ret;
-
-+       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
-+               invalidate_bh_lrus();
+diff --git a/src/lib/libcrypto/crypto/getentropy_linux.c b/src/lib/libcrypto/crypto/getentropy_linux.c
+index c16b289..b717d91 100644
+--- a/src/lib/libcrypto/crypto/getentropy_linux.c
++++ b/src/lib/libcrypto/crypto/getentropy_linux.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: getentropy_linux.c,v 1.24 2014/07/13 13:37:38 deraadt Exp $	*/
++/*	$OpenBSD: getentropy_linux.c,v 1.25 2014/07/16 14:26:47 kettenis Exp $	*/
+ 
+ /*
+  * Copyright (c) 2014 Theo de Raadt <deraadt@openbsd.org>
+@@ -73,10 +73,21 @@
+ 
+ int	getentropy(void *buf, size_t len);
+ 
++#ifndef SYS__getrandom
++#ifdef __LP64__
++#define SYS__getrandom 317
++#else
++#define SYS__getrandom 354
++#endif
++#endif
 +
-        ret = __alloc_contig_migrate_range(&cc, start, end);
-        if (ret)
-                goto done;
---
-1.7.9.5
+ #if 0
+ extern int main(int, char *argv[]);
+ #endif
+ static int gotdata(char *buf, size_t len);
++#ifdef SYS__getrandom
++static int getentropy_getrandom(void *buf, size_t len);
++#endif
+ static int getentropy_urandom(void *buf, size_t len);
+ #ifdef CTL_MAXNAME
+ static int getentropy_sysctl(void *buf, size_t len);
+@@ -95,6 +106,13 @@ getentropy(void *buf, size_t len)
+ 	}
+ 
+ 	/*
++	 * Brand new system call in Linux.  Interface not yet settled.
++	 */
++	ret = getentropy_getrandom(buf, len);
++	if (ret != -1)
++		return (ret);
++
++	/*
+ 	 * Try to get entropy with /dev/urandom
+ 	 *
+ 	 * This can fail if the process is inside a chroot or if file
+@@ -180,6 +198,28 @@ gotdata(char *buf, size_t len)
+ }
+ 
+ static int
++getentropy_getrandom(void *buf, size_t len)
++{
++	size_t i = 0;
++
++#ifdef SYS__getrandom
++	ssize_t ret;
++
++	for (i = 0; i < len; ) {
++		size_t wanted = len - i;
++		ret = syscall(SYS__getrandom, (char *)buf + i, wanted, 0);
++		if (ret == -1) {
++			if (errno == EAGAIN || errno == EINTR)
++				continue;
++			return (-1);
++		}
++		i += ret;
++	}
++#endif
++	return (i == len ? 0 : -1);
++}
++
++static int
+ getentropy_urandom(void *buf, size_t len)
+ {
+ 	struct stat st;
+-- 
+2.0.1
+
