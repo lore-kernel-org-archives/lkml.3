@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030407AbaGRNJz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:09:55 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17463 "EHLO
+	id S1030432AbaGRNJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:09:59 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17467 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030335AbaGRNJw (ORCPT
+	by vger.kernel.org with ESMTP id S1030335AbaGRNJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:52 -0400
+	Fri, 18 Jul 2014 09:09:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 031/170] IB/umad: Fix error handling
-Date: Fri, 18 Jul 2014 14:10:36 +0200
-Message-Id: <266b09f397670c5c10ae6aaea7d2b2fb873b4759.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 135/170] thermal: hwmon: Make the check for critical temp valid consistent
+Date: Fri, 18 Jul 2014 14:12:20 +0200
+Message-Id: <87af4aae4913304aee9b6b8cad477f78db1b041a.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,138 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Aaron Lu <aaron.lu@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
+commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
 
-Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
-or if nonseekable_open() fails.
+On 05/21/2014 04:22 PM, Aaron Lu wrote:
+> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+>> Hello,
+>>
+>> I get following error when rmmod thermal.
+>>
+>> rmmod  thermal
+>> Killed
 
-Avoid leaking a kref count, that sm_sem is kept down and also that the
-IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
-nonseekable_open() fails.
+While dealing with this problem, I found another problem that also
+results in a kernel crash on thermal module removal:
 
-Since container_of() never returns NULL, remove the code that tests
-whether container_of() returns NULL.
+From: Aaron Lu <aaron.lu@intel.com>
+Date: Wed, 21 May 2014 16:05:38 +0800
+Subject: thermal: hwmon: Make the check for critical temp valid consistent
 
-Moving the kref_get() call from the start of ib_umad_*open() to the
-end is safe since it is the responsibility of the caller of these
-functions to ensure that the cdev pointer remains valid until at least
-when these functions return.
+We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
+to decide if we need to create the temp_crit attribute file but we just
+check if tz->ops->get_crit_temp exists to decide if we need to remove
+that attribute file. Some ACPI thermal zone doesn't have a valid critical
+trip point and that would result in removing a non-existent device file
+on thermal module unload.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-
-[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
-
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-
-[ nonseekable_open() can't actually fail, but....  - Roland ]
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/core/user_mad.c | 49 +++++++++++++++++++++-----------------
- 1 file changed, 27 insertions(+), 22 deletions(-)
+ drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index f0d588f8859e..9bdf576cd4ab 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- {
- 	struct ib_umad_port *port;
- 	struct ib_umad_file *file;
--	int ret;
-+	int ret = -ENXIO;
- 
- 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	mutex_lock(&port->file_mutex);
- 
--	if (!port->ib_dev) {
--		ret = -ENXIO;
-+	if (!port->ib_dev)
- 		goto out;
--	}
- 
-+	ret = -ENOMEM;
- 	file = kzalloc(sizeof *file, GFP_KERNEL);
--	if (!file) {
--		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
--		ret = -ENOMEM;
-+	if (!file)
- 		goto out;
--	}
- 
- 	mutex_init(&file->mutex);
- 	spin_lock_init(&file->send_lock);
-@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- 	list_add_tail(&file->port_list, &port->file_list);
- 
- 	ret = nonseekable_open(inode, filp);
-+	if (ret) {
-+		list_del(&file->port_list);
-+		kfree(file);
-+		goto out;
-+	}
-+
-+	kref_get(&port->umad_dev->ref);
- 
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	int ret;
- 
- 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	if (filp->f_flags & O_NONBLOCK) {
- 		if (down_trylock(&port->sm_sem)) {
-@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	}
- 
- 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
--	if (ret) {
--		up(&port->sm_sem);
--		goto fail;
--	}
-+	if (ret)
-+		goto err_up_sem;
- 
- 	filp->private_data = port;
- 
--	return nonseekable_open(inode, filp);
-+	ret = nonseekable_open(inode, filp);
-+	if (ret)
-+		goto err_clr_sm_cap;
-+
-+	kref_get(&port->umad_dev->ref);
-+
-+	return 0;
-+
-+err_clr_sm_cap:
-+	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
-+	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
-+
-+err_up_sem:
-+	up(&port->sm_sem);
- 
- fail:
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
- 	return ret;
+diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
+index fdb07199d9c2..1967bee4f076 100644
+--- a/drivers/thermal/thermal_hwmon.c
++++ b/drivers/thermal/thermal_hwmon.c
+@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+ 	return NULL;
  }
  
++static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
++{
++	unsigned long temp;
++	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
++}
++
+ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ {
+ 	struct thermal_hwmon_device *hwmon;
+@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	if (result)
+ 		goto free_temp_mem;
+ 
+-	if (tz->ops->get_crit_temp) {
+-		unsigned long temperature;
+-		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+-			snprintf(temp->temp_crit.name,
+-				 sizeof(temp->temp_crit.name),
++	if (thermal_zone_crit_temp_valid(tz)) {
++		snprintf(temp->temp_crit.name,
++				sizeof(temp->temp_crit.name),
+ 				"temp%d_crit", hwmon->count);
+-			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+-			temp->temp_crit.attr.attr.mode = 0444;
+-			temp->temp_crit.attr.show = temp_crit_show;
+-			sysfs_attr_init(&temp->temp_crit.attr.attr);
+-			result = device_create_file(hwmon->device,
+-						    &temp->temp_crit.attr);
+-			if (result)
+-				goto unregister_input;
+-		}
++		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
++		temp->temp_crit.attr.attr.mode = 0444;
++		temp->temp_crit.attr.show = temp_crit_show;
++		sysfs_attr_init(&temp->temp_crit.attr.attr);
++		result = device_create_file(hwmon->device,
++					    &temp->temp_crit.attr);
++		if (result)
++			goto unregister_input;
+ 	}
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
+@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	}
+ 
+ 	device_remove_file(hwmon->device, &temp->temp_input.attr);
+-	if (tz->ops->get_crit_temp)
++	if (thermal_zone_crit_temp_valid(tz))
+ 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
 -- 
 2.0.0
 
