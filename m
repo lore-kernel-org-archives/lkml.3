@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762462AbaGRUvY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:51:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43775 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762161AbaGRUvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:51:23 -0400
-Message-ID: <53C9889F.3040107@zytor.com>
-Date: Fri, 18 Jul 2014 13:50:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1762520AbaGRUwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:52:42 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31171 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752AbaGRUwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 16:52:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/QqzIsw17NyybCfySDNmlNewEAR395iNk=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 91FA25AFC2D
+Date: Fri, 18 Jul 2014 16:52:38 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] irqchip: Fixes for v3.16 (round #2)
+Message-ID: <20140718205238.GJ24496@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warning after merge of the tip tree
-References: <20140718150005.73db8eb9@canb.auug.org.au> <53C97287.5020509@zytor.com> <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com> <53C97E0F.6090601@zytor.com> <CALCETrXP+Rz8wi_N2G7WLwnGuFMC8zeo5o+jgGmvpZkndrM+2Q@mail.gmail.com> <53C98055.5070301@zytor.com> <CALCETrVWSjqBJyEC4k6qAfa2PcoKq6LWR8HH2WyuMBU+98pJsQ@mail.gmail.com>
-In-Reply-To: <CALCETrVWSjqBJyEC4k6qAfa2PcoKq6LWR8HH2WyuMBU+98pJsQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 01:20 PM, Andy Lutomirski wrote:
->>
->> The reason this is a concern is that: (x > x + n) and its variants is
->> often used to mean (x > INT_MAX - n) without the type knowledge, but
->> that is actually invalid standard C because signed types are not
->> guaranteed to wrap.
-> 
-> Right, but the constant in this case is *much* less than INT_MAX.
-> Anyway, this is moot.
+Thomas,
 
-It isn't about the constant (n) at all, it is about the value of x.
+Here's all of the fixes I have queued up for v3.16.  Nothing else is
+allowed to break ;-)
 
-> I do wonder whether the kind of people who build hardened kernels
-> should enable -fwrapv, though.
+This is an incremental pull request on the irqchip/urgent branch from
+tags/irqchip-urgent-3.16 up to tags/irqchip-urgent-3.16-2.
 
--fwrapv in gcc makes signed arithmetic strict 2's-complement, which is
-what I think we want in the kernel.  Someone would just have to make
-sure there isn't some key codepath in the kernel which gets pessimized.
+Please pull.
 
-	-hpa
+thx,
+
+Jason.
 
 
+The following changes since commit 4f4366033945419b0c52118c29d3057d7c558765:
+
+  irqchip: spear_shirq: Fix interrupt offset (2014-06-21 23:26:39 +0000)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.16-2
+
+for you to fetch changes up to 29e697b11853d3f83b1864ae385abdad4aa2c361:
+
+  irqchip: gic: Fix core ID calculation when topology is read from DT (2014-07-18 13:13:41 +0000)
+
+----------------------------------------------------------------
+irqchip fixes for v3.16 (round #2)
+
+ - gic
+   - Add Cortex A7 compatible string
+   - Add gic400 compatible string
+   - Fix core ID calc when topology is present in DT
+
+----------------------------------------------------------------
+Matthias Brugger (1):
+      irqchip: gic: Add support for cortex a7 compatible string
+
+Suravee Suthikulpanit (1):
+      irqchip: gic: Add binding probe for ARM GIC400
+
+Tomasz Figa (1):
+      irqchip: gic: Fix core ID calculation when topology is read from DT
+
+ drivers/irqchip/irq-gic.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
