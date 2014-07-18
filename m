@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaGRVcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:32:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53135 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256AbaGRVcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:32:05 -0400
-Date: Fri, 18 Jul 2014 23:31:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Havard Skinnemoen <hskinnemoen@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ewout van Bekkum <ewout@google.com>
-Subject: Re: [PATCH 4/6] x86-mce: Add spinlocks to prevent duplicated MCP and
- CMCI reports.
-Message-ID: <20140718213157.GB29366@pd.tnic>
-References: <CAFQmdRbguE7O16diTNMXMU-3E8Zeu=Y=vcXVHKRyxzbq09TfzQ@mail.gmail.com>
- <20140710184416.GE5603@pd.tnic>
- <CA+8MBbKNQEk5UQnVf-G8zeMiYE2FpyztHE6_RoDs3RM_8mrVow@mail.gmail.com>
- <20140710191224.GF5603@pd.tnic>
- <20140711092454.GA17083@pd.tnic>
- <CA+8MBbKYo_Tmb3Zk4W9gBZmZqBpCu4uLUu9M5C2MZAYZEb16Vg@mail.gmail.com>
- <20140711195200.GA18246@pd.tnic>
- <CAFQmdRZ7d6Mgxob2A0nuJP09oAWW=BykL_bH7DeWo_8CM3YywA@mail.gmail.com>
- <20140717105025.GA22549@pd.tnic>
- <CA+8MBbLdD=MHVjQpUAsVhMJEfa3nxsnja6hDAytP_esRotF=Vg@mail.gmail.com>
+	id S1755092AbaGRVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:32:56 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45556 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425AbaGRVcz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 17:32:55 -0400
+Message-ID: <53C99283.1010107@gmail.com>
+Date: Fri, 18 Jul 2014 23:32:51 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbLdD=MHVjQpUAsVhMJEfa3nxsnja6hDAytP_esRotF=Vg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Christoph Hellwig <hch@lst.de>, Vladimir Davydov <vdavydov@parallels.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com>	 <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de>	 <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <53C9808F.5040906@gmail.com>
+In-Reply-To: <53C9808F.5040906@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 02:23:04PM -0700, Tony Luck wrote:
-> On Thu, Jul 17, 2014 at 3:50 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > Well, maybe it is about time we tracked shared banks.
-> 
-> For cpus that support CMCI and the MCi_CTL2 registers we do track
-> sharing. Only one cpu gets to be the "owner" of a bank that supports
-> CMCI (the first one to find it and set bit 30 in the CTL2 register).
-> 
-> The test_bit()  at the top of the loop in machine_check_poll() makes
-> sure only the owner of a bank actually looks at it.
-> 
->         for (i = 0; i < mca_cfg.banks; i++) {
->                 if (!mce_banks[i].ctl || !test_bit(i, *b))
->                         continue;
-> 
-> If we don't have CMCI, then we don't have the CTL2 registers, and
-> so have no way to find out which banks are shared.
-
-Ah, so Havard's corrected explanation was this:
-
-"I don't think we got the description right here. I think the real issue
-here was machine check polls happening on multiple CPUs with shared
-banks, all reporting the same MCEs. This is very reproducible when
-booting with mce=no_cmci, since all CPUs will handle all banks, and
-there's AFAICT no good way to identify shared banks without enabling
-CMCI."
-
-Remind me, why would one boot with mce=no_cmci at all, on a CMCI
-machine?
-
-> I'd be surprised if it was a problem in practice. If we have  CMCI,
-> then we limit the banks that we look at (and if we see a high rate
-> of interrupts, then we turn off interrupts an poll).
+On 18.07.2014 22:16, poma wrote:
+> On 18.07.2014 22:07, James Bottomley wrote:
+>> On Fri, 2014-07-18 at 22:01 +0200, poma wrote:
+>>> On 18.07.2014 16:17, Christoph Hellwig wrote:
+>>>> On Fri, Jul 18, 2014 at 05:21:04PM +0400, Vladimir Davydov wrote:
+>>>>> Slab warns, because the name of the cache being created contains spaces.
+>>>>> The "bad" cache is created by scsi_get_host_cmd_pool. Its name
+>>>>> (pool->cmd_name) is initialized by scsi_alloc_host_cmd_pool as follows:
+>>>>>
+>>>>> 	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+>>>>>
+>>>>> So, if hostt->name contains spaces, the cache name will also contain
+>>>>> spaces and we'll get the warning. And hostt->name can contain spaces,
+>>>>> e.g. virtscsi_host_template_single.name="Virtio SCSI HBA".
+>>>>
+>>>> Or might not even be present.  I'll send a patch to replace it with
+>>>> ->proc_name, which must not contain spaces and is generally shorter
+>>>> as well.
+>>>>
+>>>
+>>> Is this what you thought?
+>>
+>> No, he means this, if you want to try it.
+>>
+>> James
+>>
+>> ---
+>>
+>> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+>> index 88d46fe..eb07a9b 100644
+>> --- a/drivers/scsi/scsi.c
+>> +++ b/drivers/scsi/scsi.c
+>> @@ -368,8 +368,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
+>>    	if (!pool)
+>>    		return NULL;
+>>
+>> -	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+>> -	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
+>> +	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
+>> +	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
+>>    	if (!pool->cmd_name || !pool->sense_name) {
+>>    		scsi_free_host_cmd_pool(pool);
+>>    		return NULL;
+>>
+>>
 >
-> If we don't have CMCI, then we are polling at a pretty low rate
-> (current code adjusts the rate higher if we are finding errors to
-> log, but we don't let that rate rise forever ... cap is ~ 1HZ).
+> Man, I just now read it correctly - "So, if hostt->name contains spaces".
+> Thanks.
+>
+> I'll be back.
+>
 
-Right, it would be interesting to see how a huuge machine (4 sockets
-with lotsa memory) behaves under a CMCI storm...
+Yea, I can confirm it works! :)
+No warnings.
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+poma
+
+
