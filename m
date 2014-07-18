@@ -1,81 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761064AbaGRJJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:09:20 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:58803 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756084AbaGRJJR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:09:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH v2 21/29] nios2: Futex operations
-Date: Fri, 18 Jul 2014 11:09:10 +0200
-Message-ID: <17186253.ZJUn1qWK0f@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAFiDJ5-uDPCZha-s2-DrLbHLjezBkLTEjJ0nbnsMocof7kO=1Q@mail.gmail.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com> <12323898.sHjczXbE7P@wuerfel> <CAFiDJ5-uDPCZha-s2-DrLbHLjezBkLTEjJ0nbnsMocof7kO=1Q@mail.gmail.com>
+	id S1761095AbaGRJKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:10:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38571 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755440AbaGRJKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:10:43 -0400
+Date: Fri, 18 Jul 2014 11:10:34 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Rui Xiang <rui.xiang@huawei.com>
+cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: testing result of loop-aio patchset on ext3
+In-Reply-To: <53C645AA.9080509@huawei.com>
+Message-ID: <alpine.LFD.2.00.1407181105410.12453@localhost.localdomain>
+References: <53C3A42E.40000@huawei.com> <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain> <53C5F770.9030105@huawei.com> <alpine.LFD.2.00.1407160955010.2431@localhost.localdomain> <53C645AA.9080509@huawei.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TVEdHqWFcn1bvTsheK6gZF7HfLCGWetoctXtwmEDjir
- C4Tgx8IHpaTh5WAyC/XHR+3noheSeGLWeO7yWfrzY/TA2kQLfs
- 45JVQpNkcTzlbIIw55nBee+7Ua1LXKExNMHt0OiJXpvfD4D8ak
- LJ/2eQmHILxA53jg2oJzCIo0P0QhlG+/L4LSirZKESBI9xCXKz
- SneUdmtoIqJqVddJWgkRMzujNy7kXGbufNgOLiBdgEA9kPegSh
- sYVqgDuAF+V/SpWfFllcyu2uOjXoj4qOlHI4g8Dy6kEvLae72K
- p1xohluT3DT7c48QqPHwjmT4x9PxrcTXkWnQQKPc4KiI1c7Q1J
- YIJIiysn+674qtY8Y4eQ=
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-292471106-1405674638=:12453"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 July 2014 14:07:42 Ley Foon Tan wrote:
-> On Thu, Jul 17, 2014 at 7:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > The get_user/put_user functions really need to be annotated might_fault(),
-> > because that's what they do.
-> >
-> > The whole point of get_user() is to access an unchecked user space
-> > pointer, which  can do a number of things based on what the pointer
-> > points to:
-> >
-> > - access a user space variable that resides in memory
-> > - access a kernel pointer and fail because of the access_ok()
-> >   check
-> > - access a user space pointer that is not mapped and return
-> >   through the __ex_table fixup.
-> > - access a user space pointer that has a valid VMA but not PTE,
-> >   causing a page fault to be resolved.
-> >
-> > It's the last case that breaks here.
-> So, do you mean that we can't use get_user/put_user in futex support?
-> BTW, some architectures like sh,parisc, m68k use get_user in futex
-> function as well.
-> Any recommendation way to support futex if we can't use get_user.
-> Note, nios2 doesn't have atomic instruction.
-> Thanks.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I looked at it again now and I'm no longer sure about my initial
-interpretation. The way it seems to work is that pagefault_disable()
-turns the case I mentioned into a simple error through the fixup,
-so we return -EFAULT from get_user, and retry the futex from
-futex_wake_op().
+--8323328-292471106-1405674638=:12453
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 
-This would however also mean that there is no need for a spinlock
-at all, atomicity is already implied by pagefault_disable() here
-because you are running on a UP kernel and pagefault_disable() also
-means there is no preemption.
+On Wed, 16 Jul 2014, Rui Xiang wrote:
 
-If this understanding is right, we can probably just merge the
-m68k implementation into the asm-generic version, as that does
-exactly that, and just isn't SMP safe. I'm still unsure whether
-I'm missing something here though, as everything else seems to
-do this in assembly, even for non-SMP machines that could use
-the trivial method that m68k has.
+> Date: Wed, 16 Jul 2014 17:28:10 +0800
+> From: Rui Xiang <rui.xiang@huawei.com>
+> To: Lukáš Czerner <lczerner@redhat.com>
+> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>     Li Zefan <lizefan@huawei.com>
+> Subject: Re: testing result of loop-aio patchset on ext3
+> 
+> On 2014/7/16 15:58, Lukáš Czerner wrote:
+> > On Wed, 16 Jul 2014, Rui Xiang wrote:
+> > 
+> >> Date: Wed, 16 Jul 2014 11:54:24 +0800
+> >> From: Rui Xiang <rui.xiang@huawei.com>
+> >> To: Lukáš Czerner <lczerner@redhat.com>
+> >> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+> >>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> >>     Li Zefan <lizefan@huawei.com>
+> >> Subject: Re: testing result of loop-aio patchset on ext3
+> >>
+> >> On 2014/7/14 17:51, Lukáš Czerner wrote:
+> >>> On Mon, 14 Jul 2014, Rui Xiang wrote:
+> >>>
+> >>>> Date: Mon, 14 Jul 2014 17:34:38 +0800
+> >>>> From: Rui Xiang <rui.xiang@huawei.com>
+> >>>> To: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org
+> >>>> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> >>>>     Li Zefan <lizefan@huawei.com>
+> >>>> Subject: testing result of loop-aio patchset on ext3
+> >>>>
+> >>>> Hi Dave,
+> >>>>
+> >>>> We export a container image file as a block device via loop device, but we
+> >>>> found it's very easy that the container rootfs gets corrupted due to power
+> >>>> loss.
+> >>>>
+> >>>> Your early version of loop-aio patchset said the patchset can make loop
+> >>>> mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
+> >>>> it doesn't help.
+> >>>>
+> >>>> Both the guest fs and host fs are ext3.
+> >>>>
+> >>>> The loop-aio patchset is from:
+> >>>> git://github.com/kleikamp/linux-shaggy.git aio_loop
+> >>>>
+> >>>> Steps:
+> >>>> 1. dd a 10G image, mkfs.ext3,
+> >>>>   # dd if=/dev/zero of=./raw_image bs=1M count=10000
+> >>>>   # echo y | mkfs.ext3 raw_image
+> >>>>
+> >>>> 2. losetup a loop device, mount at ./test_dir
+> >>>>   # losetup /dev/loop1 raw_image
+> >>>>   # mount /dev/loop1 ./test_dir
+> >>>>
+> >>>> 3. copy fs_mark into test_dir and run
+> >>>>   # ./fs_mark -d ./tmp/ -s 102400000 -n 80
+> >>>>
+> >>>> 4. during runing fs_mark, make systerm reboot indirectly.
+> >>>>   # echo b > /proc/sysrq-trigger
+> >>>>
+> >>>> After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
+> >>>>
+> >>>> # fsck.ext3 -n raw_image
+> >>>> e2fsck 1.41.9 (22-Aug-2009)
+> >>>> Warning: skipping journal recovery because doing a read-only filesystem check.
+> >>>> raw_image contains a file system with errors, check forced.
+> >>>> Pass 1: Checking inodes, blocks, and sizes
+> >>>> Pass 2: Checking directory structure
+> >>>> Pass 3: Checking directory connectivity
+> >>>> Pass 4: Checking reference counts
+> >>>> Pass 5: Checking group summary information
+> >>>> Free blocks count wrong (2481348, counted=2480577).
+> >>>> Fix? no
+> >>>> Free inodes count wrong (640837, counted=640835).
+> >>>> Fix? no
+> >>>> raw_image: ********** WARNING: Filesystem still has errors **********
+> >>>> raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
+> >>>
+> >>> It's not damaged, this is expected result if you're using old
+> >>> e2fsprogs which still treats this as an error.
+> >>>
+> >>> It's not an error because we only update superblock summary at
+> >>> unmount time so with unclean shutdown it's likely that it does not
+> >>> match the reality, but e2fsck can and will easily fix that for you.
+> >>>
+> >>> Please try e2fsprogs v1.42.3 or newer.
+> >>>
+> >>
+> >> Hi Lukas,
+> >>
+> >> I updated e2fsprogs to v1.42.3, and user the newer fsck.ext3 to check raw_image.
+> >> Exactly, the result seemed normal.
+> > 
+> > Now I can see that there are much more problems than before, that's
+> > weird. Sorry for not making this clear, but for this kind of
+> > reproducers please use the most recent e2fsprogs. Also , what is the
+> > kernel version you're using in this test ?
+> > 
+> 
+> I use the most recent e2fsprogs 1.42.11 to check, and the error info is same as
+> result fscked by v1.42.3. It seems that shouldn't be the reason.
+> 
+> Otherwise, the kernel version in this test is stable 3.4.
 
-	Arnd
+In that case, this is a problem somewhere else. I'll try to
+reproduce and see what I can see.
+
+I assume you're not able to reproduce this on a real device ?
+
+Thanks!
+-Lukas
+
+> 
+> 
+> Thanks!
+> 
+> > Thanks!
+> > -Lukas
+> > 
+> >>
+> >> Then, I continue my previous test. And after testing 35 times, "fsck -n" reported image fs
+> >> had been damaged, too.
+> >>
+> >>  # fsck.ext3 -n image1
+> >> e2fsck 1.42.3.wc1 (28-May-2012)
+> >> Warning: skipping journal recovery because doing a read-only filesystem check.
+> >> image1 has been mounted 36 times without being checked, check forced.
+> >> Pass 1: Checking inodes, blocks, and sizes
+> >> Inode 16407, i_size is 597447, should be 602112.  Fix? no
+> >> Inode 16407, i_blocks is 1176, should be 1184.  Fix? no
+> >> Inode 409941, i_blocks is 200208, should be 112.  Fix? no
+> >> Pass 2: Checking directory structure
+> >> Pass 3: Checking directory connectivity
+> >> Pass 4: Checking reference counts
+> >> Pass 5: Checking group summary information
+> >> Block bitmap differences:  -1506836 -1506843 -(1506859--1506860) -(1660941--1661964) -(1661966--1671167) -(1671688--1686473)
+> >> Fix? no
+> >> Free blocks count wrong for group #2 (31558, counted=31556).
+> >> Fix? no
+> >> Free blocks count wrong for group #43 (15871, counted=15867).
+> >> Fix? no
+> >> Free blocks count wrong (2204041, counted=2204035).
+> >> Fix? no
+> >> image1: ********** WARNING: Filesystem still has errors **********
+> >> image1: 13008/655360 files (0.3% non-contiguous), 417399/2621440 blocks
+> >>
+> >> I backup the image to image_bk, and then mount the image to a dir, and cat all files in the image.
+> >> Steps:
+> >> # dd if=image1 of=image_bk
+> >> # mount image1 err_dir
+> >> # find -name '*' -exec cat > /dev/null {} \;
+> >>
+> >> There are no issues during catting, and no err in dmesg too.
+> >>
+> >> *But when I umount the image1 from err_dir, The fsck result didn't show any fs corruption info.
+> >>
+> >> I mount image_bk to err_dir and umount it with no operation directly. The result is same to iamge1.
+> >>
+> >> *So, is fs in the image as a block device via loop device damaged really, or does it have some others issues? 
+> >> Could you give me some opinions?
+> >>
+> >>
+> >> Thanks.
+> >>
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+--8323328-292471106-1405674638=:12453--
