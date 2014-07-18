@@ -1,96 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030280AbaGRKRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:17:17 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:60635 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934697AbaGRKRN (ORCPT
+	id S1761357AbaGRKRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:17:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44239 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760968AbaGRKLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:17:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHfPSqBiDZXxSVaK3PHrGhDQxi4TU=szKA06Odm9yeB8a5rDFw@mail.gmail.com>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
- <59765980.V0Hsx6tyKd@wuerfel> <CAHfPSqBiDZXxSVaK3PHrGhDQxi4TU=szKA06Odm9yeB8a5rDFw@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 18 Jul 2014 15:46:51 +0530
-Message-ID: <CAHfPSqAT3EGso2MnFw2qZFpjT5KxHhFZ5Qw165tWEeD0JtdG+A@mail.gmail.com>
-Subject: Re: [PATCHv6 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and
- code clean
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        My self <ch.naveen@samsung.com>, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        linux-iio@vger.kernel.org, t.figa@samsung.com, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 06:11:07 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 03/14] scsi: centralize command re-queueing in scsi_dispatch_fn
+Date: Fri, 18 Jul 2014 12:13:02 +0200
+Message-Id: <1405678393-11497-4-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405678393-11497-1-git-send-email-hch@lst.de>
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+Make sure we only have the logic for requeing commands in one place.
 
-On 18 July 2014 15:43, Naveen Krishna Ch <naveenkrishna.ch@gmail.com> wrote:
-> Hello Arnd,
->
-> On 18 July 2014 15:08, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Friday 18 July 2014 14:59:42 Chanwoo Choi wrote:
->>> This patchset support Exynos3250 ADC (Analog Digital Converter) because
->>> Exynos3250 has additional special clock for ADC IP.
->>>
->>
->> by coincidence, I have just looked at the same driver in order to
->> add support for s3c24xx and s3c64xx, so we can remove the plat-samsung
->> adc framework they still use.  Those changes would naturally conflict
->> with yours, but I think it makes sense for your patches to come first.
->>
->> I'll comment a bit more on the individual patches. I didn't have
->> interest in them earlier, so I didn't comment so far.
->>
->> Another aspect that came up is the touchscreen support. Right now,
->> there is drivers/input/touchscreen/s3c2410_ts.c which is intimately
->> tied to arch/arm/plat-samsung/adc.c. The best way forward (as discussed
->> on IRC as few days ago) seems to be to integrate support for that into
->> the exynos_adc driver. Can you comment on which parts actually support
->> touchscreen? Did touchscreen support get dropped in the exynos hardware,
->> or is the driver just missing at the moment?
->
-> SoCs from Samsung before Exynos4 had and ADC based Touch screen
-> and the driver under arch/arm/plat-samsung/adc.c and
-> drivers/input/touchscreen/s3c2410_ts.c used to work together.
->
-> Infact, the interrupt routine and priorities in plat-samsung/adc.c
-> driver as written keeping the Touchscreen in mind.
->
-> After Exynos4, ADC IP remained. But, the touch screen was removed in hardware.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Webb Scales <webbnh@hp.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Tested-by: Bart Van Assche <bvanassche@acm.org>
+Tested-by: Robert Elliott <elliott@hp.com>
+---
+ drivers/scsi/scsi.c     | 35 ++++++++++++-----------------------
+ drivers/scsi/scsi_lib.c |  9 ++++++---
+ 2 files changed, 18 insertions(+), 26 deletions(-)
 
-At least on Exynos4210> i'm not sure about the other Exynos4 series.
-I will try to verify the user manuals.
-
->
-> As per suggestion from Doug Anderson, I've implemented IIO based ADC
-> driver started to support from exynos5250.
->
->>
->>         Arnd
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
-> --
-> Shine bright,
-> (: Nav :)
-
-
-
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 321f854..2396e89 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -645,9 +645,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 		 * returns an immediate error upwards, and signals
+ 		 * that the device is no longer present */
+ 		cmd->result = DID_NO_CONNECT << 16;
+-		scsi_done(cmd);
+-		/* return 0 (because the command has been processed) */
+-		goto out;
++		goto done;
+ 	}
+ 
+ 	/* Check to see if the scsi lld made this device blocked. */
+@@ -659,17 +657,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 		 * occur until the device transitions out of the
+ 		 * suspend state.
+ 		 */
+-
+-		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
+-
+ 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
+ 			"queuecommand : device blocked\n"));
+-
+-		/*
+-		 * NOTE: rtn is still zero here because we don't need the
+-		 * queue to be plugged on return (it's already stopped)
+-		 */
+-		goto out;
++		return SCSI_MLQUEUE_DEVICE_BUSY;
+ 	}
+ 
+ 	/*
+@@ -693,20 +683,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 			       "cdb_size=%d host->max_cmd_len=%d\n",
+ 			       cmd->cmd_len, cmd->device->host->max_cmd_len));
+ 		cmd->result = (DID_ABORT << 16);
+-
+-		scsi_done(cmd);
+-		goto out;
++		goto done;
+ 	}
+ 
+ 	if (unlikely(host->shost_state == SHOST_DEL)) {
+ 		cmd->result = (DID_NO_CONNECT << 16);
+-		scsi_done(cmd);
+-	} else {
+-		trace_scsi_dispatch_cmd_start(cmd);
+-		cmd->scsi_done = scsi_done;
+-		rtn = host->hostt->queuecommand(host, cmd);
++		goto done;
++
+ 	}
+ 
++	trace_scsi_dispatch_cmd_start(cmd);
++
++	cmd->scsi_done = scsi_done;
++	rtn = host->hostt->queuecommand(host, cmd);
+ 	if (rtn) {
+ 		trace_scsi_dispatch_cmd_error(cmd, rtn);
+ 		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
+@@ -715,12 +704,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 
+ 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
+ 			"queuecommand : request rejected\n"));
+-
+-		scsi_queue_insert(cmd, rtn);
+ 	}
+ 
+- out:
+ 	return rtn;
++ done:
++	scsi_done(cmd);
++	return 0;
+ }
+ 
+ /**
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 3ac677c..bf73427 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1557,9 +1557,12 @@ static void scsi_request_fn(struct request_queue *q)
+ 		 * Dispatch the command to the low-level driver.
+ 		 */
+ 		rtn = scsi_dispatch_cmd(cmd);
+-		spin_lock_irq(q->queue_lock);
+-		if (rtn)
++		if (rtn) {
++			scsi_queue_insert(cmd, rtn);
++			spin_lock_irq(q->queue_lock);
+ 			goto out_delay;
++		}
++		spin_lock_irq(q->queue_lock);
+ 	}
+ 
+ 	return;
+@@ -1579,7 +1582,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 	blk_requeue_request(q, req);
+ 	sdev->device_busy--;
+ out_delay:
+-	if (sdev->device_busy == 0)
++	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
+ 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ }
+ 
 -- 
-Shine bright,
-(: Nav :)
+1.9.1
+
