@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761646AbaGRNh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:37:29 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17682 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761921AbaGRNNB (ORCPT
+	id S1761723AbaGRNh5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:37:57 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53004 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761411AbaGRNhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:13:01 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Bert Vermeulen <bert@biot.com>,
-        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 129/170] USB: ftdi_sio: Add extra PID.
-Date: Fri, 18 Jul 2014 14:12:14 +0200
-Message-Id: <b9240255c51f6c16ed4f3eda10be351ba58f2967.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 09:37:55 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53C92332.5010807@roeck-us.net>
+Date: Fri, 18 Jul 2014 06:37:54 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@suse.de>
+CC: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
+        apw@canonical.com, joe@perches.com, tytso@mit.edu, dwalter@google.com,
+        neilb@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+References: <1405611268-12463-1-git-send-email-richard@nod.at> <53C8CCE1.4000105@roeck-us.net> <20140718082324.GA31270@pd.tnic>
+In-Reply-To: <20140718082324.GA31270@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bert Vermeulen <bert@biot.com>
+On 07/18/2014 01:23 AM, Borislav Petkov wrote:
+> On Fri, Jul 18, 2014 at 12:29:37AM -0700, Guenter Roeck wrote:
+>> First, 'abuse' is a relative term. It describes a use you
+>> (and possibly many others) may find objectionable, but that
+>> does not mean all uses are objectionable.
+>
+> Do you actually have a valid use case for keeping the cmdline switch ...
+>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I find it convenient to be able to check a new file before committing it
+and creating a patch. Also, I find it convenient to be able use it to clean
+up a file before I do heavy lifting with it. Yes, I understand the latter
+is discouraged nowadays, and I would not use it anymore outside my scope
+of responsibility unless specifically asked by the maintainer to do so,
+but in such cases it helps me a lot to be able to address the cleanup
+prior to the heavy lifting.
 
-===============
-
-commit 5a7fbe7e9ea0b1b9d7ffdba64db1faa3a259164c upstream.
-
-This patch adds PID 0x0003 to the VID 0x128d (Testo). At least the
-Testo 435-4 uses this, likely other gear as well.
-
-Signed-off-by: Bert Vermeulen <bert@biot.com>
-Cc: Johan Hovold <johan@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/serial/ftdi_sio.c     | 3 ++-
- drivers/usb/serial/ftdi_sio_ids.h | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index ebf04c7d49cb..399fe9fa4db0 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -721,7 +721,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
--	{ USB_DEVICE(TESTO_VID, TESTO_USB_INTERFACE_PID) },
-+	{ USB_DEVICE(TESTO_VID, TESTO_1_PID) },
-+	{ USB_DEVICE(TESTO_VID, TESTO_3_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_GAMMA_SCOUT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13M_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13S_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 500474c48f4b..106cc16cc6ed 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -798,7 +798,8 @@
-  * Submitted by Colin Leroy
-  */
- #define TESTO_VID			0x128D
--#define TESTO_USB_INTERFACE_PID		0x0001
-+#define TESTO_1_PID			0x0001
-+#define TESTO_3_PID			0x0003
- 
- /*
-  * Mobility Electronics products.
--- 
-2.0.0
+Guenter
 
