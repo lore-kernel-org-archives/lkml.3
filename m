@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761623AbaGRLkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:40:09 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42909 "EHLO
+	id S1030222AbaGRLnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:43:13 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42896 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761480AbaGRLkD (ORCPT
+	with ESMTP id S1756400AbaGRLj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:40:03 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-13-53c907929523
+	Fri, 18 Jul 2014 07:39:59 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-07-53c9078ecd2f
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v3 04/12] usb: dwc2/gadget: Fix comment text
-Date: Fri, 18 Jul 2014 13:39:29 +0200
-Message-id: <1405683577-11226-5-git-send-email-r.baldyga@samsung.com>
+        andrzej.p@samsung.com, Kamil Debski <k.debski@samsung.com>,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v3 03/12] usb: dwc2/gadget: move phy bus legth initialization
+Date: Fri, 18 Jul 2014 13:39:28 +0200
+Message-id: <1405683577-11226-4-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
 References: <1405683577-11226-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jAd1J7CeDDaYd4rSY9bKdxeLg/XqL
-	5sXr2Swu75rDZrFoWSuzxdojd9kttk+ZzmTx4PBOdgcOj/1z17B79G1ZxeixZf9nRo/jN7Yz
-	eXzeJBfAGsVlk5Kak1mWWqRvl8CV8XJ6I2vBFbaK360LGRsYz7N2MXJySAiYSKx5sYcFwhaT
-	uHBvPVsXIxeHkMAiRon+1RNZIZx2JokLHw8ygVSxCehIbPk+gRHEFhEQkFj/4hI7SBGzwAlG
-	iY7/F9hAEsICNhKd7VOYuxg5OFgEVCWmtwuChHkFXCUOTHwNtVlO4uSxyWA2p4CbRNuj/ywg
-	5UJANdO+8k9g5F3AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzi4nknvYFzVYHGIUYCD
-	UYmH1+Lm8WAh1sSy4srcQ4wSHMxKIrzZ94FCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcK
-	CaQnlqRmp6YWpBbBZJk4OKUaGGf7y077OlOjziHBZ9Pncyp738VYBTUacPyYzrz9ggTDYYtf
-	OVodi84r20UrbTyWk2Fjq7Ly1Kk7n9aozoiTrj93NWfnpaNxa96y89y5ZrThyiUrC0GGV5J+
-	z3YlzDK49eDmcunD38O6vBt/1cd/+mm232nej6nPVqXXXOUVVc7dV7En32xO8HklluKMREMt
-	5qLiRADXfueXKgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t9jAd0+9pPBBisfSFvMetnOYnHwfr1F
+	8+L1bBY/Xl9gs7i8aw6bxaJlrcwWa4/cZbfYPmU6k8WDwzvZHTg99s9dw+7Rt2UVo8eW/Z8Z
+	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGnN1L2AoO81VMPX2UsYFxP3cXIyeHhICJxKkd
+	8xghbDGJC/fWs3UxcnEICSxilGiY/JoVwmlnkji4/QorSBWbgI7Elu8TwDpEBAQk1r+4xA5S
+	xCzwllFi2rlvLCAJYQFfiU+XvjCB2CwCqhKPPjWDNfMKuEq0fXjMDrFOTuLksclgcU4BN4m2
+	R/+BejmAtrlKTPvKP4GRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4EB7Jr2DcVWD
+	xSFGAQ5GJR5ei5vHg4VYE8uKK3MPMUpwMCuJ8GbfBwrxpiRWVqUW5ccXleakFh9ilOZgURLn
+	PdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgVN50ruJtyu+l26+eDlTujtaexieZdEuJ6eaPVuvT
+	H6esULymsvP7hZBri3k0z67jqW2a6C+413q+4NbrYlc82fjvn7lwRlmrkueigHmo8apPdky6
+	xhd+v/8nVr15G2vRuqmPE0LY2f+JZM7fmtO+e19aZarhuslsE7i3/WwX+vPWteR7rLWrnRJL
+	cUaioRZzUXEiALEYuygwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+From: Kamil Debski <k.debski@samsung.com>
 
-Adjust the debug text to the name of the printed variable.
+This patch moves the part of code that initializes the PHY bus width.
+This results in simpler code and removes the need to check whether
+the Generic PHY Framework is used.
 
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/gadget.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc2/gadget.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index fc27b4c..35b4890 100644
+index 70eab95..fc27b4c 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -2935,7 +2935,7 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
- 	struct s3c_hsotg *hsotg = to_hsotg(gadget);
- 	unsigned long flags = 0;
+@@ -3395,6 +3395,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
--	dev_dbg(hsotg->dev, "%s: is_in: %d\n", __func__, is_on);
-+	dev_dbg(hsotg->dev, "%s: is_on: %d\n", __func__, is_on);
++	/* Set default UTMI width */
++	hsotg->phyif = GUSBCFG_PHYIF16;
++
+ 	/*
+ 	 * Attempt to find a generic PHY, then look for an old style
+ 	 * USB PHY, finally fall back to pdata
+@@ -3413,8 +3416,15 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 			hsotg->plat = plat;
+ 		} else
+ 			hsotg->uphy = uphy;
+-	} else
++	} else {
+ 		hsotg->phy = phy;
++		/*
++		 * If using the generic PHY framework, check if the PHY bus
++		 * width is 8-bit and set the phyif appropriately.
++		 */
++		if (phy_get_bus_width(phy) == 8)
++			hsotg->phyif = GUSBCFG_PHYIF8;
++	}
  
- 	spin_lock_irqsave(&hsotg->lock, flags);
- 	if (is_on) {
+ 	hsotg->dev = dev;
+ 
+@@ -3481,16 +3491,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		goto err_supplies;
+ 	}
+ 
+-	/* Set default UTMI width */
+-	hsotg->phyif = GUSBCFG_PHYIF16;
+-
+-	/*
+-	 * If using the generic PHY framework, check if the PHY bus
+-	 * width is 8-bit and set the phyif appropriately.
+-	 */
+-	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
+-		hsotg->phyif = GUSBCFG_PHYIF8;
+-
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
+ 
 -- 
 1.9.1
 
