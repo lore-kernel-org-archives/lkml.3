@@ -1,132 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761576AbaGRLSn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:18:43 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24414 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaGRLSl (ORCPT
+	id S1761593AbaGRLUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:20:44 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:42098 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755880AbaGRLUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:18:41 -0400
-Message-ID: <53C9023D.3090007@oracle.com>
-Date: Fri, 18 Jul 2014 07:17:17 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Fri, 18 Jul 2014 07:20:42 -0400
+Date: Fri, 18 Jul 2014 07:20:39 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: benh@kernel.crashing.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        David Rientjes <rientjes@google.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH RFC tip/core/rcu 2/2] rcu: Create rcuo kthreads only for
- onlined CPUs
-References: <20140714100604.GA9905@linux.vnet.ibm.com> <1405332404-10094-1-git-send-email-paulmck@linux.vnet.ibm.com> <1405332404-10094-2-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1405332404-10094-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Subject: Re: [RFC 0/2] Memoryless nodes and kworker
+Message-ID: <20140718112039.GA8383@htj.dyndns.org>
+References: <20140717230923.GA32660@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140717230923.GA32660@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2014 06:06 AM, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thu, Jul 17, 2014 at 04:09:23PM -0700, Nishanth Aravamudan wrote:
+> [Apologies for the large Cc list, but I believe we have the following
+> interested parties:
 > 
-> RCU currently uses for_each_possible_cpu() to spawn rcuo kthreads,
-> which can result in more rcuo kthreads than one would expect, for
-> example, derRichard reported 64 CPUs worth of rcuo kthreads on an
-> 8-CPU image.  This commit therefore creates rcuo kthreads only for
-> those CPUs that actually come online.
-> 
-> Reported-by: derRichard
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> x86 (recently posted memoryless node support)
+> ia64 (existing memoryless node support)
+> ppc (existing memoryless node support)
+> previous discussion of how to solve Anton's issue with slab usage
+> workqueue contributors/maintainers]
 
-Hey Paul,
+Well, you forgot to cc me.
 
-Me again. :)
+...
+> It turns out we see this large slab usage due to using the wrong NUMA
+> information when creating kthreads.
+>     
+> Two changes are required, one of which is in the workqueue code and one
+> of which is in the powerpc initialization. Note that ia64 may want to
+> consider something similar.
 
-It seems that this patch moved thread initialization to a point way
-too early during boot, before rest_init() which initializes kthreadd_task
-runs, so creating a new kthread triggers a NULL ptr deref:
+Wasn't there a thread on this exact subject a few weeks ago?  Was that
+someone else?  Memory-less node detail leaking out of allocator proper
+isn't a good idea.  Please allow allocator users to specify the nodes
+they're on and let the allocator layer deal with mapping that to
+whatever is appropriate.  Please don't push that to everybody.
 
-[    0.000000] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[    0.000000] IP: wake_up_process (kernel/sched/core.c:1768)
-[    0.000000] PGD 0
-[    0.000000] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.16.0-rc5-next-20140718-sasha-00046-g054cefc #898
-[    0.000000] task: ffffffff9fa2d580 ti: ffffffff9fa29580 task.ti: ffffffff9fa29580
-[    0.000000] RIP: wake_up_process (kernel/sched/core.c:1768)
-[    0.000000] RSP: 0000:ffffffff9fa2d238  EFLAGS: 00010046
-[    0.000000] RAX: ffffffff9fa2d580 RBX: 0000000000000000 RCX: 0000000000000000
-[    0.000000] RDX: 0000000000000000 RSI: ffffffff9f2f4567 RDI: ffffffff9f28c581
-[    0.000000] RBP: ffffffff9fa2d240 R08: 0000000000000001 R09: 0000000000000001
-[    0.000000] R10: 0000000000000000 R11: 3d3d3d3d3d3d3d3d R12: ffffffff9fab3000
-[    0.000000] R13: ffffffff99288bb0 R14: ffffffff9f18a72b R15: ffff8806f2050000
-[    0.000000] FS:  0000000000000000(0000) GS:ffff8805f3a00000(0000) knlGS:0000000000000000
-[    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    0.000000] CR2: 0000000000000000 CR3: 000000001fa22000 CR4: 00000000000006b0
-[    0.000000] Stack:
-[    0.000000]  00000000ffffffff ffffffff9fa2d388 ffffffff991fd3e7 0000000000000002
-[    0.000000]  ffffffff9fa2d580 ffffffffa13b04a0 ffffffff00000000 dead4ead00000000
-[    0.000000]  ffffffffffffffff ffffffffffffffff ffffffffa13ade38 0000000000000000
-[    0.000000] Call Trace:
-[    0.000000]  <UNK>
-[    0.000000] kthread_create_on_node (kernel/kthread.c:294)
-[    0.000000] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-[    0.000000] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-[    0.000000] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2639 (discriminator 8))
-[    0.000000] rcu_spawn_one_boost_kthread (kernel/rcu/tree_plugin.h:1348)
-[    0.000000] rcu_cpu_notify (kernel/rcu/tree.c:3454)
-[    0.000000] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2639 (discriminator 8))
-[    0.000000] rcu_init (kernel/rcu/tree.c:3753)
-[    0.000000] start_kernel (init/main.c:581)
-[    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:344)
-[    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
-[    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
-[ 0.000000] Code: 55 b0 8b 40 18 e9 2c fd ff ff 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 e8 1b 0b c9 04 55 48 89 e5 53 48 89 fb e8 ae 36 21 00 <48> 8b 03 a8 0c 75 17 48 89 df 31 d2 be 03 00 00 00 e8 98 f9 ff
-All code
-========
-   0:   55                      push   %rbp
-   1:   b0 8b                   mov    $0x8b,%al
-   3:   40 18 e9                sbb    %bpl,%cl
-   6:   2c fd                   sub    $0xfd,%al
-   8:   ff                      (bad)
-   9:   ff 66 66                jmpq   *0x66(%rsi)
-   c:   66 66 66 66 2e 0f 1f    data32 data32 data32 nopw %cs:0x0(%rax,%rax,1)
-  13:   84 00 00 00 00 00
-  19:   e8 1b 0b c9 04          callq  0x4c90b39
-  1e:   55                      push   %rbp
-  1f:   48 89 e5                mov    %rsp,%rbp
-  22:   53                      push   %rbx
-  23:   48 89 fb                mov    %rdi,%rbx
-  26:   e8 ae 36 21 00          callq  0x2136d9
-  2b:*  48 8b 03                mov    (%rbx),%rax              <-- trapping instruction
-  2e:   a8 0c                   test   $0xc,%al
-  30:   75 17                   jne    0x49
-  32:   48 89 df                mov    %rbx,%rdi
-  35:   31 d2                   xor    %edx,%edx
-  37:   be 03 00 00 00          mov    $0x3,%esi
-  3c:   e8 98 f9 ff 00          callq  0xfff9d9
+Thanks.
 
-Code starting with the faulting instruction
-===========================================
-   0:   48 8b 03                mov    (%rbx),%rax
-   3:   a8 0c                   test   $0xc,%al
-   5:   75 17                   jne    0x1e
-   7:   48 89 df                mov    %rbx,%rdi
-   a:   31 d2                   xor    %edx,%edx
-   c:   be 03 00 00 00          mov    $0x3,%esi
-  11:   e8 98 f9 ff 00          callq  0xfff9ae
-[    0.000000] RIP wake_up_process (kernel/sched/core.c:1768)
-[    0.000000]  RSP <ffffffff9fa2d238>
-[    0.000000] CR2: 0000000000000000
-
-
-Thanks,
-Sasha
+-- 
+tejun
