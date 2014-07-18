@@ -1,129 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762358AbaGRN44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:56:56 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17453 "EHLO
+	id S965449AbaGRNJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:09:16 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17431 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761325AbaGRNJm (ORCPT
+	by vger.kernel.org with ESMTP id S965286AbaGRNJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:42 -0400
+	Fri, 18 Jul 2014 09:09:12 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 119/170] mm: page_alloc: fix CMA area initialisation when pageblock > MAX_ORDER
-Date: Fri, 18 Jul 2014 14:12:04 +0200
-Message-Id: <842d2aecf2d282bfd42372a1d8f9b6ce2701b637.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 026/170] IB/mlx5: add missing padding at end of struct mlx5_ib_create_cq
+Date: Fri, 18 Jul 2014 14:10:31 +0200
+Message-Id: <52fbe34910b2eb98d4437404ef1add9942cec43c.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
 References: <cover.1405685481.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit dc78327c0ea7da5186d8cbc1647bd6088c5c9fa5 upstream.
+commit a8237b32a3faab155a5dc8f886452147ce73da3e upstream.
 
-With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
-the following is triggered at early boot:
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data type larger than 4 bytes: on most ABIs a padding must be added at
+end of the structures, while it is not required on i386.
 
-  SMP: Total of 8 processors activated.
-  devtmpfs: initialized
-  Unable to handle kernel NULL pointer dereference at virtual address 00000008
-  pgd = fffffe0000050000
-  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
-  Internal error: Oops: 96000006 [#1] SMP
-  Modules linked in:
-  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
-  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
-  PC is at __list_add+0x10/0xd4
-  LR is at free_one_page+0x270/0x638
-  ...
-  Call trace:
-    __list_add+0x10/0xd4
-    free_one_page+0x26c/0x638
-    __free_pages_ok.part.52+0x84/0xbc
-    __free_pages+0x74/0xbc
-    init_cma_reserved_pageblock+0xe8/0x104
-    cma_init_reserved_areas+0x190/0x1e4
-    do_one_initcall+0xc4/0x154
-    kernel_init_freeable+0x204/0x2a8
-    kernel_init+0xc/0xd4
+So for most ABI struct mlx5_ib_create_cq get padded to be aligned on a
+8 bytes multiple, while for i386, such padding is not added.
 
-This happens because init_cma_reserved_pageblock() calls
-__free_one_page() with pageblock_order as page order but it is bigger
-than MAX_ORDER.  This in turn causes accesses past zone->free_list[].
+The tool pahole can be used to find such implicit padding:
 
-Fix the problem by changing init_cma_reserved_pageblock() such that it
-splits pageblock into individual MAX_ORDER pages if pageblock is bigger
-than a MAX_ORDER page.
+  $ pahole --anon_include \
+  	 --nested_anon_include \
+  	 --recursive \
+  	 --class_name mlx5_ib_create_cq \
+  	 drivers/infiniband/hw/mlx5/mlx5_ib.o
 
-In cases where !CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which is all
-architectures expect for ia64, powerpc and tile at the moment, the
-âpageblock_order > MAX_ORDERâ condition will be optimised out since both
-sides of the operator are constants.  In cases where pageblock size is
-variable, the performance degradation should not be significant anyway
-since init_cma_reserved_pageblock() is called only at boot time at most
-MAX_CMA_AREAS times which by default is eight.
+Then, structure layout can be compared between i386 and x86_64:
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Reported-by: Mark Salter <msalter@redhat.com>
-Tested-by: Mark Salter <msalter@redhat.com>
-Tested-by: Christopher Covington <cov@codeaurora.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
+#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
+#  @@ -34,9 +34,8 @@ struct mlx5_ib_create_cq {
+#          __u64                      db_addr;              /*     8     8 */
+#          __u32                      cqe_size;             /*    16     4 */
+#
+#  -       /* size: 20, cachelines: 1, members: 3 */
+#  -       /* last cacheline: 20 bytes */
+#  +       /* size: 24, cachelines: 1, members: 3 */
+#  +       /* padding: 4 */
+#  +       /* last cacheline: 24 bytes */
+#   };
+
+This ABI disagreement will make an x86_64 kernel try to read past the
+buffer provided by an i386 binary.
+
+When boundary check will be implemented, a x86_64 kernel will refuse
+to read past the i386 userspace provided buffer and the uverb will
+fail.
+
+Anyway, if the structure lies in memory on a page boundary and next
+page is not mapped, ib_copy_from_udata() will fail when trying to read
+the 4 bytes of padding and the uverb will fail.
+
+This patch makes create_cq_user() takes care of the input data size to
+handle the case where no padding is provided.
+
+This way, x86_64 kernel will be able to handle struct
+mlx5_ib_create_cq as sent by unpatched and patched i386 libmlx5.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/page_alloc.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/infiniband/hw/mlx5/cq.c   | 13 ++++++++++++-
+ drivers/infiniband/hw/mlx5/user.h |  1 +
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 83aaa49bcba7..6e0a9cf8d02a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -785,9 +785,21 @@ void __init init_cma_reserved_pageblock(struct page *page)
- 		set_page_count(p, 0);
- 	} while (++p, --i);
+diff --git a/drivers/infiniband/hw/mlx5/cq.c b/drivers/infiniband/hw/mlx5/cq.c
+index 344ab03948a3..706833ab7e7e 100644
+--- a/drivers/infiniband/hw/mlx5/cq.c
++++ b/drivers/infiniband/hw/mlx5/cq.c
+@@ -32,6 +32,7 @@
  
--	set_page_refcounted(page);
- 	set_pageblock_migratetype(page, MIGRATE_CMA);
--	__free_pages(page, pageblock_order);
+ #include <linux/kref.h>
+ #include <rdma/ib_umem.h>
++#include <rdma/ib_user_verbs.h>
+ #include "mlx5_ib.h"
+ #include "user.h"
+ 
+@@ -518,14 +519,24 @@ static int create_cq_user(struct mlx5_ib_dev *dev, struct ib_udata *udata,
+ 			  int *cqe_size, int *index, int *inlen)
+ {
+ 	struct mlx5_ib_create_cq ucmd;
++	size_t ucmdlen;
+ 	int page_shift;
+ 	int npages;
+ 	int ncont;
+ 	int err;
+ 
+-	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd)))
++	ucmdlen =
++		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
++		 sizeof(ucmd)) ? (sizeof(ucmd) -
++				  sizeof(ucmd.reserved)) : sizeof(ucmd);
 +
-+	if (pageblock_order >= MAX_ORDER) {
-+		i = pageblock_nr_pages;
-+		p = page;
-+		do {
-+			set_page_refcounted(p);
-+			__free_pages(p, MAX_ORDER - 1);
-+			p += MAX_ORDER_NR_PAGES;
-+		} while (i -= MAX_ORDER_NR_PAGES);
-+	} else {
-+		set_page_refcounted(page);
-+		__free_pages(page, pageblock_order);
-+	}
++	if (ib_copy_from_udata(&ucmd, udata, ucmdlen))
+ 		return -EFAULT;
+ 
++	if (ucmdlen == sizeof(ucmd) &&
++	    ucmd.reserved != 0)
++		return -EINVAL;
 +
- 	adjust_managed_page_count(page, pageblock_nr_pages);
- }
- #endif
+ 	if (ucmd.cqe_size != 64 && ucmd.cqe_size != 128)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/infiniband/hw/mlx5/user.h b/drivers/infiniband/hw/mlx5/user.h
+index a886de3e593c..e7da977e2548 100644
+--- a/drivers/infiniband/hw/mlx5/user.h
++++ b/drivers/infiniband/hw/mlx5/user.h
+@@ -84,6 +84,7 @@ struct mlx5_ib_create_cq {
+ 	__u64	buf_addr;
+ 	__u64	db_addr;
+ 	__u32	cqe_size;
++	__u32	reserved; /* explicit padding (optional on i386) */
+ };
+ 
+ struct mlx5_ib_create_cq_resp {
 -- 
 2.0.0
 
