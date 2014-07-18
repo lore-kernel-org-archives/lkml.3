@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965838AbaGRQv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:51:57 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:57919 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232AbaGRQvz (ORCPT
+	id S1030492AbaGRQyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:54:37 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46140 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755885AbaGRQyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:51:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
-References: <1405626731-12220-1-git-send-email-adityakali@google.com>
- <1405626731-12220-6-git-send-email-adityakali@google.com> <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
- <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 18 Jul 2014 09:51:33 -0700
-Message-ID: <CALCETrW6YpyJBmr3sZC6KL03GP4dcGYavQF5DFZfys6Cok-vpw@mail.gmail.com>
-Subject: Re: [PATCH 5/5] cgroup: introduce cgroup namespaces
-To: Aditya Kali <adityakali@google.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Linux API <linux-api@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 12:54:35 -0400
+Message-ID: <1405702472.30262.1.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 0/25] Replace DEFINE_PCI_DEVICE_TABLE macro use
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Greg KH <greg@kroah.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Benoit Taine <benoit.taine@lip6.fr>, linux-mips@linux-mips.org,
+        linux-fbdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, linux-acenic@sunsite.dk,
+        linux-scsi@vger.kernel.org, linux-rdma@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-hippi@sunsite.dk,
+        industrypack-devel@lists.sourceforge.net, linux-mmc@vger.kernel.org,
+        MPT-FusionLinux.pdl@avagotech.com,
+        virtualization@lists.linux-foundation.org,
+        ath9k-devel@venema.h4ckr.net, wil6210@qca.qualcomm.com,
+        linux-pcmcia@lists.infradead.org, linux-can@vger.kernel.org,
+        xen-devel@lists.xenproject.org, platform-driver-x86@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, e1000-devel@lists.sourceforge.net,
+        linux-crypto@vger.kernel.org, devel@linuxdriverproject.org
+Date: Fri, 18 Jul 2014 09:54:32 -0700
+In-Reply-To: <20140718164340.GA24960@kroah.com>
+References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
+	 <20140718162213.GC31114@tuxdriver.com> <20140718164340.GA24960@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 17, 2014 1:56 PM, "Aditya Kali" <adityakali@google.com> wrote:
->
-> On Thu, Jul 17, 2014 at 12:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Thu, Jul 17, 2014 at 12:52 PM, Aditya Kali <adityakali@google.com> wrote:
-> >> Introduce the ability to create new cgroup namespace. The newly created
-> >> cgroup namespace remembers the 'struct cgroup *root_cgrp' at the point
-> >> of creation of the cgroup namespace. The task that creates the new
-> >> cgroup namespace and all its future children will now be restricted only
-> >> to the cgroup hierarchy under this root_cgrp. In the first version,
-> >> setns() is not supported for cgroup namespaces.
-> >> The main purpose of cgroup namespace is to virtualize the contents
-> >> of /proc/self/cgroup file. Processes inside a cgroup namespace
-> >> are only able to see paths relative to their namespace root.
-> >> This allows container-tools (like libcontainer, lxc, lmctfy, etc.)
-> >> to create completely virtualized containers without leaking system
-> >> level cgroup hierarchy to the task.
-> >
-> > What happens if someone moves a task in a cgroup namespace outside of
-> > the namespace root cgroup?
-> >
->
-> Attempt to move a task outside of cgroupns root will fail with EPERM.
-> This is true irrespective of the privileges of the process attempting
-> this. Once cgroupns is created, the task will be confined to the
-> cgroup hierarchy under its cgroupns root until it dies.
+On Fri, 2014-07-18 at 09:43 -0700, Greg KH wrote:
+> On Fri, Jul 18, 2014 at 12:22:13PM -0400, John W. Linville wrote:
+> > On Fri, Jul 18, 2014 at 05:26:47PM +0200, Benoit Taine wrote:
+> > > We should prefer `const struct pci_device_id` over
+> > > `DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
+> > > This issue was reported by checkpatch.
+> > 
+> > Honestly, I prefer the macro -- it stands-out more.  Maybe the style
+> > guidelines and/or checkpatch should change instead?
+> 
+> The macro is horrid, no other bus has this type of thing just to save a
+> few characters in typing
 
-Can a task in a non-init userns create a cgroupns?  If not, that's
-unusual.  If so, is it problematic if they can prevent themselves from
-being moved?
+OK, so this is the macro:
 
-I hate to say it, but it might be worth requiring explicit permission
-from the cgroup manager for this.  For example, there could be a new
-cgroup attribute may_unshare, and any attempt to unshare the cgroup ns
-will fail with -EPERM unless the caller is in a may_share=1 cgroup.
-may_unshare in a parent cgroup would not give child cgroups the
-ability to unshare.
+#define DEFINE_PCI_DEVICE_TABLE(_table) \
+	const struct pci_device_id _table[]
 
---Andy
+Could you explain what's so horrible?
+
+The reason it's useful today is that people forget the const (and
+sometimes the [] making it a true table instead of a pointer).  If you
+use the DEFINE_PCI_DEVICE_TABLE macro, the compile breaks if you use it
+wrongly (good) and you automatically get the correct annotations.
+
+> , so why should PCI be "special" in this regard
+> anymore?
+
+I think the PCI usage dwarfs most other bus types now, so you could turn
+the question around.  However, I don't think majority voting is a good
+guide to best practise; lets debate the merits for their own sake.
+
+James
+
+
