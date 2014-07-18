@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945928AbaGRSKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:10:30 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43593 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422755AbaGRSK3 (ORCPT
+	id S1422832AbaGRSOD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:14:03 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:45059 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030663AbaGRSOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:10:29 -0400
-Message-ID: <53C96313.7060608@infradead.org>
-Date: Fri, 18 Jul 2014 11:10:27 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 14:14:00 -0400
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Build Errors when building usb directory
-References: <CAPDOMVjrRS1zSDwQ0KVL6-m774_gAwM8Ov4mehDvUZXjtmVrOA@mail.gmail.com>
-In-Reply-To: <CAPDOMVjrRS1zSDwQ0KVL6-m774_gAwM8Ov4mehDvUZXjtmVrOA@mail.gmail.com>
+In-Reply-To: <CALCETrUv3G+C3PTOD1FJGOG8AQCA30hNkUiusCnQDGq6Kt_Feg@mail.gmail.com>
+References: <1405620518-18495-1-git-send-email-keescook@chromium.org>
+	<alpine.LRH.2.11.1407181325200.15709@namei.org>
+	<CALCETrUv3G+C3PTOD1FJGOG8AQCA30hNkUiusCnQDGq6Kt_Feg@mail.gmail.com>
+Date: Fri, 18 Jul 2014 11:13:59 -0700
+X-Google-Sender-Auth: xxAQnTZ2fv-l92gae79uUzqDbDk
+Message-ID: <CAGXu5jL9wQ4ZJ1kDRx_Y_cyGQEjO_Ugmcc--Q71x32_x1q9ScA@mail.gmail.com>
+Subject: Re: [PATCH v12 11/11] seccomp: add thread sync ability
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Drysdale <drysdale@google.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 10:45 AM, Nick Krause wrote:
-> Hey Greg and others,
-> When I built the usb directory today to check a patch I am also
-> sending to. I seem to hitting
-> a few compiler errors and a lot of warnings.  I am going to attach a
-> file of my log of this build.
-> Cheers Nick
-> 
+On Fri, Jul 18, 2014 at 10:17 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Jul 17, 2014 at 8:26 PM, James Morris <jmorris@namei.org> wrote:
+>> On Thu, 17 Jul 2014, Kees Cook wrote:
+>>
+>>> Twelfth time's the charm! :)
+>>
+>> Btw, there doesn't seem to be an official seccomp maintainer.  Kees, would
+>> you like to volunteer for this?  If so, send in a patch for MAINTAINERS,
+>> and set up a git tree for me to pull from.
 
-Hi,
+Sure thing, I'll get this set up now. I wonder if I should include the
+glob "arch/*/kernel/ptrace.c" in the MAINTAINERS entry. :P
 
-What command(s) did you use to build the usb directory?
+> *snicker* :)
+>
+> Kees, if you take on this awesome responsibility, should I send you a
+> rebased version of the fastpath stuff?  If so, I think that the
+> arch-neutral part should go in through your shiny new tree (once it's
+> reviewed to your satisfaction), and I'll ask hpa to pick up the x86
+> part.
 
-thanks,
+Yeah, that sounds perfect.
+
+> I'd volunteer to be a "R:eviewer", but I don't think that the R tag
+> has made it into MAINTAINERS yet.
+
+I'd love to have you listed. :)
+
+-Kees
+
 -- 
-~Randy
+Kees Cook
+Chrome OS Security
