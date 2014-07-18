@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761023AbaGROCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:02:18 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:57859 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756335AbaGROCR (ORCPT
+	id S935073AbaGRODx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:03:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34580 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933454AbaGRODw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:02:17 -0400
-Message-ID: <53C928EA.4000800@linaro.org>
-Date: Fri, 18 Jul 2014 09:02:18 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 10:03:52 -0400
+Date: Fri, 18 Jul 2014 16:03:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "Sahasrabudhe, Sheetal" <sheetals@quicinc.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com
+Subject: Re: perf: child events not killed on release paths, survive
+ indefinitely
+Message-ID: <20140718140343.GC20603@laptop.programming.kicks-ass.net>
+References: <20140718123238.GF25180@leverpostej>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>
-CC: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/6] printk: insert newline in devkmsg_read()
-References: <1405606151-19875-1-git-send-email-elder@linaro.org> <1405606151-19875-6-git-send-email-elder@linaro.org> <20140718114506.GA6774@pathway.suse.cz>
-In-Reply-To: <20140718114506.GA6774@pathway.suse.cz>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140718123238.GF25180@leverpostej>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 06:45 AM, Petr Mládek wrote:
-> On Thu 2014-07-17 09:09:10, Alex Elder wrote:
->> If a log record has LOG_PREFIX set, its predecessor record should be
->> terminated if it was marked LOG_CONT.  In devkmsg_read(), this
->> condition was being ignored, which would lead to such records
->> showing up combined when reading /dev/kmsg.  Fix this oversight.
->>
->> Reported-by: Petr Mládek <pmladek@suse.cz>
->> Signed-off-by: Alex Elder <elder@linaro.org>
->> ---
->>  kernel/printk/printk.c | 6 +++++-
->>  1 file changed, 5 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
->> index e5ee1cb..3174ba9 100644
->> --- a/kernel/printk/printk.c
->> +++ b/kernel/printk/printk.c
->> @@ -575,6 +575,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->>  	char cont;
->>  	size_t len;
->>  	ssize_t ret;
->> +	bool insert_newline;
->>  
->>  	if (!user)
->>  		return -EBADF;
->> @@ -626,7 +627,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->>  	else
->>  		cont = '-';
->>  
->> -	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
->> +	/* Insert a newline if we're terminating the previous record
->> early */
+On Fri, Jul 18, 2014 at 01:32:39PM +0100, Mark Rutland wrote:
+> Hi all,
 > 
-> More correct description would be:
+> Sheetal reported a weird issue on arm where events which have been
+> closed seem to stay around and compete for HW counters if an application
+> has forked between the events being opened and them being closed.
 > 
-> 	/* Insert a newline if the previous line was not terminated properly */
-
-I will change it as you suggest.
-
+> I've reproduced this in mainline and linux-next and this seems to be a
+> generic issue; the below test case fires on my x86-64 workstation as
+> well as on arm and arm64.
 > 
->> +	insert_newline = (user->prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
->> +	len = sprintf(user->buf, "%s%u,%llu,%llu,%c;",
->> +		      insert_newline ? "\n" : "",
->>  		      (msg->facility << 3) | msg->level,
->>  		      user->seq, ts_usec, cont);
->>  	user->prev = msg->flags;
+> The problem is the way we (don't) handle child events when releasing a
+> parent in perf_release and perf_event_release_kernel. We call put_event
+> on the parent when it is released, but this will exit early having done
+> nothing because each child will have incremented the parent refcount
+> when initialised from perf_event_init_task. We don't seem to do anything
+> about the children in this case.
 > 
-> Please, do similar change also in msg_print_text() that would fix also
-> syslog(). Note that syslog is the place where we stopped to disable
-> prefix when there was continuous line before.
-
-I will do this, as you will see in v3 which I plan to post in a
-few hours.  (Note that this touches a spot where I have yet another
-minor bug fix that I have not yet posted...  Oh well.)
-
-					-Alex
-
-> Best Regards.
-> Petr
+> Thus the parent event can't be killed until all the children have first
+> been killed. As the only places references to them exist are the
+> parent's child_list and their respective tasks' hardware
+> perf_event_context, they'll only get killed when their respective tasks
+> exit (I confirmed this with some printks in hw_perf_event_destroy and
+> put_event). Until that happens they remain in their respective contexts
+> and continue to compete for HW counters, adversely affecting events
+> opened later.
 > 
+> I'm not sure what the best way of handling this is. We need to clean up
+> the children when the last possible user of the event is gone, but it
+> looks to me like we'd need to have a separate child_refcount or
+> reader_refcount to be able to tell when the events are still useful and
+> when the only references which remain are internal.
+> 
+> Any ideas?
+
+Jiri was recently poking at that:
+
+lkml.kernel.org/r/1405079782-8139-3-git-send-email-jolsa@kernel.org
 
