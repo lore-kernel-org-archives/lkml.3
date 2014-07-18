@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934932AbaGRQXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:23:19 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:64617 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaGRQXR (ORCPT
+	id S1761776AbaGRQYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:24:35 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:51880 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741AbaGRQYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:23:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <6104032.PNRl85V92G@wuerfel>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
-	<1405663186-26464-4-git-send-email-cw00.choi@samsung.com>
-	<6104032.PNRl85V92G@wuerfel>
-Date: Sat, 19 Jul 2014 01:23:15 +0900
-Message-ID: <CAGTfZH3cH-QFMbfTWJJfTPTRT-Bij2TW=6CH_Yy-GaZqZvn-Xg@mail.gmail.com>
-Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for
- Exynos3250 ADC
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        naveen krishna <ch.naveen@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 12:24:34 -0400
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1399139966-10625-1-git-send-email-peter@piie.net> <1399139966-10625-4-git-send-email-peter@piie.net> <20140717095855.GC23869@pd.tnic>
+Message-ID: <cone.1405700669.905673.1043.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
+        Borislav Petkov <bp@suse.de>, Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH v3 3/6] thermal: Added Bang-bang thermal governor
+Date: Fri, 18 Jul 2014 18:24:29 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 6:50 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 July 2014 14:59:45 Chanwoo Choi wrote:
->>                         Must be "samsung,exynos-adc-v2" for
->>                                 future controllers.
->
-> It would be good to change 'future controllers' to something else now.
-> Presumably that word was used before the actual products were announced,
-> but now they are publically known.
->
->> +                       Must be "samsung,exynos3250-adc-v2" for
->> +                               controllers compatible with ADC of Exynos3250.
->
-> Doesn't this version have a specific name as well? The ADC block
-> seems to use version numbers, so better put those in here to avoid
-> confusion when another Exynos7890 comes out that uses the same
-> ADC as exynos3250.
+Borislav Petkov writes:
 
-If don't add new compatible including specific exynos version,
-I would add new 'adc-needs-sclk' property with existing 'exynos-adc-v2'
-compatible name.
+> On Sat, May 03, 2014 at 07:59:23PM +0200, Peter Feuerer wrote:
+>> The bang-bang thermal governor uses a hysteresis to switch abruptly on
+>> or off a cooling device.  It is intended to control fans, which can
+>> not be throttled but just switched on or off.
+>> Bang-bang cannot be set as default governor as it is intended for
+>> special devices only.  For those special devices the driver needs to
+>> explicitely request it.
+>> 
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Zhang Rui <rui.zhang@intel.com>
+>> Cc: Andreas Mohr <andi@lisas.de>
+>> Cc: Borislav Petkov <bp@suse.de>
+>> Cc: Javi Merino <javi.merino@arm.com>
+>> Signed-off-by: Peter Feuerer <peter@piie.net>
+> 
+> ...
+> 
+>> +static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
+>> +{
+>> +	long trip_temp;
+>> +	unsigned long trip_hyst;
+>> +	struct thermal_instance *instance;
+>> +
+>> +	tz->ops->get_trip_temp(tz, trip, &trip_temp);
+>> +	tz->ops->get_trip_hyst(tz, trip, &trip_hyst);
+>> +
+>> +	dev_dbg(&tz->device, "Trip%d[temp=%ld]:temp=%d:hyst=%ld\n",
+>> +				trip, trip_temp, tz->temperature,
+>> +				trip_hyst);
+>> +
+>> +	mutex_lock(&tz->lock);
+>> +
+>> +	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
+>> +		if (instance->trip != trip)
+>> +			continue;
+>> +
+>> +		/* in case fan is in initial state, switch the fan off */
+>> +		if (instance->target == THERMAL_NO_TARGET)
+>> +			instance->target = 0;
+>> +
+>> +		/* in case fan is neither on nor off set the fan to active */
+>> +		if (instance->target != 0 && instance->target != 1) {
+> 
+> ->target is unsigned long so
+> 
+> 		if (instance->target > 1)
+
+Right, but I wanted to clearly point out the two possible states.
 
 
-Dear Naveen, Tomasz,
+> (and btw, a whole unsigned long for a cooling state... 2^64-1 cooling
+> states, nice).
 
-If existing exynos-adc driver add just one property for 'sclk_adc'
-as following, exynos-adc could not include the exynos version
-in compatible name.
+Hehe, true, maybe u8 makes more sense, so the compiler can take the action to align it accordingly to prevent bit shifting.
 
-I need your opinion about it.
+> 
+>> +			pr_warn("Thermal instance %s controlled by bang-bang has unexpected state: %ld\n",
+>> +					instance->name, instance->target);
+>> +			instance->target = 1;
+>> +		}
+> 
+> Can that even happen?
 
-                adc: adc@126C0000 {
-                        compatible = "samsung,exynos-adc-v2";
-                        reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-                        interrupts = <0 137 0>;
-                        clock-names = "adc", "sclk_adc";
-                        clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
-+                        adc-needs-sclk;
-                        #io-channel-cells = <1>;
-                        io-channel-ranges;
-                }
+It should not, but if so, we have a warning and I have the feeling we should 
+keep it there.
 
-Thanks,
-Chanwoo Choi
+-- 
+--peter;
