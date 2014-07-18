@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219AbaGRXNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:13:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46888 "EHLO
+	id S1755598AbaGRXPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:15:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaGRXNl (ORCPT
+	with ESMTP id S1751796AbaGRXPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:13:41 -0400
-Date: Fri, 18 Jul 2014 16:13:40 -0700
+	Fri, 18 Jul 2014 19:15:31 -0400
+Date: Fri, 18 Jul 2014 16:15:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Sam Asadi <asadi.samuel@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: comedi: adl_pci9118: commenting style issue
- fixed
-Message-ID: <20140718231340.GA24825@kroah.com>
-References: <1405714388-13375-1-git-send-email-asadi.samuel@gmail.com>
+To: Igor Bezukh <igbzkh@gmail.com>
+Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6655: apply kernel coding style to
+ wCommandTimerWait function
+Message-ID: <20140718231531.GA29920@kroah.com>
+References: <1405708513-27831-1-git-send-email-igbzkh@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405714388-13375-1-git-send-email-asadi.samuel@gmail.com>
+In-Reply-To: <1405708513-27831-1-git-send-email-igbzkh@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 11:13:07PM +0300, Sam Asadi wrote:
-> A 'quoted string split across lines' issue fixed, while a better use of
-> language applied to the comment.
+On Fri, Jul 18, 2014 at 09:35:13PM +0300, Igor Bezukh wrote:
+> Since there is a lot of stuff that need to be changed in order to meet the kernel
+> coding style in wcmd.c file, I've decided to fix function-per-patch.
+> The following changes were made in vCommandTimerWait function:
 > 
-> Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/adl_pci9118.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> - Camel case change:
+>    - MSecond ---> msec
+>    - hDdeviceContext ---> private
+>    - pDevice ---> priv
+> - Removed redundant return
+> - Removed redndant comment
 > 
-> diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
-> index 93bd9ee..7365f31 100644
-> --- a/drivers/staging/comedi/drivers/adl_pci9118.c
-> +++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-> @@ -418,8 +418,7 @@ static int check_channel_list(struct comedi_device *dev,
->  			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
->  			    (bipolar)) {
->  				comedi_error(dev,
-> -					     "Bipolar and unipolar ranges "
-> -							"can't be mixtured!");
-> +					     "Bipolar and unipolar ranges can't be mixed!");
+> In future patches, I will also change the function name itself.
 
-What tree did you refresh this against?  My staging-next branch of
-staging.git on git.kernel.org does not have comedi_error() anymore in it
-:(
+A better way to do this, that is easier to review, is to do, on a
+per-file basis, one thing, like "remove redundant return", or "remove
+unneeded comments".
+
+Having to review all of these changes at once, even for something as
+"small" as a single function, is much harder than making sure you only
+do one thing, and do it all at once.
+
+So, can you break it up in this way instead?
 
 thanks,
 
