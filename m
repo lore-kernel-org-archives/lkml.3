@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422673AbaGRPd6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:33:58 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:55235 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762161AbaGRP0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:26:14 -0400
-X-pt: isis.lip6.fr
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: Shahed Shaikh <shahed.shaikh@qlogic.com>
-Cc: benoit.taine@lip6.fr, Dept-HSGLinuxNICDev@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/25] qlcnic: Replace DEFINE_PCI_DEVICE_TABLE macro use
-Date: Fri, 18 Jul 2014 17:27:02 +0200
-Message-Id: <1405697232-11785-16-git-send-email-benoit.taine@lip6.fr>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:11 +0200 (CEST)
+	id S1422722AbaGRPeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:34:20 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:41909 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030215AbaGRPeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:34:17 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org
+Cc: dcb314@hotmail.com, davem@davemloft.net, kadlec@blackhole.kfki.hu,
+        kaber@trash.net, pablo@netfilter.org, ja@ssi.bg, horms@verge.net.au,
+        wensong@linux-vs.org, Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH 3/5] net/netfilter/ipvs/ip_vs_ctl.c: drop argument range check just before the check for equality
+Date: Fri, 18 Jul 2014 18:33:58 +0300
+Message-Id: <1405697638-23767-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should prefer `struct pci_device_id` over `DEFINE_PCI_DEVICE_TABLE` to meet
-kernel coding style guidelines. This issue was reported by checkpatch.
-
-Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
-
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80601
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 ---
-Tested by compilation without errors.
+ net/netfilter/ipvs/ip_vs_ctl.c | 2 --
+ 1 file changed, 2 deletions(-)
 
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index 0fdbcc8..2bf7d9d 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -108,7 +108,7 @@ static u32 qlcnic_vlan_tx_check(struct qlcnic_adapter *adapter)
- 	{PCI_DEVICE(PCI_VENDOR_ID_QLOGIC, (device)), \
- 	.class = PCI_CLASS_NETWORK_ETHERNET << 8, .class_mask = ~0}
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index 581a658..4ed7b59 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -2338,8 +2338,6 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
  
--static DEFINE_PCI_DEVICE_TABLE(qlcnic_pci_tbl) = {
-+static const struct pci_device_id qlcnic_pci_tbl[] = {
- 	ENTRY(PCI_DEVICE_ID_QLOGIC_QLE824X),
- 	ENTRY(PCI_DEVICE_ID_QLOGIC_QLE834X),
- 	ENTRY(PCI_DEVICE_ID_QLOGIC_VF_QLE834X),
+ 	if (cmd < IP_VS_BASE_CTL || cmd > IP_VS_SO_SET_MAX)
+ 		return -EINVAL;
+-	if (len < 0 || len >  MAX_ARG_LEN)
+-		return -EINVAL;
+ 	if (len != set_arglen[SET_CMDID(cmd)]) {
+ 		pr_err("set_ctl: len %u != %u\n",
+ 		       len, set_arglen[SET_CMDID(cmd)]);
+-- 
+1.8.5.5
 
