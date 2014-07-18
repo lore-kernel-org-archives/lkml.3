@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946048AbaGRT5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 15:57:23 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:41257 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035AbaGRT5V (ORCPT
+	id S1762012AbaGRT5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 15:57:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41519 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968AbaGRT5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 15:57:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18ZeGlUFGuYsfbPFg/D53BXibzjcMkcXuk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 551835AFBA9
-Date: Fri, 18 Jul 2014 15:57:08 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: suravee.suthikulpanit@amd.com
-Cc: marc.zyngier@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        Catalin.Marinas@arm.com, Will.Deacon@arm.com, tglx@linutronix.de,
-        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] irqchip: gicv2m: Clean up logic for detecting MSI
- support
-Message-ID: <20140718195708.GH24496@titan.lakedaemon.net>
-References: <1405689996-3601-1-git-send-email-suravee.suthikulpanit@amd.com>
+	Fri, 18 Jul 2014 15:57:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405689996-3601-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53C97287.5020509@zytor.com>
+References: <20140718150005.73db8eb9@canb.auug.org.au> <53C97287.5020509@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 18 Jul 2014 12:57:32 -0700
+Message-ID: <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the tip tree
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 08:26:36AM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> It's not quite clear that msi-controller is already checked
-> by of_msi_chip_add. So, this patch add a note to clarify.
-> 
-> Also, clean up redundant logic and unnecessary pr_info.
-> 
-> Cc: Mark Rutland <Mark.Rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-> Cc: Will Deacon <Will.Deacon@arm.com>
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> ---
-> 
-> Note: This patch is created against irqchip/gic branch.
-> 
->  drivers/irqchip/irq-gic-v2m.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+On Fri, Jul 18, 2014 at 12:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/17/2014 10:00 PM, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> After merging the tip tree, today's linux-next build (x86_64
+>> allmodconfig) produced these warnings:
+>>
+>> In file included from arch/x86/vdso/vdso2c.c:161:0:
+>> arch/x86/vdso/vdso2c.c: In function 'main':
+>> arch/x86/vdso/vdso2c.h:118:6: warning: assuming signed overflow
+>> does not occur when assuming that (X + c) < X is always false
+>> [-Wstrict-overflow] In file included from
+>> arch/x86/vdso/vdso2c.c:165:0: arch/x86/vdso/vdso2c.h:118:6:
+>> warning: assuming signed overflow does not occur when assuming that
+>> (X + c) < X is always false [-Wstrict-overflow]
+>>
+>> Probably introduced by commit e6577a7ce99a ("x86, vdso: Move the
+>> vvar area before the vdso text").
+>>
+>
+> This seems toxic.
+>
+> I always wonder if we shouldn't use -fwrapv for the kernel...
 
-Applied to the unstable branch irqchip/gic-v2m until Marc returns from
-vacation.  Please see my email to MarkR on your previous series
-regarding the re-shuffling of the branches.
+This particular warning is IMO in a particularly dumb category: GCC
+optimizes some code and then warns about a construct that wasn't there
+in the original code.  In this case, I think it unrolled a loop and
+discovered that one iteration contained a test that was always true.
+Big deal.
 
-thx,
+(OTOH, the code in question was buggy, but not all for the reason that
+GCC thought it was.)
 
-Jason.
+--Andy
+
+>
+>         -hpa
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
