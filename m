@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935071AbaGRQix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:38:53 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:32923 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473AbaGRQiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:38:51 -0400
-Date: Fri, 18 Jul 2014 12:38:43 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Richard Yao <ryao@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, mthode@mthode.org, kernel@gentoo.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@openvz.org>,
-        Rik van Riel <riel@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Dave Chinner <dchinner@redhat.com>,
-        "open list:MEMORY MANAGEMENT" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: vmscan: unlock_page page when forcing reclaim
-Message-ID: <20140718163843.GK29639@cmpxchg.org>
-References: <1405698484-25803-1-git-send-email-ryao@gentoo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405698484-25803-1-git-send-email-ryao@gentoo.org>
+	id S935172AbaGRQjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:39:10 -0400
+Received: from rslrsmtp2.opaltelecom.net ([62.24.128.202]:28534 "EHLO
+	iprslrsmtp2msp.cpwnetworks.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S935145AbaGRQjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 12:39:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArQEAEdMyVM+GID9/2dsb2JhbABZDochrn+Sb4dSgR92hC0EUikMAiYCLjEBEohGrC2XUxeBLI4fgn+BTgWiOoRMiE6DAkNr
+X-IPAS-Result: ArQEAEdMyVM+GID9/2dsb2JhbABZDochrn+Sb4dSgR92hC0EUikMAiYCLjEBEohGrC2XUxeBLI4fgn+BTgWiOoRMiE6DAkNr
+X-IronPort-AV: E=Sophos;i="5.01,686,1400022000"; 
+   d="scan'208";a="484986793"
+Message-ID: <1405701503.3485.49.camel@samson1.armitage.org.uk>
+Subject: [PATCH] Make IP_MULTICAST_ALL and IP_MSFILTER work on raw sockets
+From: Quentin Armitage <quentin@armitage.org.uk>
+To: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        "David S.Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 18 Jul 2014 17:38:23 +0100
+Organization: The Armitage family
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 11:48:02AM -0400, Richard Yao wrote:
-> A small userland program I wrote to assist me in drive forensic
-> operations soft deadlocked on Linux 3.14.4. The stack trace from /proc
-> was:
-> 
-> [<ffffffff8112968e>] sleep_on_page_killable+0xe/0x40
-> [<ffffffff81129829>] wait_on_page_bit_killable+0x79/0x80
-> [<ffffffff811299a5>] __lock_page_or_retry+0x95/0xc0
-> [<ffffffff8112a95b>] filemap_fault+0x21b/0x420
-> [<ffffffff8115685e>] __do_fault+0x6e/0x520
-> [<ffffffff81156de3>] handle_pte_fault+0xd3/0x1f0
-> [<ffffffff81157073>] __handle_mm_fault+0x173/0x290
-> [<ffffffff811571d2>] handle_mm_fault+0x42/0xb0
-> [<ffffffff81587a11>] __do_page_fault+0x191/0x490
-> [<ffffffff81587dec>] do_page_fault+0xc/0x10
-> [<ffffffff81584622>] page_fault+0x22/0x30
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> The program used mmap() to do a linear scan of the device on 64-bit
-> hardware. The block device in question was 200GB in size and the system
-> had only 8GB of RAM. All IO operations stopped following pageout.
-> 
-> shrink_page_list() seemed to have raced with filemap_fault() by evicting
-> a page when we had an active fault handler. This is possible only
-> because 02c6de8d757cb32c0829a45d81c3dfcbcafd998b altered the behavior of
-> shrink_page_list() to ignore references. Consequently, we must call
-> unlock_page() instead of __clear_page_locked() when doing this so that
-> waiters are notified. unlock_page() here will cause active page fault
-> handlers to retry (depending on the architecture), which avoids the soft
-> deadlock.
+Currently, although IP_MULTICAST_ALL and IP_MSFILTER ioctl calls succeed on
+raw sockets, there is no code to implement the functionality on received
+packets; it is only implemented for UDP sockets. The raw(7) man page states:
+"In addition, all ip(7) IPPROTO_IP socket options valid for datagram sockets
+are supported", which implies these ioctls should work on raw sockets.
 
-I don't really understand how the scenario you describe can happen.
+To fix this, add a call to ip_mc_sf_allow on raw sockets.
 
-Successfully reclaiming a page means that __remove_mapping() was able
-to freeze a page count of 2 (page cache and LRU isolation), but
-filemap_fault() increases the refcount on the page before trying to
-lock the page.  If __remove_mapping() wins, find_get_page() does not
-work and the fault does not lock the page.  If find_get_page() wins,
-__remove_mapping() does not work and the reclaimer aborts and does a
-regular unlock_page().
+This should not break any existing code, since the current position of
+not calling ip_mc_sf_filter makes it behave as if neither the IP_MULTICAST_ALL
+nor the IP_MSFILTER ioctl had been called. Adding the call to ip_mc_sf_allow
+will therefore maintain the current behaviour so long as IP_MULTICAST_ALL and
+IP_MSFILTER ioctls are not called. Any code that currently is calling
+IP_MULTICAST_ALL or IP_MSFILTER ioctls on raw sockets presumably is wanting
+the filter to be applied, although no filtering will currently be occurring.
 
-page_check_references() is purely about reclaim strategy, it should
-not be essential for correctness.
+Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
+---
+ net/ipv4/raw.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index 2c65160..2e1628c 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -58,6 +58,7 @@
+ #include <linux/in_route.h>
+ #include <linux/route.h>
+ #include <linux/skbuff.h>
++#include <linux/igmp.h>
+ #include <net/net_namespace.h>
+ #include <net/dst.h>
+ #include <net/sock.h>
+@@ -174,7 +175,9 @@ static int raw_v4_input(struct sk_buff *skb, const struct iphdr *iph, int hash)
+ 
+ 	while (sk) {
+ 		delivered = 1;
+-		if (iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) {
++		if ((iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) &&
++		    ip_mc_sf_allow(sk, iph->daddr, iph->saddr,
++				   skb->dev->ifindex)) {
+ 			struct sk_buff *clone = skb_clone(skb, GFP_ATOMIC);
+ 
+ 			/* Not releasing hash table! */
+-- 
+1.7.7.6
+
+
+
