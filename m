@@ -1,75 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762424AbaGRWWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 18:22:35 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44404 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759315AbaGRWWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 18:22:33 -0400
-Date: Fri, 18 Jul 2014 18:22:15 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: How to automate checkpatch && get_maintainers && git send-email
- of commits range?
-Message-ID: <20140718222215.GF18775@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-	kernelnewbies@kernelnewbies.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	kernel-janitors@vger.kernel.org
-References: <CANZNk81LiTM9vY0dRV=T0BCT9k-BxU45Ojw_PyOcpdmtXHKM2Q@mail.gmail.com>
+	id S932406AbaGRWYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 18:24:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53300 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755400AbaGRWYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 18:24:13 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] PM / sleep: Move platform suspend operations to separate functions
+Date: Sat, 19 Jul 2014 00:42:31 +0200
+Message-ID: <7305139.n04xFAvSbJ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANZNk81LiTM9vY0dRV=T0BCT9k-BxU45Ojw_PyOcpdmtXHKM2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 05:38:30PM +0300, Andrey Utkin wrote:
-> Is there script for automated checkpatch.pl && get_maintainers.pl &&
-> git send-email for range of commits? I see none. Would it be welcome
-> to submit such one to kernel tree?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Too much automation can be a really bad thing.  You **really** want to
-sanity check the output of checkpatch.pl and get_maintainers.pl.
-Their output is not always correct, and some amount of human common
-sense is required.  (Granted Nick Krause hasn't shown much in the way
-of common sense, but some human intervention --- assuming he is human
-and not an badly written, automated troll program --- is better than
-none.)
+After the introduction of freeze_ops it makes more sense to move
+all of the platform suspend operations to separate functions that
+each will do all of the necessary checks and choose the right
+callback to execute istead of doing all that in the core code
+which makes it generally harder to follow.
 
-The other thing is that I strongly recommend that people use git
-format-patch first, to make sure that what you will be blasting out to
-thousands of peoples' mail boxes is in fact sane.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-And then think very hard about which patches people need to see in
-order to be able to evaluate a patch.  For example, if you have patch
-1 out of a series which adds a new function, and then patches 2
-through 1000 modify a thousand different drivers to use that new
-function, if you use an automated get_maintainers.pl script to send
-each patch to just the maintainer, then the device driver maintainer
-might not see patch #1 which is critical context to understanding the
-patch that you want to make to his driver.  And then you will have
-several hundred very angry and annoyed developers wondering why you
-sent them patch 345/1000, with no other context, and wondering what
-the heck they are supposed to do with the email that you have just
-launched into their inbox.
+This is on top of the master branch of linux-pm.git.
 
-There's a reason why many developers cordially hate these scripts;
-it's too easy to misuse them, and unfortunately, there are too many
-Nick Krause like idiots out there who mindlessly use such scripts and
-cause pain to maintainers.  The critical step is to force such idiots
-to stop and ***think*** and unfortunately, automation seems to
-encourage the opposite behaviour.
+---
+ kernel/power/suspend.c |  120 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 77 insertions(+), 43 deletions(-)
 
-Regards,
+Index: linux-pm/kernel/power/suspend.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend.c
++++ linux-pm/kernel/power/suspend.c
+@@ -36,12 +36,6 @@ const char *pm_states[PM_SUSPEND_MAX];
+ 
+ static const struct platform_suspend_ops *suspend_ops;
+ static const struct platform_freeze_ops *freeze_ops;
+-
+-static bool need_suspend_ops(suspend_state_t state)
+-{
+-	return state > PM_SUSPEND_FREEZE;
+-}
+-
+ static DECLARE_WAIT_QUEUE_HEAD(suspend_freeze_wait_head);
+ static bool suspend_freeze_wake;
+ 
+@@ -139,6 +133,65 @@ int suspend_valid_only_mem(suspend_state
+ }
+ EXPORT_SYMBOL_GPL(suspend_valid_only_mem);
+ 
++static bool sleep_state_supported(suspend_state_t state)
++{
++	return state == PM_SUSPEND_FREEZE || (suspend_ops && suspend_ops->enter);
++}
++
++static int platform_suspend_prepare(suspend_state_t state)
++{
++	return state != PM_SUSPEND_FREEZE && suspend_ops->prepare ?
++		suspend_ops->prepare() : 0;
++}
++
++static int platform_suspend_prepare_late(suspend_state_t state)
++{
++	return state != PM_SUSPEND_FREEZE && suspend_ops->prepare_late ?
++		suspend_ops->prepare_late() : 0;
++}
++
++static void platform_suspend_wake(suspend_state_t state)
++{
++	if (state != PM_SUSPEND_FREEZE && suspend_ops->wake)
++		suspend_ops->wake();
++}
++
++static void platform_suspend_finish(suspend_state_t state)
++{
++	if (state != PM_SUSPEND_FREEZE && suspend_ops->finish)
++		suspend_ops->finish();
++}
++
++static int platform_suspend_begin(suspend_state_t state)
++{
++	if (state == PM_SUSPEND_FREEZE && freeze_ops && freeze_ops->begin)
++		return freeze_ops->begin();
++	else if (suspend_ops->begin)
++		return suspend_ops->begin(state);
++	else
++		return 0;
++}
++
++static void platform_suspend_end(suspend_state_t state)
++{
++	if (state == PM_SUSPEND_FREEZE && freeze_ops && freeze_ops->end)
++		freeze_ops->end();
++	else if (suspend_ops->end)
++		suspend_ops->end();
++}
++
++static void platform_suspend_recover(suspend_state_t state)
++{
++	if (state != PM_SUSPEND_FREEZE && suspend_ops->recover)
++		suspend_ops->recover();
++}
++
++static bool platform_suspend_again(suspend_state_t state)
++{
++	return state != PM_SUSPEND_FREEZE && suspend_ops->suspend_again ?
++		suspend_ops->suspend_again() : false;
++}
++
+ static int suspend_test(int level)
+ {
+ #ifdef CONFIG_PM_DEBUG
+@@ -162,7 +215,7 @@ static int suspend_prepare(suspend_state
+ {
+ 	int error;
+ 
+-	if (need_suspend_ops(state) && (!suspend_ops || !suspend_ops->enter))
++	if (!sleep_state_supported(state))
+ 		return -EPERM;
+ 
+ 	pm_prepare_console();
+@@ -208,23 +261,18 @@ static int suspend_enter(suspend_state_t
+ {
+ 	int error;
+ 
+-	if (need_suspend_ops(state) && suspend_ops->prepare) {
+-		error = suspend_ops->prepare();
+-		if (error)
+-			goto Platform_finish;
+-	}
++	error = platform_suspend_prepare(state);
++	if (error)
++		goto Platform_finish;
+ 
+ 	error = dpm_suspend_end(PMSG_SUSPEND);
+ 	if (error) {
+ 		printk(KERN_ERR "PM: Some devices failed to power down\n");
+ 		goto Platform_finish;
+ 	}
+-
+-	if (need_suspend_ops(state) && suspend_ops->prepare_late) {
+-		error = suspend_ops->prepare_late();
+-		if (error)
+-			goto Platform_wake;
+-	}
++	error = platform_suspend_prepare_late(state);
++	if (error)
++		goto Platform_wake;
+ 
+ 	if (suspend_test(TEST_PLATFORM))
+ 		goto Platform_wake;
+@@ -272,15 +320,11 @@ static int suspend_enter(suspend_state_t
+ 	ftrace_start();
+ 
+  Platform_wake:
+-	if (need_suspend_ops(state) && suspend_ops->wake)
+-		suspend_ops->wake();
+-
++	platform_suspend_wake(state);
+ 	dpm_resume_start(PMSG_RESUME);
+ 
+  Platform_finish:
+-	if (need_suspend_ops(state) && suspend_ops->finish)
+-		suspend_ops->finish();
+-
++	platform_suspend_finish(state);
+ 	return error;
+ }
+ 
+@@ -293,18 +337,13 @@ int suspend_devices_and_enter(suspend_st
+ 	int error;
+ 	bool wakeup = false;
+ 
+-	if (need_suspend_ops(state) && !suspend_ops)
++	if (!sleep_state_supported(state))
+ 		return -ENOSYS;
+ 
+-	if (need_suspend_ops(state) && suspend_ops->begin) {
+-		error = suspend_ops->begin(state);
+-		if (error)
+-			goto Close;
+-	} else if (state == PM_SUSPEND_FREEZE && freeze_ops && freeze_ops->begin) {
+-		error = freeze_ops->begin();
+-		if (error)
+-			goto Close;
+-	}
++	error = platform_suspend_begin(state);
++	if (error)
++		goto Close;
++
+ 	suspend_console();
+ 	suspend_test_start();
+ 	error = dpm_suspend_start(PMSG_SUSPEND);
+@@ -318,25 +357,20 @@ int suspend_devices_and_enter(suspend_st
+ 
+ 	do {
+ 		error = suspend_enter(state, &wakeup);
+-	} while (!error && !wakeup && need_suspend_ops(state)
+-		&& suspend_ops->suspend_again && suspend_ops->suspend_again());
++	} while (!error && !wakeup && platform_suspend_again(state));
+ 
+  Resume_devices:
+ 	suspend_test_start();
+ 	dpm_resume_end(PMSG_RESUME);
+ 	suspend_test_finish("resume devices");
+ 	resume_console();
+- Close:
+-	if (need_suspend_ops(state) && suspend_ops->end)
+-		suspend_ops->end();
+-	else if (state == PM_SUSPEND_FREEZE && freeze_ops && freeze_ops->end)
+-		freeze_ops->end();
+ 
++ Close:
++	platform_suspend_end(state);
+ 	return error;
+ 
+  Recover_platform:
+-	if (need_suspend_ops(state) && suspend_ops->recover)
+-		suspend_ops->recover();
++	platform_suspend_recover(state);
+ 	goto Resume_devices;
+ }
+ 
 
-						- Ted
