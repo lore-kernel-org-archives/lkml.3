@@ -1,125 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986AbaGRDxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 23:53:53 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:38379 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821AbaGRDxv (ORCPT
+	id S1759982AbaGRD6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:58:19 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:47694 "HELO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753959AbaGRD6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 23:53:51 -0400
+	Thu, 17 Jul 2014 23:58:17 -0400
 MIME-Version: 1.0
-Date: Thu, 17 Jul 2014 23:53:50 -0400
-Message-ID: <CAPDOMViWdf1Uw_a76bn3U8H_FE+AGAQV6Zx2AydM0-8ZuerfRA@mail.gmail.com>
-Subject: Build Failures for Sh architecture
-From: Nick Krause <xerofoify@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: laurent.pinchart+renesas@ideasonboard.com, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, horms+renesas@verge.net.au,
-        geert+renesas@glider.be,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-sh@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c3e09e8bffac04fe6fb499
+From: Derrick Pallas <pallas@meraki.com>
+Date: Thu, 17 Jul 2014 20:57:56 -0700
+Message-ID: <CAFqNYV4_yW60oKmb4edH8CQtFiyT491eWOPheBrDse9j-jCYZg@mail.gmail.com>
+Subject: Linux 3.4.95 breaks LZO tests (additional pull needed)
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Derrick Pallas <derrick@pallas.us>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c3e09e8bffac04fe6fb499
-Content-Type: text/plain; charset=UTF-8
-
-Hey Andrew and other maintainers of this architecture ,
-I seem to be hitting a few build errors with default configurations
-for this architecture.
-I am attached my logs of these failing builds , naming each file after
-the build that is
-logged in each file.
-Cheers Nick
-
---001a11c3e09e8bffac04fe6fb499
-Content-Type: application/octet-stream; name=allmodconfig
-Content-Disposition: attachment; filename=allmodconfig
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hxqyshlu0
-
-PHN0ZGluPjoxOjA6IGVycm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBzb2Z0LWltYXNrIGlu
-IHVzZXIgbW9kZQo8c3RkaW4+OjE6MDogZXJyb3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNv
-ZnQtaW1hc2sgaW4gdXNlciBtb2RlCi4vc2NyaXB0cy9nY2MtdmVyc2lvbi5zaDogbGluZSAzMTog
-cHJpbnRmOiAjOiBpbnZhbGlkIG51bWJlcgouL3NjcmlwdHMvZ2NjLXZlcnNpb24uc2g6IGxpbmUg
-MzE6IHByaW50ZjogIzogaW52YWxpZCBudW1iZXIKPHN0ZGluPjoxOjA6IGVycm9yOiBjYW5ub3Qg
-dXNlIGF0b21pYyBtb2RlbCBzb2Z0LWltYXNrIGluIHVzZXIgbW9kZQo8c3RkaW4+OjE6MDogZXJy
-b3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNvZnQtaW1hc2sgaW4gdXNlciBtb2RlCi4vc2Ny
-aXB0cy9nY2MtdmVyc2lvbi5zaDogbGluZSAzMTogcHJpbnRmOiAjOiBpbnZhbGlkIG51bWJlcgou
-L3NjcmlwdHMvZ2NjLXZlcnNpb24uc2g6IGxpbmUgMzE6IHByaW50ZjogIzogaW52YWxpZCBudW1i
-ZXIKL2Jpbi9zaDogbGluZSAwOiBbOiB0b28gbWFueSBhcmd1bWVudHMKc2NyaXB0cy9tb2QvZW1w
-dHkuYzoxOjA6IGVycm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBzb2Z0LWltYXNrIGluIHVz
-ZXIgbW9kZQogLyogZW1wdHkgZmlsZSB0byBmaWd1cmUgb3V0IGVuZGlhbm5lc3MgLyB3b3JkIHNp
-emUgKi8KIF4KbWFrZVsyXTogKioqIFtzY3JpcHRzL21vZC9lbXB0eS5vXSBFcnJvciAxCm1ha2Vb
-MV06ICoqKiBbc2NyaXB0cy9tb2RdIEVycm9yIDIKbWFrZVsxXTogKioqIFdhaXRpbmcgZm9yIHVu
-ZmluaXNoZWQgam9icy4uLi4Ka2VybmVsL2JvdW5kcy5jOjE6MDogZXJyb3I6IGNhbm5vdCB1c2Ug
-YXRvbWljIG1vZGVsIHNvZnQtaW1hc2sgaW4gdXNlciBtb2RlCiAvKgogXgptYWtlWzFdOiAqKiog
-W2tlcm5lbC9ib3VuZHMuc10gRXJyb3IgMQptYWtlOiAqKiogW3ByZXBhcmUwXSBFcnJvciAyCm1h
-a2U6ICoqKiBXYWl0aW5nIGZvciB1bmZpbmlzaGVkIGpvYnMuLi4uCm1ha2U6ICoqKiBbc2NyaXB0
-c10gRXJyb3IgMgo=
---001a11c3e09e8bffac04fe6fb499
-Content-Type: application/octet-stream; name=allyesconfig
-Content-Disposition: attachment; filename=allyesconfig
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hxqyskyq1
-
-PHN0ZGluPjoxOjA6IGVycm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBzb2Z0LWltYXNrIGlu
-IHVzZXIgbW9kZQo8c3RkaW4+OjE6MDogZXJyb3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNv
-ZnQtaW1hc2sgaW4gdXNlciBtb2RlCi4vc2NyaXB0cy9nY2MtdmVyc2lvbi5zaDogbGluZSAzMTog
-cHJpbnRmOiAjOiBpbnZhbGlkIG51bWJlcgouL3NjcmlwdHMvZ2NjLXZlcnNpb24uc2g6IGxpbmUg
-MzE6IHByaW50ZjogIzogaW52YWxpZCBudW1iZXIKPHN0ZGluPjoxOjA6IGVycm9yOiBjYW5ub3Qg
-dXNlIGF0b21pYyBtb2RlbCBzb2Z0LWltYXNrIGluIHVzZXIgbW9kZQo8c3RkaW4+OjE6MDogZXJy
-b3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNvZnQtaW1hc2sgaW4gdXNlciBtb2RlCi4vc2Ny
-aXB0cy9nY2MtdmVyc2lvbi5zaDogbGluZSAzMTogcHJpbnRmOiAjOiBpbnZhbGlkIG51bWJlcgou
-L3NjcmlwdHMvZ2NjLXZlcnNpb24uc2g6IGxpbmUgMzE6IHByaW50ZjogIzogaW52YWxpZCBudW1i
-ZXIKL2Jpbi9zaDogbGluZSAwOiBbOiB0b28gbWFueSBhcmd1bWVudHMKPHN0ZGluPjoxOjA6IGVy
-cm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBzb2Z0LWltYXNrIGluIHVzZXIgbW9kZQo8c3Rk
-aW4+OjE6MDogZXJyb3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNvZnQtaW1hc2sgaW4gdXNl
-ciBtb2RlCi4vc2NyaXB0cy9nY2MtdmVyc2lvbi5zaDogbGluZSAzMTogcHJpbnRmOiAjOiBpbnZh
-bGlkIG51bWJlcgouL3NjcmlwdHMvZ2NjLXZlcnNpb24uc2g6IGxpbmUgMzE6IHByaW50ZjogIzog
-aW52YWxpZCBudW1iZXIKL2Jpbi9zaDogbGluZSAwOiBbOiB0b28gbWFueSBhcmd1bWVudHMKc2Ny
-aXB0cy9tb2QvZW1wdHkuYzoxOjA6IGVycm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBzb2Z0
-LWltYXNrIGluIHVzZXIgbW9kZQogLyogZW1wdHkgZmlsZSB0byBmaWd1cmUgb3V0IGVuZGlhbm5l
-c3MgLyB3b3JkIHNpemUgKi8KIF4KbWFrZVsyXTogKioqIFtzY3JpcHRzL21vZC9lbXB0eS5vXSBF
-cnJvciAxCm1ha2VbMl06ICoqKiBXYWl0aW5nIGZvciB1bmZpbmlzaGVkIGpvYnMuLi4uCm1ha2Vb
-MV06ICoqKiBbc2NyaXB0cy9tb2RdIEVycm9yIDIKbWFrZVsxXTogKioqIFdhaXRpbmcgZm9yIHVu
-ZmluaXNoZWQgam9icy4uLi4KbWFrZTogKioqIFtzY3JpcHRzXSBFcnJvciAyCm1ha2U6ICoqKiBX
-YWl0aW5nIGZvciB1bmZpbmlzaGVkIGpvYnMuLi4uCg==
---001a11c3e09e8bffac04fe6fb499
-Content-Type: application/octet-stream; name=rsk7203_defconfig
-Content-Disposition: attachment; filename=rsk7203_defconfig
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hxqyyl8k2
-
-c2NyaXB0cy9tb2QvZW1wdHkuYzoxOjA6IGVycm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBz
-b2Z0LWltYXNrIGluIHVzZXIgbW9kZQogLyogZW1wdHkgZmlsZSB0byBmaWd1cmUgb3V0IGVuZGlh
-bm5lc3MgLyB3b3JkIHNpemUgKi8KIF4Kc2NyaXB0cy9tb2QvZGV2aWNldGFibGUtb2Zmc2V0cy5j
-OjE6MDogZXJyb3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNvZnQtaW1hc2sgaW4gdXNlciBt
-b2RlCiAjaW5jbHVkZSA8bGludXgva2J1aWxkLmg+CiBeCm1ha2VbMl06ICoqKiBbc2NyaXB0cy9t
-b2QvZGV2aWNldGFibGUtb2Zmc2V0cy5zXSBFcnJvciAxCm1ha2VbMl06ICoqKiBXYWl0aW5nIGZv
-ciB1bmZpbmlzaGVkIGpvYnMuLi4uCm1ha2VbMl06ICoqKiBbc2NyaXB0cy9tb2QvZW1wdHkub10g
-RXJyb3IgMQptYWtlWzFdOiAqKiogW3NjcmlwdHMvbW9kXSBFcnJvciAyCm1ha2VbMV06ICoqKiBX
-YWl0aW5nIGZvciB1bmZpbmlzaGVkIGpvYnMuLi4uCm1ha2U6ICoqKiBbc2NyaXB0c10gRXJyb3Ig
-MgptYWtlOiAqKiogV2FpdGluZyBmb3IgdW5maW5pc2hlZCBqb2JzLi4uLgprZXJuZWwvYm91bmRz
-LmM6MTowOiBlcnJvcjogY2Fubm90IHVzZSBhdG9taWMgbW9kZWwgc29mdC1pbWFzayBpbiB1c2Vy
-IG1vZGUKIC8qCiBeCm1ha2VbMV06ICoqKiBba2VybmVsL2JvdW5kcy5zXSBFcnJvciAxCm1ha2U6
-ICoqKiBbcHJlcGFyZTBdIEVycm9yIDIK
---001a11c3e09e8bffac04fe6fb499
-Content-Type: application/octet-stream; name=se7206_defconfig
-Content-Disposition: attachment; filename=se7206_defconfig
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hxqz1qaa3
-
-c2NyaXB0cy9tb2QvZW1wdHkuYzoxOjA6IGVycm9yOiBjYW5ub3QgdXNlIGF0b21pYyBtb2RlbCBz
-b2Z0LWltYXNrIGluIHVzZXIgbW9kZQogLyogZW1wdHkgZmlsZSB0byBmaWd1cmUgb3V0IGVuZGlh
-bm5lc3MgLyB3b3JkIHNpemUgKi8KIF4Kc2NyaXB0cy9tb2QvZGV2aWNldGFibGUtb2Zmc2V0cy5j
-OjE6MDogZXJyb3I6IGNhbm5vdCB1c2UgYXRvbWljIG1vZGVsIHNvZnQtaW1hc2sgaW4gdXNlciBt
-b2RlCiAjaW5jbHVkZSA8bGludXgva2J1aWxkLmg+CiBeCm1ha2VbMl06ICoqKiBbc2NyaXB0cy9t
-b2QvZW1wdHkub10gRXJyb3IgMQptYWtlWzJdOiAqKiogV2FpdGluZyBmb3IgdW5maW5pc2hlZCBq
-b2JzLi4uLgptYWtlWzJdOiAqKiogW3NjcmlwdHMvbW9kL2RldmljZXRhYmxlLW9mZnNldHMuc10g
-RXJyb3IgMQptYWtlWzFdOiAqKiogW3NjcmlwdHMvbW9kXSBFcnJvciAyCm1ha2U6ICoqKiBbc2Ny
-aXB0c10gRXJyb3IgMgo=
---001a11c3e09e8bffac04fe6fb499--
+An LZO update was backported in Linux 3.4.95 but fails to work if
+crypto tests are enabled. It turns out that
+0ec7382036922be063b515b2a3f1d6
+f7a607392c, which updates the test vectors, did not come along for the
+ride. Thanks, ~Derrick
