@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933914AbaGRNFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:05:46 -0400
-Received: from wolff.to ([98.103.208.27]:55979 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S965275AbaGRNC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:02:59 -0400
-Date: Fri, 18 Jul 2014 08:01:26 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140718130126.GA2401@wolff.to>
-References: <53C6CFCC.2050300@arm.com>
- <20140716195414.GA16401@wolff.to>
- <53C7084C.7090104@arm.com>
- <20140717030947.GA17889@wolff.to>
- <53C79013.1020808@arm.com>
- <20140717090452.GH19379@twins.programming.kicks-ass.net>
- <53C7B247.2070309@arm.com>
- <20140717123502.GL19379@twins.programming.kicks-ass.net>
- <20140718053449.GA2039@wolff.to>
- <20140718101633.GP9918@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20140718101633.GP9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1761524AbaGRNGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:06:09 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17182 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934455AbaGRNCk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:02:40 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 088/170] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+Date: Fri, 18 Jul 2014 14:11:33 +0200
+Message-Id: <778763287ded64dd5c022435d3e0e3182f148a64.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 12:16:33 +0200,
-  Peter Zijlstra <peterz@infradead.org> wrote:
->So it looks like the actual domain tree is broken, and not what we
->assumed it was.
->
->Could I bother you to run with the below instead? It should also print
->out the sched domain masks so we don't need to guess about them.
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-The full dmesg output is at:
-https://bugzilla.kernel.org/attachment.cgi?id=143381
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
->(make sure you have CONFIG_SCHED_DEBUG=y otherwise it will not build)
->
->> I also booted with early printk=keepsched_debug as requested by Dietmar.
->
->can you make that: sched_debug ?
+===============
 
-I think I've fixed that.
+commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
 
-I think the part you are most interested in contains the following:
-[    0.252280] smpboot: Total of 4 processors activated (21438.11 BogoMIPS)
-[    0.253058] __sdt_alloc: allocated f255b020 with cpus: 
-[    0.253146] __sdt_alloc: allocated f255b0e0 with cpus: 
-[    0.253227] __sdt_alloc: allocated f255b120 with cpus: 
-[    0.253308] __sdt_alloc: allocated f255b160 with cpus: 
-[    0.253390] __sdt_alloc: allocated f255b1a0 with cpus: 
-[    0.253471] __sdt_alloc: allocated f255b1e0 with cpus: 
-[    0.253551] __sdt_alloc: allocated f255b220 with cpus: 
-[    0.253632] __sdt_alloc: allocated f255b260 with cpus: 
-[    0.254009] __sdt_alloc: allocated f255b2a0 with cpus: 
-[    0.254092] __sdt_alloc: allocated f255b2e0 with cpus: 
-[    0.254181] __sdt_alloc: allocated f255b320 with cpus: 
-[    0.254262] __sdt_alloc: allocated f255b360 with cpus: 
-[    0.254350] build_sched_domain: cpu: 0 level: SMT cpu_map: 0-3 tl->mask: 0,2
-[    0.254433] build_sched_domain: cpu: 0 level: MC cpu_map: 0-3 tl->mask: 0
-[    0.254516] build_sched_domain: cpu: 0 level: DIE cpu_map: 0-3 tl->mask: 0-3
-[    0.254600] build_sched_domain: cpu: 1 level: SMT cpu_map: 0-3 tl->mask: 1,3
-[    0.254683] build_sched_domain: cpu: 1 level: MC cpu_map: 0-3 tl->mask: 1
-[    0.254766] build_sched_domain: cpu: 1 level: DIE cpu_map: 0-3 tl->mask: 0-3
-[    0.254850] build_sched_domain: cpu: 2 level: SMT cpu_map: 0-3 tl->mask: 0,2
-[    0.254932] build_sched_domain: cpu: 2 level: MC cpu_map: 0-3 tl->mask: 2
-[    0.255005] build_sched_domain: cpu: 2 level: DIE cpu_map: 0-3 tl->mask: 0-3
-[    0.255091] build_sched_domain: cpu: 3 level: SMT cpu_map: 0-3 tl->mask: 1,3
-[    0.255176] build_sched_domain: cpu: 3 level: MC cpu_map: 0-3 tl->mask: 3
-[    0.255260] build_sched_domain: cpu: 3 level: DIE cpu_map: 0-3 tl->mask: 0-3
-[    0.256006] build_sched_groups: got group f255b020 with cpus: 
-[    0.256089] build_sched_groups: got group f255b120 with cpus: 
-[    0.256171] build_sched_groups: got group f255b1a0 with cpus: 
-[    0.256252] build_sched_groups: got group f255b2a0 with cpus: 
-[    0.256333] build_sched_groups: got group f255b2e0 with cpus: 
-[    0.256414] build_sched_groups: got group f255b320 with cpus: 
-[    0.256495] build_sched_groups: got group f255b360 with cpus: 
-[    0.256576] build_sched_groups: got group f255b0e0 with cpus: 
-[    0.256657] build_sched_groups: got group f255b160 with cpus: 
-[    0.256740] build_sched_groups: got group f255b1e0 with cpus: 
-[    0.256821] build_sched_groups: FAIL
-[    0.257004] build_sched_groups: got group f255b1a0 with cpus: 0
-[    0.257087] build_sched_groups: FAIL
-[    0.257167] build_sched_groups: got group f255b1e0 with cpus: 1
+>From the Bluetooth Core Specification 4.1 page 1958:
+
+"if both devices have set the Authentication_Requirements parameter to
+one of the MITM Protection Not Required options, authentication stage 1
+shall function as if both devices set their IO capabilities to
+DisplayOnly (e.g., Numeric comparison with automatic confirmation on
+both devices)"
+
+So far our implementation has done user confirmation for all just-works
+cases regardless of the MITM requirements, however following the
+specification to the word means that we should not be doing confirmation
+when neither side has the MITM flag set.
+
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ net/bluetooth/hci_event.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 2eeb6643d78a..b093ef858e1f 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3164,8 +3164,11 @@ static void hci_user_confirm_request_evt(struct hci_dev *hdev,
+ 
+ 		/* If we're not the initiators request authorization to
+ 		 * proceed from user space (mgmt_user_confirm with
+-		 * confirm_hint set to 1). */
+-		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
++		 * confirm_hint set to 1). The exception is if neither
++		 * side had MITM in which case we do auto-accept.
++		 */
++		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
++		    (loc_mitm || rem_mitm)) {
+ 			BT_DBG("Confirming auto-accept as acceptor");
+ 			confirm_hint = 1;
+ 			goto confirm;
+-- 
+2.0.0
 
