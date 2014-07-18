@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048AbaGRGww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:52:52 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:56569 "EHLO
+	id S933373AbaGRGw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:52:57 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:56631 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758012AbaGRGws (ORCPT
+	with ESMTP id S933108AbaGRGwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:52:48 -0400
+	Fri, 18 Jul 2014 02:52:53 -0400
 X-Original-SENDERIP: 10.177.222.156
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -20,14 +20,14 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Minchan Kim <minchan@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: [PATCH v13 5/8] s390: add pmd_[dirty|mkclean] for THP
-Date: Fri, 18 Jul 2014 15:53:03 +0900
-Message-Id: <1405666386-15095-6-git-send-email-minchan@kernel.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v13 7/8] arm64: add pmd_[dirty|mkclean] for THP
+Date: Fri, 18 Jul 2014 15:53:05 +0900
+Message-Id: <1405666386-15095-8-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1405666386-15095-1-git-send-email-minchan@kernel.org>
 References: <1405666386-15095-1-git-send-email-minchan@kernel.org>
@@ -37,48 +37,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
 overwrite of the contents since MADV_FREE syscall is called for
-THP page but for s390 pmds only referenced bit is available
-because there is no free bit left in the pmd entry for the
-software dirty bit so this patch adds dumb pmd_dirty which
-returns always true by suggesting by Martin.
+THP page.
 
-They finally find a solution in future.
-http://marc.info/?l=linux-api&m=140440328820808&w=2
+This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+support.
 
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-s390@vger.kernel.org
-Acked-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Steve Capper <steve.capper@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/s390/include/asm/pgtable.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm64/include/asm/pgtable.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index fcba5e03839f..9862fcb0592b 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1586,6 +1586,18 @@ static inline pmd_t pmd_mkdirty(pmd_t pmd)
- 	return pmd;
- }
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index e0ccceb317d9..41dfe3c7260c 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -240,10 +240,12 @@ static inline pmd_t pte_pmd(pte_t pte)
+ #endif
  
-+static inline int pmd_dirty(pmd_t pmd)
-+{
-+	/* No dirty bit in the segment table entry */
-+	return 1;
-+}
-+
-+static inline pmd_t pmd_mkclean(pmd_t pmd)
-+{
-+	/* No dirty bit in the segment table entry */
-+	return pmd;
-+}
-+
- #define __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
- static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
- 					    unsigned long address, pmd_t *pmdp)
+ #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
++#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+ #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+ #define pmd_mksplitting(pmd)	pte_pmd(pte_mkspecial(pmd_pte(pmd)))
+ #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
++#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+ #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+ #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+ #define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
 -- 
 2.0.0
 
