@@ -1,146 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563AbaGRG2o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:28:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:36158 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615AbaGRG2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:28:43 -0400
-Message-ID: <1405664920.17297.4.camel@concordia>
-Subject: Re: [PATCH 07/11] perf, tools: Add perf download to download event
- files
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        acme@infradead.org, Andi Kleen <ak@linux.intel.com>
-Date: Fri, 18 Jul 2014 16:28:40 +1000
-In-Reply-To: <1405123165-22666-8-git-send-email-andi@firstfloor.org>
-References: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
-	 <1405123165-22666-8-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752443AbaGRGmz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:42:55 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56910 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaGRGmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 02:42:53 -0400
+Message-ID: <53C8C1EA.9030603@linaro.org>
+Date: Fri, 18 Jul 2014 07:42:50 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        agross@codeaurora.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1] mmc: mmci: Add qcom dml support to the driver.
+References: <1405079306-1406-1-git-send-email-srinivas.kandagatla@linaro.org> <1405625780-13503-1-git-send-email-srinivas.kandagatla@linaro.org> <53C856FB.7010609@codeaurora.org>
+In-Reply-To: <53C856FB.7010609@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 16:59 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a downloader to automatically download the right
-> files from a download site.
-...
-> diff --git a/tools/perf/Documentation/perf-download.txt b/tools/perf/Documentation/perf-download.txt
-> new file mode 100644
-> index 0000000..9e5b28e
-> --- /dev/null
-> +++ b/tools/perf/Documentation/perf-download.txt
-> @@ -0,0 +1,31 @@
-> +perf-download(1)
-> +===============
-> +
-> +NAME
-> +----
-> +perf-download - Download event files for current CPU.
-> +
-> +SYNOPSIS
-> +--------
-> +[verse]
-> +'perf download' [vendor-family-model]
+Thanks Stephen for the comments.
 
-Can you make that arch agnostic? eg:
+On 18/07/14 00:06, Stephen Boyd wrote:
+> On 07/17/14 12:36, Srinivas Kandagatla wrote:
+>> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+>> index b66b351..a83b7b5 100644
+>> --- a/drivers/mmc/host/mmci.c
+>> +++ b/drivers/mmc/host/mmci.c
+>> @@ -74,6 +75,7 @@ static unsigned int fmax = 515633;
+>>    * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
+>>    * @explicit_mclk_control: enable explicit mclk control in driver.
+>>    * @qcom_fifo: enables qcom specific fifo pio read logic.
+>> + * @qcom_dml: enables qcom specific dml glue for dma transfers.
+>
+> Maybe s/dml glue/dma glue/ in the comment so we don't refer to the
+> variable with dml in the name by dml.
+>
+Will fix it in v2.
 
-> +'perf download' [cpu-identifier]
+>>    */
+>>   struct variant_data {
+>>   	unsigned int		clkreg;
+>> @@ -569,6 +579,7 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+>>   	struct dma_async_tx_descriptor *desc;
+>>   	enum dma_data_direction buffer_dirn;
+>>   	int nr_sg;
+>> +	u32 flags = DMA_CTRL_ACK;
+>
+> unsigned long to match function signature please.
+>
+Ok.
+>>
+>>   	if (data->flags & MMC_DATA_READ) {
+>>   		conf.direction = DMA_DEV_TO_MEM;
+>> @@ -593,9 +604,12 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+>>   	if (nr_sg == 0)
+>>   		return -EINVAL;
+>>
+>> +	if (host->variant->qcom_dml)
+>> +		flags |= DMA_PREP_INTERRUPT;
+>> +
+>>   	dmaengine_slave_config(chan, &conf);
+>>   	desc = dmaengine_prep_slave_sg(chan, data->sg, nr_sg,
+>> -					    conf.direction, DMA_CTRL_ACK);
+>> +					    conf.direction, flags);
+>>   	if (!desc)
+>>   		goto unmap_exit;
+>>
+>> diff --git a/drivers/mmc/host/mmci_qcom_dml.c b/drivers/mmc/host/mmci_qcom_dml.c
+>> new file mode 100644
+>> index 0000000..e2ecd07
+>> --- /dev/null
+>> +++ b/drivers/mmc/host/mmci_qcom_dml.c
+>> @@ -0,0 +1,171 @@
+>
+> No license text? I'd think most of this code is from qualcomm's kernel
+> and those files all have the gpl stuff.
 
-> diff --git a/tools/perf/perf-download.sh b/tools/perf/perf-download.sh
-> new file mode 100755
-> index 0000000..269dc96
-> --- /dev/null
-> +++ b/tools/perf/perf-download.sh
-> @@ -0,0 +1,57 @@
-> +#!/bin/bash
-> +# download event files for current cpu for perf
-> +
-> +CURLOPT=${CURLOPT:- --max-time 5 -#}
-> +
-> +set -e
-> +
-> +if ! type curl > /dev/null ; then
-> +	echo "please install curl"
-> +	exit 1
-> +fi
-> +
-> +if [ "$1" == "" ] ; then
-> +	S=$(awk '
-> +/^vendor/     		{ V=$3 }
-> +/^model/ && $2 == ":" 	{ M=$3 }
-> +/^cpu family/ 		{ F = $4 }
-> +END	      		{ printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
-> +else
-> +	S="$1"
-> +fi
-> +V=$(echo $S  | ( IFS=- read v f m ; echo $v) )
+Thanks for spotting, I will copy paste the text from 3.4 kernel.
 
-This obviously needs a bit of work to support other arches. I'm thinking we use
-uname -m to do a top level switch? eg:
+>> +	void __iomem *dml_base;
+>> +
+>> +	dml_base = host->base + DML_OFFSET;
+>> +
+>> +	if (data->flags & MMC_DATA_READ) {
+>> +		/* Read operation: configure DML for producer operation */
+>> +		/* Set producer CRCI-x and disable consumer CRCI */
+>> +		config = readl(dml_base + DML_CONFIG);
+>> +		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_X_SEL;
+>> +		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_DISABLE;
+>> +		writel(config, (dml_base + DML_CONFIG));
+>> +
+>> +		/* Set the Producer BAM block size */
+>> +		writel(data->blksz, (dml_base +	DML_PRODUCER_BAM_BLOCK_SIZE));
+>> +
+>> +		/* Set Producer BAM Transaction size */
+>> +		writel(data->blocks * data->blksz,
+>> +			(dml_base + DML_PRODUCER_BAM_TRANS_SIZE));
+>> +		/* Set Producer Transaction End bit */
+>> +		writel((readl_relaxed(dml_base + DML_CONFIG) |
+>> +			PRODUCER_TRANS_END_EN),
+>> +			(dml_base + DML_CONFIG));
+>
+> Please use local variables instead of writel(readl()). It makes things
+> much more readable.
+OK, will be fixed in v2.
+>
+>> +		/* Trigger producer */
+>> +		writel(1, (dml_base + DML_PRODUCER_START));
+>> +	} else {
+>> +		/* Write operation: configure DML for consumer operation */
+>> +		/* Set consumer CRCI-x and disable producer CRCI*/
+>> +		config = readl(dml_base + DML_CONFIG);
+>> +		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_X_SEL;
+>> +		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_DISABLE;
+>> +		writel(config, (dml_base + DML_CONFIG));
+>> +		/* Clear Producer Transaction End bit */
+>> +		writel((readl_relaxed(dml_base + DML_CONFIG)
+>> +			& ~PRODUCER_TRANS_END_EN),
+>> +			(dml_base + DML_CONFIG));
+>> +		/* Trigger consumer */
+>> +		writel(1, (dml_base + DML_CONSUMER_START));
+>
+> It would be better to use the relaxed accessors when possible.
+>
+Ok, I will use it.
 
-  ARCH=$(uname -m | sed -e s/i.86/i386/ -e s/ppc.*/powerpc/)
-  
-  if [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "i386" ]; then
-          S=$(awk '/^vendor/              { V=$3 }
-                   /^model/ && $2 == ":"  { M=$3 }
-                   /^cpu family/          { F = $4 }
-                   END                    { printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
-  elif [ "$ARCH" == "powerpc" ]; then
-          ...
-  fi
+>> +	}
+>> +}
+>> +
+>> +static int of_get_dml_pipe_index(struct device_node *np, const char *name)
+>> +{
+>> +	int count, i;
+>> +	const char *s;
+>> +	struct of_phandle_args	dma_spec;
+>> +
+>> +	if (!np || !name)
+>
+> Looks unnecessary. name is definitely not NULL because this function is
+> static and the only caller is right down there. np is most likely not
+> NULL either, but if it is we should blow up with an oops instead of
+> silently failing.
+>
+I agree its an over do. Will fix it.
 
-> +case "$V" in
-> +GenuineIntel)
-> +	echo "Downloading models file"
-> +	URLBASE=${URLBASE:-https://download.01.org/perfmon}
-> +	MAPFILE=${MAPFILE:-mapfile.csv}
-> +	echo "Downloading readme.txt"
-> +	curl $CURLOPT $URLBASE/readme.txt -o readme.txt
-> +	;;
-> +
-> +# Add more CPU vendors here
-> +
-> +*)
-> +	echo "Unsupported CPU vendor $V"
-> +	exit 1
-> +	;;
-> +esac
-> +
-> +curl $CURLOPT $URLBASE/$MAPFILE -o $MAPFILE
-> +
-> +echo "Downloading events file"
-> +awk -v urlbase=$URLBASE -v cpu="$S" -F, \
-> +	'$1 == cpu && $4 == "core" { print "url = \"" urlbase $3 "\""; exit 0 }' \
-> +	$MAPFILE > url$$
-> +if [ -s url$$ ] ; then
-> +	curl $CURLOPT -K url$$ -o $S-core.json
-> +else
-> +	echo "CPU $S not found"
-> +fi
+>> +		return -ENODEV;
+>> +
+>> +	count = of_property_count_strings(np, "dma-names");
+>> +	if (count < 0)
+>> +		return -ENODEV;
+>> +
+>> +	for (i = 0; i < count; i++) {
+>> +
+>> +		if (of_property_read_string_index(np, "dma-names", i, &s))
+>> +			continue;
+>> +
+>> +		if (strcmp(name, s))
+>> +			continue;
+>> +
+>> +		if (of_parse_phandle_with_args(np, "dmas", "#dma-cells", i,
+>> +				       &dma_spec))
+>> +			continue;
+>> +
+>> +		if (dma_spec.args_count)
+>> +			return dma_spec.args[0];
+>> +	}
+>
+> Could this be rewritten to use of_property_match_string()?
+>
+> index = of_property_match_string(np, "dma-names", s);
+> if (index < 0)
+> 	return index;
+>
+> if (of_parse_phandle_with_args(np, "dmas", "#dma-cells", index,
+> 			       &dma_spec))
+> 	return -ENODEV;
+>
+>
+Yes this looks simple and it work.
 
-I'm not 100% sure, but I think we will want to use our PVR register as the
-lookup key. That's just a hex value, with major and minor versions.
-
-To make that work I think we will want a loop in the map lookup to handle
-chopping off the low bits.
-
-So for example it would check the MAPFILE for:
-  003e0301
-  003e030
-  003e03
-  003e0
-
-etc.
-
-So we might need another arch specific chunk in there.
-
-cheers
-
-
+>> +
+>> +	return -ENODEV;
+>> +}
+>> +
+>> +/* Initialize the dml hardware connected to SD Card controller */
+>> +int dml_hw_init(struct mmci_host *host, struct device_node *np)
+>> +{
+>> +	u32 config = 0;
+>
+> unnecessary initialization.
+>
+>> +	void __iomem *dml_base;
+>> +	u32 consumer_id = 0, producer_id = 0;
+>
+> unnecessary initialization.
+>
+Agree, I will fix it.
+>> +
+>> +	consumer_id = of_get_dml_pipe_index(np, "tx");
+>> +	producer_id = of_get_dml_pipe_index(np, "rx");
+>> +
+>> +	if (IS_ERR_VALUE(producer_id) || IS_ERR_VALUE(consumer_id))
+>
+> Is it actually possible for these ids to be very large values? Why not
+> just <= 0?
+>
+Ok.
+>> +		return -ENODEV;
+>> +
+>> +	dml_base = host->base + DML_OFFSET;
+>> +
+>> +	/* Reset the DML block */
+>> +	writel(1, (dml_base + DML_SW_RESET));
+>> +
+>> +	/* Disable the producer and consumer CRCI */
+>> +	config = (PRODUCER_CRCI_DISABLE | CONSUMER_CRCI_DISABLE);
+>> +	/*
+>> +	 * Disable the bypass mode. Bypass mode will only be used
+>> +	 * if data transfer is to happen in PIO mode and don't
+>> +	 * want the BAM interface to connect with SDCC-DML.
+>> +	 */
+>> +	config &= ~BYPASS;
+>> +	/*
+>> +	 * Disable direct mode as we don't DML to MASTER the AHB bus.
+>> +	 * BAM connected with DML should MASTER the AHB bus.
+>> +	 */
+>> +	config &= ~DIRECT_MODE;
+>> +	/*
+>> +	 * Disable infinite mode transfer as we won't be doing any
+>> +	 * infinite size data transfers. All data transfer will be
+>> +	 * of finite data size.
+>> +	 */
+>> +	config &= ~INFINITE_CONS_TRANS;
+>> +	writel(config, (dml_base + DML_CONFIG));
+>
+> unnecessary parens (throughout this file actually).
+>
+Yes.. Its mostly from 3.4 kernels. I will revisit these ones.
+>> +
+>> +	/*
+>> +	 * Initialize the logical BAM pipe size for producer
+>> +	 * and consumer.
+>> +	 */
+>> +	writel(PRODUCER_PIPE_LOGICAL_SIZE,
+>> +		(dml_base + DML_PRODUCER_PIPE_LOGICAL_SIZE));
+>> +	writel(CONSUMER_PIPE_LOGICAL_SIZE,
+>> +		(dml_base + DML_CONSUMER_PIPE_LOGICAL_SIZE));
+>> +
+>> +	/* Initialize Producer/consumer pipe id */
+>> +	writel(producer_id | (consumer_id << CONSUMER_PIPE_ID_SHFT),
+>> +		(dml_base + DML_PIPE_ID));
+>> +
+>> +	return 0;
+>> +}
+>> diff --git a/drivers/mmc/host/mmci_qcom_dml.h b/drivers/mmc/host/mmci_qcom_dml.h
+>> new file mode 100644
+>> index 0000000..d2c5aa45
+>> --- /dev/null
+>> +++ b/drivers/mmc/host/mmci_qcom_dml.h
+>> @@ -0,0 +1,17 @@
+>
+> ditto for license text.
+Will be done in v2.
+>
+>> +#ifndef __MMC_QCOM_DML_H__
+>> +#define __MMC_QCOM_DML_H__
+>> +
+>> +#ifdef CONFIG_MMC_QCOM_DML
+>> +int dml_hw_init(struct mmci_host *host, struct device_node *np);
+>> +void dml_start_xfer(struct mmci_host *host, struct mmc_data *data);
+>> +#else
+>> +static inline int dml_hw_init(struct mmci_host *host, struct device_node *np)
+>> +{
+>> +	return -ENOSYS;
+>> +}
+>> +static inline void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
+>> +{
+>> +}
+>> +#endif /* CONFIG_MMC_QCOM_DML */
+>> +
+>> +#endif /* __MMC_QCOM_DML_H__ */
+>
+>
