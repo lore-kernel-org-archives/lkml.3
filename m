@@ -1,375 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762266AbaGRUIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:08:10 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:59255 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044AbaGRUII (ORCPT
+	id S1762302AbaGRUIi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:08:38 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:55834 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761857AbaGRUIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:08:08 -0400
-Date: Fri, 18 Jul 2014 16:08:04 -0400
+	Fri, 18 Jul 2014 16:08:37 -0400
+Date: Fri, 18 Jul 2014 16:08:34 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
         Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH percpu/for-3.17 1/2] percpu: implement percpu_pool
-Message-ID: <20140718200804.GG13012@htj.dyndns.org>
+Subject: [PATCH percpu/for-3.17 2/2] blk-throttle: replace custom async
+ percpu alloc mechanism with percpu_pool
+Message-ID: <20140718200834.GH13012@htj.dyndns.org>
+References: <20140718200804.GG13012@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140718200804.GG13012@htj.dyndns.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-So, I have another case where percpu allocation needs to be performed
-from an atomic context (also on the IO path), so I wrote up a simple
-percpu alloc cache which is filled asynchronously and replaced
-blk-throttle's custom implementation with it.
-
-I still think it's quite unlikely that we implement atomic allocation
-directly in the percpu allocator; however, even if that happens
-eventually, having percpu_pool instead of multiple custom mechanisms
-scattered around the kernel should make it a lot easier to transition
-to that.
-
-Thanks.
------- 8< ------
->From eaaca4e64d3cce54d2b7ac5e4d5fb207290cc48f Mon Sep 17 00:00:00 2001
+>From 0a4bd997ba9725565883c688d7dcee8264abf71c Mon Sep 17 00:00:00 2001
 From: Tejun Heo <tj@kernel.org>
 Date: Fri, 18 Jul 2014 16:07:14 -0400
-Subject: [PATCH 1/2] percpu: implement percpu_pool
 
-percpu allocator requires sleepable context for allocations.  Most use
-cases are fine with the requirement but blk-throttle currently
-implements its own asynchronous allocation mechanism to allow
-initiating allocation from atomic contexts and there are expected to
-be more similar use cases.
+throtl_pd_init() is called under the queue lock but needs to allocate
+the percpu stats area.  This is currently handled by queueing it on a
+list and scheduling a work item to allocate and fill the percpu stats
+area.  Now that perpcu_pool is available, this custom mechanism can be
+replaced.
 
-It'd be best to make percpu allocator take GFP mask like other
-allocators but its entanglement with kernel virtual address management
-makes it very cumbersome.  Also, percpu allocations from atomic
-contexts are likely to remain highly restricted.
+Add tg_stats_cpu_pool and implement tg_ensure_stats_cpu() which tries
+to make sure that tg->stats_cpu is populated to replace the custom
+async alloc mechanism.  As percpu_pool allocation can fail,
+tg_ensure_stats_cpu() is invoked whenever ->stats_cpu is about to be
+accessed.  This is similar to the way code was structured before as
+the custom async alloc could take arbitrary amount of time and each
+access should verify that ->stats_cpu is populated.
 
-This patch implements a simple asynchronous allocation pool, named
-percpu_pool, which can be used from any context and is refilled
-automatically.  A pool is initialized with the size and alignment of
-the percpu areas to serve and the low an high watermarks.  When the
-number of cached areas fall below the low watermark, a work item is
-kicked off to fill it up to the high mark.  A pool can be statically
-defined and can be manually filled and emptied.
-
-If we later end up implementing proper GFP support for percpu
-allocator, percpu_pool usages should be easy to convert.
+This simplifies the code.  There shouldn't be noticeable functional
+difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
 ---
- include/linux/percpu.h |  90 +++++++++++++++++++++++++
- mm/percpu.c            | 177 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 267 insertions(+)
+ block/blk-throttle.c | 116 +++++++++++++++++++--------------------------------
+ 1 file changed, 42 insertions(+), 74 deletions(-)
 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 6f61b61..ab5d3ff 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -7,6 +7,7 @@
- #include <linux/cpumask.h>
- #include <linux/pfn.h>
- #include <linux/init.h>
-+#include <linux/workqueue.h>
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 3fdb21a..9954fe8 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -144,9 +144,6 @@ struct throtl_grp {
  
- #include <asm/percpu.h>
+ 	/* Per cpu stats pointer */
+ 	struct tg_stats_cpu __percpu *stats_cpu;
+-
+-	/* List of tgs waiting for per cpu stats memory to be allocated */
+-	struct list_head stats_alloc_node;
+ };
  
-@@ -129,4 +130,93 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
- #define alloc_percpu(type)	\
- 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type), __alignof__(type))
+ struct throtl_data
+@@ -168,12 +165,12 @@ struct throtl_data
+ 	struct work_struct dispatch_work;
+ };
  
+-/* list and work item to allocate percpu group stats */
+-static DEFINE_SPINLOCK(tg_stats_alloc_lock);
+-static LIST_HEAD(tg_stats_alloc_list);
+-
+-static void tg_stats_alloc_fn(struct work_struct *);
+-static DECLARE_DELAYED_WORK(tg_stats_alloc_work, tg_stats_alloc_fn);
 +/*
-+ * percpu_pool is an automatically managed percpu allocation cache which
-+ * can be used to allocate percpu areas from atomic contexts.
++ * percpu_pool to allow allocating tg->stats_cpu under queue_lock.  The low
++ * and high numbers are somewhat arbitrary.  They should be okay, but if
++ * somebody can come up with better numbers and rationales, don't be shy.
 + */
-+struct percpu_pool {
-+	spinlock_t		lock;
-+	size_t			elem_size;
-+	size_t			elem_align;
-+	int			nr_low;
-+	int			nr_high;
-+	int			nr;
-+	bool			inhibit_fill:1;
-+	void __percpu		*head;
-+	struct work_struct	fill_work;
-+};
-+
-+void __pcpu_pool_fill_workfn(struct work_struct *work);
-+
-+/**
-+ * __PERCPU_POOL_INIT - initializer for percpu_pool
-+ * @name: name of the percpu_pool being initialized
-+ * @size: size of the percpu elements to be cached
-+ * @align: alignment of the percpu elements to be cached
-+ * @low: low watermark of the pool
-+ * @high: high watermark of the pool
-+ *
-+ * Initializer for percpu_pool @name which serves percpu areas of @size
-+ * bytes with the alignment of @align.  If the pool falls below @low, it's
-+ * filled upto @high.  Note that the pool starts empty.  If not explicitly
-+ * filled with percpu_pool_fill(), the first allocation will fail and
-+ * trigger filling.
-+ */
-+#define __PERCPU_POOL_INIT(name, size, align, low, high)		\
-+{									\
-+	.lock			= __SPIN_LOCK_INITIALIZER(name.lock),	\
-+	.elem_size		= (size),				\
-+	.elem_align		= (align),				\
-+	.nr_low			= (low),				\
-+	.nr_high		= (high),				\
-+	.fill_work		= __WORK_INITIALIZER(name.fill_work,	\
-+					__pcpu_pool_fill_workfn),	\
-+}
-+
-+/**
-+ * __DEFINE_PERCPU_POOL - define a percpu_pool
-+ * @name: name of the percpu_pool being defined
-+ * @size: size of the percpu elements to be cached
-+ * @align: alignment of the percpu elements to be cached
-+ * @low: low watermark of the pool
-+ * @high: high watermark of the pool
-+ *
-+ * Define a percpu_pool @name.  See __PERCPU_POOL_INIT().
-+ */
-+#define __DEFINE_PERCPU_POOL(name, size, align, low, high)		\
-+	struct percpu_pool name = __PERCPU_POOL_INIT(name, size, align,	\
-+						     low, high)
-+
-+/**
-+ * PERCPU_POOL_INIT - initializer for percpu_pool
-+ * @name: name of the percpu_pool being initialized
-+ * @type: type of the percpu elements to be cached
-+ * @low: low watermark of the pool
-+ * @high: high watermark of the pool
-+ *
-+ * Equivalent to __PERCPU_POOL_INIT() except that the size and alignment
-+ * are calculated from @type instead of being explicitly specified.
-+ */
-+#define PERCPU_POOL_INIT(name, type, low, high)				\
-+	__PERCPU_POOL_INIT(name, sizeof(type), __alignof__(type),	\
-+			   low, high)
-+
-+/**
-+ * DEFINE_PERCPU_POOL - define a percpu_pool
-+ * @name: name of the percpu_pool being defined
-+ * @type: type of the percpu elements to be cached
-+ * @low: low watermark of the pool
-+ * @high: high watermark of the pool
-+ *
-+ * Equivalent to __DEFINE_PERCPU_POOL() except that the size and alignment
-+ * are calculated from @type instead of being explicitly specified.
-+ */
-+#define DEFINE_PERCPU_POOL(name, type, low, high)			\
-+	__DEFINE_PERCPU_POOL(name, sizeof(type), __alignof__(type),	\
-+			     low, high)
-+
-+extern void percpu_pool_fill(struct percpu_pool *pool, int target_nr);
-+extern void percpu_pool_empty(struct percpu_pool *pool);
-+extern void __percpu *percpu_pool_alloc(struct percpu_pool *pool);
-+
- #endif /* __LINUX_PERCPU_H */
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 2139e30..c536cd0 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -68,6 +68,7 @@
- #include <linux/vmalloc.h>
- #include <linux/workqueue.h>
- #include <linux/kmemleak.h>
-+#include <linux/delay.h>
++static DEFINE_PERCPU_POOL(tg_stats_cpu_pool, struct tg_stats_cpu, 16, 32);
  
- #include <asm/cacheflush.h>
- #include <asm/sections.h>
-@@ -1965,3 +1966,179 @@ void __init percpu_init_late(void)
- 		spin_unlock_irqrestore(&pcpu_lock, flags);
- 	}
+ static void throtl_pending_timer_fn(unsigned long arg);
+ 
+@@ -256,53 +253,6 @@ static struct throtl_data *sq_to_td(struct throtl_service_queue *sq)
+ 	}								\
+ } while (0)
+ 
+-static void tg_stats_init(struct tg_stats_cpu *tg_stats)
+-{
+-	blkg_rwstat_init(&tg_stats->service_bytes);
+-	blkg_rwstat_init(&tg_stats->serviced);
+-}
+-
+-/*
+- * Worker for allocating per cpu stat for tgs. This is scheduled on the
+- * system_wq once there are some groups on the alloc_list waiting for
+- * allocation.
+- */
+-static void tg_stats_alloc_fn(struct work_struct *work)
+-{
+-	static struct tg_stats_cpu *stats_cpu;	/* this fn is non-reentrant */
+-	struct delayed_work *dwork = to_delayed_work(work);
+-	bool empty = false;
+-
+-alloc_stats:
+-	if (!stats_cpu) {
+-		int cpu;
+-
+-		stats_cpu = alloc_percpu(struct tg_stats_cpu);
+-		if (!stats_cpu) {
+-			/* allocation failed, try again after some time */
+-			schedule_delayed_work(dwork, msecs_to_jiffies(10));
+-			return;
+-		}
+-		for_each_possible_cpu(cpu)
+-			tg_stats_init(per_cpu_ptr(stats_cpu, cpu));
+-	}
+-
+-	spin_lock_irq(&tg_stats_alloc_lock);
+-
+-	if (!list_empty(&tg_stats_alloc_list)) {
+-		struct throtl_grp *tg = list_first_entry(&tg_stats_alloc_list,
+-							 struct throtl_grp,
+-							 stats_alloc_node);
+-		swap(tg->stats_cpu, stats_cpu);
+-		list_del_init(&tg->stats_alloc_node);
+-	}
+-
+-	empty = list_empty(&tg_stats_alloc_list);
+-	spin_unlock_irq(&tg_stats_alloc_lock);
+-	if (!empty)
+-		goto alloc_stats;
+-}
+-
+ static void throtl_qnode_init(struct throtl_qnode *qn, struct throtl_grp *tg)
+ {
+ 	INIT_LIST_HEAD(&qn->node);
+@@ -386,6 +336,37 @@ static struct bio *throtl_pop_queued(struct list_head *queued,
+ 	return bio;
  }
-+
-+
-+/*
-+ * percpu_pool implementation.
-+ *
-+ * percpu_pool allocates percpu areas and chain them so that they can be
-+ * given out in atomic contexts.  When a pool goes below its configured low
-+ * watermark, its work item is queued to fill it upto the high watermark.
-+ */
-+
-+static void __percpu **pcpu_pool_nextp(void __percpu *p)
+ 
++static bool tg_ensure_stats_cpu(struct throtl_grp *tg)
 +{
-+	static int pcpu_pool_cpu = -1;
++	struct tg_stats_cpu __percpu *stats_cpu;
++	int cpu;
++
++	if (likely(tg->stats_cpu))
++		return true;
++
++	stats_cpu = percpu_pool_alloc(&tg_stats_cpu_pool);
++	if (!stats_cpu)
++		return false;
++
++	for_each_possible_cpu(cpu) {
++		struct tg_stats_cpu *tg_stats = per_cpu_ptr(stats_cpu, cpu);
++
++		blkg_rwstat_init(&tg_stats->service_bytes);
++		blkg_rwstat_init(&tg_stats->serviced);
++	}
 +
 +	/*
-+	 * @pcpu_pool_cpu is the CPU whose area is used to chain percpu
-+	 * areas and can be any possible CPU.
++	 * Try to install @stats_cpu.  There may be multiple competing
++	 * instances of this function.  Use cmpxchg() so that only the
++	 * first one gets installed.
 +	 */
-+	if (unlikely(pcpu_pool_cpu < 0))
-+		pcpu_pool_cpu = cpumask_any(cpu_possible_mask);
++	if (cmpxchg(&tg->stats_cpu, (struct tg_stats_cpu __percpu *)NULL,
++		    stats_cpu))
++		free_percpu(stats_cpu);
 +
-+	return per_cpu_ptr((void __percpu * __percpu *)p, pcpu_pool_cpu);
++	return true;
 +}
 +
-+/**
-+ * pcpu_pool_alloc_elems - allocate percpu_areas and put them on a list
-+ * @elem_size: the size of each element
-+ * @elem_align: the alignment of each element
-+ * @nr: the number of elements to allocate
-+ * @headp: out param for the head of the allocated list
-+ * @tailp: out param for the tail of the allocated list
-+ *
-+ * Try to allocate @nr percpu areas with @elem_size and @elem_align and put
-+ * them on a list pointed to by *@headp and *@tailp.  Returns the number of
-+ * successfully allocated elements which may be zero.
-+ */
-+static int pcpu_pool_alloc_elems(size_t elem_size, size_t elem_align, int nr,
-+				 void __percpu **headp, void __percpu **tailp)
-+{
-+	void __percpu *head = NULL;
-+	void __percpu *tail = NULL;
-+	int i;
+ /* init a service_queue, assumes the caller zeroed it */
+ static void throtl_service_queue_init(struct throtl_service_queue *sq,
+ 				      struct throtl_service_queue *parent_sq)
+@@ -408,7 +389,6 @@ static void throtl_pd_init(struct blkcg_gq *blkg)
+ 	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 	struct throtl_data *td = blkg->q->td;
+ 	struct throtl_service_queue *parent_sq;
+-	unsigned long flags;
+ 	int rw;
+ 
+ 	/*
+@@ -444,15 +424,7 @@ static void throtl_pd_init(struct blkcg_gq *blkg)
+ 	tg->iops[READ] = -1;
+ 	tg->iops[WRITE] = -1;
+ 
+-	/*
+-	 * Ugh... We need to perform per-cpu allocation for tg->stats_cpu
+-	 * but percpu allocator can't be called from IO path.  Queue tg on
+-	 * tg_stats_alloc_list and allocate from work item.
+-	 */
+-	spin_lock_irqsave(&tg_stats_alloc_lock, flags);
+-	list_add(&tg->stats_alloc_node, &tg_stats_alloc_list);
+-	schedule_delayed_work(&tg_stats_alloc_work, 0);
+-	spin_unlock_irqrestore(&tg_stats_alloc_lock, flags);
++	tg_ensure_stats_cpu(tg);
+ }
+ 
+ /*
+@@ -482,11 +454,6 @@ static void throtl_pd_online(struct blkcg_gq *blkg)
+ static void throtl_pd_exit(struct blkcg_gq *blkg)
+ {
+ 	struct throtl_grp *tg = blkg_to_tg(blkg);
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&tg_stats_alloc_lock, flags);
+-	list_del_init(&tg->stats_alloc_node);
+-	spin_unlock_irqrestore(&tg_stats_alloc_lock, flags);
+ 
+ 	free_percpu(tg->stats_cpu);
+ 
+@@ -498,7 +465,7 @@ static void throtl_pd_reset_stats(struct blkcg_gq *blkg)
+ 	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 	int cpu;
+ 
+-	if (tg->stats_cpu == NULL)
++	if (!tg_ensure_stats_cpu(tg))
+ 		return;
+ 
+ 	for_each_possible_cpu(cpu) {
+@@ -963,8 +930,7 @@ static void throtl_update_dispatch_stats(struct blkcg_gq *blkg, u64 bytes,
+ 	struct tg_stats_cpu *stats_cpu;
+ 	unsigned long flags;
+ 
+-	/* If per cpu stats are not allocated yet, don't do any accounting. */
+-	if (tg->stats_cpu == NULL)
++	if (!tg_ensure_stats_cpu(tg))
+ 		return;
+ 
+ 	/*
+@@ -1690,6 +1656,8 @@ static int __init throtl_init(void)
+ 	if (!kthrotld_workqueue)
+ 		panic("Failed to create kthrotld\n");
+ 
++	percpu_pool_fill(&tg_stats_cpu_pool, 0);
 +
-+	/* each elem should be able to carry a pointer to allow chaining */
-+	elem_size = max_t(size_t, elem_size, sizeof(void __percpu *));
-+	elem_align = max_t(size_t, elem_align, __alignof__(void __percpu *));
-+
-+	for (i = 0; i < nr; i++) {
-+		void __percpu *p;
-+
-+		p = __alloc_percpu(elem_size, elem_align);
-+		if (!p)
-+			break;
-+
-+		if (!tail)
-+			tail = p;
-+		if (head)
-+			*pcpu_pool_nextp(p) = head;
-+		head = p;
-+
-+		cond_resched();
-+	}
-+
-+	*headp = head;
-+	*tailp = tail;
-+	return i;
-+}
-+
-+/**
-+ * pcpu_pool_fill - fill a percpu_pool
-+ * @pool: percpu_pool to fill
-+ * @target_nr: target number of elements (0 for default)
-+ *
-+ * Try to fill @pool upto @target_nr elements.  If @target_nr is zero, the
-+ * high watermark set during pool init is used.
-+ *
-+ * If @target_nr is non-zero but lower than the low watermark, automatic
-+ * pool refilling is disabled until it is completely empty.  This is useful
-+ * for a pool which allocates some fixed number of elements during boot but
-+ * may or may not be used afterwards.  By pre-filling with the amount
-+ * necessary during boot, systems which don't use it afterwards can avoid
-+ * carrying around a potentially large cache of percpu areas.
-+ */
-+void percpu_pool_fill(struct percpu_pool *pool, int target_nr)
-+{
-+	void __percpu *head;
-+	void __percpu *tail;
-+	int nr;
-+
-+	target_nr = target_nr ?: pool->nr_high;
-+	nr = max(target_nr - pool->nr, 0);
-+	nr = pcpu_pool_alloc_elems(pool->elem_size, pool->elem_align, nr,
-+				   &head, &tail);
-+
-+	spin_lock_irq(&pool->lock);
-+	if (nr) {
-+		*pcpu_pool_nextp(tail) = pool->head;
-+		pool->head = head;
-+		pool->nr += nr;
-+	}
-+	pool->inhibit_fill = target_nr < pool->nr_low;
-+	spin_unlock_irq(&pool->lock);
-+}
-+
-+/**
-+ * pcpu_pool_empty - empty a percpu_pool
-+ * @pool: percpu_pool to empty
-+ *
-+ * Empty @pool.  If @pool is not used after this function is invoked, @pool
-+ * can be destroyed on completion.
-+ */
-+void percpu_pool_empty(struct percpu_pool *pool)
-+{
-+	void __percpu *head;
-+	unsigned long flags;
-+
-+	cancel_work_sync(&pool->fill_work);
-+
-+	spin_lock_irqsave(&pool->lock, flags);
-+	head = pool->head;
-+	pool->head = NULL;
-+	pool->nr = 0;
-+	spin_unlock_irqrestore(&pool->lock, flags);
-+
-+	while (head) {
-+		void __percpu *p = head;
-+
-+		head = *pcpu_pool_nextp(p);
-+		free_percpu(p);
-+	}
-+}
-+
-+void __pcpu_pool_fill_workfn(struct work_struct *work)
-+{
-+	struct percpu_pool *pool = container_of(work, struct percpu_pool,
-+						fill_work);
-+	percpu_pool_fill(pool, 0);
-+}
-+
-+/**
-+ * percpu_pool_alloc - allocate from a percpu_pool
-+ * @pool: percpu_pool to allocate from
-+ *
-+ * Allocate an element from @pool.  This function can be used from any
-+ * context.
-+ *
-+ * @pool is automatically refilled if it falls below the low watermark set
-+ * during pool init; however, the refilling is asynchronous and the pool
-+ * may go empty before refilling is complete.
-+ *
-+ * Returns the pointer to the allocated percpu area on success, %NULL on
-+ * failure.  The returned percpu pointer can be freed via free_percpu().
-+ */
-+void __percpu *percpu_pool_alloc(struct percpu_pool *pool)
-+{
-+	void __percpu *p;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&pool->lock, flags);
-+
-+	p = pool->head;
-+	if (p) {
-+		pool->head = *pcpu_pool_nextp(p);
-+		*pcpu_pool_nextp(p) = NULL;
-+		pool->nr--;
-+	}
-+
-+	if (!pool->nr || (!pool->inhibit_fill && pool->nr < pool->nr_low)) {
-+		pool->inhibit_fill = false;
-+		schedule_work(&pool->fill_work);
-+	}
-+
-+	spin_unlock_irqrestore(&pool->lock, flags);
-+
-+	return p;
-+}
+ 	return blkcg_policy_register(&blkcg_policy_throtl);
+ }
+ 
 -- 
 1.9.3
 
