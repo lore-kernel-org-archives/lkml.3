@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934958AbaGRE3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 00:29:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33351 "EHLO
+	id S935008AbaGRE3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 00:29:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33441 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965024AbaGRE1u (ORCPT
+	with ESMTP id S934961AbaGRE3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 00:27:50 -0400
-Date: Thu, 17 Jul 2014 21:27:32 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-acebd408bef17169fbf79079b96f0264b535916c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+	Fri, 18 Jul 2014 00:29:33 -0400
+Date: Thu, 17 Jul 2014 21:28:34 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-0b437860818dc717f6a9e8a5089223a8414f5fff@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1405374411-29012-2-git-send-email-jolsa@kernel.org>
-References: <1405374411-29012-2-git-send-email-jolsa@kernel.org>
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1405332185-4050-40-git-send-email-adrian.hunter@intel.com>
+References: <1405332185-4050-40-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Remove verbose from functions prototypes
-Git-Commit-ID: acebd408bef17169fbf79079b96f0264b535916c
+Subject: [tip:perf/core] perf tools: Allow TSC conversion on any arch
+Git-Commit-ID: 0b437860818dc717f6a9e8a5089223a8414f5fff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,178 +37,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  acebd408bef17169fbf79079b96f0264b535916c
-Gitweb:     http://git.kernel.org/tip/acebd408bef17169fbf79079b96f0264b535916c
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 14 Jul 2014 23:46:47 +0200
+Commit-ID:  0b437860818dc717f6a9e8a5089223a8414f5fff
+Gitweb:     http://git.kernel.org/tip/0b437860818dc717f6a9e8a5089223a8414f5fff
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Mon, 14 Jul 2014 13:03:03 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 17 Jul 2014 11:04:42 -0300
+CommitDate: Thu, 17 Jul 2014 12:59:00 -0300
 
-perf tools: Remove verbose from functions prototypes
+perf tools: Allow TSC conversion on any arch
 
-And use verbose as an global object in following functions:
+It is possible to record a perf.data file on one architecture and
+process it on another.
 
-  __map_groups__fprintf_maps
-  __map_groups__fprintf_removed_maps
-  map_groups__fprintf_maps
-  map_groups__fprintf
+Consequently, TSC conversion functions need to be moved out of the arch
+directory.
 
-Also making map_groups__fprintf_maps static.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1405374411-29012-2-git-send-email-jolsa@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1405332185-4050-40-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/stdio/hist.c |  2 +-
- tools/perf/util/map.c      | 24 ++++++++++++------------
- tools/perf/util/map.h      |  9 ++++-----
- tools/perf/util/thread.c   |  4 ++--
- 4 files changed, 19 insertions(+), 20 deletions(-)
+ tools/perf/Makefile.perf            |  2 ++
+ tools/perf/arch/x86/util/tsc.c      | 22 +---------------------
+ tools/perf/arch/x86/util/tsc.h      |  3 ---
+ tools/perf/tests/perf-time-to-tsc.c |  3 +--
+ tools/perf/util/tsc.c               | 25 +++++++++++++++++++++++++
+ tools/perf/util/tsc.h               | 11 +++++++++++
+ 6 files changed, 40 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 90122ab..40af0ac 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -479,7 +479,7 @@ print_entries:
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 90c4983..3308b22 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -295,6 +295,7 @@ LIB_H += util/intlist.h
+ LIB_H += util/perf_regs.h
+ LIB_H += util/unwind.h
+ LIB_H += util/vdso.h
++LIB_H += util/tsc.h
+ LIB_H += ui/helpline.h
+ LIB_H += ui/progress.h
+ LIB_H += ui/util.h
+@@ -374,6 +375,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
+ LIB_OBJS += $(OUTPUT)util/record.o
+ LIB_OBJS += $(OUTPUT)util/srcline.o
+ LIB_OBJS += $(OUTPUT)util/data.o
++LIB_OBJS += $(OUTPUT)util/tsc.o
  
- 		if (h->ms.map == NULL && verbose > 1) {
- 			__map_groups__fprintf_maps(h->thread->mg,
--						   MAP__FUNCTION, verbose, fp);
-+						   MAP__FUNCTION, fp);
- 			fprintf(fp, "%.10s end\n", graph_dotted_line);
- 		}
- 	}
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 7af1480..845f627 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -12,6 +12,7 @@
- #include "vdso.h"
- #include "build-id.h"
- #include "util.h"
-+#include "debug.h"
- #include <linux/string.h>
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
+index 40021fa..3655f24 100644
+--- a/tools/perf/arch/x86/util/tsc.c
++++ b/tools/perf/arch/x86/util/tsc.c
+@@ -6,29 +6,9 @@
+ #include "../../perf.h"
+ #include <linux/types.h>
+ #include "../../util/debug.h"
++#include "../../util/tsc.h"
+ #include "tsc.h"
  
- const char *map_type__name[MAP__NR_TYPES] = {
-@@ -568,8 +569,8 @@ int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
- 	return ams->sym ? 0 : -1;
- }
- 
--size_t __map_groups__fprintf_maps(struct map_groups *mg,
--				  enum map_type type, int verbose, FILE *fp)
-+size_t __map_groups__fprintf_maps(struct map_groups *mg, enum map_type type,
-+				  FILE *fp)
+-u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
+-{
+-	u64 t, quot, rem;
+-
+-	t = ns - tc->time_zero;
+-	quot = t / tc->time_mult;
+-	rem  = t % tc->time_mult;
+-	return (quot << tc->time_shift) +
+-	       (rem << tc->time_shift) / tc->time_mult;
+-}
+-
+-u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
+-{
+-	u64 quot, rem;
+-
+-	quot = cyc >> tc->time_shift;
+-	rem  = cyc & ((1 << tc->time_shift) - 1);
+-	return tc->time_zero + quot * tc->time_mult +
+-	       ((rem * tc->time_mult) >> tc->time_shift);
+-}
+-
+ int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
+ 			     struct perf_tsc_conversion *tc)
  {
- 	size_t printed = fprintf(fp, "%s:\n", map_type__name[type]);
- 	struct rb_node *nd;
-@@ -587,17 +588,16 @@ size_t __map_groups__fprintf_maps(struct map_groups *mg,
- 	return printed;
- }
+diff --git a/tools/perf/arch/x86/util/tsc.h b/tools/perf/arch/x86/util/tsc.h
+index 2affe03..2edc4d3 100644
+--- a/tools/perf/arch/x86/util/tsc.h
++++ b/tools/perf/arch/x86/util/tsc.h
+@@ -14,7 +14,4 @@ struct perf_event_mmap_page;
+ int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
+ 			     struct perf_tsc_conversion *tc);
  
--size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp)
-+static size_t map_groups__fprintf_maps(struct map_groups *mg, FILE *fp)
- {
- 	size_t printed = 0, i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		printed += __map_groups__fprintf_maps(mg, i, verbose, fp);
-+		printed += __map_groups__fprintf_maps(mg, i, fp);
- 	return printed;
- }
+-u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
+-u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
+-
+ #endif /* TOOLS_PERF_ARCH_X86_UTIL_TSC_H__ */
+diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
+index 3b7cd4d..0372f6e 100644
+--- a/tools/perf/tests/perf-time-to-tsc.c
++++ b/tools/perf/tests/perf-time-to-tsc.c
+@@ -8,10 +8,9 @@
+ #include "evsel.h"
+ #include "thread_map.h"
+ #include "cpumap.h"
++#include "tsc.h"
+ #include "tests.h"
  
- static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
--						 enum map_type type,
--						 int verbose, FILE *fp)
-+						 enum map_type type, FILE *fp)
- {
- 	struct map *pos;
- 	size_t printed = 0;
-@@ -614,23 +614,23 @@ static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
- }
- 
- static size_t map_groups__fprintf_removed_maps(struct map_groups *mg,
--					       int verbose, FILE *fp)
-+					       FILE *fp)
- {
- 	size_t printed = 0, i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		printed += __map_groups__fprintf_removed_maps(mg, i, verbose, fp);
-+		printed += __map_groups__fprintf_removed_maps(mg, i, fp);
- 	return printed;
- }
- 
--size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp)
-+size_t map_groups__fprintf(struct map_groups *mg, FILE *fp)
- {
--	size_t printed = map_groups__fprintf_maps(mg, verbose, fp);
-+	size_t printed = map_groups__fprintf_maps(mg, fp);
- 	printed += fprintf(fp, "Removed maps:\n");
--	return printed + map_groups__fprintf_removed_maps(mg, verbose, fp);
-+	return printed + map_groups__fprintf_removed_maps(mg, fp);
- }
- 
- int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
--				   int verbose, FILE *fp)
-+				   FILE *fp)
- {
- 	struct rb_root *root = &mg->maps[map->type];
- 	struct rb_node *next = rb_first(root);
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 5806a90..22d13a2 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -142,8 +142,8 @@ void map__fixup_end(struct map *map);
- 
- void map__reloc_vmlinux(struct map *map);
- 
--size_t __map_groups__fprintf_maps(struct map_groups *mg,
--				  enum map_type type, int verbose, FILE *fp);
-+size_t __map_groups__fprintf_maps(struct map_groups *mg, enum map_type type,
-+				  FILE *fp);
- void maps__insert(struct rb_root *maps, struct map *map);
- void maps__remove(struct rb_root *maps, struct map *map);
- struct map *maps__find(struct rb_root *maps, u64 addr);
-@@ -153,8 +153,7 @@ void map_groups__init(struct map_groups *mg);
- void map_groups__exit(struct map_groups *mg);
- int map_groups__clone(struct map_groups *mg,
- 		      struct map_groups *parent, enum map_type type);
--size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp);
--size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp);
-+size_t map_groups__fprintf(struct map_groups *mg, FILE *fp);
- 
- int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
- 				     u64 addr);
-@@ -211,7 +210,7 @@ struct symbol *map_groups__find_function_by_name(struct map_groups *mg,
- }
- 
- int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
--				   int verbose, FILE *fp);
-+				   FILE *fp);
- 
- struct map *map_groups__find_by_name(struct map_groups *mg,
- 				     enum map_type type, const char *name);
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index b9c36ef..9692c06 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -129,12 +129,12 @@ int thread__comm_len(struct thread *thread)
- size_t thread__fprintf(struct thread *thread, FILE *fp)
- {
- 	return fprintf(fp, "Thread %d %s\n", thread->tid, thread__comm_str(thread)) +
--	       map_groups__fprintf(thread->mg, verbose, fp);
-+	       map_groups__fprintf(thread->mg, fp);
- }
- 
- void thread__insert_map(struct thread *thread, struct map *map)
- {
--	map_groups__fixup_overlappings(thread->mg, map, verbose, stderr);
-+	map_groups__fixup_overlappings(thread->mg, map, stderr);
- 	map_groups__insert(thread->mg, map);
- }
- 
+-#include "../arch/x86/util/tsc.h"
+-
+ #define CHECK__(x) {				\
+ 	while ((x) < 0) {			\
+ 		pr_debug(#x " failed!\n");	\
+diff --git a/tools/perf/util/tsc.c b/tools/perf/util/tsc.c
+new file mode 100644
+index 0000000..ef4749836
+--- /dev/null
++++ b/tools/perf/util/tsc.c
+@@ -0,0 +1,25 @@
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++#include "tsc.h"
++
++u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
++{
++	u64 t, quot, rem;
++
++	t = ns - tc->time_zero;
++	quot = t / tc->time_mult;
++	rem  = t % tc->time_mult;
++	return (quot << tc->time_shift) +
++	       (rem << tc->time_shift) / tc->time_mult;
++}
++
++u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
++{
++	u64 quot, rem;
++
++	quot = cyc >> tc->time_shift;
++	rem  = cyc & ((1 << tc->time_shift) - 1);
++	return tc->time_zero + quot * tc->time_mult +
++	       ((rem * tc->time_mult) >> tc->time_shift);
++}
+diff --git a/tools/perf/util/tsc.h b/tools/perf/util/tsc.h
+new file mode 100644
+index 0000000..4eca848
+--- /dev/null
++++ b/tools/perf/util/tsc.h
+@@ -0,0 +1,11 @@
++#ifndef __PERF_TSC_H
++#define __PERF_TSC_H
++
++#include <linux/types.h>
++
++#include "../arch/x86/util/tsc.h"
++
++u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
++u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
++
++#endif
