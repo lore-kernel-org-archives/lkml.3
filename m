@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935178AbaGRNQr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:16:47 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17884 "EHLO
+	id S935198AbaGRNQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:16:51 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17887 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935119AbaGRNQo (ORCPT
+	by vger.kernel.org with ESMTP id S935179AbaGRNQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:16:44 -0400
+	Fri, 18 Jul 2014 09:16:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Scott Mayhew <smayhew@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 038/170] nfs: Fix cache_validity check in nfs_write_pageuptodate()
-Date: Fri, 18 Jul 2014 14:10:43 +0200
-Message-Id: <b7c3aabcc089fcf599e08225cca4b53fa273c3c7.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, ChiaHao <andy.jhshiu@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 104/170] arm64: Bug fix in stack alignment exception
+Date: Fri, 18 Jul 2014 14:11:49 +0200
+Message-Id: <443a109cb54f00f4541415c55a246a2ff8d42409.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
 References: <cover.1405685481.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Scott Mayhew <smayhew@redhat.com>
+From: ChiaHao <andy.jhshiu@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 18dd78c427513fb0f89365138be66e6ee8700d1b upstream.
+commit 3906c2b53cd23c2ae03e6ce41432c8e7f0a3cbbb upstream.
 
-NFS_INO_INVALID_DATA cannot be ignored, even if we have a delegation.
+The value of ESR has been stored into x1, and should be directly pass to
+do_sp_pc_abort function, "MOV x1, x25" is an extra operation and do_sp_pc_abort
+will get the wrong value of ESR.
 
-We're still having some problems with data corruption when multiple
-clients are appending to a file and those clients are being granted
-write delegations on open.
-
-To reproduce:
-
-Client A:
-vi /mnt/`hostname -s`
-while :; do echo "XXXXXXXXXXXXXXX" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
-
-Client B:
-vi /mnt/`hostname -s`
-while :; do echo "YYYYYYYYYYYYYYY" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
-
-What's happening is that in nfs_update_inode() we're recognizing that
-the file size has changed and we're setting NFS_INO_INVALID_DATA
-accordingly, but then we ignore the cache_validity flags in
-nfs_write_pageuptodate() because we have a delegation.  As a result,
-in nfs_updatepage() we're extending the write to cover the full page
-even though we've not read in the data to begin with.
-
-Signed-off-by: Scott Mayhew <smayhew@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: ChiaHao <andy.jhshiu@gmail.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: <stable@vger.kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/write.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm64/kernel/entry.S | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index c6aa89f92558..3a1b1d1a27ce 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -913,12 +913,14 @@ static bool nfs_write_pageuptodate(struct page *page, struct inode *inode)
- 
- 	if (nfs_have_delegated_attributes(inode))
- 		goto out;
--	if (nfsi->cache_validity & (NFS_INO_INVALID_DATA|NFS_INO_REVAL_PAGECACHE))
-+	if (nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
- 		return false;
- 	smp_rmb();
- 	if (test_bit(NFS_INO_INVALIDATING, &nfsi->flags))
- 		return false;
- out:
-+	if (nfsi->cache_validity & NFS_INO_INVALID_DATA)
-+		return false;
- 	return PageUptodate(page) != 0;
- }
- 
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 3881fd115ebb..028a1b91e2b3 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -275,7 +275,6 @@ el1_sp_pc:
+ 	 * Stack or PC alignment exception handling
+ 	 */
+ 	mrs	x0, far_el1
+-	mov	x1, x25
+ 	mov	x2, sp
+ 	b	do_sp_pc_abort
+ el1_undef:
 -- 
 2.0.0
 
