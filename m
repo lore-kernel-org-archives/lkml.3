@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422928AbaGRNzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:55:52 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17457 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761779AbaGRNJq (ORCPT
+	id S1762314AbaGRN4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:56:22 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:37488 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761298AbaGRN4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:09:46 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 116/170] tracing: Remove ftrace_stop/start() from reading the trace file
-Date: Fri, 18 Jul 2014 14:12:01 +0200
-Message-Id: <e876fdcdf49813d47f8d56ce11aa369dd46a1890.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 09:56:18 -0400
+Date: Fri, 18 Jul 2014 06:56:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Richard Weinberger <richard@nod.at>
+Cc: Borislav Petkov <bp@suse.de>, akpm@linux-foundation.org, apw@canonical.com,
+        joe@perches.com, tytso@mit.edu, dwalter@google.com, neilb@suse.de,
+        hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+Message-ID: <20140718135612.GA18432@roeck-us.net>
+References: <1405611268-12463-1-git-send-email-richard@nod.at>
+ <53C8CCE1.4000105@roeck-us.net>
+ <20140718082324.GA31270@pd.tnic>
+ <53C92332.5010807@roeck-us.net>
+ <53C92535.2010605@nod.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C92535.2010605@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Fri, Jul 18, 2014 at 03:46:29PM +0200, Richard Weinberger wrote:
+> Am 18.07.2014 15:37, schrieb Guenter Roeck:
+> > On 07/18/2014 01:23 AM, Borislav Petkov wrote:
+> >> On Fri, Jul 18, 2014 at 12:29:37AM -0700, Guenter Roeck wrote:
+> >>> First, 'abuse' is a relative term. It describes a use you
+> >>> (and possibly many others) may find objectionable, but that
+> >>> does not mean all uses are objectionable.
+> >>
+> >> Do you actually have a valid use case for keeping the cmdline switch ...
+> >>
+> > 
+> > I find it convenient to be able to check a new file before committing it
+> > and creating a patch. Also, I find it convenient to be able use it to clean
+> > up a file before I do heavy lifting with it. Yes, I understand the latter
+> > is discouraged nowadays, and I would not use it anymore outside my scope
+> > of responsibility unless specifically asked by the maintainer to do so,
+> > but in such cases it helps me a lot to be able to address the cleanup
+> > prior to the heavy lifting.
+> 
+> As capable kernel hacker you can still use a command like:
+> diff -urN /dev/null $file | ./scripts/checkpatch.pl -
+> 
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Yes, that came up before. Or I can revert the patch locally, or keep an old
+version of checkpatch around. You make me suffer because someone else abuses
+the system. That someone will find other ways to abuse the system, such as
+using the same approach, or annoy you with something else, such as searching
+for "fixme" statements in the code or sending unhelpful emails about failing
+builds. The one thing you will not accomplish is to solve the problem.
 
-===============
-
-commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
-
-Disabling reading and writing to the trace file should not be able to
-disable all function tracing callbacks. There's other users today
-(like kprobes and perf). Reading a trace file should not stop those
-from happening.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- kernel/trace/trace.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 24a74162e76f..57d7c64bb980 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1323,7 +1323,6 @@ void tracing_start(void)
- 
- 	arch_spin_unlock(&ftrace_max_lock);
- 
--	ftrace_start();
-  out:
- 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
- }
-@@ -1370,7 +1369,6 @@ void tracing_stop(void)
- 	struct ring_buffer *buffer;
- 	unsigned long flags;
- 
--	ftrace_stop();
- 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
- 	if (global_trace.stop_count++)
- 		goto out;
--- 
-2.0.0
-
+Guenter
