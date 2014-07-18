@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762215AbaGRWH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 18:07:29 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44387 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754379AbaGRWH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 18:07:28 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: linux-kernel@vger.kernel.org
-Cc: hannes@stressinduktion.org, davej@redhat.com, price@mit.edu,
-        Greg Price <price@mit.edu>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH] random: check for increase of entropy_count because of signed conversion
-Date: Fri, 18 Jul 2014 18:07:19 -0400
-Message-Id: <1405721239-2630-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140718215054.GD18775@thunk.org>
-References: <20140718215054.GD18775@thunk.org>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1762356AbaGRWJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 18:09:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43256 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665AbaGRWJ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 18:09:56 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] sched_clock: Avoid corrupting hrtimer tree during suspend
+Date: Fri, 18 Jul 2014 15:09:52 -0700
+Message-Id: <1405721392-30795-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+During suspend we call sched_clock_poll() to update the epoch and
+accumulated time and reprogram the sched_clock_timer to fire
+before the next wrap-around time. Unfortunately,
+sched_clock_poll() doesn't restart the timer, instead it relies
+on the hrtimer layer to do that and during suspend we aren't
+calling that function from the hrtimer layer. Instead, we're
+reprogramming the expires time while the hrtimer is enqueued,
+which can cause the hrtimer tree to be corrupted. Fix this
+problem by updating the state via update_sched_clock() and
+properly restarting the timer via hrtimer_start().
 
-The expression entropy_count -= ibytes << (ENTROPY_SHIFT + 3) could
-actually increase entropy_count if during assignment of the unsigned
-expression on the RHS (mind the -=) we reduce the value modulo
-2^width(int) and assign it to entropy_count. Trinity found this.
-
-[ Commit modified by tytso to add an additional safety check for a
-  negative entropy_count -- which should never happen, and to also add
-  an additional paranoia check to prevent overly large count values to
-  be passed into urandom_read().  ]
-
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Greg Price <price@mit.edu>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Fixes: a08ca5d1089d "sched_clock: Use an hrtimer instead of timer"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/char/random.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 0a7ac0a..003f744 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -641,7 +641,7 @@ retry:
- 		} while (unlikely(entropy_count < pool_size-2 && pnfrac));
- 	}
+I also wonder if we should be restarting the timer during resume
+instead of suspend given that the resume path modifies the epoch.
+At that point timers can't run because interrupts are disabled and
+we don't really care if the timer fires earlier than it's supposed
+to anyway because it's just there to avoid rollover events, but
+does it seem better to do it that way? I didn't send that version
+because this patch is to fix the code intention, but I'm curious
+if anyone else feels like it should be changed.
+
+ kernel/time/sched_clock.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index 445106d2c729..9e32ce88e9ee 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -191,7 +191,9 @@ void __init sched_clock_postinit(void)
  
--	if (entropy_count < 0) {
-+	if (unlikely(entropy_count < 0)) {
- 		pr_warn("random: negative entropy/overflow: pool %s count %d\n",
- 			r->name, entropy_count);
- 		WARN_ON(1);
-@@ -981,7 +981,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 		      int reserved)
+ static int sched_clock_suspend(void)
  {
- 	int entropy_count, orig;
--	size_t ibytes;
-+	size_t ibytes, nfrac;
- 
- 	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
- 
-@@ -999,7 +999,17 @@ retry:
- 	}
- 	if (ibytes < min)
- 		ibytes = 0;
--	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
-+
-+	nfrac = ibytes << (ENTROPY_SHIFT + 3);
-+	if (entropy_count < 0) {
-+		pr_warn("random: negative entropy count: pool %s count %d\n",
-+			r->name, entropy_count);
-+		WARN_ON(1);
-+		entropy_count = 0;
-+	}
-+	if ((unsigned) entropy_count > nfrac)
-+		entropy_count -= nfrac;
-+	else
- 		entropy_count = 0;
- 
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-@@ -1376,6 +1386,7 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
- 			    "with %d bits of entropy available\n",
- 			    current->comm, nonblocking_pool.entropy_total);
- 
-+	nbytes = min_t(size_t, nbytes, INT_MAX >> ENTROPY_SHIFT);
- 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
- 
- 	trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
+-	sched_clock_poll(&sched_clock_timer);
++	update_sched_clock();
++	/* Restart the timer because we forced an update */
++	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
+ 	cd.suspended = true;
+ 	return 0;
+ }
 -- 
-2.0.0
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
