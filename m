@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965968AbaGRRB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:01:59 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:38361 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965879AbaGRRBx (ORCPT
+	id S1422701AbaGRRCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:02:17 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:50848 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030432AbaGRRCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:01:53 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: peter.chen@freescale.com, s.hauer@pengutronix.de, shawn.guo@freescale.com
-Cc: b35083@freescale.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stefan@agner.ch
-Subject: [PATCH 1/6] ARM: dts: vf610: add USB PHY and controller
-Date: Fri, 18 Jul 2014 19:01:37 +0200
-Message-Id: <839af70e8acf139bc0f7bbdb4dd68dd146b5d6a8.1405702442.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <cover.1405702442.git.stefan@agner.ch>
-References: <cover.1405702442.git.stefan@agner.ch>
+	Fri, 18 Jul 2014 13:02:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <5835825.JtcDoyOP8b@wuerfel>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
+	<6104032.PNRl85V92G@wuerfel>
+	<CAGTfZH3cH-QFMbfTWJJfTPTRT-Bij2TW=6CH_Yy-GaZqZvn-Xg@mail.gmail.com>
+	<5835825.JtcDoyOP8b@wuerfel>
+Date: Sat, 19 Jul 2014 02:02:09 +0900
+Message-ID: <CAGTfZH3mnPJ72wi7aFYoChe_OeuRVsUVo3KGRRLTV5scwPbO4g@mail.gmail.com>
+Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for
+ Exynos3250 ADC
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds USB PHY and USB controller nodes. Vybrid SoCs have two
-independent USB cores which each supports DR (dual role). However,
-real OTG is not supported since the OTG ID pin is not available.
+On Sat, Jul 19, 2014 at 1:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 19 July 2014 01:23:15 Chanwoo Choi wrote:
+>> If don't add new compatible including specific exynos version,
+>> I would add new 'adc-needs-sclk' property with existing 'exynos-adc-v2'
+>> compatible name.
+>>
+>>
+>> Dear Naveen, Tomasz,
+>>
+>> If existing exynos-adc driver add just one property for 'sclk_adc'
+>> as following, exynos-adc could not include the exynos version
+>> in compatible name.
+>>
+>> I need your opinion about it.
+>>
+>>                 adc: adc@126C0000 {
+>>                         compatible = "samsung,exynos-adc-v2";
+>>                         reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+>>                         interrupts = <0 137 0>;
+>>                         clock-names = "adc", "sclk_adc";
+>>                         clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+>> +                        adc-needs-sclk;
+>>                         #io-channel-cells = <1>;
+>>                         io-channel-ranges;
+>>                 }
+>
+> How about just making it an optional clock? That would be much
+> easier because then you can simply see if the clock itself is
+> there and use it, or otherwise ignore it.
 
-The PHYs are located within the anadig register range, hence we need
-to change the length of the anadig registers.
+The v1 of this patchset[1] got the clock of 'sclk_adc'  but if the dt node
+of ADC in dtsi file didn't include 'sclk_adc', print just warning message
+without stopping probe as following:
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/boot/dts/vf610.dtsi | 46 +++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 43 insertions(+), 3 deletions(-)
+ [1] https://lkml.org/lkml/2014/4/10/710
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 6a6190c..f6c3f02 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -25,6 +25,8 @@
- 		gpio2 = &gpio3;
- 		gpio3 = &gpio4;
- 		gpio4 = &gpio5;
-+		usbphy0 = &usbphy0;
-+		usbphy1 = &usbphy1;
- 	};
- 
- 	cpus {
-@@ -285,9 +287,25 @@
- 				gpio-ranges = <&iomuxc 0 128 7>;
- 			};
- 
--			anatop@40050000 {
--				compatible = "fsl,vf610-anatop";
--				reg = <0x40050000 0x1000>;
-+			anatop: anatop@40050000 {
-+				compatible = "fsl,vf610-anatop", "syscon";
-+				reg = <0x40050000 0x400>;
-+			};
-+
-+			usbphy0: usbphy@40050800 {
-+				compatible = "fsl,vf610-usbphy", "fsl,imx23-usbphy";
-+				reg = <0x40050800 0x400>;
-+				interrupts = <0 50 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBPHY0>;
-+				fsl,anatop = <&anatop>;
-+			};
-+
-+			usbphy1: usbphy@40050c00 {
-+				compatible = "fsl,vf610-usbphy", "fsl,imx23-usbphy";
-+				reg = <0x40050c00 0x400>;
-+				interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBPHY1>;
-+				fsl,anatop = <&anatop>;
- 			};
- 
- 			i2c0: i2c@40066000 {
-@@ -309,6 +327,18 @@
- 				reg = <0x4006b000 0x1000>;
- 				#clock-cells = <1>;
- 			};
-+
-+			usbdev0: usb@40034000 {
-+				compatible = "fsl,imx6q-usb", "fsl,imx27-usb";
-+				reg = <0x40034000 0x800>;
-+				interrupts = <0 75 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBC0>;
-+				fsl,usbphy = <&usbphy0>;
-+				dr_mode = "peripheral";
-+				status = "disabled";
-+			};
-+
-+
- 		};
- 
- 		aips1: aips-bus@40080000 {
-@@ -371,6 +401,16 @@
- 				status = "disabled";
- 			};
- 
-+			usbh1: usb@400b4000 {
-+				compatible = "fsl,imx6q-usb", "fsl,imx27-usb";
-+				reg = <0x400b4000 0x800>;
-+				interrupts = <0 76 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBC1>;
-+				fsl,usbphy = <&usbphy1>;
-+				dr_mode = "host";
-+				status = "disabled";
-+			};
-+
- 			ftm: ftm@400b8000 {
- 				compatible = "fsl,ftm-timer";
- 				reg = <0x400b8000 0x1000 0x400b9000 0x1000>;
--- 
-2.0.1
++       info->sclk = devm_clk_get(&pdev->dev, "sclk_adc");
++       if (IS_ERR(info->sclk)) {
++               dev_warn(&pdev->dev, "failed getting sclk clock, err = %ld\n",
++                                                       PTR_ERR(info->sclk));
++               info->sclk = NULL;
++       }
 
+But, Tomasz Figa suggested the method[2] of this patchset(v6).
+ [2] https://lkml.org/lkml/2014/4/11/189
+
+Thanks,
+Chanwoo Choi
