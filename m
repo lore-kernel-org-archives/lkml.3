@@ -1,175 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762203AbaGRNoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:44:16 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24013 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761981AbaGRNoL (ORCPT
+	id S1762272AbaGRNol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:44:41 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17580 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757854AbaGRNLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:44:11 -0400
-Date: Fri, 18 Jul 2014 14:43:43 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 5/5] arm64: Add atomic pool for non-coherent and CMA
- allocations.
-Message-ID: <20140718134343.GA4608@arm.com>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
- <1404324218-4743-6-git-send-email-lauraa@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404324218-4743-6-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Jul 2014 09:11:45 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@fb.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 108/170] blkcg: fix use-after-free in __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
+Date: Fri, 18 Jul 2014 14:11:53 +0200
+Message-Id: <e68605c92e6988eca2e565945746e850cc381cf8.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 07:03:38PM +0100, Laura Abbott wrote:
-> diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
-> index 4164c5a..a2487f1 100644
-> --- a/arch/arm64/mm/dma-mapping.c
-> +++ b/arch/arm64/mm/dma-mapping.c
-[...]
->  static void *__dma_alloc_coherent(struct device *dev, size_t size,
->  				  dma_addr_t *dma_handle, gfp_t flags,
->  				  struct dma_attrs *attrs)
-> @@ -53,7 +103,8 @@ static void *__dma_alloc_coherent(struct device *dev, size_t size,
->  	if (IS_ENABLED(CONFIG_ZONE_DMA) &&
->  	    dev->coherent_dma_mask <= DMA_BIT_MASK(32))
->  		flags |= GFP_DMA;
-> -	if (IS_ENABLED(CONFIG_DMA_CMA)) {
-> +
-> +	if (!(flags & __GFP_WAIT) && IS_ENABLED(CONFIG_DMA_CMA)) {
->  		struct page *page;
->  
->  		size = PAGE_ALIGN(size);
+From: Tejun Heo <tj@kernel.org>
 
-I think that's the wrong condition here. You want to use CMA if
-(flags & __GFP_WAIT). CMA does not support atomic allocations so it can
-fall back to swiotlb_alloc_coherent().
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> @@ -73,50 +124,56 @@ static void __dma_free_coherent(struct device *dev, size_t size,
->  				void *vaddr, dma_addr_t dma_handle,
->  				struct dma_attrs *attrs)
->  {
-> +	bool freed;
-> +	phys_addr_t paddr = dma_to_phys(dev, dma_handle);
-> +
->  	if (dev == NULL) {
->  		WARN_ONCE(1, "Use an actual device structure for DMA allocation\n");
->  		return;
->  	}
->  
-> -	if (IS_ENABLED(CONFIG_DMA_CMA)) {
-> -		phys_addr_t paddr = dma_to_phys(dev, dma_handle);
->  
-> -		dma_release_from_contiguous(dev,
-> +	freed = dma_release_from_contiguous(dev,
->  					phys_to_page(paddr),
->  					size >> PAGE_SHIFT);
-> -	} else {
-> +	if (!freed)
->  		swiotlb_free_coherent(dev, size, vaddr, dma_handle);
-> -	}
->  }
+===============
 
-Is __dma_free_coherent() ever called in atomic context? If yes, the
-dma_release_from_contiguous() may not like it since it tries to acquire
-a mutex. But since we don't have the gfp flags here, we don't have an
-easy way to know what to call.
+commit a5049a8ae34950249a7ae94c385d7c5c98914412 upstream.
 
-So the initial idea of always calling __alloc_from_pool() for both
-coherent/non-coherent cases would work better (but still with a single
-shared pool, see below).
+Hello,
 
->  static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
->  				     dma_addr_t *dma_handle, gfp_t flags,
->  				     struct dma_attrs *attrs)
->  {
-> -	struct page *page, **map;
-> +	struct page *page;
->  	void *ptr, *coherent_ptr;
-> -	int order, i;
->  
->  	size = PAGE_ALIGN(size);
-> -	order = get_order(size);
-> +
-> +	if (!(flags & __GFP_WAIT)) {
-> +		struct page *page = NULL;
-> +		void *addr = __alloc_from_pool(size, &page);
-> +
-> +		if (addr)
-> +			*dma_handle = phys_to_dma(dev, page_to_phys(page));
-> +
-> +		return addr;
-> +
-> +	}
+So, this patch should do.  Joe, Vivek, can one of you guys please
+verify that the oops goes away with this patch?
 
-If we do the above for the __dma_alloc_coherent() case, we could use the
-same pool but instead of returning addr it could just return
-page_address(page). The downside of sharing the pool is that you need
-cache flushing for every allocation (which we already do for the
-non-atomic case).
+Jens, the original thread can be read at
 
-> @@ -332,6 +391,67 @@ static struct notifier_block amba_bus_nb = {
->  
->  extern int swiotlb_late_init_with_default_size(size_t default_size);
->  
-> +static int __init atomic_pool_init(void)
-> +{
-> +	pgprot_t prot = __pgprot(PROT_NORMAL_NC);
-> +	unsigned long nr_pages = atomic_pool_size >> PAGE_SHIFT;
-> +	struct page *page;
-> +	void *addr;
-> +
-> +
-> +	if (dev_get_cma_area(NULL))
+  http://thread.gmane.org/gmane.linux.kernel/1720729
 
-Is it worth using this condition for other places where we check
-IS_ENABLED(CONFIG_DMA_CMA) (maybe as a separate patch).
+The fix converts blkg->refcnt from int to atomic_t.  It does some
+overhead but it should be minute compared to everything else which is
+going on and the involved cacheline bouncing, so I think it's highly
+unlikely to cause any noticeable difference.  Also, the refcnt in
+question should be converted to a perpcu_ref for blk-mq anyway, so the
+atomic_t is likely to go away pretty soon anyway.
 
-> +		page = dma_alloc_from_contiguous(NULL, nr_pages,
-> +					get_order(atomic_pool_size));
-> +	else
-> +		page = alloc_pages(GFP_KERNEL, get_order(atomic_pool_size));
+Thanks.
 
-One problem here is that the atomic pool wouldn't be able to honour
-GFP_DMA (in the latest kernel, CMA is by default in ZONE_DMA). You
-should probably pass GFP_KERNEL|GFP_DMA here. You could also use the
-swiotlb_alloc_coherent() which, with a NULL dev, assumes 32-bit DMA mask
-but it still expects GFP_DMA to be passed.
+------- 8< -------
+__blkg_release_rcu() may be invoked after the associated request_queue
+is released with a RCU grace period inbetween.  As such, the function
+and callbacks invoked from it must not dereference the associated
+request_queue.  This is clearly indicated in the comment above the
+function.
 
-> +	if (page) {
-> +		int ret;
-> +
-> +		atomic_pool = gen_pool_create(PAGE_SHIFT, -1);
-> +		if (!atomic_pool)
-> +			goto free_page;
-> +
-> +		addr = dma_common_contiguous_remap(page, atomic_pool_size,
-> +					VM_USERMAP, prot, atomic_pool_init);
-> +
-> +		if (!addr)
-> +			goto destroy_genpool;
-> +
-> +		memset(addr, 0, atomic_pool_size);
-> +		__dma_flush_range(addr, addr + atomic_pool_size);
+Unfortunately, while trying to fix a different issue, 2a4fd070ee85
+("blkcg: move bulk of blkcg_gq release operations to the RCU
+callback") ignored this and added [un]locking of @blkg->q->queue_lock
+to __blkg_release_rcu().  This of course can cause oops as the
+request_queue may be long gone by the time this code gets executed.
 
-If you add the flushing in the __dma_alloc_noncoherent(), it won't be
-needed here (of course, more efficient here but it would not work if we
-share the pool).
+  general protection fault: 0000 [#1] SMP
+  CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
+  Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
+  task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
+  RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+  RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
+  RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
+  RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
+  RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
+  R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
+  R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
+  FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
+  Stack:
+   ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
+   ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
+   ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
+  Call Trace:
+   [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
+   [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
+   [<ffffffff81091d81>] kthread+0xe1/0x100
+   [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
+  Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
+  +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
+  +b7
+  RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+   RSP <ffff88085403fdf0>
 
-> +postcore_initcall(atomic_pool_init);
+The request_queue locking was added because blkcg_gq->refcnt is an int
+protected with the queue lock and __blkg_release_rcu() needs to put
+the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
+dropping queue locking in the function.
 
-Why not arch_initcall? Or even better, we could have a common DMA init
-function that calls swiotlb_late_init() and atomic_pool_init() (in this
-order if you decide to use swiotlb allocation above).
+Given the general heavy weight of the current request_queue and blkcg
+operations, this is unlikely to cause any noticeable overhead.
+Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
+the near future, so whatever (most likely negligible) overhead it may
+add is temporary.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
+Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ block/blk-cgroup.c |  7 ++-----
+ block/blk-cgroup.h | 17 +++++++----------
+ 2 files changed, 9 insertions(+), 15 deletions(-)
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 4e491d9b5292..dd0dd2d4ceca 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
+ 	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
+ 	blkg->blkcg = blkcg;
+-	blkg->refcnt = 1;
++	atomic_set(&blkg->refcnt, 1);
+ 
+ 	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
+ 	if (blkcg != &blkcg_root) {
+@@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head *rcu_head)
+ 
+ 	/* release the blkcg and parent blkg refs this blkg has been holding */
+ 	css_put(&blkg->blkcg->css);
+-	if (blkg->parent) {
+-		spin_lock_irq(blkg->q->queue_lock);
++	if (blkg->parent)
+ 		blkg_put(blkg->parent);
+-		spin_unlock_irq(blkg->q->queue_lock);
+-	}
+ 
+ 	blkg_free(blkg);
+ }
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 2e34c386d760..f1c1cfc92f41 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -18,6 +18,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/radix-tree.h>
+ #include <linux/blkdev.h>
++#include <linux/atomic.h>
+ 
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
+@@ -104,7 +105,7 @@ struct blkcg_gq {
+ 	struct request_list		rl;
+ 
+ 	/* reference count */
+-	int				refcnt;
++	atomic_t			refcnt;
+ 
+ 	/* is this blkg online? protected by both blkcg and q locks */
+ 	bool				online;
+@@ -253,13 +254,12 @@ static inline int blkg_path(struct blkcg_gq *blkg, char *buf, int buflen)
+  * blkg_get - get a blkg reference
+  * @blkg: blkg to get
+  *
+- * The caller should be holding queue_lock and an existing reference.
++ * The caller should be holding an existing reference.
+  */
+ static inline void blkg_get(struct blkcg_gq *blkg)
+ {
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	WARN_ON_ONCE(!blkg->refcnt);
+-	blkg->refcnt++;
++	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
++	atomic_inc(&blkg->refcnt);
+ }
+ 
+ void __blkg_release_rcu(struct rcu_head *rcu);
+@@ -267,14 +267,11 @@ void __blkg_release_rcu(struct rcu_head *rcu);
+ /**
+  * blkg_put - put a blkg reference
+  * @blkg: blkg to put
+- *
+- * The caller should be holding queue_lock.
+  */
+ static inline void blkg_put(struct blkcg_gq *blkg)
+ {
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	WARN_ON_ONCE(blkg->refcnt <= 0);
+-	if (!--blkg->refcnt)
++	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
++	if (atomic_dec_and_test(&blkg->refcnt))
+ 		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
+ }
+ 
 -- 
-Catalin
+2.0.0
+
