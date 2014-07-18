@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761949AbaGRQRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:17:33 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:51635 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761729AbaGRQRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:17:31 -0400
-Date: Fri, 18 Jul 2014 13:16:36 -0300
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        George Cherian <george.cherian@ti.com>,
-        linux-arm-kernel@lists.infradead.org, Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 0/9] usb: musb: several bugfixes for the musb driver
-Message-ID: <20140718161636.GA18460@arch.cereza>
-References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+	id S1762063AbaGRQRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:17:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60429 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762012AbaGRQRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 12:17:48 -0400
+Date: Fri, 18 Jul 2014 18:17:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>
+Subject: Re: [PATCH v3 2/6] acerhdf: Adding support for new models
+Message-ID: <20140718161740.GA29366@pd.tnic>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1399139966-10625-1-git-send-email-peter@piie.net>
+ <1399139966-10625-3-git-send-email-peter@piie.net>
+ <20140717094648.GB23869@pd.tnic>
+ <cone.1405699613.361414.1043.1000@galar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <cone.1405699613.361414.1043.1000@galar>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lothar,
+On Fri, Jul 18, 2014 at 06:06:53PM +0200, Peter Feuerer wrote:
+> Everytime I send out a modified version of acerhdf.c to someone in the
+> internet for trying out some changes, I increment the second minor
+> version number. And from time to time I push things to Mainline, then
+> I need to catch up with the numbering ;)
 
-On 18 Jul 11:31 AM, Lothar Waßmann wrote:
-> The first three patches do some source code cleanup in the files that
-> are modified in the subsequent patches.
+Right, that's a good way to know which version people are testing when
+you're staring at dmesg.
+
+> The major 0 is just from the ages, when all cool projects used to have a 0
+> in front.
 > 
+> Maybe it would be a good idea to go for 1.0 when I implemented a better
+> handling for the huge bios table.
 
-I've applied patches 4 and 9 on a recent -next, after fixing a conflict
-due to patch 3 ("usb: musb_am335x: source cleanup"):
+Probably. You could at least increment it to 0.6 when you switch to the
+bang-bang governor :-)
 
-> Patch 4 carries the proper fix reported in commit:
->         7adb5c876e9c ("usb: musb: Fix panic upon musb_am335x module removal")
-> 
-> Patch 9 reinstates module unloading support for the musb_am335x driver
->         which was disabled due to a false failure analysis
-> 
-
-For these two patches, Tested-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-
-Tested on a beaglebone with a mass storage USB device, module load/unload
-works without issues. The module_get/put in the phy is now preventing the
-musb_am335x driver unload, which seems to be the real cause of the issue
-I reported. Thanks for providing a proper fix!
 -- 
-Ezequiel Garcia, VanguardiaSur
-www.vanguardiasur.com.ar
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
