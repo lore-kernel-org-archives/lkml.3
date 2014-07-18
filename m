@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762169AbaGRUE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 16:04:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:42652 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755035AbaGRUE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 16:04:27 -0400
-Date: Fri, 18 Jul 2014 16:04:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/4] ARM: add IPI tracepoints
-Message-ID: <20140718160418.54d11f6a@gandalf.local.home>
-In-Reply-To: <1405660735-13408-3-git-send-email-nicolas.pitre@linaro.org>
-References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
-	<1405660735-13408-3-git-send-email-nicolas.pitre@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1762199AbaGRUGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 16:06:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43341 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755035AbaGRUGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 16:06:14 -0400
+Message-ID: <53C97E0F.6090601@zytor.com>
+Date: Fri, 18 Jul 2014 13:05:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build warning after merge of the tip tree
+References: <20140718150005.73db8eb9@canb.auug.org.au> <53C97287.5020509@zytor.com> <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com>
+In-Reply-To: <CALCETrXs4fdKDA1C4ts3qzgbB6PrmCZZyK3R4cBLaO9RbBp0YA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 01:18:53 -0400
-Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+On 07/18/2014 12:57 PM, Andy Lutomirski wrote:
+> 
+> This particular warning is IMO in a particularly dumb category: GCC
+> optimizes some code and then warns about a construct that wasn't there
+> in the original code.  In this case, I think it unrolled a loop and
+> discovered that one iteration contained a test that was always true.
+> Big deal.
+> 
+> (OTOH, the code in question was buggy, but not all for the reason that
+> GCC thought it was.)
+> 
 
-  
-> -#ifdef CONFIG_IRQ_WORK
-> -void arch_irq_work_raise(void)
-> -{
-> -	if (is_smp())
-> -		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-> -}
-> +static const char *ipi_types[NR_IPI]
-> +#ifdef CONFIG_TRACING
-> +__tracepoint_string
->  #endif
+		if (syms[sym_vvar_start] > syms[i] + 4096)
+			fail("%s underruns begin_vvar\n",
+			     required_syms[i].name);
 
-Oh, this is ugly. I should probably add a define when !CONFIG_TRACING
-is set. Something like:
+if i == sym_vvar_start then this is at least a valid warning.  It could
+easily be quieted by chaning syms[] to an unsigned array.
 
-#ifdef CONFIG_TRACING
-...
-#else
-# define __tracepoint_string
-#endif
+	-hpa
 
-Such that users of __tracepoint_string don't need to add ugly ifdefs in
-the code.
-
-If you want to add that to ftrace_event.h to this series, I'll ack it.
-
--- Steve
-
-
-> -
-> -static const char *ipi_types[NR_IPI] = {
-> += {
->  #define S(x,s)	[x] = s
->  	S(IPI_WAKEUP, "CPU wakeup interrupts"),
->  	S(IPI_TIMER, "Timer broadcast interrupts"),
-> @@ -473,6 +457,12 @@ static const char *ipi_types[NR_IPI] = {
->  	S(IPI_COMPLETION, "completion interrupts"),
->  };
->  
