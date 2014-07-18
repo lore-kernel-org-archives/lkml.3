@@ -1,42 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761779AbaGRTeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 15:34:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46440 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909AbaGRTeU (ORCPT
+	id S1762044AbaGRTe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 15:34:56 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:48758 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906AbaGRTez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 15:34:20 -0400
-Date: Fri, 18 Jul 2014 21:34:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] sched_clock: Track monotonic raw clock
-Message-ID: <20140718193417.GG3935@laptop>
-References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
- <20140718191338.GF3935@laptop>
- <CALAqxLX4ia_dBO-oNY1XMnSrJdDZc87EneHj9WcxtOZaupZaCg@mail.gmail.com>
+	Fri, 18 Jul 2014 15:34:55 -0400
+Message-ID: <53C976E1.9040505@linaro.org>
+Date: Fri, 18 Jul 2014 14:34:57 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLX4ia_dBO-oNY1XMnSrJdDZc87EneHj9WcxtOZaupZaCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: akpm@linux-foundation.org
+CC: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/7] printk: LOG_CONT and LOG_NEWLINE are opposites
+References: <1405692859-32500-1-git-send-email-elder@linaro.org> <1405692859-32500-4-git-send-email-elder@linaro.org>
+In-Reply-To: <1405692859-32500-4-git-send-email-elder@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 12:25:48PM -0700, John Stultz wrote:
-> Also, assuming we someday will merge the x86 sched_clock logic into
-> the generic sched_clock code, we'll have to handle cases where they
-> aren't the same.
+On 07/18/2014 09:14 AM, Alex Elder wrote:
+> Two log record flags--LOG_CONT and LOG_NEWLINE--are mutually
+> exclusive.  That is, one or the other is always set, but they are
+> never both set at the same time in a log record flags field.  What
+> follows is a great deal of explanation that aims to prove this
+> assertion.
+> 
+> Having that knowledge allows us to simplify a bit of logic, and with
+> a little more work (in follow-on patches) it allows us to do without
+> some flag values, considerably simplifying things.
 
-I prefer that to not happen. I spend quite a bit of time and effort to
-make the x86 code go fast, and that generic code doesn't look like fast
-at all.
+And in this patch I inadvertently deleted a hunk.  It
+goes at the end, and I've appended it below.
+
+I'm really sorry I screwed these patches up.  I got
+sloppy, and tried to send them out in a hurry this
+morning.
+
+I'm going to post a new version 4 that will correct these
+things.
+
+					-Alex
+
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> Reviewed-by: Petr Mládek <pmladek@suse.cz>
+> ---
+>  kernel/printk/printk.c | 18 +++++++++++-------
+>  1 file changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index f2a069e..00367b5 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -1006,11 +1006,9 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+>  		prefix = false;
+>  
+>  	if (msg->flags & LOG_CONT) {
+> -		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
+> +		if (prev & LOG_CONT)
+>  			prefix = false;
+> -
+> -		if (!(msg->flags & LOG_NEWLINE))
+> -			newline = false;
+> +		newline = false;
+>  	}
+>  
+>  	do {
+> @@ -1639,10 +1637,16 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  	text_len += vscnprintf(text + text_len,
+>  			       sizeof(textbuf) - text_len, fmt, args);
+>  
+> -	/* mark and strip a trailing newline */
+> +	/*
+> +	 * If there's a trailing newline, flag it and strip it off.
+> +	 * Otherwise we assume this is a partial log message, to be
+> +	 * continued with the next call.
+> +	 */
+>  	if (text_len && text[text_len-1] == '\n') {
+>  		text_len--;
+> -		lflags |= LOG_NEWLINE;
+> +		lflags = LOG_NEWLINE;
+> +	} else {
+> +		lflags = LOG_CONT;
+>  	}
+>  
+>  	/* strip kernel syslog prefix and extract log level or control flags */
+> @@ -1672,7 +1676,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  		level = default_message_loglevel;
+>  
+>  	if (dict)
+> -		lflags |= LOG_PREFIX|LOG_NEWLINE;
+> +		lflags = LOG_PREFIX|LOG_NEWLINE;
+>  
+>  	if (!(lflags & LOG_NEWLINE)) {
+>  		/*
+> 
+@@ -1700,8 +1700,7 @@ asmlinkage int vprintk_emit(int facility
+                if (cont_add(facility, level, text, text_len))
+                        printed_len += text_len;
+                else
+-                       printed_len += log_store(facility, level,
+-                                                lflags | LOG_CONT, 0,
++                       printed_len += log_store(facility, level, lflags, 0,
+                                                 dict, dictlen, text,
+text_len);
+        } else {
+                bool stored = false;
 
