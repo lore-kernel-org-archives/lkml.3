@@ -1,95 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760006AbaGRDmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 23:42:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39833 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689AbaGRDmh convert rfc822-to-8bit (ORCPT
+	id S1760024AbaGRDoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:44:13 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30566 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291AbaGRDoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 23:42:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,682,1400050800"; 
-   d="scan'208";a="545163779"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        "Anton Vorontsov" <anton.vorontsov@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-Subject: RE: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-Thread-Topic: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-Thread-Index: AQHPmnKNI0r2NBTVDkup5w5zVT7G15ukzBAAgAByGVA=
-Date: Fri, 18 Jul 2014 03:38:33 +0000
-Message-ID: <20ADAB092842284E95860F279283C56422FBE00C@BGSMSX104.gar.corp.intel.com>
-References: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
- <1404799461-26345-3-git-send-email-jenny.tc@intel.com>
- <20140718021836.GD21934@earth.universe>
-In-Reply-To: <20140718021836.GD21934@earth.universe>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 17 Jul 2014 23:44:11 -0400
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: manish.chopra@qlogic.com, sony.chacko@qlogic.com,
+        rajesh.borundia@qlogic.com, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
+        Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool get_ethtool_stats()
+Date: Fri, 18 Jul 2014 11:43:29 +0800
+Message-Id: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.7.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Sebastian Reichel [mailto:sre@kernel.org]
-> Sent: Friday, July 18, 2014 7:49 AM
-> To: Tc, Jenny
-> Cc: linux-kernel@vger.kernel.org; Dmitry Eremin-Solenikov; Pavel Machek; Anton
-> Vorontsov; David Woodhouse; David Cohen; Pallala, Ramakrishna;
-> myungjoo.ham@samsung.com
-> Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-> 
-> Hi Jenny,
-> 
-> On Tue, Jul 08, 2014 at 11:34:19AM +0530, Jenny TC wrote:
-> > The Power Supply charging driver connects multiple subsystems to do
-> > charging in a generic way. The subsystems involves power_supply,
-> > thermal and battery communication subsystems (1wire). With this the
-> > charging is handled in a generic way.
-> >
-> > The driver makes use of different new features - Battery
-> > Identification interfaces, pluggable charging algorithms, charger cable arbitrations
-> etc.
-> > The patch also introduces generic interface for charger cable notifications.
-> > Charger cable events and capabilities can be notified using the
-> > generic power_supply_notifier chain.
-> >
-> > Overall this driver removes the charging logic out of the charger chip
-> > driver and the charger chip driver can just listen to the request from
-> > the power supply charging driver to set the charger properties. This
-> > can be implemented by exposing get_property and set property callbacks.
-> 
-> this seems to be a superset of charger-manager, which is already in the kernel. I
-> would prefer not to have two different charger mangement frameworks in the kernel.
-> 
-> I suggest to add features supported by charger-manager to power supply charging
-> driver and convert users of charger-manager to the improved driver.
-> 
-> I CC'd MyungJoo Ham, who wrote the charger-manager, so that he can also give
-> feedback.
+netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
+but it doesn't collect stats.rxdropped in driver, so we will get
+different rx_dropped statistic information while using ifconfig and ethtool.
+this patch fills stats.rxdropped field with data from net core
+with dev_get_stats() just as ixgbe driver did for some of its stats.
 
-We are back to the initial discussions we had in the list. The initial proposal
-was for the charger manager. The charger manager is more aligned to
-regulator framework, use private notification
-mechanisms(cm_notify_event,fullbatt_vchk etc) and relies more on
-platform data (struct charger_desc). This doesn't seems to be good to support plug in
-charger drivers, charging algorithms, battery identification drivers at runtime.
-Power supply charger driver is introduced to meet all these requirements by
-extending the existing power_supply subsystem features like
-power_supply_changed event, power_supply_register, power supply thermal
-throttling mechanism so that plugging new driver would be
-easy. Also the user interfaces would remain the same as power_supply subsystem.
+Tested with last netxen 4.0.82
+Compiled with stable 3.15.6
 
-Able to locate link on the discussion. 
-http://www.gossamer-threads.com/lists/linux/kernel/1562180.
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
+---
+-v2 only fix rx_dropped field, not all.
+-v3 workaround checkpatch.pl bug according to suggestion from Joe Perches <joe@perches.com>
+ 
+.../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   59 +++++++++++++++-----
+ 1 files changed, 45 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+index 87e073c..2753f00 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+@@ -31,28 +31,43 @@
+ #include "netxen_nic.h"
+ #include "netxen_nic_hw.h"
+ 
++enum {NETDEV_STATS, NETXEN_STATS};
++
+ struct netxen_nic_stats {
+ 	char stat_string[ETH_GSTRING_LEN];
++	int type;
+ 	int sizeof_stat;
+ 	int stat_offset;
+ };
+ 
+-#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
+-			offsetof(struct netxen_adapter, m)
++#define NETXEN_NIC_STAT(name, m)					\
++{									\
++	.stat_string = name,						\
++	.type = NETXEN_STATS,						\
++	.sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),		\
++	.stat_offset = offsetof(struct netxen_adapter, m)		\
++}
++
++#define NETXEN_NETDEV_STAT(name, m)					\
++{	.stat_string = name,						\
++	.type =	NETDEV_STATS,						\
++	.sizeof_stat = FIELD_SIZEOF(struct rtnl_link_stats64, m),	\
++	.stat_offset = offsetof(struct rtnl_link_stats64, m)		\
++}
+ 
+ #define NETXEN_NIC_PORT_WINDOW 0x10000
+ #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
+ 
+ static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
+-	{"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
+-	{"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
+-	{"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
+-	{"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
+-	{"csummed", NETXEN_NIC_STAT(stats.csummed)},
+-	{"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)},
+-	{"lro_pkts", NETXEN_NIC_STAT(stats.lro_pkts)},
+-	{"rx_bytes", NETXEN_NIC_STAT(stats.rxbytes)},
+-	{"tx_bytes", NETXEN_NIC_STAT(stats.txbytes)},
++	NETXEN_NIC_STAT("xmit_called", stats.xmitcalled),
++	NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
++	NETXEN_NETDEV_STAT("rx_dropped", rx_dropped),
++	NETXEN_NIC_STAT("tx_dropped", stats.txdropped),
++	NETXEN_NIC_STAT("csummed", stats.csummed),
++	NETXEN_NIC_STAT("rx_pkts", stats.rx_pkts),
++	NETXEN_NIC_STAT("lro_pkts", stats.lro_pkts),
++	NETXEN_NIC_STAT("rx_bytes", stats.rxbytes),
++	NETXEN_NIC_STAT("tx_bytes", stats.txbytes),
+ };
+ 
+ #define NETXEN_NIC_STATS_LEN	ARRAY_SIZE(netxen_nic_gstrings_stats)
+@@ -677,11 +692,27 @@ netxen_nic_get_ethtool_stats(struct net_device *dev,
+ {
+ 	struct netxen_adapter *adapter = netdev_priv(dev);
+ 	int index;
++	struct rtnl_link_stats64 temp;
++	const struct rtnl_link_stats64 *net_stats;
++	char *p = NULL;
+ 
++	net_stats = dev_get_stats(dev, &temp);
+ 	for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
+-		char *p =
+-		    (char *)adapter +
+-		    netxen_nic_gstrings_stats[index].stat_offset;
++
++		switch (netxen_nic_gstrings_stats[index].type) {
++		case NETDEV_STATS:
++			p = (char *)net_stats +
++				netxen_nic_gstrings_stats[index].stat_offset;
++			break;
++		case NETXEN_STATS:
++			p = (char *)adapter +
++				netxen_nic_gstrings_stats[index].stat_offset;
++			break;
++		default:
++			data[index] = 0;
++			continue;
++		}
++
+ 		data[index] =
+ 		    (netxen_nic_gstrings_stats[index].sizeof_stat ==
+ 		     sizeof(u64)) ? *(u64 *) p : *(u32 *) p;
+-- 
+1.7.1
 
