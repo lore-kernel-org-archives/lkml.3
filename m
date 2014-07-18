@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761728AbaGROyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:54:32 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:34494 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760927AbaGROya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:54:30 -0400
-Date: Fri, 18 Jul 2014 15:54:22 +0100
-From: Steve Capper <steve.capper@linaro.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v13 6/8] arm: add pmd_[dirty|mkclean] for THP
-Message-ID: <20140718145421.GA18569@linaro.org>
-References: <1405666386-15095-1-git-send-email-minchan@kernel.org>
- <1405666386-15095-7-git-send-email-minchan@kernel.org>
+	id S1030387AbaGROym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:54:42 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:56428 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761797AbaGROyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 10:54:40 -0400
+X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jul 2014 10:54:39 EDT
+X-pt: isis.lip6.fr
+Date: Fri, 18 Jul 2014 16:46:21 +0200
+From: Benoit Taine <benoit.taine@lip6.fr>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: How to automate checkpatch && get_maintainers && git send-email
+ of commits range?
+Message-ID: <20140718144621.GA12871@lip6.fr>
+References: <CANZNk81LiTM9vY0dRV=T0BCT9k-BxU45Ojw_PyOcpdmtXHKM2Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1405666386-15095-7-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANZNk81LiTM9vY0dRV=T0BCT9k-BxU45Ojw_PyOcpdmtXHKM2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 16:45:09 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 03:53:04PM +0900, Minchan Kim wrote:
-> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
-> overwrite of the contents since MADV_FREE syscall is called for
-> THP page.
-> 
-> This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
-> support.
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Steve Capper <steve.capper@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+On 18/07/2014 17:38, Andrey Utkin wrote:
+> Is there script for automated checkpatch.pl && get_maintainers.pl &&
+> git send-email for range of commits? I see none. Would it be welcome
+> to submit such one to kernel tree?
 
-This patch looks good to me:
-Acked-by: Steve Capper <steve.capper@linaro.org>
+You can use `splitpatch` to split a patch into multiple mails with the
+correct mailing list and maintainers. It generates a script to
+chain-send these emails using `cocci-send-email` (a modified version of
+`git-send-email`).
 
-There is another patch that introduces a helper function to test for
-pmd bits, please see below.
+Both are available in the `tools/` directory of coccinelle's
+distribution <http://coccinelle.lip6.fr/>.
 
-> ---
->  arch/arm/include/asm/pgtable-3level.h | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-> index 85c60adc8b60..830f84f2d277 100644
-> --- a/arch/arm/include/asm/pgtable-3level.h
-> +++ b/arch/arm/include/asm/pgtable-3level.h
-> @@ -220,6 +220,8 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
->  #define pmd_trans_splitting(pmd) (pmd_val(pmd) & PMD_SECT_SPLITTING)
->  #endif
->  
-> +#define pmd_dirty(pmd)		(pmd_val(pmd) & PMD_SECT_DIRTY)
-
-Russell,
-Should this be folded into my {pte|pmd}_isset patch?
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/268979.html
-
-Cheers,
 -- 
-Steve
-
-
-> +
->  #define PMD_BIT_FUNC(fn,op) \
->  static inline pmd_t pmd_##fn(pmd_t pmd) { pmd_val(pmd) op; return pmd; }
->  
-> @@ -228,6 +230,7 @@ PMD_BIT_FUNC(mkold,	&= ~PMD_SECT_AF);
->  PMD_BIT_FUNC(mksplitting, |= PMD_SECT_SPLITTING);
->  PMD_BIT_FUNC(mkwrite,   &= ~PMD_SECT_RDONLY);
->  PMD_BIT_FUNC(mkdirty,   |= PMD_SECT_DIRTY);
-> +PMD_BIT_FUNC(mkclean,   &= ~PMD_SECT_DIRTY);
->  PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
->  
->  #define pmd_mkhuge(pmd)		(__pmd(pmd_val(pmd) & ~PMD_TABLE_BIT))
-> -- 
-> 2.0.0
-> 
+Benoît Taine
+Master cycle intern
+Regal Team. LIP6
