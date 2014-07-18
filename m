@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762205AbaGROWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:22:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:38043 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761825AbaGROV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:21:27 -0400
-From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-To: <nicolas.ferre@atmel.com>, <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        <soren.brinkmann@xilinx.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Cyrille Pitchen <cyrille.pitchen@atmel.com>
-Subject: [PATCH 3/6] net/macb: add TX checksum offload feature
-Date: Fri, 18 Jul 2014 16:21:15 +0200
-Message-ID: <81148356bc5a52d07c49b18f68833fa7b2f97f2d.1405689937.git.cyrille.pitchen@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1405689937.git.cyrille.pitchen@atmel.com>
-References: <cover.1405689937.git.cyrille.pitchen@atmel.com>
+	id S1762259AbaGROXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:23:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40543 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762163AbaGROW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 10:22:58 -0400
+Date: Fri, 18 Jul 2014 16:22:49 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
+        apw@canonical.com, joe@perches.com, tytso@mit.edu, dwalter@google.com,
+        neilb@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+Message-ID: <20140718142249.GB31270@pd.tnic>
+References: <1405611268-12463-1-git-send-email-richard@nod.at>
+ <53C8CCE1.4000105@roeck-us.net>
+ <20140718082324.GA31270@pd.tnic>
+ <53C92332.5010807@roeck-us.net>
+ <53C92535.2010605@nod.at>
+ <20140718135612.GA18432@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140718135612.GA18432@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
----
- drivers/net/ethernet/cadence/macb.c | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+On Fri, Jul 18, 2014 at 06:56:12AM -0700, Guenter Roeck wrote:
+> Yes, that came up before. Or I can revert the patch locally, or keep
+> an old version of checkpatch around. You make me suffer
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 06e9934..9bdcd1b 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1524,6 +1524,10 @@ static void macb_configure_dma(struct macb *bp)
- 			dmacfg = GEM_BFINS(FBLDO, bp->dma_burst_length, dmacfg);
- 		dmacfg |= GEM_BIT(TXPBMS) | GEM_BF(RXBMS, -1L);
- 		dmacfg &= ~GEM_BIT(ENDIA);
-+		if (bp->dev->features & NETIF_F_HW_CSUM)
-+			dmacfg |= GEM_BIT(TXCOEN);
-+		else
-+			dmacfg &= ~GEM_BIT(TXCOEN);
- 		netdev_dbg(bp->dev, "Cadence configure DMA with 0x%08x\n", dmacfg);
- 		gem_writel(bp, DMACFG, dmacfg);
- 	}
-@@ -1923,6 +1927,27 @@ int macb_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- }
- EXPORT_SYMBOL_GPL(macb_ioctl);
- 
-+static int macb_set_features(struct net_device *netdev,
-+			     netdev_features_t features)
-+{
-+	struct macb *bp = netdev_priv(netdev);
-+	netdev_features_t changed = features ^ netdev->features;
-+
-+	/* TX checksum offload */
-+	if ((changed & NETIF_F_HW_CSUM) && macb_is_gem(bp)) {
-+		u32 dmacfg;
-+
-+		dmacfg = gem_readl(bp, DMACFG);
-+		if (features & NETIF_F_HW_CSUM)
-+			dmacfg |= GEM_BIT(TXCOEN);
-+		else
-+			dmacfg &= ~GEM_BIT(TXCOEN);
-+		gem_writel(bp, DMACFG, dmacfg);
-+	}
-+
-+	return 0;
-+}
-+
- static const struct net_device_ops macb_netdev_ops = {
- 	.ndo_open		= macb_open,
- 	.ndo_stop		= macb_close,
-@@ -1936,6 +1961,7 @@ static const struct net_device_ops macb_netdev_ops = {
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller	= macb_poll_controller,
- #endif
-+	.ndo_set_features	= macb_set_features,
- };
- 
- #if defined(CONFIG_OF)
-@@ -2118,6 +2144,10 @@ static int __init macb_probe(struct platform_device *pdev)
- 
- 	/* Set features */
- 	dev->hw_features = NETIF_F_SG;
-+	if (macb_is_gem(bp) && !(bp->caps & MACB_CAPS_FIFO_MODE)) {
-+		/* Checksum offload is only available on packet buffer design */
-+		dev->hw_features |= NETIF_F_HW_CSUM;
-+	}
- 	if (bp->caps & MACB_CAPS_SG_DISABLED)
- 		dev->hw_features &= ~NETIF_F_SG;
- 	dev->features = dev->hw_features;
+Come on, you suffer from a one-liner?! Script it or whatever. Puh-lease!
+
+The thing is inviting lazy wankers from all over the place who refuse to
+turn on their brains just so they get a stupid patch into the kernel.
+Keeping --file for your convenience is causing much more trouble all
+over the place. Kill it already.
+
 -- 
-1.8.2.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
