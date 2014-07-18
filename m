@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161342AbaGRN0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:26:01 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17914 "EHLO
+	id S1161361AbaGRN0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:26:30 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17910 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161214AbaGRNRP (ORCPT
+	by vger.kernel.org with ESMTP id S935220AbaGRNRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:17:15 -0400
+	Fri, 18 Jul 2014 09:17:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Arik Nemtsov <arik@wizery.com>,
-        Arik Nemtsov <arikx.nemtsov@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 097/170] mac80211: don't check netdev state for debugfs read/write
-Date: Fri, 18 Jul 2014 14:11:42 +0200
-Message-Id: <3174f2792732ea8528fffbbb42cd4d5ca484be31.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 027/170] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
+Date: Fri, 18 Jul 2014 14:10:32 +0200
+Message-Id: <35d693c3e44aa97471f17439beda93c070fcb0de.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -25,49 +23,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
+commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
 
-Doing so will lead to an oops for a p2p-dev interface, since it has
-no netdev.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data type larger than 4 bytes: on most ABIs a padding must be added at
+end of the structures, while it is not required on i386.
 
-Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
+aligned on a 8 bytes multiple, while for i386, such padding is not
+added.
+
+Tool pahole could be used to find such implicit padding:
+
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name mlx5_ib_create_srq \
+           drivers/infiniband/hw/mlx5/mlx5_ib.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
+#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
+#  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
+#          __u64                      db_addr;              /*     8     8 */
+#          __u32                      flags;                /*    16     4 */
+#
+#  -       /* size: 20, cachelines: 1, members: 3 */
+#  -       /* last cacheline: 20 bytes */
+#  +       /* size: 24, cachelines: 1, members: 3 */
+#  +       /* padding: 4 */
+#  +       /* last cacheline: 24 bytes */
+#   };
+
+ABI disagreement will make an x86_64 kernel try to read past
+the buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will
+refuse to read past the i386 userspace provided buffer and the
+uverb will fail.
+
+Anyway, if the structure lay in memory on a page boundary and
+next page is not mapped, ib_copy_from_udata() will fail and the
+uverb will fail.
+
+This patch makes create_srq_user() takes care of the input
+data size to handle the case where no padding was provided.
+
+This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
+as sent by unpatched and patched i386 libmlx5.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/mac80211/debugfs_netdev.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/mlx5/srq.c  | 14 +++++++++++++-
+ drivers/infiniband/hw/mlx5/user.h |  1 +
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/net/mac80211/debugfs_netdev.c b/net/mac80211/debugfs_netdev.c
-index cafe614ef93d..8e41f0163c5a 100644
---- a/net/mac80211/debugfs_netdev.c
-+++ b/net/mac80211/debugfs_netdev.c
-@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
- 	ssize_t ret = -EINVAL;
+diff --git a/drivers/infiniband/hw/mlx5/srq.c b/drivers/infiniband/hw/mlx5/srq.c
+index 0aa478bc291a..47a1f0a9c926 100644
+--- a/drivers/infiniband/hw/mlx5/srq.c
++++ b/drivers/infiniband/hw/mlx5/srq.c
+@@ -35,6 +35,7 @@
+ #include <linux/mlx5/srq.h>
+ #include <linux/slab.h>
+ #include <rdma/ib_umem.h>
++#include <rdma/ib_user_verbs.h>
  
- 	read_lock(&dev_base_lock);
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*format)(sdata, buf, sizeof(buf));
-+	ret = (*format)(sdata, buf, sizeof(buf));
- 	read_unlock(&dev_base_lock);
+ #include "mlx5_ib.h"
+ #include "user.h"
+@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd *pd, struct mlx5_ib_srq *srq,
+ {
+ 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
+ 	struct mlx5_ib_create_srq ucmd;
++	size_t ucmdlen;
+ 	int err;
+ 	int npages;
+ 	int page_shift;
+ 	int ncont;
+ 	u32 offset;
  
- 	if (ret >= 0)
-@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
+-	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
++	ucmdlen =
++		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
++		 sizeof(ucmd)) ? (sizeof(ucmd) -
++				  sizeof(ucmd.reserved)) : sizeof(ucmd);
++
++	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
+ 		mlx5_ib_dbg(dev, "failed copy udata\n");
+ 		return -EFAULT;
+ 	}
++
++	if (ucmdlen == sizeof(ucmd) &&
++	    ucmd.reserved != 0)
++		return -EINVAL;
++
+ 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
  
- 	ret = -ENODEV;
- 	rtnl_lock();
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*write)(sdata, buf, count);
-+	ret = (*write)(sdata, buf, count);
- 	rtnl_unlock();
+ 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
+diff --git a/drivers/infiniband/hw/mlx5/user.h b/drivers/infiniband/hw/mlx5/user.h
+index e7da977e2548..84fea5d00cd2 100644
+--- a/drivers/infiniband/hw/mlx5/user.h
++++ b/drivers/infiniband/hw/mlx5/user.h
+@@ -100,6 +100,7 @@ struct mlx5_ib_create_srq {
+ 	__u64	buf_addr;
+ 	__u64	db_addr;
+ 	__u32	flags;
++	__u32	reserved; /* explicit padding (optional on i386) */
+ };
  
- 	return ret;
+ struct mlx5_ib_create_srq_resp {
 -- 
 2.0.0
 
