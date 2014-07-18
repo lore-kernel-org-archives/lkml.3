@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030605AbaGROLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:11:38 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52300 "EHLO
+	id S1161059AbaGROLy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:11:54 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52571 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934609AbaGROLg (ORCPT
+	by vger.kernel.org with ESMTP id S1030681AbaGROLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:11:36 -0400
+	Fri, 18 Jul 2014 10:11:52 -0400
 From: Punit Agrawal <punit.agrawal@arm.com>
 To: linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: orjan.eide@arm.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
+Cc: orjan.eide@arm.com, Punit Agrawal <punit.agrawal@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 1/2] PM / devfreq: Export helper functions for drivers
-Date: Fri, 18 Jul 2014 15:09:53 +0100
-Message-Id: <1405692594-19352-2-git-send-email-punit.agrawal@arm.com>
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [PATCH 2/2] PM / devfreq: exynos: Enable building exynos PPMU as module
+Date: Fri, 18 Jul 2014 15:09:54 +0100
+Message-Id: <1405692594-19352-3-git-send-email-punit.agrawal@arm.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405692594-19352-1-git-send-email-punit.agrawal@arm.com>
 References: <1405692594-19352-1-git-send-email-punit.agrawal@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ørjan Eide <orjan.eide@arm.com>
-
-These functions are indended for use by drivers and should be available
-also when the driver is built as a module.
+Export symbols from the PPMU driver needed to build the exynos bus
+driver as a module.
 
 Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Ørjan Eide <orjan.eide@arm.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
 ---
- drivers/devfreq/devfreq.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/devfreq/Kconfig              |    2 +-
+ drivers/devfreq/exynos/exynos_ppmu.c |    3 +++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 9f90369..30b538d8 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -1119,6 +1119,7 @@ struct dev_pm_opp *devfreq_recommended_opp(struct device *dev,
+diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+index 49e74c1..77bf126 100644
+--- a/drivers/devfreq/Kconfig
++++ b/drivers/devfreq/Kconfig
+@@ -79,7 +79,7 @@ config ARM_EXYNOS4_BUS_DEVFREQ
+ 	  This does not yet operate with optimal voltages.
  
- 	return opp;
+ config ARM_EXYNOS5_BUS_DEVFREQ
+-	bool "ARM Exynos5250 Bus DEVFREQ Driver"
++	tristate "ARM Exynos5250 Bus DEVFREQ Driver"
+ 	depends on SOC_EXYNOS5250
+ 	select ARCH_HAS_OPP
+ 	select DEVFREQ_GOV_SIMPLE_ONDEMAND
+diff --git a/drivers/devfreq/exynos/exynos_ppmu.c b/drivers/devfreq/exynos/exynos_ppmu.c
+index 75fcc51..97b75e5 100644
+--- a/drivers/devfreq/exynos/exynos_ppmu.c
++++ b/drivers/devfreq/exynos/exynos_ppmu.c
+@@ -73,6 +73,7 @@ void busfreq_mon_reset(struct busfreq_ppmu_data *ppmu_data)
+ 		exynos_ppmu_start(ppmu_base);
+ 	}
  }
-+EXPORT_SYMBOL(devfreq_recommended_opp);
++EXPORT_SYMBOL(busfreq_mon_reset);
  
- /**
-  * devfreq_register_opp_notifier() - Helper function to get devfreq notified
-@@ -1142,6 +1143,7 @@ int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
- 
- 	return ret;
- }
-+EXPORT_SYMBOL(devfreq_register_opp_notifier);
- 
- /**
-  * devfreq_unregister_opp_notifier() - Helper function to stop getting devfreq
-@@ -1168,6 +1170,7 @@ int devfreq_unregister_opp_notifier(struct device *dev, struct devfreq *devfreq)
- 
- 	return ret;
- }
-+EXPORT_SYMBOL(devfreq_unregister_opp_notifier);
- 
- static void devm_devfreq_opp_release(struct device *dev, void *res)
+ void exynos_read_ppmu(struct busfreq_ppmu_data *ppmu_data)
  {
+@@ -97,6 +98,7 @@ void exynos_read_ppmu(struct busfreq_ppmu_data *ppmu_data)
+ 
+ 	busfreq_mon_reset(ppmu_data);
+ }
++EXPORT_SYMBOL(exynos_read_ppmu);
+ 
+ int exynos_get_busier_ppmu(struct busfreq_ppmu_data *ppmu_data)
+ {
+@@ -114,3 +116,4 @@ int exynos_get_busier_ppmu(struct busfreq_ppmu_data *ppmu_data)
+ 
+ 	return busy;
+ }
++EXPORT_SYMBOL(exynos_get_busier_ppmu);
 -- 
 1.7.10.4
 
