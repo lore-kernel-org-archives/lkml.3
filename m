@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092AbaGRVc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:32:56 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45556 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425AbaGRVcz (ORCPT
+	id S1756467AbaGRVfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:35:22 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:46564 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746AbaGRVfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:32:55 -0400
-Message-ID: <53C99283.1010107@gmail.com>
-Date: Fri, 18 Jul 2014 23:32:51 +0200
+	Fri, 18 Jul 2014 17:35:20 -0400
+Message-ID: <53C99315.2090003@gmail.com>
+Date: Fri, 18 Jul 2014 23:35:17 +0200
 From: poma <pomidorabelisima@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Christoph Hellwig <hch@lst.de>, Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+To: Christoph Lameter <cl@gentwo.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
 Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
-References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com>	 <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de>	 <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <53C9808F.5040906@gmail.com>
-In-Reply-To: <53C9808F.5040906@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <alpine.DEB.2.11.1407180916340.28061@gentwo.org> <53C97DAC.3070305@gmail.com>
+In-Reply-To: <53C97DAC.3070305@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.07.2014 22:16, poma wrote:
-> On 18.07.2014 22:07, James Bottomley wrote:
->> On Fri, 2014-07-18 at 22:01 +0200, poma wrote:
->>> On 18.07.2014 16:17, Christoph Hellwig wrote:
->>>> On Fri, Jul 18, 2014 at 05:21:04PM +0400, Vladimir Davydov wrote:
->>>>> Slab warns, because the name of the cache being created contains spaces.
->>>>> The "bad" cache is created by scsi_get_host_cmd_pool. Its name
->>>>> (pool->cmd_name) is initialized by scsi_alloc_host_cmd_pool as follows:
->>>>>
->>>>> 	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
->>>>>
->>>>> So, if hostt->name contains spaces, the cache name will also contain
->>>>> spaces and we'll get the warning. And hostt->name can contain spaces,
->>>>> e.g. virtscsi_host_template_single.name="Virtio SCSI HBA".
->>>>
->>>> Or might not even be present.  I'll send a patch to replace it with
->>>> ->proc_name, which must not contain spaces and is generally shorter
->>>> as well.
->>>>
->>>
->>> Is this what you thought?
+On 18.07.2014 22:03, poma wrote:
+> On 18.07.2014 16:20, Christoph Lameter wrote:
+>> On Fri, 18 Jul 2014, poma wrote:
 >>
->> No, he means this, if you want to try it.
+>>> I guess someone working over the summertime. :)
 >>
->> James
+>> Cache names should not contain blanks. I guess the
 >>
->> ---
+>>     WARN_ON(strchr(name, ' '));     /* It confuses parsers */
 >>
->> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
->> index 88d46fe..eb07a9b 100644
->> --- a/drivers/scsi/scsi.c
->> +++ b/drivers/scsi/scsi.c
->> @@ -368,8 +368,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
->>    	if (!pool)
->>    		return NULL;
->>
->> -	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
->> -	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
->> +	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
->> +	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
->>    	if (!pool->cmd_name || !pool->sense_name) {
->>    		scsi_free_host_cmd_pool(pool);
->>    		return NULL;
->>
+>> was triggered?
 >>
 >
-> Man, I just now read it correctly - "So, if hostt->name contains spaces".
-> Thanks.
->
-> I'll be back.
+> I can only guess also. ;)
 >
 
-Yea, I can confirm it works! :)
-No warnings.
+BTW sorry for the noise. :)
 
 
 poma
