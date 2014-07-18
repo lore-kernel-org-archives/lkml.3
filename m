@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761524AbaGRNGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:06:09 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17182 "EHLO
+	id S1030236AbaGRNGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:06:34 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17172 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934455AbaGRNCk (ORCPT
+	by vger.kernel.org with ESMTP id S932739AbaGRNCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:02:40 -0400
+	Fri, 18 Jul 2014 09:02:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 088/170] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
-Date: Fri, 18 Jul 2014 14:11:33 +0200
-Message-Id: <778763287ded64dd5c022435d3e0e3182f148a64.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Peter Christensen <pch@ordbogen.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 052/170] ipvs: Fix panic due to non-linear skb
+Date: Fri, 18 Jul 2014 14:10:57 +0200
+Message-Id: <8391d35ef8245102821c29553fa7b5db545f9446.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,53 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Peter Christensen <pch@ordbogen.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
+commit f44a5f45f544561302e855e7bd104e5f506ec01b upstream.
 
->From the Bluetooth Core Specification 4.1 page 1958:
+Receiving a ICMP response to an IPIP packet in a non-linear skb could
+cause a kernel panic in __skb_pull.
 
-"if both devices have set the Authentication_Requirements parameter to
-one of the MITM Protection Not Required options, authentication stage 1
-shall function as if both devices set their IO capabilities to
-DisplayOnly (e.g., Numeric comparison with automatic confirmation on
-both devices)"
+The problem was introduced in
+commit f2edb9f7706dcb2c0d9a362b2ba849efe3a97f5e ("ipvs: implement
+passive PMTUD for IPIP packets").
 
-So far our implementation has done user confirmation for all just-works
-cases regardless of the MITM requirements, however following the
-specification to the word means that we should not be doing confirmation
-when neither side has the MITM flag set.
-
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Tested-by: Szymon Janc <szymon.janc@tieto.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Peter Christensen <pch@ordbogen.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/bluetooth/hci_event.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/netfilter/ipvs/ip_vs_core.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 2eeb6643d78a..b093ef858e1f 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3164,8 +3164,11 @@ static void hci_user_confirm_request_evt(struct hci_dev *hdev,
+diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
+index 3581736446d5..e2d38e5318d4 100644
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -1392,15 +1392,19 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
  
- 		/* If we're not the initiators request authorization to
- 		 * proceed from user space (mgmt_user_confirm with
--		 * confirm_hint set to 1). */
--		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
-+		 * confirm_hint set to 1). The exception is if neither
-+		 * side had MITM in which case we do auto-accept.
-+		 */
-+		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
-+		    (loc_mitm || rem_mitm)) {
- 			BT_DBG("Confirming auto-accept as acceptor");
- 			confirm_hint = 1;
- 			goto confirm;
+ 	if (ipip) {
+ 		__be32 info = ic->un.gateway;
++		__u8 type = ic->type;
++		__u8 code = ic->code;
+ 
+ 		/* Update the MTU */
+ 		if (ic->type == ICMP_DEST_UNREACH &&
+ 		    ic->code == ICMP_FRAG_NEEDED) {
+ 			struct ip_vs_dest *dest = cp->dest;
+ 			u32 mtu = ntohs(ic->un.frag.mtu);
++			__be16 frag_off = cih->frag_off;
+ 
+ 			/* Strip outer IP and ICMP, go to IPIP header */
+-			__skb_pull(skb, ihl + sizeof(_icmph));
++			if (pskb_pull(skb, ihl + sizeof(_icmph)) == NULL)
++				goto ignore_ipip;
+ 			offset2 -= ihl + sizeof(_icmph);
+ 			skb_reset_network_header(skb);
+ 			IP_VS_DBG(12, "ICMP for IPIP %pI4->%pI4: mtu=%u\n",
+@@ -1408,7 +1412,7 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
+ 			ipv4_update_pmtu(skb, dev_net(skb->dev),
+ 					 mtu, 0, 0, 0, 0);
+ 			/* Client uses PMTUD? */
+-			if (!(cih->frag_off & htons(IP_DF)))
++			if (!(frag_off & htons(IP_DF)))
+ 				goto ignore_ipip;
+ 			/* Prefer the resulting PMTU */
+ 			if (dest) {
+@@ -1427,12 +1431,13 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
+ 		/* Strip outer IP, ICMP and IPIP, go to IP header of
+ 		 * original request.
+ 		 */
+-		__skb_pull(skb, offset2);
++		if (pskb_pull(skb, offset2) == NULL)
++			goto ignore_ipip;
+ 		skb_reset_network_header(skb);
+ 		IP_VS_DBG(12, "Sending ICMP for %pI4->%pI4: t=%u, c=%u, i=%u\n",
+ 			&ip_hdr(skb)->saddr, &ip_hdr(skb)->daddr,
+-			ic->type, ic->code, ntohl(info));
+-		icmp_send(skb, ic->type, ic->code, info);
++			type, code, ntohl(info));
++		icmp_send(skb, type, code, info);
+ 		/* ICMP can be shorter but anyways, account it */
+ 		ip_vs_out_stats(cp, skb);
+ 
 -- 
 2.0.0
 
