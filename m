@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaGRGnT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:43:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:54643 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853AbaGRGnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:43:17 -0400
-Message-ID: <1405665795.17297.5.camel@concordia>
-Subject: Re: [PATCH 06/11] perf, tools: Automatically look for event file
- name for cpu
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        acme@infradead.org, Andi Kleen <ak@linux.intel.com>
-Date: Fri, 18 Jul 2014 16:43:15 +1000
-In-Reply-To: <1405123165-22666-7-git-send-email-andi@firstfloor.org>
-References: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
-	 <1405123165-22666-7-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754380AbaGRGpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:45:44 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:35934 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaGRGpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 02:45:43 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53C8C290.90503@lge.com>
+Date: Fri, 18 Jul 2014 15:45:36 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        =?EUC-KR?B?J7Howdi89ic=?= <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>
+CC: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>
+Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+Content-Type: text/plain; charset=EUC-KR
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 16:59 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> When no JSON event file is specified automatically look
-> for a suitable file in ~/.cache/pmu-events. A "perf download" can
-> automatically add files there for the current CPUs.
-... 
 
-> diff --git a/tools/perf/arch/x86/util/header.c b/tools/perf/arch/x86/util/header.c
-> index 146d12a..76e0ece 100644
-> --- a/tools/perf/arch/x86/util/header.c
-> +++ b/tools/perf/arch/x86/util/header.c
-> @@ -57,3 +58,15 @@ get_cpuid(char *buffer, size_t sz)
->  	}
->  	return -1;
->  }
-> +
-> +int get_cpuid(char *buffer, size_t sz)
-> +{
-> +	return __get_cpuid(buffer, sz, "%s,%u,%u,%u$");
-> +}
-> +
-> +char *get_cpu_str(void)
-> +{
-> +	char *buf = malloc(128);
+Hi,
 
-I realise malloc failure is unlikely, but it's not impossible right?
+For page migration of CMA, buffer-heads of lru should be dropped.
+Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
 
-Seems like it'd be cleaner if the caller allocated the buffer.
+I have two solution to drop bhs.
+One is invalidating entire lru.
+Another is searching the lru and dropping only one bh that Laura proposed
+at https://lkml.org/lkml/2012/8/31/313.
 
-> +	__get_cpuid(buf, 128, "%s-%d-%X-core");
-> +	return buf;
-> +}
+I'm not sure which has better performance.
+So I did performance test on my cortex-a7 platform with Lmbench
+that has "File & VM system latencies" test.
+I am attaching the results.
+The first line is of invalidating entire lru and the second is dropping selected bh.
 
-cheers
+File & VM system latencies in microseconds - smaller is better
+-------------------------------------------------------------------------------
+Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+                        Create Delete Create Delete Latency Fault  Fault  selct
+--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
+10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
 
 
+I tried several times but the result tells that they are the same under 1% gap
+except Protection Fault.
+But the latency of Protection Fault is very small and I think it has little effect.
+
+Therefore we can choose anything but I choose invalidating entire lru.
+The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
+So I think inserting codes in drop_buffers() can affect the system.
+And also we cannot distinguish migration type in drop_buffers().
+
+In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
+I think alloc_contig_range() is proper to deal with bh like following patch.
+
+Laura, can I have you name on Acked-by line?
+Please let me represent my thanks.
+
+Thanks for any feedback.
+
+------------------------------- 8< ----------------------------------
+
+>From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
+From: Gioh Kim <gioh.kim@lge.com>
+Date: Fri, 18 Jul 2014 13:40:01 +0900
+Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+
+The bh must be free to migrate a page at which bh is mapped.
+The reference count of bh is increased when it is installed
+into lru so that the bh of lru must be freed before migrating the page.
+
+This frees every bh of lru. We could free only bh of migrating page.
+But searching lru costs more than invalidating entire lru.
+
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+Acked-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ mm/page_alloc.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b99643d4..3b474e0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+        if (ret)
+                return ret;
+
++       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
++               invalidate_bh_lrus();
++
+        ret = __alloc_contig_migrate_range(&cc, start, end);
+        if (ret)
+                goto done;
+--
+1.7.9.5
