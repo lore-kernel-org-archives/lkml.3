@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760869AbaGRI5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:57:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:44672 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084AbaGRI5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:57:43 -0400
-Message-ID: <1405673860.13852.1.camel@concordia>
-Subject: Re: perf: Add support for full Intel event lists v7
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        acme@infradead.org
-Date: Fri, 18 Jul 2014 18:57:40 +1000
-In-Reply-To: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
-References: <1405123165-22666-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760914AbaGRI71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:59:27 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:57770 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180AbaGRI7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 04:59:24 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <20140717.162040.171795478640839195.davem@davemloft.net>
+References: <1405584370-30054-1-git-send-email-teg@jklm.no>
+ <1405584370-30054-5-git-send-email-teg@jklm.no> <20140717.162040.171795478640839195.davem@davemloft.net>
+From: Tom Gundersen <teg@jklm.no>
+Date: Fri, 18 Jul 2014 10:59:04 +0200
+Message-ID: <CAG-2HqX5wng4e+0=UAPPBt4cG2p0Yaoo0g31OUKticxfD_NrEA@mail.gmail.com>
+Subject: Re: [PATCH net-next v9 4/9] net: set name_assign_type when setting
+ names via ioctls
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-11 at 16:59 -0700, Andi Kleen wrote:
-> All feedback addressed. Hopefully ready for merge now.
-...
+On Fri, Jul 18, 2014 at 1:20 AM, David Miller <davem@davemloft.net> wrote:
+> From: Tom Gundersen <teg@jklm.no>
+> Date: Thu, 17 Jul 2014 10:06:05 +0200
+>
+>> @@ -2787,10 +2788,13 @@ static int gsm_create_network(struct gsm_dlci *dlci, struct gsm_netconfig *nc)
+>>       pr_debug("create network interface");
+>>
+>>       netname = "gsm%d";
+>> -     if (nc->if_name[0] != '\0')
+>> +     if (nc->if_name[0] != '\0') {
+>>               netname = nc->if_name;
+>> -     net = alloc_netdev(sizeof(struct gsm_mux_net), netname,
+>> -                        NET_NAME_UNKNOWN, gsm_mux_net_init);
+>> +             name_assign_type = NET_NAME_USER;
+>> +     }
+>> +     net = alloc_netdev(sizeof(struct gsm_mux_net),
+>> +                     netname, name_assign_type,
+>> +                     gsm_mux_net_init);
+>
+> The indentation is now not correct.  For a function call, all arguments on the
+> second and subsequent line, must start exactly at the first column after the
+> openning parenthesis of the function call.
 
-> The JSON format and perf parser has some minor Intelisms, but they
-> are simple and small and optional. It's easy to extend, so it would be
-> possible to use it for other CPUs too, add different pmu attributes, and
-> add new download sites to the downloader tool.
+Indeed. Thanks, I'll fix this up.
 
-Yeah I agree.
+Cheers,
 
-We'll do some follow-up patches to get it working for the IBM powerpc chips.
-
-cheers
-
-
+Tom
