@@ -1,57 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259AbaGRGHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:07:46 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:63025 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283AbaGRGHn (ORCPT
+	id S1760285AbaGRGJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:09:59 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:62169 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaGRGJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:07:43 -0400
+	Fri, 18 Jul 2014 02:09:57 -0400
+Message-ID: <53C8B9E2.7050709@gmail.com>
+Date: Fri, 18 Jul 2014 11:38:34 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <12323898.sHjczXbE7P@wuerfel>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<alpine.DEB.2.10.1407151201170.24854@nanos>
-	<CAFiDJ5-UQ4pu1Hkc444yaA6cbttTXM7KM2eProGUkYgjqvOSUg@mail.gmail.com>
-	<12323898.sHjczXbE7P@wuerfel>
-Date: Fri, 18 Jul 2014 14:07:42 +0800
-X-Google-Sender-Auth: rmla86D5tHV-4uyWCRgoZBKyXzA
-Message-ID: <CAFiDJ5-uDPCZha-s2-DrLbHLjezBkLTEjJ0nbnsMocof7kO=1Q@mail.gmail.com>
-Subject: Re: [PATCH v2 21/29] nios2: Futex operations
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ethan Zhao <ethan.kernel@gmail.com>
+CC: Ethan Zhao <ethan.zhao@oracle.com>, manish.chopra@qlogic.com,
+        sony.chacko@qlogic.com, rajesh.borundia@qlogic.com,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool
+ get_ethtool_stats()
+References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>	<53C898E7.5080204@gmail.com> <CABawtvOpER3yEqmLigSDt8Wy5_9X0QA2e0zJ+KByhOy7du2gVQ@mail.gmail.com>
+In-Reply-To: <CABawtvOpER3yEqmLigSDt8Wy5_9X0QA2e0zJ+KByhOy7du2gVQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 7:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> The get_user/put_user functions really need to be annotated might_fault(),
-> because that's what they do.
+On 07/18/2014 11:35 AM, Ethan Zhao wrote:
+> On Fri, Jul 18, 2014 at 11:47 AM, Varka Bhadram <varkabhadram@gmail.com> wrote:
+>> On 07/18/2014 09:13 AM, Ethan Zhao wrote:
+>>> netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
+>>> but it doesn't collect stats.rxdropped in driver, so we will get
+>>> different rx_dropped statistic information while using ifconfig and
+>>> ethtool.
+>>> this patch fills stats.rxdropped field with data from net core
+>>> with dev_get_stats() just as ixgbe driver did for some of its stats.
+>>>
+>>> Tested with last netxen 4.0.82
+>>> Compiled with stable 3.15.6
+>>>
+>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>>> Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
+>>> ---
+>>> -v2 only fix rx_dropped field, not all.
+>>> -v3 workaround checkpatch.pl bug according to suggestion from Joe Perches
+>>> <joe@perches.com>
+>>>    .../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   59
+>>> +++++++++++++++-----
+>>>    1 files changed, 45 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>>> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>>> index 87e073c..2753f00 100644
+>>> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>>> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
+>>> @@ -31,28 +31,43 @@
+>>>    #include "netxen_nic.h"
+>>>    #include "netxen_nic_hw.h"
+>>>    +enum {NETDEV_STATS, NETXEN_STATS};
+>>> +
+>>>    struct netxen_nic_stats {
+>>>          char stat_string[ETH_GSTRING_LEN];
+>>> +       int type;
+>>>          int sizeof_stat;
+>>>          int stat_offset;
+>>>    };
+>>>    -#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
+>>> -                       offsetof(struct netxen_adapter, m)
+>>> +#define NETXEN_NIC_STAT(name, m)                                       \
+>>> +{                                                                      \
+>>> +       .stat_string = name,                                            \
+>>> +       .type = NETXEN_STATS,                                           \
+>>> +       .sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),          \
+>>> +       .stat_offset = offsetof(struct netxen_adapter, m)               \
+>>> +}
+>>> +
+>>> +#define NETXEN_NETDEV_STAT(name, m)                                    \
+>>> +{      .stat_string = name,                                            \
+>>> +       .type = NETDEV_STATS,                                           \
+>>> +       .sizeof_stat = FIELD_SIZEOF(struct rtnl_link_stats64, m),       \
+>>> +       .stat_offset = offsetof(struct rtnl_link_stats64, m)            \
+>>> +}
+>>>      #define NETXEN_NIC_PORT_WINDOW 0x10000
+>>>    #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
+>>>      static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
+>>> -       {"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
+>>> -       {"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
+>>> -       {"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
+>>> -       {"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
+>>> -       {"csummed", NETXEN_NIC_STAT(stats.csummed)},
+>>> -       {"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)},
+>>> -       {"lro_pkts", NETXEN_NIC_STAT(stats.lro_pkts)},
+>>> -       {"rx_bytes", NETXEN_NIC_STAT(stats.rxbytes)},
+>>> -       {"tx_bytes", NETXEN_NIC_STAT(stats.txbytes)},
+>>> +       NETXEN_NIC_STAT("xmit_called", stats.xmitcalled),
+>>> +       NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
+>>> +       NETXEN_NETDEV_STAT("rx_dropped", rx_dropped),
+>>> +       NETXEN_NIC_STAT("tx_dropped", stats.txdropped),
+>>> +       NETXEN_NIC_STAT("csummed", stats.csummed),
+>>> +       NETXEN_NIC_STAT("rx_pkts", stats.rx_pkts),
+>>> +       NETXEN_NIC_STAT("lro_pkts", stats.lro_pkts),
+>>> +       NETXEN_NIC_STAT("rx_bytes", stats.rxbytes),
+>>> +       NETXEN_NIC_STAT("tx_bytes", stats.txbytes),
+>>>    };
+>>>      #define NETXEN_NIC_STATS_LEN
+>>> ARRAY_SIZE(netxen_nic_gstrings_stats)
+>>> @@ -677,11 +692,27 @@ netxen_nic_get_ethtool_stats(struct net_device *dev,
+>>>    {
+>>>          struct netxen_adapter *adapter = netdev_priv(dev);
+>>>          int index;
+>>> +       struct rtnl_link_stats64 temp;
+>>> +       const struct rtnl_link_stats64 *net_stats;
+>>> +       char *p = NULL;
+>>>    +     net_stats = dev_get_stats(dev, &temp);
+>>>          for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
+>>> -               char *p =
+>>> -                   (char *)adapter +
+>>> -                   netxen_nic_gstrings_stats[index].stat_offset;
+>>> +
+>>> +               switch (netxen_nic_gstrings_stats[index].type) {
+>>> +               case NETDEV_STATS:
+>>> +                       p = (char *)net_stats +
+>>> +
+>>> netxen_nic_gstrings_stats[index].stat_offset;
+>>> +                       break;
+>>> +               case NETXEN_STATS:
+>>> +                       p = (char *)adapter +
+>>> +
+>>> netxen_nic_gstrings_stats[index].stat_offset;
+>>> +                       break;
+>>> +               default:
+>>> +                       data[index] = 0;
+>>> +                       continue;
+>>
+>> If there is a chance of default case, then it will be always in switch case
+>> ...?
+>    It is possible that hit the default case, but will not stay in swich case.
+>    try this little case
 >
-> The whole point of get_user() is to access an unchecked user space
-> pointer, which  can do a number of things based on what the pointer
-> points to:
+>   #include <stdio.h>
+> #include <stdlib.h>
 >
-> - access a user space variable that resides in memory
-> - access a kernel pointer and fail because of the access_ok()
->   check
-> - access a user space pointer that is not mapped and return
->   through the __ex_table fixup.
-> - access a user space pointer that has a valid VMA but not PTE,
->   causing a page fault to be resolved.
+> main()
+> {
+>          int i,j;
+>          for (i=0; i<16; i++) {
+>                  j=i%3;
 >
-> It's the last case that breaks here.
-So, do you mean that we can't use get_user/put_user in futex support?
-BTW, some architectures like sh,parisc, m68k use get_user in futex
-function as well.
-Any recommendation way to support futex if we can't use get_user.
-Note, nios2 doesn't have atomic instruction.
-Thanks.
+>          switch(j) {
+>          case 1:
+>                  printf("i=%d\n",i);
+>                  break;
+>          case 2:
+>                  printf("i=%d\n",i);
+>                  break;
+>          default:
+>                  printf("i=%d,j=%d\n",i,j);
+>                  continue;
+>          }
+>          }
+> }
+>
+Ohhh.. You are right . Thanks for the clarity.  :-)
 
-Regards
-Ley Foon
+
+-- 
+Regards,
+Varka Bhadram.
+
