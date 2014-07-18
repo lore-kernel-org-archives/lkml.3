@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175AbaGRBUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 21:20:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37345 "EHLO
+	id S1759011AbaGRB1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 21:27:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184AbaGRBUd (ORCPT
+	with ESMTP id S1752760AbaGRB1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 21:20:33 -0400
-Date: Thu, 17 Jul 2014 18:20:32 -0700
+	Thu, 17 Jul 2014 21:27:30 -0400
+Date: Thu, 17 Jul 2014 18:27:29 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Hans-Christian Koch <hc.koch@scheerkoch.de>,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [ PATCH V9 0/2] serial/uart/8250: Introduce tunable RX trigger
- I/F
-Message-ID: <20140718012032.GA29919@kroah.com>
-References: <20140716011931.31474.68825.stgit@yuno-kbuild.novalocal>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: devel@driverdev.osuosl.org, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: Re: question regarding drivers/staging/iio/adc/ad7280a.c
+Message-ID: <20140718012729.GA24211@kroah.com>
+References: <CAB78YHwneVuVBPujeKE=rEygvtyn=VvtLtd75+pvwqxPxYcB6g@mail.gmail.com>
+ <53C5656F.9030200@kernel.org>
+ <53C65E8F.2080708@metafoo.de>
+ <CAB78YHzEPZf-8m0zwFz5PZWkqMuX9m5W01f2JGQ+7MbAkTACPg@mail.gmail.com>
+ <20140717205815.GB1532@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716011931.31474.68825.stgit@yuno-kbuild.novalocal>
+In-Reply-To: <20140717205815.GB1532@kroah.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 01:19:31AM +0000, Yoshihiro YUNOMAE wrote:
-> Hi Greg,
+On Thu, Jul 17, 2014 at 01:58:15PM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Jul 17, 2014 at 11:40:04PM +0530, Himangi Saraogi wrote:
+> > Hi,
+> > 
+> > I have sent in a patch for adding devm_kasprintf https://lkml.org/lkml/2014/7/
+> > 16/667.
+> > I will be updating this file and send in a patch once it is accepted. Was it
+> > the right thing
+> > to do to send the devm_kasprintf patch separately from the patch on the file to
+> > use it for,
+> > because the person applying the later may not see the dependency?
 > 
-> This patch set introduces tunable RX interrupt trigger I/F for 8250 serials.
-> I used Greg's patch(*1) as 1st patch in this version, and applied 2nd patch
-> of previous version.
+> Well, you should have told me there was a dependancy :)
 > 
-> Would you review this patch set?
+> As I'll end up taking both of these patches in the end, I'll queue your
+> devm_kasprintf patch up in my staging-next tree so that it will work
+> properly with your patch.
 
-Looks good.
+Now applied there, so all should be good, right?
 
-> Note:
-> I cleaned up Greg's patch as follows:
->  - Delete extra line break
->  - Use kcalloc instead of kmalloc
->  - sizeof(struct attribute_group *) => sizeof(**uport->tty_groups)
-
-thanks, for doing that, nice job :)
+thanks,
 
 greg k-h
