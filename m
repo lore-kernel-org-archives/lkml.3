@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422908AbaGRNvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:51:05 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:32374 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422892AbaGRNvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:51:01 -0400
-Message-ID: <53C92640.1000609@atmel.com>
-Date: Fri, 18 Jul 2014 15:50:56 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1422925AbaGRNvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:51:15 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60175 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422892AbaGRNvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:51:10 -0400
+Message-ID: <53C92643.9050406@ti.com>
+Date: Fri, 18 Jul 2014 09:50:59 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bo Shen <voice.shen@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: correct typo error for ohci clock
-References: <1405307294-17708-1-git-send-email-voice.shen@atmel.com> <20140714081421.5f539287@bbrezillon>
-In-Reply-To: <20140714081421.5f539287@bbrezillon>
-X-Enigmail-Version: 1.5.2
+To: Jason Cooper <jason@lakedaemon.net>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, <ivan.khoronzhuk@ti.com>,
+        <m-karicheri2@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] irqchip: add keystone irq controller ip driver
+References: <1405351677-12108-1-git-send-email-grygorii.strashko@ti.com> <20140718125953.GF24496@titan.lakedaemon.net>
+In-Reply-To: <20140718125953.GF24496@titan.lakedaemon.net>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/07/2014 08:14, Boris BREZILLON :
-> On Mon, 14 Jul 2014 11:08:14 +0800
-> Bo Shen <voice.shen@atmel.com> wrote:
+Hi Jason,
+
+On Friday 18 July 2014 08:59 AM, Jason Cooper wrote:
+> Grygorii,
 > 
->> Correct the typo error for the second "uhphs_clk".
+> On Mon, Jul 14, 2014 at 06:27:57PM +0300, Grygorii Strashko wrote:
+>> On Keystone SOCs, DSP cores can send interrupts to ARM
+>> host using the IRQ controller IP. It provides 28 IRQ
+>> signals to ARM. The IRQ handler running on HOST OS can
+>> identify DSP signal source by analyzing SRCCx bits in
+>> IPCARx registers. This is one of the component used by
+>> the IPC mechanism used on Keystone SOCs.
 >>
->> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> 
-> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> sam9n12 dtsi has the same bug, I'll fix it
-
-Ok, thanks to Voice and you: I try to queue them for 3.16-fixes.
-
-Bye,
-
-> And sorry for the mess when moving sam9n12 and sam9x5 to the CCF, I
-> should have checked my clock definitions more carefully :-(.
-
-I admit that these values are pretty hard to read: the eye get bored
-quite quickly ;-)
-
-Bye,
-
-
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 >> ---
->>  arch/arm/boot/dts/at91sam9x5.dtsi | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>  .../interrupt-controller/ti,keystone-irq.txt       |   36 +++
+>>  drivers/irqchip/Kconfig                            |    7 +
+>>  drivers/irqchip/Makefile                           |    1 +
+>>  drivers/irqchip/irq-keystone.c                     |  235 ++++++++++++++++++++
+>>  4 files changed, 279 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/ti,keystone-irq.txt
+>>  create mode 100644 drivers/irqchip/irq-keystone.c
 >>
->> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
->> index 2ebc421..727d3a4 100644
->> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
->> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
->> @@ -1155,8 +1155,7 @@
->>  			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
->>  			reg = <0x00600000 0x100000>;
->>  			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
->> -			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
->> -				 <&uhpck>;
->> +			clocks = <&usb>, <&uhphs_clk>, <&uhphs_clk>, <&uhpck>;
->>  			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
->>  			status = "disabled";
->>  		};
-> 
-> 
-> 
 
 
--- 
-Nicolas Ferre
+[..]
+
+>> +
+>> +static const struct of_device_id keystone_irq_dt_ids[] = {
+>> +	{ .compatible = "ti,keystone-irq", },
+>> +	{},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, keystone_irq_dt_ids);
+>> +
+>> +static struct platform_driver keystone_irq_device_driver = {
+>> +	.probe		= keystone_irq_probe,
+>> +	.remove		= keystone_irq_remove,
+>> +	.driver		= {
+>> +		.name	= "keystone_irq",
+>> +		.owner	= THIS_MODULE,
+>> +		.of_match_table	= of_match_ptr(keystone_irq_dt_ids),
+>> +	}
+>> +};
+>> +
+>> +module_platform_driver(keystone_irq_device_driver);
+> 
+> My understanding of DSP use-cases is a little sparse, are there
+> legitimate scenarios where you might remove this driver during runtime?
+> Perhaps IRQCHIP_DECLARE() might be better?
+> 
+There is no scenario where driver needs to hotpluged out. Usecase is
+simple. Its really any other IRQCHIP. The difference is really the
+source of interrupts. Instead of peripherals interrupting the host
+OS9linux), here the DSP cores can send interrupts to Host OS.
+
+Hope this clarifies.
+
+Regards,
+Santosh
+
