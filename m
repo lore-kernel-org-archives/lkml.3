@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030710AbaGRNLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:11:55 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17589 "EHLO
+	id S1761800AbaGRNLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:11:46 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17577 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761810AbaGRNLv (ORCPT
+	by vger.kernel.org with ESMTP id S1761314AbaGRNLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:51 -0400
+	Fri, 18 Jul 2014 09:11:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andras Kovacs <andras@sth.sze.hu>,
-        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 128/170] USB: cp210x: add support for Corsair usb dongle
-Date: Fri, 18 Jul 2014 14:12:13 +0200
-Message-Id: <fbbea5f5e5c2cb096de9d682ecbb4b8c6206d88c.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Pavel Machek <pavel@ucw.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 157/170] ext4: clarify error count warning messages
+Date: Fri, 18 Jul 2014 14:12:42 +0200
+Message-Id: <efd7a61ae1217472c8ea0e82816c590924afc620.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,40 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andras Kovacs <andras@sth.sze.hu>
+From: Theodore Ts'o <tytso@mit.edu>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
+commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
 
-Corsair USB Dongles are shipped with Corsair AXi series PSUs.
-These are cp210x serial usb devices, so make driver detect these.
-I have a program, that can get information from these PSUs.
+Make it clear that values printed are times, and that it is error
+since last fsck. Also add note about fsck version required.
 
-Tested with 2 different dongles shipped with Corsair AX860i and
-AX1200i units.
-
-Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/super.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 71873cafb9d3..1db213a6e843 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -153,6 +153,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
-+	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index d9711dc42164..a8b886851ff6 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2762,10 +2762,11 @@ static void print_daily_error_info(unsigned long arg)
+ 	es = sbi->s_es;
+ 
+ 	if (es->s_error_count)
+-		ext4_msg(sb, KERN_NOTICE, "error count: %u",
++		/* fsck newer than v1.41.13 is needed to clean this condition. */
++		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
+ 			 le32_to_cpu(es->s_error_count));
+ 	if (es->s_first_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
++		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
+ 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
+ 		       (int) sizeof(es->s_first_error_func),
+ 		       es->s_first_error_func,
+@@ -2779,7 +2780,7 @@ static void print_daily_error_info(unsigned long arg)
+ 		printk("\n");
+ 	}
+ 	if (es->s_last_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
++		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
+ 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
+ 		       (int) sizeof(es->s_last_error_func),
+ 		       es->s_last_error_func,
 -- 
 2.0.0
 
