@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761507AbaGRQQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:16:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45768 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaGRQQG (ORCPT
+	id S1761949AbaGRQRd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:17:33 -0400
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:51635 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761729AbaGRQRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:16:06 -0400
-Date: Fri, 18 Jul 2014 18:16:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bruno Wolff III <bruno@wolff.to>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140718161602.GH12054@laptop.lan>
-References: <20140717030947.GA17889@wolff.to>
- <53C79013.1020808@arm.com>
- <20140717090452.GH19379@twins.programming.kicks-ass.net>
- <53C7B247.2070309@arm.com>
- <20140717123502.GL19379@twins.programming.kicks-ass.net>
- <20140718053449.GA2039@wolff.to>
- <20140718101633.GP9918@twins.programming.kicks-ass.net>
- <20140718130126.GA2401@wolff.to>
- <20140718141648.GE20603@laptop.programming.kicks-ass.net>
- <20140718145040.GG12054@laptop.lan>
+	Fri, 18 Jul 2014 12:17:31 -0400
+Date: Fri, 18 Jul 2014 13:16:36 -0300
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        George Cherian <george.cherian@ti.com>,
+        linux-arm-kernel@lists.infradead.org, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 0/9] usb: musb: several bugfixes for the musb driver
+Message-ID: <20140718161636.GA18460@arch.cereza>
+References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140718145040.GG12054@laptop.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 04:50:40PM +0200, Peter Zijlstra wrote:
-> On Fri, Jul 18, 2014 at 04:16:48PM +0200, Peter Zijlstra wrote:
-> > On Fri, Jul 18, 2014 at 08:01:26AM -0500, Bruno Wolff III wrote:
-> > > build_sched_domain: cpu: 0 level: SMT cpu_map: 0-3 tl->mask: 0,2
-> > > [    0.254433] build_sched_domain: cpu: 0 level: MC cpu_map: 0-3 tl->mask: 0
-> > > [    0.254516] build_sched_domain: cpu: 0 level: DIE cpu_map: 0-3 tl->mask: 0-3
-> > > [    0.254600] build_sched_domain: cpu: 1 level: SMT cpu_map: 0-3 tl->mask: 1,3
-> > > [    0.254683] build_sched_domain: cpu: 1 level: MC cpu_map: 0-3 tl->mask: 1
-> > > [    0.254766] build_sched_domain: cpu: 1 level: DIE cpu_map: 0-3 tl->mask: 0-3
-> > > [    0.254850] build_sched_domain: cpu: 2 level: SMT cpu_map: 0-3 tl->mask: 0,2
-> > > [    0.254932] build_sched_domain: cpu: 2 level: MC cpu_map: 0-3 tl->mask: 2
-> > > [    0.255005] build_sched_domain: cpu: 2 level: DIE cpu_map: 0-3 tl->mask: 0-3
-> > > [    0.255091] build_sched_domain: cpu: 3 level: SMT cpu_map: 0-3 tl->mask: 1,3
-> > > [    0.255176] build_sched_domain: cpu: 3 level: MC cpu_map: 0-3 tl->mask: 3
-> > > [    0.255260] build_sched_domain: cpu: 3 level: DIE cpu_map: 0-3 tl->mask: 0-3
-> > 
-> > *blink*...
-> > 
-> > That's, shall we say, unexpected. Let me ponder that a bit. HPA any clue
-> > why a machine might report such a weird topology? AFAIK threads _always_
-> > share cache.  So how can cpu_coregroup_mask be a subset (instead of a
-> > superset) of topology_thread_cpumask?
-> > 
-> > Let me go stare at the x86 topology mask setup code.
+Hi Lothar,
+
+On 18 Jul 11:31 AM, Lothar Waßmann wrote:
+> The first three patches do some source code cleanup in the files that
+> are modified in the subsequent patches.
 > 
-> Possibly something like so, but I'm not too sure. Anybody?
 
-OK, Borislav says topoext is AMD only, so that's not the problem. In
-which case the problem must be that cpu_llc_id is wrong.
+I've applied patches 4 and 9 on a recent -next, after fixing a conflict
+due to patch 3 ("usb: musb_am335x: source cleanup"):
 
-This gets set in init_intel_cacheinfo() but that's hurting my brain for
-the moment. There's plenty P4 specific cruft in there though.
+> Patch 4 carries the proper fix reported in commit:
+>         7adb5c876e9c ("usb: musb: Fix panic upon musb_am335x module removal")
+> 
+> Patch 9 reinstates module unloading support for the musb_am335x driver
+>         which was disabled due to a false failure analysis
+> 
+
+For these two patches, Tested-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+
+Tested on a beaglebone with a mass storage USB device, module load/unload
+works without issues. The module_get/put in the phy is now preventing the
+musb_am335x driver unload, which seems to be the real cause of the issue
+I reported. Thanks for providing a proper fix!
+-- 
+Ezequiel Garcia, VanguardiaSur
+www.vanguardiasur.com.ar
