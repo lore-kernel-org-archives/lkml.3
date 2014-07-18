@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935233AbaGRNXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:23:06 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17961 "EHLO
+	id S1161300AbaGRNXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:23:31 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17950 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1422681AbaGRNSV (ORCPT
+	by vger.kernel.org with ESMTP id S1030823AbaGRNSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:18:21 -0400
+	Fri, 18 Jul 2014 09:18:14 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 100/170] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
-Date: Fri, 18 Jul 2014 14:11:45 +0200
-Message-Id: <c56d55d645be041c808e1dc363a4ebbe5228025a.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "David R. Piegdon" <lkml@p23q.org>,
+        Tony Lindgren <tony@atomide.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 103/170] ARM: OMAP2+: Fix parser-bug in platform muxing code
+Date: Fri, 18 Jul 2014 14:11:48 +0200
+Message-Id: <ce2d2b635d6629a3626ceea60a2b05683d406fba.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -26,129 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: "David R. Piegdon" <lkml@p23q.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
+commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
 
-There's a race between fork() and hugepage migration, as a result we try
-to "dereference" a swap entry as a normal pte, causing kernel panic.
-The cause of the problem is that copy_hugetlb_page_range() can't handle
-"swap entry" family (migration entry and hwpoisoned entry) so let's fix
-it.
+Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
+wrongly selected if the requested muxname is a *prefix* of their
+m0-entry and they have a matching mN-entry. Fix by additionally checking
+that the length of the m0_entry is equal.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+For example muxing of "dss_data2.dss_data2" on omap32xx will fail
+because the prefix "dss_data2" will match the mux-entries "dss_data2" as
+well as "dss_data20", with the suffix "dss_data2" matching m0 (for
+dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
+path candidates:
+
+Relevant muxentries from mux34xx.c:
+        _OMAP3_MUXENTRY(DSS_DATA20, 90,
+                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
+                "gpio_90", NULL, NULL, "safe_mode"),
+        _OMAP3_MUXENTRY(DSS_DATA2, 72,
+                "dss_data2", NULL, NULL, NULL,
+                "gpio_72", NULL, NULL, "safe_mode"),
+
+This will result in a failure to mux the pin at all:
+
+ _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
+
+Patch should apply to linus' latest master down to rather old linux-2.6
+trees.
+
+Signed-off-by: David R. Piegdon <lkml@p23q.org>
+Cc: stable@vger.kernel.org
+[tony@atomide.com: updated description to include full description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 43 insertions(+), 28 deletions(-)
+ arch/arm/mach-omap2/mux.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 92e103b72dcb..11c2b7fed052 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2381,6 +2381,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
- 		update_mmu_cache(vma, address, ptep);
- }
+diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+index f82cf878d6af..94c2f6d17dae 100644
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -183,8 +183,10 @@ static int __init _omap_mux_get_by_name(struct omap_mux_partition *partition,
+ 		m0_entry = mux->muxnames[0];
  
-+static int is_hugetlb_entry_migration(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_migration_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
+ 		/* First check for full name in mode0.muxmode format */
+-		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
+-			continue;
++		if (mode0_len)
++			if (strncmp(muxname, m0_entry, mode0_len) ||
++			    (strlen(m0_entry) != mode0_len))
++				continue;
  
- int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 			    struct vm_area_struct *vma)
-@@ -2408,10 +2433,26 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 
- 		spin_lock(&dst->page_table_lock);
- 		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
--		if (!huge_pte_none(huge_ptep_get(src_pte))) {
-+		entry = huge_ptep_get(src_pte);
-+		if (huge_pte_none(entry)) { /* skip none entry */
-+			;
-+		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
-+				    is_hugetlb_entry_hwpoisoned(entry))) {
-+			swp_entry_t swp_entry = pte_to_swp_entry(entry);
-+
-+			if (is_write_migration_entry(swp_entry) && cow) {
-+				/*
-+				 * COW mappings require pages in both
-+				 * parent and child to be set to read.
-+				 */
-+				make_migration_entry_read(&swp_entry);
-+				entry = swp_entry_to_pte(swp_entry);
-+				set_huge_pte_at(src, addr, src_pte, entry);
-+			}
-+			set_huge_pte_at(dst, addr, dst_pte, entry);
-+		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
--			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
-@@ -2426,32 +2467,6 @@ nomem:
- 	return -ENOMEM;
- }
- 
--static int is_hugetlb_entry_migration(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_migration_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
--static int is_hugetlb_entry_hwpoisoned(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
- void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 			    unsigned long start, unsigned long end,
- 			    struct page *ref_page)
+ 		/* Then check for muxmode only */
+ 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
 -- 
 2.0.0
 
