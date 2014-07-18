@@ -1,79 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934880AbaGRPpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:45:07 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:34084 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933858AbaGRPpE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:45:04 -0400
-Date: Fri, 18 Jul 2014 19:44:43 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
-Message-ID: <20140718154443.GM27940@esperanza>
-References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
- <20140716155814.GZ29639@cmpxchg.org>
+	id S965722AbaGRPpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:45:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933858AbaGRPpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:45:34 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 1/4] xen PVonHVM: use E820_Reserved area for shared_info
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+	<1405431640-649-2-git-send-email-vkuznets@redhat.com>
+	<20140715150652.GN3403@laptop.dumpdata.com>
+	<87vbqytyp6.fsf@vitty.brq.redhat.com>
+	<20140715155045.GB7792@laptop.dumpdata.com>
+	<871ttjorjp.fsf@vitty.brq.redhat.com>
+	<20140718135627.GF24044@laptop.dumpdata.com>
+Date: Fri, 18 Jul 2014 17:45:21 +0200
+In-Reply-To: <20140718135627.GF24044@laptop.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Fri, 18 Jul 2014 09:56:27 -0400")
+Message-ID: <87pph2oelq.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140716155814.GZ29639@cmpxchg.org>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 11:58:14AM -0400, Johannes Weiner wrote:
-> On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
-> > +#ifdef CONFIG_MEMCG_KMEM
-> > +	{
-> > +		.name = "kmem.limit_in_bytes",
-> > +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-> > +		.write = mem_cgroup_write,
-> > +		.read_u64 = mem_cgroup_read_u64,
-> > +	},
-> 
-> Does it really make sense to have a separate limit for kmem only?
-> IIRC, the reason we introduced this was that this memory is not
-> reclaimable and so we need to limit it.
-> 
-> But the opposite effect happened: because it's not reclaimable, the
-> separate kmem limit is actually unusable for any values smaller than
-> the overall memory limit: because there is no reclaim mechanism for
-> that limit, once you hit it, it's over, there is nothing you can do
-> anymore.  The problem isn't so much unreclaimable memory, the problem
-> is unreclaimable limits.
-> 
-> If the global case produces memory pressure through kernel memory
-> allocations, we reclaim page cache, anonymous pages, inodes, dentries
-> etc.  I think the same should happen for kmem: kmem should just be
-> accounted and limited in the overall memory limit of a group, and when
-> pressure arises, we go after anything that's reclaimable.
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
-Personally, I don't think there's much sense in having a separate knob
-for kmem limit either. Until we have a user with a sane use case for it,
-let's not propagate it to the new interface.
+> On Fri, Jul 18, 2014 at 01:05:46PM +0200, Vitaly Kuznetsov wrote:
+>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+>> 
+>> > On Tue, Jul 15, 2014 at 05:43:17PM +0200, Vitaly Kuznetsov wrote:
+>> >> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+>> >> 
+>> >> > On Tue, Jul 15, 2014 at 03:40:37PM +0200, Vitaly Kuznetsov wrote:
+>> >> >> From: Olaf Hering <olaf@aepfle.de>
+>> >> >> 
+>> >> >> This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
+>> >> >> ("xen PVonHVM: move shared_info to MMIO before kexec").
+>> >> >> 
+>> >> >> Currently kexec in a PVonHVM guest fails with a triple fault because the
+>> >> >> new kernel overwrites the shared info page. The exact failure depends on
+>> >> >> the size of the kernel image. This patch moves the pfn from RAM into an
+>> >> >> E820 reserved memory area.
+>> >> >> 
+>> >> >> The pfn containing the shared_info is located somewhere in RAM. This will
+>> >> >> cause trouble if the current kernel is doing a kexec boot into a new
+>> >> >> kernel. The new kernel (and its startup code) can not know where the pfn
+>> >> >> is, so it can not reserve the page. The hypervisor will continue to update
+>> >> >> the pfn, and as a result memory corruption occours in the new kernel.
+>> >> >> 
+>> >> >> The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
+>> >> >> E820 map. Within that range newer toolstacks (4.3+) will keep 1MB
+>> >> >> starting from FE700000 as reserved for guest use. Older Xen4 toolstacks
+>> >> >> will usually not allocate areas up to FE700000, so FE700000 is expected
+>> >> >> to work also with older toolstacks.
+>> >> >> 
+>> >> >> In Xen3 there is no reserved area at a fixed location. If the guest is
+>> >> >> started on such old hosts the shared_info page will be placed in RAM. As
+>> >> >> a result kexec can not be used.
+>> >> >
+>> >> > So this looks right, the one thing that we really need to check 
+>> >> > is e9daff24a266307943457086533041bd971d0ef9
+>> >> >
+>> >> >    This reverts commit 9d02b43dee0d7fb18dfb13a00915550b1a3daa9f.
+>> >> >
+>> >> >     We are doing this b/c on 32-bit PVonHVM with older hypervisors
+>> >> >     (Xen 4.1) it ends up bothing up the start_info. This is bad b/c
+>> >> >     we use it for the time keeping, and the timekeeping code loops
+>> >> >     forever - as the version field never changes. Olaf says to
+>> >> >     revert it, so lets do that.
+>> >> >
+>> >> > Could you kindly test that the migration on 32-bit PVHVM guests
+>> >> > on older hypervisors works?
+>> >> >
+>> >> 
+>> >> Sure, will do! Was there anything special about the setup or any 32-bit
+>> >> pvhvm guest migration (on 64-bit hypervisor I suppose) would fail? I can
+>> >> try checking both current and old versions to make sure the issue was
+>> >> acutually fixed.
+>> >
+>> > Nothing fancy (well, it was SMP, so 4 CPUs). I did the 'save'/'restore' and the
+>> > guest would not restore properly.
+>> >
+>> 
+>> The symptoms you saw were: after the resume guest appears to be frozen,
+>> all vcpus except for the first one spin at 100%? I was able to reproduce
+>
+> Yes, that is it.
+>> that on old patch version and everything works fine with your fix
+>> (calling xen_hvm_set_shared_info() in addition to
+>> xen_hvm_connect_shared_info() on resume). We're probably safe to apply
+>> it now, thanks!
+>
+> Woot!  Could you include that tidbit of information in
+> the commit please?
+>
 
-Furthermore, even when we introduce kmem shrinking, the kmem-only limit
-alone won't be very useful, because there are plenty of GFP_NOFS kmem
-allocations, which make most of slab shrinkers useless. To avoid
-ENOMEM's in such situation, we would have to introduce either a soft
-kmem limit (watermark) or a kind of kmem precharges. This means if we
-decided to introduce kmem-only limit, we'd eventually have to add more
-knobs and write more code to make it usable w/o even knowing if anyone
-would really benefit from it.
+Sure,
 
-However, there might be users that only want user memory limiting and
-don't want to pay the price of kmem accounting, which is pretty
-expensive. Even if we implement percpu stocks for kmem, there still will
-be noticeable overhead due to touching more cache lines on
-kmalloc/kfree.
+>> 
+>> However I'd like to suggest we remove '__init' from
+>> xen_hvm_set_shared_info() as now we call it on resume.
+>
+> Good idea.
+>
+> Lets wait until Stefano responds (for the MSI PIRQ one), and
+> if he does not have anything special to say, then repost the
+> whole patchset including this tiny __init fix and the updated
+> comment?
 
-So I guess there should be a tunable, which will allow to toggle memcg
-features. May be, a bitmask for future extensibility.
+Deal :-) Please take a look at my '[PATCH RFC] evtchn: introduce
+EVTCHNOP_fifo_destroy hypercall'. In case that works we can fix FIFO
+case at the same time, no TODO required.
+
+I'll be able to return to this work at the end of next week.
+
+-- 
+  Vitaly
