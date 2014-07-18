@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161062AbaGRNPQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:15:16 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:34390 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965808AbaGRNPE (ORCPT
+	id S965978AbaGRNcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:32:11 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17811 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161054AbaGRNPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:15:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405613855-27572-5-git-send-email-svarbanov@mm-sol.com>
-References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
-	<1405613855-27572-5-git-send-email-svarbanov@mm-sol.com>
-Date: Fri, 18 Jul 2014 18:45:01 +0530
-Message-ID: <CABu_nUQDWbejZcQqFSJMhCokeMJXBcsCpsiJxz4gBsmtKiyivA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] mfd: pm8921: rename pm8921-core driver
-From: Prakash Burla <burlaprakash.linuxkernel@gmail.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 09:15:15 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 021/170] UBIFS: fix an mmap and fsync race condition
+Date: Fri, 18 Jul 2014 14:10:26 +0200
+Message-Id: <9724ace0cc02e44fa5247a5924aefd24f7c1a72c.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 9:47 PM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
-> The pm8921-core driver presently supports pm8921 and pm8058
-> Qualcomm PMICs.  To avoid confusion with new generation PMICs
-> (like pm8941) rename the pm8921-core driver to more
-> appropriate name pm8xxx-ssbi, which reflects better that
-> those chips use SSBI interface.
->
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
->  drivers/mfd/Kconfig                          |   14 +++++-----
->  drivers/mfd/Makefile                         |    2 +-
->  drivers/mfd/{pm8921-core.c => pm8xxx-ssbi.c} |   38 +++++++++++++-------------
->  3 files changed, 27 insertions(+), 27 deletions(-)
->  rename drivers/mfd/{pm8921-core.c => pm8xxx-ssbi.c} (92%)
- .
- [Nope]
->  MODULE_LICENSE("GPL v2");
-> -MODULE_DESCRIPTION("PMIC 8921 core driver");
-> +MODULE_DESCRIPTION("PMIC PM8XXX SSBI driver");
->  MODULE_VERSION("1.0");
-> -MODULE_ALIAS("platform:pm8921-core");
-> +MODULE_ALIAS("platform:pm8xxx-ssbi");
- >How about adding the module author as svarbanov@mm-sol.com/qcom?
-      MODULE_AUTHOR("SVARBANOV<svarbanov@mm-sol.com>");
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+From: hujianyang <hujianyang@huawei.com>
+
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
+
+There is a race condition in UBIFS:
+
+Thread A (mmap)                        Thread B (fsync)
+
+->__do_fault                           ->write_cache_pages
+   -> ubifs_vm_page_mkwrite
+       -> budget_space
+       -> lock_page
+       -> release/convert_page_budget
+       -> SetPagePrivate
+       -> TestSetPageDirty
+       -> unlock_page
+                                       -> lock_page
+                                           -> TestClearPageDirty
+                                           -> ubifs_writepage
+                                               -> do_writepage
+                                                   -> release_budget
+                                                   -> ClearPagePrivate
+                                                   -> unlock_page
+   -> !(ret & VM_FAULT_LOCKED)
+   -> lock_page
+   -> set_page_dirty
+       -> ubifs_set_page_dirty
+           -> TestSetPageDirty (set page dirty without budgeting)
+   -> unlock_page
+
+This leads to situation where we have a diry page but no budget allocated for
+this page, so further write-back may fail with -ENOSPC.
+
+In this fix we return from page_mkwrite without performing unlock_page. We
+return VM_FAULT_LOCKED instead. After doing this, the race above will not
+happen.
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Tested-by: Laurence Withers <lwithers@guralp.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/ubifs/file.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 123c79b7261e..b56eb6275744 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1525,8 +1525,7 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
+ 	}
+ 
+ 	wait_for_stable_page(page);
+-	unlock_page(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
+ 
+ out_unlock:
+ 	unlock_page(page);
+-- 
+2.0.0
+
