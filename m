@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762006AbaGRNjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:39:21 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17664 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761853AbaGRNMp (ORCPT
+	id S1762026AbaGRNje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:39:34 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:45206 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762008AbaGRNjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:12:45 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 020/170] MIPS: MSC: Prevent out-of-bounds writes to MIPS SC ioremap'd region
-Date: Fri, 18 Jul 2014 14:10:25 +0200
-Message-Id: <8acb1c84456884115a0e7a8d077a88d074d79d20.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	Fri, 18 Jul 2014 09:39:32 -0400
+Message-ID: <53C92396.2080007@linaro.org>
+Date: Fri, 18 Jul 2014 08:39:34 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>
+CC: akpm@linux-foundation.org, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/6] printk: LOG_CONT and LOG_NEWLINE are opposites
+References: <1405606151-19875-1-git-send-email-elder@linaro.org> <1405606151-19875-3-git-send-email-elder@linaro.org> <20140718105356.GY6774@pathway.suse.cz>
+In-Reply-To: <20140718105356.GY6774@pathway.suse.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+On 07/18/2014 05:53 AM, Petr Mládek wrote:
+>> @@ -1686,9 +1690,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+>> >  		if (cont_add(facility, level, text, text_len))
+>> >  			printed_len += text_len;
+>> >  		else
+>> > -			printed_len += log_store(facility, level,
+>> > -						 lflags | LOG_CONT, 0,
+>> > -						 dict, dictlen, text, text_len);
+>> > +			printed_len += log_store(facility, level, lflags, 0,
+>> > +						 NULL, 0, text, text_len);
+>> >  	} else {
+>> >  		bool stored = false;
+>> >  
+> I do not see real benefit in this change. I think that it would cause
+> more confusion than help. I would suggest to remove it. Then I will
+> agree with this patch :-)
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Done.  I'm going to add your Reviewed-by based on this.  Please correct
+me if that's not what you want.
 
-===============
-
-commit ab6c15bc6620ebe220970cc040b29bcb2757f373 upstream.
-
-Previously, the lower limit for the MIPS SC initialization loop was
-set incorrectly allowing one extra loop leading to writes
-beyond the MSC ioremap'd space. More precisely, the value of the 'imp'
-in the last loop increased beyond the msc_irqmap_t boundaries and
-as a result of which, the 'n' variable was loaded with an incorrect
-value. This value was used later on to calculate the offset in the
-MSC01_IC_SUP which led to random crashes like the following one:
-
-CPU 0 Unable to handle kernel paging request at virtual address e75c0200,
-epc == 8058dba4, ra == 8058db90
-[...]
-Call Trace:
-[<8058dba4>] init_msc_irqs+0x104/0x154
-[<8058b5bc>] arch_init_irq+0xd8/0x154
-[<805897b0>] start_kernel+0x220/0x36c
-
-Kernel panic - not syncing: Attempted to kill the idle task!
-
-This patch fixes the problem
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7118/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- arch/mips/kernel/irq-msc01.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/mips/kernel/irq-msc01.c b/arch/mips/kernel/irq-msc01.c
-index fab40f7d2e03..ac9facc08694 100644
---- a/arch/mips/kernel/irq-msc01.c
-+++ b/arch/mips/kernel/irq-msc01.c
-@@ -131,7 +131,7 @@ void __init init_msc_irqs(unsigned long icubase, unsigned int irqbase, msc_irqma
- 
- 	board_bind_eic_interrupt = &msc_bind_eic_interrupt;
- 
--	for (; nirq >= 0; nirq--, imp++) {
-+	for (; nirq > 0; nirq--, imp++) {
- 		int n = imp->im_irq;
- 
- 		switch (imp->im_type) {
--- 
-2.0.0
-
+					-Alex
