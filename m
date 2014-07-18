@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422832AbaGRNtr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:49:47 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17507 "EHLO
+	id S1422847AbaGRNuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:50:06 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17500 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030552AbaGRNKe (ORCPT
+	by vger.kernel.org with ESMTP id S1030534AbaGRNK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:10:34 -0400
+	Fri, 18 Jul 2014 09:10:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: linux-kernel@vger.kernel.org, Alex Smith <alex.smith@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 075/170] rt2x00: fix rfkill regression on rt2500pci
-Date: Fri, 18 Jul 2014 14:11:20 +0200
-Message-Id: <db172b15bfb29485fca401e330306516f7c83dd5.1405685481.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 019/170] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
+Date: Fri, 18 Jul 2014 14:10:24 +0200
+Message-Id: <98eab24734a44d94e8ae53d8486c8e1751bccd8e.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,128 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Alex Smith <alex.smith@imgtec.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 616a8394b5df8c88f4dd416f4527439a4e365034 upstream.
+commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
 
-As reported by Niels, starting rfkill polling during device probe
-(commit e2bc7c5, generally sane change) broke rfkill on rt2500pci
-device. I considered that bug as some initalization issue, which
-should be fixed on rt2500pci specific code. But after several
-attempts (see bug report for details) we fail to find working solution.
-Hence I decided to revert to old behaviour on rt2500pci to fix
-regression.
+On MIPS calls to _mcount in modules generate 2 instructions to load
+the _mcount address (and therefore 2 relocations). The mcount_loc
+table should only reference the first of these, so the second is
+filtered out by checking the relocation offset and ignoring ones that
+immediately follow the previous one seen.
 
-Additionally patch also unregister rfkill on device remove instead
-of ifconfig down, what was another issue introduced by bad commit.
+However if a module has an _mcount call at offset 0, the second
+relocation would not be filtered out due to old_r_offset == 0
+being taken to mean that the current relocation is the first one
+seen, and both would end up in the mcount_loc table.
 
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=73821
+This results in ftrace_make_nop() patching both (adjacent)
+instructions to branches over the _mcount call sequence like so:
 
-Fixes: e2bc7c5f3cb8 ("rt2x00: Fix rfkill_polling register function.")
-Bisected-by: Niels <nille0386@googlemail.com>
-Reported-and-tested-by: Niels <nille0386@googlemail.com>
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
+  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
+  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
+  ...
+
+The second branch is in the delay slot of the first, which is
+defined to be unpredictable - on the platform on which this bug was
+encountered, it triggers a reserved instruction exception.
+
+Fix by initializing old_r_offset to ~0 and using that instead of 0
+to determine whether the current relocation is the first seen.
+
+Signed-off-by: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7098/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/rt2x00/rt2500pci.c |  7 ++++++-
- drivers/net/wireless/rt2x00/rt2x00.h    |  1 +
- drivers/net/wireless/rt2x00/rt2x00dev.c | 24 +++++++++++++++++++++---
- 3 files changed, 28 insertions(+), 4 deletions(-)
+ scripts/recordmcount.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2500pci.c b/drivers/net/wireless/rt2x00/rt2500pci.c
-index 0ac5c589ddce..13f557a44a62 100644
---- a/drivers/net/wireless/rt2x00/rt2500pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2500pci.c
-@@ -1684,8 +1684,13 @@ static int rt2500pci_init_eeprom(struct rt2x00_dev *rt2x00dev)
- 	/*
- 	 * Detect if this device has an hardware controlled radio.
- 	 */
--	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
-+	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO)) {
- 		__set_bit(CAPABILITY_HW_BUTTON, &rt2x00dev->cap_flags);
-+		/*
-+		 * On this device RFKILL initialized during probe does not work.
-+		 */
-+		__set_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags);
-+	}
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 9d1421e63ff8..49b582a225b0 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
  
- 	/*
- 	 * Check if the BBP tuning should be enabled.
-diff --git a/drivers/net/wireless/rt2x00/rt2x00.h b/drivers/net/wireless/rt2x00/rt2x00.h
-index fe4c572db52c..89dbf2db93da 100644
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -705,6 +705,7 @@ enum rt2x00_capability_flags {
- 	REQUIRE_SW_SEQNO,
- 	REQUIRE_HT_TX_DESC,
- 	REQUIRE_PS_AUTOWAKE,
-+	REQUIRE_DELAYED_RFKILL,
+ static int MIPS_is_fake_mcount(Elf_Rel const *rp)
+ {
+-	static Elf_Addr old_r_offset;
++	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
+ 	Elf_Addr current_r_offset = _w(rp->r_offset);
+ 	int is_fake;
  
- 	/*
- 	 * Capabilities
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index f12e909cbb48..6ccfa0a671e7 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -1128,9 +1128,10 @@ static void rt2x00lib_uninitialize(struct rt2x00_dev *rt2x00dev)
- 		return;
+-	is_fake = old_r_offset &&
++	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
+ 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
+ 	old_r_offset = current_r_offset;
  
- 	/*
--	 * Unregister extra components.
-+	 * Stop rfkill polling.
- 	 */
--	rt2x00rfkill_unregister(rt2x00dev);
-+	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_unregister(rt2x00dev);
- 
- 	/*
- 	 * Allow the HW to uninitialize.
-@@ -1168,6 +1169,12 @@ static int rt2x00lib_initialize(struct rt2x00_dev *rt2x00dev)
- 
- 	set_bit(DEVICE_STATE_INITIALIZED, &rt2x00dev->flags);
- 
-+	/*
-+	 * Start rfkill polling.
-+	 */
-+	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_register(rt2x00dev);
-+
- 	return 0;
- }
- 
-@@ -1377,7 +1384,12 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
- 	rt2x00link_register(rt2x00dev);
- 	rt2x00leds_register(rt2x00dev);
- 	rt2x00debug_register(rt2x00dev);
--	rt2x00rfkill_register(rt2x00dev);
-+
-+	/*
-+	 * Start rfkill polling.
-+	 */
-+	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_register(rt2x00dev);
- 
- 	return 0;
- 
-@@ -1393,6 +1405,12 @@ void rt2x00lib_remove_dev(struct rt2x00_dev *rt2x00dev)
- 	clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
- 
- 	/*
-+	 * Stop rfkill polling.
-+	 */
-+	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_unregister(rt2x00dev);
-+
-+	/*
- 	 * Disable radio.
- 	 */
- 	rt2x00lib_disable_radio(rt2x00dev);
 -- 
 2.0.0
 
