@@ -1,141 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571AbaGRBr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 21:47:57 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58653 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093AbaGRBr4 (ORCPT
+	id S932409AbaGRBsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 21:48:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37427 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122AbaGRBsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 21:47:56 -0400
-Message-ID: <53C87CC5.80506@hitachi.com>
-Date: Fri, 18 Jul 2014 10:47:49 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 17 Jul 2014 21:48:17 -0400
+Date: Thu, 17 Jul 2014 18:48:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>, linux-doc@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 3/7] security: introduce kernel_fw_from_file hook
+Message-ID: <20140718014816.GA603@kroah.com>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+ <1405373897-31671-4-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH ftrace/core v3 1/3] [BUGFIX]kprobes/ftrace: Recover original
- IP if pre_handler doesn't change it
-References: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal> <20140715060021.12195.9680.stgit@kbuild-fedora.novalocal> <20140717142151.51bde92c@gandalf.local.home>
-In-Reply-To: <20140717142151.51bde92c@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405373897-31671-4-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/18 3:21), Steven Rostedt wrote:
-> This looks to require an acked-by from hpa.
+On Mon, Jul 14, 2014 at 02:38:13PM -0700, Kees Cook wrote:
+> In order to validate the contents of firmware being loaded, there must be
+> a hook to evaluate any loaded firmware that wasn't built into the kernel
+> itself. Without this, there is a risk that a root user could load malicious
+> firmware designed to mount an attack against kernel memory (e.g. via DMA).
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  include/linux/security.h |   16 ++++++++++++++++
+>  security/capability.c    |    6 ++++++
+>  security/security.c      |    6 ++++++
+>  3 files changed, 28 insertions(+)
 
-Oh, I see.
+I would like an ack from a security developer/maintainer before applying
+this patch...
 
-> 
-> On Tue, 15 Jul 2014 06:00:21 +0000
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> Recover original IP register if the pre_handler doesn't change it.
->> Since current kprobes doesn't expect that another ftrace handler
->> may change regs->ip, it sets kprobe.addr + MCOUNT_INSN_SIZE to
->> regs->ip and returns to ftrace.
->> This seems wrong behavior since kprobes can recover regs->ip
->> and safely pass it to other handler.
-> 
-> s/other/another/
-> 
->>
->> This adds a code which recovers original regs->ip passed from
-> 
->  "... adds code which recovers the original ..."
-> 
->> ftrace right before returning ftrace, so that another ftrace user
-> 
->  "... returning to ftrace, ..."
+thanks,
 
-Thanks, I'll update the description. :)
-
-> 
->> can change regs->ip.
-> 
-> You say BUGFIX in the subject, but as nothing changes the regs->ip
-> currently from ftrace, is this currently a real bug?
-
-Hmm, indeed, in-tree ftrace handlers never change regs->ip except
-kprobes, and for the out-of-tree modules, we need IPMODIFY flag to
-avoid such conflict among them. Thus, we can not solve such problem
-only by this patch. OK, I'll drop BUGFIX tag.
-
-Thank you,
-
-> 
-> -- Steve
-> 
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> ---
->>  arch/x86/kernel/kprobes/ftrace.c |    9 ++++++---
->>  1 file changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
->> index 717b02a..5f8f0b3 100644
->> --- a/arch/x86/kernel/kprobes/ftrace.c
->> +++ b/arch/x86/kernel/kprobes/ftrace.c
->> @@ -27,7 +27,7 @@
->>  
->>  static nokprobe_inline
->>  int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
->> -		      struct kprobe_ctlblk *kcb)
->> +		      struct kprobe_ctlblk *kcb, unsigned long orig_ip)
->>  {
->>  	/*
->>  	 * Emulate singlestep (and also recover regs->ip)
->> @@ -39,6 +39,8 @@ int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
->>  		p->post_handler(p, regs, 0);
->>  	}
->>  	__this_cpu_write(current_kprobe, NULL);
->> +	if (orig_ip)
->> +		regs->ip = orig_ip;
->>  	return 1;
->>  }
->>  
->> @@ -46,7 +48,7 @@ int skip_singlestep(struct kprobe *p, struct pt_regs *regs,
->>  		    struct kprobe_ctlblk *kcb)
->>  {
->>  	if (kprobe_ftrace(p))
->> -		return __skip_singlestep(p, regs, kcb);
->> +		return __skip_singlestep(p, regs, kcb, 0);
->>  	else
->>  		return 0;
->>  }
->> @@ -71,13 +73,14 @@ void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
->>  	if (kprobe_running()) {
->>  		kprobes_inc_nmissed_count(p);
->>  	} else {
->> +		unsigned long orig_ip = regs->ip;
->>  		/* Kprobe handler expects regs->ip = ip + 1 as breakpoint hit */
->>  		regs->ip = ip + sizeof(kprobe_opcode_t);
->>  
->>  		__this_cpu_write(current_kprobe, p);
->>  		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
->>  		if (!p->pre_handler || !p->pre_handler(p, regs))
->> -			__skip_singlestep(p, regs, kcb);
->> +			__skip_singlestep(p, regs, kcb, orig_ip);
->>  		/*
->>  		 * If pre_handler returns !0, it sets regs->ip and
->>  		 * resets current kprobe.
->>
-> 
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+greg k-h
