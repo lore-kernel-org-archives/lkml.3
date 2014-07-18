@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761339AbaGRJjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:39:53 -0400
-Received: from mail1.skidata.com ([91.230.2.99]:38107 "EHLO mail1.skidata.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761234AbaGRJjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:39:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AugEAAXryFOsEApK/2dsb2JhbABZg2BXBMRqh0eBH3aEMRM/KBQ0TgENBYhHCMN5EwSNO4IQhE0Fmx+HPpA1aoFF
-X-IPAS-Result: AugEAAXryFOsEApK/2dsb2JhbABZg2BXBMRqh0eBH3aEMRM/KBQ0TgENBYhHCMN5EwSNO4IQhE0Fmx+HPpA1aoFF
-Date: Fri, 18 Jul 2014 11:39:46 +0200
-From: Richard Leitner <richard.leitner@skidata.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC] usb: gadget: serial: remove PREFIX macro
-Message-ID: <20140718113946.0e70c0cb@lxbuild.skidata.net>
-Organization: SKIDATA AG
+	id S1761154AbaGRJml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:42:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46484 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923AbaGRJmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 05:42:38 -0400
+Date: Fri, 18 Jul 2014 11:42:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Ley Foon Tan <lftan@altera.com>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v2 21/29] nios2: Futex operations
+In-Reply-To: <17186253.ZJUn1qWK0f@wuerfel>
+Message-ID: <alpine.DEB.2.10.1407181140250.24854@nanos>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <12323898.sHjczXbE7P@wuerfel> <CAFiDJ5-uDPCZha-s2-DrLbHLjezBkLTEjJ0nbnsMocof7kO=1Q@mail.gmail.com> <17186253.ZJUn1qWK0f@wuerfel>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.16.60.30]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the ttyGS PREFIX macro from u_serial.c and replace all occurences with
-the hardcoded ttyGS string.
+On Fri, 18 Jul 2014, Arnd Bergmann wrote:
+> On Friday 18 July 2014 14:07:42 Ley Foon Tan wrote:
+> > On Thu, Jul 17, 2014 at 7:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > The get_user/put_user functions really need to be annotated might_fault(),
+> > > because that's what they do.
+> > >
+> > > The whole point of get_user() is to access an unchecked user space
+> > > pointer, which  can do a number of things based on what the pointer
+> > > points to:
+> > >
+> > > - access a user space variable that resides in memory
+> > > - access a kernel pointer and fail because of the access_ok()
+> > >   check
+> > > - access a user space pointer that is not mapped and return
+> > >   through the __ex_table fixup.
+> > > - access a user space pointer that has a valid VMA but not PTE,
+> > >   causing a page fault to be resolved.
+> > >
+> > > It's the last case that breaks here.
+> > So, do you mean that we can't use get_user/put_user in futex support?
+> > BTW, some architectures like sh,parisc, m68k use get_user in futex
+> > function as well.
+> > Any recommendation way to support futex if we can't use get_user.
+> > Note, nios2 doesn't have atomic instruction.
+> > Thanks.
+> 
+> I looked at it again now and I'm no longer sure about my initial
+> interpretation. The way it seems to work is that pagefault_disable()
+> turns the case I mentioned into a simple error through the fixup,
+> so we return -EFAULT from get_user, and retry the futex from
+> futex_wake_op().
+> 
+> This would however also mean that there is no need for a spinlock
+> at all, atomicity is already implied by pagefault_disable() here
+> because you are running on a UP kernel and pagefault_disable() also
+> means there is no preemption.
+> 
+> If this understanding is right, we can probably just merge the
+> m68k implementation into the asm-generic version, as that does
+> exactly that, and just isn't SMP safe. I'm still unsure whether
+> I'm missing something here though, as everything else seems to
+> do this in assembly, even for non-SMP machines that could use
+> the trivial method that m68k has.
 
-This macro was mostly used in a few debug/warning messages and a lot of
-hardcoded ttyGS existed beneath. It may have been used for renaming the
-tty, but if done so most debug messages would have ignored this because
-of the hardcoded strings.
+For UP relying of pagefault disable should be good enough indeed. I
+guess the asm for the other UP stuff results from looking at
+architectures or copying from architectures which did this in ASM :)
 
-Due to the fact the usage of this PREFIX instead of the hardcoded strings
-in all debug calls would have resulted in a hard to read/grep code it
-is removed completely.
+Thanks,
 
-Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
----
-note: previous discussion was at https://lkml.org/lkml/2014/6/27/193
----
- drivers/usb/gadget/u_serial.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-index ad0aca8..7e7a6b0 100644
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -55,11 +55,8 @@
-  * for a telephone or fax link.  And ttyGS2 might be something that just
-  * needs a simple byte stream interface for some messaging protocol that
-  * is managed in userspace ... OBEX, PTP, and MTP have been mentioned.
-- */
--
--#define PREFIX	"ttyGS"
--
--/*
-+ *
-+ *
-  * gserial is the lifecycle interface, used by USB functions
-  * gs_port is the I/O nexus, used by the tty driver
-  * tty_struct links to the tty/filesystem framework
-@@ -385,7 +382,7 @@ __acquires(&port->port_lock)
- 		list_del(&req->list);
- 		req->zero = (gs_buf_data_avail(&port->port_write_buf) == 0);
- 
--		pr_vdebug(PREFIX "%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
-+		pr_vdebug("ttyGS%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
- 				port->port_num, len, *((u8 *)req->buf),
- 				*((u8 *)req->buf+1), *((u8 *)req->buf+2));
- 
-@@ -503,12 +500,12 @@ static void gs_rx_push(unsigned long _port)
- 		switch (req->status) {
- 		case -ESHUTDOWN:
- 			disconnect = true;
--			pr_vdebug(PREFIX "%d: shutdown\n", port->port_num);
-+			pr_vdebug("ttyGS%d: shutdown\n", port->port_num);
- 			break;
- 
- 		default:
- 			/* presumably a transient fault */
--			pr_warning(PREFIX "%d: unexpected RX status %d\n",
-+			pr_warn("ttyGS%d: unexpected RX status %d\n",
- 					port->port_num, req->status);
- 			/* FALLTHROUGH */
- 		case 0:
-@@ -537,7 +534,7 @@ static void gs_rx_push(unsigned long _port)
- 			if (count != size) {
- 				/* stop pushing; TTY layer can't handle more */
- 				port->n_read += count;
--				pr_vdebug(PREFIX "%d: rx block %d/%d\n",
-+				pr_vdebug("ttyGS%d: rx block %d/%d\n",
- 						port->port_num,
- 						count, req->actual);
- 				break;
-@@ -569,7 +566,7 @@ static void gs_rx_push(unsigned long _port)
- 			if (do_push)
- 				tasklet_schedule(&port->push);
- 			else
--				pr_warning(PREFIX "%d: RX not scheduled?\n",
-+				pr_warn("ttyGS%d: RX not scheduled?\n",
- 					port->port_num);
- 		}
- 	}
-@@ -985,7 +982,7 @@ static void gs_unthrottle(struct tty_struct *tty)
- 		 * read queue backs up enough we'll be NAKing OUT packets.
- 		 */
- 		tasklet_schedule(&port->push);
--		pr_vdebug(PREFIX "%d: unthrottle\n", port->port_num);
-+		pr_vdebug("ttyGS%d: unthrottle\n", port->port_num);
- 	}
- 	spin_unlock_irqrestore(&port->port_lock, flags);
- }
-@@ -1295,7 +1292,7 @@ static int userial_init(void)
- 		return -ENOMEM;
- 
- 	gs_tty_driver->driver_name = "g_serial";
--	gs_tty_driver->name = PREFIX;
-+	gs_tty_driver->name = "ttyGS";
- 	/* uses dynamically assigned dev_t values */
- 
- 	gs_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
--- 
-1.7.10.4
+	tglx
