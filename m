@@ -1,58 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759450AbaGRXQM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:16:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46903 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158AbaGRXQL (ORCPT
+	id S1759675AbaGRXQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:16:54 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:64098 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908AbaGRXQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:16:11 -0400
-Date: Fri, 18 Jul 2014 16:16:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-Cc: devel@driverdev.osuosl.org, waydi1@gmail.com, swetland@google.com,
-        linux-kernel@vger.kernel.org, daniel@ffwll.ch
-Subject: Re: [PATCH] staging: android: Fixed missing blank line
-Message-ID: <20140718231610.GA29987@kroah.com>
-References: <1405658874-24448-1-git-send-email-sanjeev_sharma@mentor.com>
+	Fri, 18 Jul 2014 19:16:52 -0400
+From: Dmitry Torokhov <dtor@google.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Patrik Fimml <patrikf@chromium.org>,
+        Bastien Nocera <hadess@hadess.net>, linux-pm@vger.kernel.org,
+        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Power-managing devices that are not of interest at some point in time
+Date: Fri, 18 Jul 2014 16:16:50 -0700
+Message-ID: <1451627.FURGiR949u@dtor-glaptop>
+Organization: Google, Inc.
+User-Agent: KMail/4.13.2 (Linux/3.13.0-32-generic; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <1693424.kPNUQHOHlX@vostro.rjw.lan>
+References: <Pine.LNX.4.44L0.1407181557020.979-100000@iolanthe.rowland.org> <2443949.K0iePsg3Aa@vostro.rjw.lan> <1693424.kPNUQHOHlX@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405658874-24448-1-git-send-email-sanjeev_sharma@mentor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 10:17:54AM +0530, Sanjeev Sharma wrote:
-> This patch will add an blank line after
-> declaration reported by checkpatch.pl script.
+On Saturday, July 19, 2014 12:55:09 AM Rafael J. Wysocki wrote:
+> On Saturday, July 19, 2014 12:19:39 AM Rafael J. Wysocki wrote:
+> > On Friday, July 18, 2014 02:45:40 PM Dmitry Torokhov wrote:
+> > > On Friday, July 18, 2014 11:59:18 PM Rafael J. Wysocki wrote:
+> > > > On Friday, July 18, 2014 02:26:21 PM Dmitry Torokhov wrote:
+> > > > > On Friday, July 18, 2014 04:09:46 PM Alan Stern wrote:
+> > > > > > On Fri, 18 Jul 2014, Patrik Fimml wrote:
+> > > > > > > On Fri, Jul 18, 2014 at 03:00:46PM -0400, Alan Stern wrote:
+> > > > [cut]
+> > > > 
+> > > > > > > I'm not sure what the appropriate action for a video camera is
+> > > > > > > anyway.
+> > > > > > > Should it go away completely, including its device? Should it be
+> > > > > > > there,
+> > > > > > > but certainly not be the default choice when there is an
+> > > > > > > external
+> > > > > > > camera? I'm thinking along the lines of some application's
+> > > > > > > settings
+> > > > > > > dialog here, where it might be desirable to still be able to
+> > > > > > > select
+> > > > > > > the
+> > > > > > > internal camera for future recordings.
+> > > > > > > 
+> > > > > > > Of course, userspace could still decide simply not to
+> > > > > > > quiesce|deactivate|inhibit the device if that was desired.
+> > > > > > 
+> > > > > > There's some question about how much of userspace needs to get
+> > > > > > involved.  Just the daemon that manages these configuration
+> > > > > > changes, or
+> > > > > > other programs as well?  I guess that's not really our problem...
+> > > > > 
+> > > > > We need to provide means of implementing policy; the policy itself
+> > > > > is not
+> > > > > really our concern ;)
+> > > > > 
+> > > > > > In the end, it sounds like you're suggesting a new pair of PM
+> > > > > > callbacks: ->deactivate() and ->reactivate(), or ->inhibit() and
+> > > > > > ->uninhibit().  Plus an optional (?) sysfs interface for invoking
+> > > > > > the
+> > > > > > callbacks.
+> > > > > 
+> > > > > We do need sysfs interface so that userspace can talk to the devices
+> > > > > in
+> > > > > question; and we also need to make sure that PM core is aware of the
+> > > > > new
+> > > > > callbacks and provides guarantees about their interactions with
+> > > > > system-
+> > > > > and
+> > > > > runtime-PM callbacks so that individual drivers do not have to sort
+> > > > > it out
+> > > > > on their own.
+> > > > 
+> > > > A step back, please.
+> > > > 
+> > > > I have no idea why those need to be PM callbacks.
+> > > > 
+> > > > What you need really seems to be a way to tell a driver "ignore input
+> > > > from
+> > > > this device from now on as it is most likely bogus".  A natural
+> > > > reaction of
+> > > > the driver to that might be to stop processing input from the device
+> > > > and
+> > > > then runtime suspend it (and prevent it from generating remote wakeup
+> > > > as
+> > > > that may be bogus as well), but I don't see why the PM core needs to
+> > > > be
+> > > > involved in that at all.
+> > > 
+> > > So that we do not need to handle cases like:
+> > > 
+> > > - I am already in idle state and request comes to inhibit, what do I do
+> > > (in
+> > 
+> > > driver) or:
+> > I'm not sure why being "suspended" or not matters here.  The PM core
+> > doesn't know what physical state the device is in anyway and the driver
+> > or subsystem (or another layer such as ACPI) has to track that.
+> > 
+> > Also it seems that it should be perfectly fine to ignore input from the
+> > device without suspending it as well as it is perfectly fine to be
+> > suspended while you are generally not ignoring the input (just because
+> > there is no input at the moment, for example).
+> > 
+> > Yes, it make sense to suspend the device when you know you'll ignore input
+> > going forward, but then if the real goal is to prevent bogus input from
+> > reaching applications, then this isn't a power management problem even.
 > 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
->  drivers/staging/android/sw_sync.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-> index a76db3f..863d4b1 100644
-> --- a/drivers/staging/android/sw_sync.c
-> +++ b/drivers/staging/android/sw_sync.c
-> @@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
->  				       char *str, int size)
->  {
->  	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
-> +
->  	snprintf(str, size, "%d", pt->value);
->  }
->  
-> @@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
->  static int sw_sync_release(struct inode *inode, struct file *file)
->  {
->  	struct sw_sync_timeline *obj = file->private_data;
-> +
->  	sync_timeline_destroy(&obj->obj);
->  	return 0;
->  }
+> The area where it must interact with power management is wakeup, both remote
+> wakeup at run time and wakeup from system suspend.  In particular, there's
+> the question whether or not a device ignoring its input should be regarded
+> as a wakeup source.
 
-I already applied a previous version of this patch, with your gmail
-address :(
+I'd say no.
+
+Anyway, even though it is very tempting to declare inhibit a "deeper" state of 
+runtime suspend maybe you are right and inhibit should really be separate from 
+PM and drivers would have to sort out all the possible state permutations.
+
+Considering input devices:
+
+input_open(): check if device is inhibited, if so do nothing. Otherwise try 
+waking up itself and parent (via pm_runtime_get_sync() on itself), this will 
+power up the device. Do additional configuration if needed.
+
+input_close(): check if device is inhibited, if not do pm_runtime_put (_sync? 
+to make sure we power off properly and not leave device up and running? or 
+should we power down manually not waiting for runtime PM)?
+
+inhibit(): check if device is opened, if opened do pm_runtime_put_sync().
+
+uninhibit(): if device is opened do pm_runtime_get_sync(), let runtime PM 
+bring up the device. Do additional config if needed -> very similar to 
+input_open(), different condition.
+
+runtime_suspend(): power down the device. If not inhibited enable as wakeup 
+source.
+
+runtime_resume(): power up the device if device is opened and not inhibited.
+
+system_suspend(): check if device is opened, not inhibited and not in 
+runtimesuspend  already; power down.
+
+system_resume(): power up the device if it is opened and not inhibited. I 
+guess it's OK to wake up device that shoudl be runtime-PM-idle since it will 
+go to back sleep shortly.
+
+Ugh.. This is complicated...
+
+Thanks,
+Dmitry
+
