@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762061AbaGROV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:21:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52245 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761825AbaGROVY (ORCPT
+	id S1030640AbaGROXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:23:30 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:37309 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030558AbaGROX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:21:24 -0400
-Date: Fri, 18 Jul 2014 07:21:14 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Guenter Roeck <linux@roeck-us.net>, Borislav Petkov <bp@suse.de>,
-        akpm@linux-foundation.org, apw@canonical.com, joe@perches.com,
-        tytso@mit.edu, dwalter@google.com, neilb@suse.de, hch@infradead.org,
+	Fri, 18 Jul 2014 10:23:26 -0400
+Date: Fri, 18 Jul 2014 09:23:24 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl: Remove --file option
-Message-ID: <20140718142114.GA10475@infradead.org>
-References: <1405611268-12463-1-git-send-email-richard@nod.at>
- <53C8CCE1.4000105@roeck-us.net>
- <20140718082324.GA31270@pd.tnic>
- <53C92332.5010807@roeck-us.net>
- <53C92535.2010605@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53C92535.2010605@nod.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Subject: Re: [PATCH v2 1/1] doc: Add remote CPU access details and others to
+ this_cpu_ops.txt
+In-Reply-To: <53C85FE9.6010304@gmail.com>
+Message-ID: <alpine.DEB.2.11.1407180922110.28503@gentwo.org>
+References: <1405552141-8506-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1407170848490.27584@gentwo.org> <53C7D93B.4090006@gmail.com> <alpine.DEB.2.11.1407170934220.28121@gentwo.org> <53C7E234.3020503@gmail.com> <alpine.DEB.2.11.1407171005450.28248@gentwo.org>
+ <53C85FE9.6010304@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 03:46:29PM +0200, Richard Weinberger wrote:
-> As capable kernel hacker you can still use a command like:
-> diff -urN /dev/null $file | ./scripts/checkpatch.pl -
+On Thu, 17 Jul 2014, Pranith Kumar wrote:
 
-Or he could just use the existing -f flag.  I really don't understand
-why you're trying to educate people by taking their toy away.  They'll
-find another one in no time anyway.
+> > then we have on x86 a increment operation with locked semantics racing
+> > with an unlocked one on the same cacheline.
+> OK, I will add this as a warning in the documentation. Thanks!
+
+Note that I have not been able to get beyond a bad feeling. Looked up
+various sources of information about how the lock prefix works. Still I am
+not sure if this works or not.
+
 
