@@ -1,161 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759675AbaGRXQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:16:54 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:64098 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908AbaGRXQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:16:52 -0400
-From: Dmitry Torokhov <dtor@google.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Patrik Fimml <patrikf@chromium.org>,
-        Bastien Nocera <hadess@hadess.net>, linux-pm@vger.kernel.org,
-        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Power-managing devices that are not of interest at some point in time
-Date: Fri, 18 Jul 2014 16:16:50 -0700
-Message-ID: <1451627.FURGiR949u@dtor-glaptop>
-Organization: Google, Inc.
-User-Agent: KMail/4.13.2 (Linux/3.13.0-32-generic; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <1693424.kPNUQHOHlX@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1407181557020.979-100000@iolanthe.rowland.org> <2443949.K0iePsg3Aa@vostro.rjw.lan> <1693424.kPNUQHOHlX@vostro.rjw.lan>
+	id S1756409AbaGRXYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:24:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:53818 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752278AbaGRXYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 19:24:48 -0400
+Date: Sat, 19 Jul 2014 09:24:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Masanari Iida <standby24x7@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH/linux-next] Documentation:Docbook: Fix file locations in
+ gadget.tmpl
+Message-ID: <20140719092438.5f82cdb0@canb.auug.org.au>
+In-Reply-To: <20140718154232.GP24914@saruman.home>
+References: <1405655169-23804-1-git-send-email-standby24x7@gmail.com>
+	<1405655169-23804-2-git-send-email-standby24x7@gmail.com>
+	<53C93AF8.5090407@infradead.org>
+	<20140718154232.GP24914@saruman.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Wy5PYr=w.VfpAbKB/=eU4cR"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 19, 2014 12:55:09 AM Rafael J. Wysocki wrote:
-> On Saturday, July 19, 2014 12:19:39 AM Rafael J. Wysocki wrote:
-> > On Friday, July 18, 2014 02:45:40 PM Dmitry Torokhov wrote:
-> > > On Friday, July 18, 2014 11:59:18 PM Rafael J. Wysocki wrote:
-> > > > On Friday, July 18, 2014 02:26:21 PM Dmitry Torokhov wrote:
-> > > > > On Friday, July 18, 2014 04:09:46 PM Alan Stern wrote:
-> > > > > > On Fri, 18 Jul 2014, Patrik Fimml wrote:
-> > > > > > > On Fri, Jul 18, 2014 at 03:00:46PM -0400, Alan Stern wrote:
-> > > > [cut]
-> > > > 
-> > > > > > > I'm not sure what the appropriate action for a video camera is
-> > > > > > > anyway.
-> > > > > > > Should it go away completely, including its device? Should it be
-> > > > > > > there,
-> > > > > > > but certainly not be the default choice when there is an
-> > > > > > > external
-> > > > > > > camera? I'm thinking along the lines of some application's
-> > > > > > > settings
-> > > > > > > dialog here, where it might be desirable to still be able to
-> > > > > > > select
-> > > > > > > the
-> > > > > > > internal camera for future recordings.
-> > > > > > > 
-> > > > > > > Of course, userspace could still decide simply not to
-> > > > > > > quiesce|deactivate|inhibit the device if that was desired.
-> > > > > > 
-> > > > > > There's some question about how much of userspace needs to get
-> > > > > > involved.  Just the daemon that manages these configuration
-> > > > > > changes, or
-> > > > > > other programs as well?  I guess that's not really our problem...
-> > > > > 
-> > > > > We need to provide means of implementing policy; the policy itself
-> > > > > is not
-> > > > > really our concern ;)
-> > > > > 
-> > > > > > In the end, it sounds like you're suggesting a new pair of PM
-> > > > > > callbacks: ->deactivate() and ->reactivate(), or ->inhibit() and
-> > > > > > ->uninhibit().  Plus an optional (?) sysfs interface for invoking
-> > > > > > the
-> > > > > > callbacks.
-> > > > > 
-> > > > > We do need sysfs interface so that userspace can talk to the devices
-> > > > > in
-> > > > > question; and we also need to make sure that PM core is aware of the
-> > > > > new
-> > > > > callbacks and provides guarantees about their interactions with
-> > > > > system-
-> > > > > and
-> > > > > runtime-PM callbacks so that individual drivers do not have to sort
-> > > > > it out
-> > > > > on their own.
-> > > > 
-> > > > A step back, please.
-> > > > 
-> > > > I have no idea why those need to be PM callbacks.
-> > > > 
-> > > > What you need really seems to be a way to tell a driver "ignore input
-> > > > from
-> > > > this device from now on as it is most likely bogus".  A natural
-> > > > reaction of
-> > > > the driver to that might be to stop processing input from the device
-> > > > and
-> > > > then runtime suspend it (and prevent it from generating remote wakeup
-> > > > as
-> > > > that may be bogus as well), but I don't see why the PM core needs to
-> > > > be
-> > > > involved in that at all.
-> > > 
-> > > So that we do not need to handle cases like:
-> > > 
-> > > - I am already in idle state and request comes to inhibit, what do I do
-> > > (in
-> > 
-> > > driver) or:
-> > I'm not sure why being "suspended" or not matters here.  The PM core
-> > doesn't know what physical state the device is in anyway and the driver
-> > or subsystem (or another layer such as ACPI) has to track that.
-> > 
-> > Also it seems that it should be perfectly fine to ignore input from the
-> > device without suspending it as well as it is perfectly fine to be
-> > suspended while you are generally not ignoring the input (just because
-> > there is no input at the moment, for example).
-> > 
-> > Yes, it make sense to suspend the device when you know you'll ignore input
-> > going forward, but then if the real goal is to prevent bogus input from
-> > reaching applications, then this isn't a power management problem even.
-> 
-> The area where it must interact with power management is wakeup, both remote
-> wakeup at run time and wakeup from system suspend.  In particular, there's
-> the question whether or not a device ignoring its input should be regarded
-> as a wakeup source.
+--Sig_/Wy5PYr=w.VfpAbKB/=eU4cR
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I'd say no.
+Hi Felipe,
 
-Anyway, even though it is very tempting to declare inhibit a "deeper" state of 
-runtime suspend maybe you are right and inhibit should really be separate from 
-PM and drivers would have to sort out all the possible state permutations.
+On Fri, 18 Jul 2014 10:42:32 -0500 Felipe Balbi <balbi@ti.com> wrote:
+>
+> already in my tree, should be in linux-next already. If not today,
+> tomorrow.
 
-Considering input devices:
+Well, Monday (logical tomorrow :-))
 
-input_open(): check if device is inhibited, if so do nothing. Otherwise try 
-waking up itself and parent (via pm_runtime_get_sync() on itself), this will 
-power up the device. Do additional configuration if needed.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-input_close(): check if device is inhibited, if not do pm_runtime_put (_sync? 
-to make sure we power off properly and not leave device up and running? or 
-should we power down manually not waiting for runtime PM)?
+--Sig_/Wy5PYr=w.VfpAbKB/=eU4cR
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-inhibit(): check if device is opened, if opened do pm_runtime_put_sync().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-uninhibit(): if device is opened do pm_runtime_get_sync(), let runtime PM 
-bring up the device. Do additional config if needed -> very similar to 
-input_open(), different condition.
+iQIcBAEBCAAGBQJTyay8AAoJEMDTa8Ir7ZwV8rMP/RrQmOHj77Gki4w9tPVg4tXH
+zWsKSVO9xcr1j2gasEBLsVdGF3Zt1RSDkhF/R4hFHqUX4gumofNJkq1//VRl2HNK
+keJic4zwmnzaYpDom/LKVQtZNAPmm6zDQQ0u3Q8SZn7M6rMM6rYfurY6FiiTT8sL
+IiLAcwRqVqJIflSmG9ZLvNKXDS3vUEIo/H+dj9djxHQdIUJZQzQeymC/ni0JZYHI
+DXbkJmoTnr3Y1xa8HLG5r/xMMe31yConkEwAnCyf94Wua9tKkTsAWAEhnIrMDmIo
+gsYH/Z2e6bFh6w9yxtB7TopsVt3FqDvUM7o747MJaDqPJdZNp0W2LM2SwnoObiRT
+3yKBxviWxn9RGedby4jOJ9YKBVxk6hv3uqt7US2I85YL7XspfrhU7H8LoYXJZyId
+UtIW+xsAdEShyJPNe8PXU7tpM54Mk5f4hXZKoKOH09c0UBUfrR8NNM0qdy+szfQ5
+ZPvemdHkSz/icHfGw92Cq+ni2jS0dB48Ho6nNBr2JY/ShYGUtuPuZGvy/JSL1Wec
+YYOq4hZp1uocsNOHj4lmyRj3A+rpQq8Gf47cKJBeNCRQKGUattEKkKlsmyAWJHYU
+ik/3JxKS5/35g6Yvoy3GaGjRiSuuU0YtU/mGb9DVG1jzBENWE/mbr9Hv0eeR4u5J
+QjwQd6URgnglijYjV1xU
+=bWn6
+-----END PGP SIGNATURE-----
 
-runtime_suspend(): power down the device. If not inhibited enable as wakeup 
-source.
-
-runtime_resume(): power up the device if device is opened and not inhibited.
-
-system_suspend(): check if device is opened, not inhibited and not in 
-runtimesuspend  already; power down.
-
-system_resume(): power up the device if it is opened and not inhibited. I 
-guess it's OK to wake up device that shoudl be runtime-PM-idle since it will 
-go to back sleep shortly.
-
-Ugh.. This is complicated...
-
-Thanks,
-Dmitry
-
+--Sig_/Wy5PYr=w.VfpAbKB/=eU4cR--
