@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030774AbaGRRvY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:51:24 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61201 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030529AbaGRRvW (ORCPT
+	id S1422734AbaGRRyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:54:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54492 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030448AbaGRRyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:51:22 -0400
-Message-ID: <53C95E97.2020805@linaro.org>
-Date: Fri, 18 Jul 2014 10:51:19 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 13:54:31 -0400
+Message-ID: <53C95F55.3010608@codeaurora.org>
+Date: Fri, 18 Jul 2014 10:54:29 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sched_clock: Track monotonic raw clock
-References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
-In-Reply-To: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
+        =?EUC-KR?B?J7Howdi89ic=?= <iamjoonsoo.kim@lge.com>,
+        Minchan Kim <minchan@kernel.org>
+CC: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>
+Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+References: <53C8C290.90503@lge.com>
+In-Reply-To: <53C8C290.90503@lge.com>
+Content-Type: text/plain; charset=EUC-KR
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 10:43 AM, Pawel Moll wrote:
-> This change is trying to make the sched clock "similar" to the
-> monotonic raw one.
->
-> The main goal is to provide some kind of unification between time
-> flow in kernel and in user space, mainly to achieve correlation
-> between perf timestamps and clock_gettime(CLOCK_MONOTONIC_RAW).
-> This has been suggested by Ingo and John during the latest
-> discussion (of many, we tried custom ioctl, custom clock etc.)
-> about this:
->
-> http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
->
-> For now I focused on the generic sched clock implementation,
-> but similar approach can be applied elsewhere.
->
-> Initially I just wanted to copy epoch from monotonic to sched
-> clock at update_clock(), but this can cause the sched clock
-> going backwards in certain corner cases, eg. when the sched
-> clock "increases faster" than the monotonic one. I believe
-> it's a killer issue, but feel free to ridicule me if I worry
-> too much :-)
->
-> In the end I tried to employ some basic control theory technique
-> to tune the multiplier used to calculate ns from cycles and
-> it seems to be be working in my system, with the average error
-> in the area of 2-3 clock cycles (I've got both clocks running
-> at 24MHz, which gives 41ns resolution).
->
-> / # cat /sys/kernel/debug/sched_clock_error
-> min error: 0ns
-> max error: 200548913ns
-> 100 samples moving average error: 117ns
-> / # cat /sys/kernel/debug/tracing/trace
-> <...>
->           <idle>-0     [000] d.h3  1195.102296: sched_clock_adjust: sched=1195102288457ns, mono=1195102288411ns, error=-46ns, mult_adj=65
->           <idle>-0     [000] d.h3  1195.202290: sched_clock_adjust: sched=1195202282416ns, mono=1195202282485ns, error=69ns, mult_adj=38
->           <idle>-0     [000] d.h3  1195.302286: sched_clock_adjust: sched=1195302278832ns, mono=1195302278861ns, error=29ns, mult_adj=47
->           <idle>-0     [000] d.h3  1195.402278: sched_clock_adjust: sched=1195402271082ns, mono=1195402270872ns, error=-210ns, mult_adj=105
->           <idle>-0     [000] d.h3  1195.502278: sched_clock_adjust: sched=1195502270832ns, mono=1195502270950ns, error=118ns, mult_adj=29
->           <idle>-0     [000] d.h3  1195.602276: sched_clock_adjust: sched=1195602268707ns, mono=1195602268732ns, error=25ns, mult_adj=50
->           <idle>-0     [000] d.h3  1195.702280: sched_clock_adjust: sched=1195702272999ns, mono=1195702272997ns, error=-2ns, mult_adj=55
->           <idle>-0     [000] d.h3  1195.802276: sched_clock_adjust: sched=1195802268749ns, mono=1195802268684ns, error=-65ns, mult_adj=71
->           <idle>-0     [000] d.h3  1195.902272: sched_clock_adjust: sched=1195902265207ns, mono=1195902265223ns, error=16ns, mult_adj=53
->           <idle>-0     [000] d.h3  1196.002276: sched_clock_adjust: sched=1196002269374ns, mono=1196002269283ns, error=-91ns, mult_adj=78
-> <...>
->
-> This code definitely needs more work and testing (I'm not 100%
-> sure if the Kp and Ki I've picked for the proportional and
-> integral terms are universal), but for now wanted to see
-> if this approach makes any sense whatsoever.
->
-> All feedback more than appreciated!
+On 7/17/2014 11:45 PM, Gioh Kim wrote:
+> 
+> Hi,
+> 
+> For page migration of CMA, buffer-heads of lru should be dropped.
+> Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
+> 
+> I have two solution to drop bhs.
+> One is invalidating entire lru.
+> Another is searching the lru and dropping only one bh that Laura proposed
+> at https://lkml.org/lkml/2012/8/31/313.
+> 
+> I'm not sure which has better performance.
+> So I did performance test on my cortex-a7 platform with Lmbench
+> that has "File & VM system latencies" test.
+> I am attaching the results.
+> The first line is of invalidating entire lru and the second is dropping selected bh.
+> 
+> File & VM system latencies in microseconds - smaller is better
+> -------------------------------------------------------------------------------
+> Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+>                         Create Delete Create Delete Latency Fault  Fault  selct
+> --------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+> 10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
+> 10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
+> 
+> 
+> I tried several times but the result tells that they are the same under 1% gap
+> except Protection Fault.
+> But the latency of Protection Fault is very small and I think it has little effect.
+> 
+> Therefore we can choose anything but I choose invalidating entire lru.
+> The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
+> So I think inserting codes in drop_buffers() can affect the system.
+> And also we cannot distinguish migration type in drop_buffers().
+> 
+> In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
+> I think alloc_contig_range() is proper to deal with bh like following patch.
+> 
+> Laura, can I have you name on Acked-by line?
+> Please let me represent my thanks.
+> 
+> Thanks for any feedback.
+> 
+> ------------------------------- 8< ----------------------------------
+> 
+> From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
+> From: Gioh Kim <gioh.kim@lge.com>
+> Date: Fri, 18 Jul 2014 13:40:01 +0900
+> Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+> 
+> The bh must be free to migrate a page at which bh is mapped.
+> The reference count of bh is increased when it is installed
+> into lru so that the bh of lru must be freed before migrating the page.
+> 
+> This frees every bh of lru. We could free only bh of migrating page.
+> But searching lru costs more than invalidating entire lru.
+> 
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> Acked-by: Laura Abbott <lauraa@codeaurora.org>\
 
-Very cool work! I've not been able to review it carefully, but one good
-stress test would be to pick a system where the hardware used for
-sched_clock is different from the hardware used for timekeeping.
+I'd prefer if you would remove my Acked-by line until I've actually
+given it :)
 
-Probably easily done on x86 hardware that normally uses the TSC, but has
-HPET/ACPI PM hardware available. After the system boots, change the
-clocksource via:
-/sys/devices/system/clocksource/clocksource0/current_clocksource
+> ---
+>  mm/page_alloc.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index b99643d4..3b474e0 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+>         if (ret)
+>                 return ret;
+> 
+> +       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
+> +               invalidate_bh_lrus();
+> +
+>         ret = __alloc_contig_migrate_range(&cc, start, end);
+>         if (ret)
+>                 goto done;
 
+I agree with the others that the if (...) check doesn't actually help
+anything here and should probably be removed.
 
-Although, looking again, this looks like it only works on the "generic"
-sched_clock (so ARM/ARM64?)...
+Thanks,
+Laura
 
-thanks
--john
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
