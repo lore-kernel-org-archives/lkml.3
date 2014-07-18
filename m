@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518AbaGRAt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 20:49:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55336 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759055AbaGRAtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 20:49:53 -0400
-From: NeilBrown <neilb@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 18 Jul 2014 10:48:28 +1000
-Subject: [PATCH 5/5] autofs4: comment typo: remove a a doubled word.
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Kent <raven@themaw.net>
-Message-ID: <20140718004828.19389.95882.stgit@notabene.brown>
-In-Reply-To: <20140718004353.19389.48104.stgit@notabene.brown>
-References: <20140718004353.19389.48104.stgit@notabene.brown>
-User-Agent: StGit/0.16
+	id S1759560AbaGRAum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 20:50:42 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56166 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759051AbaGRAuk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jul 2014 20:50:40 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Quentin Armitage <quentin@armitage.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: kirkwood: Reinstate cpufreq driver for ARCH_KIRKWOOD
+Date: Fri, 18 Jul 2014 03:08:57 +0200
+Message-ID: <5801914.DoQzr9v8uz@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140710135859.GL21833@lunn.ch>
+References: <1404987355.23201.65.camel@samson1.armitage.org.uk> <20140710135859.GL21833@lunn.ch>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Ian Kent <raven@themaw.net>
----
- fs/autofs4/root.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thursday, July 10, 2014 03:58:59 PM Andrew Lunn wrote:
+> On Thu, Jul 10, 2014 at 11:15:55AM +0100, Quentin Armitage wrote:
+> > Commit ff1f0018cf66080d8e6f59791e552615648a033a ("drivers: Enable
+> > building of Kirkwood drivers for mach-mvebu") added Kirkwood into
+> > mach-mvebu, adding MACH_KIRKWOOD to ARCH_KIRKWOOD in the KConfig files.
+> > 
+> > The change for ARM_KIRKWOOD_CPUFREQ replaced ARCH_KIRKWOOD with
+> > MACH_KIRKWOOD, whereas all the other changes were ARCH_KIRKWOOD ||
+> > MACH_KIRKWOOD.
+> > 
+> > As a consequence of this change, the cpufreq driver is no longer enabled
+> > for ARCH_KIRKWOOD. This patch reinstates ARM_KIRKWOOD_CPUFREQ for
+> > ARCH_KIRKWOOD.
+> > 
+> > Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
+> > ---
+> > diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> > index ebac671..24778f0 100644
+> > --- a/drivers/cpufreq/Kconfig.arm
+> > +++ b/drivers/cpufreq/Kconfig.arm
+> > @@ -118,7 +118,7 @@ config ARM_INTEGRATOR
+> >           If in doubt, say Y.
+> > 
+> >  config ARM_KIRKWOOD_CPUFREQ
+> > -       def_bool MACH_KIRKWOOD
+> > +       def_bool ARCH_KIRKWOOD || MACH_KIRKWOOD
+> >         help
+> >           This adds the CPUFreq driver for Marvell Kirkwood
+> >           SoCs.
+> 
+> Acked-by: Andrew Lunn <andrew@lunn.ch>
 
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index fb202cadd4b3..cdb25ebccc4c 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -377,7 +377,7 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
- 		 * this because the leaves of the directory tree under the
- 		 * mount never trigger mounts themselves (they have an autofs
- 		 * trigger mount mounted on them). But v4 pseudo direct mounts
--		 * do need the leaves to to trigger mounts. In this case we
-+		 * do need the leaves to trigger mounts. In this case we
- 		 * have no choice but to use the list_empty() check and
- 		 * require user space behave.
- 		 */
-
+Applied, thanks!
 
