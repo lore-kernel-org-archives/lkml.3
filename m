@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760988AbaGRJEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:04:25 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20992 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754394AbaGRJEX (ORCPT
+	id S1760649AbaGRJF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:05:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37918 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756217AbaGRJFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:04:23 -0400
-X-IronPort-AV: E=Sophos;i="5.00,914,1396972800"; 
-   d="scan'208";a="33450965"
-Message-ID: <53C8E350.6040705@cn.fujitsu.com>
-Date: Fri, 18 Jul 2014 17:05:20 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 18 Jul 2014 05:05:25 -0400
+Date: Fri, 18 Jul 2014 10:04:40 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/4 V3] irqchip: gic: Introduce ARM GICv2m MSI(-X) support
+Message-ID: <20140718090439.GC25180@leverpostej>
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140717131854.GN13108@titan.lakedaemon.net>
+ <20140717135534.GM30313@leverpostej>
+ <53C7E23D.1050900@amd.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: Jan Kiszka <jan.kiszka@web.de>, <mtosatti@redhat.com>,
-        <nadav.amit@gmail.com>, <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] kvm, mem-hotplug: Do not pin apic access page
- in memory.
-References: <1404824492-30095-1-git-send-email-tangchen@cn.fujitsu.com> <1404824492-30095-6-git-send-email-tangchen@cn.fujitsu.com> <20140712080442.GH4399@minantech.com> <53C38D55.2040307@cn.fujitsu.com> <20140714145822.GK4399@minantech.com> <53C51608.4080109@web.de> <20140715120921.GT18167@minantech.com> <53C51E66.7030208@cn.fujitsu.com> <20140715124048.GU18167@minantech.com> <53C7D0DC.1020001@cn.fujitsu.com> <20140717135707.GP4399@minantech.com>
-In-Reply-To: <20140717135707.GP4399@minantech.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.99]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C7E23D.1050900@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
+On Thu, Jul 17, 2014 at 03:48:29PM +0100, Suravee Suthikulanit wrote:
+> On 7/17/2014 8:55 AM, Mark Rutland wrote:
+> > Hi Jason,
+> >
+> > On Thu, Jul 17, 2014 at 02:18:54PM +0100, Jason Cooper wrote:
+> >> On Wed, Jul 09, 2014 at 06:05:00PM -0500, suravee.suthikulpanit@amd.com wrote:
+> >>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> >>>
+> >>> This patch set introduces support for MSI(-X) in GICv2m specification,
+> >>> which is implemented in some variation of GIC400.
+> >>>
+> >>> This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+> >>> (https://lkml.org/lkml/2014/3/14/320).
+> >>>
+> >>> Changes in V3:
+> >>>      * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic
+> >>>        (per Jason Cooper request)
+> >>>      * Misc fix/clean up per Mark Rutland comments
+> >>>      * Minor Clean up in the driver/irqchip/irq-gic-v2m.c: alloc_msi_irqs()
+> >>>      * Patch 4 is new to the series:
+> >>>          * Add ARM64-specific version arch_setup_msi_irqs() to allow support
+> >>>            for Multiple MSI.
+> >>>          * Add support for Multiple MSI for GICv2m.
+> >>>
+> >>> Suravee Suthikulpanit (4):
+> >>>    irqchip: gic: Add binding probe for ARM GIC400
+> >>>    irqchip: gic: Restructuring ARM GIC code
+> >>>    irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+> >>>    irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
+> >>
+> >> Ok, patch #1 applied to irqchip/urgent.  Patches 2 and 3 applied to
+> >> irqchip/gic with irqchip/urgent merged in.  To facilitate
+> >> testing/merging, I've prepared an unsigned tag for you on the
+> >> irqchip/gic branch:
+> >
+> > I'm a little concerned that this is all going through for v3.17 without
+> > a {Reviewed,Acked}-by from Marc or anyone working with GIC{,v2m}.
+> 
+> > While his comments on v1 have been addressed, he has not had a chance to
+> > acknowledge the solutions. I appreciate Marc's holiday is unfortunately
+> > timed.
+> >
+> > I also have an open concern with the binding with regard to the
+> > orthogonality of GICV GICH and the MSI registers.
+> 
+> The MSI part is normally enabled from the optional "msi-controller" 
+> keyword. It should not really matter which compatible ID it uses.
 
-On 07/17/2014 09:57 PM, Gleb Natapov wrote:
-> On Thu, Jul 17, 2014 at 09:34:20PM +0800, Tang Chen wrote:
->> Hi Gleb,
->>
->> On 07/15/2014 08:40 PM, Gleb Natapov wrote:
->> ......
->>>>
->>>> And yes, we have the problem you said here. We can migrate the page while L2
->>>> vm is running.
->>>> So I think we should enforce L2 vm to exit to L1. Right ?
->>>>
->>> We can request APIC_ACCESS_ADDR reload during L2->L1 vmexit emulation, so
->>> if APIC_ACCESS_ADDR changes while L2 is running it will be reloaded for L1 too.
->>>
->>
->> Sorry, I think I don't quite understand the procedure you are talking about
->> here.
->>
->> Referring to the code, I think we have three machines: L0(host), L1 and L2.
->> And we have two types of vmexit: L2->L1 and L2->L0.  Right ?
->>
->> We are now talking about this case: L2 and L1 shares the apic page.
->>
->> Using patch 5/5, when apic page is migrated on L0, mmu_notifier will notify
->> L1,
->> and update L1's VMCS. At this time, we are in L0, not L2. Why cannot we
-> Using patch 5/5, when apic page is migrated on L0, mmu_notifier will notify
-> L1 or L2 VMCS depending on which one happens to be running right now.
-> If it is L1 then L2's VMCS will be updated during vmentry emulation,
+I meant the fact that the MSI registers being described in reg[4],
+rather than how the driver determines MSI support.
 
-OK, this is easy to understand.
+> Ooops. I noticed that was accidentally dropped the check for 
+> "msi-controller" in the gicv2m_of_init() function.  I'll send a follow 
+> up patch to fix this.
 
->if it is
-> L2 we need to request reload during vmexit emulation to make sure L1's VMCS is
-> updated.
->
+Sure. Whatever happens we should have both the msi-controller property
+and the registers for the MSI block before we enable MSI support.
 
-I'm a little confused here. In patch 5/5, I called 
-make_all_cpus_request() to
-force all vcpus exit to host. If we are in L2, where will the vcpus exit 
-to ?
-L1 or L0 ?
+> > Suravee, do you need this urgently for v3.17? I was under the impression
+> > that we wouldn't have full PCIe support by then.
+> >
+> 
+> PCI is the dependency for this patch to function.  So, it should be 
+> aligned with upstreaming of PCI patches.
 
-Thanks.
+Ok, so it sounds like this can wait for the moment (but we should
+definitely ensure this gets some testing before then).
 
+Cheers,
+Mark
