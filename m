@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367AbaGRC7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 22:59:03 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:58158 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964AbaGRC7B (ORCPT
+	id S1759507AbaGRDBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:01:31 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:48462 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964AbaGRDBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 22:59:01 -0400
+	Thu, 17 Jul 2014 23:01:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140718090325.32eb36bb@canb.auug.org.au>
-References: <CAPDOMViJfR2qqNRkx_mKpQ0FWd76YN77ev3M=0boZFW6NvS3Pg@mail.gmail.com>
-	<20140718090325.32eb36bb@canb.auug.org.au>
-Date: Thu, 17 Jul 2014 22:58:59 -0400
-Message-ID: <CAPDOMVjOVW3y9cc-6wnh0wtoX9F8AMCNZ4WDV5QJFn4riQ2WXg@mail.gmail.com>
-Subject: Re: Build allyesconfig for PowerPc tested
+In-Reply-To: <alpine.DEB.2.10.1407180013260.24854@nanos>
+References: <CAPDOMVgJx4NTSDXyS4k9jfWzSw_vJ=TFDBPdCUgxa-Xato1bYA@mail.gmail.com>
+	<alpine.DEB.2.10.1407180013260.24854@nanos>
+Date: Thu, 17 Jul 2014 23:01:29 -0400
+Message-ID: <CAPDOMViHhE22ndcjez+vfZWGprsx_Cw0Rn-FpaoNsi63cRnr9g@mail.gmail.com>
+Subject: Re: Alpha Checkpatch Errors
 From: Nick Krause <xerofoify@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
+        Matt Turner <mattst88@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 7:03 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Nick,
+On Thu, Jul 17, 2014 at 6:17 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 17 Jul 2014, Nick Krause wrote:
 >
-> On Thu, 17 Jul 2014 14:49:29 -0400 Nick Krause <xerofoify@gmail.com> wrote:
->>
->> For a while allyesconfig for powerpc seemed to fail building I ran the
->> test today to check if
->> it builds. It seems to build for me but with warnings. Furthermore
->> there seem to be a few
->> warnings that need clean up. I can either send another email to the
->> maintainers of the powerpc
->> architecture branch or you can with my logs as I am attaching them here,
+>> Hey Richard and other Maintainers,
+>> I am wondering about cleaning up the cleanpatch errors for alpha,  as
+>> I  am hitting a lot of in the arch/alpha directory.
+>> It would be nice if I got a list of files that still need coding style
+>> cleanup as this may be of nice to cleanup :).
 >
-> Powerpc allyesconfig will not build completely, this has been known for
-> a long time.  Even your log shows it failing, so I do not understand
-> what you are saying.  (BTW, that is not the normal way for the build to
-> fail, it will always fail when trying to link vmlinux.  Maybe you are
-> missing some tool to build the kernel signing keys?)
+> Nick, can you please stop that nonsense? checkpatch.pl is a tool to
+> check PATCHES and not to apply random nonsense on existing code. See
+> also:
 >
-> You should report warnings/failures in subsystems to the appropriate
-> subsyetem maintainer, just because you get these for a particular
-> architecture does not mean that they are the responsibility of that
-> architecture maintainer.
+>   https://lwn.net/Articles/605597/
 >
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-
-
-That's fine I will send this to the maintainer of the powerpc architecture .
-I would like to see this get mixed soon.
-Cheers Nick
+> Joe, can you please finally remove the -f option from checkpatch.pl ?
+>
+> Thanks,
+>
+>         tglx
+I understand how about checkpatch. We should remove the -f option as I
+agree it gets used too much.
+Sorry Nick
