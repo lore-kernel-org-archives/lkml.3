@@ -1,150 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965209AbaGRKL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:11:28 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50287 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934455AbaGRKLZ (ORCPT
+	id S965246AbaGRKLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:11:53 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:63126 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934026AbaGRKLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:11:25 -0400
-Message-ID: <53C8F280.9040507@gmail.com>
-Date: Fri, 18 Jul 2014 15:40:08 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 18 Jul 2014 06:11:49 -0400
 MIME-Version: 1.0
-To: Neil Armstrong <superna9999@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] net: macb: Separate rx and tx ring init function
-References: <53C8EE60.8020707@gmail.com>
-In-Reply-To: <53C8EE60.8020707@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <6186153.TIYp5NXPIq@wuerfel>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
+ <1405663186-26464-2-git-send-email-cw00.choi@samsung.com> <6186153.TIYp5NXPIq@wuerfel>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Fri, 18 Jul 2014 15:41:27 +0530
+Message-ID: <CAHfPSqBDOEH5HurG=rECV=d+MM_YjTEpsiwuTgtNgFgCQ0P2bw@mail.gmail.com>
+Subject: Re: [PATCHv6 1/4] iio: adc: exynos_adc: Add exynos_adc_data structure
+ to improve readability
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
+        My self <ch.naveen@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, kyungmin.park@samsung.com, t.figa@samsung.com,
+        linux-iio@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 03:22 PM, Neil Armstrong wrote:
-> A single method is called to initialize the TX and RX
-> rings. Separate the methods into distinct ones for
-> MACB and GEM context.
+Hello Arnd,
+
+On 18 July 2014 15:12, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 18 July 2014 14:59:43 Chanwoo Choi wrote:
+>> This patchset add 'exynos_adc_data' structure which includes some functions
+>> to control ADC operation and specific data according to ADC version (v1 or v2).
+>>
 >
-> Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
-> ---
->   drivers/net/ethernet/cadence/macb.c |   33 ++++++++++++++++++++++++---------
->   drivers/net/ethernet/cadence/macb.h |    3 ++-
->   2 files changed, 26 insertions(+), 10 deletions(-)
+> This new structure makes a lot of sense for covering the exynos specific
+> versions, but it will likely give a little more complexity for the
+> older models. We'll have to deal with that later then, no need to
+> hold up your patch. Interestingly, the version numbers seem weird. The
+> old driver uses
 >
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index e9daa07..20ad483 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -1219,7 +1219,14 @@ out_err:
->   	return -ENOMEM;
->   }
->   
-> -static void gem_init_rings(struct macb *bp)
-> +static void gem_init_rx_rings(struct macb *bp)
-> +{
-> +	bp->rx_tail = bp->rx_prepared_head = 0;
-> +
-> +	gem_rx_refill(bp);
-> +}
-> +
-> +static void gem_init_tx_rings(struct macb *bp)
->   {
->   	int i;
->   
-> @@ -1229,12 +1236,10 @@ static void gem_init_rings(struct macb *bp)
->   	}
->   	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
->   
-> -	bp->rx_tail = bp->rx_prepared_head = bp->tx_head = bp->tx_tail = 0;
-> -
-> -	gem_rx_refill(bp);
-> +	bp->tx_head = bp->tx_tail = 0;
+>         {
+>                 .name           = "s3c24xx-adc",
+>                 .driver_data    = TYPE_ADCV1,
+>         }, {
+>                 .name           = "s3c2443-adc",
+>                 .driver_data    = TYPE_ADCV11,
+>         }, {
+>                 .name           = "s3c2416-adc",
+>                 .driver_data    = TYPE_ADCV12,
+>         }, {
+>                 .name           = "s3c64xx-adc",
+>                 .driver_data    = TYPE_ADCV2,
+>         }, {
+>                 .name           = "samsung-adc-v3",
+>                 .driver_data    = TYPE_ADCV3,
+>         }
+>
+> Where TYPE_ADCV3 seems to be the same as the new ADC_V1 used in this
+> driver. Do you have an explanation for that?
 
-This is not the preferred way of doing it....
+As per suggestion from Doug Anderson,
+I've implemented IIO based ADC driver to work with Exynos5250.
+keeping the plat-samsung/adc.c unchanged.
 
-multiple assignments should be avoided
+Assuming Exynos5250 is the one using the driver for the first time.
+i've named it v1 and so on.
 
->   }
->   
-> -static void macb_init_rings(struct macb *bp)
-> +static void macb_init_rx_rings(struct macb *bp)
->   {
->   	int i;
->   	dma_addr_t addr;
-> @@ -1247,13 +1252,20 @@ static void macb_init_rings(struct macb *bp)
->   	}
->   	bp->rx_ring[RX_RING_SIZE - 1].addr |= MACB_BIT(RX_WRAP);
->   
-> +	bp->rx_tail = 0;
-> +}
-> +
-> +static void macb_init_tx_rings(struct macb *bp)
-> +{
-> +	int i;
-> +
->   	for (i = 0; i < TX_RING_SIZE; i++) {
->   		bp->tx_ring[i].addr = 0;
->   		bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
->   	}
->   	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
->   
-> -	bp->rx_tail = bp->tx_head = bp->tx_tail = 0;
-> +	bp->tx_head = bp->tx_tail = 0;
+Now, This seems to cause a lot of confusion.
 
-Dto...
+>
+>         Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
->   }
->   
->   static void macb_reset_hw(struct macb *bp)
-> @@ -1554,7 +1566,8 @@ static int macb_open(struct net_device *dev)
->   
->   	napi_enable(&bp->napi);
->   
-> -	bp->macbgem_ops.mog_init_rings(bp);
-> +	bp->macbgem_ops.mog_init_rx_rings(bp);
-> +	bp->macbgem_ops.mog_init_tx_rings(bp);
->   	macb_init_hw(bp);
->   
->   	/* schedule a link state check */
-> @@ -1901,12 +1914,14 @@ static int __init macb_probe(struct platform_device *pdev)
->   	if (macb_is_gem(bp)) {
->   		bp->macbgem_ops.mog_alloc_rx_buffers = gem_alloc_rx_buffers;
->   		bp->macbgem_ops.mog_free_rx_buffers = gem_free_rx_buffers;
-> -		bp->macbgem_ops.mog_init_rings = gem_init_rings;
-> +		bp->macbgem_ops.mog_init_rx_rings = gem_init_rx_rings;
-> +		bp->macbgem_ops.mog_init_tx_rings = gem_init_tx_rings;
->   		bp->macbgem_ops.mog_rx = gem_rx;
->   	} else {
->   		bp->macbgem_ops.mog_alloc_rx_buffers = macb_alloc_rx_buffers;
->   		bp->macbgem_ops.mog_free_rx_buffers = macb_free_rx_buffers;
-> -		bp->macbgem_ops.mog_init_rings = macb_init_rings;
-> +		bp->macbgem_ops.mog_init_rx_rings = macb_init_rx_rings;
-> +		bp->macbgem_ops.mog_init_tx_rings = macb_init_tx_rings;
->   		bp->macbgem_ops.mog_rx = macb_rx;
->   	}
->   
-> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-> index 51c0244..8016d08 100644
-> --- a/drivers/net/ethernet/cadence/macb.h
-> +++ b/drivers/net/ethernet/cadence/macb.h
-> @@ -550,7 +550,8 @@ struct macb;
->   struct macb_or_gem_ops {
->   	int	(*mog_alloc_rx_buffers)(struct macb *bp);
->   	void	(*mog_free_rx_buffers)(struct macb *bp);
-> -	void	(*mog_init_rings)(struct macb *bp);
-> +	void	(*mog_init_rx_rings)(struct macb *bp);
-> +	void	(*mog_init_tx_rings)(struct macb *bp);
->   	int	(*mog_rx)(struct macb *bp, int budget);
->   };
->   
 
 
 -- 
-Regards,
-Varka Bhadram.
-
+Shine bright,
+(: Nav :)
