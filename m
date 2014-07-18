@@ -1,117 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762133AbaGRNk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:40:59 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:50290 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762113AbaGRNkz (ORCPT
+	id S1762152AbaGRNli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:41:38 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17640 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934950AbaGRNM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:40:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
-References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
-Date: Fri, 18 Jul 2014 15:40:53 +0200
-Message-ID: <CAFLxGvxQU_z+mChHsNSu9VZEdXrU+RU75k6H18uKbdAj2TKD5g@mail.gmail.com>
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Yue Zhang <yuezha@microsoft.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        driverdev-devel@linuxdriverproject.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, haiyangz@microsoft.com,
-        "K. Y. Srinivasan" <kys@microsoft.com>, huishao@microsoft.com,
-        decui@microsoft.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jul 2014 09:12:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Eric Sandeen <sandeen@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 159/170] ext4: disable synchronous transaction batching if max_batch_time==0
+Date: Fri, 18 Jul 2014 14:12:44 +0200
+Message-Id: <14e64d74cf337c8edcce44a09490af720f31c3e1.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 12:55 PM, Yue Zhang <yuezha@microsoft.com> wrote:
-> From: Yue Zhang <yuezha@microsoft.com>
->
-> This patch addresses the comment from Olaf Hering and Greg KH
-> for a previous commit 3a494e710367 ("hyperv: Add handler for
-> RNDIS_STATUS_NETWORK_CHANGE event")
->
-> In previous solution, the driver calls "network restart" to
-> force a DHCP renew when the host is back from hibernation.
->
-> In this fix, the driver will keep network carrier offline for
-> 10 seconds and then bring it back. So that ifplugd daemon will
-> notice this change and refresh DHCP lease.
->
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
->
-> Signed-off-by: Yue Zhang <yuezha@microsoft.com>
-> ---
->  drivers/net/hyperv/netvsc_drv.c | 21 +++++++++++++++++----
->  1 file changed, 17 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index a9c5eaa..559c97d 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -33,6 +33,7 @@
->  #include <linux/if_vlan.h>
->  #include <linux/in.h>
->  #include <linux/slab.h>
-> +#include <linux/delay.h>
->  #include <net/arp.h>
->  #include <net/route.h>
->  #include <net/sock.h>
-> @@ -792,8 +793,7 @@ static void netvsc_link_change(struct work_struct *w)
->         struct netvsc_device *net_device;
->         struct rndis_device *rdev;
->         bool notify, refresh = false;
-> -       char *argv[] = { "/etc/init.d/network", "restart", NULL };
-> -       char *envp[] = { "HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
-> +       int delay;
->
->         rtnl_lock();
->
-> @@ -816,8 +816,21 @@ static void netvsc_link_change(struct work_struct *w)
->
->         rtnl_unlock();
->
-> -       if (refresh)
-> -               call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
-> +       if (refresh) {
-> +               /*
-> +                * Keep the carrier offline for 10 seconds
-> +                * to notify ifplugd daemon network change
-> +                */
+From: Eric Sandeen <sandeen@redhat.com>
 
-Why 10? Is this a random number which works by accident for ifplugd?
-What about other networking implementations, is 10 also ok for them?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> +               for (delay = 0; delay < 10; delay++) {
-> +                       rtnl_lock();
-> +                       netif_carrier_off(net);
-> +                       rtnl_unlock();
-> +                       ssleep(1);
-> +               }
-> +               rtnl_lock();
-> +               netif_carrier_on(net);
-> +               rtnl_unlock();
-> +       }
->
->         if (notify)
->                 netdev_notify_peers(net);
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+===============
 
+commit 5dd214248f94d430d70e9230bda72f2654ac88a8 upstream.
 
+The mount manpage says of the max_batch_time option,
 
+	This optimization can be turned off entirely
+	by setting max_batch_time to 0.
+
+But the code doesn't do that.  So fix the code to do
+that.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/ext4/super.c       | 2 --
+ fs/jbd2/transaction.c | 5 ++++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index a8b886851ff6..9afc4ba21611 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1500,8 +1500,6 @@ static int handle_mount_opt(struct super_block *sb, char *opt, int token,
+ 			arg = JBD2_DEFAULT_MAX_COMMIT_AGE;
+ 		sbi->s_commit_interval = HZ * arg;
+ 	} else if (token == Opt_max_batch_time) {
+-		if (arg == 0)
+-			arg = EXT4_DEF_MAX_BATCH_TIME;
+ 		sbi->s_max_batch_time = arg;
+ 	} else if (token == Opt_min_batch_time) {
+ 		sbi->s_min_batch_time = arg;
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 7272cc6977ec..ab3815c856dc 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1590,9 +1590,12 @@ int jbd2_journal_stop(handle_t *handle)
+ 	 * to perform a synchronous write.  We do this to detect the
+ 	 * case where a single process is doing a stream of sync
+ 	 * writes.  No point in waiting for joiners in that case.
++	 *
++	 * Setting max_batch_time to 0 disables this completely.
+ 	 */
+ 	pid = current->pid;
+-	if (handle->h_sync && journal->j_last_sync_writer != pid) {
++	if (handle->h_sync && journal->j_last_sync_writer != pid &&
++	    journal->j_max_batch_time) {
+ 		u64 commit_time, trans_time;
+ 
+ 		journal->j_last_sync_writer = pid;
 -- 
-Thanks,
-//richard
+2.0.0
+
