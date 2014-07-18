@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609AbaGRDFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 23:05:15 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:61922 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676AbaGRDFN (ORCPT
+	id S1759652AbaGRDHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 23:07:49 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:34397 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676AbaGRDHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 23:05:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDOMVjb_JxnGSTf5mW_RQ58h4-7fS6HywARpPV3XgWA33SybQ@mail.gmail.com>
-References: <CAPDOMVjTxTNTfgPJMz6eNfabXuvtJ43YMpEeDEQ236EtF168Cg@mail.gmail.com>
-	<20140717075204.GA15569@ravnborg.org>
-	<CAPDOMVjb_JxnGSTf5mW_RQ58h4-7fS6HywARpPV3XgWA33SybQ@mail.gmail.com>
-Date: Thu, 17 Jul 2014 23:05:12 -0400
-Message-ID: <CAPDOMVj9GcoC26Sp6sOmwZf39mfOn=Wy87AnfzDguthcFOTXhg@mail.gmail.com>
-Subject: Re: Sparc: Fix Mes in highmem.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jul 2014 23:07:48 -0400
+Message-ID: <1405652857.21735.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:locking/urgent] locking/mutex: Disable optimistic spinning
+ on some architectures
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org, torvalds@linux-foundation.org, catalin.marinas@arm.com,
+        peterz@infradead.org, cmetcalf@tilera.com, jason.low2@hp.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, dave.anglin@bell.net,
+        James.Bottomley@hansenpartnership.com, will.deacon@arm.com,
+        waiman.long@hp.com, james.hogan@imgtec.com, mpatocka@redhat.com,
+        davem@davemloft.net, paulmck@linux.vnet.ibm.com, vgupta@synopsys.com,
+        benh@kernel.crashing.org, jejb@parisc-linux.org
+Cc: linux-tip-commits@vger.kernel.org, stable@kernel.org
+Date: Thu, 17 Jul 2014 20:07:37 -0700
+In-Reply-To: <tip-4badad352a6bb202ec68afa7a574c0bb961e5ebc@git.kernel.org>
+References: <20140606175316.GV13930@laptop.programming.kicks-ass.net>
+	 <tip-4badad352a6bb202ec68afa7a574c0bb961e5ebc@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 1:38 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> On Thu, Jul 17, 2014 at 3:52 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
->> On Wed, Jul 16, 2014 at 10:25:30PM -0400, Nick Krause wrote:
->>> I am hitting three Fix mes in this file and am wondering as the
->>> maintainer how you would like
->>> to clean them up.
->>
->> They may be addressed if we one day decide to give the sparc32 highmem
->> support a big overhaul. Until then they are left as is.
->>
->>         Sam
->  Very well then I will just not touch it until we are going to
-> overhaul the highmem  for
-> sparc32.
-> Cheers Nick
-If you want I can fix the sparc32 highmem area with your help. I am new
-to the kernel so a little help if needed would be great when doing this work
-for you:).
-Cheers Nick
+On Wed, 2014-07-16 at 12:24 -0700, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  4badad352a6bb202ec68afa7a574c0bb961e5ebc
+> Gitweb:     http://git.kernel.org/tip/4badad352a6bb202ec68afa7a574c0bb961e5ebc
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Fri, 6 Jun 2014 19:53:16 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 16 Jul 2014 14:57:07 +0200
+> 
+> locking/mutex: Disable optimistic spinning on some architectures
+> 
+> The optimistic spin code assumes regular stores and cmpxchg() play nice;
+> this is found to not be true for at least: parisc, sparc32, tile32,
+> metag-lock1, arc-!llsc and hexagon.
+> 
+> There is further wreckage, but this in particular seemed easy to
+> trigger, so blacklist this.
+> 
+> Opt in for known good archs.
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Jason Low <jason.low2@hp.com>
+> Cc: Waiman Long <waiman.long@hp.com>
+> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: John David Anglin <dave.anglin@bell.net>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: stable@vger.kernel.org
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: sparclinux@vger.kernel.org
+> Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+Cc'ing stable: this issue was reported to begin after commit fb0527bd,
+so since v3.13.
+
+Thanks,
+Davidlohr
+
