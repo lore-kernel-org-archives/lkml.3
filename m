@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaGRVjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:39:33 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:56589 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaGRVjb (ORCPT
+	id S1756156AbaGRVlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:41:03 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57363 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751640AbaGRVlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:39:31 -0400
+	Fri, 18 Jul 2014 17:41:00 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dtor@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Patrik Fimml <patrikf@chromium.org>,
+        Bastien Nocera <hadess@hadess.net>, linux-pm@vger.kernel.org,
+        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Power-managing devices that are not of interest at some point in time
+Date: Fri, 18 Jul 2014 23:59:18 +0200
+Message-ID: <1539989.Y0kuKjTTVX@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1660498.3ZcWSfNcWh@dtor-glaptop>
+References: <Pine.LNX.4.44L0.1407181557020.979-100000@iolanthe.rowland.org> <1660498.3ZcWSfNcWh@dtor-glaptop>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:a41b:32ff:6745:940b]
-In-Reply-To: <1405692730-31284-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1405692730-31284-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Fri, 18 Jul 2014 14:39:30 -0700
-Message-ID: <CAOesGMgp+Zxc5Brwpa8-zSgWpj+jX3XVO8nC3f=Tw-b=_m0hVQ@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.16 #2
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Bo Shen <voice.shen@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 7:12 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> Arnd, Olof, Kevin,
->
-> This is the latest regressions that we found while testing the at91sam9n12 and
-> at91sam9x5 platforms following our move to CCF.
-> I created a pull-request this time because I have 3 patches: there should be
-> no conflict anyway. This tag does not contain the fix that Olof had taken during
-> previous -rc cycle on purpose: this way it won't appear twice in the history.
->
-> Thanks, best regards,
->
-> The following changes since commit 971dc9ce106110745f246337f229013589354536:
->
->   ARM: at91/dt: sam9261: remove slow RC osc (2014-06-25 18:00:17 +0200)
->
-> are available in the git repository at:
->
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
->
-> for you to fetch changes up to e0d69e119fc6bf7cc3c9f791478108c1b925bb2e:
->
->   ARM: at91/dt: add missing clocks property to pwm node in sam9x5.dtsi (2014-07-18 15:56:35 +0200)
+On Friday, July 18, 2014 02:26:21 PM Dmitry Torokhov wrote:
+> On Friday, July 18, 2014 04:09:46 PM Alan Stern wrote:
+> > On Fri, 18 Jul 2014, Patrik Fimml wrote:
+> > > On Fri, Jul 18, 2014 at 03:00:46PM -0400, Alan Stern wrote:
 
-Merged, thanks.
+[cut]
 
+> > > I'm not sure what the appropriate action for a video camera is anyway.
+> > > Should it go away completely, including its device? Should it be there,
+> > > but certainly not be the default choice when there is an external
+> > > camera? I'm thinking along the lines of some application's settings
+> > > dialog here, where it might be desirable to still be able to select the
+> > > internal camera for future recordings.
+> > > 
+> > > Of course, userspace could still decide simply not to
+> > > quiesce|deactivate|inhibit the device if that was desired.
+> > 
+> > There's some question about how much of userspace needs to get
+> > involved.  Just the daemon that manages these configuration changes, or
+> > other programs as well?  I guess that's not really our problem...
+> 
+> We need to provide means of implementing policy; the policy itself is not 
+> really our concern ;)
+> 
+> > 
+> > In the end, it sounds like you're suggesting a new pair of PM
+> > callbacks: ->deactivate() and ->reactivate(), or ->inhibit() and
+> > ->uninhibit().  Plus an optional (?) sysfs interface for invoking the
+> > callbacks.
+> 
+> We do need sysfs interface so that userspace can talk to the devices in 
+> question; and we also need to make sure that PM core is aware of the new 
+> callbacks and provides guarantees about their interactions with system- and 
+> runtime-PM callbacks so that individual drivers do not have to sort it out on 
+> their own.
 
--Olof
+A step back, please.
+
+I have no idea why those need to be PM callbacks.
+
+What you need really seems to be a way to tell a driver "ignore input from this
+device from now on as it is most likely bogus".  A natural reaction of the
+driver to that might be to stop processing input from the device and then
+runtime suspend it (and prevent it from generating remote wakeup as that may
+be bogus as well), but I don't see why the PM core needs to be involved in
+that at all.
+
+Rafael
+
