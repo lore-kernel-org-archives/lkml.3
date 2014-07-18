@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176AbaGRFho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 01:37:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34290 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759597AbaGRFhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 01:37:41 -0400
-Message-ID: <53C8B29F.5@ti.com>
-Date: Fri, 18 Jul 2014 11:07:35 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1759747AbaGRFjb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 01:39:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57618 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436AbaGRFja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 01:39:30 -0400
+Date: Fri, 18 Jul 2014 15:39:19 +1000
+From: NeilBrown <neilb@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH] stating/lustre: fix misuse of current->parent.
+Message-ID: <20140718153919.58e0164d@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>, David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next PATCH v2 0/3] Broadcast/Multicast rate limit via Ethtool
- Coalesce
-References: <1404890050-4020-1-git-send-email-mugunthanvnm@ti.com> <20140709.164420.157865201153845876.davem@davemloft.net> <53C76990.3000304@ti.com> <063D6719AE5E284EB5DD2968C1650D6D172768B0@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D172768B0@AcuExch.aculab.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/JXZQuo/IDBpNtsy8VeQ13Bo"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 July 2014 06:23 PM, David Laight wrote:
->> From: Mugunthan V N
->> On Thursday 10 July 2014 05:14 AM, David Miller wrote:
->>> From: Mugunthan V N <mugunthanvnm@ti.com>
->>> Date: Wed, 9 Jul 2014 12:44:07 +0530
->>>
->>>> A system/cpu can be loaded by a hacker with flooding of broadcast or
->>>> multicast packets, to prevent this some Ethernet controllers like CPSW
->>>> provide a mechanism to limit the broadcast/multicast packet rate via
->>>> hardware limiters. This patch series enables this feature via
->>>> Ethtool Coalesce.
->>> This is pretty bogus if you ask me.
->>>
->>> What is the difference from accepting a high rate of unicast packets?
->>> I say it is no different.
->>>
->>> Therefore, this feature makes no sense to me at all.
->> Any packet storm can cause an endpoint some issues. Typically packet
->> storms will cause the system CPU to thrash resulting is very low system
->> performance.
->>
->> Unicast storms only target a single destination end station, it can be
->> easily mitigated by the host adding a blocking entry in the LUT for each
->> aggressor.
->>
->> Broadcast and multicast target multiple end stations, or an entire
->> network, not only can it cause CPU thrashing, it can result in loss of
->> other broadcast and multicast services. The rate limiting feature allow
->> the broadcast and or multicast traffic to be dropped if the rates are
->> too high. This eliminates the CPU thrashing issue. It also allows the
->> system to analyze the aggressors and block them for future transgressions.
-> Rate limiting multicast traffic will definitely cause the loss of multicast
-> services.
+--Sig_/JXZQuo/IDBpNtsy8VeQ13Bo
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-When a system apply the rate limit, the system should expect to miss
-some of the broadcast/multicast packet depending on the rate limit it
-applies.
 
->
-> My experience of broadcast storms is that many of the ethernet switches
-> (probably especially the cheap ones) end up using a much slower software?
-> path for broadcasts. In a broadcast storm they start discarding normal
-> traffic - to point where a single ssh session becomes unusable.
-> This is true even when isolated from the storm by a 10M hub.
->
-> Broadcast storms are probably mostly caused by network topology issues.
-> Especially is switches are sending traffic to 'all ports' while resetting
-> the spanning tree tables.
->
 
-This is one more example where broadcast/multicast rate limit can be used.
+current->parent is used by ptrace to redirect some signal delivery
+to the ptracer.  It should only be used by 'ptrace' or 'signal' code.
+All other users should  use current->real_parent, which is the real
+parent.
 
-Regards
-Mugunthan V N
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/st=
+aging/lustre/lustre/llite/lproc_llite.c
+index 77ee9e58cf87..5c5d2d6470f1 100644
+--- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
++++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+@@ -909,7 +909,7 @@ void ll_stats_ops_tally(struct ll_sb_info *sbi, int op,=
+ int count)
+ 		 sbi->ll_stats_track_id =3D=3D current->pid)
+ 		lprocfs_counter_add(sbi->ll_stats, op, count);
+ 	else if (sbi->ll_stats_track_type =3D=3D STATS_TRACK_PPID &&
+-		 sbi->ll_stats_track_id =3D=3D current->parent->pid)
++		 sbi->ll_stats_track_id =3D=3D current->real_parent->pid)
+ 		lprocfs_counter_add(sbi->ll_stats, op, count);
+ 	else if (sbi->ll_stats_track_type =3D=3D STATS_TRACK_GID &&
+ 		 sbi->ll_stats_track_id =3D=3D
+
+--Sig_/JXZQuo/IDBpNtsy8VeQ13Bo
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU8izBznsnt1WYoG5AQIiqQ/+OfwkYQLgz+oigq6qZbIUtjn/vLhyZG2d
+oa2i2YaZPiwTw3ZoSAj7chrLZBReMoVq/n4wNw5feApsLkkRGGqmlbwxyECoWVHV
+66mSwtrCRMAfIMe2gtbb/osZjYstQt4hch3v6motUlOebWzV8lVJqkVOaVT+NkwQ
+wGBUvXOc7iKvQyQ3zIF+jFZiU/6RxZAlprtkwEuqx3ClvKltnvW+KnCd2birUVqq
+h1ipskpaW93ScCe+rrqamnrSk04RX+CdNe+lKDJ2Gk5mGx4/nwLH5XiQeEwgThRD
+0RGu+onLP2HRId1dyDhGJ4BP+lrpl5y//eBIEBjdw0Hz9eruo5XtswVMYFLevw6v
+Ym6GZeUXumC/h1EueAk/g9bNWEjgvOXY6lWgWmaOpZeYFsVKxEHrDXGWmTmle6YH
+gdIKScVSJSG/TPI21G9fUKh6XHROi7RNCu1BA+SzXkfSwp66U9O7Cesuci4wBrHo
+0UMGrIUCHdAQWcHumQmtxOgySrDQ0tzTFO0eJJST/fjvv9oWNosb9ugXqUiQfE5q
+44Jnqt9uZSIoolMr00+pCA448DsR7ROTaD/pJaH2rDlqiIX0pyzjy/jHQYnoHZQ7
+Bf8NMnP2X5Z1vb9pl1u0nZTKSyqTkSfyxePOKUVS7tF4T39+2w9gtg3WnHOsnB8Y
+YZH11CPeHqo=
+=FVGF
+-----END PGP SIGNATURE-----
+
+--Sig_/JXZQuo/IDBpNtsy8VeQ13Bo--
