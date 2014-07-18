@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760827AbaGRIfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:35:33 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:57755 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaGRIf1 (ORCPT
+	id S1760649AbaGRIl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:41:57 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:65442 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaGRIlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:35:27 -0400
-Date: Fri, 18 Jul 2014 10:35:22 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: davem@davemloft.net, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sparc: Add support for seek and shorter read to
- /dev/mdesc
-Message-ID: <20140718083522.GA20146@ravnborg.org>
-References: <1405618910-17667-1-git-send-email-khalid.aziz@oracle.com>
+	Fri, 18 Jul 2014 04:41:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405618910-17667-1-git-send-email-khalid.aziz@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [84.208.72.173]
+In-Reply-To: <20140717.161931.283488873926282207.davem@davemloft.net>
+References: <1405584370-30054-1-git-send-email-teg@jklm.no>
+ <1405584370-30054-4-git-send-email-teg@jklm.no> <20140717.161931.283488873926282207.davem@davemloft.net>
+From: Tom Gundersen <teg@jklm.no>
+Date: Fri, 18 Jul 2014 10:41:33 +0200
+Message-ID: <CAG-2HqVfQtGYmHvFtajxFW-L3WTPd2cdR2Ou2K5DYtEkgmnk-Q@mail.gmail.com>
+Subject: Re: [PATCH net-next v9 3/9] net: nl802154 - make add_iface take name
+ assign type
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net,
+        David Herrmann <dh.herrmann@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Khalid.
+On Fri, Jul 18, 2014 at 1:19 AM, David Miller <davem@davemloft.net> wrote:
+> From: Tom Gundersen <teg@jklm.no>
+> Date: Thu, 17 Jul 2014 10:06:04 +0200
+>
+>> @@ -192,8 +193,10 @@ int ieee802154_add_iface(struct sk_buff *skb, struct genl_info *info)
+>>               if (devname[nla_len(info->attrs[IEEE802154_ATTR_DEV_NAME]) - 1]
+>>                               != '\0')
+>>                       return -EINVAL; /* phy name should be null-terminated */
+>> +             name_assign_type = NET_NAME_USER;
+>>       } else  {
+>>               devname = "wpan%d";
+>> +             name_assign_type = NET_NAME_ENUM;
+>>       }
+>>
+>>       if (strlen(devname) >= IFNAMSIZ)
+>
+> Just wondering what should happen if "%d" appears in a user provided name.
+>
+> That would seem to be both USER and ENUM.
 
-Looks better now - thanks.
+Yes, this is a bit of a grey area.
 
-A few nits remaining.
-Please fix and submit a v3 - then we will see if David approves.
+I discussed this a bit with David Herrmann, and we landed on that
+these names should be USER. As the user has explicitly asked for the
+enumerated name, nobody should rename them to anything else (so ENUM
+would have the wrong effect as it indicates that userspace should
+rename the device), moreover, we should assume that the user knows
+what they are doing, and that the enumerated names are fine in this
+context.
 
-	Sam
+Cheers,
 
-> +/* mdesc_open() - Grab a reference to mdesc_handle when /dev/mdesc is
-> + *	opened. Hold this reference until /dev/mdesc is closed to ensure
-> + *	mdesc data structure is not released underneath us. Store the
-> + *	pointer to mdesc structure in private_data for read and seek to use
-Please use one space between "*" and "text" - not a tab.
-This is how it is done in the rest of the sparc code.
-
-
-
-> + */
-> +static int mdesc_open(struct inode *inode, struct file *file)
->  {
->  	struct mdesc_handle *hp = mdesc_grab();
-> -	int err;
->  
->  	if (!hp)
->  		return -ENODEV;
->  
-> -	err = hp->handle_size;
-> -	if (len < hp->handle_size)
-> -		err = -EMSGSIZE;
-> -	else if (copy_to_user(buf, &hp->mdesc, hp->handle_size))
-> -		err = -EFAULT;
-> -	mdesc_release(hp);
-> +	file->private_data = hp;
-> +	return 0;
-> +}
-
-Personally I would add an empty line before the return.
-But this is not something mandatory.
-
-> +static loff_t mdesc_llseek(struct file *file, loff_t offset, int whence)
-> +{
-> +	struct mdesc_handle *hp;
-> +
-> +	switch (whence) {
-> +	case SEEK_CUR:
-> +		offset += file->f_pos;
-> +		break;
-> +	case SEEK_SET:
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	hp = file->private_data;
-> +	if (offset > hp->handle_size)
-> +		return -EINVAL;
-> +	else
-> +		file->f_pos = offset;
-> +	return offset;
-> +}
-Likewise regarning empty line.
-
-> +
-> +/* mdesc_close() - /dev/mdesc is being closed, release the reference to
-> + *	mdesc structure.
-> + */
-Tab => space
-
-
-	Sam
+Tom
