@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307AbaGRBMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jul 2014 21:12:16 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49282 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753184AbaGRBMO (ORCPT
+	id S1759341AbaGRBNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jul 2014 21:13:35 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:43453 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996AbaGRBNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jul 2014 21:12:14 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dmitry Torokhov <dtor@google.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Bastien Nocera <hadess@hadess.net>,
-        Patrik Fimml <patrikf@chromium.org>, linux-pm@vger.kernel.org,
-        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Power-managing devices that are not of interest at some point in time
-Date: Fri, 18 Jul 2014 03:30:31 +0200
-Message-ID: <2674541.jV2qHCZlHf@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4468130.Uu9vndH3sC@dtor-glaptop>
-References: <Pine.LNX.4.44L0.1407171029210.1517-100000@iolanthe.rowland.org> <8587268.sIIBz6Y2QN@vostro.rjw.lan> <4468130.Uu9vndH3sC@dtor-glaptop>
+	Thu, 17 Jul 2014 21:13:34 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CALCETrVTm0YWCoj8pLEi9Yu1ECiYLV8CgDhEVehzgw_21eSNAw@mail.gmail.com>
+References: <cover.1405095200.git.luto@amacapital.net> <a13ebdd57378120348f40cbe12d9b1705d189434.1405095200.git.luto@amacapital.net>
+ <CA+55aFxc1FWkSzRmtRP3XhEJ1Y1p8bc3SiTShhskwjRLJkTazA@mail.gmail.com>
+ <CALCETrUqeUJT7xGy0TERVjJUAZUCXJGdgaDWv-f5+vkkArP8ig@mail.gmail.com>
+ <20140712183748.GW18735@two.firstfloor.org> <0795204d-575c-40b9-b5b0-75ab14eee330@email.android.com>
+ <20140712185202.GX18735@two.firstfloor.org> <CALCETrVTm0YWCoj8pLEi9Yu1ECiYLV8CgDhEVehzgw_21eSNAw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 17 Jul 2014 18:13:12 -0700
+Message-ID: <CALCETrWuL1GC1PjYQC3z0LNf=ZVSEYpx0toBvP=twhK-2dcq8Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86_64,signal: Remove 'fs' and 'gs' from sigcontext
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 17, 2014 05:43:42 PM Dmitry Torokhov wrote:
-> On Friday, July 18, 2014 02:43:02 AM Rafael J. Wysocki wrote:
-> > On Thursday, July 17, 2014 09:59:19 AM Dmitry Torokhov wrote:
-> > > On Thursday, July 17, 2014 10:39:16 AM Alan Stern wrote:
-> > > > On Wed, 16 Jul 2014, Dmitry Torokhov wrote:
-> > > > > We are not planning on implementing the policy in kernel, that's
-> > > > > indeed task for userspace; but unless we bring in the heavy hammer of
-> > > > > forcibly unbinding drivers, we do not currently have universal
-> > > > > mechanism of quiescing devices.
-> > > > 
-> > > > We sort of do: the ->freeze() callback.  But it wasn't intended for
-> > > > this kind of use; drivers may very well expect that userspace will
-> > > > already be frozen when the callback runs.  Besides, ->freeze() is
-> > > > supposed to quiesce devices without powering them down, whereas you
-> > > > want to do both.
-> > > 
-> > > Right.
-> > > 
-> > > > What you're asking for is different from anything the PM subsystem has
-> > > > done before.
-> > > 
-> > > Right.
-> > > 
-> > > > Given this fact, I don't see any alternatives to adding a
-> > > > new API or repurposing an existing API.  Either one would be somewhat
-> > > > painful.
-> > > > 
-> > > > For example, we could arrange to invoke ->suspend().  However, since
-> > > > the circumstances would be unusual (userspace is still running,
-> > > > ->prepare() was not called beforehand, ->suspend_irq() won't be called
-> > > > afterward), subsystems and drivers may very well react inappropriately.
-> > > 
-> > > I do not think anybody expects that drivers would not have to be modified
-> > > to support this functionality; I expect drivers would have to declare
-> > > themselves "queiscable" and therefore would assert that they will act
-> > > according to whatever rules we set up. I only want to make sure that this
-> > > new state is added to existing list of PM states rather than creating
-> > > completely new facility, so that driver authors have a chance to
-> > > understand PM state transitions that involve their driver.
-> > 
-> > If you're referring to runtime PM, it doesn't use "states".  It uses status
-> > values (you can think of them as metastates) which are "active", "suspended"
-> > or in-transit from one to the other.  There's no room for more of these in
-> > the design, I'm afraid.
-> > 
-> > Moreover, .runtime_suspend() can only be called when the device is quiescent
-> > already.  [That also applies to .suspend_late() and .suspend_irq() for
-> > system suspend and the freezing of tasks is requisite for the .prepare()
-> > and .suspend() callbacks (and the corresponding hibernation-related ones).]
-> > 
-> > From past discussions on similar topics it followed that there really was
-> > no generic way for individual drivers to quiesce devices on demand as long
-> > as user space was running.  Everything we could come up with was racy, this
-> > way or another.  That is the reason for using the freezer during system
-> > suspend.  In other words, if you want drivers to quiesce devices by force,
-> > you need to quiesce user space by force to start with - for example by
-> > freezing it.
-> > 
-> > For runtime PM, on the other hand, the underlying observation is that
-> > drivers should be able to detect when devices are already quiescent and
-> > initialize power transitions at those points.  It's role is to help with
-> > that, but not with quiescing things.
-> > 
-> > That said, in the "laptop lid closed" scenario (assuming that the system is
-> > not supposed to suspend in response to that, which in my opinion is the
-> > best approach)
-> 
-> This is default approach that works for many, but not necessarily all  use 
-> cases. I believe docked with lid closed scenario was mentioned already.
-> 
-> > the problem really seems to be that drivers are not
-> > aggressive enough with starting PM transitions (using runtime PM) when they
-> > see no activity.  Thus it seems that when the lid is closed, it'll be good
-> > to switch the drivers into a "more aggressive runtime PM mode" in which
-> > they will use any opportunity to start a power transition without worrying
-> > about extra latencies resulting from that.  In that mode they should also
-> > disable remote wakeup.  I think this should be sufficient to address the
-> > use case at hand.
-> 
-> OK, so how do we let the drivers know that they should start being aggressive 
-> with PM and that they should disable remote wakeup? I'd rather not add 
-> subsystem-specific interface for this, that is why we are reaching out in the 
-> first place.
+On Sat, Jul 12, 2014 at 2:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Sat, Jul 12, 2014 at 11:52 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> On Sat, Jul 12, 2014 at 11:40:03AM -0700, H. Peter Anvin wrote:
+>>> Because you are doing something weird (like Pin, for example) and take an asynchronous fault?
+>>
+>> But even for pin that would need executing 16 bit code, or really weird
+>> 32bit code. AFAIK for 32bit the only good use case was NX emulation
+>> (and old virtualization) which are both completely obsolete.
+>
+> Nothing particularly weird is needed.  Set a non-default stack segment
+> (e.g. any 16-bit ss) and take *any* fault.  This could be something
+> asynchronous or even a normal synchronous fault.  Return from the
+> signal handler: boom.
+>
+> We know that people use 16-bit stack segments: it's what prompted the
+> whole espfix64 thing.
+>
+>>
+>> I don't think it's worth messing with the signal handlers for 16bit
+>> code. If there's any problem with saving/restoring state that emulator
+>> can always handle it by itself.
+>>
+>
+> How?
+>
+> I can think of at least two vaguely feasible ways.  The program could
+> ptrace itself, trap sigreturn, and fix ss.  Or it could restore
+> registers itself and return using far ret or iret.  Both suck.
 
-For disabling remote wakeup we have a PM QoS flag that I'm not entirely happy
-with, so I guess we can replace it with something saner (I talked about that
-with Alan during the last year's LinuxCon, but then didn't have the time to
-get to that).
+You can't even hack around this with ptrace -- ptrace silently fails
+to write ss for non-TIF_IA32 tasks.
 
-For the whole thing I guess we can add a sysfs attribute under devices/.../power
-that will need to be exposed by drivers supporting that feature.  I'm not sure
-how to call it, though.
-
-Rafael
-
+--Andy
