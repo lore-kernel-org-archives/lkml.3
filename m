@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864AbaGRME2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:04:28 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60909 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761566AbaGRMEZ (ORCPT
+	id S965275AbaGRMEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:04:33 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:8244 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S964944AbaGRMEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:04:25 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, spk.linux@gmail.com
-Subject: [PATCH Resend 2/2] mfd: tps65912-spi: Remove unused variable
-Date: Fri, 18 Jul 2014 17:30:17 +0530
-Message-Id: <1405684817-20171-2-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405684817-20171-1-git-send-email-sachin.kamat@samsung.com>
-References: <1405684817-20171-1-git-send-email-sachin.kamat@samsung.com>
+	Fri, 18 Jul 2014 08:04:30 -0400
+Date: Fri, 18 Jul 2014 08:04:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ftrace: Do not copy old hash when resetting.
+Message-ID: <20140718080419.2bac2909@gandalf.local.home>
+In-Reply-To: <53C8A622.4090902@huawei.com>
+References: <1405311000-75943-1-git-send-email-wangnan0@huawei.com>
+	<53C8A622.4090902@huawei.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-‘rx_buf’ is not used in this function.
+On Fri, 18 Jul 2014 12:44:18 +0800
+Wang Nan <wangnan0@huawei.com> wrote:
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
----
- drivers/mfd/tps65912-spi.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> Hi Steve,
+> 
+> What's your opinion on my v2 patch ( https://lkml.org/lkml/2014/7/14/839 )?
+> 
+> I have swapped if consitions following your suggestion.
+> 
 
-diff --git a/drivers/mfd/tps65912-spi.c b/drivers/mfd/tps65912-spi.c
-index 69a5178bf152..de60ad98bd9f 100644
---- a/drivers/mfd/tps65912-spi.c
-+++ b/drivers/mfd/tps65912-spi.c
-@@ -32,10 +32,9 @@ static int tps65912_spi_write(struct tps65912 *tps65912, u8 addr,
- 	unsigned long spi_data = 1 << 23 | addr << 15 | *data;
- 	struct spi_transfer xfer;
- 	struct spi_message msg;
--	u32 tx_buf, rx_buf;
-+	u32 tx_buf;
- 
- 	tx_buf = spi_data;
--	rx_buf = 0;
- 
- 	xfer.tx_buf	= &tx_buf;
- 	xfer.rx_buf	= NULL;
--- 
-1.7.9.5
+Bah I didn't see it.
+
+Damn Claws mail, I need to figure out why the f*ck it randomly marks
+all my email as read. This has caused me to miss a few important emails
+recently :-(
+
+It looks fine, I've now marked it as todo that way I'll see it to pull
+it in for 3.17. Thanks,
+
+-- Steve
+
+
+> On 2014/7/14 12:10, Wang Nan wrote:
+> > If we are going to reset hash, we don't need to duplicate old hash
+> > and remove every entries right after allocation.
+> > 
+> > Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > ---
+> >  kernel/trace/ftrace.c | 8 +++++---
+> >  1 file changed, 5 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> > index 5b372e3..52d6931 100644
+> > --- a/kernel/trace/ftrace.c
+> > +++ b/kernel/trace/ftrace.c
+> > @@ -3471,14 +3471,16 @@ ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
+> >  	else
+> >  		orig_hash = &ops->notrace_hash;
+> >  
+> > -	hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
+> > +	if (!reset)
+> > +		hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
+> > +	else
+> > +		hash = alloc_ftrace_hash(FTRACE_HASH_DEFAULT_BITS);
+> > +
+> >  	if (!hash) {
+> >  		ret = -ENOMEM;
+> >  		goto out_regex_unlock;
+> >  	}
+> >  
+> > -	if (reset)
+> > -		ftrace_filter_reset(hash);
+> >  	if (buf && !ftrace_match_records(hash, buf, len)) {
+> >  		ret = -EINVAL;
+> >  		goto out_regex_unlock;
+> > 
+> 
 
