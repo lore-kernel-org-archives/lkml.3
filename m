@@ -1,220 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965598AbaGRKQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:16:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44260 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761121AbaGRKLJ (ORCPT
+	id S965642AbaGRKQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:16:45 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:39801 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965268AbaGRKQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:11:09 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+	Fri, 18 Jul 2014 06:16:41 -0400
+Message-ID: <53C8F3BC.4060607@gmail.com>
+Date: Fri, 18 Jul 2014 15:45:24 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Neil Armstrong <superna9999@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/14] scsi: push host_lock down into scsi_{host,target}_queue_ready
-Date: Fri, 18 Jul 2014 12:13:04 +0200
-Message-Id: <1405678393-11497-6-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405678393-11497-1-git-send-email-hch@lst.de>
-References: <1405678393-11497-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Subject: Re: [PATCH 1/2] net: macb: Separate rx and tx ring init function
+References: <53C8EE60.8020707@gmail.com> <53C8F280.9040507@gmail.com> <53C8F34D.9090503@gmail.com>
+In-Reply-To: <53C8F34D.9090503@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for not taking a host-wide lock in the dispatch path by pushing
-the lock down into the places that actually need it.  Note that this
-patch is just a preparation step, as it will actually increase lock
-roundtrips and thus decrease performance on its own.
+On 07/18/2014 03:43 PM, Neil Armstrong wrote:
+> Le 18/07/2014 12:10, Varka Bhadram a écrit :
+>> On 07/18/2014 03:22 PM, Neil Armstrong wrote:
+>>> A single method is called to initialize the TX and RX
+>>> rings. Separate the methods into distinct ones for
+>>> MACB and GEM context.
+>>>
+>>> Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
+>>> ---
+>>>    drivers/net/ethernet/cadence/macb.c |   33 ++++++++++++++++++++++++---------
+>>>    drivers/net/ethernet/cadence/macb.h |    3 ++-
+>>>    2 files changed, 26 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+>>> index e9daa07..20ad483 100644
+>>> --- a/drivers/net/ethernet/cadence/macb.c
+>>> +++ b/drivers/net/ethernet/cadence/macb.c
+>>> @@ -1219,7 +1219,14 @@ out_err:
+>>>    	return -ENOMEM;
+>>>    }
+>>>    
+>>> -static void gem_init_rings(struct macb *bp)
+>>> +static void gem_init_rx_rings(struct macb *bp)
+>>> +{
+>>> +	bp->rx_tail = bp->rx_prepared_head = 0;
+>>> +
+>>> +	gem_rx_refill(bp);
+>>> +}
+>>> +
+>>> +static void gem_init_tx_rings(struct macb *bp)
+>>>    {
+>>>    	int i;
+>>>    
+>>> @@ -1229,12 +1236,10 @@ static void gem_init_rings(struct macb *bp)
+>>>    	}
+>>>    	bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
+>>>    
+>>> -	bp->rx_tail = bp->rx_prepared_head = bp->tx_head = bp->tx_tail = 0;
+>>> -
+>>> -	gem_rx_refill(bp);
+>>> +	bp->tx_head = bp->tx_tail = 0;
+>> This is not the preferred way of doing it....
+>>
+>> multiple assignments should be avoided
+> Should I change it ? I only moved the lines, the logic hasn't changed.
+>
+Yes. we can change the logic also....  :-)
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Reviewed-by: Webb Scales <webbnh@hp.com>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Tested-by: Bart Van Assche <bvanassche@acm.org>
-Tested-by: Robert Elliott <elliott@hp.com>
----
- drivers/scsi/scsi_lib.c | 75 +++++++++++++++++++++++++------------------------
- 1 file changed, 39 insertions(+), 36 deletions(-)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index b832696..112c737 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1274,18 +1274,18 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
- /*
-  * scsi_target_queue_ready: checks if there we can send commands to target
-  * @sdev: scsi device on starget to check.
-- *
-- * Called with the host lock held.
-  */
- static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 					   struct scsi_device *sdev)
- {
- 	struct scsi_target *starget = scsi_target(sdev);
-+	int ret = 0;
- 
-+	spin_lock_irq(shost->host_lock);
- 	if (starget->single_lun) {
- 		if (starget->starget_sdev_user &&
- 		    starget->starget_sdev_user != sdev)
--			return 0;
-+			goto out;
- 		starget->starget_sdev_user = sdev;
- 	}
- 
-@@ -1293,57 +1293,66 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 		/*
- 		 * unblock after target_blocked iterates to zero
- 		 */
--		if (--starget->target_blocked == 0) {
--			SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
--					 "unblocking target at zero depth\n"));
--		} else
--			return 0;
-+		if (--starget->target_blocked != 0)
-+			goto out;
-+
-+		SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
-+				 "unblocking target at zero depth\n"));
- 	}
- 
- 	if (scsi_target_is_busy(starget)) {
- 		list_move_tail(&sdev->starved_entry, &shost->starved_list);
--		return 0;
-+		goto out;
- 	}
- 
--	return 1;
-+	scsi_target(sdev)->target_busy++;
-+	ret = 1;
-+out:
-+	spin_unlock_irq(shost->host_lock);
-+	return ret;
- }
- 
- /*
-  * scsi_host_queue_ready: if we can send requests to shost, return 1 else
-  * return 0. We must end up running the queue again whenever 0 is
-  * returned, else IO can hang.
-- *
-- * Called with host_lock held.
-  */
- static inline int scsi_host_queue_ready(struct request_queue *q,
- 				   struct Scsi_Host *shost,
- 				   struct scsi_device *sdev)
- {
-+	int ret = 0;
-+
-+	spin_lock_irq(shost->host_lock);
-+
- 	if (scsi_host_in_recovery(shost))
--		return 0;
-+		goto out;
- 	if (shost->host_busy == 0 && shost->host_blocked) {
- 		/*
- 		 * unblock after host_blocked iterates to zero
- 		 */
--		if (--shost->host_blocked == 0) {
--			SCSI_LOG_MLQUEUE(3,
--				shost_printk(KERN_INFO, shost,
--					     "unblocking host at zero depth\n"));
--		} else {
--			return 0;
--		}
-+		if (--shost->host_blocked != 0)
-+			goto out;
-+
-+		SCSI_LOG_MLQUEUE(3,
-+			shost_printk(KERN_INFO, shost,
-+				     "unblocking host at zero depth\n"));
- 	}
- 	if (scsi_host_is_busy(shost)) {
- 		if (list_empty(&sdev->starved_entry))
- 			list_add_tail(&sdev->starved_entry, &shost->starved_list);
--		return 0;
-+		goto out;
- 	}
- 
- 	/* We're OK to process the command, so we can't be starved */
- 	if (!list_empty(&sdev->starved_entry))
- 		list_del_init(&sdev->starved_entry);
- 
--	return 1;
-+	shost->host_busy++;
-+	ret = 1;
-+out:
-+	spin_unlock_irq(shost->host_lock);
-+	return ret;
- }
- 
- /*
-@@ -1524,7 +1533,7 @@ static void scsi_request_fn(struct request_queue *q)
- 			blk_start_request(req);
- 		sdev->device_busy++;
- 
--		spin_unlock(q->queue_lock);
-+		spin_unlock_irq(q->queue_lock);
- 		cmd = req->special;
- 		if (unlikely(cmd == NULL)) {
- 			printk(KERN_CRIT "impossible request in %s.\n"
-@@ -1534,7 +1543,6 @@ static void scsi_request_fn(struct request_queue *q)
- 			blk_dump_rq_flags(req, "foo");
- 			BUG();
- 		}
--		spin_lock(shost->host_lock);
- 
- 		/*
- 		 * We hit this when the driver is using a host wide
-@@ -1545,9 +1553,11 @@ static void scsi_request_fn(struct request_queue *q)
- 		 * a run when a tag is freed.
- 		 */
- 		if (blk_queue_tagged(q) && !blk_rq_tagged(req)) {
-+			spin_lock_irq(shost->host_lock);
- 			if (list_empty(&sdev->starved_entry))
- 				list_add_tail(&sdev->starved_entry,
- 					      &shost->starved_list);
-+			spin_unlock_irq(shost->host_lock);
- 			goto not_ready;
- 		}
- 
-@@ -1555,16 +1565,7 @@ static void scsi_request_fn(struct request_queue *q)
- 			goto not_ready;
- 
- 		if (!scsi_host_queue_ready(q, shost, sdev))
--			goto not_ready;
--
--		scsi_target(sdev)->target_busy++;
--		shost->host_busy++;
--
--		/*
--		 * XXX(hch): This is rather suboptimal, scsi_dispatch_cmd will
--		 *		take the lock again.
--		 */
--		spin_unlock_irq(shost->host_lock);
-+			goto host_not_ready;
- 
- 		/*
- 		 * Finally, initialize any error handling parameters, and set up
-@@ -1587,9 +1588,11 @@ static void scsi_request_fn(struct request_queue *q)
- 
- 	return;
- 
-- not_ready:
-+ host_not_ready:
-+	spin_lock_irq(shost->host_lock);
-+	scsi_target(sdev)->target_busy--;
- 	spin_unlock_irq(shost->host_lock);
--
-+ not_ready:
- 	/*
- 	 * lock q, handle tag, requeue req, and decrement device_busy. We
- 	 * must return with queue_lock held.
 -- 
-1.9.1
+Regards,
+Varka Bhadram.
 
