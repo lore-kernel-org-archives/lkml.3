@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409AbaGRXYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:24:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:53818 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278AbaGRXYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:24:48 -0400
-Date: Sat, 19 Jul 2014 09:24:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Masanari Iida <standby24x7@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH/linux-next] Documentation:Docbook: Fix file locations in
- gadget.tmpl
-Message-ID: <20140719092438.5f82cdb0@canb.auug.org.au>
-In-Reply-To: <20140718154232.GP24914@saruman.home>
-References: <1405655169-23804-1-git-send-email-standby24x7@gmail.com>
-	<1405655169-23804-2-git-send-email-standby24x7@gmail.com>
-	<53C93AF8.5090407@infradead.org>
-	<20140718154232.GP24914@saruman.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1759718AbaGRXZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:25:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47464 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757271AbaGRXZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 19:25:00 -0400
+Message-ID: <53C9ACCA.3070306@codeaurora.org>
+Date: Fri, 18 Jul 2014 16:24:58 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Wy5PYr=w.VfpAbKB/=eU4cR"; protocol="application/pgp-signature"
+To: John Stultz <john.stultz@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] sched_clock: Avoid corrupting hrtimer tree during suspend
+References: <1405721392-30795-1-git-send-email-sboyd@codeaurora.org> <53C99EC5.2060602@linaro.org> <53C9A1EC.8060905@codeaurora.org> <53C9A2E7.8020307@linaro.org>
+In-Reply-To: <53C9A2E7.8020307@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Wy5PYr=w.VfpAbKB/=eU4cR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Felipe,
-
-On Fri, 18 Jul 2014 10:42:32 -0500 Felipe Balbi <balbi@ti.com> wrote:
+On 07/18/14 15:42, John Stultz wrote:
+> If its a regression (and needs -stable backports) it needs to go in via
+> tip/timers/urgent, and not via the regular merge window.
 >
-> already in my tree, should be in linux-next already. If not today,
-> tomorrow.
+> Whats the additional risk -stable wise for canceling the timer during
+> suspend and starting it back up during resume?
+>
 
-Well, Monday (logical tomorrow :-))
+I'd say close to zero given that we'd only be making the timer run a
+little bit later and we have slack in there already. Here's that version.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+----8<-----
 
---Sig_/Wy5PYr=w.VfpAbKB/=eU4cR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Subject: [PATCH] sched_clock: Avoid corrupting hrtimer tree during suspend
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+During suspend we call sched_clock_poll() to update the epoch and
+accumulated time and reprogram the sched_clock_timer to fire
+before the next wrap-around time. Unfortunately,
+sched_clock_poll() doesn't restart the timer, instead it relies
+on the hrtimer layer to do that and during suspend we aren't
+calling that function from the hrtimer layer. Instead, we're
+reprogramming the expires time while the hrtimer is enqueued,
+which can cause the hrtimer tree to be corrupted. Furthermore, we
+restart the timer during suspend but we update the epoch during
+resume which seems counter-intuitive.
 
-iQIcBAEBCAAGBQJTyay8AAoJEMDTa8Ir7ZwV8rMP/RrQmOHj77Gki4w9tPVg4tXH
-zWsKSVO9xcr1j2gasEBLsVdGF3Zt1RSDkhF/R4hFHqUX4gumofNJkq1//VRl2HNK
-keJic4zwmnzaYpDom/LKVQtZNAPmm6zDQQ0u3Q8SZn7M6rMM6rYfurY6FiiTT8sL
-IiLAcwRqVqJIflSmG9ZLvNKXDS3vUEIo/H+dj9djxHQdIUJZQzQeymC/ni0JZYHI
-DXbkJmoTnr3Y1xa8HLG5r/xMMe31yConkEwAnCyf94Wua9tKkTsAWAEhnIrMDmIo
-gsYH/Z2e6bFh6w9yxtB7TopsVt3FqDvUM7o747MJaDqPJdZNp0W2LM2SwnoObiRT
-3yKBxviWxn9RGedby4jOJ9YKBVxk6hv3uqt7US2I85YL7XspfrhU7H8LoYXJZyId
-UtIW+xsAdEShyJPNe8PXU7tpM54Mk5f4hXZKoKOH09c0UBUfrR8NNM0qdy+szfQ5
-ZPvemdHkSz/icHfGw92Cq+ni2jS0dB48Ho6nNBr2JY/ShYGUtuPuZGvy/JSL1Wec
-YYOq4hZp1uocsNOHj4lmyRj3A+rpQq8Gf47cKJBeNCRQKGUattEKkKlsmyAWJHYU
-ik/3JxKS5/35g6Yvoy3GaGjRiSuuU0YtU/mGb9DVG1jzBENWE/mbr9Hv0eeR4u5J
-QjwQd6URgnglijYjV1xU
-=bWn6
------END PGP SIGNATURE-----
+Let's fix this by saving the accumulated state and canceling the
+timer during suspend. On resume we can update the epoch and
+restart the timer similar to what we would do if we were starting
+the clock for the first time.
 
---Sig_/Wy5PYr=w.VfpAbKB/=eU4cR--
+Fixes: a08ca5d1089d "sched_clock: Use an hrtimer instead of timer"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ kernel/time/sched_clock.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index 445106d2c729..01d2d15aa662 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -191,7 +191,8 @@ void __init sched_clock_postinit(void)
+ 
+ static int sched_clock_suspend(void)
+ {
+-	sched_clock_poll(&sched_clock_timer);
++	update_sched_clock();
++	hrtimer_cancel(&sched_clock_timer);
+ 	cd.suspended = true;
+ 	return 0;
+ }
+@@ -199,6 +200,7 @@ static int sched_clock_suspend(void)
+ static void sched_clock_resume(void)
+ {
+ 	cd.epoch_cyc = read_sched_clock();
++	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
+ 	cd.suspended = false;
+ }
+ 
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
