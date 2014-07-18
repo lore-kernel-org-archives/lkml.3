@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762458AbaGRN54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:57:56 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63785 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762437AbaGRN5y (ORCPT
+	id S1761744AbaGRNJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:09:05 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17421 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761723AbaGRNJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:57:54 -0400
-Date: Fri, 18 Jul 2014 06:57:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.16-rc6
-Message-ID: <20140718135751.GB18432@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Jul 2014 09:09:01 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
+        Jan Kara <jack@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 049/170] reiserfs: call truncate_setsize under tailpack mutex
+Date: Fri, 18 Jul 2014 14:10:54 +0200
+Message-Id: <a4424b76ff576642a98409dd587631dd34891e62.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jeff Mahoney <jeffm@suse.com>
 
---huq684BweRXVnRxX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Linus,
+===============
 
-Please pull hwmon fixes for Linux 3.16-rc6 from signed tag:
+commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
+truncates serialized on i_mutex. They mostly still do, with the exception
+of reiserfs_file_release. That blocks out other writers via the tailpack
+mutex and the inode openers counter adjusted in reiserfs_file_open.
 
-Thanks,
-Guenter
-------
+However, NFS will call reiserfs_setattr without having called ->open, so
+we end up with a race when nfs is calling ->setattr while another
+process is releasing the file. Ultimately, it triggers the
+BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
 
-The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
+The solution is to pull the lock into reiserfs_setattr to encompass the
+truncate_setsize call as well.
 
-  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/reiserfs/inode.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-are available in the git repository at:
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index ad62bdbb451e..1e4cf9d73130 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -3220,8 +3220,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 	    attr->ia_size != i_size_read(inode)) {
+ 		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (!error) {
++			/*
++			 * Could race against reiserfs_file_release
++			 * if called from NFS, so take tailpack mutex.
++			 */
++			mutex_lock(&REISERFS_I(inode)->tailpack);
+ 			truncate_setsize(inode, attr->ia_size);
+-			reiserfs_vfs_truncate_file(inode);
++			reiserfs_truncate_file(inode, 1);
++			mutex_unlock(&REISERFS_I(inode)->tailpack);
+ 		}
+ 	}
+ 
+-- 
+2.0.0
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to de12d6f4b10b21854441f5242dcb29ea96181e58:
-
-  hwmon: (adt7470) Fix writes to temperature limit registers (2014-07-16 21:18:47 -0700)
-
-----------------------------------------------------------------
-More fallout from module tests and code inspection.
-
-Fixes to temperature limit write operations in adt7470 driver.
-Also, dashes are not allowed in hwmon 'name' attributes.
-Fix drivers where necessary.
-
-----------------------------------------------------------------
-Axel Lin (2):
-      hwmon: (da9052) Don't use dash in the name attribute
-      hwmon: (da9055) Don't use dash in the name attribute
-
-Guenter Roeck (1):
-      hwmon: (adt7470) Fix writes to temperature limit registers
-
- drivers/hwmon/adt7470.c      | 6 +++---
- drivers/hwmon/da9052-hwmon.c | 2 +-
- drivers/hwmon/da9055-hwmon.c | 2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
-
---huq684BweRXVnRxX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTySffAAoJEMsfJm/On5mBYvMP/2tSsN3lUKVuOuUFj//xaBix
-HH131fzj8sinMXiMrVe253IIbDDWwwsqY6TQxJLhAhL3C/opjzsJMSdwKntg7mzi
-OJgd3bJUgoqOb1iCVSzVXavJtZI+fMeNHscVJsZ4vEmMA0xVneZqY5dlS4Yso4Nu
-cXChwUAcLJSTwU1gScJqvxgRaUV5/dOV0qUgGnX2i4u87HBmfDeU9NETYFZgbR2h
-N213K+m8YQXSSw3SI1FTukyVVjoN+fi9PKlgliPEIcvMoSp0O4c1GGlvOdWCyIhh
-eNoL7uDjs+4dD5XyzXFZsrI7BQBnWftDsSsf7yngtpG9C1x/wrMGdlEtXu7PC1rp
-m87z9Uka8Fj9q1LazfbVjOkzldgDCvHyuLXeMGpDPI+tlM0A0ce8OMvkSD3fmSMF
-M+dW6I/AxYHmmcR5Qq9lqHzeAwetAxkKyYfJ3nigomPasFIHKvebgQIyWM/OFQH+
-Xkim3dL6ZMZe4KGVIkig78OKlQ41B0QGvQRLlav5CJFlw2Pi2LegUNYPnACl8LYs
-5r4ftOPMibN9vxSodcQP7dgeDhw9JangeYqw0UE2qKSlNAJg0Jy8rZoPZEcc4dPY
-wmees2kjdXHiTWn3Woxc+FFbEN/HgzqfQ/U0GkJPC1zJQNg8nFA1An7YwVv/J6hQ
-MCYOPMi8gE60o6pHIOB+
-=boB9
------END PGP SIGNATURE-----
-
---huq684BweRXVnRxX--
