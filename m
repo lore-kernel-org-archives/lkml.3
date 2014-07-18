@@ -1,76 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945974AbaGRTAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 15:00:49 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55812 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757195AbaGRTAr (ORCPT
+	id S1422883AbaGRTEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 15:04:05 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47528 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279AbaGRTEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 15:00:47 -0400
-Date: Fri, 18 Jul 2014 15:00:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Patrik Fimml <patrikf@chromium.org>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Dmitry Torokhov <dtor@google.com>,
-        Bastien Nocera <hadess@hadess.net>, <linux-pm@vger.kernel.org>,
-        Benson Leung <bleung@google.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Power-managing devices that are not of interest at some point
- in time
-In-Reply-To: <20140718174712.GA3156@google.com>
-Message-ID: <Pine.LNX.4.44L0.1407181439560.979-100000@iolanthe.rowland.org>
+	Fri, 18 Jul 2014 15:04:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1405703514.11182.6.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+	<1405373897-31671-7-git-send-email-keescook@chromium.org>
+	<1405703514.11182.6.camel@dhcp-9-2-203-236.watson.ibm.com>
+Date: Fri, 18 Jul 2014 12:04:01 -0700
+X-Google-Sender-Auth: rzZWtOmgqeRifKwVQlm6Z_blVHE
+Message-ID: <CAGXu5jJxyXBzk6HA=ZVPRA_e0DxvWoUfvHMz_Eh82FJdfZWkEg@mail.gmail.com>
+Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
+From: Kees Cook <keescook@chromium.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>, zohar@us.ibm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014, Patrik Fimml wrote:
+On Fri, Jul 18, 2014 at 10:11 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2014-07-14 at 14:38 -0700, Kees Cook wrote:
+>> As an alternative to loading bytes from the "data" blob when reading
+>> firmware, let kernel read from an fd, so that the LSM can reason about
+>> the origin of firmware contents during userspace on-demand loading.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  Documentation/firmware_class/README |   10 +++++
+>>  drivers/base/firmware_class.c       |   77 ++++++++++++++++++++++++++++++++++-
+>>  2 files changed, 86 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
+>> index 71f86859d7d8..d899bdacba1e 100644
+>> --- a/Documentation/firmware_class/README
+>> +++ b/Documentation/firmware_class/README
+>> @@ -59,6 +59,16 @@
+>>   8), kernel(driver): Driver code calls release_firmware(fw_entry) releasing
+>>                the firmware image and any related resource.
+>>
+>> + Alternative loading (via file descriptor):
+>> + ==========================================
+>> + Instead of "loading", and "data" above, firmware can be loaded through
+>> + an open file descriptor as well, via the "fd" file:
+>> +
+>> + Replacing steps 2 thorugh 6 above with the following userspace actions,
+>> + performs the same loading:
+>> +     - open firmware image file (e.g. as fd 3).
+>> +     - write fd (e.g. "3") to /sys/class/firmware/xxx/fd.
+>> +
+>>   High level behavior (driver code):
+>>   ==================================
+>>
+>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>> index b38cbcd6ebb1..eac996447d28 100644
+>> --- a/drivers/base/firmware_class.c
+>> +++ b/drivers/base/firmware_class.c
+>> @@ -839,6 +839,70 @@ static struct bin_attribute firmware_attr_data = {
+>>       .write = firmware_data_write,
+>>  };
+>>
+>> +/**
+>> + * fd_store - set value in the 'fd' control file
+>> + * @dev: device pointer
+>> + * @attr: device attribute pointer
+>> + * @buf: buffer to scan for loading fd value
+>> + * @count: number of bytes in @buf
+>> + *
+>> + * Parses an fd number from buf, and then loads firmware bytes from
+>> + * the current process's matching open fd.
+>> + *
+>> + **/
+>> +static ssize_t fd_store(struct device *dev,
+>> +                              struct device_attribute *attr,
+>> +                              const char *buf, size_t count)
+>> +{
+>
+> I must be missing something.  Here's a static definition, where's the
+> call to fd_store()?
 
->  2. Give userspace a way of quiescing a device. Handles to the device
->     stay open, but the device will no longer perform its function and,
->     if possible, power down.
+It's hidden by macro insanity (below).
 
-"Quiescing" is the wrong word.  "Quiescing a device" means stopping the
-device from doing anything, which isn't what you want.  You want to
-ignore any activity the device may generate and reduce the device's
-power consumption as much as possible.  A better word would be
-"deactivating".
+>
+> Mimi
+>
+>> +     struct firmware_priv *fw_priv = to_firmware_priv(dev);
+>> +     struct firmware_buf *fw_buf = fw_priv->buf;
+>> +     ssize_t retval;
+>> +     int fd;
+>> +     struct fd f;
+>> +
+>> +     if (!capable(CAP_SYS_RAWIO))
+>> +             return -EPERM;
+>> +
+>> +     retval = kstrtoint(buf, 10, &fd);
+>> +     if (retval)
+>> +             return retval;
+>> +
+>> +     f = fdget(fd);
+>> +     if (!f.file)
+>> +             return -EBADF;
+>> +
+>> +     mutex_lock(&fw_lock);
+>> +     /* If we raced another loader, we must fail. */
+>> +     if (test_bit(FW_STATUS_DONE, &fw_buf->status)) {
+>> +             retval = -EINVAL;
+>> +             goto unlock;
+>> +     }
+>> +
+>> +     fw_load_start(fw_buf);
+>> +     /* fw_read_file_contents uses vmalloc, not pages. */
+>> +     fw_buf->is_paged_buf = false;
+>> +     retval = fw_read_file_contents(f.file, fw_buf);
+>> +     if (retval) {
+>> +             /* If we called fw_load_start, we must abort on fail. */
+>> +             fw_load_abort(fw_priv);
+>> +             goto unlock;
+>> +     }
+>> +
+>> +     /* Success. */
+>> +     set_bit(FW_STATUS_DONE, &fw_buf->status);
+>> +     list_del_init(&fw_buf->pending_list);
+>> +     complete_all(&fw_buf->completion);
+>> +
+>> +unlock:
+>> +     mutex_unlock(&fw_lock);
+>> +     fdput(f);
+>> +
+>> +     if (retval)
+>> +             return retval;
+>> +     return count;
+>> +}
+>> +static DEVICE_ATTR_WO(fd);
 
-> For input devices, this makes a lot of sense in my opinion.
+DEVICE_ATTR_WO defines the function pointer to fd_store (and
+explicitly lacks a function pointer for fd_show).
 
-I agree.
+-Kees
 
-> The notable difference to runtime PM as we have it today is that with
-> runtime PM, a device typically goes to a low-power state because it is
-> idle. In our scenario, we want to forcibly quiesce it even if it is not
-> idle (and if it continues to provide events in a low-power mode, we
-> want to ignore them instead of passing them on). So maybe integration
-> with runtime PM is not the best fit.
-> 
-> Perhaps the best way to go forward would be to add a new property for
-> all devices that support quiescing so userspace has a uniform way of
-> doing things, but have subsystems (and potentially the device driver)
-> decide what action is appropriate to quiesce a device. Some subsystems
-> might be able to provide a default implementation (e.g. input could just
-> skip all events that are reported from the device driver).
+>> +
+>>  static void firmware_class_timeout_work(struct work_struct *work)
+>>  {
+>>       struct firmware_priv *fw_priv = container_of(work,
+>> @@ -912,10 +976,19 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+>>               mutex_lock(&fw_lock);
+>>               list_del_init(&buf->pending_list);
+>>               mutex_unlock(&fw_lock);
+>> -             dev_err(f_dev, "%s: device_create_file failed\n", __func__);
+>> +             dev_err(f_dev, "%s: dev_attr_loading failed\n", __func__);
+>>               goto err_del_bin_attr;
+>>       }
+>>
+>> +     retval = device_create_file(f_dev, &dev_attr_fd);
+>> +     if (retval) {
+>> +             mutex_lock(&fw_lock);
+>> +             list_del_init(&buf->pending_list);
+>> +             mutex_unlock(&fw_lock);
+>> +             dev_err(f_dev, "%s: &dev_attr_fd failed\n", __func__);
+>> +             goto err_del_loading;
+>> +     }
+>> +
+>>       if (opt_flags & FW_OPT_UEVENT) {
+>>               buf->need_uevent = true;
+>>               dev_set_uevent_suppress(f_dev, false);
+>> @@ -933,6 +1006,8 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+>>       if (!buf->data)
+>>               retval = -ENOMEM;
+>>
+>> +     device_remove_file(f_dev, &dev_attr_fd);
+>> +err_del_loading:
+>>       device_remove_file(f_dev, &dev_attr_loading);
+>>  err_del_bin_attr:
+>>       device_remove_bin_file(f_dev, &firmware_attr_data);
+>
+>
 
-You mentioned that handles to the device would remain open.  So when 
-the user opens the lid again, the old handles would start functioning, 
-right?
 
-This has the disadvantage that the class device could not be
-unregistered, because doing so would invalidate the open handles.  
-Under such circumestances, how would a userspace video program know not
-to list a camera built into the lid among the possible video sources
-(an example given earlier in this discussion)?  The program would have
-to make an explicit test of the "deactivate" property -- it wouldn't
-automatically become aware that the camera wasn't available.
 
-Would it sometimes be okay to unregister the class device and
-invalidate the old handles, forcing programs to open new handles when
-the lid is opened?  This would reduce the number of changes user 
-programs would need.
-
-Alan Stern
-
+-- 
+Kees Cook
+Chrome OS Security
