@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422874AbaGRNuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:50:52 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17498 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030501AbaGRNK0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:10:26 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 121/170] tty: Correct INPCK handling
-Date: Fri, 18 Jul 2014 14:12:06 +0200
-Message-Id: <2c53a1afadd6984b792b7354298ebd6cf8584f47.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	id S1422890AbaGRNu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:50:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52062 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030501AbaGRNux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:50:53 -0400
+Date: Fri, 18 Jul 2014 08:50:13 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        George Cherian <george.cherian@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 4/9] usb: phy: am335x-control: prevent module from being
+ unloaded when in use
+Message-ID: <20140718135012.GD24914@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-2-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-3-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-4-git-send-email-LW@KARO-electronics.de>
+ <1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uxuisgdDHaNETlh8"
+Content-Disposition: inline
+In-Reply-To: <1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Hurley <peter@hurleysoftware.com>
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 18, 2014 at 11:31:25AM +0200, Lothar Wa=DFmann wrote:
+> This patch fixes the real cause of the crash that was "fixed" by
+> commit 7adb5c876e9c usb: musb: Fix panic upon musb_am335x module removal
+>=20
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
 
-===============
+what is the "real cause of the crash" ? You don't explain that here.
 
-commit 66528f90669691c85c73bea4f0c9f4a5857c4cab upstream.
+> ---
+>  drivers/usb/phy/phy-am335x-control.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>=20
+> diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-a=
+m335x-control.c
+> index 35b6083..df3e1ba 100644
+> --- a/drivers/usb/phy/phy-am335x-control.c
+> +++ b/drivers/usb/phy/phy-am335x-control.c
+> @@ -140,6 +140,9 @@ static int am335x_control_usb_probe(struct platform_d=
+evice *pdev)
+>  	const struct of_device_id *of_id;
+>  	const struct phy_control *phy_ctrl;
+> =20
+> +	if (!try_module_get(pdev->dev.parent->driver->owner))
+> +		return -EPROBE_DEFER;
+> +
+>  	of_id =3D of_match_node(omap_control_usb_id_table, pdev->dev.of_node);
+>  	if (!of_id)
+>  		return -EINVAL;
+> @@ -171,8 +174,15 @@ static int am335x_control_usb_probe(struct platform_=
+device *pdev)
+>  	return 0;
+>  }
+> =20
+> +static int am335x_control_usb_remove(struct platform_device *pdev)
+> +{
+> +	module_put(pdev->dev.parent->driver->owner);
+> +	return 0;
+> +}
 
-If INPCK is not set, input parity detection should be disabled. This means
-parity errors should not be received from the tty driver, and the data
-received should be treated normally.
+I can't see how this can make any difference. Care to explain ?
 
-SUS v3, 11.2.2, General Terminal Interface - Input Modes, states:
-  "If INPCK is set, input parity checking shall be enabled. If INPCK is
-   not set, input parity checking shall be disabled, allowing output parity
-   generation without input parity errors. Note that whether input parity
-   checking is enabled or disabled is independent of whether parity detection
-   is enabled or disabled (see Control Modes). If parity detection is enabled
-   but input parity checking is disabled, the hardware to which the terminal
-   is connected shall recognize the parity bit, but the terminal special file
-   shall not check whether or not this bit is correctly set."
+--=20
+balbi
 
-Ignore parity errors reported by the tty driver when INPCK is not set, and
-handle the received data normally.
+--uxuisgdDHaNETlh8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Fixes: Bugzilla #71681, 'Improvement of n_tty_receive_parity_error from n_tty.c'
-Reported-by: Ivan <athlon_@mail.ru>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/tty/n_tty.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index bd73dc25b41d..eac1b0d5b463 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1210,15 +1210,16 @@ static void n_tty_receive_parity_error(struct tty_struct *tty, unsigned char c)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 
--	if (I_IGNPAR(tty))
--		return;
--	if (I_PARMRK(tty)) {
--		put_tty_queue('\377', ldata);
--		put_tty_queue('\0', ldata);
--		put_tty_queue(c, ldata);
--	} else	if (I_INPCK(tty))
--		put_tty_queue('\0', ldata);
--	else
-+	if (I_INPCK(tty)) {
-+		if (I_IGNPAR(tty))
-+			return;
-+		if (I_PARMRK(tty)) {
-+			put_tty_queue('\377', ldata);
-+			put_tty_queue('\0', ldata);
-+			put_tty_queue(c, ldata);
-+		} else
-+			put_tty_queue('\0', ldata);
-+	} else
- 		put_tty_queue(c, ldata);
- 	wake_up_interruptible(&tty->read_wait);
- }
--- 
-2.0.0
+iQIcBAEBAgAGBQJTySYUAAoJEIaOsuA1yqREM1IP/2+Ws5mZCF3XmetoEttCHJZ6
+bG61FEOX4nzVwFSu7mGz/be6UMzY6nhwYN2QhHlytY4iEjEMKvZVbmoN+h25lzuB
+i+nEAjb+aJTefRQADxGdsm4Ca7HfS2bHOIZ9hAXDpo7F6BP3JOMsSqDULe11k4fh
+yAQh8yg/0e91JRoWvc7+4NUjwt3kxFCLNWXgmYobTzMlv652+11WPS1WfnZ6O1bU
+9ZMieOTfKbabDAIdWtlrykZh0AnBlCv9FiS47kUGq9SEZjlrrdrdwDH5cQlAS3ed
+3uWgH3gOdqGy/LBCjnMh3OHv8PT4K/40g5dQns4Q3rzPQHIvUac/uv2S5KOgiUUr
+fErZwd/GlJBpvilNPW+P5b5lRJf/3rVTkhuIymoOAxpMSMgfXRoBqc8RIgzUOTs4
+LX5XzB9JCHhJZlC/XXhTBA2lWNjvwc3d+OY7CjU70KMXqB4IDGtUeQ4CkRS9VQps
+KikTEdeIfW1gwbH09v4cD9AXl+CLIzkPH6z6AgEo+BVAX/mj5G/yv9CjatlRF/mO
+OwetAxE+KUYvf51bkoVTMvUNl5PYULevpP6ayGioER3Pd4oTV1MY//+zzJHguxmK
+uP0X4bcvdOqhD1+b+UI9Q7zREqPBvW7LEmhLbrO0BO9unLhDXMADRiUoEkLa3GSW
+yVpa8b4inXVgvBajzVUQ
+=5sWk
+-----END PGP SIGNATURE-----
 
+--uxuisgdDHaNETlh8--
