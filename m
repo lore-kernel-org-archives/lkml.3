@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762390AbaGRXDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:03:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46773 "EHLO
+	id S1757219AbaGRXNm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:13:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46888 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188AbaGRXDT (ORCPT
+	with ESMTP id S1750790AbaGRXNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:03:19 -0400
-Date: Fri, 18 Jul 2014 16:03:18 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-Cc: Benoit Taine <benoit.taine@lip6.fr>,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 25/25] ipack: Replace DEFINE_PCI_DEVICE_TABLE macro use
-Message-ID: <20140718230318.GA8919@kroah.com>
-References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
- <1405697232-11785-26-git-send-email-benoit.taine@lip6.fr>
- <1405699156.2237.4.camel@fourier>
+	Fri, 18 Jul 2014 19:13:41 -0400
+Date: Fri, 18 Jul 2014 16:13:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sam Asadi <asadi.samuel@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Staging: comedi: adl_pci9118: commenting style issue
+ fixed
+Message-ID: <20140718231340.GA24825@kroah.com>
+References: <1405714388-13375-1-git-send-email-asadi.samuel@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405699156.2237.4.camel@fourier>
+In-Reply-To: <1405714388-13375-1-git-send-email-asadi.samuel@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 05:59:16PM +0200, Samuel Iglesias Gonsálvez wrote:
-> On Fri, 2014-07-18 at 17:27 +0200, Benoit Taine wrote:
-> > We should prefer `struct pci_device_id` over `DEFINE_PCI_DEVICE_TABLE` to meet
-> > kernel coding style guidelines. This issue was reported by checkpatch.
-> > 
-> > Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
-> > 
-> > ---
-> > Tested by compilation without errors.
-> > 
-> >  drivers/ipack/carriers/tpci200.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/ipack/carriers/tpci200.c b/drivers/ipack/carriers/tpci200.c
-> > index c276fde..de5e321 100644
-> > --- a/drivers/ipack/carriers/tpci200.c
-> > +++ b/drivers/ipack/carriers/tpci200.c
-> > @@ -618,7 +618,7 @@ static void tpci200_pci_remove(struct pci_dev *dev)
-> >  	__tpci200_pci_remove(tpci200);
-> >  }
-> >  
-> > -static DEFINE_PCI_DEVICE_TABLE(tpci200_idtable) = {
-> > +static const struct pci_device_id tpci200_idtable[] = {
-> >  	{ TPCI200_VENDOR_ID, TPCI200_DEVICE_ID, TPCI200_SUBVENDOR_ID,
-> >  	  TPCI200_SUBDEVICE_ID },
-> >  	{ 0, },
-> > 
-> > 
+On Fri, Jul 18, 2014 at 11:13:07PM +0300, Sam Asadi wrote:
+> A 'quoted string split across lines' issue fixed, while a better use of
+> language applied to the comment.
 > 
-> Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/adl_pci9118.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> Greg, Would you mind picking this patch through your char-misc tree?
+> diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+> index 93bd9ee..7365f31 100644
+> --- a/drivers/staging/comedi/drivers/adl_pci9118.c
+> +++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+> @@ -418,8 +418,7 @@ static int check_channel_list(struct comedi_device *dev,
+>  			if ((CR_RANGE(chanlist[i]) < PCI9118_BIPOLAR_RANGES) !=
+>  			    (bipolar)) {
+>  				comedi_error(dev,
+> -					     "Bipolar and unipolar ranges "
+> -							"can't be mixtured!");
+> +					     "Bipolar and unipolar ranges can't be mixed!");
 
-Will do, thanks.
+What tree did you refresh this against?  My staging-next branch of
+staging.git on git.kernel.org does not have comedi_error() anymore in it
+:(
+
+thanks,
 
 greg k-h
