@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946149AbaGRScE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 14:32:04 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47834 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945934AbaGRS2k (ORCPT
+	id S1946161AbaGRScp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 14:32:45 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:57000 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422937AbaGRS2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 14:28:40 -0400
+	Fri, 18 Jul 2014 14:28:39 -0400
 From: Zi Shen Lim <zlim.lnx@gmail.com>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Jiang Liu <liuj97@gmail.com>,
@@ -16,9 +16,9 @@ To: Catalin Marinas <catalin.marinas@arm.com>,
         Alexei Starovoitov <ast@plumgrid.com>
 Cc: Zi Shen Lim <zlim.lnx@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: [PATCH 06/14] arm64: introduce aarch64_insn_gen_add_sub_imm()
-Date: Fri, 18 Jul 2014 11:28:12 -0700
-Message-Id: <1405708100-13604-7-git-send-email-zlim.lnx@gmail.com>
+Subject: [PATCH 05/14] arm64: introduce aarch64_insn_gen_load_store_pair()
+Date: Fri, 18 Jul 2014 11:28:11 -0700
+Message-Id: <1405708100-13604-6-git-send-email-zlim.lnx@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
 References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
@@ -26,98 +26,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce function to generate add/subtract (immediate) instructions.
+Introduce function to generate load/store pair instructions.
 
 Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
 ---
- arch/arm64/include/asm/insn.h | 16 ++++++++++++++++
- arch/arm64/kernel/insn.c      | 44 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 60 insertions(+)
+ arch/arm64/include/asm/insn.h | 16 +++++++++++
+ arch/arm64/kernel/insn.c      | 65 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+)
 
 diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index eef8f1e..29386aa 100644
+index 5bc1cc3..eef8f1e 100644
 --- a/arch/arm64/include/asm/insn.h
 +++ b/arch/arm64/include/asm/insn.h
-@@ -75,6 +75,7 @@ enum aarch64_insn_register_type {
+@@ -66,12 +66,14 @@ enum aarch64_insn_imm_type {
+ 	AARCH64_INSN_IMM_14,
+ 	AARCH64_INSN_IMM_12,
+ 	AARCH64_INSN_IMM_9,
++	AARCH64_INSN_IMM_7,
+ 	AARCH64_INSN_IMM_MAX
+ };
+ 
+ enum aarch64_insn_register_type {
+ 	AARCH64_INSN_REGTYPE_RT,
  	AARCH64_INSN_REGTYPE_RN,
- 	AARCH64_INSN_REGTYPE_RT2,
++	AARCH64_INSN_REGTYPE_RT2,
  	AARCH64_INSN_REGTYPE_RM,
-+	AARCH64_INSN_REGTYPE_RD,
  };
  
- enum aarch64_insn_register {
-@@ -162,6 +163,13 @@ enum aarch64_insn_ldst_type {
- 	AARCH64_INSN_LDST_STORE_PAIR_POST_INDEX,
+@@ -154,6 +156,10 @@ enum aarch64_insn_size_type {
+ enum aarch64_insn_ldst_type {
+ 	AARCH64_INSN_LDST_LOAD_REG_OFFSET,
+ 	AARCH64_INSN_LDST_STORE_REG_OFFSET,
++	AARCH64_INSN_LDST_LOAD_PAIR_PRE_INDEX,
++	AARCH64_INSN_LDST_STORE_PAIR_PRE_INDEX,
++	AARCH64_INSN_LDST_LOAD_PAIR_POST_INDEX,
++	AARCH64_INSN_LDST_STORE_PAIR_POST_INDEX,
  };
  
-+enum aarch64_insn_adsb_type {
-+	AARCH64_INSN_ADSB_ADD,
-+	AARCH64_INSN_ADSB_SUB,
-+	AARCH64_INSN_ADSB_ADD_SETFLAGS,
-+	AARCH64_INSN_ADSB_SUB_SETFLAGS
-+};
-+
  #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
- static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
- { return (code & (mask)) == (val); } \
-@@ -174,6 +182,10 @@ __AARCH64_INSN_FUNCS(stp_post,	0x7FC00000, 0x28800000)
- __AARCH64_INSN_FUNCS(ldp_post,	0x7FC00000, 0x28C00000)
- __AARCH64_INSN_FUNCS(stp_pre,	0x7FC00000, 0x29800000)
- __AARCH64_INSN_FUNCS(ldp_pre,	0x7FC00000, 0x29C00000)
-+__AARCH64_INSN_FUNCS(add_imm,	0x7F000000, 0x11000000)
-+__AARCH64_INSN_FUNCS(adds_imm,	0x7F000000, 0x31000000)
-+__AARCH64_INSN_FUNCS(sub_imm,	0x7F000000, 0x51000000)
-+__AARCH64_INSN_FUNCS(subs_imm,	0x7F000000, 0x71000000)
+@@ -164,6 +170,10 @@ static __always_inline u32 aarch64_insn_get_##abbr##_value(void) \
+ 
+ __AARCH64_INSN_FUNCS(str_reg,	0x3FE0EC00, 0x38206800)
+ __AARCH64_INSN_FUNCS(ldr_reg,	0x3FE0EC00, 0x38606800)
++__AARCH64_INSN_FUNCS(stp_post,	0x7FC00000, 0x28800000)
++__AARCH64_INSN_FUNCS(ldp_post,	0x7FC00000, 0x28C00000)
++__AARCH64_INSN_FUNCS(stp_pre,	0x7FC00000, 0x29800000)
++__AARCH64_INSN_FUNCS(ldp_pre,	0x7FC00000, 0x29C00000)
  __AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
  __AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
  __AARCH64_INSN_FUNCS(cbz,	0xFE000000, 0x34000000)
-@@ -220,6 +232,10 @@ u32 aarch64_insn_gen_load_store_pair(enum aarch64_insn_register reg1,
- 				     int offset,
- 				     enum aarch64_insn_variant variant,
- 				     enum aarch64_insn_ldst_type type);
-+u32 aarch64_insn_gen_add_sub_imm(enum aarch64_insn_register dst,
-+				 enum aarch64_insn_register src,
-+				 int imm, enum aarch64_insn_variant variant,
-+				 enum aarch64_insn_adsb_type type);
+@@ -204,6 +214,12 @@ u32 aarch64_insn_gen_load_store_reg(enum aarch64_insn_register reg,
+ 				    enum aarch64_insn_register offset,
+ 				    enum aarch64_insn_size_type size,
+ 				    enum aarch64_insn_ldst_type type);
++u32 aarch64_insn_gen_load_store_pair(enum aarch64_insn_register reg1,
++				     enum aarch64_insn_register reg2,
++				     enum aarch64_insn_register base,
++				     int offset,
++				     enum aarch64_insn_variant variant,
++				     enum aarch64_insn_ldst_type type);
  
  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
  
 diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index 7880c06..ec3a902 100644
+index b882c85..7880c06 100644
 --- a/arch/arm64/kernel/insn.c
 +++ b/arch/arm64/kernel/insn.c
-@@ -285,6 +285,7 @@ static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
- 
- 	switch (type) {
- 	case AARCH64_INSN_REGTYPE_RT:
-+	case AARCH64_INSN_REGTYPE_RD:
- 		shift = 0;
+@@ -255,6 +255,10 @@ u32 __kprobes aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+ 		mask = BIT(9) - 1;
+ 		shift = 12;
  		break;
++	case AARCH64_INSN_IMM_7:
++		mask = BIT(7) - 1;
++		shift = 15;
++		break;
+ 	default:
+ 		pr_err("aarch64_insn_encode_immediate: unknown immediate encoding %d\n",
+ 			type);
+@@ -286,6 +290,9 @@ static u32 aarch64_insn_encode_register(enum aarch64_insn_register_type type,
  	case AARCH64_INSN_REGTYPE_RN:
-@@ -555,3 +556,46 @@ u32 aarch64_insn_gen_load_store_pair(enum aarch64_insn_register reg1,
- 	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_7, insn,
- 					     offset >> shift);
+ 		shift = 5;
+ 		break;
++	case AARCH64_INSN_REGTYPE_RT2:
++		shift = 10;
++		break;
+ 	case AARCH64_INSN_REGTYPE_RM:
+ 		shift = 16;
+ 		break;
+@@ -490,3 +497,61 @@ u32 aarch64_insn_gen_load_store_reg(enum aarch64_insn_register reg,
+ 	return aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RM, insn,
+ 					    offset);
  }
 +
-+u32 aarch64_insn_gen_add_sub_imm(enum aarch64_insn_register dst,
-+				 enum aarch64_insn_register src,
-+				 int imm, enum aarch64_insn_variant variant,
-+				 enum aarch64_insn_adsb_type type)
++u32 aarch64_insn_gen_load_store_pair(enum aarch64_insn_register reg1,
++				     enum aarch64_insn_register reg2,
++				     enum aarch64_insn_register base,
++				     int offset,
++				     enum aarch64_insn_variant variant,
++				     enum aarch64_insn_ldst_type type)
 +{
 +	u32 insn;
++	int shift;
 +
 +	switch (type) {
-+	case AARCH64_INSN_ADSB_ADD:
-+		insn = aarch64_insn_get_add_imm_value();
++	case AARCH64_INSN_LDST_LOAD_PAIR_PRE_INDEX:
++		insn = aarch64_insn_get_ldp_pre_value();
 +		break;
-+	case AARCH64_INSN_ADSB_SUB:
-+		insn = aarch64_insn_get_sub_imm_value();
++	case AARCH64_INSN_LDST_STORE_PAIR_PRE_INDEX:
++		insn = aarch64_insn_get_stp_pre_value();
 +		break;
-+	case AARCH64_INSN_ADSB_ADD_SETFLAGS:
-+		insn = aarch64_insn_get_adds_imm_value();
++	case AARCH64_INSN_LDST_LOAD_PAIR_POST_INDEX:
++		insn = aarch64_insn_get_ldp_post_value();
 +		break;
-+	case AARCH64_INSN_ADSB_SUB_SETFLAGS:
-+		insn = aarch64_insn_get_subs_imm_value();
++	case AARCH64_INSN_LDST_STORE_PAIR_POST_INDEX:
++		insn = aarch64_insn_get_stp_post_value();
 +		break;
 +	default:
 +		BUG_ON(1);
@@ -125,21 +147,33 @@ index 7880c06..ec3a902 100644
 +
 +	switch (variant) {
 +	case AARCH64_INSN_VARIANT_32BIT:
++		/* offset must be multiples of 4 in the range [-256, 252] */
++		BUG_ON(offset & 0x3);
++		BUG_ON(offset < -256 || offset > 252);
++		shift = 2;
 +		break;
 +	case AARCH64_INSN_VARIANT_64BIT:
++		/* offset must be multiples of 8 in the range [-512, 504] */
++		BUG_ON(offset & 0x7);
++		BUG_ON(offset < -512 || offset > 504);
++		shift = 3;
 +		insn |= AARCH64_INSN_SF_BIT;
 +		break;
 +	default:
 +		BUG_ON(1);
 +	}
 +
-+	BUG_ON(imm & ~(SZ_4K - 1));
++	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RT, insn,
++					    reg1);
 +
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RD, insn, dst);
++	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RT2, insn,
++					    reg2);
 +
-+	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn, src);
++	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RN, insn,
++					    base);
 +
-+	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_12, insn, imm);
++	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_7, insn,
++					     offset >> shift);
 +}
 -- 
 1.9.1
