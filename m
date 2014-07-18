@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965876AbaGRRBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:01:51 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:38323 "EHLO
+	id S965950AbaGRRB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:01:57 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:38383 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894AbaGRRBu (ORCPT
+	with ESMTP id S965884AbaGRRBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:01:50 -0400
+	Fri, 18 Jul 2014 13:01:54 -0400
 From: Stefan Agner <stefan@agner.ch>
 To: peter.chen@freescale.com, s.hauer@pengutronix.de, shawn.guo@freescale.com
 Cc: b35083@freescale.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         stefan@agner.ch
-Subject: [PATCH 0/6] vf610: Add USB support
-Date: Fri, 18 Jul 2014 19:01:36 +0200
-Message-Id: <cover.1405702442.git.stefan@agner.ch>
+Subject: [PATCH 3/6] ARM: dts: vf610: Add usbmisc for non-core registers
+Date: Fri, 18 Jul 2014 19:01:39 +0200
+Message-Id: <4b3b16a8de1bd916d51c951aca286616f7ec8a9d.1405702442.git.stefan@agner.ch>
 X-Mailer: git-send-email 2.0.1
+In-Reply-To: <cover.1405702442.git.stefan@agner.ch>
+References: <cover.1405702442.git.stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds USB support for Vybrid VF610 SoC. It extends the
-clock framework to support the USB PHY cocks, extends the device
-tree files and adds support for the non-core registers in the
-usbmisc_imx driver.
+Add device tree node for usbmisc which controls the non-core USB
+registers. This is required to use the property to disable the over-
+current detection.
 
-This patchset needs the eSDHC length fix available in Shawn's
-for-next branch.
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ arch/arm/boot/dts/vf610.dtsi | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-The whole patchset proved to be working on a Colibri VF61. The
-first USB controller runs in peripheral mode. I could successfully
-use RNDIS, however with some stability issues: Suddenly the other
-side was not reachable anymore and the interface needed to brought
-down and back up again. I'm still investigating this.
-
-The second USB controller, running in USB host mode, showed no
-issues so far.
-
-Stefan Agner (6):
-  ARM: dts: vf610: add USB PHY and controller
-  ARM: imx: clk-vf610: add USBPHY clocks
-  ARM: dts: vf610: Add usbmisc for non-core registers
-  chipidea: usbmisc_imx: Add USB support for VF610 SoCs
-  usb: phy: mxs: Add VF610 USB PHY support
-  ARM: dts: vf610-colibri: add USB support
-
- arch/arm/boot/dts/vf610-colibri.dts     | 10 +++++
- arch/arm/boot/dts/vf610.dtsi            | 55 ++++++++++++++++++++++--
- arch/arm/mach-imx/clk-vf610.c           | 12 +++++-
- drivers/usb/chipidea/usbmisc_imx.c      | 76 +++++++++++++++++++++++----------
- drivers/usb/phy/phy-mxs-usb.c           |  5 +++
- include/dt-bindings/clock/vf610-clock.h |  5 ++-
- 6 files changed, 135 insertions(+), 28 deletions(-)
-
+diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+index f6c3f02..b20ce4f 100644
+--- a/arch/arm/boot/dts/vf610.dtsi
++++ b/arch/arm/boot/dts/vf610.dtsi
+@@ -334,11 +334,19 @@
+ 				interrupts = <0 75 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_USBC0>;
+ 				fsl,usbphy = <&usbphy0>;
++				fsl,usbmisc = <&usbmisc 0>;
+ 				dr_mode = "peripheral";
+ 				status = "disabled";
+ 			};
+ 
+-
++			usbmisc: usb@40034800 {
++				#index-cells = <1>;
++				compatible = "fsl,vf610-usbmisc";
++				reg = <0x40034800 0x200>,
++					<0x400b4800 0x200>;
++				clocks = <&clks VF610_CLK_USBC0>,
++					<&clks VF610_CLK_USBC1>;
++			};
+ 		};
+ 
+ 		aips1: aips-bus@40080000 {
+@@ -407,6 +415,7 @@
+ 				interrupts = <0 76 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_USBC1>;
+ 				fsl,usbphy = <&usbphy1>;
++				fsl,usbmisc = <&usbmisc 1>;
+ 				dr_mode = "host";
+ 				status = "disabled";
+ 			};
 -- 
 2.0.1
 
