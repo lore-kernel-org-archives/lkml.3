@@ -1,127 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762157AbaGRVqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 17:46:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53587 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755746AbaGRVqo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 17:46:44 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] PM / Hibernate: Memory bitmap scalability improvements
-Date: Sat, 19 Jul 2014 00:05:02 +0200
-Message-ID: <2105930.LcBFYOUaLE@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405684643-30234-1-git-send-email-joro@8bytes.org>
-References: <1405684643-30234-1-git-send-email-joro@8bytes.org>
+	id S1762320AbaGRVrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 17:47:21 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.24]:49928 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751567AbaGRVrT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 17:47:19 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+CC: KY Srinivasan <kys@microsoft.com>, "David S. Miller" <davem@davemloft.net>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
+ in 3.14+ on Hyper-V 2012 R2
+Thread-Topic: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
+ in 3.14+ on Hyper-V 2012 R2
+Thread-Index: AQHPmVd2lonpWupwu0Spl7Lqc9fFbZuU0/7ggACNCICABXpggIAAJvuQgAWV9wD//5q4EIAA5T4AgAVQRhA=
+Date: Fri, 18 Jul 2014 21:30:49 +0000
+Message-ID: <e72aea6f4eab48e6851fdc4d32b89fa2@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <20140706201800.GA10587@sucs.org>
+ <941b0055b1a94c66b3a608ae67764d11@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140707181341.GA2646@sucs.org> <20140711055259.GA10317@sucs.org>
+ <52afbe119b1a481aa1c80f909c3a2432@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140714213032.GA23639@sucs.org>
+ <8b68f48141a045f784c10f9c081cd51f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140715050832.GA28549@sucs.org>
+In-Reply-To: <20140715050832.GA28549@sucs.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(24454002)(51704005)(164054003)(51914003)(377454003)(13464003)(199002)(189002)(87936001)(46406003)(107046002)(66066001)(99396002)(21056001)(4396001)(2009001)(84676001)(2656002)(74502001)(80022001)(31966008)(106116001)(97756001)(93886003)(97736001)(6806004)(86612001)(76176999)(54356999)(77982001)(106466001)(79102001)(44976005)(50986999)(77096999)(23726002)(46102001)(1411001)(64706001)(92566001)(81342001)(19580395003)(83322001)(20776003)(47776003)(81542001)(19580405001)(68736004)(76482001)(110136001)(85852003)(74662001)(50466002)(33646002)(83072002)(108616002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB598;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-Forefront-PRVS: 02760F0D1C
+Authentication-Results: spf=pass (sender IP is 131.107.159.100)
+ smtp.mailfrom=haiyangz@microsoft.com; 
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 18, 2014 01:57:17 PM Joerg Roedel wrote:
-> Hi,
-> 
-> here is a patch set to improve the scalability of the memory
-> bitmap implementation used for hibernation. The current
-> implementation does not scale well to machines with several
-> TB of memory. A resume on those machines may cause soft
-> lockups to be reported.
-> 
-> These patches improve the data structure by adding a radix
-> tree to the linked list structure to improve random access
-> performance from O(n) to O(log_b(n)), where b depends on the
-> architecture (b=512 on amd64, 1024 in i386).
-> 
-> A test on a 12TB machine showed an improvement in resume
-> time from 76s with the old implementation to 2.4s with the
-> radix tree and the improved swsusp_free function. See below
-> for details of this test.
-> 
-> Patches 1-3 that add the radix tree while keeping the
-> existing memory bitmap implementation in place and add code
-> to compare the results between both implementations. This
-> was used during development to make sure both data
-> structures return the same results.
-> 
-> Patch 4 re-implements the swsusp_free() function to not
-> iterate over all pfns but only over the bits set in the
-> bitmaps. This showed to scale better on large memory
-> machines.
-> 
-> Patch 5 removes the old memory bitmap implementation now
-> that the radix tree is in place and working correctly.
-> 
-> The last patch adds touching the soft lockup watchdog in
-> rtree_next_node. This is necessary because the worst case
-> performance (all bits set in the forbidden_pages_map and
-> free_pages_map) is the same as with the old implementation
-> and may still cause soft lockups. Patch 6 avoids this.
-> 
-> The code was tested in 32 and 64 bit x86 and showed no
-> issues there.
-> 
-> Below is an example test that shows the performance
-> improvement on a 12TB machine. First the test with the old
-> memory bitmap:
-> 
-> # time perf record /usr/sbin/resume $sdev
-> resume: libgcrypt version: 1.5.0
-> [ perf record: Woken up 12 times to write data ]
-> [ perf record: Captured and wrote 2.882 MB perf.data (~125898 samples) ]
-> 
-> real    1m16.043s
-> user    0m0.016s
-> sys     0m0.312s
-> # perf report --stdio |head -50
-> # Events: 75K cycles
-> #
-> # Overhead  Command         Shared Object                                   
-> Symbol
-> # ........  .......  .................... 
-> ........................................
-> #
->     56.16%   resume  [kernel.kallsyms]     [k] memory_bm_test_bit
->     19.35%   resume  [kernel.kallsyms]     [k] swsusp_free
->     14.90%   resume  [kernel.kallsyms]     [k] memory_bm_find_bit
->      7.28%   resume  [kernel.kallsyms]     [k] swsusp_page_is_forbidden
-> 
-> And here is the same test on the same machine with these
-> patches applied:
-> 
-> #  time perf record /usr/sbin/resume $sdev
-> resume: libgcrypt version: 1.5.0
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.039 MB perf.data (~1716 samples) ]
-> 
-> real    0m2.376s
-> user    0m0.020s
-> sys     0m0.408s
-> 
-> # perf report --stdio |head -50
-> # Events: 762  cycles
-> #
-> # Overhead  Command      Shared Object                     Symbol
-> # ........  .......  .................  .........................
-> #
->     34.78%   resume  [kernel.kallsyms]  [k] find_next_bit
->     27.03%   resume  [kernel.kallsyms]  [k] clear_page_c_e
->      9.70%   resume  [kernel.kallsyms]  [k] mark_nosave_pages
->      3.92%   resume  [kernel.kallsyms]  [k] alloc_rtree_node
->      2.38%   resume  [kernel.kallsyms]  [k] get_image_page
-> 
-> As can be seen on these results these patches improve the
-> scalability significantly. Please review, any comments
-> appreciated.
 
-Looks good.
 
-How much testing did that receive?
+> -----Original Message-----
+> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
+> Sent: Tuesday, July 15, 2014 1:09 AM
+> To: Haiyang Zhang
+> Cc: KY Srinivasan; David S. Miller; devel@linuxdriverproject.org; linux-
+> kernel@vger.kernel.org; netdev@vger.kernel.org
+> Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers is
+> racy in 3.14+ on Hyper-V 2012 R2
+> 
+> On Mon, Jul 14, 2014 at 10:39:48PM +0000, Haiyang Zhang wrote:
+> > > -----Original Message-----
+> > > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
+> > > Sent: Monday, July 14, 2014 5:31 PM
+> > > To: Haiyang Zhang
+> > > Cc: KY Srinivasan; David S. Miller; devel@linuxdriverproject.org;
+> linux-
+> > > kernel@vger.kernel.org; netdev@vger.kernel.org
+> > > Subject: Re: [BISECTED][REGRESSION] Loading Hyper-V network drivers
+> is
+> > > racy in 3.14+ on Hyper-V 2012 R2
+> >
+> > Thanks for the tests! I will make a patch that can automatically retry
+> > smaller memory allocs when memory is insufficient.
+> 
+> This concerns me a bit - why would there be insufficient memory on a 64
+> bit VM with 4 GBytes of RAM just after startup (presumably the host's
+> memory isn't the issue)? Additionally, while things might fail just when
+> things are starting up, doing ifup eth0 at some point later succeeds so
+> whatever issue it had seems temporary.
+> 
+> Perhaps it would be wise to adding some debugging output to see if the
+> allocation really failed and why...
 
-Rafael
+Actually, there will be debug log in dmesg if the memory allocation fails. 
+But it didn't show up in your dmesg. And since it can be recovered by 
+"ifup eth0" later, the NIC must have been properly loaded (buffer alloc was 
+successful but took a bit longer time). I think the larger receive-buffer 
+size (16MB) may take longer time, because vzalloc() may sleep. And, that's 
+why we don't see the bug with a small buffer size, because the allocation 
+is quick.
+
+Could you try put "LINKDELAY=60" into the this file?
+	/etc/sysconfig/network-scripts/ifcfg-eth0
+And see if the problem goes away?
+
+Thanks,
+- Haiyang
 
