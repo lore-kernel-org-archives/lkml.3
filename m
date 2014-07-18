@@ -1,171 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760285AbaGRGJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:09:59 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:62169 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093AbaGRGJ5 (ORCPT
+	id S933182AbaGRGMm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 02:12:42 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:48254 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759620AbaGRGMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 02:09:57 -0400
-Message-ID: <53C8B9E2.7050709@gmail.com>
-Date: Fri, 18 Jul 2014 11:38:34 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ethan Zhao <ethan.kernel@gmail.com>
-CC: Ethan Zhao <ethan.zhao@oracle.com>, manish.chopra@qlogic.com,
-        sony.chacko@qlogic.com, rajesh.borundia@qlogic.com,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool
- get_ethtool_stats()
-References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>	<53C898E7.5080204@gmail.com> <CABawtvOpER3yEqmLigSDt8Wy5_9X0QA2e0zJ+KByhOy7du2gVQ@mail.gmail.com>
-In-Reply-To: <CABawtvOpER3yEqmLigSDt8Wy5_9X0QA2e0zJ+KByhOy7du2gVQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jul 2014 02:12:40 -0400
+From: Elena Ufimtseva <ufimtseva@gmail.com>
+To: xen-devel@lists.xenproject.org
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
+Subject: [PATCH v6 1/1] xen: vnuma for pv guests
+Date: Fri, 18 Jul 2014 01:57:25 -0400
+Message-Id: <1405663045-31620-2-git-send-email-ufimtseva@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405663045-31620-1-git-send-email-ufimtseva@gmail.com>
+References: <1405663045-31620-1-git-send-email-ufimtseva@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 11:35 AM, Ethan Zhao wrote:
-> On Fri, Jul 18, 2014 at 11:47 AM, Varka Bhadram <varkabhadram@gmail.com> wrote:
->> On 07/18/2014 09:13 AM, Ethan Zhao wrote:
->>> netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
->>> but it doesn't collect stats.rxdropped in driver, so we will get
->>> different rx_dropped statistic information while using ifconfig and
->>> ethtool.
->>> this patch fills stats.rxdropped field with data from net core
->>> with dev_get_stats() just as ixgbe driver did for some of its stats.
->>>
->>> Tested with last netxen 4.0.82
->>> Compiled with stable 3.15.6
->>>
->>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->>> Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
->>> ---
->>> -v2 only fix rx_dropped field, not all.
->>> -v3 workaround checkpatch.pl bug according to suggestion from Joe Perches
->>> <joe@perches.com>
->>>    .../ethernet/qlogic/netxen/netxen_nic_ethtool.c    |   59
->>> +++++++++++++++-----
->>>    1 files changed, 45 insertions(+), 14 deletions(-)
->>>
->>> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> index 87e073c..2753f00 100644
->>> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ethtool.c
->>> @@ -31,28 +31,43 @@
->>>    #include "netxen_nic.h"
->>>    #include "netxen_nic_hw.h"
->>>    +enum {NETDEV_STATS, NETXEN_STATS};
->>> +
->>>    struct netxen_nic_stats {
->>>          char stat_string[ETH_GSTRING_LEN];
->>> +       int type;
->>>          int sizeof_stat;
->>>          int stat_offset;
->>>    };
->>>    -#define NETXEN_NIC_STAT(m) sizeof(((struct netxen_adapter *)0)->m), \
->>> -                       offsetof(struct netxen_adapter, m)
->>> +#define NETXEN_NIC_STAT(name, m)                                       \
->>> +{                                                                      \
->>> +       .stat_string = name,                                            \
->>> +       .type = NETXEN_STATS,                                           \
->>> +       .sizeof_stat = FIELD_SIZEOF(struct netxen_adapter, m),          \
->>> +       .stat_offset = offsetof(struct netxen_adapter, m)               \
->>> +}
->>> +
->>> +#define NETXEN_NETDEV_STAT(name, m)                                    \
->>> +{      .stat_string = name,                                            \
->>> +       .type = NETDEV_STATS,                                           \
->>> +       .sizeof_stat = FIELD_SIZEOF(struct rtnl_link_stats64, m),       \
->>> +       .stat_offset = offsetof(struct rtnl_link_stats64, m)            \
->>> +}
->>>      #define NETXEN_NIC_PORT_WINDOW 0x10000
->>>    #define NETXEN_NIC_INVALID_DATA 0xDEADBEEF
->>>      static const struct netxen_nic_stats netxen_nic_gstrings_stats[] = {
->>> -       {"xmit_called", NETXEN_NIC_STAT(stats.xmitcalled)},
->>> -       {"xmit_finished", NETXEN_NIC_STAT(stats.xmitfinished)},
->>> -       {"rx_dropped", NETXEN_NIC_STAT(stats.rxdropped)},
->>> -       {"tx_dropped", NETXEN_NIC_STAT(stats.txdropped)},
->>> -       {"csummed", NETXEN_NIC_STAT(stats.csummed)},
->>> -       {"rx_pkts", NETXEN_NIC_STAT(stats.rx_pkts)},
->>> -       {"lro_pkts", NETXEN_NIC_STAT(stats.lro_pkts)},
->>> -       {"rx_bytes", NETXEN_NIC_STAT(stats.rxbytes)},
->>> -       {"tx_bytes", NETXEN_NIC_STAT(stats.txbytes)},
->>> +       NETXEN_NIC_STAT("xmit_called", stats.xmitcalled),
->>> +       NETXEN_NIC_STAT("xmit_finished", stats.xmitfinished),
->>> +       NETXEN_NETDEV_STAT("rx_dropped", rx_dropped),
->>> +       NETXEN_NIC_STAT("tx_dropped", stats.txdropped),
->>> +       NETXEN_NIC_STAT("csummed", stats.csummed),
->>> +       NETXEN_NIC_STAT("rx_pkts", stats.rx_pkts),
->>> +       NETXEN_NIC_STAT("lro_pkts", stats.lro_pkts),
->>> +       NETXEN_NIC_STAT("rx_bytes", stats.rxbytes),
->>> +       NETXEN_NIC_STAT("tx_bytes", stats.txbytes),
->>>    };
->>>      #define NETXEN_NIC_STATS_LEN
->>> ARRAY_SIZE(netxen_nic_gstrings_stats)
->>> @@ -677,11 +692,27 @@ netxen_nic_get_ethtool_stats(struct net_device *dev,
->>>    {
->>>          struct netxen_adapter *adapter = netdev_priv(dev);
->>>          int index;
->>> +       struct rtnl_link_stats64 temp;
->>> +       const struct rtnl_link_stats64 *net_stats;
->>> +       char *p = NULL;
->>>    +     net_stats = dev_get_stats(dev, &temp);
->>>          for (index = 0; index < NETXEN_NIC_STATS_LEN; index++) {
->>> -               char *p =
->>> -                   (char *)adapter +
->>> -                   netxen_nic_gstrings_stats[index].stat_offset;
->>> +
->>> +               switch (netxen_nic_gstrings_stats[index].type) {
->>> +               case NETDEV_STATS:
->>> +                       p = (char *)net_stats +
->>> +
->>> netxen_nic_gstrings_stats[index].stat_offset;
->>> +                       break;
->>> +               case NETXEN_STATS:
->>> +                       p = (char *)adapter +
->>> +
->>> netxen_nic_gstrings_stats[index].stat_offset;
->>> +                       break;
->>> +               default:
->>> +                       data[index] = 0;
->>> +                       continue;
->>
->> If there is a chance of default case, then it will be always in switch case
->> ...?
->    It is possible that hit the default case, but will not stay in swich case.
->    try this little case
->
->   #include <stdio.h>
-> #include <stdlib.h>
->
-> main()
-> {
->          int i,j;
->          for (i=0; i<16; i++) {
->                  j=i%3;
->
->          switch(j) {
->          case 1:
->                  printf("i=%d\n",i);
->                  break;
->          case 2:
->                  printf("i=%d\n",i);
->                  break;
->          default:
->                  printf("i=%d,j=%d\n",i,j);
->                  continue;
->          }
->          }
-> }
->
-Ohhh.. You are right . Thanks for the clarity.  :-)
+Issues Xen hypercall subop XENMEM_get_vnumainfo and sets the
+NUMA topology, otherwise sets dummy NUMA node and prevents
+numa_init from calling other numa initializators as they dont
+work with pv guests.
 
+Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
+---
+ arch/x86/include/asm/xen/vnuma.h |   10 ++++
+ arch/x86/mm/numa.c               |    3 +
+ arch/x86/xen/Makefile            |    1 +
+ arch/x86/xen/setup.c             |    6 +-
+ arch/x86/xen/vnuma.c             |  120 ++++++++++++++++++++++++++++++++++++++
+ include/xen/interface/memory.h   |   50 ++++++++++++++++
+ 6 files changed, 189 insertions(+), 1 deletion(-)
+ create mode 100644 arch/x86/include/asm/xen/vnuma.h
+ create mode 100644 arch/x86/xen/vnuma.c
 
+diff --git a/arch/x86/include/asm/xen/vnuma.h b/arch/x86/include/asm/xen/vnuma.h
+new file mode 100644
+index 0000000..8c8b098
+--- /dev/null
++++ b/arch/x86/include/asm/xen/vnuma.h
+@@ -0,0 +1,10 @@
++#ifndef _ASM_X86_VNUMA_H
++#define _ASM_X86_VNUMA_H
++
++#ifdef CONFIG_XEN
++int xen_numa_init(void);
++#else
++static inline int xen_numa_init(void) { return -1; };
++#endif
++
++#endif /* _ASM_X86_VNUMA_H */
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index a32b706..045a8b3 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -18,6 +18,7 @@
+ #include <asm/acpi.h>
+ #include <asm/amd_nb.h>
+ 
++#include "asm/xen/vnuma.h"
+ #include "numa_internal.h"
+ 
+ int __initdata numa_off;
+@@ -687,6 +688,8 @@ static int __init dummy_numa_init(void)
+ void __init x86_numa_init(void)
+ {
+ 	if (!numa_off) {
++		if (!numa_init(xen_numa_init))
++			return;
+ #ifdef CONFIG_ACPI_NUMA
+ 		if (!numa_init(x86_acpi_numa_init))
+ 			return;
+diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+index 96ab2c0..185ec9b 100644
+--- a/arch/x86/xen/Makefile
++++ b/arch/x86/xen/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+ obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
+ obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
+ obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
++obj-$(CONFIG_NUMA)		+= vnuma.o
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 2e555163..9dc0d3b 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -20,6 +20,7 @@
+ #include <asm/numa.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
++#include <asm/xen/vnuma.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/page.h>
+@@ -642,6 +643,9 @@ void __init xen_arch_setup(void)
+ 	WARN_ON(xen_set_default_idle());
+ 	fiddle_vdso();
+ #ifdef CONFIG_NUMA
+-	numa_off = 1;
++	if (xen_initial_domain())
++		numa_off = 1;
++	else
++		numa_off = 0;
+ #endif
+ }
+diff --git a/arch/x86/xen/vnuma.c b/arch/x86/xen/vnuma.c
+new file mode 100644
+index 0000000..73f052f
+--- /dev/null
++++ b/arch/x86/xen/vnuma.c
+@@ -0,0 +1,120 @@
++#include <linux/err.h>
++#include <linux/memblock.h>
++#include <xen/interface/xen.h>
++#include <xen/interface/memory.h>
++#include <asm/xen/interface.h>
++#include <asm/xen/hypercall.h>
++#include <asm/xen/vnuma.h>
++
++/*
++ * Called from numa_init if numa_off = 0.
++ */
++int __init xen_numa_init(void)
++{
++	unsigned int i, j, idx;
++	unsigned int cpu, pcpus, nr_nodes, nr_cpus;
++	unsigned int *vdistance, *cpu_to_node;
++	unsigned long mem_size, dist_size, cpu_to_node_size;
++	struct vmemrange *vmem;
++	u64 physm, physd, physc;
++	int rc;
++
++	struct vnuma_topology_info numa_topo = {
++		.domid = DOMID_SELF
++	};
++
++	rc = -EINVAL;
++	physm = physd = physc = 0;
++
++	if (!xen_pv_domain())
++		return rc;
++
++	/* get the number of nodes for allocation of memblocks. */
++	pcpus = num_possible_cpus();
++	nr_cpus = setup_max_cpus < pcpus ? setup_max_cpus : pcpus;
++
++	/* support for nodes with at least one cpu per node. */
++	nr_nodes = nr_cpus;
++
++	/*
++	 * Allocate arrays for nr_cpus/nr_nodes sizes and let
++	 * hypervisor know that these are the boundaries. Partial
++	 * copy is not allowed and hypercall will fail.
++	 */
++
++	mem_size =  nr_nodes * sizeof(struct vmemrange);
++	dist_size = nr_nodes * nr_nodes * sizeof(*numa_topo.distance.h);
++	cpu_to_node_size = nr_cpus * sizeof(*numa_topo.cpu_to_node.h);
++
++	physm = memblock_alloc(mem_size, PAGE_SIZE);
++	physd = memblock_alloc(dist_size, PAGE_SIZE);
++	physc = memblock_alloc(cpu_to_node_size, PAGE_SIZE);
++
++	if (!physm || !physd || !physc)
++		goto out;
++
++	vmem = __va(physm);
++	vdistance  = __va(physd);
++	cpu_to_node  = __va(physc);
++
++	numa_topo.nr_nodes = nr_nodes;
++	numa_topo.nr_cpus = nr_cpus;
++
++	set_xen_guest_handle(numa_topo.memrange.h, vmem);
++	set_xen_guest_handle(numa_topo.distance.h, vdistance);
++	set_xen_guest_handle(numa_topo.cpu_to_node.h, cpu_to_node);
++
++	if (HYPERVISOR_memory_op(XENMEM_get_vnuma_info, &numa_topo) < 0)
++		goto out;
++
++	/*
++	 * NUMA nodes memory ranges are in pfns, constructed and
++	 * aligned based on e820 ram domain map.
++	 */
++	for (i = 0; i < nr_nodes; i++) {
++		if (numa_add_memblk(i, vmem[i].start, vmem[i].end))
++			goto out;
++		node_set(i, numa_nodes_parsed);
++	}
++
++	setup_nr_node_ids();
++	/* Setting the cpu, apicid to node. */
++	for_each_cpu(cpu, cpu_possible_mask) {
++		set_apicid_to_node(cpu, cpu_to_node[cpu]);
++		numa_set_node(cpu, cpu_to_node[cpu]);
++		cpumask_set_cpu(cpu, node_to_cpumask_map[cpu_to_node[cpu]]);
++	}
++
++	for (i = 0; i < nr_nodes; i++) {
++		for (j = 0; j < nr_nodes; j++) {
++			idx = (i * nr_nodes) + j;
++			numa_set_distance(i, j, *(vdistance + idx));
++		}
++	}
++
++	rc = 0;
++out:
++	if (physm)
++		memblock_free(__pa(physm), mem_size);
++	if (physd)
++		memblock_free(__pa(physd), dist_size);
++	if (physc)
++		memblock_free(__pa(physc), cpu_to_node_size);
++	/*
++	 * Set a dummy node and return success.  This prevents calling any
++	 * hardware-specific initializers which do not work in a PV guest.
++	 * Taken from dummy_numa_init code.
++	 */
++	if (rc) {
++		for (i = 0; i < MAX_LOCAL_APIC; i++)
++			set_apicid_to_node(i, NUMA_NO_NODE);
++		nodes_clear(numa_nodes_parsed);
++		nodes_clear(node_possible_map);
++		nodes_clear(node_online_map);
++		node_set(0, numa_nodes_parsed);
++		/* cpus up to max_cpus will be assigned to one node. */
++		numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
++		setup_nr_node_ids();
++	}
++	return 0;
++}
+diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+index 2ecfe4f..96d6387 100644
+--- a/include/xen/interface/memory.h
++++ b/include/xen/interface/memory.h
+@@ -263,4 +263,54 @@ struct xen_remove_from_physmap {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
+ 
++/* vNUMA structures */
++struct vmemrange {
++	uint64_t start, end;
++};
++DEFINE_GUEST_HANDLE_STRUCT(vmemrange);
++
++struct vnuma_topology_info {
++	/* OUT */
++	domid_t domid;
++	/*
++	 * nr_nodes and nr_cpus are used for retreival of sizes
++	 * of will be allocated arrays for vnuma topology.
++	 * We need to know vcpus numberfor domain as NR_CPUS
++	 * is less then domain max_vcpus, number of possible
++	 * cpus will equal to NR_CPUS and we have no way of
++	 * learning domain vcpus number.
++	 */
++	/* number of virtual numa nodes */
++	unsigned int nr_nodes;
++	unsigned int nr_cpus;
++	/* distance table */
++	union {
++		GUEST_HANDLE(uint) h;
++		uint64_t    _pad;
++	} distance;
++	/* cpu mapping to vnodes */
++	union {
++		GUEST_HANDLE(uint) h;
++		uint64_t    _pad;
++	} cpu_to_node;
++	/*
++	* memory areas constructed by Xen, start and end
++	* of the ranges are specific to domain e820 map.
++	* Xen toolstack constructs these ranges for domain
++	* when building it.
++	*/
++	union {
++		GUEST_HANDLE(vmemrange) h;
++		uint64_t    _pad;
++	} memrange;
++};
++DEFINE_GUEST_HANDLE_STRUCT(vnuma_topology_info);
++
++/*
++ * Used to retreive vnuma topology info.
++ * Use XENMEM_get_vnuma_nodes to obtain number of
++ * nodes before allocating memory for topology.
++ */
++#define XENMEM_get_vnuma_info	26
++
+ #endif /* __XEN_PUBLIC_MEMORY_H__ */
 -- 
-Regards,
-Varka Bhadram.
+1.7.10.4
 
