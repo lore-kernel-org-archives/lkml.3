@@ -1,136 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934625AbaGRLHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 07:07:45 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:38744 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933281AbaGRLHo (ORCPT
+	id S965395AbaGRLIC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 07:08:02 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:31596 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933281AbaGRLIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 07:07:44 -0400
-Date: Fri, 18 Jul 2014 12:07:18 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "msalter@redhat.com" <msalter@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: make CONFIG_ZONE_DMA user settable
-Message-ID: <20140718110718.GC19850@arm.com>
-References: <1403499924-11214-1-git-send-email-msalter@redhat.com>
- <20140623110937.GB15907@arm.com>
- <1403529423.755.49.camel@deneb.redhat.com>
- <20140624141455.GE4489@arm.com>
- <1403620714.755.69.camel@deneb.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403620714.755.69.camel@deneb.redhat.com>
-Thread-Topic: [PATCH] arm64: make CONFIG_ZONE_DMA user settable
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Jul 2014 07:08:00 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-47-53c9000de393
+Message-id: <53C9000F.4070007@samsung.com>
+Date: Fri, 18 Jul 2014 13:07:59 +0200
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "balbi@ti.com" <balbi@ti.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
+Subject: Re: [PATCH v2 10/12] usb: dwc2/gadget: assign TX FIFO dynamically
+References: <1405506150-16185-1-git-send-email-r.baldyga@samsung.com>
+ <1405506150-16185-11-git-send-email-r.baldyga@samsung.com>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844BEA77@US01WEMBX2.internal.synopsys.com>
+In-reply-to: <A2CA0424C0A6F04399FB9E1CD98E0304844BEA77@US01WEMBX2.internal.synopsys.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xa7q8DCeDDW4eVreY9bKdxeLg/XqL
+	5sXr2Swu75rDZrFoWSuzxdojd9ktHj3cyurA7rF/7hp2j74tqxg9tuz/zOhx/MZ2Jo/Pm+QC
+	WKO4bFJSczLLUov07RK4Mn5tW8dcsJGvYum960wNjIu5uxg5OSQETCReL9rLCGGLSVy4t54N
+	xBYSWMoosX0fSxcjF5D9kVFiRcMRZpAEr4CWxM5dK9hBbBYBVYmFjS/AbDYBHYkt3yeADRIV
+	iJA40PeMFaJeUOLH5HssILaIgL/ErFO/mECGMgssZZI4cXsx2FBhAS+J3itdjBDbLjBK/Jr4
+	BayDUyBK4ufkVrAiZqAN+1unsUHY8hKb17xlnsAoMAvJkllIymYhKVvAyLyKUTS1NLmgOCk9
+	10ivODG3uDQvXS85P3cTIyTMv+5gXHrM6hCjAAejEg/vApMTwUKsiWXFlbmHGCU4mJVEeLPv
+	Hw8W4k1JrKxKLcqPLyrNSS0+xMjEwSnVwLg8/2DKZv+TV054KvP2bCtiFYoPCv3/6h7Ph1lz
+	LOz2Tb169Lu/aM9E64ZAY/VrqXutnfT6c2P2z17mtWhKkSxX/o/J72yMjJvW6s16nrh27VnV
+	OWy7Nb5WqTNsvCj89eOsaNMpPzkPbLycFqo9J3Lti/v6S56suPsuhnduhPLb0PDyb5MTJW4o
+	sRRnJBpqMRcVJwIAAaLtAVECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 03:38:34PM +0100, Mark Salter wrote:
-> On Tue, 2014-06-24 at 15:14 +0100, Catalin Marinas wrote:
-> > On Mon, Jun 23, 2014 at 02:17:03PM +0100, Mark Salter wrote:
-> > > On Mon, 2014-06-23 at 12:09 +0100, Catalin Marinas wrote:
-> > > > My proposal (in the absence of any kind of description) is to still
-> > > > create a ZONE_DMA if we have DMA memory below 32-bit, otherwise just add
-> > > > everything (>32-bit) to ZONE_DMA. Basically an extension from your CMA
-> > > > patch, make dma_phys_limit static in that file and set it to
-> > > > memblock_end_of_DRAM() if no 32-bit DMA. Re-use it in the
-> > > > zone_sizes_init() function for ZONE_DMA (maybe with a pr_info for no
-> > > > 32-bit only DMA zone).
-> > > 
-> > > There's a performance issue with all memory being in ZONE_DMA. It means
-> > > all normal allocations will fail on ZONE_NORMAL and then have to fall
-> > > back to ZONE_DMA. It would be better to put some percentage of memory
-> > > in ZONE_DMA.
-> > 
-> > Is the performance penalty real or just theoretical? I haven't run any
-> > benchmarks myself.
+On 07/16/2014 09:58 PM, Paul Zimmerman wrote:
+>> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
+>> Sent: Wednesday, July 16, 2014 3:22 AM
+>>
+>> Because we have not enough memory to have each TX FIFO of size at least 3072
+>> bytes (the maximum single packet size), we create four FIFOs of lenght 1024,
+>> and four of length 3072 bytes, and assing them to endpoints dynamically
+>> according to maxpacket size value of given endpoint.
 > 
-> It is real insofar as you must eat cycles eliminating ZONE_NORMAL from
-> consideration in the page allocation hot path. How much that really
-> costs, I don't know. But it seems like it could be easily avoided by
-> limiting ZONE_DMA size. Is there any reason it needs to be larger than
-> 4GiB?
+> I don't think this commit message entirely explains what you are doing
+> here.
+> 
+> 3072 is actually 3 times the max packet size for an Isoc endpoint. So you
+> want to have four TX FIFOs of that size, presumably to be assigned to
+> Isoc endpoints. Where before this change, all TX FIFOs were of size 768,
+> which is not even 1 max packet size for an Isoc endpoint. So I guess you
+> were seeing some problem with that?
 
-Basically ZONE_DMA should allow a 32-bit dma mask. When memory starts
-above 4G, in the absence of an IOMMU, it is likely that 32-bit devices
-get some offset for the top bits to be able to address the bottom of the
-memory. The problem is that dma_to_phys() that early in the kernel has
-no idea about DMA offsets until later (they can be specified in DT per
-device).
+FIFO size in DPTXFSIZn register is in terms of 32-bit words, so
+768*4=3072 - maximum packet size with 3 transactions per microframe
+(Mult=2). The problem is that we have not enough memory to have all
+FIFOs of this size, so we split available memory to have at least few
+FIFOs of maximum packet size.
 
-The patch belows tries to guess a DMA offset and use the bottom 32-bit
-of the DRAM as ZONE_DMA.
+> 
+> With a TX FIFO size of 3072, an entire microframe worth of Isoc data
+> (when MaxBurst=2) can fit in the FIFO. I guess that is why you chose
+> 3072?
+> 
 
--------8<-----------------------
+Yes, this is why I chose this value.
 
->From 133656f8378dbb838ad5f12ea29aa9303d7ca922 Mon Sep 17 00:00:00 2001
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Fri, 18 Jul 2014 11:54:37 +0100
-Subject: [PATCH] arm64: Create non-empty ZONE_DMA when DRAM starts above 4GB
+> Also, after this change, you are only initializing 8 TX FIFOs, where
+> before you were initializing all 15. So now there can only be a maximum
+> of 8 IN endpoints active at the same time. That's OK I guess, but I
+> think you should mention that in the commit message.
+> 
 
-ZONE_DMA is created to allow 32-bit only devices to access memory in the
-absence of an IOMMU. On systems where the memory starts above 4GB, it is
-expected that some devices have a DMA offset hardwired to be able to
-access the bottom of the memory. Linux currently supports DT bindings
-for the DMA offsets but they are not (easily) available early during
-boot.
+We use only 8 IN endpoints so there is no need to have more TX FIFOs.
 
-This patch tries to guess a DMA offset and assumes that ZONE_DMA
-corresponds to the 32-bit mask above the start of DRAM.
+I'm preparing v3 of this patchset so I will supply better description.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Salter <msalter@redhat.com>
----
- arch/arm64/mm/init.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 7f68804814a1..160bbaa4fc78 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -60,6 +60,17 @@ static int __init early_initrd(char *p)
- early_param("initrd", early_initrd);
- #endif
- 
-+/*
-+ * Return the maximum physical address for ZONE_DMA (DMA_BIT_MASK(32)). It
-+ * currently assumes that for memory starting above 4G, 32-bit devices will
-+ * use a DMA offset.
-+ */
-+static phys_addr_t max_zone_dma_phys(void)
-+{
-+	phys_addr_t offset = memblock_start_of_DRAM() & GENMASK_ULL(63, 32);
-+	return min(offset + (1ULL << 32), memblock_end_of_DRAM());
-+}
-+
- static void __init zone_sizes_init(unsigned long min, unsigned long max)
- {
- 	struct memblock_region *reg;
-@@ -70,9 +81,7 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
- 
- 	/* 4GB maximum for 32-bit only capable devices */
- 	if (IS_ENABLED(CONFIG_ZONE_DMA)) {
--		unsigned long max_dma_phys =
--			(unsigned long)(dma_to_phys(NULL, DMA_BIT_MASK(32)) + 1);
--		max_dma = max(min, min(max, max_dma_phys >> PAGE_SHIFT));
-+		max_dma = PFN_DOWN(max_zone_dma_phys());
- 		zone_size[ZONE_DMA] = max_dma - min;
- 	}
- 	zone_size[ZONE_NORMAL] = max - max_dma;
-@@ -142,7 +151,7 @@ void __init arm64_memblock_init(void)
- 
- 	/* 4GB maximum for 32-bit only capable devices */
- 	if (IS_ENABLED(CONFIG_ZONE_DMA))
--		dma_phys_limit = dma_to_phys(NULL, DMA_BIT_MASK(32)) + 1;
-+		dma_phys_limit = max_zone_dma_phys();
- 	dma_contiguous_reserve(dma_phys_limit);
- 
- 	memblock_allow_resize();
+Thanks,
+Robert Baldyga
