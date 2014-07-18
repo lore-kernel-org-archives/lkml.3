@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030745AbaGRNv7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:51:59 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:41971 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932309AbaGRNvm (ORCPT
+	id S1161127AbaGRNwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:52:42 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17494 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761196AbaGRNKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:51:42 -0400
-Date: Fri, 18 Jul 2014 09:51:32 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH ftrace/core v3 2/3] ftrace, kprobes: Support IPMODIFY
- flag to find IP modify conflict
-Message-ID: <20140718095132.34c9179e@gandalf.local.home>
-In-Reply-To: <53C8C813.2060709@hitachi.com>
-References: <20140715060015.12195.74457.stgit@kbuild-fedora.novalocal>
-	<20140715060028.12195.33527.stgit@kbuild-fedora.novalocal>
-	<20140717144110.0fb00723@gandalf.local.home>
-	<53C8C813.2060709@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 18 Jul 2014 09:10:20 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Axel Lin <axel.lin@ingics.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 138/170] hwmon: (adm1031) Fix writes to limit registers
+Date: Fri, 18 Jul 2014 14:12:23 +0200
+Message-Id: <bf3b6fffb362959d90dde42e69e76fc1c53adedb.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 16:09:07 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+From: Guenter Roeck <linux@roeck-us.net>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> > "The ops can modify the IP register. This can only be set along with
-> > SAVE_REGS. If another ops is already registered for any of the
-> > functions that this ops will be registered for, then this ops will fail
-> > to register."
-> 
-> Not only register, but also set_filter_ip ;)
-> "...will fail to register or set_filter_ip."
+===============
 
-Sure.
+commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
 
+Upper limit for write operations to temperature limit registers
+was clamped to a fractional value. However, limit registers do
+not support fractional values. As a result, upper limits of 127.5
+degrees C or higher resulted in a rounded limit of 128 degrees C.
+Since limit registers are signed, this was stored as -128 degrees C.
+Clamp limits to (-55, +127) degrees C to solve the problem.
 
-> >> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> >> index 3214289..e52d86f 100644
-> >> --- a/kernel/kprobes.c
-> >> +++ b/kernel/kprobes.c
-> > 
-> > I think this should be split into two patches. One that adds the ftrace
-> > infrastructure, and the other that adds the kprobes user of the
-> > IPMODIFY flag.
-> 
-> Hmm, I thought that it was natural to introduce new feature and its user
-> together, so that we could use git-bisect safely.
+Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
+clamped at all, but masked. As a result, out-of-range writes resulted
+in a more or less arbitrary limit. Clamp those attributes to (0, 127)
+degrees C for more predictable results.
 
-It should still be bisect friendly. That is, the feature is added
-before the user, not the user before the feature ;-)
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/hwmon/adm1031.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-I know some people like the feature and user in one patch, but for me,
-when the user is in a different sub system (here it's kprobes) from the
-infrastructure that is changing (ftrace), I prefer separate patches.
+diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
+index 253ea396106d..bdceca0d7e22 100644
+--- a/drivers/hwmon/adm1031.c
++++ b/drivers/hwmon/adm1031.c
+@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
+ 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
+@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
+ 						  data->pwm[nr]);
+@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
+@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
+@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_crit[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
+-- 
+2.0.0
 
-The user patch shows me where the users are. When they are one patch, I
-tend to have them get lost.
-
--- Steve
