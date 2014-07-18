@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762280AbaGRP0U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:26:20 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:55212 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762220AbaGRP0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:26:17 -0400
-X-pt: isis.lip6.fr
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: benoit.taine@lip6.fr, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/25] x86: Replace DEFINE_PCI_DEVICE_TABLE macro use
-Date: Fri, 18 Jul 2014 17:26:53 +0200
-Message-Id: <1405697232-11785-7-git-send-email-benoit.taine@lip6.fr>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-References: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:08 +0200 (CEST)
+	id S1762733AbaGRPbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:31:08 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:39877 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762058AbaGRPbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:31:04 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Cc: dcb314@hotmail.com, rafael.j.wysocki@intel.com, trenn@suse.de,
+        linux@dominikbrodowski.net,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH 1/5] tools/power/cpupower/utils/helpers/sysfs.c: drop negativity check on unsigned value
+Date: Fri, 18 Jul 2014 18:30:45 +0300
+Message-Id: <1405697445-23620-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should prefer `struct pci_device_id` over `DEFINE_PCI_DEVICE_TABLE` to meet
-kernel coding style guidelines. This issue was reported by checkpatch.
-
-Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
-
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80621
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 ---
-Tested by compilation without errors.
+ tools/power/cpupower/utils/helpers/sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/platform/x86/intel_ips.c     |    2 +-
- drivers/platform/x86/intel_scu_ipc.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index 18dcb58..a0d1f57 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -1478,7 +1478,7 @@ ips_link_to_i915_driver(void)
- }
- EXPORT_SYMBOL_GPL(ips_link_to_i915_driver);
+diff --git a/tools/power/cpupower/utils/helpers/sysfs.c b/tools/power/cpupower/utils/helpers/sysfs.c
+index 851c7a1..09afe5d 100644
+--- a/tools/power/cpupower/utils/helpers/sysfs.c
++++ b/tools/power/cpupower/utils/helpers/sysfs.c
+@@ -81,7 +81,7 @@ int sysfs_is_cpu_online(unsigned int cpu)
+ 	close(fd);
  
--static DEFINE_PCI_DEVICE_TABLE(ips_id_table) = {
-+static const struct pci_device_id ips_id_table[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL,
- 		     PCI_DEVICE_ID_INTEL_THERMAL_SENSOR), },
- 	{ 0, }
-diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index 76ca094..66a4d32 100644
---- a/drivers/platform/x86/intel_scu_ipc.c
-+++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -640,7 +640,7 @@ static void ipc_remove(struct pci_dev *pdev)
- 	intel_scu_devices_destroy();
- }
+ 	value = strtoull(linebuf, &endp, 0);
+-	if (value > 1 || value < 0)
++	if (value > 1)
+ 		return -EINVAL;
  
--static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
-+static const struct pci_device_id pci_ids[] = {
- 	{
- 		PCI_VDEVICE(INTEL, PCI_DEVICE_ID_LINCROFT),
- 		(kernel_ulong_t)&intel_scu_ipc_lincroft_pdata,
+ 	return value;
+-- 
+1.8.5.5
 
