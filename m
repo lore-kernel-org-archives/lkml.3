@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761448AbaGRKiG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:38:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14437 "EHLO mx1.redhat.com"
+	id S1761466AbaGRKiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:38:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48482 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761154AbaGRKiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:38:05 -0400
+	id S1761443AbaGRKiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 06:38:06 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 2/8] GFS2: Fix race in glock lru glock disposal
-Date: Fri, 18 Jul 2014 11:37:39 +0100
-Message-Id: <1405679865-15728-3-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 3/8] GFS2: Use GFP_NOFS when allocating glocks
+Date: Fri, 18 Jul 2014 11:37:40 +0100
+Message-Id: <1405679865-15728-4-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1405679865-15728-1-git-send-email-swhiteho@redhat.com>
 References: <1405679865-15728-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We must not leave items on the LRU list with GLF_LOCK set, since
-they can be removed if the glock is brought back into use, which
-may then potentially result in a hang, waiting for GLF_LOCK to
-clear.
+Normally GFP_KERNEL is ok here, but there is now a rarely used code path
+relating to deallocation of unlinked inodes (in certain corner cases)
+which if hit at times of memory shortage can cause recursion while
+trying to free memory.
 
-It doesn't happen very often, since it requires a glock that has
-not been used for a long time to be brought back into use at the
-same moment that the shrinker is part way through disposing of
-glocks.
-
-The fix is to set GLF_LOCK at a later time, when we already know
-that the other locks can be obtained. Also, we now only release
-the lru_lock in case a resched is needed, rather than on every
-iteration.
+One solution would be to try and move the gfs2_glock_get() call so
+that it is no longer called while another glock is held, but that
+doesn't look at all easy, so GFP_NOFS is the best solution for the
+time being.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
 diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 278fae5..c1e5b12 100644
+index c1e5b12..b703dcc 100644
 --- a/fs/gfs2/glock.c
 +++ b/fs/gfs2/glock.c
-@@ -1406,12 +1406,16 @@ __acquires(&lru_lock)
- 		gl = list_entry(list->next, struct gfs2_glock, gl_lru);
- 		list_del_init(&gl->gl_lru);
- 		if (!spin_trylock(&gl->gl_spin)) {
-+add_back_to_lru:
- 			list_add(&gl->gl_lru, &lru_list);
- 			atomic_inc(&lru_count);
- 			continue;
- 		}
-+		if (test_and_set_bit(GLF_LOCK, &gl->gl_flags)) {
-+			spin_unlock(&gl->gl_spin);
-+			goto add_back_to_lru;
-+		}
- 		clear_bit(GLF_LRU, &gl->gl_flags);
--		spin_unlock(&lru_lock);
- 		gl->gl_lockref.count++;
- 		if (demote_ok(gl))
- 			handle_callback(gl, LM_ST_UNLOCKED, 0, false);
-@@ -1419,7 +1423,7 @@ __acquires(&lru_lock)
- 		if (queue_delayed_work(glock_workqueue, &gl->gl_work, 0) == 0)
- 			gl->gl_lockref.count--;
- 		spin_unlock(&gl->gl_spin);
--		spin_lock(&lru_lock);
-+		cond_resched_lock(&lru_lock);
- 	}
- }
+@@ -731,14 +731,14 @@ int gfs2_glock_get(struct gfs2_sbd *sdp, u64 number,
+ 		cachep = gfs2_glock_aspace_cachep;
+ 	else
+ 		cachep = gfs2_glock_cachep;
+-	gl = kmem_cache_alloc(cachep, GFP_KERNEL);
++	gl = kmem_cache_alloc(cachep, GFP_NOFS);
+ 	if (!gl)
+ 		return -ENOMEM;
  
-@@ -1444,7 +1448,7 @@ static long gfs2_scan_glock_lru(int nr)
- 		gl = list_entry(lru_list.next, struct gfs2_glock, gl_lru);
+ 	memset(&gl->gl_lksb, 0, sizeof(struct dlm_lksb));
  
- 		/* Test for being demotable */
--		if (!test_and_set_bit(GLF_LOCK, &gl->gl_flags)) {
-+		if (!test_bit(GLF_LOCK, &gl->gl_flags)) {
- 			list_move(&gl->gl_lru, &dispose);
- 			atomic_dec(&lru_count);
- 			freed++;
+ 	if (glops->go_flags & GLOF_LVB) {
+-		gl->gl_lksb.sb_lvbptr = kzalloc(GFS2_MIN_LVB_SIZE, GFP_KERNEL);
++		gl->gl_lksb.sb_lvbptr = kzalloc(GFS2_MIN_LVB_SIZE, GFP_NOFS);
+ 		if (!gl->gl_lksb.sb_lvbptr) {
+ 			kmem_cache_free(cachep, gl);
+ 			return -ENOMEM;
 -- 
 1.8.3.1
 
