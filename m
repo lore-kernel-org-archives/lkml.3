@@ -1,189 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945959AbaGRNxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:53:20 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:16219 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030649AbaGRNxP (ORCPT
+	id S1161150AbaGRNxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:53:51 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17486 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761298AbaGRNKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:53:15 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7fac6d000006cfe-02-53c926c2f8a4
-Content-transfer-encoding: 8BIT
-Message-id: <1405691588.6365.3.camel@AMDC1943>
-Subject: Re: [PATCH 1/2] clk: samsung: exynos4x12: Enable ARMCLK down feature
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Fri, 18 Jul 2014 15:53:08 +0200
-In-reply-to: <53C91A9E.7020207@samsung.com>
-References: <1405677186-18678-1-git-send-email-k.kozlowski@samsung.com>
- <53C91A9E.7020207@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xq7qH1E4GG9z+bmaxccZ6VoveBVfZ
-	LM42vWG32PT4GqvF5V1z2CxmnN/HZLH2yF12i6cTLrJZrJ/xmsWB0+POtT1sHpuX1Hv0bVnF
-	6PF5k1wASxSXTUpqTmZZapG+XQJXxoljt9gKlqlX/N/H1sD4T66LkZNDQsBE4ty9J2wQtpjE
-	hXvrgWwuDiGBpYwSO/v+sIAkeAUEJX5Mvgdkc3AwC8hLHLmUDRJmFlCXmDRvETNE/WdGiVn3
-	/7FC1OtJLD9xhwnEFhbwlfh5bzM7iM0mYCyxefkSsGUiAioSl09NZwRpZhY4yyTx5M9UJpAF
-	LAKqEvc2FYHUcApoSzz43w1WLySQIfG09xLUocoS8/YfY5rAKDALyXmzEM6bheS8BYzMqxhF
-	U0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCAv3LDsbFx6wOMQpwMCrx8HJMOBEsxJpYVlyZe4hR
-	goNZSYR3isrJYCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mm8PqdGMiogTvlGZl6FYfrvZbJZ57
-	60Iv78dj17NP8NZu/HPXm0n2QqLOdqN3tevysntPr7yg8ILN+3acSF9N2TqXykVtPKteFGx/
-	HLDjwalLXjvj3HlCQlXj/RIZYlfwLrlbs0XB58OOu3l8E9oDDBVe3uTwejLzxI/wO9/tcw44
-	/fcX3b1RiaU4I9FQi7moOBEAUGQQNVICAAA=
+	Fri, 18 Jul 2014 09:10:14 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 167/170] ring-buffer: Check if buffer exists before polling
+Date: Fri, 18 Jul 2014 14:12:52 +0200
+Message-Id: <2cc74b130195cde747edb3061bec624cef7763e2.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-07-18 at 15:01 +0200, Tomasz Figa wrote:
-> Hi Krzysztof,
-> 
-> On 18.07.2014 11:53, Krzysztof Kozlowski wrote:
-> > Enable ARMCLK down and up features on Exynos4212 and 4412 SoCs. The
-> > frequency of ARMCLK will be reduced upon entering idle mode (WFI or
-> > WFE).  Additionally upon exiting from idle mode the divider for ARMCLK
-> > will be brought back to 1.
-> > 
-> > These are exactly the same settings as for Exynos5250
-> > (clk-exynos5250.c), except of Exynos4412 where ARMCLK down is enabled
-> > for all 4 cores.
-> 
-> Could you add a sentence or two about the purpose of this change? E.g.
-> what it improves, in what conditions, etc.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Sure, I'll describe benefits.
-> 
-> > 
-> > Tested on Trats2 board (Exynos4412) and Samsung Gear 1 (Exynos4212).
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/clk/samsung/clk-exynos4.c | 53 +++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 53 insertions(+)
-> > 
-> > diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
-> > index 7f4a473a7ad7..b8ea37b23984 100644
-> > --- a/drivers/clk/samsung/clk-exynos4.c
-> > +++ b/drivers/clk/samsung/clk-exynos4.c
-> > @@ -114,11 +114,34 @@
-> >  #define DIV_CPU1		0x14504
-> >  #define GATE_SCLK_CPU		0x14800
-> >  #define GATE_IP_CPU		0x14900
-> > +#define PWR_CTRL1		0x15020
-> > +#define PWR_CTRL2		0x15024
-> 
-> I guess these registers should be also added to save/restore list below
-> in this driver.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, you're right.
+===============
 
-> 
-> >  #define E4X12_DIV_ISP0		0x18300
-> >  #define E4X12_DIV_ISP1		0x18304
-> >  #define E4X12_GATE_ISP0		0x18800
-> >  #define E4X12_GATE_ISP1		0x18804
-> >  
-> > +/* Below definitions are used for PWR_CTRL settings */
-> > +#define PWR_CTRL1_CORE2_DOWN_RATIO		(7 << 28)
-> > +#define PWR_CTRL1_CORE1_DOWN_RATIO		(7 << 16)
-> 
-> I think these macros could be defined to take the ratio as its argument,
-> e.g.
-> 
-> #define PWR_CTRL1_CORE2_DOWN_RATIO(x)		((x) << 28)
+commit 8b8b36834d0fff67fc8668093f4312dd04dcf21d upstream.
 
-OK.
+The per_cpu buffers are created one per possible CPU. But these do
+not mean that those CPUs are online, nor do they even exist.
 
-> 
-> > +#define PWR_CTRL1_DIV2_DOWN_EN			(1 << 9)
-> > +#define PWR_CTRL1_DIV1_DOWN_EN			(1 << 8)
-> > +#define PWR_CTRL1_USE_CORE3_WFE			(1 << 7)
-> > +#define PWR_CTRL1_USE_CORE2_WFE			(1 << 6)
-> > +#define PWR_CTRL1_USE_CORE1_WFE			(1 << 5)
-> > +#define PWR_CTRL1_USE_CORE0_WFE			(1 << 4)
-> > +#define PWR_CTRL1_USE_CORE3_WFI			(1 << 3)
-> > +#define PWR_CTRL1_USE_CORE2_WFI			(1 << 2)
-> > +#define PWR_CTRL1_USE_CORE1_WFI			(1 << 1)
-> > +#define PWR_CTRL1_USE_CORE0_WFI			(1 << 0)
-> > +
-> > +#define PWR_CTRL2_DIV2_UP_EN			(1 << 25)
-> > +#define PWR_CTRL2_DIV1_UP_EN			(1 << 24)
-> > +#define PWR_CTRL2_DUR_STANDBY2_VAL		(1 << 16)
-> > +#define PWR_CTRL2_DUR_STANDBY1_VAL		(1 << 8)
-> 
-> These two too.
-> 
-> > +#define PWR_CTRL2_CORE2_UP_RATIO		(1 << 4)
-> > +#define PWR_CTRL2_CORE1_UP_RATIO		(1 << 0)
-> 
-> These two as well.
-> 
-> > +
-> >  /* the exynos4 soc type */
-> >  enum exynos4_soc {
-> >  	EXYNOS4210,
-> > @@ -1164,6 +1187,34 @@ static struct samsung_pll_clock exynos4x12_plls[nr_plls] __initdata = {
-> >  			VPLL_LOCK, VPLL_CON0, NULL),
-> >  };
-> >  
-> > +static void __init exynos4_core_down_clock(void)
-> > +{
-> > +	unsigned int tmp;
-> > +
-> > +	/*
-> > +	 * Enable arm clock down (in idle) and set arm divider
-> > +	 * ratios in WFI/WFE state.
-> > +	 */
-> > +	tmp = (PWR_CTRL1_CORE2_DOWN_RATIO | PWR_CTRL1_CORE1_DOWN_RATIO |
-> > +		PWR_CTRL1_DIV2_DOWN_EN | PWR_CTRL1_DIV1_DOWN_EN |
-> > +		PWR_CTRL1_USE_CORE1_WFE | PWR_CTRL1_USE_CORE0_WFE |
-> > +		PWR_CTRL1_USE_CORE1_WFI | PWR_CTRL1_USE_CORE0_WFI);
-> > +	if (of_machine_is_compatible("samsung,exynos4412"))
-> 
-> Maybe you could use num_possible_cpus() here instead?
+With the addition of the ring buffer polling, it assumes that the
+caller polls on an existing buffer. But this is not the case if
+the user reads trace_pipe from a CPU that does not exist, and this
+causes the kernel to crash.
 
-Sure.
+Simple fix is to check the cpu against buffer bitmask against to see
+if the buffer was allocated or not and return -ENODEV if it is
+not.
 
-> 
-> > +		tmp |= PWR_CTRL1_USE_CORE3_WFE | PWR_CTRL1_USE_CORE2_WFE |
-> > +		       PWR_CTRL1_USE_CORE3_WFI | PWR_CTRL1_USE_CORE2_WFI;
-> > +	__raw_writel(tmp, reg_base + PWR_CTRL1);
-> > +
-> > +	/*
-> > +	 * Enable arm clock up (on exiting idle). Set arm divider
-> > +	 * ratios when not in idle along with the standby duration
-> > +	 * ratios.
-> > +	 */
-> > +	tmp = (PWR_CTRL2_DIV2_UP_EN | PWR_CTRL2_DIV1_UP_EN |
-> > +		PWR_CTRL2_DUR_STANDBY2_VAL | PWR_CTRL2_DUR_STANDBY1_VAL |
-> > +		PWR_CTRL2_CORE2_UP_RATIO | PWR_CTRL2_CORE1_UP_RATIO);
-> > +	__raw_writel(tmp, reg_base + PWR_CTRL2);
-> 
-> Do we need the clock up feature at all? The values you set seem to
-> configure both dividers to 2 (resulting in arm_clk = apll / 4) for a
-> very short period of time (16 ticks of some, unfortunately unspecified,
-> clock) between wake-up and setting the frequency back to normal.
-> Moreover, for certain settings (div_core * div_core2 set to > 4 by
-> cpufreq) this might cause issues with activating higher frequency than
-> current voltage allows.
+More updates were done to pass the -ENODEV back up to userspace.
 
-It seems that the clock up feature is not needed on Exynos 4x12. I'll
-remove it.
+Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
 
-Additionally I'll add support for 4210.
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ include/linux/ring_buffer.h |  2 +-
+ kernel/trace/ring_buffer.c  |  5 ++++-
+ kernel/trace/trace.c        | 25 ++++++++++++++++++-------
+ kernel/trace/trace.h        |  4 ++--
+ 4 files changed, 25 insertions(+), 11 deletions(-)
 
-Thanks for your feedback!
-Krzysztof
-
-> 
-> I believe the same comments apply for patch 2/2 as well.
-> 
-> Best regards,
-> Tomasz
+diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
+index d69cf637a15a..49a4d6f59108 100644
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size, unsigned flags, struct lock_class_key *k
+ 	__ring_buffer_alloc((size), (flags), &__key);	\
+ })
+ 
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
+ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 			  struct file *filp, poll_table *poll_table);
+ 
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 0e337eedb909..15c4ae203885 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct irq_work *work)
+  * as data is added to any of the @buffer's cpu buffers. Otherwise
+  * it will wait for data to be added to a specific cpu buffer.
+  */
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	DEFINE_WAIT(wait);
+@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
++		if (!cpumask_test_cpu(cpu, buffer->cpumask))
++			return -ENODEV;
+ 		cpu_buffer = buffer->buffers[cpu];
+ 		work = &cpu_buffer->irq_work;
+ 	}
+@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ 		schedule();
+ 
+ 	finish_wait(&work->waiters, &wait);
++	return 0;
+ }
+ 
+ /**
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 57d7c64bb980..5e9cb157d31e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1044,13 +1044,13 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ }
+ #endif /* CONFIG_TRACER_MAX_TRACE */
+ 
+-static void default_wait_pipe(struct trace_iterator *iter)
++static int default_wait_pipe(struct trace_iterator *iter)
+ {
+ 	/* Iterators are static, they should be filled or empty */
+ 	if (trace_buffer_iter(iter, iter->cpu_file))
+-		return;
++		return 0;
+ 
+-	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
++	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
+ }
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+@@ -4059,17 +4059,19 @@ tracing_poll_pipe(struct file *filp, poll_table *poll_table)
+  *
+  *     Anyway, this is really very primitive wakeup.
+  */
+-void poll_wait_pipe(struct trace_iterator *iter)
++int poll_wait_pipe(struct trace_iterator *iter)
+ {
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	/* sleep for 100 msecs, and try again. */
+ 	schedule_timeout(HZ / 10);
++	return 0;
+ }
+ 
+ /* Must be called with trace_types_lock mutex held. */
+ static int tracing_wait_pipe(struct file *filp)
+ {
+ 	struct trace_iterator *iter = filp->private_data;
++	int ret;
+ 
+ 	while (trace_empty(iter)) {
+ 
+@@ -4079,10 +4081,13 @@ static int tracing_wait_pipe(struct file *filp)
+ 
+ 		mutex_unlock(&iter->mutex);
+ 
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 
+ 		mutex_lock(&iter->mutex);
+ 
++		if (ret)
++			return ret;
++
+ 		if (signal_pending(current))
+ 			return -EINTR;
+ 
+@@ -5016,8 +5021,12 @@ tracing_buffers_read(struct file *filp, char __user *ubuf,
+ 				goto out_unlock;
+ 			}
+ 			mutex_unlock(&trace_types_lock);
+-			iter->trace->wait_pipe(iter);
++			ret = iter->trace->wait_pipe(iter);
+ 			mutex_lock(&trace_types_lock);
++			if (ret) {
++				size = ret;
++				goto out_unlock;
++			}
+ 			if (signal_pending(current)) {
+ 				size = -EINTR;
+ 				goto out_unlock;
+@@ -5229,8 +5238,10 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
+ 			goto out;
+ 		}
+ 		mutex_unlock(&trace_types_lock);
+-		iter->trace->wait_pipe(iter);
++		ret = iter->trace->wait_pipe(iter);
+ 		mutex_lock(&trace_types_lock);
++		if (ret)
++			goto out;
+ 		if (signal_pending(current)) {
+ 			ret = -EINTR;
+ 			goto out;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 10c86fb7a2b4..7e8be3e50f83 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -334,7 +334,7 @@ struct tracer {
+ 	void			(*stop)(struct trace_array *tr);
+ 	void			(*open)(struct trace_iterator *iter);
+ 	void			(*pipe_open)(struct trace_iterator *iter);
+-	void			(*wait_pipe)(struct trace_iterator *iter);
++	int			(*wait_pipe)(struct trace_iterator *iter);
+ 	void			(*close)(struct trace_iterator *iter);
+ 	void			(*pipe_close)(struct trace_iterator *iter);
+ 	ssize_t			(*read)(struct trace_iterator *iter,
+@@ -549,7 +549,7 @@ void trace_init_global_iter(struct trace_iterator *iter);
+ 
+ void tracing_iter_reset(struct trace_iterator *iter, int cpu);
+ 
+-void poll_wait_pipe(struct trace_iterator *iter);
++int poll_wait_pipe(struct trace_iterator *iter);
+ 
+ void tracing_sched_switch_trace(struct trace_array *tr,
+ 				struct task_struct *prev,
+-- 
+2.0.0
 
