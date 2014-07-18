@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030303AbaGRKRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 06:17:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44246 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761055AbaGRKLI (ORCPT
+	id S965307AbaGRKT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 06:19:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60814 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203AbaGRKTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 06:11:08 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 04/14] scsi: set ->scsi_done before calling scsi_dispatch_cmd
-Date: Fri, 18 Jul 2014 12:13:03 +0200
-Message-Id: <1405678393-11497-5-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405678393-11497-1-git-send-email-hch@lst.de>
-References: <1405678393-11497-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 18 Jul 2014 06:19:24 -0400
+Date: Fri, 18 Jul 2014 12:18:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
+        Matt Turner <mattst88@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: Alpha Checkpatch Errors
+Message-ID: <20140718101846.GQ9918@twins.programming.kicks-ass.net>
+References: <CAPDOMVgJx4NTSDXyS4k9jfWzSw_vJ=TFDBPdCUgxa-Xato1bYA@mail.gmail.com>
+ <alpine.DEB.2.10.1407180013260.24854@nanos>
+ <CAPDOMViHhE22ndcjez+vfZWGprsx_Cw0Rn-FpaoNsi63cRnr9g@mail.gmail.com>
+ <1405653693.21735.9.camel@buesod1.americas.hpqcorp.net>
+ <CAPDOMVh-gtvTP6OY_fM31NcM_ez==f1fBNgV_YaoSXuQcUtiRQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qF9qg9OJwyrKJKWk"
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVh-gtvTP6OY_fM31NcM_ez==f1fBNgV_YaoSXuQcUtiRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The blk-mq code path will set this to a different function, so make the
-code simpler by setting it up in a legacy-request specific place.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Reviewed-by: Webb Scales <webbnh@hp.com>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Tested-by: Bart Van Assche <bvanassche@acm.org>
-Tested-by: Robert Elliott <elliott@hp.com>
----
- drivers/scsi/scsi.c     | 23 +----------------------
- drivers/scsi/scsi_lib.c | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+), 22 deletions(-)
+--qF9qg9OJwyrKJKWk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 2396e89..6200a26 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -72,8 +72,6 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/scsi.h>
- 
--static void scsi_done(struct scsi_cmnd *cmd);
--
- /*
-  * Definitions and constants.
-  */
-@@ -693,8 +691,6 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 	}
- 
- 	trace_scsi_dispatch_cmd_start(cmd);
--
--	cmd->scsi_done = scsi_done;
- 	rtn = host->hostt->queuecommand(host, cmd);
- 	if (rtn) {
- 		trace_scsi_dispatch_cmd_error(cmd, rtn);
-@@ -708,28 +704,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 
- 	return rtn;
-  done:
--	scsi_done(cmd);
-+	cmd->scsi_done(cmd);
- 	return 0;
- }
- 
- /**
-- * scsi_done - Invoke completion on finished SCSI command.
-- * @cmd: The SCSI Command for which a low-level device driver (LLDD) gives
-- * ownership back to SCSI Core -- i.e. the LLDD has finished with it.
-- *
-- * Description: This function is the mid-level's (SCSI Core) interrupt routine,
-- * which regains ownership of the SCSI command (de facto) from a LLDD, and
-- * calls blk_complete_request() for further processing.
-- *
-- * This function is interrupt context safe.
-- */
--static void scsi_done(struct scsi_cmnd *cmd)
--{
--	trace_scsi_dispatch_cmd_done(cmd);
--	blk_complete_request(cmd->request);
--}
--
--/**
-  * scsi_finish_command - cleanup and pass command back to upper layer
-  * @cmd: the command
-  *
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index bf73427..b832696 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -29,6 +29,8 @@
- #include <scsi/scsi_eh.h>
- #include <scsi/scsi_host.h>
- 
-+#include <trace/events/scsi.h>
-+
- #include "scsi_priv.h"
- #include "scsi_logging.h"
- 
-@@ -1454,6 +1456,23 @@ static void scsi_softirq_done(struct request *rq)
- 	}
- }
- 
-+/**
-+ * scsi_done - Invoke completion on finished SCSI command.
-+ * @cmd: The SCSI Command for which a low-level device driver (LLDD) gives
-+ * ownership back to SCSI Core -- i.e. the LLDD has finished with it.
-+ *
-+ * Description: This function is the mid-level's (SCSI Core) interrupt routine,
-+ * which regains ownership of the SCSI command (de facto) from a LLDD, and
-+ * calls blk_complete_request() for further processing.
-+ *
-+ * This function is interrupt context safe.
-+ */
-+static void scsi_done(struct scsi_cmnd *cmd)
-+{
-+	trace_scsi_dispatch_cmd_done(cmd);
-+	blk_complete_request(cmd->request);
-+}
-+
- /*
-  * Function:    scsi_request_fn()
-  *
-@@ -1556,6 +1575,7 @@ static void scsi_request_fn(struct request_queue *q)
- 		/*
- 		 * Dispatch the command to the low-level driver.
- 		 */
-+		cmd->scsi_done = scsi_done;
- 		rtn = scsi_dispatch_cmd(cmd);
- 		if (rtn) {
- 			scsi_queue_insert(cmd, rtn);
--- 
-1.9.1
+On Thu, Jul 17, 2014 at 11:24:45PM -0400, Nick Krause wrote:
+> Yes I am human.
 
+Could you then perhaps try harder at being one, the way it looks now is
+you're failing even the 'simple' Turing test.
+
+--qF9qg9OJwyrKJKWk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTyPSFAAoJEHZH4aRLwOS6otYP/i+Pu5q7G06V9GshjOyOfH1p
+TOyG+kOlV7t/gVuTxRiE5gBYM0N7/bFBXztyDXTruOVrPfQmX6KB2IUVoNmkxdAN
+Ugsu4wvKNqS8JAs8Si+NEdpvhDyq41B7XqZLe7iAFUVnAvpDqTF+oUv2Bl51U4yl
+4kD7QH1QRS4DA1Whv1idf8jvW16LtrCAwh72NmNntsCmADjQEaOH06FA3bz3WPwH
+vNtZlPMsCCac1lXVeGDPcCynd9vr9lI/3l5HkZYOtURoGg+5Fo1O2LY4QQdAEQ48
+Q3wpAWbtmOF7P2FoWrBKZS2AuFAg5Z5hkPgchKZonB3Po6PqBm/CTyVAyYCxVymv
+GjMvrDJ1KcW3BrOL76uxIy8j3YmE3Ewv7s/t1Jfj/jqp8lRLo1BV0aO/RrfzccJm
+XPlN5IbZdn4MAuQ5YpwbPxIqt9N+m3xElUJ29yCOm9HetSPHrg9gBBuWPFhiuCyg
+A1UGxinh8o4rYQrr9sDMhA8i38hv2GDLRVuP78zazv4SBtqvDZ/DE15v2KgCVFdx
+2e8KiHG81DuJR/2xaeRBGd0S+uuQ6QjXuAyNz6EutquEAnPUntwHKsylX/NZFvgu
+NvpOrynR9aw3b+lV6NVVTPOP76Z7bZ8h3uTiVYl2P8MP0XE4+8Dyx06/F5vzCuZi
+yHOZzxvNtrOR5qx6K/d1
+=UEp3
+-----END PGP SIGNATURE-----
+
+--qF9qg9OJwyrKJKWk--
