@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422903AbaGRPjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:39:44 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13410 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1422874AbaGRPjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:39:40 -0400
-Date: Fri, 18 Jul 2014 16:39:31 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>,
-        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "alan.cox@intel.com" <alan.cox@intel.com>,
-        "mark.gross@intel.com" <mark.gross@intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140718153931.GJ8700@e103034-lin>
-References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+	id S965576AbaGRPnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:43:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37103 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933454AbaGRPnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:43:18 -0400
+Date: Fri, 18 Jul 2014 10:42:32 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Masanari Iida <standby24x7@gmail.com>, <sfr@canb.auug.org.au>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH/linux-next] Documentation:Docbook: Fix file locations in
+ gadget.tmpl
+Message-ID: <20140718154232.GP24914@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405655169-23804-1-git-send-email-standby24x7@gmail.com>
+ <1405655169-23804-2-git-send-email-standby24x7@gmail.com>
+ <53C93AF8.5090407@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RtGa12sjXv8gVUZO"
 Content-Disposition: inline
-In-Reply-To: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53C93AF8.5090407@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 12:26:04AM +0100, Yuyang Du wrote:
-> Thanks to Morten, Ben, and Fengguang.
-> 
-> v4 changes:
-> 
-> - Insert memory barrier before writing cfs_rq->load_last_update_copy.
-> - Fix typos.
+--RtGa12sjXv8gVUZO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It is quite a challenge keeping up with your revisions :) Three
-revisions in five days. It takes time to go through all the changes to
-understand the implications of your proposed changes.
+On Fri, Jul 18, 2014 at 08:19:20AM -0700, Randy Dunlap wrote:
+> On 07/17/2014 08:46 PM, Masanari Iida wrote:
+> > Because of file location changes by commit 5ed4ac73e5975,
+> > make xmldocs failed because of missing files.
+> > Fix file paths in gadget.tmpl file.
+> >=20
+> > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+>=20
+> Hi,
+>=20
+> There was a patch for this on the USB mailing list yesterday
+> from Andrzej Pietrasiewicz <andrzej.p@samsung.com>.
+>=20
+> Hopefully Felipe or Greg will apply one of them soon.
 
-I still haven't gotten to the bottom of everything, but this is my view
-so far.
+already in my tree, should be in linux-next already. If not today,
+tomorrow.
 
-1. runnable_avg_period is removed
+--=20
+balbi
 
-load_avg_contrib used to be runnable_avg_sum/runnable_avg_period scaled
-by the task load weight (priority). The runnable_avg_period is replaced
-by a constant in this patch set. The effect of that change is that task
-load tracking no longer is more sensitive early life of the task until
-it has built up some history. Task are now initialized to start out as
-if they have been runnable forever (>345ms). If this assumption about
-the task behavior is wrong it will take longer to converge to the true
-average than it did before. The upside is that is more stable.
+--RtGa12sjXv8gVUZO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-2. runnable_load_avg and blocked_load_avg are combined
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-runnable_load_avg currently represents the sum of load_avg_contrib of
-all tasks on the rq, while blocked_load_avg is the sum of those tasks
-not on a runqueue. It makes perfect sense to consider the sum of both
-when calculating the load of a cpu, but we currently don't include
-blocked_load_avg. The reason for that is the priority scaling of the
-task load_avg_contrib may lead to under-utilization of cpus that
-occasionally have tiny high priority task running. You can easily have a
-task that takes 5% of cpu time but has a load_avg_contrib several times
-larger than a default priority task runnable 100% of the time.
+iQIcBAEBAgAGBQJTyUBoAAoJEIaOsuA1yqREMq4P/35LKNZXo6G6/hp5MCboDvJ3
+P/10dzpnGlGkfLj7djY9JhnJ7wqbK5gX+Et5WOMs4EmyuEtyA0NJscYSzSXhf2Ib
+e9t0DQY5kuWKJ0HxQlpHq330Amu8yCVKTSDayyfm4pcn9Z4n50NPgiRaxY8aIVfy
+vFi6dJ1jQqR1i1trw3Mwr3ZE4vqOwv1AL+ZcLbnym7D1SLAwBISl4oB7GWf1f0AZ
+WaEDYGBDD53jBgOIOv3JYWEE1Y3uRSBI4qRjbKMn4fCutnTRsmCdFtd4S90LuQ/T
+QbwPT9tciADkaDPj21ZadoPF1ggHhJQqm62CXyrQ/0RF7jdgcDvtpi1CpENb++XU
+gP3me0fxOEBqdmoZZzQ12MAYqlaq9Srz5bZPGnbAKp3xra3UKuaGY5P/X9cpkqRr
+2/DXkpBFJ+MBbQgk+1MDd+uoBMc8cvobcz3m+Dg5maAuwZDx4RSUBODHaysZtdHU
+uzSbnXxvX3HFBohiYk0drrrY46XKC94pLHGpR5/gi735CI6tqcEk0qfNVEgZXIJg
+/xybGkEf9UhZG3R3IDO/D9ko47tUSUWheWE2kX4nVunTl6Uz40fkVHLFjtBPyCO4
+hduF3wZc+OQftlt/aNbyUdyhN9+DcR48CtwbY5qmPzhUmIXyA85G3Eup5IwbRt9i
+gUk3gEL8nvXUhgZqxp5s
+=87xk
+-----END PGP SIGNATURE-----
 
-Another thing that might be an issue is that the blocked of a terminated
-task lives on for quite a while until has decayed away.
-
-I'm all for taking the blocked load into consideration, but this issue
-has to be resolved first. Which leads me on to the next thing.
-
-Most of the work going on around energy awareness is based on the load
-tracking to estimate task and cpu utilization. It seems that most of the
-involved parties think that we need an unweighted variant of the tracked
-load as well as tracking the running time of a task. The latter was part
-of the original proposal by pjt and Ben, but wasn't used. It seems that
-unweighted runnable tracking should be fairly easy to add to your
-proposal, but I don't have an overview of whether it is possible to add
-running tracking. Do you think that is possible?
-
-Morten
+--RtGa12sjXv8gVUZO--
