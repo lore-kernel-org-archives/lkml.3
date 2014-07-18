@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965851AbaGRRBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:01:11 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54115 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965751AbaGRRBJ (ORCPT
+	id S965876AbaGRRBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:01:51 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:38323 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894AbaGRRBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:01:09 -0400
-Date: Fri, 18 Jul 2014 10:01:07 -0700
-From: "hch@infradead.org" <hch@infradead.org>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "kys@microsoft.com" <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Message-ID: <20140718170107.GA7564@infradead.org>
-References: <53911A35.7010805@cs.wisc.edu>
- <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
- <5391F801.4010107@cs.wisc.edu>
- <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>
- <539206FA.1020001@kernel.dk>
- <5b926a0a9f264edda91c7c2ab0acb7d1@BY2PR03MB299.namprd03.prod.outlook.com>
- <13807d2cc8744ae1bc374f20d8f9caec@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20140718151039.GA7425@infradead.org>
- <2d43adebbc47441084d8e1284507a427@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <1405702633.30262.3.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405702633.30262.3.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 18 Jul 2014 13:01:50 -0400
+From: Stefan Agner <stefan@agner.ch>
+To: peter.chen@freescale.com, s.hauer@pengutronix.de, shawn.guo@freescale.com
+Cc: b35083@freescale.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stefan@agner.ch
+Subject: [PATCH 0/6] vf610: Add USB support
+Date: Fri, 18 Jul 2014 19:01:36 +0200
+Message-Id: <cover.1405702442.git.stefan@agner.ch>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 04:57:13PM +0000, James Bottomley wrote:
-> Actually, no you didn't.  The difference is in the derivation of the
-> timeout.  Christoph's patch is absolute in terms of SD_TIMEOUT; yours is
-> relative to the queue timeout setting ... I thought there was a reason
-> for preferring the relative version.
+This patchset adds USB support for Vybrid VF610 SoC. It extends the
+clock framework to support the USB PHY cocks, extends the device
+tree files and adds support for the non-core registers in the
+usbmisc_imx driver.
 
-Yes, KYs version is better.  It takes the base timeout drivers set
-on the request queue into account.
+This patchset needs the eSDHC length fix available in Shawn's
+for-next branch.
+
+The whole patchset proved to be working on a Colibri VF61. The
+first USB controller runs in peripheral mode. I could successfully
+use RNDIS, however with some stability issues: Suddenly the other
+side was not reachable anymore and the interface needed to brought
+down and back up again. I'm still investigating this.
+
+The second USB controller, running in USB host mode, showed no
+issues so far.
+
+Stefan Agner (6):
+  ARM: dts: vf610: add USB PHY and controller
+  ARM: imx: clk-vf610: add USBPHY clocks
+  ARM: dts: vf610: Add usbmisc for non-core registers
+  chipidea: usbmisc_imx: Add USB support for VF610 SoCs
+  usb: phy: mxs: Add VF610 USB PHY support
+  ARM: dts: vf610-colibri: add USB support
+
+ arch/arm/boot/dts/vf610-colibri.dts     | 10 +++++
+ arch/arm/boot/dts/vf610.dtsi            | 55 ++++++++++++++++++++++--
+ arch/arm/mach-imx/clk-vf610.c           | 12 +++++-
+ drivers/usb/chipidea/usbmisc_imx.c      | 76 +++++++++++++++++++++++----------
+ drivers/usb/phy/phy-mxs-usb.c           |  5 +++
+ include/dt-bindings/clock/vf610-clock.h |  5 ++-
+ 6 files changed, 135 insertions(+), 28 deletions(-)
+
+-- 
+2.0.1
 
