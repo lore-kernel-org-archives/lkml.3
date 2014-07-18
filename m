@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182AbaGRGMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 02:12:42 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:48254 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759620AbaGRGMk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760304AbaGRGMk (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Jul 2014 02:12:40 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:39791 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755030AbaGRGMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 02:12:38 -0400
 From: Elena Ufimtseva <ufimtseva@gmail.com>
 To: xen-devel@lists.xenproject.org
 Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
@@ -15,23 +15,114 @@ Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
         tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
         stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
         linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
-Subject: [PATCH v6 1/1] xen: vnuma for pv guests
-Date: Fri, 18 Jul 2014 01:57:25 -0400
-Message-Id: <1405663045-31620-2-git-send-email-ufimtseva@gmail.com>
+Subject: [PATCH v6 0/1] introduce vnuma for Xen guests
+Date: Fri, 18 Jul 2014 01:57:24 -0400
+Message-Id: <1405663045-31620-1-git-send-email-ufimtseva@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405663045-31620-1-git-send-email-ufimtseva@gmail.com>
-References: <1405663045-31620-1-git-send-email-ufimtseva@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issues Xen hypercall subop XENMEM_get_vnumainfo and sets the
-NUMA topology, otherwise sets dummy NUMA node and prevents
-numa_init from calling other numa initializators as they dont
-work with pv guests.
+xen: vnuma for PV guests
 
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
----
+This patch is an addition to Xen vNUMA implementation posted
+to xen-devel mailing list.
+
+The patchset introduces vNUMA for paravirtualized Xen guests.
+Xen subop hypercall is used to retreive vnuma topology information.
+Bases on the retreived topology from Xen, NUMA number of nodes,
+memory ranges, distance table and cpumask is being set.
+If initialization is incorrect, sets 'dummy' node and unsets
+nodemask.
+
+vNUMA topology that exposed to guest is a structure with following
+fields:
+    number of vNUMA nodes;
+    number of vcpus;
+    distance table;
+    vnodes memory sizes;
+    vcpus to vnodes mapping;
+
+Subop hypercall XENMEM_gevnumainfo is called to get the information about
+vNUMA topology. Before calling it, guest should provide number of  
+of nr_nodes and nr_cpus to hypervisor to prevent overflows. Hypervisor also
+copies back number of vnodes and vcpus that were copied to the guest.
+
+This patch is available here:
+https://git.gitorious.org/vnuma/linux_vnuma.git
+git://gitorious.org/vnuma/linux_vnuma.git
+
+Patchset for Xen is available here:
+https://git.gitorious.org/vnuma/xen_vnuma.git
+git://gitorious.org/vnuma/xen_vnuma.git
+
+Example of vnuma enabled pv domain with 4 nodes and 4 cpus boot:
+
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x0009ffff]
+[    0.000000]   node   0: [mem 0x00100000-0xffffffff]
+[    0.000000]   node   1: [mem 0x100000000-0x1ffffffff]
+[    0.000000]   node   2: [mem 0x200000000-0x2ffffffff]
+[    0.000000]   node   3: [mem 0x300000000-0x3ffffffff]
+[    0.000000] On node 0 totalpages: 1048479
+[    0.000000]   DMA zone: 56 pages used for memmap
+[    0.000000]   DMA zone: 21 pages reserved
+[    0.000000]   DMA zone: 3999 pages, LIFO batch:0
+[    0.000000]   DMA32 zone: 14280 pages used for memmap
+[    0.000000]   DMA32 zone: 1044480 pages, LIFO batch:31
+[    0.000000] On node 1 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 2 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 3 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] SFI: Simple Firmware Interface v0.81 http://simplefirmware.org
+[    0.000000] smpboot: Allowing 4 CPUs, 0 hotplug CPUs
+[    0.000000] No local APIC present
+[    0.000000] APIC: disable apic facility
+[    0.000000] APIC: switched to apic NOOP
+[    0.000000] nr_irqs_gsi: 16
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.000000] e820: cannot find a gap in the 32bit address range
+[    0.000000] e820: PCI devices with unassigned 32bit BARs may break!
+[    0.000000] e820: [mem 0x400100000-0x4004fffff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on Xen
+[    0.000000] Xen version: 4.4-unstable (preserve-AD)
+[    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:4 nr_node_ids:4
+[    0.000000] PERCPU: Embedded 28 pages/cpu @ffff8800ffc00000 s85376 r8192 d21120 u2097152
+[    0.000000] pcpu-alloc: s85376 r8192 d21120 u2097152 alloc=1*2097152
+
+
+numactl output:
+
+root@heatpipe:~# numactl --hardware
+available: 4 nodes (0-3)
+node 0 cpus: 0
+node 0 size: 4031 MB
+node 0 free: 3997 MB
+node 1 cpus: 1
+node 1 size: 4039 MB
+node 1 free: 4022 MB
+node 2 cpus: 2
+node 2 size: 4039 MB
+node 2 free: 4023 MB
+node 3 cpus: 3
+node 3 size: 3975 MB
+node 3 free: 3963 MB
+node distances:
+node   0   1   2   3
+  0:  10  20  20  20
+  1:  20  10  20  20
+  2:  20  20  10  20
+  3:  20  20  20  10
+
+Elena Ufimtseva (1):
+  xen: vnuma for pv guests
+
  arch/x86/include/asm/xen/vnuma.h |   10 ++++
  arch/x86/mm/numa.c               |    3 +
  arch/x86/xen/Makefile            |    1 +
@@ -42,260 +133,6 @@ Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
  create mode 100644 arch/x86/include/asm/xen/vnuma.h
  create mode 100644 arch/x86/xen/vnuma.c
 
-diff --git a/arch/x86/include/asm/xen/vnuma.h b/arch/x86/include/asm/xen/vnuma.h
-new file mode 100644
-index 0000000..8c8b098
---- /dev/null
-+++ b/arch/x86/include/asm/xen/vnuma.h
-@@ -0,0 +1,10 @@
-+#ifndef _ASM_X86_VNUMA_H
-+#define _ASM_X86_VNUMA_H
-+
-+#ifdef CONFIG_XEN
-+int xen_numa_init(void);
-+#else
-+static inline int xen_numa_init(void) { return -1; };
-+#endif
-+
-+#endif /* _ASM_X86_VNUMA_H */
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a32b706..045a8b3 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -18,6 +18,7 @@
- #include <asm/acpi.h>
- #include <asm/amd_nb.h>
- 
-+#include "asm/xen/vnuma.h"
- #include "numa_internal.h"
- 
- int __initdata numa_off;
-@@ -687,6 +688,8 @@ static int __init dummy_numa_init(void)
- void __init x86_numa_init(void)
- {
- 	if (!numa_off) {
-+		if (!numa_init(xen_numa_init))
-+			return;
- #ifdef CONFIG_ACPI_NUMA
- 		if (!numa_init(x86_acpi_numa_init))
- 			return;
-diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-index 96ab2c0..185ec9b 100644
---- a/arch/x86/xen/Makefile
-+++ b/arch/x86/xen/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
- obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
- obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
- obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
-+obj-$(CONFIG_NUMA)		+= vnuma.o
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 2e555163..9dc0d3b 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -20,6 +20,7 @@
- #include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/xen/vnuma.h>
- 
- #include <xen/xen.h>
- #include <xen/page.h>
-@@ -642,6 +643,9 @@ void __init xen_arch_setup(void)
- 	WARN_ON(xen_set_default_idle());
- 	fiddle_vdso();
- #ifdef CONFIG_NUMA
--	numa_off = 1;
-+	if (xen_initial_domain())
-+		numa_off = 1;
-+	else
-+		numa_off = 0;
- #endif
- }
-diff --git a/arch/x86/xen/vnuma.c b/arch/x86/xen/vnuma.c
-new file mode 100644
-index 0000000..73f052f
---- /dev/null
-+++ b/arch/x86/xen/vnuma.c
-@@ -0,0 +1,120 @@
-+#include <linux/err.h>
-+#include <linux/memblock.h>
-+#include <xen/interface/xen.h>
-+#include <xen/interface/memory.h>
-+#include <asm/xen/interface.h>
-+#include <asm/xen/hypercall.h>
-+#include <asm/xen/vnuma.h>
-+
-+/*
-+ * Called from numa_init if numa_off = 0.
-+ */
-+int __init xen_numa_init(void)
-+{
-+	unsigned int i, j, idx;
-+	unsigned int cpu, pcpus, nr_nodes, nr_cpus;
-+	unsigned int *vdistance, *cpu_to_node;
-+	unsigned long mem_size, dist_size, cpu_to_node_size;
-+	struct vmemrange *vmem;
-+	u64 physm, physd, physc;
-+	int rc;
-+
-+	struct vnuma_topology_info numa_topo = {
-+		.domid = DOMID_SELF
-+	};
-+
-+	rc = -EINVAL;
-+	physm = physd = physc = 0;
-+
-+	if (!xen_pv_domain())
-+		return rc;
-+
-+	/* get the number of nodes for allocation of memblocks. */
-+	pcpus = num_possible_cpus();
-+	nr_cpus = setup_max_cpus < pcpus ? setup_max_cpus : pcpus;
-+
-+	/* support for nodes with at least one cpu per node. */
-+	nr_nodes = nr_cpus;
-+
-+	/*
-+	 * Allocate arrays for nr_cpus/nr_nodes sizes and let
-+	 * hypervisor know that these are the boundaries. Partial
-+	 * copy is not allowed and hypercall will fail.
-+	 */
-+
-+	mem_size =  nr_nodes * sizeof(struct vmemrange);
-+	dist_size = nr_nodes * nr_nodes * sizeof(*numa_topo.distance.h);
-+	cpu_to_node_size = nr_cpus * sizeof(*numa_topo.cpu_to_node.h);
-+
-+	physm = memblock_alloc(mem_size, PAGE_SIZE);
-+	physd = memblock_alloc(dist_size, PAGE_SIZE);
-+	physc = memblock_alloc(cpu_to_node_size, PAGE_SIZE);
-+
-+	if (!physm || !physd || !physc)
-+		goto out;
-+
-+	vmem = __va(physm);
-+	vdistance  = __va(physd);
-+	cpu_to_node  = __va(physc);
-+
-+	numa_topo.nr_nodes = nr_nodes;
-+	numa_topo.nr_cpus = nr_cpus;
-+
-+	set_xen_guest_handle(numa_topo.memrange.h, vmem);
-+	set_xen_guest_handle(numa_topo.distance.h, vdistance);
-+	set_xen_guest_handle(numa_topo.cpu_to_node.h, cpu_to_node);
-+
-+	if (HYPERVISOR_memory_op(XENMEM_get_vnuma_info, &numa_topo) < 0)
-+		goto out;
-+
-+	/*
-+	 * NUMA nodes memory ranges are in pfns, constructed and
-+	 * aligned based on e820 ram domain map.
-+	 */
-+	for (i = 0; i < nr_nodes; i++) {
-+		if (numa_add_memblk(i, vmem[i].start, vmem[i].end))
-+			goto out;
-+		node_set(i, numa_nodes_parsed);
-+	}
-+
-+	setup_nr_node_ids();
-+	/* Setting the cpu, apicid to node. */
-+	for_each_cpu(cpu, cpu_possible_mask) {
-+		set_apicid_to_node(cpu, cpu_to_node[cpu]);
-+		numa_set_node(cpu, cpu_to_node[cpu]);
-+		cpumask_set_cpu(cpu, node_to_cpumask_map[cpu_to_node[cpu]]);
-+	}
-+
-+	for (i = 0; i < nr_nodes; i++) {
-+		for (j = 0; j < nr_nodes; j++) {
-+			idx = (i * nr_nodes) + j;
-+			numa_set_distance(i, j, *(vdistance + idx));
-+		}
-+	}
-+
-+	rc = 0;
-+out:
-+	if (physm)
-+		memblock_free(__pa(physm), mem_size);
-+	if (physd)
-+		memblock_free(__pa(physd), dist_size);
-+	if (physc)
-+		memblock_free(__pa(physc), cpu_to_node_size);
-+	/*
-+	 * Set a dummy node and return success.  This prevents calling any
-+	 * hardware-specific initializers which do not work in a PV guest.
-+	 * Taken from dummy_numa_init code.
-+	 */
-+	if (rc) {
-+		for (i = 0; i < MAX_LOCAL_APIC; i++)
-+			set_apicid_to_node(i, NUMA_NO_NODE);
-+		nodes_clear(numa_nodes_parsed);
-+		nodes_clear(node_possible_map);
-+		nodes_clear(node_online_map);
-+		node_set(0, numa_nodes_parsed);
-+		/* cpus up to max_cpus will be assigned to one node. */
-+		numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
-+		setup_nr_node_ids();
-+	}
-+	return 0;
-+}
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index 2ecfe4f..96d6387 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -263,4 +263,54 @@ struct xen_remove_from_physmap {
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
- 
-+/* vNUMA structures */
-+struct vmemrange {
-+	uint64_t start, end;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(vmemrange);
-+
-+struct vnuma_topology_info {
-+	/* OUT */
-+	domid_t domid;
-+	/*
-+	 * nr_nodes and nr_cpus are used for retreival of sizes
-+	 * of will be allocated arrays for vnuma topology.
-+	 * We need to know vcpus numberfor domain as NR_CPUS
-+	 * is less then domain max_vcpus, number of possible
-+	 * cpus will equal to NR_CPUS and we have no way of
-+	 * learning domain vcpus number.
-+	 */
-+	/* number of virtual numa nodes */
-+	unsigned int nr_nodes;
-+	unsigned int nr_cpus;
-+	/* distance table */
-+	union {
-+		GUEST_HANDLE(uint) h;
-+		uint64_t    _pad;
-+	} distance;
-+	/* cpu mapping to vnodes */
-+	union {
-+		GUEST_HANDLE(uint) h;
-+		uint64_t    _pad;
-+	} cpu_to_node;
-+	/*
-+	* memory areas constructed by Xen, start and end
-+	* of the ranges are specific to domain e820 map.
-+	* Xen toolstack constructs these ranges for domain
-+	* when building it.
-+	*/
-+	union {
-+		GUEST_HANDLE(vmemrange) h;
-+		uint64_t    _pad;
-+	} memrange;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(vnuma_topology_info);
-+
-+/*
-+ * Used to retreive vnuma topology info.
-+ * Use XENMEM_get_vnuma_nodes to obtain number of
-+ * nodes before allocating memory for topology.
-+ */
-+#define XENMEM_get_vnuma_info	26
-+
- #endif /* __XEN_PUBLIC_MEMORY_H__ */
 -- 
 1.7.10.4
 
