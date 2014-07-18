@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760878AbaGRNgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:36:36 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17700 "EHLO
+	id S1761540AbaGRNhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:37:00 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17687 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965674AbaGRNNg (ORCPT
+	by vger.kernel.org with ESMTP id S1761906AbaGRNNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:13:36 -0400
+	Fri, 18 Jul 2014 09:13:07 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Maxime Bizon <mbizon@freebox.fr>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 132/170] workqueue: fix dev_set_uevent_suppress() imbalance
-Date: Fri, 18 Jul 2014 14:12:17 +0200
-Message-Id: <d5c66201eaff070b915bd31fdc1d03dbe96180d7.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 083/170] drm/radeon: don't allow RADEON_GEM_DOMAIN_CPU for command submission
+Date: Fri, 18 Jul 2014 14:11:28 +0200
+Message-Id: <20badb285d5c13d6c4c8ab2a47203d73378da50b.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
 References: <cover.1405685481.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Bizon <mbizon@freebox.fr>
+From: Marek Olšák <marek.olsak@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit bddbceb688c6d0decaabc7884fede319d02f96c8 upstream.
+commit ec65da385d46f63740c1c9230b891a6dcbd64c71 upstream.
 
-Uevents are suppressed during attributes registration, but never
-restored, so kobject_uevent() does nothing.
+It hangs the hardware.
 
-Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 226223ab3c4118ddd10688cc2c131135848371ab
+Signed-off-by: Marek Olšák <marek.olsak@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/workqueue.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_cs.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index cea58300f650..e0b695893579 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3412,6 +3412,7 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
- 		}
- 	}
+diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
+index b2b8b38f0319..ed9a997c99a3 100644
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -97,6 +97,12 @@ static int radeon_cs_parser_relocs(struct radeon_cs_parser *p)
+ 			uint32_t domain = r->write_domain ?
+ 				r->write_domain : r->read_domains;
  
-+	dev_set_uevent_suppress(&wq_dev->dev, false);
- 	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
- 	return 0;
- }
++			if (domain & RADEON_GEM_DOMAIN_CPU) {
++				DRM_ERROR("RADEON_GEM_DOMAIN_CPU is not valid "
++					  "for command submission\n");
++				return -EINVAL;
++			}
++
+ 			p->relocs[i].lobj.domain = domain;
+ 			if (domain == RADEON_GEM_DOMAIN_VRAM)
+ 				domain |= RADEON_GEM_DOMAIN_GTT;
 -- 
 2.0.0
 
