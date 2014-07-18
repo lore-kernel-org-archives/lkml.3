@@ -1,68 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761870AbaGRNMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:12:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44510 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761848AbaGRNMm (ORCPT
+	id S1761955AbaGRNij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:38:39 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17667 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761871AbaGRNMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:12:42 -0400
-Message-ID: <53C91CA9.7060103@oracle.com>
-Date: Fri, 18 Jul 2014 09:10:01 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH RFC tip/core/rcu 2/2] rcu: Create rcuo kthreads only for
- onlined CPUs
-References: <20140714100604.GA9905@linux.vnet.ibm.com> <1405332404-10094-1-git-send-email-paulmck@linux.vnet.ibm.com> <1405332404-10094-2-git-send-email-paulmck@linux.vnet.ibm.com> <53C9023D.3090007@oracle.com> <20140718125516.GH8690@linux.vnet.ibm.com>
-In-Reply-To: <20140718125516.GH8690@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 18 Jul 2014 09:12:47 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 058/170] ALSA: usb-audio: Fix races at disconnection and PCM closing
+Date: Fri, 18 Jul 2014 14:11:03 +0200
+Message-Id: <9d1274d16846751a7a9d6ffa21cf06b6a0cf3bfa.1405685481.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
+In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
+References: <cover.1405685481.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 08:55 AM, Paul E. McKenney wrote:
-> On Fri, Jul 18, 2014 at 07:17:17AM -0400, Sasha Levin wrote:
->> > On 07/14/2014 06:06 AM, Paul E. McKenney wrote:
->>> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->>> > > 
->>> > > RCU currently uses for_each_possible_cpu() to spawn rcuo kthreads,
->>> > > which can result in more rcuo kthreads than one would expect, for
->>> > > example, derRichard reported 64 CPUs worth of rcuo kthreads on an
->>> > > 8-CPU image.  This commit therefore creates rcuo kthreads only for
->>> > > those CPUs that actually come online.
->>> > > 
->>> > > Reported-by: derRichard
->>> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> > 
->> > Hey Paul,
->> > 
->> > Me again. :)
->> > 
->> > It seems that this patch moved thread initialization to a point way
->> > too early during boot, before rest_init() which initializes kthreadd_task
->> > runs, so creating a new kthread triggers a NULL ptr deref:
-> This should be fixed by commit 918179699e4a in -rcu.  My guess is that
-> you are instead using commit c6e2955266d14, which, said to say, made it
-> into -next yesterday.  :-(
-> 
-> If my guess is wrong, please let me know!
+From: Takashi Iwai <tiwai@suse.de>
 
-Your guess is correct.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I'll wait for the next -next tree and retry.
+===============
 
+commit 92a586bdc06de6629dae1b357dac221253f55ff8 upstream.
 
-Thanks,
-Sasha
+When a USB-audio device is disconnected while PCM is still running, we
+still see some race: the disconnect callback calls
+snd_usb_endpoint_free() that calls release_urbs() and then kfree()
+while a PCM stream would be closed at the same time and calls
+stop_endpoints() that leads to wait_clear_urbs().  That is, the EP
+object might be deallocated while a PCM stream is syncing with
+wait_clear_urbs() with the same EP.
+
+Basically calling multiple wait_clear_urbs() would work fine, also
+calling wait_clear_urbs() and release_urbs() would work, too, as
+wait_clear_urbs() just reads some fields in ep.  The problem is the
+succeeding kfree() in snd_pcm_endpoint_free().
+
+This patch moves out the EP deallocation into the later point, the
+destructor callback.  At this stage, all PCMs must have been already
+closed, so it's safe to free the objects.
+
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ sound/usb/card.c     | 13 ++++++++++---
+ sound/usb/endpoint.c | 17 ++++++++++++++---
+ sound/usb/endpoint.h |  1 +
+ 3 files changed, 25 insertions(+), 6 deletions(-)
+
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index 64952e2d3ed1..fda227e3bbac 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -307,6 +307,11 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
+ 
+ static int snd_usb_audio_free(struct snd_usb_audio *chip)
+ {
++	struct list_head *p, *n;
++
++	list_for_each_safe(p, n, &chip->ep_list)
++		snd_usb_endpoint_free(p);
++
+ 	mutex_destroy(&chip->mutex);
+ 	kfree(chip);
+ 	return 0;
+@@ -583,7 +588,7 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+ 				     struct snd_usb_audio *chip)
+ {
+ 	struct snd_card *card;
+-	struct list_head *p, *n;
++	struct list_head *p;
+ 
+ 	if (chip == (void *)-1L)
+ 		return;
+@@ -596,14 +601,16 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+ 	mutex_lock(&register_mutex);
+ 	chip->num_interfaces--;
+ 	if (chip->num_interfaces <= 0) {
++		struct snd_usb_endpoint *ep;
++
+ 		snd_card_disconnect(card);
+ 		/* release the pcm resources */
+ 		list_for_each(p, &chip->pcm_list) {
+ 			snd_usb_stream_disconnect(p);
+ 		}
+ 		/* release the endpoint resources */
+-		list_for_each_safe(p, n, &chip->ep_list) {
+-			snd_usb_endpoint_free(p);
++		list_for_each_entry(ep, &chip->ep_list, list) {
++			snd_usb_endpoint_release(ep);
+ 		}
+ 		/* release the midi resources */
+ 		list_for_each(p, &chip->midi_list) {
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index ba106c6c2d3a..b0a0f2028319 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -960,19 +960,30 @@ int snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep)
+ }
+ 
+ /**
++ * snd_usb_endpoint_release: Tear down an snd_usb_endpoint
++ *
++ * @ep: the endpoint to release
++ *
++ * This function does not care for the endpoint's use count but will tear
++ * down all the streaming URBs immediately.
++ */
++void snd_usb_endpoint_release(struct snd_usb_endpoint *ep)
++{
++	release_urbs(ep, 1);
++}
++
++/**
+  * snd_usb_endpoint_free: Free the resources of an snd_usb_endpoint
+  *
+  * @ep: the list header of the endpoint to free
+  *
+- * This function does not care for the endpoint's use count but will tear
+- * down all the streaming URBs immediately and free all resources.
++ * This free all resources of the given ep.
+  */
+ void snd_usb_endpoint_free(struct list_head *head)
+ {
+ 	struct snd_usb_endpoint *ep;
+ 
+ 	ep = list_entry(head, struct snd_usb_endpoint, list);
+-	release_urbs(ep, 1);
+ 	kfree(ep);
+ }
+ 
+diff --git a/sound/usb/endpoint.h b/sound/usb/endpoint.h
+index 2287adf5ca59..fe65a38ba387 100644
+--- a/sound/usb/endpoint.h
++++ b/sound/usb/endpoint.h
+@@ -21,6 +21,7 @@ void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_sync_pending_stop(struct snd_usb_endpoint *ep);
+ int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
+ int  snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep);
++void snd_usb_endpoint_release(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_free(struct list_head *head);
+ 
+ int snd_usb_endpoint_implicit_feedback_sink(struct snd_usb_endpoint *ep);
+-- 
+2.0.0
+
