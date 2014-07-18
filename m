@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760976AbaGRJRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 05:17:46 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:50410 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755451AbaGRJRn (ORCPT
+	id S1761055AbaGRJS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 05:18:57 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:59090 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451AbaGRJSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 05:17:43 -0400
-X-IronPort-AV: E=Sophos;i="5.00,914,1396972800"; 
-   d="scan'208";a="33451710"
-Message-ID: <53C8E602.1060301@cn.fujitsu.com>
-Date: Fri, 18 Jul 2014 17:16:50 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Fri, 18 Jul 2014 05:18:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chung-Lin Tang <cltang@codesourcery.com>
+Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        lftan.linux@gmail.com, "Joseph S. Myers" <joseph@codesourcery.com>
+Subject: Re: [PATCH v2 22/29] nios2: Miscellaneous header files
+Date: Fri, 18 Jul 2014 11:18:44 +0200
+Message-ID: <24519153.8UnNuM8InF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53C8BB6B.5050606@codesourcery.com>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com> <4477048.XUlURsz4uq@wuerfel> <53C8BB6B.5050606@codesourcery.com>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-CC: Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pei Feiyue <peifeiyue@huawei.com>, <linux-mm@kvack.org>,
-        <x86@kernel.org>, <linux-ia64@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-sh@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] memory-hotplug: suitable memory should go to ZONE_MOVABLE
-References: <1405670163-53747-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1405670163-53747-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:uMW8q9/rl3HpvYdFxeKN1/Ni5LvWMf8U9F06f/QGlEI
+ +OM1Dm+T76H62AtTmRB65vah9RElVMmq8Ib0xYgDQotkSGtu7E
+ 4m2sizl2EEMGkZ9lie7Zmul4hXbXRXDAJhZo9TysdgP5DBRH9G
+ g96GdNc02lb30ptN3HAZyIdxFLt0PG+t2G9oO4KnoHayraPPkh
+ RtYLds8FWTWyAky+RTLlIr/YEfUMJ9l9cjYSFHtgDrTb+qh9SZ
+ uWWkibDxs++vldWBrjVzmbqRvir3wO1rBuPiJ3NcF0I0faB8xD
+ rZ8Gkg7tPfmHNPFDH9egCMwiZFCaM/kHaxJ0pX/mP4/M1QoxUF
+ ZLpGbhJONRqmS8JwoNwE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Friday 18 July 2014 14:15:07 Chung-Lin Tang wrote:
+> Hi Arnd,
+> Considering two other kernel interface issues that appeared earlier in
+> the context of nios2 glibc/kernel upstreaming:
+> 
+> (1) The 64-bit time_t/timespec issue.
+> (2) Dropping renameat by default in favor of renameat2
+> 
+> What's the decision for these? Are they delayed to the next release?
 
-On 07/18/2014 03:55 PM, Wang Nan wrote:
-> This series of patches fix a problem when adding memory in bad manner.
-> For example: for a x86_64 machine booted with "mem=400M" and with 2GiB
-> memory installed, following commands cause problem:
-> 
->  # echo 0x40000000 > /sys/devices/system/memory/probe
-> [   28.613895] init_memory_mapping: [mem 0x40000000-0x47ffffff]
->  # echo 0x48000000 > /sys/devices/system/memory/probe
-> [   28.693675] init_memory_mapping: [mem 0x48000000-0x4fffffff]
->  # echo online_movable > /sys/devices/system/memory/memory9/state
->  # echo 0x50000000 > /sys/devices/system/memory/probe 
-> [   29.084090] init_memory_mapping: [mem 0x50000000-0x57ffffff]
->  # echo 0x58000000 > /sys/devices/system/memory/probe 
-> [   29.151880] init_memory_mapping: [mem 0x58000000-0x5fffffff]
->  # echo online_movable > /sys/devices/system/memory/memory11/state
->  # echo online> /sys/devices/system/memory/memory8/state
->  # echo online> /sys/devices/system/memory/memory10/state
->  # echo offline> /sys/devices/system/memory/memory9/state
-> [   30.558819] Offlined Pages 32768
->  # free
->              total       used       free     shared    buffers     cached
-> Mem:        780588 18014398509432020     830552          0          0      51180
-> -/+ buffers/cache: 18014398509380840     881732
-> Swap:            0          0          0
-> 
-> This is because the above commands probe higher memory after online a
-> section with online_movable, which causes ZONE_HIGHMEM (or ZONE_NORMAL
-> for systems without ZONE_HIGHMEM) overlaps ZONE_MOVABLE.
+For renameat2, I believe we had patches to change the generic syscall
+list. It would be nice if you could include those in your patch
+series as a prerequisite and base your patches on top.
 
-Yeah, this is rare in reality but can happen. Could you please also
-include the free result and zoneinfo after applying your patch?
+Regarding time_t, I've spent much more time looking into what we
+need to do for the other 32-bit architectures now. My feeling now
+is that we're better off not introducing another special case for
+nios2 here, as that will have the effect of making it harder to
+move everyone else over later. We already have to deal with:
 
-Thanks.
+- 32-bit architectures using 32-bit time_t
+- 64-bit architectures using 64-bit time_t
+- 64-bit architectures running 32-bit tasks with 32-bit time_t
+- 64-bit x86-64 and soon arm64 running x32 user space with 64-bit time_t
 
-> 
-> After the second online_movable, the problem can be observed from
-> zoneinfo:
-> 
->  # cat /proc/zoneinfo
-> ...
-> Node 0, zone  Movable
->   pages free     65491
->         min      250
->         low      312
->         high     375
->         scanned  0
->         spanned  18446744073709518848
->         present  65536
->         managed  65536
-> ...
-> 
-> This series of patches solve the problem by checking ZONE_MOVABLE when
-> choosing zone for new memory. If new memory is inside or higher than
-> ZONE_MOVABLE, makes it go there instead.
-> 
-> 
-> Wang Nan (5):
->   memory-hotplug: x86_64: suitable memory should go to ZONE_MOVABLE
->   memory-hotplug: x86_32: suitable memory should go to ZONE_MOVABLE
->   memory-hotplug: ia64: suitable memory should go to ZONE_MOVABLE
->   memory-hotplug: sh: suitable memory should go to ZONE_MOVABLE
->   memory-hotplug: powerpc: suitable memory should go to ZONE_MOVABLE
-> 
->  arch/ia64/mm/init.c   |  7 +++++++
->  arch/powerpc/mm/mem.c |  6 ++++++
->  arch/sh/mm/init.c     | 13 ++++++++-----
->  arch/x86/mm/init_32.c |  6 ++++++
->  arch/x86/mm/init_64.c | 10 ++++++++--
->  5 files changed, 35 insertions(+), 7 deletions(-)
-> 
+and we will get in the future
 
+- 32-bit architectures providing both 32-bit time_t and 64-bit time64_t
+- 64-bit architectures with compat tasks running 64-bit time64_t
 
--- 
-Thanks.
-Zhang Yanfei
+Adding a 32-bit architecture that has a native 64-bit time_t will
+just add another special case that we will have to live with for
+a long time and that can introduce bugs for the other cases if we
+get it wrong. I vote for keeping 32-bit time_t on nios2 and fixing
+it along with arm32 and x86-32 and the others.
+
+Presumably this is not a huge problem for you as I expect it's
+easier for you to do another ABI change in user space when we get
+there: once we have support for 64-bit time64_t in the kernel, you
+can change your toolchains to default to that in user space and
+rebuild everything. This is not something we can easily do in x86.
+
+	Arnd
