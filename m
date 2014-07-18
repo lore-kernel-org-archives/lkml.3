@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935172AbaGRQjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 12:39:10 -0400
-Received: from rslrsmtp2.opaltelecom.net ([62.24.128.202]:28534 "EHLO
-	iprslrsmtp2msp.cpwnetworks.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935145AbaGRQjE (ORCPT
+	id S1030490AbaGRQjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 12:39:44 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:51844 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030388AbaGRQji convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 12:39:04 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArQEAEdMyVM+GID9/2dsb2JhbABZDochrn+Sb4dSgR92hC0EUikMAiYCLjEBEohGrC2XUxeBLI4fgn+BTgWiOoRMiE6DAkNr
-X-IPAS-Result: ArQEAEdMyVM+GID9/2dsb2JhbABZDochrn+Sb4dSgR92hC0EUikMAiYCLjEBEohGrC2XUxeBLI4fgn+BTgWiOoRMiE6DAkNr
-X-IronPort-AV: E=Sophos;i="5.01,686,1400022000"; 
-   d="scan'208";a="484986793"
-Message-ID: <1405701503.3485.49.camel@samson1.armitage.org.uk>
-Subject: [PATCH] Make IP_MULTICAST_ALL and IP_MSFILTER work on raw sockets
-From: Quentin Armitage <quentin@armitage.org.uk>
-To: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        "David S.Miller" <davem@davemloft.net>
+	Fri, 18 Jul 2014 12:39:38 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] [RFC] initial getrandom wrapper to provide getentropy for LibreSSL
+From: Brent Cook <busterb@gmail.com>
+In-Reply-To: <20140718161936.GA4877@thunk.org>
+Date: Fri, 18 Jul 2014 11:33:25 -0500
 Cc: linux-kernel@vger.kernel.org
-Date: Fri, 18 Jul 2014 17:38:23 +0100
-Organization: The Armitage family
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Message-Id: <15B9444D-C18A-41AC-BE81-30B43AA3384C@gmail.com>
+References: <1405666144-88053-1-git-send-email-busterb@gmail.com> <1158B2FC-1289-4E10-8C99-F407123B0D01@gmail.com> <20140718161936.GA4877@thunk.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, although IP_MULTICAST_ALL and IP_MSFILTER ioctl calls succeed on
-raw sockets, there is no code to implement the functionality on received
-packets; it is only implemented for UDP sockets. The raw(7) man page states:
-"In addition, all ip(7) IPPROTO_IP socket options valid for datagram sockets
-are supported", which implies these ioctls should work on raw sockets.
+On Jul 18, 2014, at 11:19 AM, Theodore Ts'o <tytso@mit.edu> wrote:
 
-To fix this, add a call to ip_mc_sf_allow on raw sockets.
+> On Fri, Jul 18, 2014 at 08:09:52AM -0500, Brent Cook wrote:
+>> On Jul 18, 2014, at 1:49 AM, Brent Cook <busterb@gmail.com> wrote:
+>> 
+>>> From: Brent Cook <bcook@openbsd.org>
+>>> 
+>>> This is not a kernel patch, but rather an initial test of the API to see
+>>> how it might mesh LibreSSL's expectations for how getentropy works.
+>>> 
+>>> It is a bit more code to carefully handle the extra return values, as
+>>> not reading enough bytes, because there is an unhandled EINTR, might
+>>> lead to an unseeded CSPRNG.
+> 
+> Take a look at the latest patch for getrandom.  It contains a
+> suggested wrapper which should be sufficient for emulation of
+> OpenBSD's getentropy(), and a lot of discussion of when you don't need
+> to worry about getting the EINTR.
+> 
+>   http://lists.openwall.net/linux-kernel/2014/07/18/329
+> 
+> Again, please don't commit anything until the syscall number and
+> interface is finalized.  What is out here is for review, and I already
+> have in the git commit a suggested wrapper to provide getentropy(2).
+> If you don't think it's good enough, please let me know what your
+> concerns might be.  (And yes, I've fixed the obvious missing open
+> brace already.  :-)
+> 
+>   	      	      	  	     	      	    - Ted
 
-This should not break any existing code, since the current position of
-not calling ip_mc_sf_filter makes it behave as if neither the IP_MULTICAST_ALL
-nor the IP_MSFILTER ioctl had been called. Adding the call to ip_mc_sf_allow
-will therefore maintain the current behaviour so long as IP_MULTICAST_ALL and
-IP_MSFILTER ioctls are not called. Any code that currently is calling
-IP_MULTICAST_ALL or IP_MSFILTER ioctls on raw sockets presumably is wanting
-the filter to be applied, although no filtering will currently be occurring.
+Ah, that looks good to me.
 
-Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
----
- net/ipv4/raw.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+I had just stubbed in the placeholder numbers for local testing purposes, no problem holding until it is finalized.
 
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 2c65160..2e1628c 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -58,6 +58,7 @@
- #include <linux/in_route.h>
- #include <linux/route.h>
- #include <linux/skbuff.h>
-+#include <linux/igmp.h>
- #include <net/net_namespace.h>
- #include <net/dst.h>
- #include <net/sock.h>
-@@ -174,7 +175,9 @@ static int raw_v4_input(struct sk_buff *skb, const struct iphdr *iph, int hash)
- 
- 	while (sk) {
- 		delivered = 1;
--		if (iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) {
-+		if ((iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) &&
-+		    ip_mc_sf_allow(sk, iph->daddr, iph->saddr,
-+				   skb->dev->ifindex)) {
- 			struct sk_buff *clone = skb_clone(skb, GFP_ATOMIC);
- 
- 			/* Not releasing hash table! */
--- 
-1.7.7.6
+ Thanks!
 
-
+ - Brent
 
