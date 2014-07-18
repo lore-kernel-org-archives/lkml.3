@@ -1,51 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030677AbaGRRue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 13:50:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59549 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761010AbaGRRuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 13:50:32 -0400
-Date: Fri, 18 Jul 2014 13:50:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
-        Matt Turner <mattst88@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-alpha@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: Alpha Checkpatch Errors
-Message-ID: <20140718135030.6f6ea09e@gandalf.local.home>
-In-Reply-To: <CAPDOMVikNzjLSwTGTWNpnNe+zwUYmKrs4+CzN__NVz3TAaNx5g@mail.gmail.com>
-References: <CAPDOMVgJx4NTSDXyS4k9jfWzSw_vJ=TFDBPdCUgxa-Xato1bYA@mail.gmail.com>
-	<alpine.DEB.2.10.1407180013260.24854@nanos>
-	<CAPDOMViHhE22ndcjez+vfZWGprsx_Cw0Rn-FpaoNsi63cRnr9g@mail.gmail.com>
-	<1405653693.21735.9.camel@buesod1.americas.hpqcorp.net>
-	<CAPDOMVh-gtvTP6OY_fM31NcM_ez==f1fBNgV_YaoSXuQcUtiRQ@mail.gmail.com>
-	<20140718115847.GA23985@home.goodmis.org>
-	<CAPDOMVjj_v6eLiweiGHOCV61hxbpRoYLeKJVHCR35-1kJoM-wA@mail.gmail.com>
-	<20140718133139.5fcc69cd@gandalf.local.home>
-	<CAPDOMVikNzjLSwTGTWNpnNe+zwUYmKrs4+CzN__NVz3TAaNx5g@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1030726AbaGRRuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 13:50:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23625 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030643AbaGRRux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 13:50:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,686,1400050800"; 
+   d="scan'208";a="571950655"
+From: Andi Kleen <andi@firstfloor.org>
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v2 1/3] perf/sdt : Listing of SDT markers by perf
+References: <20140717054826.19995.61782.stgit@hemant-fedora>
+	<20140717055341.19995.97042.stgit@hemant-fedora>
+Date: Fri, 18 Jul 2014 10:50:45 -0700
+In-Reply-To: <20140717055341.19995.97042.stgit@hemant-fedora> (Hemant Kumar's
+	message of "Thu, 17 Jul 2014 11:25:12 +0530")
+Message-ID: <87d2d24kui.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 13:35:48 -0400
-Nick Krause <xerofoify@gmail.com> wrote:
-> 
-> Why are you even asking this?
+Hemant Kumar <hemant@linux.vnet.ibm.com> writes:
 
-What do you think?
+First I should say supporting these probes is very useful. Thanks for
+working on this.
 
--- Steve
+> +
+> +#define SDT_CACHE_DIR "/var/cache/perf/"
+
+This requires running perf as root, right?
+
+It would be better to use the $HOME cache dir, like the recent JSON patches.
+
+> +#define SDT_CACHE "perf-sdt.cache"
+> +#define SDT_CACHE_TMP "perf-sdt.cache.tmp"
+> +
+> +#define DELIM ':'
+> +
+> +struct path_list {
+> +	char path[PATH_MAX];
+> +	struct list_head list;
+> +} execs;
+> +
+> +/* Write operation for cache */
+> +static void write_cache(FILE *cache, char *buffer)
+> +{
+> +	fprintf(cache, "%s", buffer);
+> +}
+> +
+
+The function seems redundant.
+
+
+> +/*
+> + * get_sdt_note_info() is the function actually responsible for
+> + * flushing the SDT notes info into the "cache" file or to the
+> + * stdout if "cache" points to NULL. Also, this function finds out
+> + * the build-id of an ELF to be written into "cache".
+> + */
+> +static void get_sdt_note_info(struct list_head *start, const char *target,
+> +			      FILE *cache)
+> +{
+> +	struct sdt_note *pos;
+> +	u8 build_id[BUILD_ID_SIZE];
+> +	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+> +	char buffer[2 * PATH_MAX];
+> +
+> +	if (list_empty(start))
+> +		return;
+> +
+> +	/* Read the build id of the file */
+> +	if (filename__read_build_id(target, &build_id,
+> +				    sizeof(build_id)) < 0) {
+> +		pr_debug("Couldn't read build-id in %s\n", target);
+
+pr_info ?
+
+> +
+> +/*
+> + * Finds out the libraries present in a system as shown by the command
+> + * "ldconfig --print-cache". Uses "=>" and '/' to find out the start of a
+> + * dso path.
+> + */
+
+This seems like a hack. How would that handle chroot, containers etc. ?
+
+> +static inline void append_path(char *path, struct list_head *list)
+> +{
+> +	char *res_path = NULL;
+> +	struct path_list *tmp = NULL;
+> +
+> +	res_path = (char *)malloc(sizeof(char) * PATH_MAX);
+> +
+> +	if (!res_path)
+> +		return;
+> +
+> +	memset(res_path, '\0', PATH_MAX);
+> +
+> +	if (realpath(path, res_path) && !is_present_in_list(list, res_path)) {
+
+
+O^2 algorithm ?
+
+> +/*
+> + * Obtain the list of paths from the PATH env variable
+> + */
+
+Same as above. This probably needs to be more configurable to handle
+more ways to find binaries.
+
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
