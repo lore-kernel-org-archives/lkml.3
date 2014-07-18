@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761887AbaGRMQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 08:16:35 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63440 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761587AbaGRMQd (ORCPT
+	id S1761975AbaGRMaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 08:30:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40771 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1761729AbaGRMaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 08:16:33 -0400
-Message-ID: <53C9101B.6020006@suse.cz>
-Date: Fri, 18 Jul 2014 14:16:27 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: stable@vger.kernel.org
-CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+	Fri, 18 Jul 2014 08:30:17 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/170] 3.12.25-stable review
-References: <cover.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-X-Enigmail-Version: 1.6
+Subject: [PATCH v10 8/8] ARM: berlin: enable the eSATA interface on the BG2Q DMP
+Date: Fri, 18 Jul 2014 14:30:07 +0200
+Message-Id: <1405686607-8126-9-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 02:12 PM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.25 release.
-> There are 170 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Sun Jul 20 12:11:21 2014
+The BG2Q has an AHCI SATA controller with an eSATA interface. Enable it.
+Only enable the first port, the BG2Q DMP does not support the second one.
 
-Oh, this should have been two *workdays*, i.e. the deadline is Jul 22.
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
+diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+index 995150f93795..385f6af64d0c 100644
+--- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
++++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+@@ -37,3 +37,11 @@
+ &uart0 {
+ 	status = "okay";
+ };
++
++&sata0 {
++	status = "okay";
++};
++
++&sata_phy {
++	status = "okay";
++};
 -- 
-js
-suse labs
+1.9.1
+
