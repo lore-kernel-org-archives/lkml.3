@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030649AbaGRNLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:11:10 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17534 "EHLO
+	id S1030684AbaGRNLT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:11:19 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17548 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030610AbaGRNLF (ORCPT
+	by vger.kernel.org with ESMTP id S1030664AbaGRNLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:05 -0400
+	Fri, 18 Jul 2014 09:11:14 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 042/170] powerpc: 64bit sendfile is capped at 2GB
-Date: Fri, 18 Jul 2014 14:10:47 +0200
-Message-Id: <c3043360563dc5e2c10ba688ea5338e0696015a1.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 069/170] usb: musb: Ensure that cppi41 timer gets armed on premature DMA TX irq
+Date: Fri, 18 Jul 2014 14:11:14 +0200
+Message-Id: <cfc3a6809fcfcad827e8c29b882de5b777e98cfc.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,42 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
+commit c58d80f523ffc15ef4d062fc7aeb03793fe39701 upstream.
 
-commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
-implementation) changed the PowerPC 64bit sendfile call from
-sys_sendile64 to sys_sendfile.
+Some TI chips raise the DMA complete interrupt before the actual
+transfer has been completed. The code tries to busy wait for a few
+microseconds and if that fails it arms an hrtimer to recheck. So far
+so good, but that has the following issue:
 
-Unfortunately this broke sendfile of lengths greater than 2G because
-sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
-fixes the bug.
+CPU 0					CPU1
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+start_next_transfer(RQ1);
+
+DMA interrupt
+  if (premature_irq(RQ1))
+    if (!hrtimer_active(timer))
+       hrtimer_start(timer);
+
+hrtimer expires
+  timer->state = CALLBACK_RUNNING;
+  timer->fn()
+    cppi41_recheck_tx_req()
+      complete_request(RQ1);
+      if (requests_pending())
+        start_next_transfer(RQ2);
+
+					DMA interrupt
+					  if (premature_irq(RQ2))
+					    if (!hrtimer_active(timer))
+					       hrtimer_start(timer);
+  timer->state = INACTIVE;
+
+The premature interrupt of request2 on CPU1 does not arm the timer and
+therefor the request completion never happens because it checks for
+!hrtimer_active(). hrtimer_active() evaluates:
+
+  timer->state != HRTIMER_STATE_INACTIVE
+
+which of course evaluates to true in the above case as timer->state is
+CALLBACK_RUNNING.
+
+That's clearly documented:
+
+ * A timer is active, when it is enqueued into the rbtree or the
+ * callback function is running or it's in the state of being migrated
+ * to another cpu.
+
+But that's not what the code wants to check. The code wants to check
+whether the timer is queued, i.e. whether its armed and waiting for
+expiry.
+
+We have a helper function for this: hrtimer_is_queued(). This
+evaluates:
+
+  timer->state & HRTIMER_STATE_QUEUED
+
+So in the above case this evaluates to false and therefor forces the
+DMA interrupt on CPU1 to call hrtimer_start().
+
+Use hrtimer_is_queued() instead of hrtimer_active() and evrything is
+good.
+
+Reported-by: Torben Hohn <torbenh@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/include/asm/systbl.h | 2 +-
+ drivers/usb/musb/musb_cppi41.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 43523fe0d8b4..05fcdd826829 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
- SYSCALL_SPU(capget)
- SYSCALL_SPU(capset)
- COMPAT_SYS(sigaltstack)
--COMPAT_SYS_SPU(sendfile)
-+SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
- SYSCALL(ni_syscall)
- SYSCALL(ni_syscall)
- PPC_SYS(vfork)
+diff --git a/drivers/usb/musb/musb_cppi41.c b/drivers/usb/musb/musb_cppi41.c
+index 0c593afc3185..cc319305c022 100644
+--- a/drivers/usb/musb/musb_cppi41.c
++++ b/drivers/usb/musb/musb_cppi41.c
+@@ -266,7 +266,7 @@ static void cppi41_dma_callback(void *private_data)
+ 		}
+ 		list_add_tail(&cppi41_channel->tx_check,
+ 				&controller->early_tx_list);
+-		if (!hrtimer_active(&controller->early_tx)) {
++		if (!hrtimer_is_queued(&controller->early_tx)) {
+ 			hrtimer_start_range_ns(&controller->early_tx,
+ 				ktime_set(0, 140 * NSEC_PER_USEC),
+ 				40 * NSEC_PER_USEC,
 -- 
 2.0.0
 
