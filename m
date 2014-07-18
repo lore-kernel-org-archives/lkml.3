@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760925AbaGRHgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 03:36:22 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:47802 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaGRHgT (ORCPT
+	id S1760951AbaGRHgz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 03:36:55 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:52885 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078AbaGRHei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 03:36:19 -0400
-Date: Fri, 18 Jul 2014 09:36:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [RFC Patch V1 09/30] mm, memcg: Use cpu_to_mem()/numa_mem_id()
- to support memoryless node
-Message-ID: <20140718073614.GC21453@dhcp22.suse.cz>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 18 Jul 2014 03:34:38 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v5 3/7] arm: Support restart through restart handler call chain
+Date: Fri, 18 Jul 2014 00:34:12 -0700
+Message-Id: <1405668856-13738-4-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405668856-13738-1-git-send-email-linux@roeck-us.net>
+References: <1405668856-13738-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 11-07-14 15:37:26, Jiang Liu wrote:
-> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
-> may return a node without memory, and later cause system failure/panic
-> when calling kmalloc_node() and friends with returned node id.
-> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
-> memory for the/current cpu.
-> 
-> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
-> is the same as cpu_to_node()/numa_node_id().
+The kernel core now supports a restart handler call chain for system
+restart functions.
 
-The change makes difference only for really tiny memcgs. If we really
-have all pages on unevictable list or anon with no swap allowed and that
-is the reason why no node is set in scan_nodes mask then reclaiming
-memoryless node or any arbitrary close one doesn't make any difference.
-The current memcg might not have any memory on that node at all.
+With this change, the arm_pm_restart callback is now optional, so check
+if it is set before calling it. Only call the kernel restart handler
+if arm_pm_restart is not set.
 
-So the change doesn't make any practical difference and the changelog is
-misleading.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v5: Renamed restart function to do_kernel_restart
+v4: No change.
+v3: Use wrapper function to execute notifier call chain.
+v2: Only call notifier call chain if arm_pm_restart is not set.
+    Do not include linux/watchdog.h.
 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  mm/memcontrol.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a2c7bcb0e6eb..d6c4b7255ca9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1933,7 +1933,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
->  	 * we use curret node.
->  	 */
->  	if (unlikely(node == MAX_NUMNODES))
-> -		node = numa_node_id();
-> +		node = numa_mem_id();
->  
->  	memcg->last_scanned_node = node;
->  	return node;
-> -- 
-> 1.7.10.4
-> 
+ arch/arm/kernel/process.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 81ef686..84ca0d5 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -230,7 +230,10 @@ void machine_restart(char *cmd)
+ 	local_irq_disable();
+ 	smp_send_stop();
+ 
+-	arm_pm_restart(reboot_mode, cmd);
++	if (arm_pm_restart)
++		arm_pm_restart(reboot_mode, cmd);
++	else
++		do_kernel_restart(cmd);
+ 
+ 	/* Give a grace period for failure to restart of 1s */
+ 	mdelay(1000);
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
