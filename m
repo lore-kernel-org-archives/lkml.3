@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965871AbaGRNR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:17:27 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17917 "EHLO
+	id S1422659AbaGRNRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:17:42 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17923 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030293AbaGRNRR (ORCPT
+	by vger.kernel.org with ESMTP id S933858AbaGRNRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:17:17 -0400
+	Fri, 18 Jul 2014 09:17:39 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 007/170] rtmutex: Plug slow unlock race
-Date: Fri, 18 Jul 2014 14:10:12 +0200
-Message-Id: <0c57bb135d3cc97273d7dd8c58d6dbb6b0078cc3.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Steve French <smfrench@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 107/170] CIFS: fix mount failure with broken pathnames when smb3 mount with mapchars option
+Date: Fri, 18 Jul 2014 14:11:52 +0200
+Message-Id: <ae8c79f81f3b3e10a688a8980e70965a3a07b857.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -24,244 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Steve French <smfrench@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
+commit ce36d9ab3bab06b7b5522f5c8b68fac231b76ffb upstream.
 
-When the rtmutex fast path is enabled the slow unlock function can
-create the following situation:
+When we SMB3 mounted with mapchars (to allow reserved characters : \ / > < * ?
+via the Unicode Windows to POSIX remap range) empty paths
+(eg when we open "" to query the root of the SMB3 directory on mount) were not
+null terminated so we sent garbarge as a path name on empty paths which caused
+SMB2/SMB2.1/SMB3 mounts to fail when mapchars was specified.  mapchars is
+particularly important since Unix Extensions for SMB3 are not supported (yet)
 
-spin_lock(foo->m->wait_lock);
-foo->m->owner = NULL;
-	    			rt_mutex_lock(foo->m); <-- fast path
-				free = atomic_dec_and_test(foo->refcnt);
-				rt_mutex_unlock(foo->m); <-- fast path
-				if (free)
-				   kfree(foo);
-
-spin_unlock(foo->m->wait_lock); <--- Use after free.
-
-Plug the race by changing the slow unlock to the following scheme:
-
-     while (!rt_mutex_has_waiters(m)) {
-     	    /* Clear the waiters bit in m->owner */
-	    clear_rt_mutex_waiters(m);
-      	    owner = rt_mutex_owner(m);
-      	    spin_unlock(m->wait_lock);
-      	    if (cmpxchg(m->owner, owner, 0) == owner)
-      	       return;
-      	    spin_lock(m->wait_lock);
-     }
-
-So in case of a new waiter incoming while the owner tries the slow
-path unlock we have two situations:
-
- unlock(wait_lock);
-					lock(wait_lock);
- cmpxchg(p, owner, 0) == owner
- 	    	   			mark_rt_mutex_waiters(lock);
-	 				acquire(lock);
-
-Or:
-
- unlock(wait_lock);
-					lock(wait_lock);
-	 				mark_rt_mutex_waiters(lock);
- cmpxchg(p, owner, 0) != owner
-					enqueue_waiter();
-					unlock(wait_lock);
- lock(wait_lock);
- wakeup_next waiter();
- unlock(wait_lock);
-					lock(wait_lock);
-					acquire(lock);
-
-If the fast path is disabled, then the simple
-
-   m->owner = NULL;
-   unlock(m->wait_lock);
-
-is sufficient as all access to m->owner is serialized via
-m->wait_lock;
-
-Also document and clarify the wakeup_next_waiter function as suggested
-by Oleg Nesterov.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: David Disseldorp <ddiss@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 109 insertions(+), 6 deletions(-)
+ fs/cifs/cifs_unicode.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index ff24a43f192f..51a83343df68 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -82,6 +82,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -89,6 +130,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
- #endif
+diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
+index 0227b45ef00a..15e9505aa35f 100644
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -290,7 +290,8 @@ int
+ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 		 const struct nls_table *cp, int mapChars)
+ {
+-	int i, j, charlen;
++	int i, charlen;
++	int j = 0;
+ 	char src_char;
+ 	__le16 dst_char;
+ 	wchar_t tmp;
+@@ -298,12 +299,11 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 	if (!mapChars)
+ 		return cifs_strtoUTF16(target, source, PATH_MAX, cp);
  
- /*
-@@ -536,7 +588,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -557,10 +610,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 */
- 	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
- 
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
- }
- 
-@@ -813,12 +879,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
- 
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
--		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
+-	for (i = 0, j = 0; i < srclen; j++) {
++	for (i = 0; i < srclen; j++) {
+ 		src_char = source[i];
+ 		charlen = 1;
+ 		switch (src_char) {
+ 		case 0:
+-			put_unaligned(0, &target[j]);
+ 			goto ctoUTF16_out;
+ 		case ':':
+ 			dst_char = cpu_to_le16(UNI_COLON);
+@@ -350,6 +350,7 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
  	}
  
-+	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
-+	 */
- 	wakeup_next_waiter(lock);
+ ctoUTF16_out:
++	put_unaligned(0, &target[j]); /* Null terminate target unicode string */
+ 	return j;
+ }
  
- 	raw_spin_unlock(&lock->wait_lock);
 -- 
 2.0.0
 
