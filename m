@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161059AbaGROLy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 10:11:54 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52571 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030681AbaGROLw (ORCPT
+	id S1030787AbaGROMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 10:12:15 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36196 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030732AbaGROMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 10:11:52 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: orjan.eide@arm.com, Punit Agrawal <punit.agrawal@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH 2/2] PM / devfreq: exynos: Enable building exynos PPMU as module
-Date: Fri, 18 Jul 2014 15:09:54 +0100
-Message-Id: <1405692594-19352-3-git-send-email-punit.agrawal@arm.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405692594-19352-1-git-send-email-punit.agrawal@arm.com>
-References: <1405692594-19352-1-git-send-email-punit.agrawal@arm.com>
+	Fri, 18 Jul 2014 10:12:13 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Bo Shen <voice.shen@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.16 #2
+Date: Fri, 18 Jul 2014 16:12:10 +0200
+Message-ID: <1405692730-31284-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export symbols from the PPMU driver needed to build the exynos bus
-driver as a module.
+Arnd, Olof, Kevin,
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
----
- drivers/devfreq/Kconfig              |    2 +-
- drivers/devfreq/exynos/exynos_ppmu.c |    3 +++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+This is the latest regressions that we found while testing the at91sam9n12 and
+at91sam9x5 platforms following our move to CCF.
+I created a pull-request this time because I have 3 patches: there should be
+no conflict anyway. This tag does not contain the fix that Olof had taken during
+previous -rc cycle on purpose: this way it won't appear twice in the history.
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index 49e74c1..77bf126 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -79,7 +79,7 @@ config ARM_EXYNOS4_BUS_DEVFREQ
- 	  This does not yet operate with optimal voltages.
- 
- config ARM_EXYNOS5_BUS_DEVFREQ
--	bool "ARM Exynos5250 Bus DEVFREQ Driver"
-+	tristate "ARM Exynos5250 Bus DEVFREQ Driver"
- 	depends on SOC_EXYNOS5250
- 	select ARCH_HAS_OPP
- 	select DEVFREQ_GOV_SIMPLE_ONDEMAND
-diff --git a/drivers/devfreq/exynos/exynos_ppmu.c b/drivers/devfreq/exynos/exynos_ppmu.c
-index 75fcc51..97b75e5 100644
---- a/drivers/devfreq/exynos/exynos_ppmu.c
-+++ b/drivers/devfreq/exynos/exynos_ppmu.c
-@@ -73,6 +73,7 @@ void busfreq_mon_reset(struct busfreq_ppmu_data *ppmu_data)
- 		exynos_ppmu_start(ppmu_base);
- 	}
- }
-+EXPORT_SYMBOL(busfreq_mon_reset);
- 
- void exynos_read_ppmu(struct busfreq_ppmu_data *ppmu_data)
- {
-@@ -97,6 +98,7 @@ void exynos_read_ppmu(struct busfreq_ppmu_data *ppmu_data)
- 
- 	busfreq_mon_reset(ppmu_data);
- }
-+EXPORT_SYMBOL(exynos_read_ppmu);
- 
- int exynos_get_busier_ppmu(struct busfreq_ppmu_data *ppmu_data)
- {
-@@ -114,3 +116,4 @@ int exynos_get_busier_ppmu(struct busfreq_ppmu_data *ppmu_data)
- 
- 	return busy;
- }
-+EXPORT_SYMBOL(exynos_get_busier_ppmu);
+Thanks, best regards,
+
+The following changes since commit 971dc9ce106110745f246337f229013589354536:
+
+  ARM: at91/dt: sam9261: remove slow RC osc (2014-06-25 18:00:17 +0200)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to e0d69e119fc6bf7cc3c9f791478108c1b925bb2e:
+
+  ARM: at91/dt: add missing clocks property to pwm node in sam9x5.dtsi (2014-07-18 15:56:35 +0200)
+
+----------------------------------------------------------------
+Second AT91 fixes series for 3.16
+- fix clock definitions after the move to CCF for:
+  - at91sam9n12 (ohci)
+  - at91sam9x5 (ohci, pwm)
+
+----------------------------------------------------------------
+Bo Shen (1):
+      ARM: at91: at91sam9x5: correct typo error for ohci clock
+
+Boris BREZILLON (2):
+      ARM: at91/dt: fix usb0 clocks definition in sam9n12 dtsi
+      ARM: at91/dt: add missing clocks property to pwm node in sam9x5.dtsi
+
+ arch/arm/boot/dts/at91sam9n12.dtsi | 2 +-
+ arch/arm/boot/dts/at91sam9x5.dtsi  | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
 -- 
-1.7.10.4
-
+Nicolas Ferre
