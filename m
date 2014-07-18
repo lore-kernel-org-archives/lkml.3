@@ -1,93 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760823AbaGRIRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 04:17:52 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:48233 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760794AbaGRIRs (ORCPT
+	id S1760842AbaGRISI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 04:18:08 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47014 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759713AbaGRISC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 04:17:48 -0400
-Date: Fri, 18 Jul 2014 09:17:42 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 03/24] mfd: max77686: Don't define dummy function if
- OF isn't enabled
-Message-ID: <20140718081742.GM30888@lee--X1>
-References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
- <1404505467-26526-4-git-send-email-javier.martinez@collabora.co.uk>
+	Fri, 18 Jul 2014 04:18:02 -0400
+Message-ID: <53C8D82B.4030204@monstr.eu>
+Date: Fri, 18 Jul 2014 10:17:47 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404505467-26526-4-git-send-email-javier.martinez@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>
+Subject: Re: [RFA][PATCH 22/27] microblaze: ftrace: Remove check of obsolete
+ variable function_trace_stop
+References: <20140626165221.736847419@goodmis.org>	<20140626165852.891982463@goodmis.org> <20140715175112.3e9128be@gandalf.local.home>
+In-Reply-To: <20140715175112.3e9128be@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="nogRgSMw4WqDkuUfvdiFWBL3sdoqw3iJa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jul 2014, Javier Martinez Canillas wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--nogRgSMw4WqDkuUfvdiFWBL3sdoqw3iJa
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> When the CONFIG_OF option was not enabled, a dummy function
-> max77686_i2c_parse_dt_pdata() was defined since this is called
-> unconditionally on probe(). Just always define the real function
-> and conditionally call it if CONFIG_OF is enabled instead.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  drivers/mfd/max77686.c | 10 +---------
->  1 file changed, 1 insertion(+), 9 deletions(-)
+Hi Steve,
 
-Applied now, thanks.
+On 07/15/2014 11:51 PM, Steven Rostedt wrote:
+> Michal,
+>=20
+> Can you please test and ack this and patch 6 of this series. Otherwise =
+I
+> may have to stip it out of the series which will break the build on
+> microblaze.
+>=20
+> You can test my branch at:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git=
 
-> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> index a38e9ee..d1f9d04 100644
-> --- a/drivers/mfd/max77686.c
-> +++ b/drivers/mfd/max77686.c
-> @@ -96,7 +96,6 @@ static const struct regmap_irq_chip max77686_rtc_irq_chip = {
->  	.num_irqs		= ARRAY_SIZE(max77686_rtc_irqs),
->  };
->  
-> -#ifdef CONFIG_OF
->  static const struct of_device_id max77686_pmic_dt_match[] = {
->  	{.compatible = "maxim,max77686", .data = NULL},
->  	{},
-> @@ -116,13 +115,6 @@ static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
->  	dev->platform_data = pd;
->  	return pd;
->  }
-> -#else
-> -static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
-> -								  *dev)
-> -{
-> -	return 0;
-> -}
-> -#endif
->  
->  static int max77686_i2c_probe(struct i2c_client *i2c,
->  			      const struct i2c_device_id *id)
-> @@ -132,7 +124,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
->  	unsigned int data;
->  	int ret = 0;
->  
-> -	if (i2c->dev.of_node)
-> +	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node)
->  		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
->  
->  	if (!pdata) {
+> rfc/remove-function-trace-stop
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I have tested this full branch and there is no issue on Microblaze that's=
+ why
+here is:
+Tested-by: Michal Simek <monstr@monstr.eu>
+
+Thanks,
+Michal
+
+
+
+
+
+
+
+
+
+
+
+--nogRgSMw4WqDkuUfvdiFWBL3sdoqw3iJa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlPI2DUACgkQykllyylKDCHVHwCdFN2HCNBBNuZkfZBaWKM7Iedl
+GzAAn0sQJuhc5NLobEt7iE3qCUKl22Fa
+=kG0E
+-----END PGP SIGNATURE-----
+
+--nogRgSMw4WqDkuUfvdiFWBL3sdoqw3iJa--
