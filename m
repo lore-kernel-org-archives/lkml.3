@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaGRNLa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:11:30 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17554 "EHLO
+	id S1030710AbaGRNLz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:11:55 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17589 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030671AbaGRNLS (ORCPT
+	by vger.kernel.org with ESMTP id S1761810AbaGRNLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:18 -0400
+	Fri, 18 Jul 2014 09:11:51 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Matthew Wilcox <matthew@wil.cx>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 125/170] sym53c8xx_2: Set DID_REQUEUE return code when aborting squeue
-Date: Fri, 18 Jul 2014 14:12:10 +0200
-Message-Id: <87aa8b9addd2fda5cff81ea099822831c225c86f.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andras Kovacs <andras@sth.sze.hu>,
+        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 128/170] USB: cp210x: add support for Corsair usb dongle
+Date: Fri, 18 Jul 2014 14:12:13 +0200
+Message-Id: <fbbea5f5e5c2cb096de9d682ecbb4b8c6206d88c.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -26,62 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Andras Kovacs <andras@sth.sze.hu>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit fd1232b214af43a973443aec6a2808f16ee5bf70 upstream.
+commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
 
-This patch fixes I/O errors with the sym53c8xx_2 driver when the disk
-returns QUEUE FULL status.
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-When the controller encounters an error (including QUEUE FULL or BUSY
-status), it aborts all not yet submitted requests in the function
-sym_dequeue_from_squeue.
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
 
-This function aborts them with DID_SOFT_ERROR.
-
-If the disk has full tag queue, the request that caused the overflow is
-aborted with QUEUE FULL status (and the scsi midlayer properly retries
-it until it is accepted by the disk), but the sym53c8xx_2 driver aborts
-the following requests with DID_SOFT_ERROR --- for them, the midlayer
-does just a few retries and then signals the error up to sd.
-
-The result is that disk returning QUEUE FULL causes request failures.
-
-The error was reproduced on 53c895 with COMPAQ BD03685A24 disk
-(rebranded ST336607LC) with command queue 48 or 64 tags.  The disk has
-64 tags, but under some access patterns it return QUEUE FULL when there
-are less than 64 pending tags.  The SCSI specification allows returning
-QUEUE FULL anytime and it is up to the host to retry.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/sym53c8xx_2/sym_hipd.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/sym53c8xx_2/sym_hipd.c b/drivers/scsi/sym53c8xx_2/sym_hipd.c
-index d92fe4037e94..6b349e301869 100644
---- a/drivers/scsi/sym53c8xx_2/sym_hipd.c
-+++ b/drivers/scsi/sym53c8xx_2/sym_hipd.c
-@@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *np, int i, int target, int lun, int task
- 		if ((target == -1 || cp->target == target) &&
- 		    (lun    == -1 || cp->lun    == lun)    &&
- 		    (task   == -1 || cp->tag    == task)) {
-+#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
- 			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
-+#else
-+			sym_set_cam_status(cp->cmd, DID_REQUEUE);
-+#endif
- 			sym_remque(&cp->link_ccbq);
- 			sym_insque_tail(&cp->link_ccbq, &np->comp_ccbq);
- 		}
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 71873cafb9d3..1db213a6e843 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -153,6 +153,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 -- 
 2.0.0
 
