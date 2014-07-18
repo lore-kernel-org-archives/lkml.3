@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030501AbaGRPTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:19:23 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:53403 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030462AbaGRPTV (ORCPT
+	id S1030549AbaGRPTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:19:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43870 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030465AbaGRPTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:19:21 -0400
+	Fri, 18 Jul 2014 11:19:22 -0400
+Message-ID: <53C93AF8.5090407@infradead.org>
+Date: Fri, 18 Jul 2014 08:19:20 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1405350546-28467-31-git-send-email-sam@ravnborg.org>
-References: <20140714150609.GA28358@ravnborg.org>
-	<1405350546-28467-1-git-send-email-sam@ravnborg.org>
-	<1405350546-28467-31-git-send-email-sam@ravnborg.org>
-Date: Fri, 18 Jul 2014 23:19:19 +0800
-Message-ID: <CAF0htA4ZWAfvUdu6HvrAZc1-D2cwWZ8v9dHcYQVS6p6UM9M7Uw@mail.gmail.com>
-Subject: Re: [PATCH 31/38] score: clean-up uapi Kbuild file
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Chen Liqin <liqin.linux@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Masanari Iida <standby24x7@gmail.com>, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH/linux-next] Documentation:Docbook: Fix file locations
+ in gadget.tmpl
+References: <1405655169-23804-1-git-send-email-standby24x7@gmail.com> <1405655169-23804-2-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1405655169-23804-2-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Acked-by: Lennox Wu <lennox.wu@gamil.com>
+On 07/17/2014 08:46 PM, Masanari Iida wrote:
+> Because of file location changes by commit 5ed4ac73e5975,
+> make xmldocs failed because of missing files.
+> Fix file paths in gadget.tmpl file.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-2014-07-14 23:08 GMT+08:00 Sam Ravnborg <sam@ravnborg.org>:
-> Remove redundant assignments.
->
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Chen Liqin <liqin.linux@gmail.com>
-> Cc: Lennox Wu <lennox.wu@gmail.com>
+Hi,
+
+There was a patch for this on the USB mailing list yesterday
+from Andrzej Pietrasiewicz <andrzej.p@samsung.com>.
+
+Hopefully Felipe or Greg will apply one of them soon.
+
+Thanks.
+
 > ---
->  arch/score/include/uapi/asm/Kbuild | 32 --------------------------------
->  1 file changed, 32 deletions(-)
->
-> diff --git a/arch/score/include/uapi/asm/Kbuild b/arch/score/include/uapi/asm/Kbuild
-> index 040178c..b15bf6b 100644
-> --- a/arch/score/include/uapi/asm/Kbuild
-> +++ b/arch/score/include/uapi/asm/Kbuild
-> @@ -1,34 +1,2 @@
->  # UAPI Header export list
->  include include/uapi/asm-generic/Kbuild.asm
-> -
-> -header-y += auxvec.h
-> -header-y += bitsperlong.h
-> -header-y += byteorder.h
-> -header-y += errno.h
-> -header-y += fcntl.h
-> -header-y += ioctl.h
-> -header-y += ioctls.h
-> -header-y += ipcbuf.h
-> -header-y += kvm_para.h
-> -header-y += mman.h
-> -header-y += msgbuf.h
-> -header-y += param.h
-> -header-y += poll.h
-> -header-y += posix_types.h
-> -header-y += ptrace.h
-> -header-y += resource.h
-> -header-y += sembuf.h
-> -header-y += setup.h
-> -header-y += shmbuf.h
-> -header-y += sigcontext.h
-> -header-y += siginfo.h
-> -header-y += signal.h
-> -header-y += socket.h
-> -header-y += sockios.h
-> -header-y += stat.h
-> -header-y += statfs.h
-> -header-y += swab.h
-> -header-y += termbits.h
-> -header-y += termios.h
-> -header-y += types.h
-> -header-y += unistd.h
-> --
-> 1.9.3
->
+>  Documentation/DocBook/gadget.tmpl | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/gadget.tmpl b/Documentation/DocBook/gadget.tmpl
+> index 2c425d7..6416292 100644
+> --- a/Documentation/DocBook/gadget.tmpl
+> +++ b/Documentation/DocBook/gadget.tmpl
+> @@ -556,11 +556,11 @@ been converted to this framework.
+>  Near-term plans include converting all of them, except for "gadgetfs".
+>  </para>
+>  
+> -!Edrivers/usb/gadget/f_acm.c
+> -!Edrivers/usb/gadget/f_ecm.c
+> -!Edrivers/usb/gadget/f_subset.c
+> -!Edrivers/usb/gadget/f_obex.c
+> -!Edrivers/usb/gadget/f_serial.c
+> +!Edrivers/usb/gadget/function/f_acm.c
+> +!Edrivers/usb/gadget/function/f_ecm.c
+> +!Edrivers/usb/gadget/function/f_subset.c
+> +!Edrivers/usb/gadget/function/f_obex.c
+> +!Edrivers/usb/gadget/function/f_serial.c
+>  
+>  </sect1>
+>  
+> 
+
+
+-- 
+~Randy
