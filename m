@@ -1,102 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761432AbaGRNFD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:05:03 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17232 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932307AbaGRNDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:03:19 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 057/170] tracing: Fix syscall_*regfunc() vs copy_process() race
-Date: Fri, 18 Jul 2014 14:11:02 +0200
-Message-Id: <1855b4bde5c72f1da35088452226b458bdadadb4.1405685481.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
-In-Reply-To: <cover.1405685481.git.jslaby@suse.cz>
-References: <cover.1405685481.git.jslaby@suse.cz>
+	id S933914AbaGRNFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:05:46 -0400
+Received: from wolff.to ([98.103.208.27]:55979 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S965275AbaGRNC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 09:02:59 -0400
+Date: Fri, 18 Jul 2014 08:01:26 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140718130126.GA2401@wolff.to>
+References: <53C6CFCC.2050300@arm.com>
+ <20140716195414.GA16401@wolff.to>
+ <53C7084C.7090104@arm.com>
+ <20140717030947.GA17889@wolff.to>
+ <53C79013.1020808@arm.com>
+ <20140717090452.GH19379@twins.programming.kicks-ass.net>
+ <53C7B247.2070309@arm.com>
+ <20140717123502.GL19379@twins.programming.kicks-ass.net>
+ <20140718053449.GA2039@wolff.to>
+ <20140718101633.GP9918@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20140718101633.GP9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Fri, Jul 18, 2014 at 12:16:33 +0200,
+  Peter Zijlstra <peterz@infradead.org> wrote:
+>So it looks like the actual domain tree is broken, and not what we
+>assumed it was.
+>
+>Could I bother you to run with the below instead? It should also print
+>out the sched domain masks so we don't need to guess about them.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+The full dmesg output is at:
+https://bugzilla.kernel.org/attachment.cgi?id=143381
 
-===============
+>(make sure you have CONFIG_SCHED_DEBUG=y otherwise it will not build)
+>
+>> I also booted with early printk=keepsched_debug as requested by Dietmar.
+>
+>can you make that: sched_debug ?
 
-commit 4af4206be2bd1933cae20c2b6fb2058dbc887f7c upstream.
+I think I've fixed that.
 
-syscall_regfunc() and syscall_unregfunc() should set/clear
-TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
-with copy_process() and miss the new child which was not added to
-the process/thread lists yet.
-
-Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
-under tasklist.
-
-Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
-
-Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- include/trace/syscall.h | 15 +++++++++++++++
- kernel/fork.c           |  2 ++
- 2 files changed, 17 insertions(+)
-
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index fed853f3d7aa..9674145e2f6a 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -4,6 +4,7 @@
- #include <linux/tracepoint.h>
- #include <linux/unistd.h>
- #include <linux/ftrace_event.h>
-+#include <linux/thread_info.h>
- 
- #include <asm/ptrace.h>
- 
-@@ -32,4 +33,18 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
- };
- 
-+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+	else
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+}
-+#else
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+}
-+#endif
-+
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index c873bd081e09..143962949bed 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1490,7 +1490,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+	syscall_tracepoint_update(p);
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
--- 
-2.0.0
+I think the part you are most interested in contains the following:
+[    0.252280] smpboot: Total of 4 processors activated (21438.11 BogoMIPS)
+[    0.253058] __sdt_alloc: allocated f255b020 with cpus: 
+[    0.253146] __sdt_alloc: allocated f255b0e0 with cpus: 
+[    0.253227] __sdt_alloc: allocated f255b120 with cpus: 
+[    0.253308] __sdt_alloc: allocated f255b160 with cpus: 
+[    0.253390] __sdt_alloc: allocated f255b1a0 with cpus: 
+[    0.253471] __sdt_alloc: allocated f255b1e0 with cpus: 
+[    0.253551] __sdt_alloc: allocated f255b220 with cpus: 
+[    0.253632] __sdt_alloc: allocated f255b260 with cpus: 
+[    0.254009] __sdt_alloc: allocated f255b2a0 with cpus: 
+[    0.254092] __sdt_alloc: allocated f255b2e0 with cpus: 
+[    0.254181] __sdt_alloc: allocated f255b320 with cpus: 
+[    0.254262] __sdt_alloc: allocated f255b360 with cpus: 
+[    0.254350] build_sched_domain: cpu: 0 level: SMT cpu_map: 0-3 tl->mask: 0,2
+[    0.254433] build_sched_domain: cpu: 0 level: MC cpu_map: 0-3 tl->mask: 0
+[    0.254516] build_sched_domain: cpu: 0 level: DIE cpu_map: 0-3 tl->mask: 0-3
+[    0.254600] build_sched_domain: cpu: 1 level: SMT cpu_map: 0-3 tl->mask: 1,3
+[    0.254683] build_sched_domain: cpu: 1 level: MC cpu_map: 0-3 tl->mask: 1
+[    0.254766] build_sched_domain: cpu: 1 level: DIE cpu_map: 0-3 tl->mask: 0-3
+[    0.254850] build_sched_domain: cpu: 2 level: SMT cpu_map: 0-3 tl->mask: 0,2
+[    0.254932] build_sched_domain: cpu: 2 level: MC cpu_map: 0-3 tl->mask: 2
+[    0.255005] build_sched_domain: cpu: 2 level: DIE cpu_map: 0-3 tl->mask: 0-3
+[    0.255091] build_sched_domain: cpu: 3 level: SMT cpu_map: 0-3 tl->mask: 1,3
+[    0.255176] build_sched_domain: cpu: 3 level: MC cpu_map: 0-3 tl->mask: 3
+[    0.255260] build_sched_domain: cpu: 3 level: DIE cpu_map: 0-3 tl->mask: 0-3
+[    0.256006] build_sched_groups: got group f255b020 with cpus: 
+[    0.256089] build_sched_groups: got group f255b120 with cpus: 
+[    0.256171] build_sched_groups: got group f255b1a0 with cpus: 
+[    0.256252] build_sched_groups: got group f255b2a0 with cpus: 
+[    0.256333] build_sched_groups: got group f255b2e0 with cpus: 
+[    0.256414] build_sched_groups: got group f255b320 with cpus: 
+[    0.256495] build_sched_groups: got group f255b360 with cpus: 
+[    0.256576] build_sched_groups: got group f255b0e0 with cpus: 
+[    0.256657] build_sched_groups: got group f255b160 with cpus: 
+[    0.256740] build_sched_groups: got group f255b1e0 with cpus: 
+[    0.256821] build_sched_groups: FAIL
+[    0.257004] build_sched_groups: got group f255b1a0 with cpus: 0
+[    0.257087] build_sched_groups: FAIL
+[    0.257167] build_sched_groups: got group f255b1e0 with cpus: 1
 
