@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030684AbaGRNLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 09:11:19 -0400
-Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17548 "EHLO
+	id S965603AbaGRNLh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 09:11:37 -0400
+Received: from bband-dyn38.178-41-141.t-com.sk ([178.41.141.38]:17568 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030664AbaGRNLO (ORCPT
+	by vger.kernel.org with ESMTP id S1757854AbaGRNLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 09:11:14 -0400
+	Fri, 18 Jul 2014 09:11:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 069/170] usb: musb: Ensure that cppi41 timer gets armed on premature DMA TX irq
-Date: Fri, 18 Jul 2014 14:11:14 +0200
-Message-Id: <cfc3a6809fcfcad827e8c29b882de5b777e98cfc.1405685481.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 149/170] crypto: sha512_ssse3 - fix byte count to bit count conversion
+Date: Fri, 18 Jul 2014 14:12:34 +0200
+Message-Id: <cd84cb243c24c43a33edfc09a8dbf46485ab58da.1405685481.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
 References: <48e8cad86bb1241c08bdaa80db022c25068ff8e0.1405685481.git.jslaby@suse.cz>
@@ -23,93 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c58d80f523ffc15ef4d062fc7aeb03793fe39701 upstream.
+commit cfe82d4f45c7cc39332a2be7c4c1d3bf279bbd3d upstream.
 
-Some TI chips raise the DMA complete interrupt before the actual
-transfer has been completed. The code tries to busy wait for a few
-microseconds and if that fails it arms an hrtimer to recheck. So far
-so good, but that has the following issue:
+Byte-to-bit-count computation is only partly converted to big-endian and is
+mixing in CPU-endian values. Problem was noticed by sparce with warning:
 
-CPU 0					CPU1
+  CHECK   arch/x86/crypto/sha512_ssse3_glue.c
+arch/x86/crypto/sha512_ssse3_glue.c:144:19: warning: restricted __be64 degrades to integer
+arch/x86/crypto/sha512_ssse3_glue.c:144:17: warning: incorrect type in assignment (different base types)
+arch/x86/crypto/sha512_ssse3_glue.c:144:17:    expected restricted __be64 <noident>
+arch/x86/crypto/sha512_ssse3_glue.c:144:17:    got unsigned long long
 
-start_next_transfer(RQ1);
-
-DMA interrupt
-  if (premature_irq(RQ1))
-    if (!hrtimer_active(timer))
-       hrtimer_start(timer);
-
-hrtimer expires
-  timer->state = CALLBACK_RUNNING;
-  timer->fn()
-    cppi41_recheck_tx_req()
-      complete_request(RQ1);
-      if (requests_pending())
-        start_next_transfer(RQ2);
-
-					DMA interrupt
-					  if (premature_irq(RQ2))
-					    if (!hrtimer_active(timer))
-					       hrtimer_start(timer);
-  timer->state = INACTIVE;
-
-The premature interrupt of request2 on CPU1 does not arm the timer and
-therefor the request completion never happens because it checks for
-!hrtimer_active(). hrtimer_active() evaluates:
-
-  timer->state != HRTIMER_STATE_INACTIVE
-
-which of course evaluates to true in the above case as timer->state is
-CALLBACK_RUNNING.
-
-That's clearly documented:
-
- * A timer is active, when it is enqueued into the rbtree or the
- * callback function is running or it's in the state of being migrated
- * to another cpu.
-
-But that's not what the code wants to check. The code wants to check
-whether the timer is queued, i.e. whether its armed and waiting for
-expiry.
-
-We have a helper function for this: hrtimer_is_queued(). This
-evaluates:
-
-  timer->state & HRTIMER_STATE_QUEUED
-
-So in the above case this evaluates to false and therefor forces the
-DMA interrupt on CPU1 to call hrtimer_start().
-
-Use hrtimer_is_queued() instead of hrtimer_active() and evrything is
-good.
-
-Reported-by: Torben Hohn <torbenh@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/musb/musb_cppi41.c | 2 +-
+ arch/x86/crypto/sha512_ssse3_glue.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/musb/musb_cppi41.c b/drivers/usb/musb/musb_cppi41.c
-index 0c593afc3185..cc319305c022 100644
---- a/drivers/usb/musb/musb_cppi41.c
-+++ b/drivers/usb/musb/musb_cppi41.c
-@@ -266,7 +266,7 @@ static void cppi41_dma_callback(void *private_data)
- 		}
- 		list_add_tail(&cppi41_channel->tx_check,
- 				&controller->early_tx_list);
--		if (!hrtimer_active(&controller->early_tx)) {
-+		if (!hrtimer_is_queued(&controller->early_tx)) {
- 			hrtimer_start_range_ns(&controller->early_tx,
- 				ktime_set(0, 140 * NSEC_PER_USEC),
- 				40 * NSEC_PER_USEC,
+diff --git a/arch/x86/crypto/sha512_ssse3_glue.c b/arch/x86/crypto/sha512_ssse3_glue.c
+index f30cd10293f0..8626b03e83b7 100644
+--- a/arch/x86/crypto/sha512_ssse3_glue.c
++++ b/arch/x86/crypto/sha512_ssse3_glue.c
+@@ -141,7 +141,7 @@ static int sha512_ssse3_final(struct shash_desc *desc, u8 *out)
+ 
+ 	/* save number of bits */
+ 	bits[1] = cpu_to_be64(sctx->count[0] << 3);
+-	bits[0] = cpu_to_be64(sctx->count[1] << 3) | sctx->count[0] >> 61;
++	bits[0] = cpu_to_be64(sctx->count[1] << 3 | sctx->count[0] >> 61);
+ 
+ 	/* Pad out to 112 mod 128 and append length */
+ 	index = sctx->count[0] & 0x7f;
 -- 
 2.0.0
 
