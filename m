@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422946AbaGRTNq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 15:13:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46378 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138AbaGRTNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 15:13:45 -0400
-Date: Fri, 18 Jul 2014 21:13:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sched_clock: Track monotonic raw clock
-Message-ID: <20140718191338.GF3935@laptop>
-References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
+	id S1422953AbaGRTRS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 15:17:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43008 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755373AbaGRTRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 15:17:17 -0400
+Message-ID: <53C97287.5020509@zytor.com>
+Date: Fri, 18 Jul 2014 12:16:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build warning after merge of the tip tree
+References: <20140718150005.73db8eb9@canb.auug.org.au>
+In-Reply-To: <20140718150005.73db8eb9@canb.auug.org.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 06:43:39PM +0100, Pawel Moll wrote:
-> This change is trying to make the sched clock "similar" to the
-> monotonic raw one.
+On 07/17/2014 10:00 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> The main goal is to provide some kind of unification between time
-> flow in kernel and in user space, mainly to achieve correlation
-> between perf timestamps and clock_gettime(CLOCK_MONOTONIC_RAW).
-> This has been suggested by Ingo and John during the latest
-> discussion (of many, we tried custom ioctl, custom clock etc.)
-> about this:
+> After merging the tip tree, today's linux-next build (x86_64
+> allmodconfig) produced these warnings:
 > 
-> http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
+> In file included from arch/x86/vdso/vdso2c.c:161:0: 
+> arch/x86/vdso/vdso2c.c: In function 'main': 
+> arch/x86/vdso/vdso2c.h:118:6: warning: assuming signed overflow
+> does not occur when assuming that (X + c) < X is always false
+> [-Wstrict-overflow] In file included from
+> arch/x86/vdso/vdso2c.c:165:0: arch/x86/vdso/vdso2c.h:118:6:
+> warning: assuming signed overflow does not occur when assuming that
+> (X + c) < X is always false [-Wstrict-overflow]
 > 
-> For now I focused on the generic sched clock implementation,
-> but similar approach can be applied elsewhere.
+> Probably introduced by commit e6577a7ce99a ("x86, vdso: Move the
+> vvar area before the vdso text").
 > 
-> Initially I just wanted to copy epoch from monotonic to sched
-> clock at update_clock(), but this can cause the sched clock
-> going backwards in certain corner cases, eg. when the sched
-> clock "increases faster" than the monotonic one. I believe
-> it's a killer issue, but feel free to ridicule me if I worry
-> too much :-)
 
-But on hardware using generic sched_clock we use the exact same hardware
-as the regular timekeeping, right?
+This seems toxic.
 
-So we could start off with the same offset/mult/shift and never deviate,
-or is that a silly question?, I've never really looked at the generic
-sched_clock stuff too closely.
+I always wonder if we shouldn't use -fwrapv for the kernel...
+
+	-hpa
+
