@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030612AbaGRPcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 11:32:21 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:54850 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030536AbaGRPcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 11:32:17 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jul 2014 11:32:14 EDT
-X-pt: isis.lip6.fr
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: linux-pci@vger.kernel.org
-Cc: benoit.taine@lip6.fr, ath5k-devel@venema.h4ckr.net,
-        ath9k-devel@venema.h4ckr.net, linux-hippi@sunsite.dk,
-        dri-devel@lists.freedesktop.org, linux-acenic@sunsite.dk,
-        wil6210@qca.qualcomm.com, platform-driver-x86@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-mips@linux-mips.org, users@rt2x00.serialmonkey.com,
-        linux-rdma@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        industrypack-devel@lists.sourceforge.net, linux-can@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        ath10k@lists.infradead.org, linux-crypto@vger.kernel.org,
-        MPT-FusionLinux.pdl@avagotech.com, devel@linuxdriverproject.org,
-        xen-devel@lists.xenproject.org, linux-pcmcia@lists.infradead.org,
-        e1000-devel@lists.sourceforge.net
-Subject: [PATCH 0/25] Replace DEFINE_PCI_DEVICE_TABLE macro use
-Date: Fri, 18 Jul 2014 17:26:47 +0200
-Message-Id: <1405697232-11785-1-git-send-email-benoit.taine@lip6.fr>
-X-Mailer: git-send-email 2.0.1
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Fri, 18 Jul 2014 17:26:11 +0200 (CEST)
+	id S1030657AbaGRPd2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 11:33:28 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:47070 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030618AbaGRPd0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 11:33:26 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <1405365496-58404-4-git-send-email-seth.forshee@canonical.com>
+References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+	<1405365496-58404-4-git-send-email-seth.forshee@canonical.com>
+Date: Fri, 18 Jul 2014 17:33:23 +0200
+Message-ID: <CAJfpegvMeiZG09U3aXvxKV+GPSn6zFgLbUwXGpTuoVSbnvgfmw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] fuse: Allow mounts from user namespaces
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        lxc-devel@lists.linuxcontainers.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should prefer `const struct pci_device_id` over
-`DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
-This issue was reported by checkpatch.
+On Mon, Jul 14, 2014 at 9:18 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> Update fuse to allow mounts from user namespaces. During mount
+> current_user_ns() is stashed away,
 
-A simplified version of the semantic patch that makes this change is as
-follows (http://coccinelle.lip6.fr/):
+Same thing here.  While practically this may work, it's theoretically
+wrong, and possibly may go wrong in special situations.   In fuse
+there's no official "server process", so storing information, like
+namespace, about one is going to be wrong.
 
-// <smpl>
-
-@@
-identifier i;
-declarer name DEFINE_PCI_DEVICE_TABLE;
-initializer z;
-@@
-
-- DEFINE_PCI_DEVICE_TABLE(i)
-+ const struct pci_device_id i[]
-= z;
-
-// </smpl>
-
-I have 103 patches ready, and will only send a few for you to judge if
-it is useful enough, and to prevent from spamming too much.
-
-Thanks.
+Thanks,
+Miklos
