@@ -1,139 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934791AbaGSNYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 09:24:16 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:62021 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754812AbaGSNQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 09:16:11 -0400
-Message-Id: <20140719131609.947731354@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Sat, 19 Jul 2014 09:15:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [for-next][PATCH 05/32] ftrace-graph: Remove dependency of ftrace_stop() from
- ftrace_graph_stop()
-References: <20140719131524.009152325@goodmis.org>
+	id S932972AbaGSN3G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:29:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47193 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932070AbaGSN3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 09:29:03 -0400
+Date: Sat, 19 Jul 2014 15:28:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
+Message-ID: <20140719132859.GA24864@pd.tnic>
+References: <20140719130602.GA5101@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0005-ftrace-graph-Remove-dependency-of-ftrace_stop-from-f.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140719130602.GA5101@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Sat, Jul 19, 2014 at 03:06:02PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> There are machines which do have stable and always-running TSCs but the
+> last get started at different points in time by the platform, causing
+> the TSCs to have a small constant diff.
+> 
+> It has been tried a couple of times to resync those during that
+> sync check but the procedure is error prone and flaky, and not 100%
+> successful.
+> 
+> So, instead of doing that, let's not touch the TSCs at all but save a
+> per-CPU TSC offset which we add to the TSC value we've read from the
+> Time-Stamp Counter. The hope is thus to still salvage the TSC on those
+> machines.
+> 
+> For that to work, we need to populate the TSC AUX MSR with the core ID
+> prior to doing the TSC sync check so that RDTSCP can give us the correct
+> core number and we can add the offset atomically. And yes, we need a
+> X86_FEATURE_RDTSCP CPU for the whole deal to work. Older ones simply
+> lose.
+> 
+> See also comment above tsc_sync.c::compute_tsc_offset() for more details.
 
-ftrace_stop() is going away as it disables parts of function tracing
-that affects users that should not be affected. But ftrace_graph_stop()
-is built on ftrace_stop(). Here's another example of killing all of
-function tracing because something went wrong with function graph
-tracing.
+And here's how it looks like: So I'm injecting a TSC diff locally because I
+don't have a machine which has that problem, Peter has a WSM for that.
 
-Instead of disabling all users of function tracing on function graph
-error, disable only function graph tracing.
+So here's the case where the target CPU has started its TSC earlier than
+the source CPU:
 
-A new function is created called ftrace_graph_is_dead(). This is called
-in strategic paths to prevent function graph from doing more harm and
-allowing at least a warning to be printed before the system crashes.
+[    0.264966] x86: Booting SMP configuration:
+[    0.265151] .... node  #0, CPUs:      #1
+[    0.281610] 1, tsc1: 37576107984
+[    0.281611] updating with 600000
 
-NOTE: ftrace_stop() is still used until all the archs are converted over
-to use ftrace_graph_is_dead(). After that, ftrace_stop() will be removed.
+This is the error injection into the TSC of CPU1 with +600K cycles.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h               |  1 +
- kernel/trace/ftrace.c                |  5 -----
- kernel/trace/trace_functions_graph.c | 35 +++++++++++++++++++++++++++++++++++
- 3 files changed, 36 insertions(+), 5 deletions(-)
+[    0.281990] 1, tsc2: 37576716684
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 4807a39e7ae1..18fb2c4a3f7f 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -760,6 +760,7 @@ extern char __irqentry_text_end[];
- extern int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 				trace_func_graph_ent_t entryfunc);
- 
-+extern bool ftrace_graph_is_dead(void);
- extern void ftrace_graph_stop(void);
- 
- /* The current handlers in use */
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1776153ea6e0..8063280fd53d 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -5473,9 +5473,4 @@ void ftrace_graph_exit_task(struct task_struct *t)
- 
- 	kfree(ret_stack);
- }
--
--void ftrace_graph_stop(void)
--{
--	ftrace_stop();
--}
- #endif
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 4de3e57f723c..3604690be70b 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -15,6 +15,38 @@
- #include "trace.h"
- #include "trace_output.h"
- 
-+static bool kill_ftrace_graph;
-+
-+/**
-+ * ftrace_graph_is_dead - returns true if ftrace_graph_stop() was called
-+ *
-+ * ftrace_graph_stop() is called when a severe error is detected in
-+ * the function graph tracing. This function is called by the critical
-+ * paths of function graph to keep those paths from doing any more harm.
-+ */
-+bool ftrace_graph_is_dead(void)
-+{
-+	return kill_ftrace_graph;
-+}
-+
-+/**
-+ * ftrace_graph_stop - set to permanently disable function graph tracincg
-+ *
-+ * In case of an error int function graph tracing, this is called
-+ * to try to keep function graph tracing from causing any more harm.
-+ * Usually this is pretty severe and this is called to try to at least
-+ * get a warning out to the user.
-+ */
-+void ftrace_graph_stop(void)
-+{
-+	kill_ftrace_graph = true;
-+	/*
-+	 * ftrace_stop() will be removed when all archs are updated to
-+	 * use ftrace_graph_is_dead()
-+	 */
-+	ftrace_stop();
-+}
-+
- /* When set, irq functions will be ignored */
- static int ftrace_graph_skip_irqs;
- 
-@@ -92,6 +124,9 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
- 	unsigned long long calltime;
- 	int index;
- 
-+	if (unlikely(ftrace_graph_is_dead()))
-+		return -EBUSY;
-+
- 	if (!current->ret_stack)
- 		return -EBUSY;
- 
+...
+
+[    0.284259] TSCs of [CPU#0 -> CPU#1] 599193 cycles out of sync, saving offset.
+[    0.284756] CPU1, saved offset: -599193
+
+We save a negative offset, and we also see the time it took us to do a
+RMW on the TSC :-)
+
+Then we run the sync test again, this time we read the TSC and add the
+negative offset.
+
+[    0.287156] TSC synchronization [CPU#0 -> CPU#1]: passed
+[    0.287385] x86: Booted up 1 node, 2 CPUs
+
+
+
+And now the case where the target CPU starts later than the source (I'd
+expect this to be the common case):
+
+[    0.264850] x86: Booting SMP configuration:
+[    0.265036] .... node  #0, CPUs:      #1
+[    0.281476] identify_cpu: Setting TSC_AUX MSR, cpu 1
+[    0.281495] 1, tsc1: 56268738505
+[    0.281497] updating with -12345678
+
+injection
+
+[    0.273772] 1, tsc2: 56256402112
+
+...
+
+[    0.284183] TSCs of [CPU#0 -> CPU#1] 12345363 cycles out of sync, saving offset.
+[    0.276608] CPU1, saved offset: 12345363
+[    0.287057] TSC synchronization [CPU#0 -> CPU#1]: passed
+[    0.287288] x86: Booted up 1 node, 2 CPUs
+
+
+
+We also state that we have this "workaround" enabled in /proc/cpuinfo:
+
+processor       : 1
+
+...
+
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc extd_apicid aperfmperf pni monitor ssse3 cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch ibs skinit wdt arat hw_pstate npt lbrv svm_lock nrip_save pausefilter
+bugs            : fxsave_leak tsc_offset
+			      ^^^^^^^^^^
+
+bogomips        : 3193.18
+TLB size        : 1024 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 36 bits physical, 48 bits virtual
+power management: ts ttp tm stc 100mhzsteps hwpstate
+
+
+
+The whole deal needs more testing now.
+
 -- 
-2.0.1
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
