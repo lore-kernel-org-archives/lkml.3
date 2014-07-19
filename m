@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaGSFDB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 01:03:01 -0400
-Received: from valhalla.ausics.net ([27.33.160.23]:54864 "EHLO mail.ausics.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaGSFC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 01:02:58 -0400
+	id S1751377AbaGSFCs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 01:02:48 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:61193 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaGSFCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 01:02:47 -0400
+Date: Sat, 19 Jul 2014 07:02:33 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched_clock: Track monotonic raw clock
+Message-ID: <20140719050233.GA4408@netboy>
+References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sat, 19 Jul 2014 15:02:55 +1000
-From: ressy66@ausics.net
-To: linux-kernel@vger.kernel.org
-Subject: 3.14.12 and =?UTF-8?Q?option=5Finstat=5Fcallback=20with=20=33G=20?=
- =?UTF-8?Q?DONGLE?=
-Message-ID: <c43daa0891bb559f93f2ee5cf480fb30@ausics.net>
-User-Agent: Roundcube Webmail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since upgrading from 3.12.24 kernel to 3.14.10, and today, .12 kernel 
-log and dmesg are flooded with constant messages
+On Fri, Jul 18, 2014 at 06:43:39PM +0100, Pawel Moll wrote:
+> 
+> This code definitely needs more work and testing (I'm not 100%
+> sure if the Kp and Ki I've picked for the proportional and
+> integral terms are universal),
 
-option1 ttyUSB0: option_instat_callback: error -2
+I wouldn't bet on it.
 
-The device still works, it sends and receives SMS's as well,
-I tried setting verbose usb debug to see if it offers any more 
-explanations, but it shows nothing more.
+> but for now wanted to see
+> if this approach makes any sense whatsoever.
 
-The device is Huawei E160, but is identified as (and always has been) an 
-E620
+You are reading sched_clock and mono-raw together every so
+often. Really stupid question: Why not just place that information
+into the trace buffer and let user space do the clock correction?
 
-ID 12d1:1001 Huawei Technologies Co., Ltd. E620 USB Modem
+...
 
-Did somthing break between 3.12 and 3.14? Rather annoying at how fast 
-and large kernel.log is geting.
+> +		/* Tune the cyc_to_ns formula */
+> +		mult_adj = sign * (error >> 2) + (cd.error_int >> 2);
 
+So Kp = Ki = 0.25? And did you say that the sample rate is 10/second?
 
+I guess that, while this works well on your machine, it might not
+always do so, depending on the mono-raw clock. Probably Kp/i need to
+be tunable to a particular system. Even better would be to leave this
+out of the kernel altogether.
+
+Thanks,
+Richard
