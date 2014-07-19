@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151AbaGSAto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 20:49:44 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:42404 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890AbaGSAtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 20:49:43 -0400
-Date: Sat, 19 Jul 2014 02:49:41 +0200
+	id S1760235AbaGSAwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 20:52:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44426 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756204AbaGSAw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 20:52:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,689,1400050800"; 
+   d="scan'208";a="575469608"
 From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] perf, x86: Don't mark DataLA addresses as store
-Message-ID: <20140719004941.GI18735@two.firstfloor.org>
-References: <1405123285-23544-1-git-send-email-andi@firstfloor.org>
- <1405123285-23544-2-git-send-email-andi@firstfloor.org>
- <CABPqkBScNfoK4a9BZkZxB-gAj3Ew2f7Ox3351YKWVt7cN-1EEw@mail.gmail.com>
- <20140714192451.GC5803@tassilo.jf.intel.com>
- <CABPqkBS=PB9tp78Y12ZRG9KLjd=DLY=3yrXeRdqCbZ4gnsdJ7A@mail.gmail.com>
- <20140714223918.GE5803@tassilo.jf.intel.com>
- <CABPqkBTYfc6CLJNzRqxDnQPr_sdv+yE9sLq717rg0sYzHhxssg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTYfc6CLJNzRqxDnQPr_sdv+yE9sLq717rg0sYzHhxssg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: peterz@infradead.org
+Cc: eranian@google.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/3] perf, x86: Fix haswell mem hierarchy flags reporting
+Date: Fri, 18 Jul 2014 17:52:12 -0700
+Message-Id: <1405731132-6259-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405731132-6259-1-git-send-email-andi@firstfloor.org>
+References: <1405731132-6259-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 15, 2014 at 12:49:43AM +0200, Stephane Eranian wrote:
-> On Tue, Jul 15, 2014 at 12:39 AM, Andi Kleen <ak@linux.intel.com> wrote:
-> >> I have a problem with this patch.
-> >>
-> >> It makes: perf mem -t store rec record OP_NA for the store.
-> >> It was recording OP_STORE before.
-> >>
-> >> I think we need to keep LD/ST info. This is useful for analysis
-> >> especially if we collect loads/stores simultaneously.
-> >>
-> >> Was working before for the mem-loads, mem-stores events.
-> >
-> > Ok. Would it be enough if it only worked for "mem-stores" and not
-> > all PEBS events?
-> >
-> Ok, do that at a minimum.
+From: Andi Kleen <ak@linux.intel.com>
 
-I fixed it now. However it turned out that "perf mem report"
-actually not report mem_op, only mem_lvl.
+This fixes a bug introduced with
 
-You may want to fix that separately.
+commit 722e76e60f2775c21b087ff12c5e678cf0ebcaaf
+Author: Stephane Eranian <eranian@google.com>
+Date:   Thu May 15 17:56:44 2014 +0200
 
--Andi
+    fix Haswell precise store data source encoding
+
+When returning early we need to return the complete value of the
+memory hierarchy, not just the mem_lvl. Otherwise any load/store/na
+flags set early get lost.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index cafb24f..7f7b117 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -121,7 +121,6 @@ static u64 precise_store_data_hsw(struct perf_event *event, u64 status,
+ 		dse.mem_op = PERF_MEM_OP_STORE;
+ 	else
+ 		dse.mem_op = PERF_MEM_OP_NA;
+-	dse.mem_lvl = PERF_MEM_LVL_NA;
+ 
+ 	/*
+ 	 * L1 info only valid for following events:
+@@ -131,8 +130,10 @@ static u64 precise_store_data_hsw(struct perf_event *event, u64 status,
+ 	 * MEM_UOPS_RETIRED.SPLIT_STORES
+ 	 * MEM_UOPS_RETIRED.ALL_STORES
+ 	 */
+-	if (cfg != 0x12d0 && cfg != 0x22d0 && cfg != 0x42d0 && cfg != 0x82d0)
+-		return dse.mem_lvl;
++	if (cfg != 0x12d0 && cfg != 0x22d0 && cfg != 0x42d0 && cfg != 0x82d0) {
++		dse.mem_lvl = PERF_MEM_LVL_NA;
++		return dse.val;
++	}
+ 
+ 	if (status & 1)
+ 		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_HIT;
+-- 
+1.9.3
+
