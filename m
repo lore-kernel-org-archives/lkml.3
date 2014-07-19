@@ -1,229 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168AbaGSUwM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 16:52:12 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:53017
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750848AbaGSUwJ (ORCPT
+	id S1755961AbaGSVP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 17:15:58 -0400
+Received: from aso-006-i447.relay.mailchannels.net ([23.91.64.128]:19387 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751174AbaGSVP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 16:52:09 -0400
-X-IronPort-AV: E=Sophos;i="5.01,693,1400018400"; 
-   d="scan'208";a="72094252"
-Date: Sat, 19 Jul 2014 22:52:06 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Jonathan Cameron <jic23@kernel.org>
-cc: Himangi Saraogi <himangi774@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH] staging:iio:ad7280a: Use managed interfaces
-In-Reply-To: <53CADAAE.1030509@kernel.org>
-Message-ID: <alpine.DEB.2.02.1407192251450.1989@localhost6.localdomain6>
-References: <20140719103341.GA18568@himangi-Dell> <53CAD915.506@kernel.org> <alpine.DEB.2.02.1407192245340.1989@localhost6.localdomain6> <53CADAAE.1030509@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 19 Jul 2014 17:15:56 -0400
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Good
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+Message-ID: <1405804548.13990.7.camel@fedora-lan>
+Subject: Re: [PATCH 0/5] Input - wacom: battery enhancements and unifying
+ hid-wacom and wacom
+From: Przemo Firszt <przemo@firszt.eu>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Date: Sat, 19 Jul 2014 22:15:48 +0100
+In-Reply-To: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-AuthUser: przemo@firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sat, 19 Jul 2014, Jonathan Cameron wrote:
-
-> On 19/07/14 21:46, Julia Lawall wrote:
-> > 
-> > 
-> > On Sat, 19 Jul 2014, Jonathan Cameron wrote:
-> > 
-> > > On 19/07/14 11:33, Himangi Saraogi wrote:
-> > > > This patch moves data allocated using unmanaged interfaces to managed
-> > > > interfaces like devm_kzalloc, devm_iio_device_register, devm_kasprintf,
-> > > > devm_request_threaded_irq and does away with the calls to free the
-> > > > allocated memory in the probe and remove functions. Some labels in the
-> > > > probe function are also removed.
-> > > > 
-> > > > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> > > cc'ing Lars who tends to look after Analog Devices drivers
-> > > and more specifically was involved in the thread that lead to this
-> > > patch.
-> > > 
-> > > Also, the devm_kasprintf does not appear to be in upstream so this
-> > > patch should have made an dependency clear.
-> > > 
-> > > https://lkml.org/lkml/2014/7/16/667
-> > > 
-> > > What is the intended merge path for that patch?
-> > 
-> > Greg said that he would be taking it.  He already took the devm_kasprintf
-> > patch.
-> Cool.  That's fine (and now you mention it - he did say that in the thread
-> I just forgot).  Still, it did want mentioning in the description for this
-> patch as well.
-
-Indeed.  Sorry about that.
-
-julia
-
-> > 
-> > julia
-> > 
-> > > 
-> > > 
-> > > > ---
-> > > > I am not very sure if devmifying request_irq is a good idea as it
-> > > > leads to the freeing of the interrupt after the ad7280_write.
-> > > Agreed. I wouldn't do it!
-> > > 
-> > > Otherwise, all looks fine.
-> > > >    drivers/staging/iio/adc/ad7280a.c | 57
-> > > > ++++++++++++++-------------------------
-> > > >    1 file changed, 20 insertions(+), 37 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/staging/iio/adc/ad7280a.c
-> > > > b/drivers/staging/iio/adc/ad7280a.c
-> > > > index d215edf..3706b3e 100644
-> > > > --- a/drivers/staging/iio/adc/ad7280a.c
-> > > > +++ b/drivers/staging/iio/adc/ad7280a.c
-> > > > @@ -486,8 +486,8 @@ static int ad7280_channel_init(struct ad7280_state
-> > > > *st)
-> > > >    {
-> > > >    	int dev, ch, cnt;
-> > > > 
-> > > > -	st->channels = kcalloc((st->slave_num + 1) * 12 + 2,
-> > > > -			       sizeof(*st->channels), GFP_KERNEL);
-> > > > +	st->channels = devm_kcalloc(&st->spi->dev, (st->slave_num + 1) * 12 +
-> > > > 2,
-> > > > +				    sizeof(*st->channels), GFP_KERNEL);
-> > > >    	if (st->channels == NULL)
-> > > >    		return -ENOMEM;
-> > > > 
-> > > > @@ -547,8 +547,9 @@ static int ad7280_attr_init(struct ad7280_state *st)
-> > > >    {
-> > > >    	int dev, ch, cnt;
-> > > > 
-> > > > -	st->iio_attr = kzalloc(sizeof(*st->iio_attr) * (st->slave_num + 1) *
-> > > > -				AD7280A_CELLS_PER_DEV * 2, GFP_KERNEL);
-> > > > +	st->iio_attr = devm_kzalloc(&st->spi->dev, sizeof(*st->iio_attr) *
-> > > > +				    (st->slave_num + 1) *
-> > > > +				    AD7280A_CELLS_PER_DEV * 2, GFP_KERNEL);
-> > > >    	if (st->iio_attr == NULL)
-> > > >    		return -ENOMEM;
-> > > > 
-> > > > @@ -564,7 +565,7 @@ static int ad7280_attr_init(struct ad7280_state *st)
-> > > >    			st->iio_attr[cnt].dev_attr.store =
-> > > >    				ad7280_store_balance_sw;
-> > > >    			st->iio_attr[cnt].dev_attr.attr.name =
-> > > > -				kasprintf(GFP_KERNEL,
-> > > > +				devm_kasprintf(&st->spi->dev, GFP_KERNEL,
-> > > >    					"in%d-in%d_balance_switch_en",
-> > > >    					(dev * AD7280A_CELLS_PER_DEV)
-> > > > + ch,
-> > > >    					(dev * AD7280A_CELLS_PER_DEV)
-> > > > + ch +
-> > > > 1);
-> > > > @@ -581,7 +582,8 @@ static int ad7280_attr_init(struct ad7280_state *st)
-> > > >    			st->iio_attr[cnt].dev_attr.store =
-> > > >    				ad7280_store_balance_timer;
-> > > >    			st->iio_attr[cnt].dev_attr.attr.name =
-> > > > -				kasprintf(GFP_KERNEL,
-> > > > "in%d-in%d_balance_timer",
-> > > > +				devm_kasprintf(&st->spi->dev, GFP_KERNEL,
-> > > > +					"in%d-in%d_balance_timer",
-> > > >    					(dev * AD7280A_CELLS_PER_DEV)
-> > > > + ch,
-> > > >    					(dev * AD7280A_CELLS_PER_DEV)
-> > > > + ch +
-> > > > 1);
-> > > >    			ad7280_attributes[cnt] =
-> > > > @@ -900,48 +902,36 @@ static int ad7280_probe(struct spi_device *spi)
-> > > > 
-> > > >    	ret = ad7280_attr_init(st);
-> > > >    	if (ret < 0)
-> > > > -		goto error_free_channels;
-> > > > +		return ret;
-> > > > 
-> > > > -	ret = iio_device_register(indio_dev);
-> > > > +	ret = devm_iio_device_register(&spi->dev, indio_dev);
-> > > >    	if (ret)
-> > > > -		goto error_free_attr;
-> > > > +		return ret;
-> > > > 
-> > > >    	if (spi->irq > 0) {
-> > > >    		ret = ad7280_write(st, AD7280A_DEVADDR_MASTER,
-> > > >    				   AD7280A_ALERT, 1,
-> > > >    				   AD7280A_ALERT_RELAY_SIG_CHAIN_DOWN);
-> > > >    		if (ret)
-> > > > -			goto error_unregister;
-> > > > +			return ret;
-> > > > 
-> > > >    		ret = ad7280_write(st, AD7280A_DEVADDR(st->slave_num),
-> > > >    				   AD7280A_ALERT, 0,
-> > > >    				   AD7280A_ALERT_GEN_STATIC_HIGH |
-> > > >    				   (pdata->chain_last_alert_ignore &
-> > > > 0xF));
-> > > >    		if (ret)
-> > > > -			goto error_unregister;
-> > > > -
-> > > > -		ret = request_threaded_irq(spi->irq,
-> > > > -					   NULL,
-> > > > -					   ad7280_event_handler,
-> > > > -					   IRQF_TRIGGER_FALLING |
-> > > > -					   IRQF_ONESHOT,
-> > > > -					   indio_dev->name,
-> > > > -					   indio_dev);
-> > > > +			return ret;
-> > > > +
-> > > > +		ret = devm_request_threaded_irq(&spi->dev, spi->irq, NULL,
-> > > > +						ad7280_event_handler,
-> > > > +						IRQF_TRIGGER_FALLING |
-> > > > +						IRQF_ONESHOT, indio_dev->name,
-> > > > +						indio_dev);
-> > > >    		if (ret)
-> > > > -			goto error_unregister;
-> > > > +			return ret;
-> > > >    	}
-> > > > 
-> > > >    	return 0;
-> > > > -error_unregister:
-> > > > -	iio_device_unregister(indio_dev);
-> > > > -
-> > > > -error_free_attr:
-> > > > -	kfree(st->iio_attr);
-> > > > -
-> > > > -error_free_channels:
-> > > > -	kfree(st->channels);
-> > > > -
-> > > > -	return ret;
-> > > >    }
-> > > > 
-> > > >    static int ad7280_remove(struct spi_device *spi)
-> > > > @@ -949,16 +939,9 @@ static int ad7280_remove(struct spi_device *spi)
-> > > >    	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-> > > >    	struct ad7280_state *st = iio_priv(indio_dev);
-> > > > 
-> > > > -	if (spi->irq > 0)
-> > > > -		free_irq(spi->irq, indio_dev);
-> > > > -	iio_device_unregister(indio_dev);
-> > > > -
-> > > >    	ad7280_write(st, AD7280A_DEVADDR_MASTER, AD7280A_CONTROL_HB,
-> > > > 1,
-> > > >    			AD7280A_CTRL_HB_PWRDN_SW | st->ctrl_hb);
-> > > > 
-> > > > -	kfree(st->channels);
-> > > > -	kfree(st->iio_attr);
-> > > > -
-> > > >    	return 0;
-> > > >    }
-> > > > 
-> > > > 
-> > > 
-> > > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
+Dnia 2014-07-10, czw o godzinie 14:44 -0400, Benjamin Tissoires pisze:
+> Hi guys,
 > 
+> Continuing on the Wacom cleanup, here are 5 patches.
 > 
+> The first two enhance the battery reporting for the Wireless receiver by
+> adding the status of the battery (discharging, full, charging) - inspired by
+> the code found in hid-wacom.c, and also by adding notifications to the power
+> system so that upower knows when the battery changed.
+> 
+> The last three are the handling of the two Wacom Bluetooth devices in wacom.ko.
+> Some enhancements here:
+> - Intuos4 now supports other tools than just the plain stylus (mouse, artpen, ...)
+> - one less driver for Wacom (~700 lines of code less in total)
+> - unifying access to LEDs/OLEDs from Bluetooth and USB devices
+> 
+> However, I did not backport the speed attribute and the ac power device (which
+> is infered by the battery status). I don't know if there are users of those two,
+> so I let them aside for now. Przemo, any ideas if this is actually used?
+> 
+> This whole code is based on top of the previous HID conversion patches.
+> I pushed a branch with all I have queued on the list here:
+> https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc4
+> 
+> Again, given that there has been no answer on how this can be merged upstream
+> (Jiri? Dmitry?), I just piled those on top of the previous.
+> I wouldn't to resplit the input and hid specific changes if this is the choice
+> that is made.
+> 
+> Cheers,
+> Benjamin
+> 
+> Benjamin Tissoires (5):
+>   Input - wacom: enhance Wireless Receiver battery reporting
+>   Input - wacom: use a specific name for the battery device
+>   Input - wacom: handle Graphire BT tablets in wacom.ko
+>   Input - wacom: handle Intuos 4 BT in wacom.ko
+>   HID: remove hid-wacom Bluetooth driver
+> 
+>  drivers/hid/Kconfig              |   8 -
+>  drivers/hid/Makefile             |   1 -
+>  drivers/hid/hid-core.c           |   2 -
+>  drivers/hid/hid-wacom.c          | 973 ---------------------------------------
+>  drivers/input/tablet/wacom.h     |   6 +
+>  drivers/input/tablet/wacom_sys.c | 114 ++++-
+>  drivers/input/tablet/wacom_wac.c | 189 +++++++-
+>  drivers/input/tablet/wacom_wac.h |   8 +
+>  8 files changed, 303 insertions(+), 998 deletions(-)
+>  delete mode 100644 drivers/hid/hid-wacom.c
+> 
+Benjamin,
+I think we might try to fix that [1] as well when making changes to the
+sysfs entries. Currently every tablet connected wirelessly will trigger
+creating new sysfs entries:
+
+/sys/class/power_supply/wacom_ac
+/sys/class/power_supply/wacom_battery
+
+so sysfs is not happy about attempts to create duplicates. We need to
+distinguish between devices using consecutive numbers or something else.
+
+[1] https://sourceforge.net/p/linuxwacom/bugs/248/
+-- 
+Kind regards,
+Przemo Firszt
+
+
