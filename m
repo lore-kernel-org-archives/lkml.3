@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762008AbaGSLhu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 07:37:50 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:49423 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761022AbaGSLhs (ORCPT
+	id S1754740AbaGSLpp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 07:45:45 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:55645 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511AbaGSLpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 07:37:48 -0400
-Date: Sat, 19 Jul 2014 17:07:41 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] parisc: Eliminate memset after alloc_bootmem_pages
-Message-ID: <20140719113741.GA23655@himangi-Dell>
+	Sat, 19 Jul 2014 07:45:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140719101946.GA4319@electric-eye.fr.zoreil.com>
+References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>
+	<C562D0E12CBDE44E8A0CCAB77060096701283AD344@AVMB1.qlogic.org>
+	<049BCC6F-0A2E-421A-9873-0B7ED6FFB3AC@gmail.com>
+	<20140719101946.GA4319@electric-eye.fr.zoreil.com>
+Date: Sat, 19 Jul 2014 19:45:43 +0800
+Message-ID: <CABawtvP4+B_smOyi-=vt56KuUthzHF9L059PXP4ekXA7KPk_Dw@mail.gmail.com>
+Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool get_ethtool_stats()
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Ethan Zhao <ethan.zhao@oracle.com>,
+        Manish Chopra <manish.chopra@qlogic.com>,
+        Sony Chacko <sony.chacko@qlogic.com>, netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_bootmem and related function always return zeroed region of
-memory. Thus a memset after calls to these functions is unnecessary.
+On Sat, Jul 19, 2014 at 6:19 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
+> Ethan Zhao <ethan.kernel@gmail.com> :
+>> ?? 2014??7??19????????2:21??Rajesh Borundia <rajesh.borundia@qlogic.com> ??????
+> [...]
+>> > I think ethtool stats are adapter specific. Driver does not maintain
+>> > rx_dropped stats and we also don't get it from adapter.  I am not
+>> > sure if ethtool stats should match ifconfig stats as ifconfig also
+>> > adds net core stats to adapter stats.
+>> I held the same point as yours before I read more drivers implementation
+>> under Ethernet dir, in fact there is no specification/convention that
+>> ethtool info is adapter specific. All information output by ethtool is
+>> based on the information name itself, one fact we want this patch is
+>> netxen defined 'rx dropped' field but output nothing.
+>
+> It may be fine as a requirement of the day but it does not bode well
+> for the future as ethtool stats API won't get less messy.
+ It is the fact.
+>
+> I'd rather see ethtool stats provides one of those:
+> 1. hardware stats only
+  Sounds very clear, is it done clear, if so we need other tools ?
+  Then why net core increase dev->dropped like
 
-The following Coccinelle semantic patch was used for making the change:
+  atomic_long_inc(&skb->dev->rx_dropped);
 
-@@
-expression E,E1;
-@@
+  and mess some of the info to dev. just let ifconfig report it without detail ?
 
-E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
-... when != E
-- memset(E,0,E1);
+> 2. driver dependent stats - anything you want - as long as the hardware
+>    only part of the stats is clearly identified
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- arch/parisc/mm/init.c | 1 -
- 1 file changed, 1 deletion(-)
+  I agree with this point, there is no other interface let the driver
+customizes the output of ethtool or ifconfig, ethtool is the only
+interface to export information we want that is driver / device
+related, even some of the information from net core where stack
+information output not covered.
 
-diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-index ae085ad..0bef864 100644
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -728,7 +728,6 @@ static void __init pagetable_init(void)
- #endif
- 
- 	empty_zero_page = alloc_bootmem_pages(PAGE_SIZE);
--	memset(empty_zero_page, 0, PAGE_SIZE);
- }
- 
- static void __init gateway_init(void)
--- 
-1.9.1
+ Regard to dropped packets, some packets are to be dropped in net core without
+error types reported. maybe it is why some drivers get rx dropped
+stats from net core to avoid losing some of them.
 
+>
+> 2. needs works. 1. hurts any requirement where it would priviously had
+> been so easy to add a few lines of code in the driver and push the mess
+> straight from kernel to the end user application.
+
+  Maybe some guys think that is enough to mess them together while not
+identify the information from net core or driver. that is better than
+lose info /no info.
+
+ My case is user could be confused when run 'ifconfig' and 'ethtool'
+to this netxen device. ifconfig reports packets dropped. but ethtool
+says zero. does that mean it is not issue of driver forever ?  who
+could tell where the packets are dropped, and for what ?
+
+ So I would like the name of the data fields that ethtool output is be
+better defined.
+ Instead of saying is not covered by ethtool.
+
+Thanks,
+Ethan
+>
+> --
+> Ueimor
