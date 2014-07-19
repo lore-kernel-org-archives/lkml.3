@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaGSVxn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 17:53:43 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40763 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbaGSVxm (ORCPT
+	id S932368AbaGSV5A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 17:57:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32150 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751370AbaGSV47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 17:53:42 -0400
-Date: Sun, 20 Jul 2014 03:23:35 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [RESEND PATCH] powerpc/mpic_msgr: Use kcalloc and correct the
- argument to sizeof
-Message-ID: <20140719215335.GA22646@himangi-Dell>
+	Sat, 19 Jul 2014 17:56:59 -0400
+Date: Sat, 19 Jul 2014 17:56:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] ARM: add IPI tracepoints
+Message-ID: <20140719175655.249601bf@gandalf.local.home>
+In-Reply-To: <CAKv+Gu-RZ4s+33LVOK3eTrvb3ig0YXmNwT0-3GS2-WuvThyXTg@mail.gmail.com>
+References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
+	<1405660735-13408-3-git-send-email-nicolas.pitre@linaro.org>
+	<20140718160418.54d11f6a@gandalf.local.home>
+	<alpine.LFD.2.11.1407181652080.3647@knanqh.ubzr>
+	<20140718172221.6dbe83e4@gandalf.local.home>
+	<CAKv+Gu_71vJFf3aUZso1X7m7fULUMhxj+MZVYq+LGNRLJvGyAA@mail.gmail.com>
+	<20140719162810.02285fc8@gandalf.local.home>
+	<CAKv+Gu-RZ4s+33LVOK3eTrvb3ig0YXmNwT0-3GS2-WuvThyXTg@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mpic_msgrs has type struct mpic_msgr **, not struct mpic_msgr *, so the
-elements of the array should have pointer type, not structure type.
-The advantage of kcalloc is, that will prevent integer overflows which
-could result from the multiplication of number of elements and size and
-it is also a bit nicer to read.
+On Sat, 19 Jul 2014 22:50:16 +0200
+Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
 
-The Coccinelle semantic patch that makes the first change is as follows:
-
-// <smpl>
-@disable sizeof_type_expr@
-type T;
-T **x;
-@@
-
-  x =
-  <+...sizeof(
-- T
-+ *x
-  )...+>
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- arch/powerpc/sysdev/mpic_msgr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/sysdev/mpic_msgr.c b/arch/powerpc/sysdev/mpic_msgr.c
-index 2c9b52a..7bdf3cc 100644
---- a/arch/powerpc/sysdev/mpic_msgr.c
-+++ b/arch/powerpc/sysdev/mpic_msgr.c
-@@ -184,7 +184,7 @@ static int mpic_msgr_probe(struct platform_device *dev)
- 		dev_info(&dev->dev, "Found %d message registers\n",
- 				mpic_msgr_count);
  
--		mpic_msgrs = kzalloc(sizeof(struct mpic_msgr) * mpic_msgr_count,
-+		mpic_msgrs = kcalloc(mpic_msgr_count, sizeof(*mpic_msgrs),
- 							 GFP_KERNEL);
- 		if (!mpic_msgrs) {
- 			dev_err(&dev->dev,
--- 
-1.9.1
+> OK, so if the general case has been fixed, perhaps we should ask Paul
+> to drop my patch?
+> 
 
+No, for a few reasons. One, this patch still needs to get in to fix the
+problem for RCU. Two, RCU basically open codes the creation of the
+string, thus this wont solve it for RCU.
+
+-- Steve
