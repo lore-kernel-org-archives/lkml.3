@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758841AbaGSJXk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 05:23:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64529 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959AbaGSJXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 05:23:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,690,1400050800"; 
-   d="scan'208";a="572262495"
-Message-ID: <1405761815.28207.15.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 5/5] fs/ubifs/{sb,super}.c: drop negativity check on
- unsigned value
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-mtd@lists.infradead.org, dcb314@hotmail.com,
-        adrian.hunter@intel.com
-Date: Sat, 19 Jul 2014 12:23:35 +0300
-In-Reply-To: <1405697725-23866-1-git-send-email-andrey.krieger.utkin@gmail.com>
-References: <1405697725-23866-1-git-send-email-andrey.krieger.utkin@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760107AbaGSJvN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 05:51:13 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:49619 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757819AbaGSJvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 05:51:09 -0400
+Date: Sat, 19 Jul 2014 11:51:04 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH 09/13] perf tools: Add perf download to download event
+ files
+Message-ID: <20140719095104.GA11994@gmail.com>
+References: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
+ <1405540969-18975-10-git-send-email-jolsa@kernel.org>
+ <20140717104704.GB9571@gmail.com>
+ <87ha2e4lj4.fsf@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ha2e4lj4.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-18 at 18:35 +0300, Andrey Utkin wrote:
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80581
-> Reported-by: David Binderman <dcb314@hotmail.com>
-> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-Hi, thanks, but I already have a patch which does the same in the
-linux-ubifs.git tree:
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-commit b793a8c8885d87d9867fb2dbfdc1ef7b5877d71b
-Author: hujianyang <hujianyang@huawei.com>
-Date:   Wed Jun 11 10:42:52 2014 +0800
+> Ingo Molnar <mingo@kernel.org> writes:
+> >
+> > We want these description files to be in the perf source code, 
+> > somewhere in tools/perf/live-config/arch/x86/ or so, and installed 
+> > during 'make install' - i.e. part of perf project and installed in 
+> > ~/.debug or ~/.perf or so.
+> 
+> I don't think that's a good idea. It would recreate all the 
+> problems oprofile has with out of date event lists. Already
+> proven to not work well.
 
-    UBIFS: remove useless statements
-    
-    This patch removes useless and duplicate statements.
-    
-    Signed-off-by: hujianyang <hujianyang@huawei.com>
-    Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+That's true only if you ignore my second suggestion:
 
--- 
-Best Regards,
-Artem Bityutskiy
+> > Those files could be refreshed via 'perf download' and could be 
+> > accessible via kernel.org as well, 'perf download' should pick up 
+> > these files from Linus's latest git repository (via the HTTP 
+> > namespace).
+> 
+> I have doubts a gitweb server is a good way to distribute 
+> potentially high volume / high access data.
 
+I don't buy that concern either, because typically humans will trigger 
+the refresh - just like clicking on a link to refresh. In any case, if 
+it starts being a problem in practice we can reconsider, it's not a 
+reason to not do it.
 
+> However getting a more neutral space is fine.
+> 
+> It would be fine to put it elsewhere on kernel.org.
+> I can ask for a space.
+
+The beauty of my approach is to:
+
+ 1) integrate the descriptions into the project, so that developers 
+    are well aware of them and keep them uptodate - while considering 
+    all the other perf features the kernel may offer.
+
+ 2) have them update automatically as we update the primary source, in 
+    a single place.
+
+Your suggestions so far lose those benefits, unnecessarily, and 
+without explanation given.
+
+So unless you can come up with a better approach, this is the way to 
+implement this feature.
+
+Thanks,
+
+	Ingo
