@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761370AbaGSJ4g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 05:56:36 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:45869 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760662AbaGSJzy (ORCPT
+	id S1760288AbaGSKHE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 06:07:04 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62392 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757217AbaGSKHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 05:55:54 -0400
-From: LABBE Corentin <clabbe.montjoie@gmail.com>
-To: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
-        paul.gortmaker@windriver.com, jg1.han@samsung.com,
-        paulmck@linux.vnet.ibm.com, valentina.manea.m@gmail.com, jack@suse.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        LABBE Corentin <clabbe.montjoie@gmail.com>
-Subject: [PATCH 2/4] No else is necessary after a break (reported by checkpatch)
-Date: Sat, 19 Jul 2014 11:55:41 +0200
-Message-Id: <1405763743-30023-3-git-send-email-clabbe.montjoie@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1405763743-30023-1-git-send-email-clabbe.montjoie@gmail.com>
-References: <1405763743-30023-1-git-send-email-clabbe.montjoie@gmail.com>
+	Sat, 19 Jul 2014 06:07:02 -0400
+Date: Sat, 19 Jul 2014 15:36:54 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] Input: max7359 - Introduce the use of managed interfaces
+Message-ID: <20140719100654.GA18035@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
----
- drivers/staging/sep/sep_main.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+This patch introduces the use of managed interfaces like devm_kzalloc,
+devm_input_allocate_device, devm_request_threaded_irq etc. and does away
+with the calls to free the allocated memory. The remove function is no
+longer required and is completely done away with. Also, the labels in
+the probe function are removed.
 
-diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
-index 177e4b9..1580d95f 100644
---- a/drivers/staging/sep/sep_main.c
-+++ b/drivers/staging/sep/sep_main.c
-@@ -2881,12 +2881,11 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
- 				if (is_kva) {
- 					error = -ENODEV;
- 					break;
--				} else {
--					error_temp = copy_to_user(
-+				}
-+				error_temp = copy_to_user(
- 						(void __user *)tail_pt,
- 						dcb_table_ptr->tail_data,
- 						dcb_table_ptr->tail_data_size);
--				}
- 				if (error_temp) {
- 					/* Release the DMA resource */
- 					error = -EFAULT;
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/input/keyboard/max7359_keypad.c | 38 +++++++++------------------------
+ 1 file changed, 10 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/input/keyboard/max7359_keypad.c b/drivers/input/keyboard/max7359_keypad.c
+index 430b545..b0ef607 100644
+--- a/drivers/input/keyboard/max7359_keypad.c
++++ b/drivers/input/keyboard/max7359_keypad.c
+@@ -203,12 +203,12 @@ static int max7359_probe(struct i2c_client *client,
+ 
+ 	dev_dbg(&client->dev, "keys FIFO is 0x%02x\n", ret);
+ 
+-	keypad = kzalloc(sizeof(struct max7359_keypad), GFP_KERNEL);
+-	input_dev = input_allocate_device();
++	keypad = devm_kzalloc(&client->dev, sizeof(struct max7359_keypad),
++			      GFP_KERNEL);
++	input_dev = devm_input_allocate_device(&client->dev);
+ 	if (!keypad || !input_dev) {
+ 		dev_err(&client->dev, "failed to allocate memory\n");
+-		error = -ENOMEM;
+-		goto failed_free_mem;
++		return -ENOMEM;
+ 	}
+ 
+ 	keypad->client = client;
+@@ -230,19 +230,20 @@ static int max7359_probe(struct i2c_client *client,
+ 
+ 	max7359_build_keycode(keypad, keymap_data);
+ 
+-	error = request_threaded_irq(client->irq, NULL, max7359_interrupt,
+-				     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				     client->name, keypad);
++	error = devm_request_threaded_irq(&client->dev, client->irq, NULL,
++					  max7359_interrupt,
++					  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					  client->name, keypad);
+ 	if (error) {
+ 		dev_err(&client->dev, "failed to register interrupt\n");
+-		goto failed_free_mem;
++		return error;
+ 	}
+ 
+ 	/* Register the input device */
+ 	error = input_register_device(input_dev);
+ 	if (error) {
+ 		dev_err(&client->dev, "failed to register input device\n");
+-		goto failed_free_irq;
++		return error;
+ 	}
+ 
+ 	/* Initialize MAX7359 */
+@@ -252,24 +253,6 @@ static int max7359_probe(struct i2c_client *client,
+ 	device_init_wakeup(&client->dev, 1);
+ 
+ 	return 0;
+-
+-failed_free_irq:
+-	free_irq(client->irq, keypad);
+-failed_free_mem:
+-	input_free_device(input_dev);
+-	kfree(keypad);
+-	return error;
+-}
+-
+-static int max7359_remove(struct i2c_client *client)
+-{
+-	struct max7359_keypad *keypad = i2c_get_clientdata(client);
+-
+-	free_irq(client->irq, keypad);
+-	input_unregister_device(keypad->input_dev);
+-	kfree(keypad);
+-
+-	return 0;
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -313,7 +296,6 @@ static struct i2c_driver max7359_i2c_driver = {
+ 		.pm   = &max7359_pm,
+ 	},
+ 	.probe		= max7359_probe,
+-	.remove		= max7359_remove,
+ 	.id_table	= max7359_ids,
+ };
+ 
 -- 
-1.8.5.5
+1.9.1
 
