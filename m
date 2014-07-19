@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaGSFqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 01:46:09 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:36335 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaGSFqH convert rfc822-to-8bit (ORCPT
+	id S1755428AbaGSFtF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 01:49:05 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:54781 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348AbaGSFtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 01:46:07 -0400
-Content-Type: text/plain;
-	charset=gb2312
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool get_ethtool_stats()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-X-Mailer: iPad Mail (11D201)
-In-Reply-To: <C562D0E12CBDE44E8A0CCAB77060096701283AD344@AVMB1.qlogic.org>
-Date: Sat, 19 Jul 2014 13:45:49 +0800
-Cc: Ethan Zhao <ethan.zhao@oracle.com>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <049BCC6F-0A2E-421A-9873-0B7ED6FFB3AC@gmail.com>
-References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com> <C562D0E12CBDE44E8A0CCAB77060096701283AD344@AVMB1.qlogic.org>
-To: Rajesh Borundia <rajesh.borundia@qlogic.com>
+	Sat, 19 Jul 2014 01:49:03 -0400
+Date: Fri, 18 Jul 2014 22:49:27 -0700
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.16-rc
+Message-ID: <20140719054927.GA31580@quad.lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
+The following changes since commit cacadb4ff969a82628d47db87b5a531be466b134:
 
-在 2014年7月19日，上午2:21，Rajesh Borundia <rajesh.borundia@qlogic.com> 写道：
+  Merge tag 'samsung-fixes-3' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into fixes (2014-07-12 21:19:21 -0700)
 
->> -----Original Message-----
->> From: Ethan Zhao [mailto:ethan.zhao@oracle.com]
->> Sent: Friday, July 18, 2014 9:13 AM
->> To: Manish Chopra; Sony Chacko; Rajesh Borundia; netdev
->> Cc: linux-kernel; ethan.kernel@gmail.com; Ethan Zhao
->> Subject: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool
->> get_ethtool_stats()
->> 
->> netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
->> but it doesn't collect stats.rxdropped in driver, so we will get different
->> rx_dropped statistic information while using ifconfig and ethtool.
->> this patch fills stats.rxdropped field with data from net core with
->> dev_get_stats() just as ixgbe driver did for some of its stats.
-> 
-> I think ethtool stats are adapter specific. Driver does not maintain
-> rx_dropped stats and we also don't get it from adapter.  I am not
-> sure if ethtool stats should match ifconfig stats as ifconfig also
-> adds net core stats to adapter stats.
-I held the same point as yours before I read more drivers implementation under
-Ethernet dir, in fact there is no specification/convention that ethtool info is adapter
-Specific. All information output by ethtool is based on the information name itself,
-One fact we want this patch is netxen defined 'rx dropped' field but output nothing.
+are available in the git repository at:
 
-> 
-> If ethtool stats should report same values as ifconfig stats then
-> we may also need to fix tx_dropped statistics.
-> 
-at least, tx dropped output information... 
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-Thanks,
-Ethan
-> Thanks,
-> Rajesh
+for you to fetch changes up to 9637f30e6b7bc394c08fa9d27d63622f141142e9:
+
+  ARM: EXYNOS: Fix core ID used by platsmp and hotplug code (2014-07-18 17:12:57 -0700)
+
+----------------------------------------------------------------
+ARM: SoC fixes for 3.16-rc
+
+A smaller set of fixes this week, and all regression fixes:
+ - a handful of issues fixed on at91 with common clock conversion
+ - a set of fixes for Marvell mvebu (SMP, coherency, PM)
+ - a clock fix for i.MX6Q.
+ - ... and a SMP/hotplug fix for Exynos
+
+----------------------------------------------------------------
+Bo Shen (1):
+      ARM: at91: at91sam9x5: correct typo error for ohci clock
+
+Boris BREZILLON (2):
+      ARM: at91/dt: fix usb0 clocks definition in sam9n12 dtsi
+      ARM: at91/dt: add missing clocks property to pwm node in sam9x5.dtsi
+
+Ezequiel Garcia (1):
+      ARM: mvebu: Fix coherency bus notifiers by using separate notifiers
+
+Gregory CLEMENT (1):
+      ARM: mvebu: Fix the operand list in the inline asm of armada_370_xp_pmsu_idle_enter
+
+Lucas Stach (1):
+      ARM: clk-imx6q: parent lvds_sel input from upstream clock gates
+
+Olof Johansson (3):
+      Merge tag 'mvebu-fixes-3.16-3' of git://git.infradead.org/linux-mvebu into fixes
+      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+      Merge tag 'imx-fixes-3.16-2' of git://git.kernel.org/.../shawnguo/linux into fixes
+
+Thomas Petazzoni (1):
+      ARM: mvebu: fix SMP boot for Armada 38x and Armada 375 Z1 in big endian
+
+Tomasz Figa (1):
+      ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
+
+ arch/arm/boot/dts/at91sam9n12.dtsi |  2 +-
+ arch/arm/boot/dts/at91sam9x5.dtsi  |  4 ++--
+ arch/arm/mach-exynos/hotplug.c     | 10 ++++++----
+ arch/arm/mach-exynos/platsmp.c     | 34 +++++++++++++++++++---------------
+ arch/arm/mach-imx/clk-imx6q.c      |  4 ++--
+ arch/arm/mach-mvebu/coherency.c    |  6 +++++-
+ arch/arm/mach-mvebu/headsmp-a9.S   |  9 ++++++++-
+ arch/arm/mach-mvebu/pmsu.c         | 10 +++++-----
+ 8 files changed, 48 insertions(+), 31 deletions(-)
