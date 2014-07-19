@@ -1,113 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250AbaGSQku (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 12:40:50 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:53938 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090AbaGSQks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 12:40:48 -0400
+	id S932290AbaGSQpB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 12:45:01 -0400
+Received: from verein.lst.de ([213.95.11.211]:51841 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932075AbaGSQpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 12:45:00 -0400
+Date: Sat, 19 Jul 2014 18:44:54 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: poma <pomidorabelisima@gmail.com>, Christoph Hellwig <hch@lst.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
+	kmem_cache_create+0x1a9/0x330()
+Message-ID: <20140719164454.GA24530@lst.de>
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de> <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1407090155250.7841@eggly.anvils>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-	<1402655819-14325-8-git-send-email-dh.herrmann@gmail.com>
-	<alpine.LSU.2.11.1407090155250.7841@eggly.anvils>
-Date: Sat, 19 Jul 2014 18:40:47 +0200
-Message-ID: <CANq1E4S=QUv_T0mYZM2qx70Bgp1eoZeORYZUFTtVmV4iFcooig@mail.gmail.com>
-Subject: Re: [RFC v3 7/7] shm: isolate pinned pages when sealing files
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Jul 18, 2014 at 01:07:26PM -0700, James Bottomley wrote:
+> > Is this what you thought?
+> 
+> No, he means this, if you want to try it.
 
-On Wed, Jul 9, 2014 at 10:57 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Fri, 13 Jun 2014, David Herrmann wrote:
->
->> When setting SEAL_WRITE, we must make sure nobody has a writable reference
->> to the pages (via GUP or similar). We currently check references and wait
->> some time for them to be dropped. This, however, might fail for several
->> reasons, including:
->>  - the page is pinned for longer than we wait
->>  - while we wait, someone takes an already pinned page for read-access
->>
->> Therefore, this patch introduces page-isolation. When sealing a file with
->> SEAL_WRITE, we copy all pages that have an elevated ref-count. The newpage
->> is put in place atomically, the old page is detached and left alone. It
->> will get reclaimed once the last external user dropped it.
->>
->> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->
-> I've not checked it line by line, but this seems to be very good work;
-> and I'm glad you have posted it, where we can refer back to it in future.
->
-> However, I'm NAKing this patch, at least for now.
->
-> The reason is simple and twofold.
->
-> I absolutely do not want to be maintaining an alternative form of
-> page migration in mm/shmem.c.  Shmem has its own peculiar problems
-> (mostly because of swap): adding a new dimension of very rarely
-> exercised complication, and dependence on the rest mm, is not wise.
->
-> And sealing just does not need this.  It is clearly technically
-> superior to, and more satisfying than, the "wait-a-while-then-give-up"
-> technique which it would replace.  But in practice, the wait-a-while
-> technique is quite good enough (and much better self-contained than this).
->
-> I've heard no requirement to support sealing of objects pinned for I/O,
-> and the sealer just would not have given the object out for that; the
-> requirement is to give the recipient of a sealed object confidence
-> that it cannot be susceptible to modification in that way.
->
-> I doubt there will ever be an actual need for sealing to use this
-> migration technique; but I can imagine us referring back to your work in
-> future, when/if implementing revoke on regular files.  And integrating
-> this into mm/migrate.c's unmap_and_move() as an extra-force mode
-> (proceed even when the page count is raised).
->
-> I think the concerns I had, when Tony first proposed this migration copy
-> technique, were in fact unfounded - I was worried by the new inverse COW.
-> On reflection, I don't think this introduces any new risks, which are
-> not already present in page migration, truncation and orphaned pages.
->
-> I didn't begin to test it at all, but the only defects that stood out
-> in your code were in the areas of memcg and mlock.  I think that if we
-> go down the road of duplicating pinned pages, then we do have to make
-> a memcg charge on the new page in addition to the old page.  And if
-> any pages happen to be mlock'ed into an address space, then we ought
-> to map in the replacement pages afterwards (as page migration does,
-> whether mlock'ed or not).
->
-> (You were perfectly correct to use unmap_mapping_range(), rather than
-> try_to_unmap() as page migration does: because unmap_mapping_range()
-> manages the VM_NONLINEAR case.  But our intention, under way, is to
-> scrap all VM_NONLINEAR code, and just emulate it with multiple vmas,
-> in which case try_to_unmap() should do.)
-
-Dropping VM_NONLINEAR would make a lot of stuff so much easier.
-
-I'm fine with dropping this patch again. The mlock and memcg issues
-you raised are valid and should get fixed. And indeed, my testing
-never triggered any real evelated page-refs except if I pinned them
-via FUSE. Therefore, the wait-for-pins function should be sufficient,
-indeed.
-
-Thanks for the reviews! I will send v4 shortly.
-David
+Yes, that's what I mean.
