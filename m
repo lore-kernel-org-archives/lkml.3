@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaGSVdS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 17:33:18 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:34249 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaGSVdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 17:33:17 -0400
+	id S1756134AbaGSVg5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 17:36:57 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58391 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756049AbaGSVg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 17:36:56 -0400
+Date: Sat, 19 Jul 2014 22:36:53 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm intel fixes
+Message-ID: <alpine.DEB.2.00.1407192233450.1576@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1405771556.18077.5.camel@x220>
-References: <1405746604-7737-1-git-send-email-xerofoify@gmail.com>
-	<1405771556.18077.5.camel@x220>
-Date: Sat, 19 Jul 2014 17:33:16 -0400
-Message-ID: <CAPDOMVgQ-F9Y4AoNfFW-vN0YP10kwYL-GCwkpnXj+zg_UMJ4jw@mail.gmail.com>
-Subject: Re: [PATCH] mips: Remove uneeded line in cmp_smp_finish
-From: Nick Krause <xerofoify@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: ralf@linux-mips.org, paul.burton@imgtec.com, Leonid.Yegoshin@imgtec.com,
-        markos.chandras@imgtec.com, Steven.Hill@imgtec.com,
-        linux-mips@linux-mips.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 8:05 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Sat, 2014-07-19 at 01:10 -0400, Nicholas Krause wrote:
->> This patch removes a unneeded line from this file as stated by the
->> fix me in this file.
->>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  arch/mips/kernel/smp-cmp.c | 2 --
->>  1 file changed, 2 deletions(-)
->>
->> diff --git a/arch/mips/kernel/smp-cmp.c b/arch/mips/kernel/smp-cmp.c
->> index fc8a515..61bfa20 100644
->> --- a/arch/mips/kernel/smp-cmp.c
->> +++ b/arch/mips/kernel/smp-cmp.c
->> @@ -60,8 +60,6 @@ static void cmp_smp_finish(void)
->>  {
->>       pr_debug("SMPCMP: CPU%d: %s\n", smp_processor_id(), __func__);
->>
->> -     /* CDFIXME: remove this? */
->> -     write_c0_compare(read_c0_count() + (8 * mips_hpt_frequency / HZ));
->
-> That comment ends in a question mark. I wonder why...
->
->>  #ifdef CONFIG_MIPS_MT_FPAFF
->>       /* If we have an FPU, enroll ourselves in the FPU-full mask */
->
->
-> Paul Bolle
->
-If we need it then can I remove the FIx me comment.
-Cheers Nick
+
+Hi Linus,
+
+Intel fixes came in late, but since I debugged one of them I'll send them 
+on,
+
+two reverts, a quirk and one warn regression.
+
+Dave.
+
+The following changes since commit b579fcca32b7eaef7c346dff55adc953b56bb1a8:
+
+  Merge tag 'rdma-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2014-07-18 20:39:34 -1000)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to e898c791e1a4c27fa1f221058b29b0ad06ddf8b0:
+
+  Merge tag 'drm-intel-fixes-2014-07-18' of git://anongit.freedesktop.org/drm-intel (2014-07-19 16:48:38 +1000)
+
+----------------------------------------------------------------
+
+Daniel Vetter (2):
+      Revert "drm/i915: Don't set the 8to6 dither flag when not scaling"
+      drm/i915: Track the primary plane correctly when reassigning planes
+
+Dave Airlie (2):
+      Revert "drm/i915: reverse dp link param selection, prefer fast over wide again"
+      Merge tag 'drm-intel-fixes-2014-07-18' of git://anongit.freedesktop.org/drm-intel
+
+Scot Doyle (1):
+      drm/i915: Ignore VBT backlight presence check on HP Chromebook 14
+
+ drivers/gpu/drm/i915/intel_display.c | 4 ++++
+ drivers/gpu/drm/i915/intel_dp.c      | 4 ++--
+ drivers/gpu/drm/i915/intel_lvds.c    | 7 +++++++
+ drivers/gpu/drm/i915/intel_panel.c   | 8 ++++----
+ 4 files changed, 17 insertions(+), 6 deletions(-)
