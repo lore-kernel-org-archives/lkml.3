@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833AbaGSXp4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 19:45:56 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60351 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064AbaGSXpx (ORCPT
+	id S1756188AbaGSXtU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 19:49:20 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43175 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaGSXtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 19:45:53 -0400
-Date: Sat, 19 Jul 2014 16:44:15 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Vlastimil Babka <vbabka@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
- take 3
-In-Reply-To: <53C8FAA6.9050908@oracle.com>
-Message-ID: <alpine.LSU.2.11.1407191628450.24073@eggly.anvils>
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz> <53C7F5FF.7010006@oracle.com> <53C8FAA6.9050908@oracle.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sat, 19 Jul 2014 19:49:18 -0400
+Date: Sat, 19 Jul 2014 16:49:06 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, David Herrmann <dh.herrmann@gmail.com>,
+        Andrew de los Reyes <adlr@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: fix defuzzing logic
+Message-ID: <20140719234843.GA28580@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014, Sasha Levin wrote:
-> On 07/17/2014 12:12 PM, Sasha Levin wrote:
-> > On 07/17/2014 12:10 PM, Vlastimil Babka wrote:
-> >> > On 07/15/2014 12:28 PM, Hugh Dickins wrote:
-> >>> >> In the end I decided that we had better look at it as two problems,
-> >>> >> the trinity faulting starvation, and the indefinite punching loop,
-> >>> >> so 1/2 and 2/2 present both solutions: belt and braces.
-> >> > 
-> >> > I tested that with my reproducer and it was OK, but as I already said, it's not trinity so I didn't observe the new problems in the first place.
-> > I've started seeing a new hang in the lru code, but I'm not sure if
-> > it's related to this patch or not (the locks are the same ones, but
-> > the location is very different).
-> > 
-> > I'm looking into that.
-> 
-> Hi Hugh,
-> 
-> The new hang I'm seeing is much simpler to analyse (compared to shmem_fallocate) and
-> doesn't seem to be related. I'll send a separate mail and Cc you just in case, but
-> I don't think that this patchset has anything to do with it.
+We attempt to remove noise from coordinates reported by devices in
+input_handle_abs_event(), unfortunately, unless we were dropping the
+event altogether, we were ignoring the adjusted value and were passing
+on the original value instead.
 
-Thanks for testing and following up, Sasha.  I agree, that one is
-unrelated.  I've just sent a suggestion in your lru_add_drain_all thread.
+Reviewed-by: Andrew de los Reyes <adlr@chromium.org>
+Reviewed-by: Benson Leung <bleung@chromium.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/input.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> 
-> Otherwise, I've been unable to reproduce the shmem_fallocate hang.
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 1c4c0db..29ca0bb 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -257,9 +257,10 @@ static int input_handle_abs_event(struct input_dev *dev,
+ }
+ 
+ static int input_get_disposition(struct input_dev *dev,
+-			  unsigned int type, unsigned int code, int value)
++			  unsigned int type, unsigned int code, int *pval)
+ {
+ 	int disposition = INPUT_IGNORE_EVENT;
++	int value = *pval;
+ 
+ 	switch (type) {
+ 
+@@ -357,6 +358,7 @@ static int input_get_disposition(struct input_dev *dev,
+ 		break;
+ 	}
+ 
++	*pval = value;
+ 	return disposition;
+ }
+ 
+@@ -365,7 +367,7 @@ static void input_handle_event(struct input_dev *dev,
+ {
+ 	int disposition;
+ 
+-	disposition = input_get_disposition(dev, type, code, value);
++	disposition = input_get_disposition(dev, type, code, &value);
+ 
+ 	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
+ 		dev->event(dev, type, code, value);
 
-Great.  Andrew, I think we can say that it's now safe to send
-1/2 shmem: fix faulting into a hole, not taking i_mutex
-2/2 shmem: fix splicing from a hole while it's punched
-on to Linus whenever suits you.
-
-(You have some other patches in the mainline-later section of the
-mmotm/series file: they're okay too, but not in doubt as these two were.)
-
-Thanks,
-Hugh
+-- 
+Dmitry
