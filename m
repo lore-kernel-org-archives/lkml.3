@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620AbaGSAoq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 20:44:46 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41145 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaGSAod (ORCPT
+	id S1759486AbaGSAoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 20:44:44 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:42751 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaGSAob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 20:44:33 -0400
+	Fri, 18 Jul 2014 20:44:31 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 03/10] rcu: Kick full dynticks CPU on extended grace period with a void IRQ
-Date: Sat, 19 Jul 2014 02:44:14 +0200
-Message-Id: <1405730661-9355-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 02/10] nohz: Kick full dynticks timer targets with an empty IPI
+Date: Sat, 19 Jul 2014 02:44:13 +0200
+Message-Id: <1405730661-9355-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
 References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
@@ -25,23 +25,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a full dynticks CPU stays for too long in the kernel, it may fail
-to report quiescent states due to it missing ticks and therefore it can
-delay the completion of grace periods.
+While we enqueue a new timer on a dynticks target, we must send it an
+IPI so that it reschedules the next tick accordingly.
 
-A way to solve this is to send an IPI to the incriminated CPU such that
-it can check rcu_needs_cpu() and reschedule some ticks accordingly to
-poll again on quiescent states reports.
+Now all we need for that is to run irq_exit() on the target. Hence
+an empty IRQ is way enough. We don't need to run tick_nohz_full_check()
+and all the overhead that comes with the several cmpxchg() necessary for
+irq work list and state progress.
 
-This is what we try to achieve while calling rcu_kick_nohz_cpu() but it
-has no effect because we trigger a scheduler IPI which is actually a
-no-op when not used for scheduler internal purpose, ie: it doesn't call
-irq_exit() when not used for remote wakeup or other specifics.
-
-No need to tweak the scheduler IPI further though. Lets keep it clean
-of external noise and use an empty IPI instead. We hereby get sure that
-we will call irq_exit() on the target without much overhead nor added
-noise on scheduler fast path.
+So lets use a void irq work instead.
 
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
@@ -51,32 +43,21 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/rcu/tree_plugin.h | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index cbc2c45..395c14d 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2401,14 +2401,16 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
-  * off.  RCU will be paying attention to this CPU because it is in the
-  * kernel, but the CPU cannot be guaranteed to be executing the RCU state
-  * machine because the scheduling-clock tick has been disabled.  Therefore,
-- * if an adaptive-ticks CPU is failing to respond to the current grace
-- * period and has not be idle from an RCU perspective, kick it.
-+ * if an full dynticks CPU is failing to respond to the current grace
-+ * period and has not be idle from an RCU perspective, kick it with a
-+ * void IRQ so that it can check that RCU needs its tick from rcu_needs_cpu()
-+ * on irq exit.
-  */
- static void rcu_kick_nohz_cpu(int cpu)
- {
- #ifdef CONFIG_NO_HZ_FULL
- 	if (tick_nohz_full_cpu(cpu))
--		smp_send_reschedule(cpu);
-+		irq_work_void_on(cpu);
- #endif /* #ifdef CONFIG_NO_HZ_FULL */
- }
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7f3063c..f3e48b8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -693,7 +693,7 @@ static bool wake_up_full_nohz_cpu(int cpu)
+ 	if (tick_nohz_full_cpu(cpu)) {
+ 		if (cpu != smp_processor_id() ||
+ 		    tick_nohz_tick_stopped())
+-			tick_nohz_full_kick_cpu(cpu);
++			irq_work_void_on(cpu);
+ 		return true;
+ 	}
  
 -- 
 1.8.3.1
