@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598AbaGSGUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 02:20:16 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45057 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752320AbaGSGUO (ORCPT
+	id S1755287AbaGSGcg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 02:32:36 -0400
+Received: from mail-yk0-f177.google.com ([209.85.160.177]:54987 "EHLO
+	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbaGSGcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 02:20:14 -0400
-X-Sasl-enc: Y4rF8pvewkyYXTOzur2lLcnTo+6WFgfVmO3dSkDYCBba 1405750813
-Message-ID: <1405750811.5052.2.camel@localhost>
-Subject: Re: [PATCH] random: check for increase of entropy_count because of
- signed conversion
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com, price@mit.edu
-Date: Sat, 19 Jul 2014 08:20:11 +0200
-In-Reply-To: <20140719054258.GH18775@thunk.org>
-References: <20140718215054.GD18775@thunk.org>
-	 <1405721239-2630-1-git-send-email-tytso@mit.edu>
-	 <1405726548.10838.34.camel@localhost> <20140719054258.GH18775@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Sat, 19 Jul 2014 02:32:35 -0400
+Message-ID: <53CA10FF.4050106@gmail.com>
+Date: Sat, 19 Jul 2014 02:32:31 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] rcu: Check for have_rcu_nocb_mask instead of rcu_nocb_mask
+References: <1405632611-29872-1-git-send-email-bobby.prani@gmail.com> <20140717234920.GD8690@linux.vnet.ibm.com> <53C86615.3040107@gmail.com> <20140719061021.GK8690@linux.vnet.ibm.com>
+In-Reply-To: <20140719061021.GK8690@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa, 2014-07-19 at 01:42 -0400, Theodore Ts'o wrote:
-> On Sat, Jul 19, 2014 at 01:35:48AM +0200, Hannes Frederic Sowa wrote:
-> > > +	nfrac = ibytes << (ENTROPY_SHIFT + 3);
-> > > +	if (entropy_count < 0) {
-> > 
-> > Minor nit: maybe also add an unlikely() here?
-> 
-> Yep, done.
-> 
-> > > +	if ((unsigned) entropy_count > nfrac)
-> > 
-> > (unsigned) -> (size_t)
-> >
-> > size_t could also be (unsigned long) so the plain (unsigned) is
-> > misleading.
-> 
-> Good point, done.
-> 
-> > (Maybe I wouldn't have done the cast at all, as we compile the kernel
-> > with -Wno-sign-compare and we have the < 0 check right above, but I
-> > don't have a strong opinion on that.)
-> 
-> I also wanted to shut up other static code checkers like Coverity.  :-)
-> 
-> > > +	nbytes = min_t(size_t, nbytes, INT_MAX >> ENTROPY_SHIFT);
-> > 
-> > Hmm, not sure, nfracs unit is 1/8 bits, so don't we have to limit nbytes
-> > to INT_MAX >> (ENTROPY_SHIFT + 3) here?
-> 
-> Good catch, done.
-> 
-> > And if we want to be even more correct here, we could switch from
-> > INT_MAX to SIZE_MAX, as we do all nfrac calculations in the size_t
-> > domain.
-> 
-> The main reason why I used INT_MAX was as a further safety check to
-> protect the:
-> 
-> 	entropy_count -= nfrac;
-> 
-> calculation, since nfrac is size_t and entropy_count is int.
-> 
-> In fact I think this online change ("nbytes = min_t(size_t, nbytes,
-> INT_MAX >> (ENTROPY_SHIFT + 3));") would have been enough to fix the
-> problem all by itself, but the other changes results in code which is
-> cleaner and easier to understand, and I'm a firm believer in multiple
-> layers of protection.  :-)
+On 07/19/2014 02:10 AM, Paul E. McKenney wrote:
 
-I see and can agree here. :)
+>> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+>> index ce8c331..8f987c1 100644
+>> --- a/kernel/rcu/tree_plugin.h
+>> +++ b/kernel/rcu/tree_plugin.h
+>> @@ -2053,9 +2053,10 @@ static void rcu_init_one_nocb(struct rcu_node *rnp)
+>>  /* Is the specified CPU a no-CBs CPU? */
+>>  bool rcu_is_nocb_cpu(int cpu)
+>>  {
+>> -	if (have_rcu_nocb_mask)
+>> -		return cpumask_test_cpu(cpu, rcu_nocb_mask);
+>> -	return false;
+>> +	if (!have_rcu_nocb_mask)
+>> +		return false;
+>> +
+>> +	return cpumask_test_cpu(cpu, rcu_nocb_mask);
+> 
+> Hmmm...  That was a subtle way to tell me that my feedback was bogus.  ;-)
+> I guess I need to stop reviewing patches at 2AM local time.
+> 
+> Anyway, you are correct, this was OK to start with, so I am dropping
+> this hunk.
+> 
 
-I think the patch is good to go.
+I thought you wanted me to change the check of the have_rcu_nocb_mask, and I
+really think the new version is better. But yes, more of a style change :)
 
-Thanks you,
-Hannes
-
+--
+Pranith
 
