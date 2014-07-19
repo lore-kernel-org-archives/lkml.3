@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965011AbaGSAqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 20:46:46 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:40366 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756253AbaGSAog (ORCPT
+	id S934062AbaGSAqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 20:46:44 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57466 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758164AbaGSAom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 20:44:36 -0400
+	Fri, 18 Jul 2014 20:44:42 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 04/10] nohz: Appropriate timekeeper kick on sysidle break
-Date: Sat, 19 Jul 2014 02:44:15 +0200
-Message-Id: <1405730661-9355-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 10/10] nohz: Warn on illegal timekeeper switch in nohz full
+Date: Sat, 19 Jul 2014 02:44:21 +0200
+Message-Id: <1405730661-9355-11-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
 References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
@@ -25,22 +25,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU wakes up from idle and finds out that the timekeeper is
-sleeping, we need to kick it such that it switches from dynticks to
-periodic mode to maintain its timekeeping duty on behalf of the newly
-awoken CPU.
+In full dynticks idle mode, the timekeeper should never be set to another
+CPU than 0.
 
-However we aren't using the right API for that. rcu_kick_nohz_cpu() is
-aimed at waking full dynticks CPUs and not the timekeeper.
-
-Moreover the timekeeper must perform a new dynticks cycle to check the
-new sysidle state and restart the tick if necessary. A simple call
-to irq_exit() isn't enough.
-
-wake_up_nohz_cpu() is a good fit for that job because it pulls the
-target out of the idle loop and restart the tick. Then if no other
-task waits for the CPU, it will reenter the idle loop and then the
-new sysidle state will be visible and well handled.
+Lets enforce that through a dedicated mutator.
 
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
@@ -50,22 +38,96 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/rcu/tree_plugin.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/time/tick-common.c   | 9 ++++-----
+ kernel/time/tick-internal.h | 7 +++++++
+ kernel/time/tick-sched.c    | 7 +++----
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 395c14d..b65da1a 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2494,7 +2494,7 @@ void rcu_sysidle_force_exit(void)
- 				      oldstate, RCU_SYSIDLE_NOT);
- 		if (oldstate == newoldstate &&
- 		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
--			rcu_kick_nohz_cpu(tick_do_timer_cpu);
-+			wake_up_nohz_cpu(tick_do_timer_cpu);
- 			return; /* We cleared it, done! */
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index cb57bce..72ccaf2 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -180,9 +180,9 @@ static void tick_setup_device(struct tick_device *td,
+ 		 */
+ 		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
+ 			if (tick_nohz_full_enabled())
+-				tick_do_timer_cpu = TICK_DO_TIMER_DEFAULT;
++				tick_do_timer_cpu_set(TICK_DO_TIMER_DEFAULT);
+ 			else
+-				tick_do_timer_cpu = cpu;
++				tick_do_timer_cpu_set(cpu);
+ 			tick_next_period = ktime_get();
+ 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
  		}
- 		oldstate = newoldstate;
+@@ -341,9 +341,8 @@ void tick_handover_do_timer(int *cpup)
+ {
+ 	if (*cpup == tick_do_timer_cpu) {
+ 		int cpu = cpumask_first(cpu_online_mask);
+-
+-		tick_do_timer_cpu = (cpu < nr_cpu_ids) ? cpu :
+-			TICK_DO_TIMER_NONE;
++		tick_do_timer_cpu_set((cpu < nr_cpu_ids) ? cpu :
++				      TICK_DO_TIMER_NONE);
+ 	}
+ }
+ 
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 6b592a8..eadfd89 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -23,6 +23,13 @@ extern void tick_setup_periodic(struct clock_event_device *dev, int broadcast);
+ extern void tick_handle_periodic(struct clock_event_device *dev);
+ extern void tick_check_new_device(struct clock_event_device *dev);
+ extern void tick_handover_do_timer(int *cpup);
++
++static inline void tick_do_timer_cpu_set(int cpu)
++{
++	WARN_ON_ONCE(tick_nohz_full_enabled() && cpu != TICK_DO_TIMER_DEFAULT);
++	tick_do_timer_cpu = cpu;
++}
++
+ extern void tick_shutdown(unsigned int *cpup);
+ extern void tick_suspend(void);
+ extern void tick_resume(void);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 845aaff..3b5102a 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -123,7 +123,7 @@ static void tick_sched_do_timer(ktime_t now)
+ 	 */
+ 	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
+ 	    && !tick_nohz_full_cpu(cpu))
+-		tick_do_timer_cpu = cpu;
++		tick_do_timer_cpu_set(cpu);
+ #endif
+ 
+ 	/* Check, if the jiffies need an update */
+@@ -550,7 +550,7 @@ static u64 timekeeping_deferment(struct tick_sched *ts, int cpu)
+ 		ts->do_timer_last = 1;
+ 		/* In full dynticks mode, CPU 0 always keeps the duty */
+ 		if (!tick_nohz_full_enabled())
+-			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++			tick_do_timer_cpu_set(TICK_DO_TIMER_NONE);
+ 	} else if (ts->do_timer_last) {
+ 		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
+ 			time_delta = timekeeping_max_deferment();
+@@ -600,7 +600,6 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 	/* Schedule the tick, if we are at least one jiffie off */
+ 	if ((long)delta_jiffies >= 1) {
+ 		u64 time_delta = timekeeping_deferment(ts, cpu);
+-
+ #ifdef CONFIG_NO_HZ_FULL
+ 		if (!ts->inidle) {
+ 			time_delta = min(time_delta,
+@@ -717,7 +716,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ 	 */
+ 	if (unlikely(!cpu_online(cpu))) {
+ 		if (cpu == tick_do_timer_cpu)
+-			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++			tick_do_timer_cpu_set(TICK_DO_TIMER_NONE);
+ 		return false;
+ 	}
+ 
 -- 
 1.8.3.1
 
