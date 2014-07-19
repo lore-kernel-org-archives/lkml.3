@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaGSNQd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 09:16:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:10810 "EHLO
+	id S1422696AbaGSNRR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:17:17 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:62021 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755114AbaGSNQN (ORCPT
+	by vger.kernel.org with ESMTP id S1755530AbaGSNQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 09:16:13 -0400
-Message-Id: <20140719131610.301075715@goodmis.org>
+	Sat, 19 Jul 2014 09:16:17 -0400
+Message-Id: <20140719131614.323173589@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Sat, 19 Jul 2014 09:15:31 -0400
+Date: Sat, 19 Jul 2014 09:15:52 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [for-next][PATCH 07/32] microblaze: ftrace: Add call to ftrace_graph_is_dead() in function
- graph code
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 28/32] tracing: Remove function_trace_stop and
+ HAVE_FUNCTION_TRACE_MCOUNT_TEST
 References: <20140719131524.009152325@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0007-microblaze-ftrace-Add-call-to-ftrace_graph_is_dead-i.patch
+Content-Disposition: inline; filename=0028-tracing-Remove-function_trace_stop-and-HAVE_FUNCTION.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,38 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-ftrace_stop() is going away as it disables parts of function tracing
-that affects users that should not be affected. But ftrace_graph_stop()
-is built on ftrace_stop(). Here's another example of killing all of
-function tracing because something went wrong with function graph
-tracing.
+All users of function_trace_stop and HAVE_FUNCTION_TRACE_MCOUNT_TEST have
+been removed. We can safely remove them from the kernel.
 
-Instead of disabling all users of function tracing on function graph
-error, disable only function graph tracing. To do this, the arch code
-must call ftrace_graph_is_dead() before it implements function graph.
-
-Link: http://lkml.kernel.org/r/53C8D874.9090601@monstr.eu
-
-Tested-by: Michal Simek <monstr@monstr.eu>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/microblaze/kernel/ftrace.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/ftrace.h | 2 --
+ kernel/trace/Kconfig   | 5 -----
+ kernel/trace/ftrace.c  | 3 ---
+ 3 files changed, 10 deletions(-)
 
-diff --git a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/ftrace.c
-index bbcd2533766c..fc7b48a52cd5 100644
---- a/arch/microblaze/kernel/ftrace.c
-+++ b/arch/microblaze/kernel/ftrace.c
-@@ -27,6 +27,9 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
- 	unsigned long return_hooker = (unsigned long)
- 				&return_to_handler;
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index c800906235e1..7a5b7b97e539 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -129,8 +129,6 @@ struct ftrace_ops {
+ #endif
+ };
  
-+	if (unlikely(ftrace_graph_is_dead()))
-+		return;
-+
- 	if (unlikely(atomic_read(&current->tracing_graph_pause)))
- 		return;
+-extern int function_trace_stop;
+-
+ /*
+  * Type of the current tracing.
+  */
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index d4409356f40d..a5da09c899dd 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -29,11 +29,6 @@ config HAVE_FUNCTION_GRAPH_FP_TEST
+ 	help
+ 	  See Documentation/trace/ftrace-design.txt
  
+-config HAVE_FUNCTION_TRACE_MCOUNT_TEST
+-	bool
+-	help
+-	  See Documentation/trace/ftrace-design.txt
+-
+ config HAVE_DYNAMIC_FTRACE
+ 	bool
+ 	help
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 70abf97d6e84..4c61f28a08e0 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -80,9 +80,6 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
+ int ftrace_enabled __read_mostly;
+ static int last_ftrace_enabled;
+ 
+-/* Quick disabling of function tracer. */
+-int function_trace_stop __read_mostly;
+-
+ /* Current function tracing op */
+ struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
+ /* What to set function_trace_op to */
 -- 
 2.0.1
 
