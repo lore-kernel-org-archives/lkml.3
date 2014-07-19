@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaGSFtF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 01:49:05 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:54781 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348AbaGSFtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 01:49:03 -0400
-Date: Fri, 18 Jul 2014 22:49:27 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for 3.16-rc
-Message-ID: <20140719054927.GA31580@quad.lixom.net>
+	id S1753182AbaGSFvp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 01:51:45 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44762 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366AbaGSFvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 01:51:43 -0400
+Date: Sat, 19 Jul 2014 01:42:58 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, price@mit.edu
+Subject: Re: [PATCH] random: check for increase of entropy_count because of
+ signed conversion
+Message-ID: <20140719054258.GH18775@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Hannes Frederic Sowa <hannes@stressinduktion.org>,
+	linux-kernel@vger.kernel.org, davej@redhat.com, price@mit.edu
+References: <20140718215054.GD18775@thunk.org>
+ <1405721239-2630-1-git-send-email-tytso@mit.edu>
+ <1405726548.10838.34.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405726548.10838.34.camel@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, Jul 19, 2014 at 01:35:48AM +0200, Hannes Frederic Sowa wrote:
+> > +	nfrac = ibytes << (ENTROPY_SHIFT + 3);
+> > +	if (entropy_count < 0) {
+> 
+> Minor nit: maybe also add an unlikely() here?
 
-The following changes since commit cacadb4ff969a82628d47db87b5a531be466b134:
+Yep, done.
 
-  Merge tag 'samsung-fixes-3' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into fixes (2014-07-12 21:19:21 -0700)
+> > +	if ((unsigned) entropy_count > nfrac)
+> 
+> (unsigned) -> (size_t)
+>
+> size_t could also be (unsigned long) so the plain (unsigned) is
+> misleading.
 
-are available in the git repository at:
+Good point, done.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+> (Maybe I wouldn't have done the cast at all, as we compile the kernel
+> with -Wno-sign-compare and we have the < 0 check right above, but I
+> don't have a strong opinion on that.)
 
-for you to fetch changes up to 9637f30e6b7bc394c08fa9d27d63622f141142e9:
+I also wanted to shut up other static code checkers like Coverity.  :-)
 
-  ARM: EXYNOS: Fix core ID used by platsmp and hotplug code (2014-07-18 17:12:57 -0700)
+> > +	nbytes = min_t(size_t, nbytes, INT_MAX >> ENTROPY_SHIFT);
+> 
+> Hmm, not sure, nfracs unit is 1/8 bits, so don't we have to limit nbytes
+> to INT_MAX >> (ENTROPY_SHIFT + 3) here?
 
-----------------------------------------------------------------
-ARM: SoC fixes for 3.16-rc
+Good catch, done.
 
-A smaller set of fixes this week, and all regression fixes:
- - a handful of issues fixed on at91 with common clock conversion
- - a set of fixes for Marvell mvebu (SMP, coherency, PM)
- - a clock fix for i.MX6Q.
- - ... and a SMP/hotplug fix for Exynos
+> And if we want to be even more correct here, we could switch from
+> INT_MAX to SIZE_MAX, as we do all nfrac calculations in the size_t
+> domain.
 
-----------------------------------------------------------------
-Bo Shen (1):
-      ARM: at91: at91sam9x5: correct typo error for ohci clock
+The main reason why I used INT_MAX was as a further safety check to
+protect the:
 
-Boris BREZILLON (2):
-      ARM: at91/dt: fix usb0 clocks definition in sam9n12 dtsi
-      ARM: at91/dt: add missing clocks property to pwm node in sam9x5.dtsi
+	entropy_count -= nfrac;
 
-Ezequiel Garcia (1):
-      ARM: mvebu: Fix coherency bus notifiers by using separate notifiers
+calculation, since nfrac is size_t and entropy_count is int.
 
-Gregory CLEMENT (1):
-      ARM: mvebu: Fix the operand list in the inline asm of armada_370_xp_pmsu_idle_enter
+In fact I think this online change ("nbytes = min_t(size_t, nbytes,
+INT_MAX >> (ENTROPY_SHIFT + 3));") would have been enough to fix the
+problem all by itself, but the other changes results in code which is
+cleaner and easier to understand, and I'm a firm believer in multiple
+layers of protection.  :-)
 
-Lucas Stach (1):
-      ARM: clk-imx6q: parent lvds_sel input from upstream clock gates
+Cheers,
 
-Olof Johansson (3):
-      Merge tag 'mvebu-fixes-3.16-3' of git://git.infradead.org/linux-mvebu into fixes
-      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
-      Merge tag 'imx-fixes-3.16-2' of git://git.kernel.org/.../shawnguo/linux into fixes
+					- Ted
 
-Thomas Petazzoni (1):
-      ARM: mvebu: fix SMP boot for Armada 38x and Armada 375 Z1 in big endian
+commit 79a8468747c5f95ed3d5ce8376a3e82e0c5857fc
+Author: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date:   Fri Jul 18 17:26:41 2014 -0400
 
-Tomasz Figa (1):
-      ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
+    random: check for increase of entropy_count because of signed conversion
+    
+    The expression entropy_count -= ibytes << (ENTROPY_SHIFT + 3) could
+    actually increase entropy_count if during assignment of the unsigned
+    expression on the RHS (mind the -=) we reduce the value modulo
+    2^width(int) and assign it to entropy_count. Trinity found this.
+    
+    [ Commit modified by tytso to add an additional safety check for a
+      negative entropy_count -- which should never happen, and to also add
+      an additional paranoia check to prevent overly large count values to
+      be passed into urandom_read().  ]
+    
+    Reported-by: Dave Jones <davej@redhat.com>
+    Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+    Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+    Cc: stable@vger.kernel.org
 
- arch/arm/boot/dts/at91sam9n12.dtsi |  2 +-
- arch/arm/boot/dts/at91sam9x5.dtsi  |  4 ++--
- arch/arm/mach-exynos/hotplug.c     | 10 ++++++----
- arch/arm/mach-exynos/platsmp.c     | 34 +++++++++++++++++++---------------
- arch/arm/mach-imx/clk-imx6q.c      |  4 ++--
- arch/arm/mach-mvebu/coherency.c    |  6 +++++-
- arch/arm/mach-mvebu/headsmp-a9.S   |  9 ++++++++-
- arch/arm/mach-mvebu/pmsu.c         | 10 +++++-----
- 8 files changed, 48 insertions(+), 31 deletions(-)
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 0a7ac0a..71529e1 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -641,7 +641,7 @@ retry:
+ 		} while (unlikely(entropy_count < pool_size-2 && pnfrac));
+ 	}
+ 
+-	if (entropy_count < 0) {
++	if (unlikely(entropy_count < 0)) {
+ 		pr_warn("random: negative entropy/overflow: pool %s count %d\n",
+ 			r->name, entropy_count);
+ 		WARN_ON(1);
+@@ -981,7 +981,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		      int reserved)
+ {
+ 	int entropy_count, orig;
+-	size_t ibytes;
++	size_t ibytes, nfrac;
+ 
+ 	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
+ 
+@@ -999,7 +999,17 @@ retry:
+ 	}
+ 	if (ibytes < min)
+ 		ibytes = 0;
+-	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
++
++	if (unlikely(entropy_count < 0)) {
++		pr_warn("random: negative entropy count: pool %s count %d\n",
++			r->name, entropy_count);
++		WARN_ON(1);
++		entropy_count = 0;
++	}
++	nfrac = ibytes << (ENTROPY_SHIFT + 3);
++	if ((size_t) entropy_count > nfrac)
++		entropy_count -= nfrac;
++	else
+ 		entropy_count = 0;
+ 
+ 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+@@ -1376,6 +1386,7 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 			    "with %d bits of entropy available\n",
+ 			    current->comm, nonblocking_pool.entropy_total);
+ 
++	nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
+ 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
+ 
+ 	trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
