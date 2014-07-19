@@ -1,124 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaGSUHI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 16:07:08 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:59565 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889AbaGSUHG (ORCPT
+	id S1756061AbaGSUKY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 16:10:24 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61283 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755773AbaGSUKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 16:07:06 -0400
-Message-ID: <1405800422.3254.4.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client changes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sat, 19 Jul 2014 16:07:02 -0400
-Organization: PrimaryData Inc
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Vc6MMz3m04tRvEOxcEvn"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Sat, 19 Jul 2014 16:10:22 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        dcb314@hotmail.com, rafael.j.wysocki@intel.com, trenn@suse.de,
+        linux@dominikbrodowski.net, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/5] tools/power/cpupower/utils/helpers/sysfs.c: drop negativity check on unsigned value
+Date: Sat, 19 Jul 2014 22:28:41 +0200
+Message-ID: <3471157.kIgI5mxtgb@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405797244-5182-1-git-send-email-andrey.krieger.utkin@gmail.com>
+References: <1405697445-23620-1-git-send-email-andrey.krieger.utkin@gmail.com> <1405797244-5182-1-git-send-email-andrey.krieger.utkin@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, July 19, 2014 10:14:04 PM Andrey Utkin wrote:
+> Resubmitting to send also to linux-pm@vger.kernel.org as requested by
+> Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> ---8<---
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80621
+> Reported-by: David Binderman <dcb314@hotmail.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
---=-Vc6MMz3m04tRvEOxcEvn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Queued up for 3.17, thanks!
 
-Hi Linus,
+> ---
+>  tools/power/cpupower/utils/helpers/sysfs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/power/cpupower/utils/helpers/sysfs.c b/tools/power/cpupower/utils/helpers/sysfs.c
+> index 851c7a1..09afe5d 100644
+> --- a/tools/power/cpupower/utils/helpers/sysfs.c
+> +++ b/tools/power/cpupower/utils/helpers/sysfs.c
+> @@ -81,7 +81,7 @@ int sysfs_is_cpu_online(unsigned int cpu)
+>  	close(fd);
+>  
+>  	value = strtoull(linebuf, &endp, 0);
+> -	if (value > 1 || value < 0)
+> +	if (value > 1)
+>  		return -EINVAL;
+>  
+>  	return value;
+> 
 
-Apologies for the relative lateness of this pull request, however the
-commits fix some issues with the NFS read/write code updates in 3.16-rc1
-that can cause serious Oopsing when using small r/wsize. The delay was
-mainly due to extra testing to make sure that the fixes behave
-correctly.
-
-The following changes since commit 66b068604903849c5dee3842eb72564064c64c72=
-:
-
-  NFSv4: test SECINFO RPC_AUTH_GSS pseudoflavors for support (2014-06-24 18=
-:46:58 -0400)
-
-are available in the git repository at:
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.16-=
-3
-
-for you to fetch changes up to f563b89b182594f827b4100bd34f916339785a77:
-
-  NFS: Don't reset pg_moreio in __nfs_pageio_add_request (2014-07-13 15:18:=
-44 -0400)
-
-----------------------------------------------------------------
-NFS client fixes for Linux 3.16
-
-Highlights include;
-- Stable fix for an NFSv3 posix ACL regression
-- Multiple fixes for regressions to the NFS generic read/write code
-  - Fix page splitting bugs that come into play when a small rsize/wsize
-    read/write needs to be sent again (due to error conditions or page
-    redirty).
-  - Fix nfs_wb_page_cancel, which is called by the "invalidatepage" method
-- Fix 2 compile warnings about unused variables.
-- Fix a performance issue affecting unstable writes.
-
-----------------------------------------------------------------
-Christoph Hellwig (1):
-      nfs: only show Posix ACLs in listxattr if actually present
-
-Trond Myklebust (2):
-      NFS: Remove 2 unused variables
-      NFS: Don't reset pg_moreio in __nfs_pageio_add_request
-
-Weston Andros Adamson (5):
-      nfs: mark nfs_page reqs with flag for extra ref
-      nfs: nfs_page should take a ref on the head req
-      nfs: change find_request to find_head_request
-      nfs: handle multiple reqs in nfs_page_async_flush
-      nfs: handle multiple reqs in nfs_wb_page_cancel
-
- fs/nfs/direct.c   |   2 -
- fs/nfs/internal.h |   1 +
- fs/nfs/nfs3acl.c  |  43 +++++++
- fs/nfs/nfs3proc.c |   4 +-
- fs/nfs/pagelist.c |  20 +++-
- fs/nfs/write.c    | 335 +++++++++++++++++++++++++++++++++++++++++++++-----=
-----
- 6 files changed, 343 insertions(+), 62 deletions(-)
-
-
-
---=20
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
-
-
---=-Vc6MMz3m04tRvEOxcEvn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABAgAGBQJTys/mAAoJEGcL54qWCgDynYEQALk9/Qz7ZVLbw/Np65S7d1Ij
-mWWLImJVcbKP7ZJcUuGRtvgnZ1lMUMTXpyLWiyxpUtJpJAj5pVVHivsCS/rwf1rF
-Ng5ixIR9UE62CllJsX3BDDpq1BnEq0Vyvey/McIIxsoWecYT+dpexKIm4s+7SvRC
-ei8f5kX5e7yoXSZWfRv56f2NXY3KwfyaiS9fTZJsWyUXVCfLA8t/0X1Lika65ooh
-Zp5GoMnnVD/HakrAain8LrQuIIGxk0+BeOkxYgCNsrTd9Cs4h171n7SoI2rcdhX6
-H/U8VPApmjEVhisqU56sghbIpTbt8g+2SA22McLVQeeFBVurrI2yJc6aItadbpnC
-K2jEY1EYhS4smWEqITrn3aA65G5zV/Xa0KVDg5B/Zt+0gSryKVXwEbpjcbQFuaiZ
-RLTGmAjSbOMbbhWBqL3QR1tCKFj2ogBKuIrHFIseUhNubUk3IwpJ+f1ew4gynG3w
-g7HciiUGa6FTbh71fpH7QHpqR1iZsFZyWZtaknIv5rNxb1Zey9oWp1ZMZSqAYVRz
-2GXBiOZUXZS6FbbRDbc73fPP93s/H6Bx0heHB5VnkK+/ZpSNa6WmarL0tj7z1tP8
-WVHN+BiKyzqptnmztkRXclHM0L3FSyaxChrmFrloV9nQrqDsCLBY0aPMapwgHJmw
-vSLEXn35LHpMHTngt0zX
-=ndtc
------END PGP SIGNATURE-----
-
---=-Vc6MMz3m04tRvEOxcEvn--
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
