@@ -1,93 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaGSLpp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 07:45:45 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:55645 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbaGSLpo (ORCPT
+	id S1754983AbaGSLxZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 07:53:25 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:53291 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452AbaGSLxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 07:45:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140719101946.GA4319@electric-eye.fr.zoreil.com>
-References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>
-	<C562D0E12CBDE44E8A0CCAB77060096701283AD344@AVMB1.qlogic.org>
-	<049BCC6F-0A2E-421A-9873-0B7ED6FFB3AC@gmail.com>
-	<20140719101946.GA4319@electric-eye.fr.zoreil.com>
-Date: Sat, 19 Jul 2014 19:45:43 +0800
-Message-ID: <CABawtvP4+B_smOyi-=vt56KuUthzHF9L059PXP4ekXA7KPk_Dw@mail.gmail.com>
-Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in ethtool get_ethtool_stats()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Ethan Zhao <ethan.zhao@oracle.com>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 19 Jul 2014 07:53:23 -0400
+From: Sam Asadi <asadi.samuel@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sam Asadi <asadi.samuel@gmail.com>
+Subject: [PATCH 1/1] Staging: comedi: adl_paci9118: organized entry comments
+Date: Sat, 19 Jul 2014 14:53:03 +0300
+Message-Id: <1405770783-6515-1-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 6:19 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
-> Ethan Zhao <ethan.kernel@gmail.com> :
->> ?? 2014??7??19????????2:21??Rajesh Borundia <rajesh.borundia@qlogic.com> ??????
-> [...]
->> > I think ethtool stats are adapter specific. Driver does not maintain
->> > rx_dropped stats and we also don't get it from adapter.  I am not
->> > sure if ethtool stats should match ifconfig stats as ifconfig also
->> > adds net core stats to adapter stats.
->> I held the same point as yours before I read more drivers implementation
->> under Ethernet dir, in fact there is no specification/convention that
->> ethtool info is adapter specific. All information output by ethtool is
->> based on the information name itself, one fact we want this patch is
->> netxen defined 'rx dropped' field but output nothing.
->
-> It may be fine as a requirement of the day but it does not bode well
-> for the future as ethtool stats API won't get less messy.
- It is the fact.
->
-> I'd rather see ethtool stats provides one of those:
-> 1. hardware stats only
-  Sounds very clear, is it done clear, if so we need other tools ?
-  Then why net core increase dev->dropped like
+Introductory comments organized according to Linux's comment
+coding style.
 
-  atomic_long_inc(&skb->dev->rx_dropped);
+Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c |  109 +++++++++++++-------------
+ 1 file changed, 55 insertions(+), 54 deletions(-)
 
-  and mess some of the info to dev. just let ifconfig report it without detail ?
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index a715cd3..f916632 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -7,61 +7,62 @@
+  *
+  * Author: Michal Dobes <dobes@tesnet.cz>
+  *
+-*/
++ */
++
+ /*
+-Driver: adl_pci9118
+-Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
+-Author: Michal Dobes <dobes@tesnet.cz>
+-Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
+-  PCI-9118HR (pci9118hr)
+-Status: works
+-
+-This driver supports AI, AO, DI and DO subdevices.
+-AI subdevice supports cmd and insn interface,
+-other subdevices support only insn interface.
+-For AI:
+-- If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
+-- If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
+-- If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
+-- It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
+-  cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
+-- If return value of cmdtest is 5 then you've bad channel list
+-  (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
+-  ranges).
+-
+-There are some hardware limitations:
+-a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
+-   ended inputs.
+-b) DMA transfers must have the length aligned to two samples (32 bit),
+-   so there is some problems if cmd->chanlist_len is odd. This driver tries
+-   bypass this with adding one sample to the end of the every scan and discard
+-   it on output but this cann't be used if cmd->scan_begin_src=TRIG_FOLLOW
+-   and is used flag TRIG_WAKE_EOS, then driver switch to interrupt driven mode
+-   with interrupt after every sample.
+-c) If isn't used DMA then you can use only mode where
+-   cmd->scan_begin_src=TRIG_FOLLOW.
+-
+-Configuration options:
+-  [0] - PCI bus of device (optional)
+-  [1] - PCI slot of device (optional)
+-	If bus/slot is not specified, then first available PCI
+-	card will be used.
+-  [2] - 0= standard 8 DIFF/16 SE channels configuration
+-	n = external multiplexer connected, 1 <= n <= 256
+-  [3] - 0=autoselect DMA or EOC interrupts operation
+-	1 = disable DMA mode
+-	3 = disable DMA and INT, only insn interface will work
+-  [4] - sample&hold signal - card can generate signal for external S&H board
+-	0 = use SSHO(pin 45) signal is generated in onboard hardware S&H logic
+-	0 != use ADCHN7(pin 23) signal is generated from driver, number say how
+-		long delay is requested in ns and sign polarity of the hold
+-		(in this case external multiplexor can serve only 128 channels)
+-  [5] - 0=stop measure on all hardware errors
+-	2 | = ignore ADOR - A/D Overrun status
+-	8|=ignore Bover - A/D Burst Mode Overrun status
+-	256|=ignore nFull - A/D FIFO Full status
+-
+-*/
++ * Driver: adl_pci9118
++ * Description: Adlink PCI-9118DG, PCI-9118HG, PCI-9118HR
++ * Author: Michal Dobes <dobes@tesnet.cz>
++ * Devices: [ADLink] PCI-9118DG (pci9118dg), PCI-9118HG (pci9118hg),
++ * PCI-9118HR (pci9118hr)
++ * Status: works
++ *
++ * This driver supports AI, AO, DI and DO subdevices.
++ * AI subdevice supports cmd and insn interface,
++ * other subdevices support only insn interface.
++ * For AI:
++ * - If cmd->scan_begin_src=TRIG_EXT then trigger input is TGIN (pin 46).
++ * - If cmd->convert_src=TRIG_EXT then trigger input is EXTTRG (pin 44).
++ * - If cmd->start_src/stop_src=TRIG_EXT then trigger input is TGIN (pin 46).
++ * - It is not necessary to have cmd.scan_end_arg=cmd.chanlist_len but
++ * cmd.scan_end_arg modulo cmd.chanlist_len must by 0.
++ * - If return value of cmdtest is 5 then you've bad channel list
++ * (it isn't possible mixture S.E. and DIFF inputs or bipolar and unipolar
++ * ranges).
++ *
++ * There are some hardware limitations:
++ * a) You cann't use mixture of unipolar/bipoar ranges or differencial/single
++ *  ended inputs.
++ * b) DMA transfers must have the length aligned to two samples (32 bit),
++ *  so there is some problems if cmd->chanlist_len is odd. This driver tries
++ *  bypass this with adding one sample to the end of the every scan and discard
++ *  it on output but this cann't be used if cmd->scan_begin_src=TRIG_FOLLOW
++ *  and is used flag TRIG_WAKE_EOS, then driver switch to interrupt driven mode
++ *  with interrupt after every sample.
++ * c) If isn't used DMA then you can use only mode where
++ *  cmd->scan_begin_src=TRIG_FOLLOW.
++ *
++ * Configuration options:
++ * [0] - PCI bus of device (optional)
++ * [1] - PCI slot of device (optional)
++ *	 If bus/slot is not specified, then first available PCI
++ *	 card will be used.
++ * [2] - 0= standard 8 DIFF/16 SE channels configuration
++ *	 n = external multiplexer connected, 1 <= n <= 256
++ * [3] - 0=autoselect DMA or EOC interrupts operation
++ *	 1 = disable DMA mode
++ *	 3 = disable DMA and INT, only insn interface will work
++ * [4] - sample&hold signal - card can generate signal for external S&H board
++ *	 0 = use SSHO(pin 45) signal is generated in onboard hardware S&H logic
++ *	 0 != use ADCHN7(pin 23) signal is generated from driver, number say how
++ *		long delay is requested in ns and sign polarity of the hold
++ *		(in this case external multiplexor can serve only 128 channels)
++ * [5] - 0=stop measure on all hardware errors
++ *	 2 | = ignore ADOR - A/D Overrun status
++ *	 8|=ignore Bover - A/D Burst Mode Overrun status
++ *	 256|=ignore nFull - A/D FIFO Full status
++ *
++ */
+ 
+ /*
+  * FIXME
+-- 
+1.7.10.4
 
-> 2. driver dependent stats - anything you want - as long as the hardware
->    only part of the stats is clearly identified
-
-  I agree with this point, there is no other interface let the driver
-customizes the output of ethtool or ifconfig, ethtool is the only
-interface to export information we want that is driver / device
-related, even some of the information from net core where stack
-information output not covered.
-
- Regard to dropped packets, some packets are to be dropped in net core without
-error types reported. maybe it is why some drivers get rx dropped
-stats from net core to avoid losing some of them.
-
->
-> 2. needs works. 1. hurts any requirement where it would priviously had
-> been so easy to add a few lines of code in the driver and push the mess
-> straight from kernel to the end user application.
-
-  Maybe some guys think that is enough to mess them together while not
-identify the information from net core or driver. that is better than
-lose info /no info.
-
- My case is user could be confused when run 'ifconfig' and 'ethtool'
-to this netxen device. ifconfig reports packets dropped. but ethtool
-says zero. does that mean it is not issue of driver forever ?  who
-could tell where the packets are dropped, and for what ?
-
- So I would like the name of the data fields that ethtool output is be
-better defined.
- Instead of saying is not covered by ethtool.
-
-Thanks,
-Ethan
->
-> --
-> Ueimor
