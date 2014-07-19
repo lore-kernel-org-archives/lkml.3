@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756AbaGSTlv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 15:41:51 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:59989 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaGSTlt (ORCPT
+	id S1755925AbaGSTpl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 15:45:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57098 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205AbaGSTpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 15:41:49 -0400
-From: Riccardo Lucchese <riccardo.lucchese@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: oleg.drokin@intel.com, josh@joshtriplett.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Riccardo Lucchese <riccardo.lucchese@gmail.com>
-Subject: [PATCH 3/3] staging: lustre/lustre/lov: Add a space before open braces '{' in lov_request.c
-Date: Sat, 19 Jul 2014 21:41:41 +0200
-Message-Id: <1405798901-15936-1-git-send-email-riccardo.lucchese@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405798498-15754-1-git-send-email-riccardo.lucchese@gmail.com>
-References: <1405798498-15754-1-git-send-email-riccardo.lucchese@gmail.com>
+	Sat, 19 Jul 2014 15:45:40 -0400
+Date: Sat, 19 Jul 2014 21:45:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 07/10] nohz: Enforce timekeeping on CPU 0
+Message-ID: <20140719194525.GT9918@twins.programming.kicks-ass.net>
+References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
+ <1405730661-9355-8-git-send-email-fweisbec@gmail.com>
+ <alpine.LFD.2.11.1407191318320.3647@knanqh.ubzr>
+ <20140719183132.GK3935@laptop>
+ <alpine.LFD.2.11.1407191442100.3647@knanqh.ubzr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1407191442100.3647@knanqh.ubzr>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following checkpatch.pl issue in lov_request.c:
-ERROR: space required before the open brace '{'
+On Sat, Jul 19, 2014 at 02:46:56PM -0400, Nicolas Pitre wrote:
+> People think all sorts of things.  And it becomes very irritating when 
+> thoughtful assumptions get burned into ROM for example.  We should be 
+> able to do better in the kernel.
 
-Signed-off-by: Riccardo Lucchese <riccardo.lucchese@gmail.com>
----
- drivers/staging/lustre/lustre/lov/lov_request.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
-index d9344c7..57ee94d 100644
---- a/drivers/staging/lustre/lustre/lov/lov_request.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_request.c
-@@ -477,7 +477,7 @@ int lov_prep_match_set(struct obd_export *exp, struct obd_info *oinfo,
- 		GOTO(out_set, rc = -ENOMEM);
- 	lockh->cookie = set->set_lockh->llh_handle.h_cookie;
- 
--	for (i = 0; i < lsm->lsm_stripe_count; i++){
-+	for (i = 0; i < lsm->lsm_stripe_count; i++) {
- 		struct lov_oinfo *loi;
- 		struct lov_request *req;
- 		obd_off start, end;
-@@ -565,7 +565,7 @@ int lov_prep_cancel_set(struct obd_export *exp, struct obd_info *oinfo,
- 	}
- 	lockh->cookie = set->set_lockh->llh_handle.h_cookie;
- 
--	for (i = 0; i < lsm->lsm_stripe_count; i++){
-+	for (i = 0; i < lsm->lsm_stripe_count; i++) {
- 		struct lov_request *req;
- 		struct lustre_handle *lov_lockhp;
- 		struct lov_oinfo *loi = lsm->lsm_oinfo[i];
-@@ -733,7 +733,7 @@ int lov_prep_brw_set(struct obd_export *exp, struct obd_info *oinfo,
- 
- 	/* alloc and initialize lov request */
- 	shift = 0;
--	for (i = 0; i < oinfo->oi_md->lsm_stripe_count; i++){
-+	for (i = 0; i < oinfo->oi_md->lsm_stripe_count; i++) {
- 		struct lov_oinfo *loi = NULL;
- 		struct lov_request *req;
- 
--- 
-1.9.1
-
+Agreed. There used to be an x86 subarch where the boot cpu wasn't cpu0,
+that always gave a lot of 'joy' too :-)
