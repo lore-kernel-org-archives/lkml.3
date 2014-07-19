@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217AbaGSH5L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 03:57:11 -0400
-Received: from 8bytes.org ([81.169.241.247]:49139 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845AbaGSH5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 03:57:09 -0400
-Date: Sat, 19 Jul 2014 09:57:08 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH 1/6] PM / Hibernate: Create a Radix-Tree to store memory
- bitmap
-Message-ID: <20140719075707.GI30979@8bytes.org>
-References: <1405684643-30234-1-git-send-email-joro@8bytes.org>
- <1405684643-30234-2-git-send-email-joro@8bytes.org>
- <7231480.jWHmWTNGCG@vostro.rjw.lan>
+	id S1756799AbaGSIaU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 04:30:20 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35124 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182AbaGSIaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 04:30:17 -0400
+Date: Sat, 19 Jul 2014 14:00:10 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] mfd: core: Use devm_kzalloc
+Message-ID: <20140719083010.GA2882@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7231480.jWHmWTNGCG@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 02:00:39AM +0200, Rafael J. Wysocki wrote:
-> > +/*
-> > + *	alloc_rtree_node - Allocate a new node and add it to the radix
-> > + *			   tree.
-> 
-> Please make this a single line.
-> 
-> > +static int add_rtree_block(struct mem_zone_bm_rtree *zone, gfp_t gfp_mask,
-> > +			   int safe_needed, struct chain_allocator *ca)
-> > +{
-> > +	struct rtree_node *node, *block, **dst;
-> > +	unsigned int levels_needed, block_nr;
-> > +	int i;
-> > +
-> > +	block_nr	= zone->blocks;
-> 
-> This isn't proper kernel coding style.  Please use spaces as separators
-> before the "=" here and elsewhere.
+This patch introduces the use of devm_kzalloc instead of the
+corresponding unmanaged version and does away with the kfrees in the
+probe and remove functions. Also, a label is done away with.
 
-Thanks for your comments, will fix this and resend next week.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/mfd/tps6105x.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-
-	Joerg
+diff --git a/drivers/mfd/tps6105x.c b/drivers/mfd/tps6105x.c
+index b5dfa6e..5de95c2 100644
+--- a/drivers/mfd/tps6105x.c
++++ b/drivers/mfd/tps6105x.c
+@@ -141,7 +141,7 @@ static int tps6105x_probe(struct i2c_client *client,
+ 	int ret;
+ 	int i;
+ 
+-	tps6105x = kmalloc(sizeof(*tps6105x), GFP_KERNEL);
++	tps6105x = devm_kmalloc(&client->dev, sizeof(*tps6105x), GFP_KERNEL);
+ 	if (!tps6105x)
+ 		return -ENOMEM;
+ 
+@@ -154,7 +154,7 @@ static int tps6105x_probe(struct i2c_client *client,
+ 	ret = tps6105x_startup(tps6105x);
+ 	if (ret) {
+ 		dev_err(&client->dev, "chip initialization failed\n");
+-		goto fail;
++		return ret;
+ 	}
+ 
+ 	/* Remove warning texts when you implement new cell drivers */
+@@ -187,16 +187,8 @@ static int tps6105x_probe(struct i2c_client *client,
+ 		tps6105x_cells[i].pdata_size = sizeof(*tps6105x);
+ 	}
+ 
+-	ret = mfd_add_devices(&client->dev, 0, tps6105x_cells,
+-			      ARRAY_SIZE(tps6105x_cells), NULL, 0, NULL);
+-	if (ret)
+-		goto fail;
+-
+-	return 0;
+-
+-fail:
+-	kfree(tps6105x);
+-	return ret;
++	return mfd_add_devices(&client->dev, 0, tps6105x_cells,
++			       ARRAY_SIZE(tps6105x_cells), NULL, 0, NULL);
+ }
+ 
+ static int tps6105x_remove(struct i2c_client *client)
+@@ -210,7 +202,6 @@ static int tps6105x_remove(struct i2c_client *client)
+ 		TPS6105X_REG0_MODE_MASK,
+ 		TPS6105X_MODE_SHUTDOWN << TPS6105X_REG0_MODE_SHIFT);
+ 
+-	kfree(tps6105x);
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
