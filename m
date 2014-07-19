@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174AbaGSNQn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 09:16:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:11706 "EHLO
+	id S933031AbaGSNQl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:16:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:11686 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755367AbaGSNQO (ORCPT
+	by vger.kernel.org with ESMTP id S1755369AbaGSNQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 09:16:14 -0400
-Message-Id: <20140719131613.422315101@goodmis.org>
+	Sat, 19 Jul 2014 09:16:15 -0400
+Message-Id: <20140719131611.384448949@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Sat, 19 Jul 2014 09:15:47 -0400
+Date: Sat, 19 Jul 2014 09:15:37 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [for-next][PATCH 23/32] microblaze: ftrace: Remove check of obsolete variable
- function_trace_stop
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 13/32] ftrace: Remove ftrace_start/stop()
 References: <20140719131524.009152325@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0023-microblaze-ftrace-Remove-check-of-obsolete-variable-.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0013-ftrace-Remove-ftrace_start-stop.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Nothing sets function_trace_stop to disable function tracing anymore.
-Remove the check for it in the arch code.
+There are no more kernel users of ftrace_stop() and ftrace_start().
+Remove them.
 
-Link: http://lkml.kernel.org/r/53C8D82B.4030204@monstr.eu
-
-Tested-by: Michal Simek <monstr@monstr.eu>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/microblaze/Kconfig         | 1 -
- arch/microblaze/kernel/mcount.S | 5 -----
- 2 files changed, 6 deletions(-)
+ include/linux/ftrace.h | 28 ----------------------------
+ 1 file changed, 28 deletions(-)
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index 9ae08541e30d..40e1c1dd0e24 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -22,7 +22,6 @@ config MICROBLAZE
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FTRACE_MCOUNT_RECORD
- 	select HAVE_FUNCTION_GRAPH_TRACER
--	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_MEMBLOCK
- 	select HAVE_MEMBLOCK_NODE_MAP
-diff --git a/arch/microblaze/kernel/mcount.S b/arch/microblaze/kernel/mcount.S
-index fc1e1322ce4c..fed9da5de8c4 100644
---- a/arch/microblaze/kernel/mcount.S
-+++ b/arch/microblaze/kernel/mcount.S
-@@ -91,11 +91,6 @@ ENTRY(ftrace_caller)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 	SAVE_REGS
- 	swi	r15, r1, 0;
--	/* MS: HAVE_FUNCTION_TRACE_MCOUNT_TEST begin of checking */
--	lwi	r5, r0, function_trace_stop;
--	bneid	r5, end;
--	nop;
--	/* MS: HAVE_FUNCTION_TRACE_MCOUNT_TEST end of checking */
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- #ifndef CONFIG_DYNAMIC_FTRACE
- 	lwi	r5, r0, ftrace_graph_return;
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 18fb2c4a3f7f..b7333794554f 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -143,32 +143,6 @@ enum ftrace_tracing_type_t {
+ /* Current tracing type, default is FTRACE_TYPE_ENTER */
+ extern enum ftrace_tracing_type_t ftrace_tracing_type;
+ 
+-/**
+- * ftrace_stop - stop function tracer.
+- *
+- * A quick way to stop the function tracer. Note this an on off switch,
+- * it is not something that is recursive like preempt_disable.
+- * This does not disable the calling of mcount, it only stops the
+- * calling of functions from mcount.
+- */
+-static inline void ftrace_stop(void)
+-{
+-	function_trace_stop = 1;
+-}
+-
+-/**
+- * ftrace_start - start the function tracer.
+- *
+- * This function is the inverse of ftrace_stop. This does not enable
+- * the function tracing if the function tracer is disabled. This only
+- * sets the function tracer flag to continue calling the functions
+- * from mcount.
+- */
+-static inline void ftrace_start(void)
+-{
+-	function_trace_stop = 0;
+-}
+-
+ /*
+  * The ftrace_ops must be a static and should also
+  * be read_mostly.  These functions do modify read_mostly variables
+@@ -245,8 +219,6 @@ static inline int ftrace_nr_registered_ops(void)
+ }
+ static inline void clear_ftrace_function(void) { }
+ static inline void ftrace_kill(void) { }
+-static inline void ftrace_stop(void) { }
+-static inline void ftrace_start(void) { }
+ #endif /* CONFIG_FUNCTION_TRACER */
+ 
+ #ifdef CONFIG_STACK_TRACER
 -- 
 2.0.1
 
