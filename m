@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759547AbaGSBfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 21:35:10 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:47935 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378AbaGSBfI (ORCPT
+	id S1758259AbaGSCMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 22:12:32 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:39765 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581AbaGSCMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 21:35:08 -0400
-From: =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] kbuild: add support to generate LLVM bitcode files
-Date: Fri, 18 Jul 2014 22:34:37 -0300
-Message-Id: <1405733677-16650-1-git-send-email-viniciustinti@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 18 Jul 2014 22:12:30 -0400
 MIME-Version: 1.0
+In-Reply-To: <53C9ADDC.7060506@infradead.org>
+References: <CAPDOMVjrRS1zSDwQ0KVL6-m774_gAwM8Ov4mehDvUZXjtmVrOA@mail.gmail.com>
+	<53C96313.7060608@infradead.org>
+	<CAPDOMVhUd+cF8PWmWJOEsuCdDuON5_KpO-pZA-aT4n351FgOWg@mail.gmail.com>
+	<53C9ADDC.7060506@infradead.org>
+Date: Fri, 18 Jul 2014 22:12:29 -0400
+Message-ID: <CAPDOMVj0eDYBrJEq5bEaw+0wNkY2NcxximMS-NTn_6EgyF-X7Q@mail.gmail.com>
+Subject: Re: Build Errors when building usb directory
+From: Nick Krause <xerofoify@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows kbuild to generate LLVM bitcode files with the .ll extension when
-building with Clang.
+On Fri, Jul 18, 2014 at 7:29 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 07/18/2014 12:59 PM, Nick Krause wrote:
+>> On Fri, Jul 18, 2014 at 2:10 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>> On 07/18/2014 10:45 AM, Nick Krause wrote:
+>>>> Hey Greg and others,
+>>>> When I built the usb directory today to check a patch I am also
+>>>> sending to. I seem to hitting
+>>>> a few compiler errors and a lot of warnings.  I am going to attach a
+>>>> file of my log of this build.
+>>>> Cheers Nick
+>>>>
+>>>
+>>> Hi,
+>>>
+>>> What command(s) did you use to build the usb directory?
+>>>
+>>> thanks,
+>>> --
+>>> ~Randy
+>> I used make M=drivers/usb to build it.
+>> Cheers Nick
+>
+>
+> I'm not seeing any of these warnings, but I am testing 3.16-rc5.
+>
+> Nick, are you using a current git tree?  If so, which one?
+> You should always specify what kernel it is that you are testing.
+>
+>
+> --
+> ~Randy
 
-  # c code
-  CC=clang make kernel/pid.ll
-
-  # asm code
-  CC=clang make arch/arm/kernel/calls.ll
-
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- Makefile               |  7 +++++++
- scripts/Makefile.build | 18 ++++++++++++++++++
- 2 files changed, 25 insertions(+)
-
-diff --git a/Makefile b/Makefile
-index f3c543d..4eb0d14 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1484,6 +1484,13 @@ endif
- %.symtypes: %.c prepare scripts FORCE
- 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
- 
-+ifeq ($(COMPILER),clang)
-+%.ll: %.c prepare scripts FORCE
-+	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-+%.ll: %.S prepare scripts FORCE
-+	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-+endif
-+
- # Modules
- /: prepare scripts FORCE
- 	$(cmd_crmodverdir)
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index bf3e677..9ea19d6 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -174,6 +174,14 @@ cmd_cc_symtypes_c =                                                         \
- $(obj)/%.symtypes : $(src)/%.c FORCE
- 	$(call cmd,cc_symtypes_c)
- 
-+ifeq ($(COMPILER),clang)
-+quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
-+cmd_cc_ll_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -emit-llvm -S -o $@ $<
-+
-+$(obj)/%.ll: $(src)/%.c FORCE
-+	$(call if_changed_dep,cc_ll_c)
-+endif
-+
- # C (.c) files
- # The C file is compiled and updated dependency information is generated.
- # (See cmd_cc_o_c + relevant part of rule_cc_o_c)
-@@ -315,6 +323,16 @@ quiet_cmd_asn1_compiler = ASN.1   $@
- $(obj)/%-asn1.c $(obj)/%-asn1.h: $(src)/%.asn1 $(objtree)/scripts/asn1_compiler
- 	$(call cmd,asn1_compiler)
- 
-+# LLVM bitcode
-+# ---------------------------------------------------------------------------
-+ifeq ($(COMPILER),clang)
-+quiet_cmd_as_ll_S = CPP $(quiet_modtag) $@
-+cmd_as_ll_S       = $(CPP) $(a_flags)   -o $@ $<
-+
-+$(obj)/%.ll: $(src)/%.S FORCE
-+	$(call if_changed_dep,as_ll_S)
-+endif
-+
- # Build the compiled-in targets
- # ---------------------------------------------------------------------------
- 
--- 
-2.0.1
-
+This is the lastest commit idea on my
+tree,f83971912231fe5390d2357442b6c25bb8076d9b.
+Cheers Nick
