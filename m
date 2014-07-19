@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966026AbaGSNRN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 09:17:13 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:11686 "EHLO
+	id S966000AbaGSNRL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:17:11 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:11706 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755556AbaGSNQR (ORCPT
+	by vger.kernel.org with ESMTP id S1755532AbaGSNQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 19 Jul 2014 09:16:17 -0400
-Message-Id: <20140719131614.872713789@goodmis.org>
+Message-Id: <20140719131615.036510835@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Sat, 19 Jul 2014 09:15:55 -0400
+Date: Sat, 19 Jul 2014 09:15:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Wang Nan <wangnan0@huawei.com>
-Subject: [for-next][PATCH 31/32] ftrace: Do not copy old hash when resetting
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [for-next][PATCH 32/32] tracing: Convert local function_graph functions to static
 References: <20140719131524.009152325@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0031-ftrace-Do-not-copy-old-hash-when-resetting.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0032-tracing-Convert-local-function_graph-functions-to-st.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Nan <wangnan0@huawei.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Do not waste time copying the old hash if the hash is going to be
-reset. Just allocate a new hash and free the old one, as that is
-the same result as copying te old one and then resetting it.
+Local functions should be static.
 
-Link: http://lkml.kernel.org/p/1405384820-48837-1-git-send-email-wangnan0@huawei.com
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-[ SDR: Removed unused ftrace_filter_reset() function ]
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ kernel/trace/trace_functions_graph.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4c61f28a08e0..762806026561 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2949,13 +2949,6 @@ ftrace_enabled_open(struct inode *inode, struct file *file)
- 	return iter ? 0 : -ENOMEM;
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 74d98820497c..f0a0c982cde3 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -353,7 +353,7 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
+ 	return ret;
  }
  
--static void ftrace_filter_reset(struct ftrace_hash *hash)
--{
--	mutex_lock(&ftrace_lock);
--	ftrace_hash_clear(hash);
--	mutex_unlock(&ftrace_lock);
--}
--
- /**
-  * ftrace_regex_open - initialize function tracer filter files
-  * @ops: The ftrace_ops that hold the hash filters
-@@ -3720,14 +3713,16 @@ ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
- 	else
- 		orig_hash = &ops->notrace_hash;
+-int trace_graph_thresh_entry(struct ftrace_graph_ent *trace)
++static int trace_graph_thresh_entry(struct ftrace_graph_ent *trace)
+ {
+ 	if (tracing_thresh)
+ 		return 1;
+@@ -442,7 +442,7 @@ void set_graph_array(struct trace_array *tr)
+ 	smp_mb();
+ }
  
--	hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
-+	if (reset)
-+		hash = alloc_ftrace_hash(FTRACE_HASH_DEFAULT_BITS);
-+	else
-+		hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
-+
- 	if (!hash) {
- 		ret = -ENOMEM;
- 		goto out_regex_unlock;
- 	}
+-void trace_graph_thresh_return(struct ftrace_graph_ret *trace)
++static void trace_graph_thresh_return(struct ftrace_graph_ret *trace)
+ {
+ 	if (tracing_thresh &&
+ 	    (trace->rettime - trace->calltime < tracing_thresh))
+@@ -475,7 +475,7 @@ static void graph_trace_reset(struct trace_array *tr)
+ 	unregister_ftrace_graph();
+ }
  
--	if (reset)
--		ftrace_filter_reset(hash);
- 	if (buf && !ftrace_match_records(hash, buf, len)) {
- 		ret = -EINVAL;
- 		goto out_regex_unlock;
+-int graph_trace_update_thresh(struct trace_array *tr)
++static int graph_trace_update_thresh(struct trace_array *tr)
+ {
+ 	graph_trace_reset(tr);
+ 	return graph_trace_init(tr);
+@@ -1435,7 +1435,7 @@ static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
+ 	seq_printf(s, "               |   |   |   |\n");
+ }
+ 
+-void print_graph_headers(struct seq_file *s)
++static void print_graph_headers(struct seq_file *s)
+ {
+ 	print_graph_headers_flags(s, tracer_flags.val);
+ }
 -- 
 2.0.1
 
