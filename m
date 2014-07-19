@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741AbaGSFKL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 01:10:11 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:59638 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaGSFKK (ORCPT
+	id S1752079AbaGSFU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 01:20:59 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48267 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750835AbaGSFU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 01:10:10 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: ralf@linux-mips.org
-Cc: paul.burton@imgtec.com, Leonid.Yegoshin@imgtec.com,
-        markos.chandras@imgtec.com, Steven.Hill@imgtec.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mips: Remove uneeded line in cmp_smp_finish
-Date: Sat, 19 Jul 2014 01:10:04 -0400
-Message-Id: <1405746604-7737-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 19 Jul 2014 01:20:58 -0400
+Message-ID: <1405747256.605.36.camel@jarvis.lan>
+Subject: Re: [PATCH] parisc: Remove FIXME comment
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: deller@gmx.de, tiwai@suse.de, Jiri Kosina <jkosina@suse.cz>,
+        Joe Perches <joe@perches.com>, dave.anglin@bell.net,
+        linux-parisc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jul 2014 22:20:56 -0700
+In-Reply-To: <CAPDOMVjScF=7ES7NU=R6sGOmp7QycKX+uMXL-w+1rNEak4G7Dg@mail.gmail.com>
+References: <1405715823-17492-1-git-send-email-xerofoify@gmail.com>
+	 <1405717414.30262.12.camel@dabdike.int.hansenpartnership.com>
+	 <CAPDOMVjScF=7ES7NU=R6sGOmp7QycKX+uMXL-w+1rNEak4G7Dg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a unneeded line from this file as stated by the
-fix me in this file.
+On Fri, 2014-07-18 at 22:25 -0400, Nick Krause wrote:
+> On Fri, Jul 18, 2014 at 5:03 PM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> > On Fri, 2014-07-18 at 16:37 -0400, Nicholas Krause wrote:
+> >> The comment for size of frame not being needed is incorrect , the
+> >> function called needs this parameter.
+> >
+> > Actually, that's not correct.  The point of the FIXME is that fram_size
+> > is only used in a debug print and could be eliminated since the
+> > internals of the function excluding the debugging statements don't use
+> > it.
+> >
+> > James
+> >
+> >
+> 
+> So I need to need a patch removing the parameter from the  function
+> and this part of the code?
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
----
- arch/mips/kernel/smp-cmp.c | 2 --
- 1 file changed, 2 deletions(-)
+Well, no, I'm not sure there's any action to take.  The FIXME reminds us
+that there's no actual use of the frame size in the function body except
+for the debugging prints.  The parameter could be removed if everyone
+who debugs the kernel agrees either to remove the debug code or remove
+the frame pointer from the prints, but it's probably not worth bothering
+about, which is why it's still there.
 
-diff --git a/arch/mips/kernel/smp-cmp.c b/arch/mips/kernel/smp-cmp.c
-index fc8a515..61bfa20 100644
---- a/arch/mips/kernel/smp-cmp.c
-+++ b/arch/mips/kernel/smp-cmp.c
-@@ -60,8 +60,6 @@ static void cmp_smp_finish(void)
- {
- 	pr_debug("SMPCMP: CPU%d: %s\n", smp_processor_id(), __func__);
- 
--	/* CDFIXME: remove this? */
--	write_c0_compare(read_c0_count() + (8 * mips_hpt_frequency / HZ));
- 
- #ifdef CONFIG_MIPS_MT_FPAFF
- 	/* If we have an FPU, enroll ourselves in the FPU-full mask */
--- 
-1.9.1
+James
+
 
