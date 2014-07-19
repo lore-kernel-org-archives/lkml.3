@@ -1,29 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742AbaGSWrj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 18:47:39 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:60667 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaGSWri (ORCPT
+	id S1753773AbaGSWyl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 18:54:41 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:38965 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaGSWyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 18:47:38 -0400
+	Sat, 19 Jul 2014 18:54:40 -0400
 MIME-Version: 1.0
-Date: Sat, 19 Jul 2014 18:47:37 -0400
-Message-ID: <CAPDOMVibN_jYoxHyaE1sRXj6garOmKvFoMXGV62B4FONTgJGMQ@mail.gmail.com>
-Subject: bios32.c: Fix me in pci_fixup_it8152
+In-Reply-To: <CAPDOMVhiHNBB_j6hEH6LMDvgEp+7-of3xEOeK6Y-QZuU3Xkt5w@mail.gmail.com>
+References: <CAPDOMVhiHNBB_j6hEH6LMDvgEp+7-of3xEOeK6Y-QZuU3Xkt5w@mail.gmail.com>
+Date: Sat, 19 Jul 2014 18:54:39 -0400
+Message-ID: <CAPDOMVgo9nvB0g+C49-iJMRLUN_Ho60Q-7qB2G4O0CgOxpdjNg@mail.gmail.com>
+Subject: Re: Intel Graphics Drivers
 From: Nick Krause <xerofoify@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: bhelgaas@google.com, wangyijing@huawei.com, thierry.reding@gmail.com,
-        thomas.petazzoni@free-electrons.com, m-karicheri2@ti.com,
-        yinghai@kernel.org, linux-arm-kernel@lists.infradead.org,
+To: daniel.vetter@ffwll.ch
+Cc: jani.nikula@linux.intel.com, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Russell and others,
-Before I clean this fix me up I wanted to known how to define the values
-as stated in the fix me in this function or if this is invalid as of the latest
-kernel trees.
+On Sat, Jul 19, 2014 at 6:32 PM, Nick Krause <xerofoify@gmail.com> wrote:
+ Hey Daniel and others ,
+ If I am correct after asking around on the mailing list then  the
+windows  Intel graphics drivers are faster then their Linux
+counterparts.
+ In addition , I  am wondering if we can improve this and try to
+remove regressions in this area of graphics  support as this seems to
+be
+ the main issue and perhaps the hardware is hard to come by outside of
+Intel or the board manufacturers as we seem to have no hardware
+ for testing as I asked before . I don't have the hardware but if
+people help do the hardware testing  and maybe a bit of advice and
+guidance
+ as I am new to the graphics stack in the kernel  I can help out  :).
+If not that's Ok too just thought it may be of help.
 Cheers Nick
+P.S. Sorry about first email it wasn't edited. :(
