@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731AbaGSAog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 20:44:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58623 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaGSAo3 (ORCPT
+	id S932203AbaGSAov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 20:44:51 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:65389 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758111AbaGSAok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 20:44:29 -0400
+	Fri, 18 Jul 2014 20:44:40 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 01/10] irq_work: Introduce void irq work
-Date: Sat, 19 Jul 2014 02:44:12 +0200
-Message-Id: <1405730661-9355-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/10] nohz: Fetch timekeeping max deferment only for timekeeper
+Date: Sat, 19 Jul 2014 02:44:19 +0200
+Message-Id: <1405730661-9355-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
 References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
@@ -25,19 +25,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Being able to trigger an empty IPI appears to be useless in the first
-place. Yet it is expected to be very useful for callers who just need
-to execute irq_enter() or irq_exit() to a remote target.
+We fetch it unconditionally from the tick stop code whereas only
+the timekeeper, or the CPU that carried that duty last, needs it.
 
-More precisely this is going to be useful for the nohz subsystem which
-often needs a remote CPU to reschedule its tick when some state changed
-and require periodicity for any reason. Similar cases have been handled
-with random IPIs until now. But they surely bring unwanted overhead
-all along since they are all dedicated for specific tasks.
+Fetching the timekeeping max deferment should be lightweight but it
+still involves a few read side barriers and a seqcount that may well
+be cache cold for non-timekeepers.
 
-Triggering an irq work/smp_call_function IPI should be enough to solve
-that. If competing and spurious IPIs become a problem, we can still
-optimize that later.
+So lets spare it when possible by inverting the way we handle timekeeper
+deferment state machine.
 
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
@@ -47,54 +43,91 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/irq_work.h |  1 +
- kernel/irq_work.c        | 21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ kernel/time/tick-sched.c | 57 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index bf9422c..b2ad065 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -36,6 +36,7 @@ bool irq_work_queue(struct irq_work *work);
- 
- #ifdef CONFIG_SMP
- bool irq_work_queue_on(struct irq_work *work, int cpu);
-+void irq_work_void_on(int cpu);
- #endif
- 
- void irq_work_run(void);
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 4b0a890..36b7fb2 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -81,6 +81,27 @@ bool irq_work_queue_on(struct irq_work *work, int cpu)
- 	return true;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 2ea2143..bcba79d 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -529,6 +529,36 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
  }
- EXPORT_SYMBOL_GPL(irq_work_queue_on);
-+
-+/**
-+ * irq_work_void_on(): Run a void IRQ on the target
-+ * @cpu: The cpu to run the IRQ on
-+ *
-+ * Run a void IRQ for its own sake on the target. It's generally
-+ * useful for callers which want to run irq_enter() or irq_exit()
-+ * on a remote CPU.
-+ */
-+void irq_work_void_on(int cpu)
-+{
-+	/*
-+	 * NOTE: we could optimize that and spare some IPIs
-+	 * after checking that raised_list isn't empty before raising.
-+	 * This can't be done properly without cmpxchg() though so
-+	 * it may make things worse after all. But lets leave that
-+	 * possibility open in case people report such issue in the
-+	 * future.
-+	 */
-+	arch_send_call_function_single_ipi(cpu);
-+}
- #endif
+ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
  
- /* Enqueue the irq work @work on the current CPU */
++/*
++ * If this cpu is the one which updates jiffies, then
++ * give up the assignment and let it be taken by the
++ * cpu which runs the tick timer next, which might be
++ * this cpu as well. If we don't drop this here the
++ * jiffies might be stale and do_timer() never
++ * invoked. Keep track of the fact that it was the one
++ * which had the do_timer() duty last. If this cpu is
++ * the one which had the do_timer() duty last, we
++ * limit the sleep time to the timekeeping max deferement
++ * value. Otherwise we can sleep as long as we want.
++ */
++static u64 timekeeping_deferment(struct tick_sched *ts, int cpu)
++{
++	u64 time_delta = KTIME_MAX;
++
++	if (tick_do_timer_cpu == cpu) {
++		time_delta = timekeeping_max_deferment();
++		tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++		ts->do_timer_last = 1;
++	} else if (ts->do_timer_last) {
++		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
++			time_delta = timekeeping_max_deferment();
++		else
++			ts->do_timer_last = 0;
++	}
++
++	return time_delta;
++}
++
+ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 					 ktime_t now, int cpu)
+ {
+@@ -536,9 +566,6 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 	ktime_t last_update, expires, ret = { .tv64 = 0 };
+ 	unsigned long rcu_delta_jiffies;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+-	u64 time_delta;
+-
+-	time_delta = timekeeping_max_deferment();
+ 
+ 	/* Read jiffies and the time when jiffies were updated last */
+ 	do {
+@@ -570,29 +597,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 
+ 	/* Schedule the tick, if we are at least one jiffie off */
+ 	if ((long)delta_jiffies >= 1) {
+-
+-		/*
+-		 * If this cpu is the one which updates jiffies, then
+-		 * give up the assignment and let it be taken by the
+-		 * cpu which runs the tick timer next, which might be
+-		 * this cpu as well. If we don't drop this here the
+-		 * jiffies might be stale and do_timer() never
+-		 * invoked. Keep track of the fact that it was the one
+-		 * which had the do_timer() duty last. If this cpu is
+-		 * the one which had the do_timer() duty last, we
+-		 * limit the sleep time to the timekeeping
+-		 * max_deferement value which we retrieved
+-		 * above. Otherwise we can sleep as long as we want.
+-		 */
+-		if (cpu == tick_do_timer_cpu) {
+-			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+-			ts->do_timer_last = 1;
+-		} else if (tick_do_timer_cpu != TICK_DO_TIMER_NONE) {
+-			time_delta = KTIME_MAX;
+-			ts->do_timer_last = 0;
+-		} else if (!ts->do_timer_last) {
+-			time_delta = KTIME_MAX;
+-		}
++		u64 time_delta = timekeeping_deferment(ts, cpu);
+ 
+ #ifdef CONFIG_NO_HZ_FULL
+ 		if (!ts->inidle) {
 -- 
 1.8.3.1
 
