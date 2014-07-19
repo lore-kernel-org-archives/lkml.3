@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123AbaGSIz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 04:55:26 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44856 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756350AbaGSIzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 04:55:23 -0400
-Date: Sat, 19 Jul 2014 02:16:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kees Cook <keescook@chromium.org>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>
-Subject: Re: [PULL] seccomp update (3.17)
-Message-ID: <20140719061658.GK18775@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kees Cook <keescook@chromium.org>, James Morris <jmorris@namei.org>,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Andy Lutomirski <luto@amacapital.net>,
-	Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-	Julien Tinnes <jln@chromium.org>,
-	David Drysdale <drysdale@google.com>
-References: <20140718191908.GA20534@www.outflux.net>
+	id S1759586AbaGSJCw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 05:02:52 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:33776 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404AbaGSJCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 05:02:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718191908.GA20534@www.outflux.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20140708073712.GC25880@mwanda>
+References: <CANeU7Q=a82YmUE49uZ1sOxZn0KGLuktSXuj7YsmUb=wXQEpPXA@mail.gmail.com>
+	<20140708073712.GC25880@mwanda>
+Date: Sat, 19 Jul 2014 02:02:49 -0700
+X-Google-Sender-Auth: LIQ1q4gYsMj16DucL1LV3W9kV2c
+Message-ID: <CANeU7Q=YfKEi8WBhNoUQOXpG_6jV1KMUsq=N-rVo1maaNERyAA@mail.gmail.com>
+Subject: Re: [PATCH] sparse: Add CLOG option for saving warning
+From: Christopher Li <sparse@chrisli.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 12:19:08PM -0700, Kees Cook wrote:
-> Hi James,
-> 
-> Please pull these seccomp changes for 3.17.
-> 
-> (And if I should base off something other than security-next, please
-> let me know. Or if there are any things I should be doing differently
-> with this tree.)
+On Tue, Jul 8, 2014 at 12:37 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> My kernel tree is full of drivers/foo.c.smatch and
+> drivers/foo.c.smatch-info files...
+>
+> It would be nice to add it to .gitignore as well.
 
-One note; there is a (interim) syscall number collision with the new
-getrandom(2) system call.  I'm sure Linus will be able to handle it,
-and fix it up, but I just wanted to give a heads up that depending on
-which pull request hits mainline first, the syscall number for either
-the new seccomp(2) or getrandom(2) may end up changing.
+Actually, ".*" is already in the .gitignore, there for the sparse log files
+are covered.
 
-I've been warning people not to try to use getrandom(2) or check
-anything into LibreSSL, et. al., until the patch is finalized and in
-Linus's tree, but if you have userspace users already using the
-syscall assignments in this patch series, please let me know and I can
-try to make adjustments on my side.
-
-Cheers,
-
-    		      		       	   - Ted
+Chris
