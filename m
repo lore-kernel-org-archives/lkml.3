@@ -1,281 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761402AbaGSM77 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 08:59:59 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:46176 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707AbaGSM76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 08:59:58 -0400
-Date: Sat, 19 Jul 2014 14:59:37 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] asm-generic/io.h: reorder funtions to form logical groups
-Message-ID: <20140719125937.GA18566@ravnborg.org>
-References: <1405508484-18303-1-git-send-email-thierry.reding@gmail.com>
- <20140718205953.GA21964@ravnborg.org>
+	id S1755023AbaGSNGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:06:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43531 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680AbaGSNGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 09:06:07 -0400
+Date: Sat, 19 Jul 2014 15:06:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] x86, TSC: Add a software TSC offset
+Message-ID: <20140719130602.GA5101@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140718205953.GA21964@ravnborg.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 929c64c1aaf378b767e0ed89826b6bb12449df15 Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Sat, 19 Jul 2014 14:47:43 +0200
-Subject: [PATCH] asm-generic/io.h: reorder funtions to form logical groups
+From: Borislav Petkov <bp@suse.de>
 
-Reoder the functions so the various functions are grouped
-according to how they access memoy.
-For example __raw_{read,write}* are now all grouped.
+There are machines which do have stable and always-running TSCs but the
+last get started at different points in time by the platform, causing
+the TSCs to have a small constant diff.
 
-The benefit of this grouping is that one can easier find all
-IO accessors of one type.
-To do so a few more #ifdef CONFIG_64BIT had to be used.
+It has been tried a couple of times to resync those during that
+sync check but the procedure is error prone and flaky, and not 100%
+successful.
 
-Add a small boiler plate comment for some of the groups to
-better let them stand out.
+So, instead of doing that, let's not touch the TSCs at all but save a
+per-CPU TSC offset which we add to the TSC value we've read from the
+Time-Stamp Counter. The hope is thus to still salvage the TSC on those
+machines.
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+For that to work, we need to populate the TSC AUX MSR with the core ID
+prior to doing the TSC sync check so that RDTSCP can give us the correct
+core number and we can add the offset atomically. And yes, we need a
+X86_FEATURE_RDTSCP CPU for the whole deal to work. Older ones simply
+lose.
+
+See also comment above tsc_sync.c::compute_tsc_offset() for more details.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
+ arch/x86/include/asm/cpufeature.h |   1 +
+ arch/x86/include/asm/tsc.h        |  19 +++++++
+ arch/x86/kernel/cpu/common.c      |   2 +
+ arch/x86/kernel/tsc_sync.c        | 117 ++++++++++++++++++++++++++++++++++----
+ 4 files changed, 129 insertions(+), 10 deletions(-)
 
-Hi Thierry.
-
-This is my attempt to bring some order into io.h
-with respect to the order the functions are defined in.
-
-In a follow-up mail I also said we should delete the _p variants
-of some methods but I then learned they are for slow IO access.
-So these I have left as is.
-
-And introducing static inline for all functions that are pure macro
-substitution is also left out for now.
-
-Please consider if you will take this as a follow-on patch.
-
-	Sam
-
- include/asm-generic/io.h | 126 +++++++++++++++++++++++++++--------------------
- 1 file changed, 73 insertions(+), 53 deletions(-)
-
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index b2ea16b..5c84db4 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -24,10 +24,10 @@
- #define mmiowb() do {} while (0)
- #endif
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index bb9b258d60e7..8c27e55372fb 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -244,6 +244,7 @@
+ #define X86_BUG_11AP		X86_BUG(5) /* Bad local APIC aka 11AP */
+ #define X86_BUG_FXSAVE_LEAK	X86_BUG(6) /* FXSAVE leaks FOP/FIP/FOP */
+ #define X86_BUG_CLFLUSH_MONITOR	X86_BUG(7) /* AAI65, CLFLUSH required before MONITOR */
++#define X86_BUG_TSC_OFFSET	X86_BUG(8) /* CPU has skewed but stable TSCs */
  
--/*****************************************************************************/
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 94605c0e9cee..a91f439738f9 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -9,6 +9,9 @@
+ #define NS_SCALE	10 /* 2^10, carefully chosen */
+ #define US_SCALE	32 /* 2^32, arbitralrily chosen */
+ 
++
++DECLARE_PER_CPU(long long, tsc_offset);
++
  /*
-- * readX/writeX() are used to access memory mapped devices. On some
-- * architectures the memory mapped IO stuff needs to be accessed
-+ * raw_{read,write}{b,w,l,q} access memory in native endian.
-+ *
-+ * On some architectures the memory mapped IO stuff needs to be accessed
-  * differently. On the simple architectures, we just read/write the
-  * memory location directly.
+  * Standard way to access the cycle counter.
   */
-@@ -55,25 +55,16 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
+@@ -32,6 +35,22 @@ static inline cycles_t get_cycles(void)
+ 	return ret;
  }
- #endif
  
--#ifndef readb
--#define readb __raw_readb
--#endif
--
--#ifndef readw
--#define readw readw
--static inline u16 readw(const volatile void __iomem *addr)
-+#ifdef CONFIG_64BIT
-+#ifndef __raw_readq
-+#define __raw_readq __raw_readq
-+static inline u64 __raw_readq(const volatile void __iomem *addr)
- {
--	return __le16_to_cpu(__raw_readw(addr));
-+	return *(const volatile u64 __force *) addr;
- }
- #endif
-+#endif /* CONFIG_64BIT */
- 
--#ifndef readl
--#define readl readl
--static inline u32 readl(const volatile void __iomem *addr)
--{
--	return __le32_to_cpu(__raw_readl(addr));
--}
--#endif
- 
- #ifndef __raw_writeb
- #define __raw_writeb __raw_writeb
-@@ -99,27 +90,42 @@ static inline void __raw_writel(u32 b, volatile void __iomem *addr)
- }
- #endif
- 
--#ifndef writeb
--#define writeb __raw_writeb
-+#ifdef CONFIG_64BIT
-+#ifndef __raw_writeq
-+#define __raw_writeq __raw_writeq
-+static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
++static inline cycles_t get_cycles_aux(void)
 +{
-+	*(volatile u64 __force *) addr = b;
++	unsigned long long ret = 0;
++	int cpu;
++
++#ifndef CONFIG_X86_TSC
++	if (!cpu_has_tsc)
++		return 0;
++#endif
++	if (static_cpu_has_safe(X86_FEATURE_RDTSCP)) {
++		rdtscpll(ret, cpu);
++		return ret + per_cpu(tsc_offset, cpu);
++	} else
++		return get_cycles();
 +}
++
+ static __always_inline cycles_t vget_cycles(void)
+ {
+ 	/*
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index ce31eeada362..c67300281790 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -962,6 +962,8 @@ static void identify_cpu(struct cpuinfo_x86 *c)
+ #ifdef CONFIG_NUMA
+ 	numa_add_cpu(smp_processor_id());
  #endif
-+#endif /* CONFIG_64BIT */
++	if (cpu_has(c, X86_FEATURE_RDTSCP))
++		write_rdtscp_aux(smp_processor_id());
+ }
  
--#ifndef writew
--#define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
+ #ifdef CONFIG_X86_64
+diff --git a/arch/x86/kernel/tsc_sync.c b/arch/x86/kernel/tsc_sync.c
+index 26488487bc61..5c0d2eeb5e9b 100644
+--- a/arch/x86/kernel/tsc_sync.c
++++ b/arch/x86/kernel/tsc_sync.c
+@@ -18,6 +18,7 @@
+ #include <linux/kernel.h>
+ #include <linux/smp.h>
+ #include <linux/nmi.h>
++#include <asm/msr-index.h>
+ #include <asm/tsc.h>
+ 
+ /*
+@@ -28,6 +29,11 @@ static atomic_t start_count;
+ static atomic_t stop_count;
+ 
+ /*
++ * TSC offset helper counters.
++ */
++static atomic_t set_offset_on_target, offset_done;
 +
 +/*
-+ * {read,write}{b,w,l,q} access little endian memory
-+ * and return result in native endian
-+ */
-+#ifndef readb
-+#define readb __raw_readb
- #endif
+  * We use a raw spinlock in this exceptional case, because
+  * we want to have the fastest, inlined, non-debug version
+  * of a critical section, to be able to prove TSC time-warps:
+@@ -36,7 +42,9 @@ static arch_spinlock_t sync_lock = __ARCH_SPIN_LOCK_UNLOCKED;
  
--#ifndef writel
--#define writel(b,addr) __raw_writel(__cpu_to_le32(b),addr)
-+#ifndef readw
-+#define readw readw
-+static inline u16 readw(const volatile void __iomem *addr)
+ static cycles_t last_tsc;
+ static cycles_t max_warp;
+-static int nr_warps;
++static int nr_warps, max_warp_cpu;
++
++DEFINE_PER_CPU(long long, tsc_offset) = { 0 };
+ 
+ /*
+  * TSC-warp measurement loop running on both CPUs:
+@@ -47,7 +55,7 @@ static void check_tsc_warp(unsigned int timeout)
+ 	int i;
+ 
+ 	rdtsc_barrier();
+-	start = get_cycles();
++	start = get_cycles_aux();
+ 	rdtsc_barrier();
+ 	/*
+ 	 * The measurement runs for 'timeout' msecs:
+@@ -64,7 +72,7 @@ static void check_tsc_warp(unsigned int timeout)
+ 		arch_spin_lock(&sync_lock);
+ 		prev = last_tsc;
+ 		rdtsc_barrier();
+-		now = get_cycles();
++		now = get_cycles_aux();
+ 		rdtsc_barrier();
+ 		last_tsc = now;
+ 		arch_spin_unlock(&sync_lock);
+@@ -89,6 +97,10 @@ static void check_tsc_warp(unsigned int timeout)
+ 			arch_spin_lock(&sync_lock);
+ 			max_warp = max(max_warp, prev - now);
+ 			nr_warps++;
++
++			if (prev - now == max_warp)
++				max_warp_cpu = smp_processor_id();
++
+ 			arch_spin_unlock(&sync_lock);
+ 		}
+ 	}
+@@ -116,6 +128,69 @@ static inline unsigned int loop_timeout(int cpu)
+ 	return (cpumask_weight(cpu_core_mask(cpu)) > 1) ? 2 : 20;
+ }
+ 
++static inline bool cpu_should_save_offset(int cpu)
 +{
-+	return __le16_to_cpu(__raw_readw(addr));
++	bool ret = static_cpu_has(X86_FEATURE_CONSTANT_TSC) &&
++		   static_cpu_has(X86_FEATURE_NONSTOP_TSC);
++
++	if (ret)
++		set_cpu_bug(&cpu_data(cpu), X86_BUG_TSC_OFFSET);
++
++	return ret;
 +}
- #endif
- 
--#ifdef CONFIG_64BIT
--#ifndef __raw_readq
--#define __raw_readq __raw_readq
--static inline u64 __raw_readq(const volatile void __iomem *addr)
-+#ifndef readl
-+#define readl readl
-+static inline u32 readl(const volatile void __iomem *addr)
- {
--	return *(const volatile u64 __force *) addr;
-+	return __le32_to_cpu(__raw_readl(addr));
- }
- #endif
- 
-+#ifdef CONFIG_64BIT
- #ifndef readq
- #define readq readq
- static inline u64 readq(const volatile void __iomem *addr)
-@@ -127,20 +133,31 @@ static inline u64 readq(const volatile void __iomem *addr)
- 	return __le64_to_cpu(__raw_readq(addr));
- }
- #endif
-+#endif /* CONFIG_64BIT */
- 
--#ifndef __raw_writeq
--#define __raw_writeq __raw_writeq
--static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
--{
--	*(volatile u64 __force *) addr = b;
--}
-+
-+#ifndef writeb
-+#define writeb __raw_writeb
-+#endif
-+
-+#ifndef writew
-+#define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
-+#endif
-+
-+#ifndef writel
-+#define writel(b,addr) __raw_writel(__cpu_to_le32(b),addr)
- #endif
- 
-+#ifdef CONFIG_64BIT
- #ifndef writeq
- #define writeq(b, addr) __raw_writeq(__cpu_to_le64(b), addr)
- #endif
- #endif /* CONFIG_64BIT */
- 
 +
 +/*
-+ * {read,write}s{b,w,l.q}b access native memory in chunks specified by count
++ * We're saving a per-core TSC offset only on machines which have a
++ * stable and non-stop TSC but which, for some reason, start their TSCs
++ * on the different nodes at different points in time, thus causing a
++ * small constant diff between them.
++ *
++ * We do this during the TSC sync check which happens between a source
++ * and a target CPU. When we detect the diff, we hold the target CPU by
++ * _not_ incrementing stop_count. What we do instead is we send it into
++ * compute_tsc_offset() below and store the max_warp difference we have
++ * measured above in a per-cpu variable.
++ *
++ * We do pay attention to which CPU saw the max_warp by writing its
++ * number into max_warp_cpu so that we can compute whether the offset
++ * we're going to write into the target's TSC is positive or negative.
++ *
++ * It is positive when the target CPU's TSC has started later than the
++ * source CPU's TSC and thus has a smaller TSC value.
++ *
++ * It is negative when the target CPU's TSC has started earlier than the
++ * source CPU's TSC and thus has a higher TSC value.
++ *
++ * Once we've computed the offset, we let both CPUs do the usual
++ * TSC sync check again, taking the offset into account, see
++ * get_cycles_aux().
++ *
++ * Called on the target.
 + */
- #ifndef readsb
- #define readsb readsb
- static inline void readsb(const void __iomem *addr, void *buffer, int count)
-@@ -183,6 +200,23 @@ static inline void readsl(const void __iomem *addr, void *buffer, int count)
- }
- #endif
- 
-+#ifdef CONFIG_64BIT
-+#ifndef readsq
-+#define readsq readsq
-+static inline void readsq(const void __iomem *addr, void *buffer, int count)
++static void compute_tsc_offset(int cpu)
 +{
-+	if (count) {
-+		u64 *buf = buffer;
-+		do {
-+			u64 x = __raw_readq(addr);
-+			*buf++ = x;
-+		} while (--count);
++	long long off;
++
++	/*
++	 * This CPU wrote last the max_warp above, means its TSC is smaller than
++	 * the source CPU which we're doing the sync check with.
++	 */
++	if (cpu == max_warp_cpu)
++		off =  max_warp;
++	else
++		off = -max_warp;
++
++	per_cpu(tsc_offset, cpu) = off;
++	pr_info("CPU%d, saved offset: %lld\n", cpu, off);
++
++	nr_warps = 0;
++	max_warp = 0;
++	last_tsc = 0;
++
++	atomic_inc(&offset_done);
++	atomic_set(&set_offset_on_target, 0);
++}
++
+ /*
+  * Source CPU calls into this - it waits for the freshly booted
+  * target CPU to arrive and then starts the measurement:
+@@ -138,6 +213,7 @@ void check_tsc_sync_source(int cpu)
+ 		return;
+ 	}
+ 
++restart_src:
+ 	/*
+ 	 * Reset it - in case this is a second bootup:
+ 	 */
+@@ -155,15 +231,27 @@ void check_tsc_sync_source(int cpu)
+ 
+ 	check_tsc_warp(loop_timeout(cpu));
+ 
++	/*
++	 * Wait for target to finish measurement:
++	 */
+ 	while (atomic_read(&stop_count) != cpus-1)
+ 		cpu_relax();
+ 
++	/* Analyze measurement */
+ 	if (nr_warps) {
+-		pr_warning("TSC synchronization [CPU#%d -> CPU#%d]:\n",
+-			smp_processor_id(), cpu);
+-		pr_warning("Measured %Ld cycles TSC warp between CPUs, "
+-			   "turning off TSC clock.\n", max_warp);
+-		mark_tsc_unstable("check_tsc_sync_source failed");
++		if (cpu_should_save_offset(cpu) && !atomic_read(&offset_done)) {
++			pr_warn("TSCs of [CPU#%d -> CPU#%d] %lld cycles out of sync, saving offset.\n",
++				smp_processor_id(), cpu, max_warp);
++
++			atomic_set(&start_count, 0);
++			atomic_set(&set_offset_on_target, 1);
++
++			goto restart_src;
++		} else {
++			pr_warning("Measured %Ld(%d) cycles TSC warp between CPUs, "
++				   "turning off TSC clock.\n", max_warp, max_warp_cpu);
++			mark_tsc_unstable("check_tsc_sync_source failed");
++		}
+ 	} else {
+ 		pr_debug("TSC synchronization [CPU#%d -> CPU#%d]: passed\n",
+ 			smp_processor_id(), cpu);
+@@ -173,6 +261,7 @@ void check_tsc_sync_source(int cpu)
+ 	 * Reset it - just in case we boot another CPU later:
+ 	 */
+ 	atomic_set(&start_count, 0);
++	atomic_set(&offset_done, 0);
+ 	nr_warps = 0;
+ 	max_warp = 0;
+ 	last_tsc = 0;
+@@ -188,11 +277,16 @@ void check_tsc_sync_source(int cpu)
+  */
+ void check_tsc_sync_target(void)
+ {
++	int this_cpu = smp_processor_id();
+ 	int cpus = 2;
+ 
+ 	if (unsynchronized_tsc() || tsc_clocksource_reliable)
+ 		return;
+ 
++restart_tgt:
++	if (atomic_read(&set_offset_on_target))
++		compute_tsc_offset(this_cpu);
++
+ 	/*
+ 	 * Register this CPU's participation and wait for the
+ 	 * source CPU to start the measurement:
+@@ -201,7 +295,7 @@ void check_tsc_sync_target(void)
+ 	while (atomic_read(&start_count) != cpus)
+ 		cpu_relax();
+ 
+-	check_tsc_warp(loop_timeout(smp_processor_id()));
++	check_tsc_warp(loop_timeout(this_cpu));
+ 
+ 	/*
+ 	 * Ok, we are done:
+@@ -211,6 +305,9 @@ void check_tsc_sync_target(void)
+ 	/*
+ 	 * Wait for the source CPU to print stuff:
+ 	 */
+-	while (atomic_read(&stop_count) != cpus)
++	while (atomic_read(&stop_count) != cpus) {
++		if (atomic_read(&set_offset_on_target))
++			goto restart_tgt;
+ 		cpu_relax();
 +	}
-+}
-+#endif
-+#endif /* CONFIG_64BIT */
-+
-+
- #ifndef writesb
- #define writesb writesb
- static inline void writesb(void __iomem *addr, const void *buffer, int count)
-@@ -223,20 +257,6 @@ static inline void writesl(void __iomem *addr, const void *buffer, int count)
- #endif
- 
- #ifdef CONFIG_64BIT
--#ifndef readsq
--#define readsq readsq
--static inline void readsq(const void __iomem *addr, void *buffer, int count)
--{
--	if (count) {
--		u64 *buf = buffer;
--		do {
--			u64 x = __raw_readq(addr);
--			*buf++ = x;
--		} while (--count);
--	}
--}
--#endif
--
- #ifndef writesq
- #define writesq writesq
- static inline void writesq(void __iomem *addr, const void *buffer, int count)
-@@ -356,6 +376,10 @@ static inline void outl(u32 b, unsigned long addr)
- #define ioread16(addr)		readw(addr)
- #define ioread32(addr)		readl(addr)
- 
-+#define iowrite8(v, addr)	writeb((v), (addr))
-+#define iowrite16(v, addr)	writew((v), (addr))
-+#define iowrite32(v, addr)	writel((v), (addr))
-+
- #ifndef ioread16be
- #define ioread16be(addr)	__be16_to_cpu(__raw_readw(addr))
- #endif
-@@ -364,10 +388,6 @@ static inline void outl(u32 b, unsigned long addr)
- #define ioread32be(addr)	__be32_to_cpu(__raw_readl(addr))
- #endif
- 
--#define iowrite8(v, addr)	writeb((v), (addr))
--#define iowrite16(v, addr)	writew((v), (addr))
--#define iowrite32(v, addr)	writel((v), (addr))
--
- #ifndef iowrite16be
- #define iowrite16be(v, addr)	__raw_writew(__cpu_to_be16(v), addr)
- #endif
--- 
-1.9.3
+ }
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
