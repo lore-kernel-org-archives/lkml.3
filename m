@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919AbaGSCZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 22:25:10 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:65219 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755327AbaGSCZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 22:25:08 -0400
+	id S1759620AbaGSCgP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 22:36:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:40073 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755327AbaGSCgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jul 2014 22:36:13 -0400
+Message-ID: <53C9D997.7000409@kernel.org>
+Date: Fri, 18 Jul 2014 22:36:07 -0400
+From: Sasha Levin <sashal@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1405717414.30262.12.camel@dabdike.int.hansenpartnership.com>
-References: <1405715823-17492-1-git-send-email-xerofoify@gmail.com>
-	<1405717414.30262.12.camel@dabdike.int.hansenpartnership.com>
-Date: Fri, 18 Jul 2014 22:25:07 -0400
-Message-ID: <CAPDOMVjScF=7ES7NU=R6sGOmp7QycKX+uMXL-w+1rNEak4G7Dg@mail.gmail.com>
-Subject: Re: [PATCH] parisc: Remove FIXME comment
-From: Nick Krause <xerofoify@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: deller@gmx.de, tiwai@suse.de, Jiri Kosina <jkosina@suse.cz>,
-        Joe Perches <joe@perches.com>, dave.anglin@bell.net,
-        linux-parisc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Nicholas Krause <xerofoify@gmail.com>, gregkh@linuxfoundation.org
+CC: stern@rowland.harvard.edu, mail@beyermatthias.de, hdegoede@redhat.com,
+        dan.j.williams@intel.com, valentine.barshak@cogentembedded.com,
+        ming.lei@canonical.com, michael.opdenacker@free-electrons.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb-core: Remove Fix mes in file hcd.c
+References: <1405704880-10036-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1405704880-10036-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 5:03 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Fri, 2014-07-18 at 16:37 -0400, Nicholas Krause wrote:
->> The comment for size of frame not being needed is incorrect , the
->> function called needs this parameter.
->
-> Actually, that's not correct.  The point of the FIXME is that fram_size
-> is only used in a debug print and could be eliminated since the
-> internals of the function excluding the debugging statements don't use
-> it.
->
-> James
->
->
+On 07/18/2014 01:34 PM, Nicholas Krause wrote:
+> I am removing two fix mes in this file as after dicussing then it  seems
+> there is no reason to check against Null for usb_device as it can never
+> be NULL and this is check is therefore not needed.
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 
-So I need to need a patch removing the parameter from the  function
-and this part of the code?
-Cheers Nick
+Please explain exactly why it's not needed, why it can never be NULL, and
+what prevents it from being NULL.
+
+"after dicussing" (do you run spellcheck on your mails?) won't mean anything
+to someone looking at this commit in a year.
+
+Your commit message also mentions usb_device which has nothing to do with
+your patch.
+
+
+Thanks,
+Sasha
