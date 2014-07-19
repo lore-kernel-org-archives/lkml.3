@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760235AbaGSCwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 22:52:11 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:54094 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807AbaGSCwJ (ORCPT
+	id S1760588AbaGSCzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 22:55:16 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39308 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428AbaGSCzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 22:52:09 -0400
+	Fri, 18 Jul 2014 22:55:14 -0400
+Date: Fri, 18 Jul 2014 22:55:12 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Ingo Molnar <mingo@redhat.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 2/4] ARM: add IPI tracepoints
+In-Reply-To: <20140718172221.6dbe83e4@gandalf.local.home>
+Message-ID: <alpine.LFD.2.11.1407182249020.3647@knanqh.ubzr>
+References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org> <1405660735-13408-3-git-send-email-nicolas.pitre@linaro.org> <20140718160418.54d11f6a@gandalf.local.home> <alpine.LFD.2.11.1407181652080.3647@knanqh.ubzr>
+ <20140718172221.6dbe83e4@gandalf.local.home>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVj6ex8GgMz6id+fgnCLg9hTbNoYxG4pebxDvMmf9xKTcQ@mail.gmail.com>
-References: <1405704880-10036-1-git-send-email-xerofoify@gmail.com>
-	<53C9D997.7000409@kernel.org>
-	<CAPDOMVj6ex8GgMz6id+fgnCLg9hTbNoYxG4pebxDvMmf9xKTcQ@mail.gmail.com>
-Date: Fri, 18 Jul 2014 22:52:08 -0400
-Message-ID: <CAPDOMVg1Ga1wQserL=P9cmFgtPM+XLNFpY+t45QV0GvPLbTmwA@mail.gmail.com>
-Subject: Re: [PATCH] usb-core: Remove Fix mes in file hcd.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Sasha Levin <sashal@kernel.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, dan.j.williams@intel.com,
-        valentine.barshak@cogentembedded.com,
-        Ming Lei <ming.lei@canonical.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 10:45 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> Sorry didn't run spell check. I will resend this patch with the
-> correct information
-> as needed. Thanks for the advice, Sasha.
->
-> Cheers Nick
->
-> On Fri, Jul 18, 2014 at 10:36 PM, Sasha Levin <sashal@kernel.org> wrote:
->> On 07/18/2014 01:34 PM, Nicholas Krause wrote:
->>> I am removing two fix mes in this file as after dicussing then it  seems
->>> there is no reason to check against Null for usb_device as it can never
->>> be NULL and this is check is therefore not needed.
->>>
->>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>
->> Please explain exactly why it's not needed, why it can never be NULL, and
->> what prevents it from being NULL.
->>
->> "after dicussing" (do you run spellcheck on your mails?) won't mean anything
->> to someone looking at this commit in a year.
->>
->> Your commit message also mentions usb_device which has nothing to do with
->> your patch.
->>
->>
->> Thanks,
->> Sasha
+On Fri, 18 Jul 2014, Steven Rostedt wrote:
 
-Sasha ,
-Greg seems to have signed it off.
-Cheers Nick
+> On Fri, 18 Jul 2014 16:55:42 -0400 (EDT)
+> Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> 
+> > 
+> > Here's the patch I have at the head of the series now, with the above
+> > ugliness changed to an unconditional __tracepoint_string attribute.
+> > 
+> 
+> I was thinking of something like this. Feel free to add this to your
+> series.
+
+OK.  Same end result, but much clearer.  Thanks.
+
+Any comments / ACKs on the other patches?  I'd like to see 1/4 to 3/4 
+(and your patch) merged upstream during the next window.  4/4 is up for 
+debate.
+
+> -- Steve
+> 
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Subject: [PATCH] tracing: Do not do anything special with tracepoint_string when tracing is disabled
+> 
+> When CONFIG_TRACING is not enabled, there's no reason to save the trace
+> strings either by the linker or as a static variable that can be
+> referenced later. Simply pass back the string that is given to
+> tracepoint_string().
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index cff3106..b296363 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -574,6 +574,7 @@ do {									\
+>  		__trace_printk(ip, fmt, ##args);			\
+>  } while (0)
+>  
+> +#ifdef CONFIG_TRACING
+>  /**
+>   * tracepoint_string - register constant persistent string to trace system
+>   * @str - a constant persistent string that will be referenced in tracepoints
+> @@ -607,6 +608,15 @@ do {									\
+>  		___tp_str;						\
+>  	})
+>  #define __tracepoint_string	__attribute__((section("__tracepoint_str")))
+> +#else
+> +/*
+> + * tracepoint_string() is used to save the string address for userspace
+> + * tracing tools. When tracing isn't configured, there's no need to save
+> + * anything.
+> + */
+> +# define tracepoint_string(str) str
+> +# define __tracepoint_string
+> +#endif
+>  
+>  #ifdef CONFIG_PERF_EVENTS
+>  struct perf_event;
+> 
+> 
