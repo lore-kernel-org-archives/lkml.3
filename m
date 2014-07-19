@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124AbaGSViN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 17:38:13 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62632 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751191AbaGSViL (ORCPT
+	id S1755863AbaGSVuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 17:50:09 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:53588 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaGSVuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 17:38:11 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ACPI / PM: Use ACPI_COMPANION() instead of ACPI_HANDLE()
-Date: Sat, 19 Jul 2014 23:56:31 +0200
-Message-ID: <1850188.af4fKDc87v@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Sat, 19 Jul 2014 17:50:07 -0400
+Date: Sun, 20 Jul 2014 03:19:59 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: Kumar Gala <galak@kernel.crashing.org>, julia.lawall@lip6.fr
+Subject: [RESEND PATCH] powerpc/fsl-pci: Correct use of ! and &
+Message-ID: <20140719214958.GA22123@himangi-Dell>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+In commit ae91d60ba88ef0bdb1b5e9b2363bd52fc45d2af7, a bug was fixed that
+involved converting !x & y to !(x & y).  The code below shows the same
+pattern, and thus should perhaps be fixed in the same way.
 
-The ACPI_HANDLE() macro evaluates ACPI_COMPANION() internally to
-return the handle of the device's ACPI companion, so it is much
-more straightforward and efficient to use ACPI_COMPANION()
-directly to obtain the device's ACPI companion object instead of
-using ACPI_HANDLE() and acpi_bus_get_device() on the returned
-handle for the same thing.
+This is not tested and clearly changes the semantics, so it is only
+something to consider.
 
-Do that in three places in the ACPI device PM code.
+The Coccinelle semantic patch that makes this change is as follows:
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+// <smpl>
+@@ expression E1,E2; @@
+(
+  !E1 & !E2
+|
+- !E1 & E2
++ !(E1 & E2)
+)
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 ---
+ arch/powerpc/sysdev/fsl_pci.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On top of https://patchwork.kernel.org/patch/4589941/
-
----
- drivers/acpi/device_pm.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
-
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -558,7 +558,6 @@ static int acpi_dev_pm_get_state(struct
-  */
- int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
- {
--	acpi_handle handle = ACPI_HANDLE(dev);
- 	struct acpi_device *adev;
- 	int ret, d_min, d_max;
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index 4bd091a..c507767 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -853,8 +853,8 @@ u64 fsl_pci_immrbar_base(struct pci_controller *hose)
+ 		in = pcie->cfg_type0 + PEX_RC_INWIN_BASE;
+ 		for (i = 0; i < 4; i++) {
+ 			/* not enabled, skip */
+-			if (!in_le32(&in[i].ar) & PEX_RCIWARn_EN)
+-				 continue;
++			if (!(in_le32(&in[i].ar) & PEX_RCIWARn_EN))
++				continue;
  
-@@ -573,8 +572,9 @@ int acpi_pm_device_sleep_state(struct de
- 			d_max_in = ACPI_STATE_D3_HOT;
- 	}
- 
--	if (!handle || acpi_bus_get_device(handle, &adev)) {
--		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
-+	adev = ACPI_COMPANION(dev);
-+	if (!adev) {
-+		dev_dbg(dev, "ACPI companion missing in %s!\n", __func__);
- 		return -ENODEV;
- 	}
- 
-@@ -664,15 +664,13 @@ static void acpi_device_pm_event(acpi_ha
- int acpi_pm_device_run_wake(struct device *phys_dev, bool enable)
- {
- 	struct acpi_device *adev;
--	acpi_handle handle;
- 
- 	if (!device_run_wake(phys_dev))
- 		return -EINVAL;
- 
--	handle = ACPI_HANDLE(phys_dev);
--	if (!handle || acpi_bus_get_device(handle, &adev)) {
--		dev_dbg(phys_dev, "ACPI handle without context in %s!\n",
--			__func__);
-+	adev = ACPI_COMPANION(phys_dev);
-+	if (!adev) {
-+		dev_dbg(phys_dev, "ACPI companion missing in %s!\n", __func__);
- 		return -ENODEV;
- 	}
- 
-@@ -692,16 +690,15 @@ static inline void acpi_device_pm_event(
-  */
- int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
- {
--	acpi_handle handle;
- 	struct acpi_device *adev;
- 	int error;
- 
- 	if (!device_can_wakeup(dev))
- 		return -EINVAL;
- 
--	handle = ACPI_HANDLE(dev);
--	if (!handle || acpi_bus_get_device(handle, &adev)) {
--		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
-+	adev = ACPI_COMPANION(dev);
-+	if (!adev) {
-+		dev_dbg(dev, "ACPI companion missing in %s!\n", __func__);
- 		return -ENODEV;
- 	}
- 
+ 			if (get_immrbase() == in_le32(&in[i].tar))
+ 				return (u64)in_le32(&in[i].barh) << 32 |
+-- 
+1.9.1
 
