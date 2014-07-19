@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862AbaGSNrr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 09:47:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48452 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131AbaGSNrp (ORCPT
+	id S1755208AbaGSNtK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:49:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40440 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900AbaGSNtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 09:47:45 -0400
-Date: Sat, 19 Jul 2014 15:47:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 02/10] nohz: Kick full dynticks timer targets with an
- empty IPI
-Message-ID: <20140719134741.GH3935@laptop>
-References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
- <1405730661-9355-3-git-send-email-fweisbec@gmail.com>
- <20140719071951.GS9918@twins.programming.kicks-ass.net>
- <20140719131844.GA16673@localhost.localdomain>
+	Sat, 19 Jul 2014 09:49:07 -0400
+Date: Sat, 19 Jul 2014 15:49:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140719134904.GA2852@amd.pavel.ucw.cz>
+References: <1405684643-30234-1-git-send-email-joro@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140719131844.GA16673@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1405684643-30234-1-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 03:18:47PM +0200, Frederic Weisbecker wrote:
-> On Sat, Jul 19, 2014 at 09:19:51AM +0200, Peter Zijlstra wrote:
-> > On Sat, Jul 19, 2014 at 02:44:13AM +0200, Frederic Weisbecker wrote:
-> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > > index 7f3063c..f3e48b8 100644
-> > > --- a/kernel/sched/core.c
-> > > +++ b/kernel/sched/core.c
-> > > @@ -693,7 +693,7 @@ static bool wake_up_full_nohz_cpu(int cpu)
-> > >  	if (tick_nohz_full_cpu(cpu)) {
-> > >  		if (cpu != smp_processor_id() ||
-> > >  		    tick_nohz_tick_stopped())
-> > > -			tick_nohz_full_kick_cpu(cpu);
-> > > +			irq_work_void_on(cpu);
-> > 
-> > So no, while the previous function name was descriptive, the new one
-> > leave one wondering.
-> 
-> Yeah, I suppose I can wrap that to some new function: tick_nohz_full_reschedule_cpu()
-> for example (although that looks a bit like a sched thing).
-> 
-> That said I plan to gather tick stop and tick restart in the same place, in the
-> end of the interrupt. So in the end we'll have only one tick_nohz_full_kick_cpu()
-> for all kick uses, and this will just wrapp to irq_work_void_on().
+Hi!
 
-So there's already kick_all_cpus_sync() in kernel/smp.c, I would suggest
-implementing your irq_work_void_on() as kick_cpu() right next to it.
+> These patches improve the data structure by adding a radix
+> tree to the linked list structure to improve random access
+> performance from O(n) to O(log_b(n)), where b depends on the
+> architecture (b=512 on amd64, 1024 in i386).
 
-And yes, I would suggest also keeping tick_nohz_full_kick_cpu() as a
-'pointless' wrapper purely for 'documentation' value.
+Are you sure? From your other mail, you said you are adding just a
+single page. I'd expect random access performance to go from
+
+O(n) to O(n/1024) in such case?
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
