@@ -1,136 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaGSSAe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 14:00:34 -0400
-Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:44056 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932192AbaGSSAc (ORCPT
+	id S932725AbaGSSBk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 14:01:40 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:57654 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192AbaGSSBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 14:00:32 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:69:355:379:541:599:800:877:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2553:2559:2562:2731:2828:2895:2898:3138:3139:3140:3141:3142:3354:3865:3867:3868:3871:3872:4250:4321:4385:4434:5007:6119:7514:7652:7901:7903:10004:10400:10848:11026:11232:11658:1
-X-HE-Tag: song23_78bd89c6e5b1e
-X-Filterd-Recvd-Size: 4171
-Message-ID: <1405792828.14358.110.camel@joe-AO725>
-Subject: Re: [PATCH 2/4] staging: sep: No else is necessary after a break
- (reported by checkpatch)
-From: Joe Perches <joe@perches.com>
-To: LABBE Corentin <clabbe.montjoie@gmail.com>, mark.a.allyn@intel.com,
-        jayant.mangalampalli@intel.com
-Cc: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
-        paul.gortmaker@windriver.com, jg1.han@samsung.com,
-        paulmck@linux.vnet.ibm.com, valentina.manea.m@gmail.com, jack@suse.cz,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Sat, 19 Jul 2014 11:00:28 -0700
-In-Reply-To: <1405791282-28023-3-git-send-email-clabbe.montjoie@gmail.com>
-References: <1405791282-28023-1-git-send-email-clabbe.montjoie@gmail.com>
-	 <1405791282-28023-3-git-send-email-clabbe.montjoie@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 19 Jul 2014 14:01:38 -0400
+Date: Sat, 19 Jul 2014 20:01:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
+ for non-nohz_full= CPUs
+Message-ID: <20140719180120.GA20887@localhost.localdomain>
+References: <20140719165350.GA18411@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140719165350.GA18411@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Mark Allyn and Jayant Mangalampalli)
-
-Is this still project still active?
-
-On Sat, 2014-07-19 at 19:34 +0200, LABBE Corentin wrote:
-> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
-> ---
->  drivers/staging/sep/sep_main.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+On Sat, Jul 19, 2014 at 09:53:50AM -0700, Paul E. McKenney wrote:
+> If a non-nohz_full= CPU is non-idle, it will have a scheduling-clock
+> interrupt, and therefore doesn't need the timekeeping CPU to keep
+> its scheduling-clock interrupt going.  This commit therefore ignores
+> the idle state of non-nohz_full CPUs when determining whether or not
+> the timekeeping CPU can safely turn off its scheduling-clock interrupt.
 > 
-> diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
-> index 177e4b9..1580d95f 100644
-> --- a/drivers/staging/sep/sep_main.c
-> +++ b/drivers/staging/sep/sep_main.c
-> @@ -2881,12 +2881,11 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
->  				if (is_kva) {
->  					error = -ENODEV;
->  					break;
-> -				} else {
-> -					error_temp = copy_to_user(
-> +				}
-> +				error_temp = copy_to_user(
->  						(void __user *)tail_pt,
->  						dcb_table_ptr->tail_data,
->  						dcb_table_ptr->tail_data_size);
-> -				}
->  				if (error_temp) {
->  					/* Release the DMA resource */
->  					error = -EFAULT;
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-It'd be probably be better to rewrite the code to unindent
-a level by using continue.  Something like below:
+Unfortunately that's not how things work. Running a CPU tick doesn't necessarily
+imply to run the timekeeping duty.
 
-btw:
+Only the timekeeper can update the timekeeping. There is an exception though:
+the timekeeping is also updated by dynticks idle CPUs when they wake up in an
+interrupt from idle.
 
-the is_kva test looks very odd and should probably be
-moved outside the loop.
+Here is in practice why it doesn't work:
 
-pt_hold should probably be void * not unsigned long
-as it loses high order bits on x86-32.
+So lets say CPU 0 is timekeeper, CPU 1 a non-nohz-full CPU and all others are full-nohz.
+CPU 0 is sleeping. CPU 1 wakes up from idle, so it has an uptodate timekeeping but then
+if it continues to execute further without waking up CPU 0, it risks stale timestamps.
 
-definition:
-	aligned_u64 out_vr_tail_pt;
-use:
-+			pt_hold = (unsigned long)dcb_table_ptr->
-+				out_vr_tail_pt;
+This can be changed by allowing timekeeping duty from all non-nohz_full CPUs, that's
+the initial direction I took, but it involved a lot of complications and scalability
+issues.
 
----
- drivers/staging/sep/sep_main.c | 37 +++++++++++++++++--------------------
- 1 file changed, 17 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
-index 75ca15e..24b4a54 100644
---- a/drivers/staging/sep/sep_main.c
-+++ b/drivers/staging/sep/sep_main.c
-@@ -2871,26 +2871,23 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
- 		 * Go over each DCB and see if
- 		 * tail pointer must be updated
- 		 */
--		for (i = 0; i < (*dma_ctx)->nr_dcb_creat;
--		     i++, dcb_table_ptr++) {
--			if (dcb_table_ptr->out_vr_tail_pt) {
--				pt_hold = (unsigned long)dcb_table_ptr->
--					out_vr_tail_pt;
--				tail_pt = (void *)pt_hold;
--				if (is_kva) {
--					error = -ENODEV;
--					break;
--				} else {
--					error_temp = copy_to_user(
--						(void __user *)tail_pt,
--						dcb_table_ptr->tail_data,
--						dcb_table_ptr->tail_data_size);
--				}
--				if (error_temp) {
--					/* Release the DMA resource */
--					error = -EFAULT;
--					break;
--				}
-+		for (i = 0; i < (*dma_ctx)->nr_dcb_creat; i++, dcb_table_ptr++) {
-+			if (!dcb_table_ptr->out_vr_tail_pt)
-+				continue;
-+			pt_hold = (unsigned long)dcb_table_ptr->
-+				out_vr_tail_pt;
-+			tail_pt = (void *)pt_hold;
-+			if (is_kva) {
-+				error = -ENODEV;
-+				break;
-+			}
-+			error_temp = copy_to_user((void __user *)tail_pt,
-+						  dcb_table_ptr->tail_data,
-+						  dcb_table_ptr->tail_data_size);
-+			if (error_temp) {
-+				/* Release the DMA resource */
-+				error = -EFAULT;
-+				break;
- 			}
- 		}
- 	}
-
-
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index ddad959a9132..eaa32e4c228d 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2789,8 +2789,13 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
+>  	 * system-idle state.  This means that the timekeeping CPU must
+>  	 * invoke rcu_sysidle_force_exit() directly if it does anything
+>  	 * more than take a scheduling-clock interrupt.
+> +	 *
+> +	 * In addition if we are not a nohz_full= CPU, then when we are
+> +	 * non-idle we have our own tick, so we don't need the timekeeping
+> +	 * CPU to keep a tick on our behalf.  We assume that the timekeeping
+> +	 * CPU is also a nohz_full= CPU.
+>  	 */
+> -	if (smp_processor_id() == tick_do_timer_cpu)
+> +	if (!tick_nohz_full_cpu(smp_processor_id()))
+>  		return;
+>  
+>  	/* Update system-idle state: We are clearly no longer fully idle! */
+> @@ -2810,11 +2815,11 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+>  
+>  	/*
+>  	 * If some other CPU has already reported non-idle, if this is
+> -	 * not the flavor of RCU that tracks sysidle state, or if this
+> -	 * is an offline or the timekeeping CPU, nothing to do.
+> +	 * not the flavor of RCU that tracks sysidle state, or if this is
+> +	 * an offline or !nohz_full= or the timekeeping CPU, nothing to do.
+>  	 */
+>  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+> -	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+> +	    cpu_is_offline(rdp->cpu) || !tick_nohz_full_cpu(rdp->cpu))
+>  		return;
+>  	if (rcu_gp_in_progress(rdp->rsp))
+>  		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+> 
