@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943AbaGSMF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 08:05:59 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:61922 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754340AbaGSMF6 (ORCPT
+	id S1754915AbaGSMPL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 08:15:11 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:47593 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754595AbaGSMPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 08:05:58 -0400
-Message-ID: <1405771556.18077.5.camel@x220>
-Subject: Re: [PATCH] mips: Remove uneeded line in cmp_smp_finish
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: ralf@linux-mips.org, paul.burton@imgtec.com, Leonid.Yegoshin@imgtec.com,
-        markos.chandras@imgtec.com, Steven.Hill@imgtec.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Sat, 19 Jul 2014 14:05:56 +0200
-In-Reply-To: <1405746604-7737-1-git-send-email-xerofoify@gmail.com>
-References: <1405746604-7737-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Jul 2014 12:05:56.0659 (UTC) FILETIME=[CBF1B830:01CFA349]
-X-RcptDomain: vger.kernel.org
+	Sat, 19 Jul 2014 08:15:09 -0400
+From: Elias Boutaleb <kagekyio@gmail.com>
+X-Google-Original-From: Elias Boutaleb <elias.boutaleb@etu.upmc.fr>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Cc: Elias Boutaleb <elias.boutaleb@etu.upmc.fr>
+Subject: [PATCH] staging: android: cleanup style issues
+Date: Sat, 19 Jul 2014 14:14:54 +0200
+Message-Id: <1405772094-8681-1-git-send-email-elias.boutaleb@etu.upmc.fr>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-07-19 at 01:10 -0400, Nicholas Krause wrote:
-> This patch removes a unneeded line from this file as stated by the
-> fix me in this file.
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  arch/mips/kernel/smp-cmp.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/arch/mips/kernel/smp-cmp.c b/arch/mips/kernel/smp-cmp.c
-> index fc8a515..61bfa20 100644
-> --- a/arch/mips/kernel/smp-cmp.c
-> +++ b/arch/mips/kernel/smp-cmp.c
-> @@ -60,8 +60,6 @@ static void cmp_smp_finish(void)
->  {
->  	pr_debug("SMPCMP: CPU%d: %s\n", smp_processor_id(), __func__);
->  
-> -	/* CDFIXME: remove this? */
-> -	write_c0_compare(read_c0_count() + (8 * mips_hpt_frequency / HZ));
+The patch fixes 3 "Missing a blank line after declarations" checkpatch warnings.
+---
+ drivers/staging/android/sw_sync.c | 2 ++
+ drivers/staging/android/sync.c    | 1 +
+ 2 files changed, 3 insertions(+)
 
-That comment ends in a question mark. I wonder why...
+diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
+index a76db3f..863d4b1 100644
+--- a/drivers/staging/android/sw_sync.c
++++ b/drivers/staging/android/sw_sync.c
+@@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
+ 				       char *str, int size)
+ {
+ 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
++
+ 	snprintf(str, size, "%d", pt->value);
+ }
  
->  #ifdef CONFIG_MIPS_MT_FPAFF
->  	/* If we have an FPU, enroll ourselves in the FPU-full mask */
-
-
-Paul Bolle
+@@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
+ static int sw_sync_release(struct inode *inode, struct file *file)
+ {
+ 	struct sw_sync_timeline *obj = file->private_data;
++
+ 	sync_timeline_destroy(&obj->obj);
+ 	return 0;
+ }
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index e7b2e02..0d37495 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+ 			     unsigned long arg)
+ {
+ 	struct sync_fence *fence = file->private_data;
++
+ 	switch (cmd) {
+ 	case SYNC_IOC_WAIT:
+ 		return sync_fence_ioctl_wait(fence, arg);
+-- 
+1.9.1
 
