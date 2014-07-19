@@ -1,80 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaGSUuU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 16:50:20 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:47738 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaGSUuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 16:50:18 -0400
+	id S1756119AbaGSUuq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 16:50:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54951 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007AbaGSUuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 16:50:44 -0400
+Message-ID: <53CADAAE.1030509@kernel.org>
+Date: Sat, 19 Jul 2014 21:53:02 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140719162810.02285fc8@gandalf.local.home>
-References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
-	<1405660735-13408-3-git-send-email-nicolas.pitre@linaro.org>
-	<20140718160418.54d11f6a@gandalf.local.home>
-	<alpine.LFD.2.11.1407181652080.3647@knanqh.ubzr>
-	<20140718172221.6dbe83e4@gandalf.local.home>
-	<CAKv+Gu_71vJFf3aUZso1X7m7fULUMhxj+MZVYq+LGNRLJvGyAA@mail.gmail.com>
-	<20140719162810.02285fc8@gandalf.local.home>
-Date: Sat, 19 Jul 2014 22:50:16 +0200
-Message-ID: <CAKv+Gu-RZ4s+33LVOK3eTrvb3ig0YXmNwT0-3GS2-WuvThyXTg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] ARM: add IPI tracepoints
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH] staging:iio:ad7280a: Use managed interfaces
+References: <20140719103341.GA18568@himangi-Dell> <53CAD915.506@kernel.org> <alpine.DEB.2.02.1407192245340.1989@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1407192245340.1989@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 July 2014 22:28, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sat, 19 Jul 2014 21:10:37 +0200
-> Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+On 19/07/14 21:46, Julia Lawall wrote:
 >
->> On 18 July 2014 23:22, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Fri, 18 Jul 2014 16:55:42 -0400 (EDT)
->> > Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->> >
->> >>
->> >> Here's the patch I have at the head of the series now, with the above
->> >> ugliness changed to an unconditional __tracepoint_string attribute.
->> >>
->> >
->> > I was thinking of something like this. Feel free to add this to your
->> > series.
->> >
->> > -- Steve
->> >
->>
->> Nico,
->>
->> If this patch addresses the issue where 3 RCU related tracepoint
->> strings turn up /after/ _edata on !CONFIG_TRACING, there is already a
->> patch queued up here
->>
->> http://marc.info/?l=linux-kernel&m=140518452623148&w=2
->>
->> As far as In know, these were the only occurrences using a __used
->> modifier, which is why they weren't dropped by the compiler in the
->> !CONFIG_TRACING case.
->>
 >
-> Ard,
+> On Sat, 19 Jul 2014, Jonathan Cameron wrote:
 >
-> Similar but different problem. Nicolas's problem was with new use cases
-> for tracepoint_string. My patch fixes the issue for the general case.
+>> On 19/07/14 11:33, Himangi Saraogi wrote:
+>>> This patch moves data allocated using unmanaged interfaces to managed
+>>> interfaces like devm_kzalloc, devm_iio_device_register, devm_kasprintf,
+>>> devm_request_threaded_irq and does away with the calls to free the
+>>> allocated memory in the probe and remove functions. Some labels in the
+>>> probe function are also removed.
+>>>
+>>> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+>> cc'ing Lars who tends to look after Analog Devices drivers
+>> and more specifically was involved in the thread that lead to this
+>> patch.
+>>
+>> Also, the devm_kasprintf does not appear to be in upstream so this
+>> patch should have made an dependency clear.
+>>
+>> https://lkml.org/lkml/2014/7/16/667
+>>
+>> What is the intended merge path for that patch?
+>
+> Greg said that he would be taking it.  He already took the devm_kasprintf
+> patch.
+Cool.  That's fine (and now you mention it - he did say that in the thread
+I just forgot).  Still, it did want mentioning in the description for this
+patch as well.
+>
+> julia
+>
+>>
+>>
+>>> ---
+>>> I am not very sure if devmifying request_irq is a good idea as it
+>>> leads to the freeing of the interrupt after the ad7280_write.
+>> Agreed. I wouldn't do it!
+>>
+>> Otherwise, all looks fine.
+>>>    drivers/staging/iio/adc/ad7280a.c | 57
+>>> ++++++++++++++-------------------------
+>>>    1 file changed, 20 insertions(+), 37 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/iio/adc/ad7280a.c
+>>> b/drivers/staging/iio/adc/ad7280a.c
+>>> index d215edf..3706b3e 100644
+>>> --- a/drivers/staging/iio/adc/ad7280a.c
+>>> +++ b/drivers/staging/iio/adc/ad7280a.c
+>>> @@ -486,8 +486,8 @@ static int ad7280_channel_init(struct ad7280_state *st)
+>>>    {
+>>>    	int dev, ch, cnt;
+>>>
+>>> -	st->channels = kcalloc((st->slave_num + 1) * 12 + 2,
+>>> -			       sizeof(*st->channels), GFP_KERNEL);
+>>> +	st->channels = devm_kcalloc(&st->spi->dev, (st->slave_num + 1) * 12 +
+>>> 2,
+>>> +				    sizeof(*st->channels), GFP_KERNEL);
+>>>    	if (st->channels == NULL)
+>>>    		return -ENOMEM;
+>>>
+>>> @@ -547,8 +547,9 @@ static int ad7280_attr_init(struct ad7280_state *st)
+>>>    {
+>>>    	int dev, ch, cnt;
+>>>
+>>> -	st->iio_attr = kzalloc(sizeof(*st->iio_attr) * (st->slave_num + 1) *
+>>> -				AD7280A_CELLS_PER_DEV * 2, GFP_KERNEL);
+>>> +	st->iio_attr = devm_kzalloc(&st->spi->dev, sizeof(*st->iio_attr) *
+>>> +				    (st->slave_num + 1) *
+>>> +				    AD7280A_CELLS_PER_DEV * 2, GFP_KERNEL);
+>>>    	if (st->iio_attr == NULL)
+>>>    		return -ENOMEM;
+>>>
+>>> @@ -564,7 +565,7 @@ static int ad7280_attr_init(struct ad7280_state *st)
+>>>    			st->iio_attr[cnt].dev_attr.store =
+>>>    				ad7280_store_balance_sw;
+>>>    			st->iio_attr[cnt].dev_attr.attr.name =
+>>> -				kasprintf(GFP_KERNEL,
+>>> +				devm_kasprintf(&st->spi->dev, GFP_KERNEL,
+>>>    					"in%d-in%d_balance_switch_en",
+>>>    					(dev * AD7280A_CELLS_PER_DEV) + ch,
+>>>    					(dev * AD7280A_CELLS_PER_DEV) + ch +
+>>> 1);
+>>> @@ -581,7 +582,8 @@ static int ad7280_attr_init(struct ad7280_state *st)
+>>>    			st->iio_attr[cnt].dev_attr.store =
+>>>    				ad7280_store_balance_timer;
+>>>    			st->iio_attr[cnt].dev_attr.attr.name =
+>>> -				kasprintf(GFP_KERNEL,
+>>> "in%d-in%d_balance_timer",
+>>> +				devm_kasprintf(&st->spi->dev, GFP_KERNEL,
+>>> +					"in%d-in%d_balance_timer",
+>>>    					(dev * AD7280A_CELLS_PER_DEV) + ch,
+>>>    					(dev * AD7280A_CELLS_PER_DEV) + ch +
+>>> 1);
+>>>    			ad7280_attributes[cnt] =
+>>> @@ -900,48 +902,36 @@ static int ad7280_probe(struct spi_device *spi)
+>>>
+>>>    	ret = ad7280_attr_init(st);
+>>>    	if (ret < 0)
+>>> -		goto error_free_channels;
+>>> +		return ret;
+>>>
+>>> -	ret = iio_device_register(indio_dev);
+>>> +	ret = devm_iio_device_register(&spi->dev, indio_dev);
+>>>    	if (ret)
+>>> -		goto error_free_attr;
+>>> +		return ret;
+>>>
+>>>    	if (spi->irq > 0) {
+>>>    		ret = ad7280_write(st, AD7280A_DEVADDR_MASTER,
+>>>    				   AD7280A_ALERT, 1,
+>>>    				   AD7280A_ALERT_RELAY_SIG_CHAIN_DOWN);
+>>>    		if (ret)
+>>> -			goto error_unregister;
+>>> +			return ret;
+>>>
+>>>    		ret = ad7280_write(st, AD7280A_DEVADDR(st->slave_num),
+>>>    				   AD7280A_ALERT, 0,
+>>>    				   AD7280A_ALERT_GEN_STATIC_HIGH |
+>>>    				   (pdata->chain_last_alert_ignore & 0xF));
+>>>    		if (ret)
+>>> -			goto error_unregister;
+>>> -
+>>> -		ret = request_threaded_irq(spi->irq,
+>>> -					   NULL,
+>>> -					   ad7280_event_handler,
+>>> -					   IRQF_TRIGGER_FALLING |
+>>> -					   IRQF_ONESHOT,
+>>> -					   indio_dev->name,
+>>> -					   indio_dev);
+>>> +			return ret;
+>>> +
+>>> +		ret = devm_request_threaded_irq(&spi->dev, spi->irq, NULL,
+>>> +						ad7280_event_handler,
+>>> +						IRQF_TRIGGER_FALLING |
+>>> +						IRQF_ONESHOT, indio_dev->name,
+>>> +						indio_dev);
+>>>    		if (ret)
+>>> -			goto error_unregister;
+>>> +			return ret;
+>>>    	}
+>>>
+>>>    	return 0;
+>>> -error_unregister:
+>>> -	iio_device_unregister(indio_dev);
+>>> -
+>>> -error_free_attr:
+>>> -	kfree(st->iio_attr);
+>>> -
+>>> -error_free_channels:
+>>> -	kfree(st->channels);
+>>> -
+>>> -	return ret;
+>>>    }
+>>>
+>>>    static int ad7280_remove(struct spi_device *spi)
+>>> @@ -949,16 +939,9 @@ static int ad7280_remove(struct spi_device *spi)
+>>>    	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>>>    	struct ad7280_state *st = iio_priv(indio_dev);
+>>>
+>>> -	if (spi->irq > 0)
+>>> -		free_irq(spi->irq, indio_dev);
+>>> -	iio_device_unregister(indio_dev);
+>>> -
+>>>    	ad7280_write(st, AD7280A_DEVADDR_MASTER, AD7280A_CONTROL_HB, 1,
+>>>    			AD7280A_CTRL_HB_PWRDN_SW | st->ctrl_hb);
+>>>
+>>> -	kfree(st->channels);
+>>> -	kfree(st->iio_attr);
+>>> -
+>>>    	return 0;
+>>>    }
+>>>
+>>>
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
-OK, so if the general case has been fixed, perhaps we should ask Paul
-to drop my patch?
-
--- 
-Ard.
