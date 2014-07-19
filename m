@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965869AbaGSNRF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 09:17:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:51597 "EHLO
+	id S965803AbaGSNRD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 09:17:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:62021 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755514AbaGSNQQ (ORCPT
+	by vger.kernel.org with ESMTP id S1755494AbaGSNQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 19 Jul 2014 09:16:16 -0400
-Message-Id: <20140719131613.958346878@goodmis.org>
+Message-Id: <20140719131613.241421466@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Sat, 19 Jul 2014 09:15:50 -0400
+Date: Sat, 19 Jul 2014 09:15:46 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [for-next][PATCH 26/32] arm64, ftrace: Remove check of obsolete variable function_trace_stop
+        Ralf Baechle <ralf@linux-mips.org>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [for-next][PATCH 22/32] MIPS: ftrace: Remove check of obsolete variable function_trace_stop
 References: <20140719131524.009152325@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0026-arm64-ftrace-Remove-check-of-obsolete-variable-funct.patch
+Content-Disposition: inline; filename=0022-MIPS-ftrace-Remove-check-of-obsolete-variable-functi.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,37 +31,51 @@ From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 Nothing sets function_trace_stop to disable function tracing anymore.
 Remove the check for it in the arch code.
 
-arm64 was broken anyway, as it had an ifdef testing
- CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST which is only set if
-the arch supports the code (which it obviously did not), and
-it was testing a non existent ftrace_trace_stop instead of
-function_trace_stop.
-
-Link: http://lkml.kernel.org/r/20140627124421.GP26276@arm.com
-
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Tested-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm64/kernel/entry-ftrace.S | 5 -----
- 1 file changed, 5 deletions(-)
+ arch/mips/Kconfig         | 1 -
+ arch/mips/kernel/mcount.S | 7 -------
+ 2 files changed, 8 deletions(-)
 
-diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
-index aa5f9fcbf9ee..38e704e597f7 100644
---- a/arch/arm64/kernel/entry-ftrace.S
-+++ b/arch/arm64/kernel/entry-ftrace.S
-@@ -96,11 +96,6 @@
-  *     - ftrace_graph_caller to set up an exit hook
-  */
- ENTRY(_mcount)
--#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--	ldr	x0, =ftrace_trace_stop
--	ldr	x0, [x0]		// if ftrace_trace_stop
--	ret				//   return;
--#endif
- 	mcount_enter
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 4e238e6e661c..10f270bd3e25 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -15,7 +15,6 @@ config MIPS
+ 	select HAVE_BPF_JIT if !CPU_MICROMIPS
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+ 	select HAVE_FUNCTION_TRACER
+-	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FTRACE_MCOUNT_RECORD
+ 	select HAVE_C_RECORDMCOUNT
+diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+index 539b6294b613..00940d1d5c4f 100644
+--- a/arch/mips/kernel/mcount.S
++++ b/arch/mips/kernel/mcount.S
+@@ -74,10 +74,6 @@ _mcount:
+ #endif
  
- 	ldr	x0, =ftrace_trace_function
+ 	/* When tracing is activated, it calls ftrace_caller+8 (aka here) */
+-	lw	t1, function_trace_stop
+-	bnez	t1, ftrace_stub
+-	 nop
+-
+ 	MCOUNT_SAVE_REGS
+ #ifdef KBUILD_MCOUNT_RA_ADDRESS
+ 	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
+@@ -105,9 +101,6 @@ ftrace_stub:
+ #else	/* ! CONFIG_DYNAMIC_FTRACE */
+ 
+ NESTED(_mcount, PT_SIZE, ra)
+-	lw	t1, function_trace_stop
+-	bnez	t1, ftrace_stub
+-	 nop
+ 	PTR_LA	t1, ftrace_stub
+ 	PTR_L	t2, ftrace_trace_function /* Prepare t2 for (1) */
+ 	bne	t1, t2, static_trace
 -- 
 2.0.1
 
