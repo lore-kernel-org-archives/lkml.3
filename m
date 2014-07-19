@@ -1,125 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609AbaGSX2A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 19:28:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7807 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751215AbaGSX16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 19:27:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,693,1400050800"; 
-   d="scan'208";a="459061609"
-Message-ID: <53CAFEFD.3040500@linux.intel.com>
-Date: Sat, 19 Jul 2014 16:27:57 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756666AbaGSX2I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 19:28:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49772 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756612AbaGSX2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jul 2014 19:28:05 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 2/7] ACPICA: Linux: Add stub implementation of ACPICA 64-bit mathematics.
+Date: Sun, 20 Jul 2014 01:46:25 +0200
+Message-ID: <3777197.HSR7Q9huIS@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <01bab2394df93a3064f09d961f4011b62895eef2.1405500886.git.lv.zheng@intel.com>
+References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1405500886.git.lv.zheng@intel.com> <01bab2394df93a3064f09d961f4011b62895eef2.1405500886.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jic23@kernel.org
-Subject: Re: [PATCH v6 4/4] iio: hid-sensor-magn-3d: Add support for rotation
- from north
-References: <1405621109-21147-1-git-send-email-reyad.attiyat@gmail.com> <1405621109-21147-5-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1405621109-21147-5-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, July 16, 2014 04:58:00 PM Lv Zheng wrote:
+> This patch adds default 64-bit mathematics in aclinux.h using do_div(). As
+> do_div() can be used for all Linux architectures, this can also be used as
+> stub macros for ACPICA 64-bit mathematics.
+> 
+> But this is not a performance friendly way, as ACPICA's architecture
+> specific division OSL only requires a dividing 64-bit number with a 32-bit
+> number implementation, while Linux __div64_32() is not available for all
+> build environments. So currently, if an architecture really wants to
+> support ACPICA, it must implement its own division OSL.
 
-On 07/17/2014 11:18 AM, Reyad Attiyat wrote:
-> Add the HID usage attribute ID's and IIO channel info for rotation
-> from north support.
->
-> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+What does this mean for i386, in particular?
+
+> This is required by the ACPICA header stub support. ACPICA header stubs are
+> useful to protect CONFIG_ACPI=n Linux kernel builds where ACPICA headers
+> are included. Lv Zheng.
+> 
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 > ---
->   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 53 ++++++++++++++++++++++++++-
->   1 file changed, 52 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> index d3b9114..3ec777a 100644
-> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> @@ -35,6 +35,10 @@ enum magn_3d_channel {
->   	CHANNEL_SCAN_INDEX_X,
->   	CHANNEL_SCAN_INDEX_Y,
->   	CHANNEL_SCAN_INDEX_Z,
-> +	CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP,
-> +	CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP,
-> +	CHANNEL_SCAN_INDEX_NORTH_MAGN,
-> +	CHANNEL_SCAN_INDEX_NORTH_TRUE,
->   	MAGN_3D_CHANNEL_MAX,
->   };
->   
-> @@ -57,7 +61,11 @@ struct magn_3d_state {
->   static const u32 magn_3d_addresses[MAGN_3D_CHANNEL_MAX] = {
->   	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
->   	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS,
-> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS
-> +	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS,
-> +	HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH,
-> +	HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH,
-> +	HID_USAGE_SENSOR_ORIENT_MAGN_NORTH,
-> +	HID_USAGE_SENSOR_ORIENT_TRUE_NORTH,
->   };
->   
->   /* Channel definitions */
-> @@ -89,6 +97,42 @@ static const struct iio_chan_spec magn_3d_channels[] = {
->   		BIT(IIO_CHAN_INFO_SCALE) |
->   		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->   		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> +	}, {
-> +		.type = IIO_ROT,
-> +		.modified = 1,
-> +		.channel2 = IIO_MOD_NORTH_MAGN_TILT_COMP,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> +		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> +		BIT(IIO_CHAN_INFO_SCALE) |
-> +		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> +		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> +	}, {
-> +		.type = IIO_ROT,
-> +		.modified = 1,
-> +		.channel2 = IIO_MOD_NORTH_TRUE_TILT_COMP,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> +		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> +		BIT(IIO_CHAN_INFO_SCALE) |
-> +		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> +		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> +	}, {
-> +		.type = IIO_ROT,
-> +		.modified = 1,
-> +		.channel2 = IIO_MOD_NORTH_MAGN,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> +		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> +		BIT(IIO_CHAN_INFO_SCALE) |
-> +		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> +		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> +	}, {
-> +		.type = IIO_ROT,
-> +		.modified = 1,
-> +		.channel2 = IIO_MOD_NORTH_TRUE,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> +		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> +		BIT(IIO_CHAN_INFO_SCALE) |
-> +		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> +		BIT(IIO_CHAN_INFO_HYSTERESIS),
->   	}
->   };
->   
-> @@ -245,6 +289,13 @@ static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
->   		offset = (usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS)
->   				+ CHANNEL_SCAN_INDEX_X;
->   	break;
-> +	case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
-> +	case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
-> +	case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
-> +	case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
-> +		offset = (usage_id - HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH)
-> +				+ CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP;
-> +	break;
->   	default:
->   		return -EINVAL;
->   	}
+>  include/acpi/platform/aclinuxex.h |   22 ++++++++++++++++++++++
+>  1 file changed, 22 insertions(+)
+> 
+> diff --git a/include/acpi/platform/aclinuxex.h b/include/acpi/platform/aclinuxex.h
+> index 191e741..568d4b8 100644
+> --- a/include/acpi/platform/aclinuxex.h
+> +++ b/include/acpi/platform/aclinuxex.h
+> @@ -46,6 +46,28 @@
+>  
+>  #ifdef __KERNEL__
+>  
+> +#ifndef ACPI_USE_NATIVE_DIVIDE
+> +
+> +#ifndef ACPI_DIV_64_BY_32
+> +#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
+> +	do { \
+> +		u64 (__n) = ((u64) n_hi) << 32 | (n_lo); \
+> +		(r32) = do_div ((__n), (d32)); \
+> +		(q32) = (u32) (__n); \
+> +	} while (0)
+> +#endif
+> +
+> +#ifndef ACPI_SHIFT_RIGHT_64
+> +#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
+> +	do { \
+> +		(n_lo) >>= 1; \
+> +		(n_lo) |= (((n_hi) & 1) << 31); \
+> +		(n_hi) >>= 1; \
+> +	} while (0)
+> +#endif
+> +
+> +#endif
+> +
+>  /*
+>   * Overrides for in-kernel ACPICA
+>   */
+> 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
