@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965371AbaGSArX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 20:47:23 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46231 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244AbaGSAof (ORCPT
+	id S965603AbaGSArx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 20:47:53 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54037 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965074AbaGSArw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 20:44:35 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 05/10] smp: Fast path check on IPI list
-Date: Sat, 19 Jul 2014 02:44:16 +0200
-Message-Id: <1405730661-9355-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
-References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
+	Fri, 18 Jul 2014 20:47:52 -0400
+Date: Fri, 18 Jul 2014 17:47:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH 1/1] rcu: Fix build failure
+Message-ID: <20140719004747.GA4782@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53C959CC.6030401@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C959CC.6030401@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14071900-0928-0000-0000-000003819150
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we enqueue a remote irq work, we trigger the same IPI as those
-raised by smp_call_function_*() family.
+On Fri, Jul 18, 2014 at 01:30:52PM -0400, Pranith Kumar wrote:
+> Hi Paul,
+> 
+> While running the kvm rcutorture test scripts, I encountered a build failure caused by
+> 
+> Commit 918179699e4a ("rcu: Don't keep timekeeping CPU tick running for non-nohz_full= CPUs")
+> 
+> This commit fixes the failure. This is on top of paul/rcu/dev.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> ---
+>  kernel/rcu/tree_plugin.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 5591276..eaa32e4 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2795,7 +2795,7 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
+>  	 * CPU to keep a tick on our behalf.  We assume that the timekeeping
+>  	 * CPU is also a nohz_full= CPU.
+>  	 */
+> -	if (!tick_nohz_full_cpu(cpu))
+> +	if (!tick_nohz_full_cpu(smp_processor_id()))
 
-So when we receive such IPI, we check both irq_work and smp_call_function
-queues. Thus if we trigger a remote irq work, we'll likely find the
-smp_call_function queue empty unless we collide with concurrent enqueuers
-but the probability is low.
+Good catch, but please see 770d957e (rcu: Don't keep timekeeping CPU
+tick running for non-nohz_full= CPUs).  ;-)
 
-Meanwhile, checking the smp_call_function queue can be costly because
-we use llist_del_all() which relies on cmpxchg().
+								Thanx, Paul
 
-We can reduce this overhead by doing a fast path check with llist_empty().
-Given the implicit IPI ordering:
-
-       Enqueuer                            Dequeuer
-       ---------                           --------
-       llist_add(csd, queue)               get_IPI() {
-       send_IPI()                              if (llist_empty(queue)
-                                                    ...
-When the IPI is sent, we are guaranteed that the IPI receiver will
-see the new csd.
-
-So lets do the fast path check to optimize non smp_call_function() related
-jobs.
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/smp.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index a1812d1..34378d4 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -184,11 +184,19 @@ static int generic_exec_single(int cpu, struct call_single_data *csd,
-  */
- void generic_smp_call_function_single_interrupt(void)
- {
-+	struct llist_head *head = &__get_cpu_var(call_single_queue);
- 	struct llist_node *entry;
- 	struct call_single_data *csd, *csd_next;
- 	static bool warned;
- 
--	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-+	/*
-+	 * Fast check: in case of irq work remote queue, the IPI list
-+	 * is likely empty. We can spare the expensive llist_del_all().
-+	 */
-+	if (llist_empty(head))
-+		goto irq_work;
-+
-+	entry = llist_del_all(head);
- 	entry = llist_reverse_order(entry);
- 
- 	/*
-@@ -212,6 +220,7 @@ void generic_smp_call_function_single_interrupt(void)
- 		csd_unlock(csd);
- 	}
- 
-+irq_work:
- 	/*
- 	 * Handle irq works queued remotely by irq_work_queue_on().
- 	 * Smp functions above are typically synchronous so they
--- 
-1.8.3.1
+>  		return;
+>  
+>  	/* Update system-idle state: We are clearly no longer fully idle! */
+> -- 
+> 1.9.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
