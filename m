@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123AbaGSBbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 21:31:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:40682 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753922AbaGSBbk (ORCPT
+	id S1759547AbaGSBfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 21:35:10 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:47935 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378AbaGSBfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 21:31:40 -0400
-Date: Fri, 18 Jul 2014 21:31:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        kernelnewbies@kernelnewbies.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: How to automate checkpatch && get_maintainers && git send-email
- of commits range?
-Message-ID: <20140719013138.GA21252@home.goodmis.org>
-References: <CANZNk81LiTM9vY0dRV=T0BCT9k-BxU45Ojw_PyOcpdmtXHKM2Q@mail.gmail.com>
- <20140718222215.GF18775@thunk.org>
+	Fri, 18 Jul 2014 21:35:08 -0400
+From: =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH] kbuild: add support to generate LLVM bitcode files
+Date: Fri, 18 Jul 2014 22:34:37 -0300
+Message-Id: <1405733677-16650-1-git-send-email-viniciustinti@gmail.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718222215.GF18775@thunk.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 06:22:15PM -0400, Theodore Ts'o wrote:
-> 
-> And then think very hard about which patches people need to see in
-> order to be able to evaluate a patch.  For example, if you have patch
-> 1 out of a series which adds a new function, and then patches 2
-> through 1000 modify a thousand different drivers to use that new
-> function, if you use an automated get_maintainers.pl script to send
-> each patch to just the maintainer, then the device driver maintainer
-> might not see patch #1 which is critical context to understanding the
-> patch that you want to make to his driver.  And then you will have
-> several hundred very angry and annoyed developers wondering why you
-> sent them patch 345/1000, with no other context, and wondering what
-> the heck they are supposed to do with the email that you have just
-> launched into their inbox.
+Allows kbuild to generate LLVM bitcode files with the .ll extension when
+building with Clang.
 
-I'm still stuck in the old stone/quilt age, where I use quilt mail to
-send my patch bombs. Although, I have scripts that pulls my patches out
-from git with format-patch, and then creates a quilt queue from them.
-I do this for that very reason that I want to review all patches before
-I hit send, and quilt mail is very basic and sends what I tell it.
-I still a bit gun shy from using git sendmail as I never got that to
-work (note, the last time I tried, it was still doing the staircase
-threads with patches by default).
+  # c code
+  CC=clang make kernel/pid.ll
 
-I'm still content with quilt, but the one thing I don't care about it
-is that all Cc'd on the 0/1000 patch gets Cc'd on all patches. I wish
-there was a way to tell quilt that they should only get Cc'd on the
-cover patch and no more, unless the patch has them Cc'd. The reason this
-bothers me is that I tend to do exactly what you stated above. I will
-just Cc patch 345/1000 to someone with no context of what that patch
-is.
+  # asm code
+  CC=clang make arch/arm/kernel/calls.ll
 
-I figured people would do the same thing that I do when I get that 345th
-patch. As I'm subscribed to LKML, I will just go into my lkml folder and
-search for that patch and see how that thread applies to me with full
-context. I'm assuming that's what others may do too.
+Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ Makefile               |  7 +++++++
+ scripts/Makefile.build | 18 ++++++++++++++++++
+ 2 files changed, 25 insertions(+)
 
--- Steve
+diff --git a/Makefile b/Makefile
+index f3c543d..4eb0d14 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1484,6 +1484,13 @@ endif
+ %.symtypes: %.c prepare scripts FORCE
+ 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
+ 
++ifeq ($(COMPILER),clang)
++%.ll: %.c prepare scripts FORCE
++	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
++%.ll: %.S prepare scripts FORCE
++	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
++endif
++
+ # Modules
+ /: prepare scripts FORCE
+ 	$(cmd_crmodverdir)
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index bf3e677..9ea19d6 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -174,6 +174,14 @@ cmd_cc_symtypes_c =                                                         \
+ $(obj)/%.symtypes : $(src)/%.c FORCE
+ 	$(call cmd,cc_symtypes_c)
+ 
++ifeq ($(COMPILER),clang)
++quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
++cmd_cc_ll_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -emit-llvm -S -o $@ $<
++
++$(obj)/%.ll: $(src)/%.c FORCE
++	$(call if_changed_dep,cc_ll_c)
++endif
++
+ # C (.c) files
+ # The C file is compiled and updated dependency information is generated.
+ # (See cmd_cc_o_c + relevant part of rule_cc_o_c)
+@@ -315,6 +323,16 @@ quiet_cmd_asn1_compiler = ASN.1   $@
+ $(obj)/%-asn1.c $(obj)/%-asn1.h: $(src)/%.asn1 $(objtree)/scripts/asn1_compiler
+ 	$(call cmd,asn1_compiler)
+ 
++# LLVM bitcode
++# ---------------------------------------------------------------------------
++ifeq ($(COMPILER),clang)
++quiet_cmd_as_ll_S = CPP $(quiet_modtag) $@
++cmd_as_ll_S       = $(CPP) $(a_flags)   -o $@ $<
++
++$(obj)/%.ll: $(src)/%.S FORCE
++	$(call if_changed_dep,as_ll_S)
++endif
++
+ # Build the compiled-in targets
+ # ---------------------------------------------------------------------------
+ 
+-- 
+2.0.1
 
