@@ -1,137 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935039AbaGRXfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jul 2014 19:35:52 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59249 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932995AbaGRXfu (ORCPT
+	id S1754768AbaGRXmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jul 2014 19:42:23 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60062 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751277AbaGRXmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jul 2014 19:35:50 -0400
-X-Sasl-enc: vG6bbAQXAypYXr2Z0V/Zp1sZI0xc4OJR6lthLzwNAOL8 1405726549
-Message-ID: <1405726548.10838.34.camel@localhost>
-Subject: Re: [PATCH] random: check for increase of entropy_count because of
- signed conversion
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com, price@mit.edu
-Date: Sat, 19 Jul 2014 01:35:48 +0200
-In-Reply-To: <1405721239-2630-1-git-send-email-tytso@mit.edu>
-References: <20140718215054.GD18775@thunk.org>
-	 <1405721239-2630-1-git-send-email-tytso@mit.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jul 2014 19:42:21 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH 1/6] PM / Hibernate: Create a Radix-Tree to store memory bitmap
+Date: Sat, 19 Jul 2014 02:00:39 +0200
+Message-ID: <7231480.jWHmWTNGCG@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405684643-30234-2-git-send-email-joro@8bytes.org>
+References: <1405684643-30234-1-git-send-email-joro@8bytes.org> <1405684643-30234-2-git-send-email-joro@8bytes.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fr, 2014-07-18 at 18:07 -0400, Theodore Ts'o wrote:
-> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+On Friday, July 18, 2014 01:57:18 PM Joerg Roedel wrote:
+> From: Joerg Roedel <jroedel@suse.de>
 > 
-> The expression entropy_count -= ibytes << (ENTROPY_SHIFT + 3) could
-> actually increase entropy_count if during assignment of the unsigned
-> expression on the RHS (mind the -=) we reduce the value modulo
-> 2^width(int) and assign it to entropy_count. Trinity found this.
+> This patch adds the code to allocate and build the radix
+> tree to store the memory bitmap. The old data structure is
+> left in place until the radix tree implementation is
+> finished.
 > 
-> [ Commit modified by tytso to add an additional safety check for a
->   negative entropy_count -- which should never happen, and to also add
->   an additional paranoia check to prevent overly large count values to
->   be passed into urandom_read().  ]
-> 
-> Reported-by: Dave Jones <davej@redhat.com>
-> Cc: Greg Price <price@mit.edu>
-> Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
 > ---
->  drivers/char/random.c | 17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
+>  kernel/power/snapshot.c | 224 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 223 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index 0a7ac0a..003f744 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -641,7 +641,7 @@ retry:
->  		} while (unlikely(entropy_count < pool_size-2 && pnfrac));
->  	}
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index 1ea328a..d0f11ec 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -248,11 +248,24 @@ static void *chain_alloc(struct chain_allocator *ca, unsigned int size)
+>   *	information is stored (in the form of a block of bitmap)
+>   *	It also contains the pfns that correspond to the start and end of
+>   *	the represented memory area.
+> + *
+> + *	The memory bitmap is organized as a radix tree to guarantee fast random
+> + *	access to the bits. There is one radix tree for each zone (as returned
+> + *	from create_mem_extents).
+> + *
+> + *	One radix tree is represented by one struct mem_zone_bm_rtree. There are
+> + *	two linked lists for the nodes of the tree, one for the inner nodes and
+> + *	one for the leave nodes. The linked leave nodes are used for fast linear
+> + *	access of the memory bitmap.
+> + *
+> + *	The struct rtree_node represents one node of the radix tree.
+>   */
 >  
-> -	if (entropy_count < 0) {
-> +	if (unlikely(entropy_count < 0)) {
->  		pr_warn("random: negative entropy/overflow: pool %s count %d\n",
->  			r->name, entropy_count);
->  		WARN_ON(1);
-> @@ -981,7 +981,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
->  		      int reserved)
->  {
->  	int entropy_count, orig;
-> -	size_t ibytes;
-> +	size_t ibytes, nfrac;
+>  #define BM_END_OF_MAP	(~0UL)
 >  
->  	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
+>  #define BM_BITS_PER_BLOCK	(PAGE_SIZE * BITS_PER_BYTE)
+> +#define BM_BLOCK_SHIFT		(PAGE_SHIFT + 3)
+> +#define BM_BLOCK_MASK		((1UL << BM_BLOCK_SHIFT) - 1)
 >  
-> @@ -999,7 +999,17 @@ retry:
->  	}
->  	if (ibytes < min)
->  		ibytes = 0;
-> -	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
+>  struct bm_block {
+>  	struct list_head hook;	/* hook into a list of bitmap blocks */
+> @@ -266,6 +279,31 @@ static inline unsigned long bm_block_bits(struct bm_block *bb)
+>  	return bb->end_pfn - bb->start_pfn;
+>  }
+>  
+> +/*
+> + * struct rtree_node is a wrapper struct to link the nodes
+> + * of the rtree together for easy linear iteration over
+> + * bits and easy freeing
+> + */
+> +struct rtree_node {
+> +	struct list_head list;
+> +	unsigned long *data;
+> +};
 > +
-> +	nfrac = ibytes << (ENTROPY_SHIFT + 3);
-> +	if (entropy_count < 0) {
-
-Minor nit: maybe also add an unlikely() here?
-
-> +		pr_warn("random: negative entropy count: pool %s count %d\n",
-> +			r->name, entropy_count);
-> +		WARN_ON(1);
-> +		entropy_count = 0;
-> +	}
-> +	if ((unsigned) entropy_count > nfrac)
-
-(unsigned) -> (size_t)
-
-size_t could also be (unsigned long) so the plain (unsigned) is
-misleading.
-
-(Maybe I wouldn't have done the cast at all, as we compile the kernel
-with -Wno-sign-compare and we have the < 0 check right above, but I
-don't have a strong opinion on that.)
-
-> +		entropy_count -= nfrac;
-> +	else
->  		entropy_count = 0;
+> +/*
+> + * struct mem_zone_bm_rtree represents a bitmap used for one
+> + * populated memory zone.
+> + */
+> +struct mem_zone_bm_rtree {
+> +	struct list_head list;		/* Link Zones together         */
+> +	struct list_head nodes;		/* Radix Tree inner nodes      */
+> +	struct list_head leaves;	/* Radix Tree leaves           */
+> +	unsigned long start_pfn;	/* Zone start page frame       */
+> +	unsigned long end_pfn;		/* Zone end page frame + 1     */
+> +	struct rtree_node *rtree;	/* Radix Tree Root             */
+> +	int levels;			/* Number of Radix Tree Levels */
+> +	unsigned int blocks;		/* Number of Bitmap Blocks     */
+> +};
+> +
+>  /* strcut bm_position is used for browsing memory bitmaps */
 >  
->  	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-> @@ -1376,6 +1386,7 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
->  			    "with %d bits of entropy available\n",
->  			    current->comm, nonblocking_pool.entropy_total);
+>  struct bm_position {
+> @@ -274,6 +312,7 @@ struct bm_position {
+>  };
 >  
-> +	nbytes = min_t(size_t, nbytes, INT_MAX >> ENTROPY_SHIFT);
-
-Hmm, not sure, nfracs unit is 1/8 bits, so don't we have to limit nbytes
-to INT_MAX >> (ENTROPY_SHIFT + 3) here?
-
-And if we want to be even more correct here, we could switch from
-INT_MAX to SIZE_MAX, as we do all nfrac calculations in the size_t
-domain.
-
-Maximum read/write size is SSIZE_MAX, so we don't need to care about
-that, but if a user on a 64 bit machine requests INT_MAX bytes, we only
-account/extract INT_MAX >> (ENTROPY_SHIFT + 3) bytes and cause a partial
-read, though we actually could calulcate a correct nfrac for INT_MAX.
-Because we don't have such large poolfragbits pools we would still
-always end up with 0 while still allowing larger buffers to fill.
-
-Hm, I just see that we should leave the INT_MAX limit just because of
-the tracepoint.
-
-Good catch,
-Hannes
-
->  	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
+>  struct memory_bitmap {
+> +	struct list_head zones;
+>  	struct list_head blocks;	/* list of bitmap blocks */
+>  	struct linked_page *p_list;	/* list of pages used to store zone
+>  					 * bitmap objects and bitmap block
+> @@ -284,6 +323,167 @@ struct memory_bitmap {
 >  
->  	trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
+>  /* Functions that operate on memory bitmaps */
+>  
+> +#define BM_ENTRIES_PER_LEVEL	(PAGE_SIZE / sizeof(unsigned long))
+> +#if BITS_PER_LONG == 32
+> +#define BM_RTREE_LEVEL_SHIFT	(PAGE_SHIFT - 2)
+> +#else
+> +#define BM_RTREE_LEVEL_SHIFT	(PAGE_SHIFT - 3)
+> +#endif
+> +#define BM_RTREE_LEVEL_MASK	((1UL << BM_RTREE_LEVEL_SHIFT) - 1)
+> +
+> +/*
+> + *	alloc_rtree_node - Allocate a new node and add it to the radix
+> + *			   tree.
 
+Please make this a single line.
 
+> + *
+> + *	This function is used to allocate inner nodes as well as the
+> + *	leave nodes of the radix tree. It also adds the node to the
+> + *	corresponding linked list passed in by the *list parameter.
+> + */
+> +static struct rtree_node *alloc_rtree_node(gfp_t gfp_mask, int safe_needed,
+> +					   struct chain_allocator *ca,
+> +					   struct list_head *list)
+> +{
+> +	struct rtree_node *node;
+> +
+> +	node = chain_alloc(ca, sizeof(struct rtree_node));
+> +	if (!node)
+> +		return NULL;
+> +
+> +	node->data = get_image_page(gfp_mask, safe_needed);
+> +	if (!node->data)
+> +		return NULL;
+> +
+> +	list_add_tail(&node->list, list);
+> +
+> +	return node;
+> +}
+> +
+> +/*
+> + *	add_rtree_block - Add a new leave node to the radix tree
+> + *
+> + *	The leave nodes need to be allocated in order to keep the leaves
+> + *	linked list in order. This is guaranteed by the zone->blocks
+> + *	counter.
+> + */
+> +static int add_rtree_block(struct mem_zone_bm_rtree *zone, gfp_t gfp_mask,
+> +			   int safe_needed, struct chain_allocator *ca)
+> +{
+> +	struct rtree_node *node, *block, **dst;
+> +	unsigned int levels_needed, block_nr;
+> +	int i;
+> +
+> +	block_nr	= zone->blocks;
+
+This isn't proper kernel coding style.  Please use spaces as separators
+before the "=" here and elsewhere.
+
+Rafael
 
