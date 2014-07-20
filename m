@@ -1,119 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaGTWJG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 18:09:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35187 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921AbaGTWJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 18:09:04 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.LNX.2.11.1407202330420.31021@titan.int.lan.stealer.net>
-References: <alpine.LNX.2.11.1407202330420.31021@titan.int.lan.stealer.net>
+	id S1751442AbaGTWMx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 18:12:53 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:40639 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaGTWMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 18:12:52 -0400
+Date: Mon, 21 Jul 2014 00:12:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
+ for non-nohz_full= CPUs
+Message-ID: <20140720221245.GA2138@lerouge>
+References: <20140719165350.GA18411@linux.vnet.ibm.com>
+ <20140719180120.GA20887@localhost.localdomain>
+ <20140720114759.GO8690@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] x86_32, entry: store badsys error code in %eax
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 20 Jul 2014 15:07:53 -0700
-To: Sven Wegener <sven.wegener@stealer.net>
-CC: Richard Weinberger <richard@nod.at>, X86 ML <x86@kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
-        =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        stable@vger.kernel.org, Roland McGrath <roland@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Message-ID: <90404aa5-cab6-44aa-9eab-4106cb16e7ab@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140720114759.GO8690@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not a subtle regression at all.  It is in fact a very very serious one.
-
-On July 20, 2014 2:33:50 PM PDT, Sven Wegener <sven.wegener@stealer.net> wrote:
->Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
->(CVE-2014-4508)") introduced a subtle regression in the x86_32 syscall
->entry code, resulting in syscall() not returning proper errors for
->non-existing syscalls on CPUs not supporting the sysenter feature.
->
->The following code:
->
->> int result = syscall(666);
->> printf("result=%d errno=%d error=%s\n", result, errno,
->strerror(errno));
->
->results in:
->
->> result=666 errno=0 error=Success
->
->Obviously, the syscall return value is the called syscall number, but
->it
->should have been an ENOSYS error. When run under ptrace it behaves
->correctly, which makes it hard to debug in the wild:
->
->> result=-1 errno=38 error=Function not implemented
->
->The %eax register is the return value register. For debugging via
->ptrace
->the syscall entry code stores the complete register context on the
->stack. The badsys handlers only store the ENOSYS error code in the
->ptrace register set and do not set %eax like a regular syscall handler
->would. The old resume_userspace call chain contains code that clobbers
->%eax and it restores %eax from the ptrace registers afterwards. The
->same
->goes for the ptrace-enabled call chain. When ptrace is not used, the
->syscall return value is the passed-in syscall number from the
->%eax register.
->
->Use %eax as the return value register in syscall_badsys and
->sysenter_badsys, like a real syscall handler does, and have the caller
->push the value onto the stack for ptrace access.
->
->Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
->---
-> arch/x86/kernel/entry_32.S | 9 +++++----
-> 1 file changed, 5 insertions(+), 4 deletions(-)
->
->diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
->index dbaa23e..0d0c9d4 100644
->--- a/arch/x86/kernel/entry_32.S
->+++ b/arch/x86/kernel/entry_32.S
->@@ -425,8 +425,8 @@ sysenter_do_call:
-> 	cmpl $(NR_syscalls), %eax
-> 	jae sysenter_badsys
-> 	call *sys_call_table(,%eax,4)
->-	movl %eax,PT_EAX(%esp)
-> sysenter_after_call:
->+	movl %eax,PT_EAX(%esp)
-> 	LOCKDEP_SYS_EXIT
-> 	DISABLE_INTERRUPTS(CLBR_ANY)
-> 	TRACE_IRQS_OFF
->@@ -502,6 +502,7 @@ ENTRY(system_call)
-> 	jae syscall_badsys
-> syscall_call:
-> 	call *sys_call_table(,%eax,4)
->+syscall_after_call:
-> 	movl %eax,PT_EAX(%esp)		# store the return value
-> syscall_exit:
-> 	LOCKDEP_SYS_EXIT
->@@ -675,12 +676,12 @@ syscall_fault:
-> END(syscall_fault)
+On Sun, Jul 20, 2014 at 04:47:59AM -0700, Paul E. McKenney wrote:
+> On Sat, Jul 19, 2014 at 08:01:24PM +0200, Frederic Weisbecker wrote:
+> > On Sat, Jul 19, 2014 at 09:53:50AM -0700, Paul E. McKenney wrote:
+> > > If a non-nohz_full= CPU is non-idle, it will have a scheduling-clock
+> > > interrupt, and therefore doesn't need the timekeeping CPU to keep
+> > > its scheduling-clock interrupt going.  This commit therefore ignores
+> > > the idle state of non-nohz_full CPUs when determining whether or not
+> > > the timekeeping CPU can safely turn off its scheduling-clock interrupt.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > Unfortunately that's not how things work. Running a CPU tick doesn't necessarily
+> > imply to run the timekeeping duty.
+> > 
+> > Only the timekeeper can update the timekeeping. There is an exception though:
+> > the timekeeping is also updated by dynticks idle CPUs when they wake up in an
+> > interrupt from idle.
+> > 
+> > Here is in practice why it doesn't work:
+> > 
+> > So lets say CPU 0 is timekeeper, CPU 1 a non-nohz-full CPU and all others are full-nohz.
+> > CPU 0 is sleeping. CPU 1 wakes up from idle, so it has an uptodate timekeeping but then
+> > if it continues to execute further without waking up CPU 0, it risks stale timestamps.
+> > 
+> > This can be changed by allowing timekeeping duty from all non-nohz_full CPUs, that's
+> > the initial direction I took, but it involved a lot of complications and scalability
+> > issues.
 > 
-> syscall_badsys:
->-	movl $-ENOSYS,PT_EAX(%esp)
->-	jmp syscall_exit
->+	movl $-ENOSYS,%eax
->+	jmp syscall_after_call
-> END(syscall_badsys)
-> 
-> sysenter_badsys:
->-	movl $-ENOSYS,PT_EAX(%esp)
->+	movl $-ENOSYS,%eax
-> 	jmp sysenter_after_call
-> END(syscall_badsys)
-> 	CFI_ENDPROC
+> So we really have to have -all- the CPUs be idle to turn off the timekeeper.
+> This won't make the battery-powered embedded guys happy...
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+I can imagine all sorts of solutions to solve this. None of them look simple
+though. And I'm really convinced this isn't worth until some user comes up
+and report me that 1) he seriously uses full dynticks and 2) he needs non-full-nohz
+CPUs other than CPU 0.
+
+If 1 and 2 ever happen, I'll gladly work on this.
+
+> 
+> Other thoughts on this?  We really should not be setting
+> CONFIG_NO_HZ_FULL_SYSIDLE by default until this is solved.
+
+Well it's better to save energy when all CPUs are idle than never.
