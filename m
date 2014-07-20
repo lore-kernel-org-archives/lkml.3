@@ -1,140 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaGTLrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 07:47:55 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:60781 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaGTLry (ORCPT
+	id S1752314AbaGTLsN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 07:48:13 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36646 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247AbaGTLsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 07:47:54 -0400
-Message-ID: <53CBAC65.2040208@gmail.com>
-Date: Sun, 20 Jul 2014 14:47:49 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 20 Jul 2014 07:48:07 -0400
+Date: Sun, 20 Jul 2014 04:47:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
+ for non-nohz_full= CPUs
+Message-ID: <20140720114759.GO8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140719165350.GA18411@linux.vnet.ibm.com>
+ <20140719180120.GA20887@localhost.localdomain>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] block: support > 16 byte CDBs for SG_IO
-References: <1405851804-29096-1-git-send-email-hch@lst.de> <1405851804-29096-3-git-send-email-hch@lst.de>
-In-Reply-To: <1405851804-29096-3-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140719180120.GA20887@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072011-7164-0000-0000-000003428279
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2014 01:23 PM, Christoph Hellwig wrote:
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-
-Hi Christoph I've quickly reviewed your code and have a few questions
-
-> ---
->  block/scsi_ioctl.c | 24 +++++++++++++++++-------
->  1 file changed, 17 insertions(+), 7 deletions(-)
+On Sat, Jul 19, 2014 at 08:01:24PM +0200, Frederic Weisbecker wrote:
+> On Sat, Jul 19, 2014 at 09:53:50AM -0700, Paul E. McKenney wrote:
+> > If a non-nohz_full= CPU is non-idle, it will have a scheduling-clock
+> > interrupt, and therefore doesn't need the timekeeping CPU to keep
+> > its scheduling-clock interrupt going.  This commit therefore ignores
+> > the idle state of non-nohz_full CPUs when determining whether or not
+> > the timekeeping CPU can safely turn off its scheduling-clock interrupt.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-> index c4e6633..a804f3e 100644
-> --- a/block/scsi_ioctl.c
-> +++ b/block/scsi_ioctl.c
-> @@ -288,8 +288,6 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
->  
->  	if (hdr->interface_id != 'S')
->  		return -EINVAL;
-> -	if (hdr->cmd_len > BLK_MAX_CDB)
-> -		return -EINVAL;
->  
->  	if (hdr->dxfer_len > (queue_max_hw_sectors(q) << 9))
->  		return -EIO;
-> @@ -306,14 +304,21 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
->  			break;
->  		}
->  
-> +	ret = -ENOMEM;
->  	rq = blk_get_request(q, writing ? WRITE : READ, GFP_KERNEL);
->  	if (!rq)
-> -		return -ENOMEM;
-> +		goto out;
->  	blk_rq_set_block_pc(rq);
->  
-> +	if (hdr->cmd_len > BLK_MAX_CDB) {
-> +		rq->cmd = kzalloc(hdr->cmd_len, GFP_KERNEL);
+> Unfortunately that's not how things work. Running a CPU tick doesn't necessarily
+> imply to run the timekeeping duty.
+> 
+> Only the timekeeper can update the timekeeping. There is an exception though:
+> the timekeeping is also updated by dynticks idle CPUs when they wake up in an
+> interrupt from idle.
+> 
+> Here is in practice why it doesn't work:
+> 
+> So lets say CPU 0 is timekeeper, CPU 1 a non-nohz-full CPU and all others are full-nohz.
+> CPU 0 is sleeping. CPU 1 wakes up from idle, so it has an uptodate timekeeping but then
+> if it continues to execute further without waking up CPU 0, it risks stale timestamps.
+> 
+> This can be changed by allowing timekeeping duty from all non-nohz_full CPUs, that's
+> the initial direction I took, but it involved a lot of complications and scalability
+> issues.
 
-So two things here:
-- hdr->cmd_len is char so can be MAX of 255. I understand that 4 bytes alignment is a SCSI
-  thing so you found no point of checking any max size?
+So we really have to have -all- the CPUs be idle to turn off the timekeeper.
+This won't make the battery-powered embedded guys happy...
 
-- Why the zero alloc, if you are going to paste over it the exact same length. Now if like in scsi
-  you need 4 bytes alignment and zero padding yes, but here you do not do this (and probably shouldn't).
-  Hence why zero-alloc?
+Other thoughts on this?  We really should not be setting
+CONFIG_NO_HZ_FULL_SYSIDLE by default until this is solved.
 
-- Looking at sg.h where hdr->cmd_len is defined it stills has a comment of <= 16 you might want to
-  remove the comment by now.
+								Thanx, Paul
 
-> +		if (!rq->cmd)
-> +			goto out_put_request;
-> +	}
-> +
->  	ret = -EFAULT;
->  	if (blk_fill_sghdr_rq(q, rq, hdr, mode))
-
-Inside here: blk_fill_sghdr_rq() calls blk_verify_command() which does:
-(Below cmd[] is the buffer copied from user)
-
-	/* Anybody who can open the device can do a read-safe command */
-	if (test_bit(cmd[0], filter->read_ok))
-		return 0;
-
-	/* Write-safe commands require a writable open */
-	if (test_bit(cmd[0], filter->write_ok) && has_write_perm)
-		return 0;
-
-Now I am not sure what type "Commands" you guys intend for these large commands
-but if they are say SCSI-VARLEN this test will not work. Also a user might fool
-the system with pretending to be "read" a device modifying command.
-
-I would pass len to this test function and only permit these above if command is
-<= 16. Any "special" large command is root only.
-
-Thanks
-Boaz
-
-> -		goto out;
-> +		goto out_free_cdb;
->  
->  	if (hdr->iovec_count) {
->  		size_t iov_data_len;
-> @@ -323,7 +328,7 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
->  					    0, NULL, &iov);
->  		if (ret < 0) {
->  			kfree(iov);
-> -			goto out;
-> +			goto out_free_cdb;
->  		}
->  
->  		iov_data_len = ret;
-> @@ -346,7 +351,7 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
->  				      GFP_KERNEL);
->  
->  	if (ret)
-> -		goto out;
-> +		goto out_free_cdb;
->  
->  	bio = rq->bio;
->  	memset(sense, 0, sizeof(sense));
-> @@ -365,8 +370,13 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
->  	hdr->duration = jiffies_to_msecs(jiffies - start_time);
->  
->  	ret = blk_complete_sghdr_rq(rq, hdr, bio);
-> -out:
-> +
-> +out_free_cdb:
-> +	if (rq->cmd != rq->__cmd)
-> +		kfree(rq->cmd);
-> +out_put_request:
->  	blk_put_request(rq);
-> +out:
->  	return ret;
->  }
->  
+> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > index ddad959a9132..eaa32e4c228d 100644
+> > --- a/kernel/rcu/tree_plugin.h
+> > +++ b/kernel/rcu/tree_plugin.h
+> > @@ -2789,8 +2789,13 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
+> >  	 * system-idle state.  This means that the timekeeping CPU must
+> >  	 * invoke rcu_sysidle_force_exit() directly if it does anything
+> >  	 * more than take a scheduling-clock interrupt.
+> > +	 *
+> > +	 * In addition if we are not a nohz_full= CPU, then when we are
+> > +	 * non-idle we have our own tick, so we don't need the timekeeping
+> > +	 * CPU to keep a tick on our behalf.  We assume that the timekeeping
+> > +	 * CPU is also a nohz_full= CPU.
+> >  	 */
+> > -	if (smp_processor_id() == tick_do_timer_cpu)
+> > +	if (!tick_nohz_full_cpu(smp_processor_id()))
+> >  		return;
+> >  
+> >  	/* Update system-idle state: We are clearly no longer fully idle! */
+> > @@ -2810,11 +2815,11 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+> >  
+> >  	/*
+> >  	 * If some other CPU has already reported non-idle, if this is
+> > -	 * not the flavor of RCU that tracks sysidle state, or if this
+> > -	 * is an offline or the timekeeping CPU, nothing to do.
+> > +	 * not the flavor of RCU that tracks sysidle state, or if this is
+> > +	 * an offline or !nohz_full= or the timekeeping CPU, nothing to do.
+> >  	 */
+> >  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+> > -	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+> > +	    cpu_is_offline(rdp->cpu) || !tick_nohz_full_cpu(rdp->cpu))
+> >  		return;
+> >  	if (rcu_gp_in_progress(rdp->rsp))
+> >  		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+> > 
 > 
 
