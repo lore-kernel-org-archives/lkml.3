@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbaGTT6P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:58:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58414 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaGTT6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:58:14 -0400
-Date: Sun, 20 Jul 2014 12:58:13 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.16-rc6
-Message-ID: <20140720195813.GA27936@kroah.com>
+	id S1753620AbaGTUAH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 16:00:07 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010AbaGTUAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 16:00:06 -0400
+Message-ID: <53CC1FC2.5000806@nod.at>
+Date: Sun, 20 Jul 2014 22:00:02 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@linux-m68k.org>
+Subject: Re: ls -l /proc/1/exe -> Permission denied
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>	<87lhrpayl4.fsf@igel.home>	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>	<87fvhwxps6.fsf@igel.home>	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com> <87bnskxn7g.fsf@igel.home> <53CBB095.6010705@nod.at> <OF2729CE69.3EF22126-ONC1257D1B.0069427B-C1257D1B.0069CA17@transmode.se>
+In-Reply-To: <OF2729CE69.3EF22126-ONC1257D1B.0069427B-C1257D1B.0069CA17@transmode.se>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
+Am 20.07.2014 21:15, schrieb Joakim Tjernlund:
+> Richard Weinberger <richard@nod.at> wrote on 2014/07/20 14:05:41:
+>>
+>> Am 20.07.2014 13:51, schrieb Andreas Schwab:
+>>> Richard Weinberger <richard.weinberger@gmail.com> writes:
+>>>> Do you have an example?
+>>>
+>>> proc symlinks are special because they actually resolve to the inode.
+>>
+>> Ah. If an attacker manages the kernel to follow the symlink he could
+>> indirectly access that file.
+>> Thanks for pointing this out!
+> 
+> That is a big if, I read this as you don't trust the kernels impl.
+> of proc sym links so paper over this with denying all other to read 
+> trivial
+> data such as the exe sym link.
 
-  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+Feel free to propose a solution for that. :-)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.16-rc6
-
-for you to fetch changes up to 9359003385a2faffa502d201771d45624037a4cd:
-
-  Merge tag 'iio-fixes-for-3.16d' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-07-13 15:47:26 -0700)
-
-----------------------------------------------------------------
-Staging fixes for 3.16-rc6
-
-Here are 2 IIO driver fixes for 3.16-rc6 that resolve some reported issues.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.16d' of git://git.kernel.org/.../jic23/iio into staging-linus
-
-Martin Fuzzey (1):
-      iio: mma8452: Use correct acceleration units.
-
-Srinivas Pandruvada (1):
-      iio:core: Handle error when mask type is not separate
-
- drivers/iio/accel/mma8452.c      | 8 +++++++-
- drivers/iio/industrialio-event.c | 3 +++
- 2 files changed, 10 insertions(+), 1 deletion(-)
+Thanks,
+//richard
