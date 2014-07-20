@@ -1,49 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaGTV72 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:59:28 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:53928 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750882AbaGTV7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:59:25 -0400
-X-Sasl-enc: +DktcfMng8ErJLbxZoD6JugdMobjHscZYcbB7ze2O07k 1405893565
-Date: Sun, 20 Jul 2014 14:59:24 -0700
-From: Greg KH <gregkh@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: davem@davemloft.net, sachin.kamat@linaro.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: staging/8821ae driver breaks allyes build in 3.16-rc*
-Message-ID: <20140720215924.GA6243@kroah.com>
-References: <20140720190523.GL18735@two.firstfloor.org>
- <20140720192511.GA3120@kroah.com>
- <20140720193821.GA12357@kroah.com>
- <20140720194327.GA11230@kroah.com>
- <20140720212101.GN18735@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140720212101.GN18735@two.firstfloor.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751399AbaGTV4p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:56:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846AbaGTV4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 17:56:42 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 08/19] perf tools: Flush ordered events in case of allocation failure
+Date: Sun, 20 Jul 2014 23:55:52 +0200
+Message-Id: <1405893363-21967-9-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
+References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 11:21:01PM +0200, Andi Kleen wrote:
-> > Ok, that's odd, I thought we didn't build staging drivers for
-> > allyesconfig, but you are right, we do.
-> > 
-> 
-> It was changed a few kernels ago iirc.
+In previous patches we added a limit for ordered events
+queue allocation size. If we reach this size we need to
+flush (part of) the queue to get some free buffers.
 
-I looked into this, it changed in 3.0, many _years_ ago, from a patch I
-wrote... :)
+The current functionality is not affected, because the
+limit is hard coded to (u64) -1. The configuration code
+for size will come in following patches.
 
-> > allyesconfig builds the staging directory just fine for me here, with
-> > Linus's current tree:
-> 
-> Ok I builds after I threw the old build directory away. Mysterious.
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/builtin-kvm.c  |  2 +-
+ tools/perf/util/session.c | 29 +++++++++++++++++++++++++++--
+ tools/perf/util/session.h |  3 ++-
+ 3 files changed, 30 insertions(+), 4 deletions(-)
 
-Ah, good, glad it's working for you now.
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index f8a561643753..f687228850d2 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -732,7 +732,7 @@ static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
+ 			return -1;
+ 		}
+ 
+-		err = perf_session_queue_event(kvm->session, event, &sample, 0);
++		err = perf_session_queue_event(kvm->session, event, &kvm->tool, &sample, 0);
+ 		/*
+ 		 * FIXME: Here we can't consume the event, as perf_session_queue_event will
+ 		 *        point to it, and it'll get possibly overwritten by the kernel.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ebb87318c073..64c58e6f0923 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -15,6 +15,7 @@
+ #include "cpumap.h"
+ #include "perf_regs.h"
+ #include "vdso.h"
++#include "asm/bug.h"
+ 
+ static int perf_session__open(struct perf_session *session)
+ {
+@@ -458,6 +459,7 @@ struct ordered_event {
+ enum oe_flush {
+ 	OE_FLUSH__FINAL,
+ 	OE_FLUSH__ROUND,
++	OE_FLUSH__HALF,
+ };
+ 
+ static void perf_session_free_sample_buffers(struct perf_session *session)
+@@ -639,6 +641,23 @@ static int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
+ 		oe->next_flush = ULLONG_MAX;
+ 		break;
+ 
++	case OE_FLUSH__HALF:
++	{
++		struct ordered_event *first, *last;
++		struct list_head *head = &oe->events;
++
++		first = list_entry(head->next, struct ordered_event, list);
++		last = oe->last;
++
++		/* Warn if we are called before any event got allocated. */
++		if (WARN_ONCE(!last || list_empty(head), "empty queue"))
++			return 0;
++
++		oe->next_flush  = first->timestamp;
++		oe->next_flush += (last->timestamp - first->timestamp) / 2;
++		break;
++	}
++
+ 	case OE_FLUSH__ROUND:
+ 	default:
+ 		break;
+@@ -701,7 +720,8 @@ static int process_finished_round(struct perf_tool *tool,
+ }
+ 
+ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+-				    struct perf_sample *sample, u64 file_offset)
++			     struct perf_tool *tool, struct perf_sample *sample,
++			     u64 file_offset)
+ {
+ 	struct ordered_events *oe = &s->ordered_events;
+ 	u64 timestamp = sample->time;
+@@ -716,6 +736,11 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 	}
+ 
+ 	new = ordered_events_new(oe, timestamp);
++	if (!new) {
++		ordered_events_flush(s, tool, OE_FLUSH__HALF);
++		new = ordered_events_new(oe, timestamp);
++	}
++
+ 	if (!new)
+ 		return -ENOMEM;
+ 
+@@ -1121,7 +1146,7 @@ static int perf_session__process_event(struct perf_session *session,
+ 		return ret;
+ 
+ 	if (tool->ordered_events) {
+-		ret = perf_session_queue_event(session, event, &sample,
++		ret = perf_session_queue_event(session, event, tool, &sample,
+ 					       file_offset);
+ 		if (ret != -ETIME)
+ 			return ret;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index e2fbaf2567e1..a09e3c8d825a 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -67,7 +67,8 @@ int perf_session__process_events(struct perf_session *session,
+ 				 struct perf_tool *tool);
+ 
+ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+-			     struct perf_sample *sample, u64 file_offset);
++			     struct perf_tool *tool, struct perf_sample *sample,
++			     u64 file_offset);
+ 
+ void perf_tool__fill_defaults(struct perf_tool *tool);
+ 
+-- 
+1.8.3.1
 
-greg k-h
