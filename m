@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaGTIsp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 04:48:45 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:47219 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaGTIsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 04:48:43 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCH 2/2] Staging: Remove redundant comments in wcmd.h file
-Date: Sun, 20 Jul 2014 11:48:32 +0300
-Message-Id: <1405846112-5046-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751267AbaGTJC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 05:02:57 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:63213 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750949AbaGTJCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 05:02:55 -0400
+In-Reply-To: <87lhrpayl4.fsf@igel.home>
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se> <87lhrpayl4.fsf@igel.home>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Subject: Re: ls -l  /proc/1/exe -> Permission denied
+X-KeepSent: 152BAB0C:4FB2E7A9-C1257D1B:0031887F;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Message-ID: <OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>
+Date: Sun, 20 Jul 2014 11:02:48 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
+ 20/07/2014 11:02:48,
+	Serialize complete at 20/07/2014 11:02:48
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant comments in the header file wcmd.h
+Andreas Schwab <schwab@linux-m68k.org> wrote on 2014/07/19 22:21:59:
+> 
+> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
+> 
+> > Trying to real /proc/<pid>/exe I noticed I could not read links not 
+> > belonging to my user such as:
+> > jocke >  ls -l /proc/1/exe
+> >              ls: cannot read symbolic link /proc/1/exe: Permission 
+denied
+> >
+> > Is this expected?
+> 
+> Yes.  This information is considered private.
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
----
- drivers/staging/vt6655/wcmd.h |   11 -----------
- 1 file changed, 11 deletions(-)
+I don't understand why though.
+Why have exe in the fist place then?
 
-diff --git a/drivers/staging/vt6655/wcmd.h b/drivers/staging/vt6655/wcmd.h
-index 2844476..696916c 100644
---- a/drivers/staging/vt6655/wcmd.h
-+++ b/drivers/staging/vt6655/wcmd.h
-@@ -33,12 +33,9 @@
- #include "80211hdr.h"
- #include "80211mgr.h"
- 
--/*---------------------  Export Definitions -------------------------*/
--
- #define AUTHENTICATE_TIMEOUT   1000 //ms
- #define ASSOCIATE_TIMEOUT      1000 //ms
- 
--// Command code
- typedef enum tagCMD_CODE {
- 	WLAN_CMD_BSSID_SCAN,
- 	WLAN_CMD_SSID,
-@@ -76,7 +73,6 @@ typedef struct tagCMD_ITEM {
- 	bool bForceSCAN;
- } CMD_ITEM, *PCMD_ITEM;
- 
--// Command state
- typedef enum tagCMD_STATE {
- 	WLAN_CMD_SCAN_START,
- 	WLAN_CMD_SCAN_END,
-@@ -92,13 +88,6 @@ typedef enum tagCMD_STATE {
- 	WLAN_CMD_IDLE
- } CMD_STATE, *PCMD_STATE;
- 
--/*---------------------  Export Classes  ----------------------------*/
--
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Types  ------------------------------*/
--
--/*---------------------  Export Functions  --------------------------*/
- void
- vResetCommandTimer(
- 	void *hDeviceContext
--- 
-1.7.9.5
-
+ Jocke
