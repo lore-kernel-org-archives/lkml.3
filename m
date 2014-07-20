@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaGTTPf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:15:35 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:58616 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802AbaGTTPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:15:34 -0400
-In-Reply-To: <53CBB095.6010705@nod.at>
-References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>	<87lhrpayl4.fsf@igel.home>
-	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>	<87fvhwxps6.fsf@igel.home>
-	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com> <87bnskxn7g.fsf@igel.home> <53CBB095.6010705@nod.at>
-To: Richard Weinberger <richard@nod.at>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@linux-m68k.org>
+	id S1753421AbaGTTWL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:22:11 -0400
+Received: from ishtar.tlinx.org ([173.164.175.65]:41097 "EHLO
+	Ishtar.hs.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaGTTWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 15:22:10 -0400
+X-Greylist: delayed 2100 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jul 2014 15:22:10 EDT
+Message-ID: <53CC0EAA.2010202@tlinx.org>
+Date: Sun, 20 Jul 2014 11:47:06 -0700
+From: "Linda A. Walsh" <lkml@tlinx.org>
+User-Agent: Thunderbird
 MIME-Version: 1.0
-Subject: Re: ls -l /proc/1/exe -> Permission denied
-X-KeepSent: 2729CE69:3EF22126-C1257D1B:0069427B;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Message-ID: <OF2729CE69.3EF22126-ONC1257D1B.0069427B-C1257D1B.0069CA17@transmode.se>
-Date: Sun, 20 Jul 2014 21:15:29 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
- 20/07/2014 21:15:29,
-	Serialize complete at 20/07/2014 21:15:29
-Content-Type: text/plain; charset="US-ASCII"
+To: Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Howto tell kernel to use 4096 as granularity & minimum size?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard@nod.at> wrote on 2014/07/20 14:05:41:
-> 
-> Am 20.07.2014 13:51, schrieb Andreas Schwab:
-> > Richard Weinberger <richard.weinberger@gmail.com> writes:
-> >> Do you have an example?
-> > 
-> > proc symlinks are special because they actually resolve to the inode.
-> 
-> Ah. If an attacker manages the kernel to follow the symlink he could
-> indirectly access that file.
-> Thanks for pointing this out!
+I have a hard disk with a "512e" sector size: emulated 512, really 4096.
 
-That is a big if, I read this as you don't trust the kernels impl.
-of proc sym links so paper over this with denying all other to read 
-trivial
-data such as the exe sym link.
+The disk returns a 512-byte size to drivers for compatibility.
 
- Jocke 
+I can partition the disk and setup the allocation size
+to 4096, but I'd like to tell the kernel to use a
+virtual-size of 4096 for the sector as an additional
+performance 'hint', so nothing will even try to use
+smaller i/o's than that.
+
+However, this doesn't seem to work ("# prompt" does mean root):
+
+/sys/block/sdd/queue#   echo 4096 >minimum_io_size    
+bash: minimum_io_size: Permission denied
+
+I realize this is probably implemented as a R-O value,
+but it there a reason it needs to be if an admin
+wants to increase it to a multiple of an emulated
+I/O size so as to have it represent the physical
+sector size?
+
+I.e. if the "/sys" code was patched to allow modification
+of this variable, would it work for the purpose
+I am describing (i.e. ignoring emulated 512 size and
+using the real 4096 size as a minimum (I wouldn't
+intend or want this to affect the sector# addressing,
+which would still be done using 512B sector blocks.
+
+Thanks!
+
+
