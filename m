@@ -1,212 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaGTRn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 13:43:57 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:44957 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157AbaGTRny (ORCPT
+	id S1753370AbaGTRq6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 13:46:58 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:64980 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaGTRq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 13:43:54 -0400
+	Sun, 20 Jul 2014 13:46:56 -0400
+Date: Sun, 20 Jul 2014 13:46:53 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140720174652.GE3068@gmail.com>
+References: <53C7D645.3070607@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
-	<1405373897-31671-7-git-send-email-keescook@chromium.org>
-	<CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
-Date: Sun, 20 Jul 2014 10:43:53 -0700
-X-Google-Sender-Auth: 8bU2BzBPlmbjyFh3Cc2rq3vVxtg
-Message-ID: <CAGXu5j+xx2exZdD64mXWzmvVUzBrFUOg-kZ5E4+tvKAuGTKW4w@mail.gmail.com>
-Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
-From: Kees Cook <keescook@chromium.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53C7D645.3070607@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 8:04 PM, Ming Lei <ming.lei@canonical.com> wrote:
-> On Tue, Jul 15, 2014 at 5:38 AM, Kees Cook <keescook@chromium.org> wrote:
->> As an alternative to loading bytes from the "data" blob when reading
->> firmware, let kernel read from an fd, so that the LSM can reason about
->> the origin of firmware contents during userspace on-demand loading.
->
-> From user space view, maybe it is better to keep previous usage and just
-> check if loading is from 'data' blob or fd in 'echo 0 > loading' of
-> firmware_loading_store(), then the 'fd' usage becomes very similar with
-> before.
+On Thu, Jul 17, 2014 at 04:57:25PM +0300, Oded Gabbay wrote:
+> Forgot to cc mailing list on cover letter. Sorry.
+> 
+> As a continuation to the existing discussion, here is a v2 patch series
+> restructured with a cleaner history and no totally-different-early-versions
+> of the code.
+> 
+> Instead of 83 patches, there are now a total of 25 patches, where 5 of them
+> are modifications to radeon driver and 18 of them include only amdkfd code.
+> There is no code going away or even modified between patches, only added.
+> 
+> The driver was renamed from radeon_kfd to amdkfd and moved to reside under
+> drm/radeon/amdkfd. This move was done to emphasize the fact that this driver
+> is an AMD-only driver at this point. Having said that, we do foresee a
+> generic hsa framework being implemented in the future and in that case, we
+> will adjust amdkfd to work within that framework.
+> 
+> As the amdkfd driver should support multiple AMD gfx drivers, we want to
+> keep it as a seperate driver from radeon. Therefore, the amdkfd code is
+> contained in its own folder. The amdkfd folder was put under the radeon
+> folder because the only AMD gfx driver in the Linux kernel at this point
+> is the radeon driver. Having said that, we will probably need to move it
+> (maybe to be directly under drm) after we integrate with additional AMD gfx
+> drivers.
+> 
+> For people who like to review using git, the v2 patch set is located at:
+> http://cgit.freedesktop.org/~gabbayo/linux/log/?h=kfd-next-3.17-v2
+> 
+> Written by Oded Gabbayh <oded.gabbay@amd.com>
 
-I don't think this is a good idea because otherwise there isn't a good
-way to have an "atomic" check of the firmware contents. What does it
-means to write to "fd" several times, then write "data" a little,
-before writing "loading", etc? I originally wrote the patch series
-requiring the "loading" piece, and it ended up being very complicated
-due to needing to switch the memory buffer logic back and forth.
-Everything is much much cleaner if "fd" is single-shot, and not part
-of the loading/data interface semantics.
+So quick comments before i finish going over all patches. There is many
+things that need more documentation espacialy as of right now there is
+no userspace i can go look at.
 
-And, as it turns out, the userspace changes are much simpler if
-"loading" isn't part of the picture for the "fd" interface, too.
+There few show stopper, biggest one is gpu memory pinning this is a big
+no, that would need serious arguments for any hope of convincing me on
+that side.
 
--Kees
+It might be better to add a drivers/gpu/drm/amd directory and add common
+stuff there.
 
->
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  Documentation/firmware_class/README |   10 +++++
->>  drivers/base/firmware_class.c       |   77 ++++++++++++++++++++++++++++++++++-
->>  2 files changed, 86 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
->> index 71f86859d7d8..d899bdacba1e 100644
->> --- a/Documentation/firmware_class/README
->> +++ b/Documentation/firmware_class/README
->> @@ -59,6 +59,16 @@
->>   8), kernel(driver): Driver code calls release_firmware(fw_entry) releasing
->>                  the firmware image and any related resource.
->>
->> + Alternative loading (via file descriptor):
->> + ==========================================
->> + Instead of "loading", and "data" above, firmware can be loaded through
->> + an open file descriptor as well, via the "fd" file:
->> +
->> + Replacing steps 2 thorugh 6 above with the following userspace actions,
->> + performs the same loading:
->> +       - open firmware image file (e.g. as fd 3).
->> +       - write fd (e.g. "3") to /sys/class/firmware/xxx/fd.
->
-> Then as above, here should be just to replace step 4, 5 as
->           - open image in user space
->           - echo fd > /sys/class/firmware/xxx/fd
->
->> +
->>   High level behavior (driver code):
->>   ==================================
->>
->> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> index b38cbcd6ebb1..eac996447d28 100644
->> --- a/drivers/base/firmware_class.c
->> +++ b/drivers/base/firmware_class.c
->> @@ -839,6 +839,70 @@ static struct bin_attribute firmware_attr_data = {
->>         .write = firmware_data_write,
->>  };
->>
->> +/**
->> + * fd_store - set value in the 'fd' control file
->> + * @dev: device pointer
->> + * @attr: device attribute pointer
->> + * @buf: buffer to scan for loading fd value
->> + * @count: number of bytes in @buf
->> + *
->> + * Parses an fd number from buf, and then loads firmware bytes from
->> + * the current process's matching open fd.
->> + *
->> + **/
->> +static ssize_t fd_store(struct device *dev,
->> +                                struct device_attribute *attr,
->> +                                const char *buf, size_t count)
->> +{
->> +       struct firmware_priv *fw_priv = to_firmware_priv(dev);
->> +       struct firmware_buf *fw_buf = fw_priv->buf;
->> +       ssize_t retval;
->> +       int fd;
->> +       struct fd f;
->> +
->> +       if (!capable(CAP_SYS_RAWIO))
->> +               return -EPERM;
->> +
->> +       retval = kstrtoint(buf, 10, &fd);
->> +       if (retval)
->> +               return retval;
->> +
->> +       f = fdget(fd);
->> +       if (!f.file)
->> +               return -EBADF;
->> +
->> +       mutex_lock(&fw_lock);
->> +       /* If we raced another loader, we must fail. */
->> +       if (test_bit(FW_STATUS_DONE, &fw_buf->status)) {
->> +               retval = -EINVAL;
->> +               goto unlock;
->> +       }
->> +
->> +       fw_load_start(fw_buf);
->> +       /* fw_read_file_contents uses vmalloc, not pages. */
->> +       fw_buf->is_paged_buf = false;
->> +       retval = fw_read_file_contents(f.file, fw_buf);
->> +       if (retval) {
->> +               /* If we called fw_load_start, we must abort on fail. */
->> +               fw_load_abort(fw_priv);
->> +               goto unlock;
->> +       }
->> +
->> +       /* Success. */
->> +       set_bit(FW_STATUS_DONE, &fw_buf->status);
->> +       list_del_init(&fw_buf->pending_list);
->> +       complete_all(&fw_buf->completion);
->> +
->> +unlock:
->> +       mutex_unlock(&fw_lock);
->> +       fdput(f);
->> +
->> +       if (retval)
->> +               return retval;
->> +       return count;
->> +}
->> +static DEVICE_ATTR_WO(fd);
->> +
->>  static void firmware_class_timeout_work(struct work_struct *work)
->>  {
->>         struct firmware_priv *fw_priv = container_of(work,
->> @@ -912,10 +976,19 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
->>                 mutex_lock(&fw_lock);
->>                 list_del_init(&buf->pending_list);
->>                 mutex_unlock(&fw_lock);
->> -               dev_err(f_dev, "%s: device_create_file failed\n", __func__);
->> +               dev_err(f_dev, "%s: dev_attr_loading failed\n", __func__);
->>                 goto err_del_bin_attr;
->>         }
->>
->> +       retval = device_create_file(f_dev, &dev_attr_fd);
->> +       if (retval) {
->> +               mutex_lock(&fw_lock);
->> +               list_del_init(&buf->pending_list);
->> +               mutex_unlock(&fw_lock);
->> +               dev_err(f_dev, "%s: &dev_attr_fd failed\n", __func__);
->> +               goto err_del_loading;
->> +       }
->> +
->>         if (opt_flags & FW_OPT_UEVENT) {
->>                 buf->need_uevent = true;
->>                 dev_set_uevent_suppress(f_dev, false);
->> @@ -933,6 +1006,8 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
->>         if (!buf->data)
->>                 retval = -ENOMEM;
->>
->> +       device_remove_file(f_dev, &dev_attr_fd);
->> +err_del_loading:
->>         device_remove_file(f_dev, &dev_attr_loading);
->>  err_del_bin_attr:
->>         device_remove_bin_file(f_dev, &firmware_attr_data);
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Given that this is not intended to be final HSA api AFAICT then i would
+say this far better to avoid the whole kfd module and add ioctl to radeon.
+This would avoid crazy communication btw radeon and kfd.
+
+The whole aperture business needs some serious explanation. Especialy as
+you want to use userspace address there is nothing to prevent userspace
+program from allocating things at address you reserve for lds, scratch,
+... only sane way would be to move those lds, scratch inside the virtual
+address reserved for kernel (see kernel memory map).
+
+The whole business of locking performance counter for exclusive per process
+access is a big NO. Which leads me to the questionable usefullness of user
+space command ring. I only see issues with that. First and foremost i would
+need to see solid figures that kernel ioctl or syscall has a higher an
+overhead that is measurable in any meaning full way against a simple
+function call. I know the userspace command ring is a big marketing features
+that please ignorant userspace programmer. But really this only brings issues
+and for absolutely not upside afaict.
+
+So i would rather see a very simple ioctl that write the doorbell and might
+do more than that in case of ring/queue overcommit where it would first have
+to wait for a free ring/queue to schedule stuff. This would also allow sane
+implementation of things like performance counter that could be acquire by
+kernel for duration of a job submitted by userspace. While still not optimal
+this would be better that userspace locking.
 
 
+I might have more thoughts once i am done with all the patches.
 
--- 
-Kees Cook
-Chrome OS Security
+Cheers,
+Jérôme
+
+> 
+> Original Cover Letter:
+> 
+> This patch set implements a Heterogeneous System Architecture (HSA) driver
+> for radeon-family GPUs.
+> HSA allows different processor types (CPUs, DSPs, GPUs, etc..) to share
+> system resources more effectively via HW features including shared pageable
+> memory, userspace-accessible work queues, and platform-level atomics. In
+> addition to the memory protection mechanisms in GPUVM and IOMMUv2, the Sea
+> Islands family of GPUs also performs HW-level validation of commands passed
+> in through the queues (aka rings).
+> 
+> The code in this patch set is intended to serve both as a sample driver for
+> other HSA-compatible hardware devices and as a production driver for
+> radeon-family processors. The code is architected to support multiple CPUs
+> each with connected GPUs, although the current implementation focuses on a
+> single Kaveri/Berlin APU, and works alongside the existing radeon kernel
+> graphics driver (kgd).
+> AMD GPUs designed for use with HSA (Sea Islands and up) share some hardware
+> functionality between HSA compute and regular gfx/compute (memory,
+> interrupts, registers), while other functionality has been added
+> specifically for HSA compute  (hw scheduler for virtualized compute rings).
+> All shared hardware is owned by the radeon graphics driver, and an interface
+> between kfd and kgd allows the kfd to make use of those shared resources,
+> while HSA-specific functionality is managed directly by kfd by submitting
+> packets into an HSA-specific command queue (the "HIQ").
+> 
+> During kfd module initialization a char device node (/dev/kfd) is created
+> (surviving until module exit), with ioctls for queue creation & management,
+> and data structures are initialized for managing HSA device topology.
+> The rest of the initialization is driven by calls from the radeon kgd at the
+> following points :
+> 
+> - radeon_init (kfd_init)
+> - radeon_exit (kfd_fini)
+> - radeon_driver_load_kms (kfd_device_probe, kfd_device_init)
+> - radeon_driver_unload_kms (kfd_device_fini)
+> 
+> During the probe and init processing per-device data structures are
+> established which connect to the associated graphics kernel driver. This
+> information is exposed to userspace via sysfs, along with a version number
+> allowing userspace to determine if a topology change has occurred while it
+> was reading from sysfs.
+> The interface between kfd and kgd also allows the kfd to request buffer
+> management services from kgd, and allows kgd to route interrupt requests to
+> kfd code since the interrupt block is shared between regular
+> graphics/compute and HSA compute subsystems in the GPU.
+> 
+> The kfd code works with an open source usermode library ("libhsakmt") which
+> is in the final stages of IP review and should be published in a separate
+> repo over the next few days.
+> The code operates in one of three modes, selectable via the sched_policy
+> module parameter :
+> 
+> - sched_policy=0 uses a hardware scheduler running in the MEC block within
+> CP, and allows oversubscription (more queues than HW slots)
+> - sched_policy=1 also uses HW scheduling but does not allow
+> oversubscription, so create_queue requests fail when we run out of HW slots
+> - sched_policy=2 does not use HW scheduling, so the driver manually assigns
+> queues to HW slots by programming registers
+> 
+> The "no HW scheduling" option is for debug & new hardware bringup only, so
+> has less test coverage than the other options. Default in the current code
+> is "HW scheduling without oversubscription" since that is where we have the
+> most test coverage but we expect to change the default to "HW scheduling
+> with oversubscription" after further testing. This effectively removes the
+> HW limit on the number of work queues available to applications.
+> 
+> Programs running on the GPU are associated with an address space through the
+> VMID field, which is translated to a unique PASID at access time via a set
+> of 16 VMID-to-PASID mapping registers. The available VMIDs (currently 16)
+> are partitioned (under control of the radeon kgd) between current
+> gfx/compute and HSA compute, with each getting 8 in the current code. The
+> VMID-to-PASID mapping registers are updated by the HW scheduler when used,
+> and by driver code if HW scheduling is not being used.
+> The Sea Islands compute queues use a new "doorbell" mechanism instead of the
+> earlier kernel-managed write pointer registers. Doorbells use a separate BAR
+> dedicated for this purpose, and pages within the doorbell aperture are
+> mapped to userspace (each page mapped to only one user address space).
+> Writes to the doorbell aperture are intercepted by GPU hardware, allowing
+> userspace code to safely manage work queues (rings) without requiring a
+> kernel call for every ring update.
+> First step for an application process is to open the kfd device. Calls to
+> open create a kfd "process" structure only for the first thread of the
+> process. Subsequent open calls are checked to see if they are from processes
+> using the same mm_struct and, if so, don't do anything. The kfd per-process
+> data lives as long as the mm_struct exists. Each mm_struct is associated
+> with a unique PASID, allowing the IOMMUv2 to make userspace process memory
+> accessible to the GPU.
+> Next step is for the application to collect topology information via sysfs.
+> This gives userspace enough information to be able to identify specific
+> nodes (processors) in subsequent queue management calls. Application
+> processes can create queues on multiple processors, and processors support
+> queues from multiple processes.
+> At this point the application can create work queues in userspace memory and
+> pass them through the usermode library to kfd to have them mapped onto HW
+> queue slots so that commands written to the queues can be executed by the
+> GPU. Queue operations specify a processor node, and so the bulk of this code
+> is device-specific.
+> Written by John Bridgman <John.Bridgman@amd.com>
+> 
+> 
+> Alexey Skidanov (1):
+>   amdkfd: Implement the Get Process Aperture IOCTL
+> 
+> Andrew Lewycky (3):
+>   amdkfd: Add basic modules to amdkfd
+>   amdkfd: Add interrupt handling module
+>   amdkfd: Implement the Set Memory Policy IOCTL
+> 
+> Ben Goz (8):
+>   amdkfd: Add queue module
+>   amdkfd: Add mqd_manager module
+>   amdkfd: Add kernel queue module
+>   amdkfd: Add module parameter of scheduling policy
+>   amdkfd: Add packet manager module
+>   amdkfd: Add process queue manager module
+>   amdkfd: Add device queue manager module
+>   amdkfd: Implement the create/destroy/update queue IOCTLs
+> 
+> Evgeny Pinchuk (3):
+>   amdkfd: Add topology module to amdkfd
+>   amdkfd: Implement the Get Clock Counters IOCTL
+>   amdkfd: Implement the PMC Acquire/Release IOCTLs
+> 
+> Oded Gabbay (10):
+>   mm: Add kfd_process pointer to mm_struct
+>   drm/radeon: reduce number of free VMIDs and pipes in KV
+>   drm/radeon/cik: Don't touch int of pipes 1-7
+>   drm/radeon: Report doorbell configuration to amdkfd
+>   drm/radeon: adding synchronization for GRBM GFX
+>   drm/radeon: Add radeon <--> amdkfd interface
+>   Update MAINTAINERS and CREDITS files with amdkfd info
+>   amdkfd: Add IOCTL set definitions of amdkfd
+>   amdkfd: Add amdkfd skeleton driver
+>   amdkfd: Add binding/unbinding calls to amd_iommu driver
+> 
+>  CREDITS                                            |    7 +
+>  MAINTAINERS                                        |   10 +
+>  drivers/gpu/drm/radeon/Kconfig                     |    2 +
+>  drivers/gpu/drm/radeon/Makefile                    |    3 +
+>  drivers/gpu/drm/radeon/amdkfd/Kconfig              |   10 +
+>  drivers/gpu/drm/radeon/amdkfd/Makefile             |   14 +
+>  drivers/gpu/drm/radeon/amdkfd/cik_mqds.h           |  185 +++
+>  drivers/gpu/drm/radeon/amdkfd/cik_regs.h           |  220 ++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c       |  123 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c        |  518 +++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_crat.h           |  294 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_device.c         |  254 ++++
+>  .../drm/radeon/amdkfd/kfd_device_queue_manager.c   |  985 ++++++++++++++++
+>  .../drm/radeon/amdkfd/kfd_device_queue_manager.h   |  101 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c       |  264 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_interrupt.c      |  161 +++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.c   |  305 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.h   |   66 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_module.c         |  131 +++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c    |  291 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h    |   54 +
+>  drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c |  488 ++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c          |   97 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pm4_headers.h    |  682 +++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pm4_opcodes.h    |  107 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h           |  466 ++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_process.c        |  405 +++++++
+>  .../drm/radeon/amdkfd/kfd_process_queue_manager.c  |  343 ++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_queue.c          |  109 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_topology.c       | 1207 ++++++++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_topology.h       |  168 +++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c         |   96 ++
+>  drivers/gpu/drm/radeon/cik.c                       |  154 +--
+>  drivers/gpu/drm/radeon/cik_reg.h                   |   65 ++
+>  drivers/gpu/drm/radeon/cikd.h                      |   51 +-
+>  drivers/gpu/drm/radeon/radeon.h                    |    9 +
+>  drivers/gpu/drm/radeon/radeon_device.c             |   32 +
+>  drivers/gpu/drm/radeon/radeon_drv.c                |    5 +
+>  drivers/gpu/drm/radeon/radeon_kfd.c                |  566 +++++++++
+>  drivers/gpu/drm/radeon/radeon_kfd.h                |  119 ++
+>  drivers/gpu/drm/radeon/radeon_kms.c                |    7 +
+>  include/linux/mm_types.h                           |   14 +
+>  include/uapi/linux/kfd_ioctl.h                     |  133 +++
+>  43 files changed, 9226 insertions(+), 95 deletions(-)
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/Kconfig
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/Makefile
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_mqds.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_crat.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device_queue_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device_queue_manager.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_interrupt.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_module.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pm4_headers.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pm4_opcodes.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_queue.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c
+>  create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.c
+>  create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.h
+>  create mode 100644 include/uapi/linux/kfd_ioctl.h
+> 
+> -- 
+> 1.9.1
+> 
