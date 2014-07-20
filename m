@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaGTMiF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 08:38:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37842 "EHLO mail.kernel.org"
+	id S1752695AbaGTMjU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 08:39:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45081 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485AbaGTMiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 08:38:03 -0400
-Message-ID: <53CBB8B7.6000309@kernel.org>
-Date: Sun, 20 Jul 2014 13:40:23 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752073AbaGTMjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 08:39:19 -0400
+Message-ID: <53CBB862.3040609@parallels.com>
+Date: Sun, 20 Jul 2014 16:38:58 +0400
+From: Vasily Averin <vvs@parallels.com>
+Organization: Parallels
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Reyad Attiyat <reyad.attiyat@gmail.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 4/4] iio: hid-sensor-magn-3d: Add support for rotation
- from north
-References: <1405621109-21147-1-git-send-email-reyad.attiyat@gmail.com> <1405621109-21147-5-git-send-email-reyad.attiyat@gmail.com> <53CAFEFD.3040500@linux.intel.com>
-In-Reply-To: <53CAFEFD.3040500@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard.weinberger@gmail.com>
+Subject: [PATCH  v3] fs: umount on symlink leaks mnt count
+References: <CAFLxGvxf_bsLNKRtt05zgkdHy+7ALWMz29QUG=f9UwTcqXetfg@mail.gmail.com> <cover.1405859651.git.vvs@openvz.org>
+In-Reply-To: <cover.1405859651.git.vvs@openvz.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/07/14 00:27, Srinivas Pandruvada wrote:
->
-> On 07/17/2014 11:18 AM, Reyad Attiyat wrote:
->> Add the HID usage attribute ID's and IIO channel info for rotation
->> from north support.
->>
->> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-> Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Applied to the togreg branch of iio.git.  This will be initially pushed out
-as testing for the autobuilders to play with.
+v3: patch inline
 
-Thanks,
->> ---
->>   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 53 ++++++++++++++++++++++++++-
->>   1 file changed, 52 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
->> index d3b9114..3ec777a 100644
->> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
->> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
->> @@ -35,6 +35,10 @@ enum magn_3d_channel {
->>       CHANNEL_SCAN_INDEX_X,
->>       CHANNEL_SCAN_INDEX_Y,
->>       CHANNEL_SCAN_INDEX_Z,
->> +    CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP,
->> +    CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP,
->> +    CHANNEL_SCAN_INDEX_NORTH_MAGN,
->> +    CHANNEL_SCAN_INDEX_NORTH_TRUE,
->>       MAGN_3D_CHANNEL_MAX,
->>   };
->> @@ -57,7 +61,11 @@ struct magn_3d_state {
->>   static const u32 magn_3d_addresses[MAGN_3D_CHANNEL_MAX] = {
->>       HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
->>       HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS,
->> -    HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS
->> +    HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS,
->> +    HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH,
->> +    HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH,
->> +    HID_USAGE_SENSOR_ORIENT_MAGN_NORTH,
->> +    HID_USAGE_SENSOR_ORIENT_TRUE_NORTH,
->>   };
->>   /* Channel definitions */
->> @@ -89,6 +97,42 @@ static const struct iio_chan_spec magn_3d_channels[] = {
->>           BIT(IIO_CHAN_INFO_SCALE) |
->>           BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->>           BIT(IIO_CHAN_INFO_HYSTERESIS),
->> +    }, {
->> +        .type = IIO_ROT,
->> +        .modified = 1,
->> +        .channel2 = IIO_MOD_NORTH_MAGN_TILT_COMP,
->> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
->> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
->> +        BIT(IIO_CHAN_INFO_SCALE) |
->> +        BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->> +        BIT(IIO_CHAN_INFO_HYSTERESIS),
->> +    }, {
->> +        .type = IIO_ROT,
->> +        .modified = 1,
->> +        .channel2 = IIO_MOD_NORTH_TRUE_TILT_COMP,
->> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
->> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
->> +        BIT(IIO_CHAN_INFO_SCALE) |
->> +        BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->> +        BIT(IIO_CHAN_INFO_HYSTERESIS),
->> +    }, {
->> +        .type = IIO_ROT,
->> +        .modified = 1,
->> +        .channel2 = IIO_MOD_NORTH_MAGN,
->> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
->> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
->> +        BIT(IIO_CHAN_INFO_SCALE) |
->> +        BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->> +        BIT(IIO_CHAN_INFO_HYSTERESIS),
->> +    }, {
->> +        .type = IIO_ROT,
->> +        .modified = 1,
->> +        .channel2 = IIO_MOD_NORTH_TRUE,
->> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
->> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
->> +        BIT(IIO_CHAN_INFO_SCALE) |
->> +        BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->> +        BIT(IIO_CHAN_INFO_HYSTERESIS),
->>       }
->>   };
->> @@ -245,6 +289,13 @@ static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
->>           offset = (usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS)
->>                   + CHANNEL_SCAN_INDEX_X;
->>       break;
->> +    case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
->> +    case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
->> +    case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
->> +    case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
->> +        offset = (usage_id - HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH)
->> +                + CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP;
->> +    break;
->>       default:
->>           return -EINVAL;
->>       }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Currently umount on symlink blocks following umount:
+
+/vz is separate mount
+
+drwxr-xr-x.  2 root root       4096 Jul 19 01:14 testdir
+lrwxrwxrwx.  1 root root         11 Jul 19 01:16 testlink -> /vz/testdir
+
+umount: /vz/testlink: not mounted (expected)
+
+umount: /vz: device is busy. (unexpected)
+
+In this case mountpoint_last() gets an extra refcount on path->mnt
+
+Signed-off-by: Vasily Averin <vvs@openvz.org>
+---
+ fs/namei.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 985c6f3..9eb787e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2256,9 +2256,10 @@ done:
+ 		goto out;
+ 	}
+ 	path->dentry = dentry;
+-	path->mnt = mntget(nd->path.mnt);
++	path->mnt = nd->path.mnt;
+ 	if (should_follow_link(dentry, nd->flags & LOOKUP_FOLLOW))
+ 		return 1;
++	mntget(path->mnt);
+ 	follow_mount(path);
+ 	error = 0;
+ out:
+-- 
+1.7.5.4
 
