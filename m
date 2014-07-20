@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaGTRf0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 13:35:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:36331 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaGTRfY (ORCPT
+	id S1753693AbaGTRf4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 13:35:56 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:48419 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294AbaGTRfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 13:35:24 -0400
+	Sun, 20 Jul 2014 13:35:41 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
@@ -19,99 +19,158 @@ Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
         Hugh Dickins <hughd@google.com>, Andy Lutomirski <luto@amacapital.net>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v4 0/6] File Sealing & memfd_create()
-Date: Sun, 20 Jul 2014 19:34:34 +0200
-Message-Id: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+Subject: [PATCH v4 6/6] shm: wait for pins to be released when sealing
+Date: Sun, 20 Jul 2014 19:34:40 +0200
+Message-Id: <1405877680-999-7-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+References: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+If we set SEAL_WRITE on a file, we must make sure there cannot be any
+ongoing write-operations on the file. For write() calls, we simply lock
+the inode mutex, for mmap() we simply verify there're no writable
+mappings. However, there might be pages pinned by AIO, Direct-IO and
+similar operations via GUP. We must make sure those do not write to the
+memfd file after we set SEAL_WRITE.
 
-This is v4 of the File-Sealing and memfd_create() patches. You can find v1 with
-a longer introduction at gmane [1], there's also v2 [2] and v3 [3] available.
-See also the article about sealing on LWN [4], and a high-level introduction on
-the new API in my blog [5]. Last but not least, man-page proposals are
-available in my private repository [6].
+As there is no way to notify GUP users to drop pages or to wait for them
+to be done, we implement the wait ourself: When setting SEAL_WRITE, we
+check all pages for their ref-count. If it's bigger than 1, we know
+there's some user of the page. We then mark the page and wait for up to
+150ms for those ref-counts to be dropped. If the ref-counts are not
+dropped in time, we refuse the seal operation.
 
-This series introduces two new APIs:
-  memfd_create(): Think of this syscall as malloc() but it returns a
-                  file-descriptor instead of a pointer. That file-descriptor is
-                  backed by anon-memory and can be memory-mapped for access.
-  sealing: The sealing API can be used to prevent a specific set of operations
-           on a file-descriptor. You 'seal' the file and give thus the
-           guarantee, that those operations will be rejected from now on.
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+---
+ mm/shmem.c | 110 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 109 insertions(+), 1 deletion(-)
 
-This series adds the memfd_create(2) syscall only to x86 and x86-64. Patches for
-most other architectures are available in my private repository [7]. Missing
-architectures are:
-    alpha, avr32, blackfin, cris, frv, m32r, microblaze, mn10300, sh, sparc,
-    um, xtensa
-These architectures lack several newer syscalls, so those should be added first
-before adding memfd_create(2). I can provide patches for those, if required.
-However, I think it should be kept separate from this series.
-
-Changes in v4:
-  - drop page-isolation in favor of shmem_wait_for_pins()
-  - add unlikely(info->seals) to write_begin hot-path
-  - return EPERM for F_ADD_SEALS if file is not writable
-  - moved shmem_wait_for_pins() entirely into it's own commit
-  - make O_LARGEFILE mandatory part of memfd_create() ABI
-  - add lru_add_drain() to shmem_tag_pins() hot-path
-  - minor coding-style changes
-
-Thanks
-David
-
-
-[1]    memfd v1: http://thread.gmane.org/gmane.comp.video.dri.devel/102241
-[2]    memfd v2: http://thread.gmane.org/gmane.linux.kernel.mm/115713
-[3]    memfd v3: http://thread.gmane.org/gmane.linux.kernel.mm/118721
-[4] LWN article: https://lwn.net/Articles/593918/
-[5]   API Intro: http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
-[6]   Man-pages: http://cgit.freedesktop.org/~dvdhrm/man-pages/log/?h=memfd
-[7]    Dev-repo: http://cgit.freedesktop.org/~dvdhrm/linux/log/?h=memfd
-
-
-David Herrmann (6):
-  mm: allow drivers to prevent new writable mappings
-  shm: add sealing API
-  shm: add memfd_create() syscall
-  selftests: add memfd_create() + sealing tests
-  selftests: add memfd/sealing page-pinning tests
-  shm: wait for pins to be released when sealing
-
- arch/x86/syscalls/syscall_32.tbl               |   1 +
- arch/x86/syscalls/syscall_64.tbl               |   1 +
- fs/fcntl.c                                     |   5 +
- fs/inode.c                                     |   1 +
- include/linux/fs.h                             |  29 +-
- include/linux/shmem_fs.h                       |  17 +
- include/linux/syscalls.h                       |   1 +
- include/uapi/linux/fcntl.h                     |  15 +
- include/uapi/linux/memfd.h                     |   8 +
- kernel/fork.c                                  |   2 +-
- kernel/sys_ni.c                                |   1 +
- mm/mmap.c                                      |  30 +-
- mm/shmem.c                                     | 324 +++++++++
- mm/swap_state.c                                |   1 +
- tools/testing/selftests/Makefile               |   1 +
- tools/testing/selftests/memfd/.gitignore       |   4 +
- tools/testing/selftests/memfd/Makefile         |  41 ++
- tools/testing/selftests/memfd/fuse_mnt.c       | 110 +++
- tools/testing/selftests/memfd/fuse_test.c      | 311 +++++++++
- tools/testing/selftests/memfd/memfd_test.c     | 913 +++++++++++++++++++++++++
- tools/testing/selftests/memfd/run_fuse_test.sh |  14 +
- 21 files changed, 1821 insertions(+), 9 deletions(-)
- create mode 100644 include/uapi/linux/memfd.h
- create mode 100644 tools/testing/selftests/memfd/.gitignore
- create mode 100644 tools/testing/selftests/memfd/Makefile
- create mode 100755 tools/testing/selftests/memfd/fuse_mnt.c
- create mode 100644 tools/testing/selftests/memfd/fuse_test.c
- create mode 100644 tools/testing/selftests/memfd/memfd_test.c
- create mode 100755 tools/testing/selftests/memfd/run_fuse_test.sh
-
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 770e072..df1aceb 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1780,9 +1780,117 @@ static loff_t shmem_file_llseek(struct file *file, loff_t offset, int whence)
+ 	return offset;
+ }
+ 
++/*
++ * We need a tag: a new tag would expand every radix_tree_node by 8 bytes,
++ * so reuse a tag which we firmly believe is never set or cleared on shmem.
++ */
++#define SHMEM_TAG_PINNED        PAGECACHE_TAG_TOWRITE
++#define LAST_SCAN               4       /* about 150ms max */
++
++static void shmem_tag_pins(struct address_space *mapping)
++{
++	struct radix_tree_iter iter;
++	void **slot;
++	pgoff_t start;
++	struct page *page;
++
++	lru_add_drain();
++	start = 0;
++	rcu_read_lock();
++
++restart:
++	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
++		page = radix_tree_deref_slot(slot);
++		if (!page || radix_tree_exception(page)) {
++			if (radix_tree_deref_retry(page))
++				goto restart;
++		} else if (page_count(page) - page_mapcount(page) > 1) {
++			spin_lock_irq(&mapping->tree_lock);
++			radix_tree_tag_set(&mapping->page_tree, iter.index,
++					   SHMEM_TAG_PINNED);
++			spin_unlock_irq(&mapping->tree_lock);
++		}
++
++		if (need_resched()) {
++			cond_resched_rcu();
++			start = iter.index + 1;
++			goto restart;
++		}
++	}
++	rcu_read_unlock();
++}
++
++/*
++ * Setting SEAL_WRITE requires us to verify there's no pending writer. However,
++ * via get_user_pages(), drivers might have some pending I/O without any active
++ * user-space mappings (eg., direct-IO, AIO). Therefore, we look at all pages
++ * and see whether it has an elevated ref-count. If so, we tag them and wait for
++ * them to be dropped.
++ * The caller must guarantee that no new user will acquire writable references
++ * to those pages to avoid races.
++ */
+ static int shmem_wait_for_pins(struct address_space *mapping)
+ {
+-	return 0;
++	struct radix_tree_iter iter;
++	void **slot;
++	pgoff_t start;
++	struct page *page;
++	int error, scan;
++
++	shmem_tag_pins(mapping);
++
++	error = 0;
++	for (scan = 0; scan <= LAST_SCAN; scan++) {
++		if (!radix_tree_tagged(&mapping->page_tree, SHMEM_TAG_PINNED))
++			break;
++
++		if (!scan)
++			lru_add_drain_all();
++		else if (schedule_timeout_killable((HZ << scan) / 200))
++			scan = LAST_SCAN;
++
++		start = 0;
++		rcu_read_lock();
++restart:
++		radix_tree_for_each_tagged(slot, &mapping->page_tree, &iter,
++					   start, SHMEM_TAG_PINNED) {
++
++			page = radix_tree_deref_slot(slot);
++			if (radix_tree_exception(page)) {
++				if (radix_tree_deref_retry(page))
++					goto restart;
++
++				page = NULL;
++			}
++
++			if (page &&
++			    page_count(page) - page_mapcount(page) != 1) {
++				if (scan < LAST_SCAN)
++					goto continue_resched;
++
++				/*
++				 * On the last scan, we clean up all those tags
++				 * we inserted; but make a note that we still
++				 * found pages pinned.
++				 */
++				error = -EBUSY;
++			}
++
++			spin_lock_irq(&mapping->tree_lock);
++			radix_tree_tag_clear(&mapping->page_tree,
++					     iter.index, SHMEM_TAG_PINNED);
++			spin_unlock_irq(&mapping->tree_lock);
++continue_resched:
++			if (need_resched()) {
++				cond_resched_rcu();
++				start = iter.index + 1;
++				goto restart;
++			}
++		}
++		rcu_read_unlock();
++	}
++
++	return error;
+ }
+ 
+ #define F_ALL_SEALS (F_SEAL_SEAL | \
 -- 
 2.0.2
 
