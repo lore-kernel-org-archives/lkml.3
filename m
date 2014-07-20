@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaGTULg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 16:11:36 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54681 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaGTULf (ORCPT
+	id S1753726AbaGTUTe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 16:19:34 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:52156 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354AbaGTUTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 16:11:35 -0400
-Date: Sun, 20 Jul 2014 22:11:30 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Wang YanQing <udknight@gmail.com>
-Cc: linus.walleij@linaro.org, gregkh@linuxfoundation.org, jhovold@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio:gpio-pl2303: add gpio driver for GPIOs on PL2303
-Message-ID: <20140720201130.GA9380@rhlx01.hs-esslingen.de>
+	Sun, 20 Jul 2014 16:19:32 -0400
+Date: Sun, 20 Jul 2014 13:19:24 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Bivolaru Catalin <bivolaru.catalin@gmail.com>,
+        kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com
+Subject: Re: [PATCH] staging: input: sunkbd.c: Fix coding style
+Message-ID: <20140720201924.GA18347@core.coreip.homeip.net>
+References: <20140720120103.GA5294@kalio-PC>
+ <1405871574.5135.24.camel@joe-AO725>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140720000131.GA2158@udknight>
-X-Priority: none
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405871574.5135.24.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jul 20, 2014 at 08:52:54AM -0700, Joe Perches wrote:
+> On Sun, 2014-07-20 at 15:01 +0300, Bivolaru Catalin wrote:
+> > Fix coding style with regard to missing spaces after , and the column limit
+> > that was violated after the first change.
+> 
+> Some checkpatch errors should be ignored.
+> 
+> These are some of them.
+> 
+> This change doesn't make it easier to read
+> or to find any array entry.
+> 
+> It's currently in groups of 16 (0x10).
+> 
+> This change would make it very difficult
+> to find any particular entry.
+> 
+> It might make some sense to change the last
+> line to add a trailing "  0,  0" entry as
+> the compiler does to make it a bit clearer
+> the table has 128 entries.
 
-> +#include <linux/slab.h>
-> +#include <linux/usb.h>
-> +#include <linux/gpio.h>
+I'd rather not change a thing in this table - it has been working as is
+for many years.
 
+Thanks.
 
-
-> +	pl2303_gpio_write(&pl2303_gpio->gpio_chip);
-> +
-> +	ret = gpiochip_add(&pl2303_gpio->gpio_chip);
-> +	if (ret < 0) {
-
-
-AFAICS that stuff is conditional:ed by #ifdef CONFIG_GPIOLIB in
-gpio.h (or rather, its internally included asm-generic/gpio.h)
-
-Thus
-
-> +config GPIO_PL2303
-> +	tristate "USB Prolific 2303 gpio support"
-> +	depends on USB_SERIAL_PL2303
-> +	help
-> +	  Enable support for GPIOs on USB Prolific 2303
-> +	  It support two GPIOs on PL2303HX currently.
-
-quite likely a
-	depends on GPIOLIB && ...
-is missing here (as is done with several other GPIO support drivers
-in the same Kconfig)
-
-Thanks for this nicely functionality-enhancing serial driver addition,
-
-Andreas Mohr
+-- 
+Dmitry
