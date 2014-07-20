@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751164AbaGTEKO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 00:10:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54820 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaGTEKN (ORCPT
+	id S1752264AbaGTEKo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 00:10:44 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:38550 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708AbaGTEKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 00:10:13 -0400
-Date: Sat, 19 Jul 2014 21:09:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sam Asadi <asadi.samuel@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: comedi: adv_pci1710.c line over 80 fixed
-Message-ID: <20140720040949.GB5875@kroah.com>
-References: <1405818950-9858-1-git-send-email-asadi.samuel@gmail.com>
+	Sun, 20 Jul 2014 00:10:43 -0400
+Message-ID: <53CB413B.4090409@gmail.com>
+Date: Sun, 20 Jul 2014 00:10:35 -0400
+From: "Roberto J. Dohnert" <rjdohnert@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405818950-9858-1-git-send-email-asadi.samuel@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Arm Build Failing
+References: <CAPDOMVh9knmN1y-LZWvsAKcrKKPQsi0+skNG1D0aQgP+hg3ssQ@mail.gmail.com>
+In-Reply-To: <CAPDOMVh9knmN1y-LZWvsAKcrKKPQsi0+skNG1D0aQgP+hg3ssQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 04:15:50AM +0300, Sam Asadi wrote:
-> A line over 80 issue fixed, which is a comment.
-> 
-> Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/adv_pci1710.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-> index 602b7a1..13ff78c 100644
-> --- a/drivers/staging/comedi/drivers/adv_pci1710.c
-> +++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-> @@ -723,7 +723,8 @@ static int pci171x_ai_cancel(struct comedi_device *dev,
->  		devpriv->CntrlReg &= Control_CNT0;
->  		devpriv->CntrlReg |= Control_SW;
->  
-> -		outw(devpriv->CntrlReg, dev->iobase + PCI171x_CONTROL);	/*  reset any operations */
-> +		outw(devpriv->CntrlReg, dev->iobase + PCI171x_CONTROL);
-> +						/* reset any operations */
+It looks like its trying to invoke the native (x86) compiler, but 
+passing it options that only make sense to an ARM compiler.
 
-That really doesn't make any sense now, does it?
+Cheers
 
-Please put it _before_ the outw() call.
+Roberto J. Dohnert
+Roberto J. Dohnert
+Lead Developer
+Black Lab Software Inc.
+PO Box 698
+Franklinton NC 27525
+http://www.pc-opensystems.com
+http://www.blacklablinux.org
 
-thanks,
+On 07/20/2014 12:03 AM, Nick Krause wrote:
+> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-m64’
+> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-mno-mmx’
+> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-mno-sse’
+> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-mno-red-zone’
+> arm-linux-gnueabihf-gcc: error: unrecognized command line option
+> ‘-mcmodel=kernel’
+> This happens every time I try to build new arch code this week. Is there a easy
+> fix for this?
+> Cheers Nick
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-greg k-h
