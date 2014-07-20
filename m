@@ -1,245 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaGTFmE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 01:42:04 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:41791 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaGTFmB (ORCPT
+	id S1753044AbaGTFq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 01:46:28 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:60557 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaGTFq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 01:42:01 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCH] Staging: vt6655: remove redundant comments
-Date: Sun, 20 Jul 2014 08:41:50 +0300
-Message-Id: <1405834910-3098-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 20 Jul 2014 01:46:27 -0400
+Message-ID: <1405835183.6512.37.camel@marge.simpson.net>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        pjt@google.com, bsegall@google.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, fengguang.wu@intel.com
+Date: Sun, 20 Jul 2014 07:46:23 +0200
+In-Reply-To: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean redundant comments in the code.
-Since I perform single fix type per patch, I've ignored the 80 line warning
-when checking the patch against checkpatch.
-I will fix the 80 line warnings on further patches.
+On Fri, 2014-07-18 at 07:26 +0800, Yuyang Du wrote: 
+> Thanks to Morten, Ben, and Fengguang.
+> 
+> v4 changes:
+> 
+> - Insert memory barrier before writing cfs_rq->load_last_update_copy.
+> - Fix typos.
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
----
- drivers/staging/vt6655/wcmd.c |   46 ++++++++++++-----------------------------
- 1 file changed, 13 insertions(+), 33 deletions(-)
+My little desktop box says lovely minus signs have had their usual
+effect on the general case (cgroups enabled but not in use). 
 
-diff --git a/drivers/staging/vt6655/wcmd.c b/drivers/staging/vt6655/wcmd.c
-index a689645..2456b30 100644
---- a/drivers/staging/vt6655/wcmd.c
-+++ b/drivers/staging/vt6655/wcmd.c
-@@ -54,13 +54,7 @@
- #include "iowpa.h"
- #include "channel.h"
- 
--/*---------------------  Static Definitions -------------------------*/
--
--/*---------------------  Static Classes  ----------------------------*/
--
--/*---------------------  Static Variables  --------------------------*/
- static int msglevel = MSG_LEVEL_INFO;
--/*---------------------  Static Functions  --------------------------*/
- 
- static
- void
-@@ -85,10 +79,6 @@ s_bCommandComplete(
- 	PSDevice pDevice
- );
- 
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Functions  --------------------------*/
--
- /*
-  * Description:
-  *      Stop AdHoc beacon during scan process
-@@ -134,7 +124,7 @@ vAdHocBeaconStop(PSDevice  pDevice)
- 
- 	if (bStop)
- 		MACvRegBitsOff(pDevice->PortOffset, MAC_REG_TCR, TCR_AUTOBCNTX);
--} /* vAdHocBeaconStop */
-+}
- 
- /*
-  * Description:
-@@ -167,7 +157,7 @@ vAdHocBeaconRestart(PSDevice pDevice)
- 	}
- }
- 
--/*+
-+/*
-  *
-  * Routine Description:
-  *   Prepare and send probe request management frames.
-@@ -176,7 +166,7 @@ vAdHocBeaconRestart(PSDevice pDevice)
-  * Return Value:
-  *    none.
-  *
-- -*/
-+ */
- 
- static
- void
-@@ -223,7 +213,7 @@ s_vProbeChannel(
- 	}
- }
- 
--/*+
-+/*
-  *
-  * Routine Description:
-  *  Constructs an probe request frame
-@@ -232,7 +222,7 @@ s_vProbeChannel(
-  * Return Value:
-  *    A ptr to Tx frame or NULL on allocation failure
-  *
-- -*/
-+ */
- 
- PSTxMgmtPacket
- s_MgrMakeProbeRequest(
-@@ -292,7 +282,6 @@ vCommandTimerWait(
- 	init_timer(&pDevice->sTimerCommand);
- 	pDevice->sTimerCommand.data = (unsigned long) pDevice;
- 	pDevice->sTimerCommand.function = (TimerFunction)vCommandTimer;
--	// RUN_AT :1 msec ~= (HZ/1024)
- 	pDevice->sTimerCommand.expires = (unsigned int)RUN_AT((MSecond * HZ) >> 10);
- 	add_timer(&pDevice->sTimerCommand);
- 	return;
-@@ -366,9 +355,8 @@ vCommandTimer(
- 			s_bCommandComplete(pDevice);
- 
- 		} else {
--//2008-8-4 <add> by chester
- 			if (!is_channel_valid(pMgmt->uScanChannel)) {
--				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Invalid channel pMgmt->uScanChannel = %d \n", pMgmt->uScanChannel);
-+				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Invalid channel pMgmt->uScanChannel = %d\n", pMgmt->uScanChannel);
- 				s_bCommandComplete(pDevice);
- 				spin_unlock_irq(&pDevice->lock);
- 				return;
-@@ -394,7 +382,6 @@ vCommandTimer(
- 
- 			CARDbSetBSSID(pMgmt->pAdapter, pMgmt->abyCurrBSSID, OP_MODE_UNKNOWN);
- 			pMgmt->uScanChannel++;
--//2008-8-4 <modify> by chester
- 			if (!is_channel_valid(pMgmt->uScanChannel) &&
- 			    pMgmt->uScanChannel <= pDevice->byMaxChannel) {
- 				pMgmt->uScanChannel = pDevice->byMaxChannel + 1;
-@@ -431,7 +418,6 @@ vCommandTimer(
- 
- 		pMgmt->eScanState = WMAC_NO_SCANNING;
- 		vAdHocBeaconRestart(pDevice);
--//2008-0409-07, <Add> by Einsn Liu
- #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
- 		if (pMgmt->eScanType == WMAC_SCAN_PASSIVE)
- 		{//send scan event to wpa_Supplicant
-@@ -471,7 +457,6 @@ vCommandTimer(
- 			return;
- 		}
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " CARDbRadioPowerOff\n");
--		//2008-09-02  <mark>	by chester
- 		s_bCommandComplete(pDevice);
- 		break;
- 
-@@ -482,7 +467,6 @@ vCommandTimer(
- 			spin_unlock_irq(&pDevice->lock);
- 			return;
- 		}
--//2008-09-02  <mark> by chester
- 		s_bCommandComplete(pDevice);
- 		break;
- 
-@@ -615,7 +599,7 @@ vCommandTimer(
- 
- 		else if (pMgmt->eCurrState < WMAC_STATE_AUTHPENDING) {
- 			printk("WLAN_AUTHENTICATE_WAIT:Authen Fail???\n");
--		} else if (pDevice->byLinkWaitCount <= 4) {    //mike add:wait another 2 sec if authenticated_frame delay!
-+		} else if (pDevice->byLinkWaitCount <= 4) {
- 			pDevice->byLinkWaitCount++;
- 			printk("WLAN_AUTHENTICATE_WAIT:wait %d times!!\n", pDevice->byLinkWaitCount);
- 			spin_unlock_irq(&pDevice->lock);
-@@ -652,7 +636,7 @@ vCommandTimer(
- 				init_timer(&pDevice->sTimerTxData);
- 				pDevice->sTimerTxData.data = (unsigned long) pDevice;
- 				pDevice->sTimerTxData.function = (TimerFunction)BSSvSecondTxData;
--				pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
-+				pDevice->sTimerTxData.expires = RUN_AT(10*HZ);
- 				pDevice->fTxDataInSleep = false;
- 				pDevice->nTxDataTimeCout = 0;
- 			}
-@@ -662,7 +646,7 @@ vCommandTimer(
- #endif
- 		} else if (pMgmt->eCurrState < WMAC_STATE_ASSOCPENDING) {
- 			printk("WLAN_ASSOCIATE_WAIT:Association Fail???\n");
--		} else if (pDevice->byLinkWaitCount <= 4) {    //mike add:wait another 2 sec if associated_frame delay!
-+		} else if (pDevice->byLinkWaitCount <= 4) {
- 			pDevice->byLinkWaitCount++;
- 			printk("WLAN_ASSOCIATE_WAIT:wait %d times!!\n", pDevice->byLinkWaitCount);
- 			spin_unlock_irq(&pDevice->lock);
-@@ -794,7 +778,7 @@ vCommandTimer(
- 		s_bCommandComplete(pDevice);
- 		break;
- 
--	} //switch
-+	}
- 	spin_unlock_irq(&pDevice->lock);
- 	return;
- }
-@@ -812,7 +796,6 @@ s_bCommandComplete(
- 
- 	pDevice->eCommandState = WLAN_CMD_IDLE;
- 	if (pDevice->cbFreeCmdQueue == CMD_Q_SIZE) {
--		//Command Queue Empty
- 		pDevice->bCmdRunning = false;
- 		return true;
- 	} else {
-@@ -961,7 +944,6 @@ bool bClearBSSID_SCAN(
- 	return true;
- }
- 
--//mike add:reset command timer
- void
- vResetCommandTimer(
- 	void *hDeviceContext
-@@ -969,9 +951,7 @@ vResetCommandTimer(
- {
- 	PSDevice        pDevice = (PSDevice)hDeviceContext;
- 
--	//delete timer
- 	del_timer(&pDevice->sTimerCommand);
--	//init timer
- 	init_timer(&pDevice->sTimerCommand);
- 	pDevice->sTimerCommand.data = (unsigned long) pDevice;
- 	pDevice->sTimerCommand.function = (TimerFunction)vCommandTimer;
-@@ -996,7 +976,7 @@ BSSvSecondTxData(
- 
- 	if (pDevice->nTxDataTimeCout < 4)     //don't tx data if timer less than 40s
- 	{
--		pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
-+		pDevice->sTimerTxData.expires = RUN_AT(10*HZ);
- 		add_timer(&pDevice->sTimerTxData);
- 		return;
- 	}
-@@ -1009,12 +989,12 @@ BSSvSecondTxData(
- 		if (pDevice->bLinkPass == true) {
- #endif
- 			pDevice->fTxDataInSleep = true;
--			PSbSendNullPacket(pDevice);      //send null packet
-+			PSbSendNullPacket(pDevice);
- 			pDevice->fTxDataInSleep = false;
- 		}
- 		spin_unlock_irq(&pDevice->lock);
- 
--		pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
-+		pDevice->sTimerTxData.expires = RUN_AT(10*HZ);
- 		add_timer(&pDevice->sTimerTxData);
- 		return;
- 	}
--- 
-1.7.9.5
+pipe-test scheduling cross core - full fastpath
+3.0.101-default        3.753363 usecs/loop -- avg 3.770737 530.4 KHz   1.000
+3.1.10-default         3.723843 usecs/loop -- avg 3.716058 538.2 KHz   1.014
+3.2.51-default         3.728060 usecs/loop -- avg 3.710372 539.0 KHz   1.016
+3.3.8-default          3.906174 usecs/loop -- avg 3.900399 512.8 KHz    .966
+3.4.97-default         3.864158 usecs/loop -- avg 3.865281 517.4 KHz    .975
+3.5.7-default          3.967481 usecs/loop -- avg 3.962757 504.7 KHz    .951
+3.6.11-default         3.851186 usecs/loop -- avg 3.845321 520.1 KHz    .980
+3.7.10-default         3.777869 usecs/loop -- avg 3.776913 529.5 KHz    .998
+3.8.13-default         4.049927 usecs/loop -- avg 4.041905 494.8 KHz    .932
+3.9.11-default         3.973046 usecs/loop -- avg 3.974208 503.2 KHz    .948
+3.10.27-default        4.189598 usecs/loop -- avg 4.189298 477.4 KHz    .900
+3.11.10-default        4.293870 usecs/loop -- avg 4.297979 465.3 KHz    .877
+3.12.24-default        4.321570 usecs/loop -- avg 4.321961 462.8 KHz    .872
+3.13.11-default        4.137845 usecs/loop -- avg 4.134863 483.7 KHz    .911
+3.14.10-default        4.145348 usecs/loop -- avg 4.139987 483.1 KHz    .910            
+3.15.4-default         4.355594 usecs/loop -- avg 4.351961 459.6 KHz    .866             
+3.16.0-default         4.537279 usecs/loop -- avg 4.543532 440.2 KHz    .829     1.000   
+3.16.0-default+v4      4.343542 usecs/loop -- avg 4.318803 463.1 KHz    .873     1.052
+
+Extending max depth to 5, cost of depth++ seemingly did not change
+despite repeatable dip at depth = 3 (gremlins at play).
+
+mount -t cgroup o cpu none /cgroups
+mkdir -p /cgroups/a/b/c/d/e
+
+cgexec -g cpu:a pipe-test 1
+3.16.0-default         5.016373 usecs/loop -- avg 5.021115 398.3 KHz   1.000
+3.16.0-default+v4      4.978625 usecs/loop -- avg 4.977381 401.8 KHz   1.008
+
+cgexec -g cpu:a/b pipe-test 1
+3.16.0-default         5.543566 usecs/loop -- avg 5.565475 359.4 KHz   1.000
+3.16.0-default+v4      5.597399 usecs/loop -- avg 5.570444 359.0 KHz    .998
+
+cgexec -g cpu:a/b/c pipe-test 1
+3.16.0-default         6.092256 usecs/loop -- avg 6.094186 328.2 KHz   1.000
+3.16.0-default+v4      6.294858 usecs/loop -- avg 6.338453 315.5 KHz    .961
+
+cgexec -g cpu:a/b/c/d pipe-test 1
+3.16.0-default         6.719044 usecs/loop -- avg 6.717118 297.7 KHz   1.000
+3.16.0-default+v4      6.788559 usecs/loop -- avg 6.710102 298.1 KHz   1.001
+
+cgexec -g cpu:a/b/c/d/e pipe-test 1
+3.16.0-default         7.186431 usecs/loop -- avg 7.194884 278.0 KHz   1.000
+3.16.0-default+v4      7.368443 usecs/loop -- avg 7.250371 275.8 KHz    .992
+
 
