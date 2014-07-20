@@ -1,45 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaGTVVH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:21:07 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:44723 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaGTVVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:21:03 -0400
-Date: Sun, 20 Jul 2014 23:21:01 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Greg KH <gregkh@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, davem@davemloft.net,
-        sachin.kamat@linaro.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: staging/8821ae driver breaks allyes build in 3.16-rc*
-Message-ID: <20140720212101.GN18735@two.firstfloor.org>
-References: <20140720190523.GL18735@two.firstfloor.org>
- <20140720192511.GA3120@kroah.com>
- <20140720193821.GA12357@kroah.com>
- <20140720194327.GA11230@kroah.com>
+	id S1751166AbaGTV2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:28:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750889AbaGTV2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 17:28:45 -0400
+Date: Sun, 20 Jul 2014 23:31:11 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH net-next V2 3/3] virtio-net: rx busy polling support
+Message-ID: <20140720203111.GE2536@redhat.com>
+References: <1405491707-22706-1-git-send-email-jasowang@redhat.com>
+ <1405491707-22706-4-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140720194327.GA11230@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1405491707-22706-4-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok, that's odd, I thought we didn't build staging drivers for
-> allyesconfig, but you are right, we do.
+On Wed, Jul 16, 2014 at 02:21:47PM +0800, Jason Wang wrote:
+> Add basic support for rx busy polling.
 > 
+> Test was done between a kvm guest and an external host. Two hosts were
+> connected through 40gb mlx4 cards. With both busy_poll and busy_read
+> are set to 50 in guest, 1 byte netperf tcp_rr shows 116% improvement:
+> transaction rate was increased from 9151.94 to 19787.37.
 
-It was changed a few kernels ago iirc.
+Pls include data about non polling tests: any effect on
+cpu utilization there?
+There could be as we are adding locking.
 
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Vlad Yasevich <vyasevic@redhat.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/virtio_net.c | 190 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 187 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index e417d93..4830713 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/cpu.h>
+>  #include <linux/average.h>
+> +#include <net/busy_poll.h>
+>  
+>  static int napi_weight = NAPI_POLL_WEIGHT;
+>  module_param(napi_weight, int, 0444);
+> @@ -94,8 +95,143 @@ struct receive_queue {
+>  
+>  	/* Name of this receive queue: input.$index */
+>  	char name[40];
+> +
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +	unsigned int state;
+> +#define VIRTNET_RQ_STATE_IDLE        0
+> +#define VIRTNET_RQ_STATE_NAPI	     1    /* NAPI or refill owns this RQ */
+> +#define VIRTNET_RQ_STATE_POLL	     2    /* poll owns this RQ */
+> +#define VIRTNET_RQ_STATE_DISABLED    4    /* RQ is disabled */
+> +#define VIRTNET_RQ_OWNED (VIRTNET_RQ_STATE_NAPI | VIRTNET_RQ_STATE_POLL)
+> +#define VIRTNET_RQ_LOCKED (VIRTNET_RQ_OWNED | VIRTNET_RQ_STATE_DISABLED)
+> +#define VIRTNET_RQ_STATE_NAPI_YIELD  8    /* NAPI or refill yielded this RQ */
+> +#define VIRTNET_RQ_STATE_POLL_YIELD  16   /* poll yielded this RQ */
+> +	spinlock_t lock;
+> +#endif  /* CONFIG_NET_RX_BUSY_POLL */
 
-> allyesconfig builds the staging directory just fine for me here, with
-> Linus's current tree:
+do we have to have a new state? no way to reuse the napi state
+for this? two lock/unlock operations for a poll seems
+excessive.
 
-Ok I builds after I threw the old build directory away. Mysterious.
+>  };
+>  
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +static inline void virtnet_rq_init_lock(struct receive_queue *rq)
+> +{
+> +
+> +	spin_lock_init(&rq->lock);
+> +	rq->state = VIRTNET_RQ_STATE_IDLE;
+> +}
+> +
+> +/* called from the device poll routine or refill routine to get ownership of a
+> + * receive queue.
+> + */
+> +static inline bool virtnet_rq_lock_napi_refill(struct receive_queue *rq)
+> +{
+> +	int rc = true;
+> +
+> +	spin_lock(&rq->lock);
+> +	if (rq->state & VIRTNET_RQ_LOCKED) {
+> +		WARN_ON(rq->state & VIRTNET_RQ_STATE_NAPI);
+> +		rq->state |= VIRTNET_RQ_STATE_NAPI_YIELD;
+> +		rc = false;
+> +	} else
+> +		/* we don't care if someone yielded */
+> +		rq->state = VIRTNET_RQ_STATE_NAPI;
+> +	spin_unlock(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* returns true is someone tried to get the rq while napi or refill had it */
 
-Sorry for the false alarm.
+s/is/if/
 
--Andi
+> +static inline bool virtnet_rq_unlock_napi_refill(struct receive_queue *rq)
+> +{
+> +	int rc = false;
+> +
+> +	spin_lock(&rq->lock);
+> +	WARN_ON(rq->state & (VIRTNET_RQ_STATE_POLL |
+> +			     VIRTNET_RQ_STATE_NAPI_YIELD));
+> +
+> +	if (rq->state & VIRTNET_RQ_STATE_POLL_YIELD)
+> +		rc = true;
+> +	/* will reset state to idle, unless RQ is disabled */
+> +	rq->state &= VIRTNET_RQ_STATE_DISABLED;
+> +	spin_unlock(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* called from virtnet_low_latency_recv() */
+> +static inline bool virtnet_rq_lock_poll(struct receive_queue *rq)
+> +{
+> +	int rc = true;
+> +
+> +	spin_lock_bh(&rq->lock);
+> +	if ((rq->state & VIRTNET_RQ_LOCKED)) {
+> +		rq->state |= VIRTNET_RQ_STATE_POLL_YIELD;
+> +		rc = false;
+> +	} else
+> +		/* preserve yield marks */
+> +		rq->state |= VIRTNET_RQ_STATE_POLL;
+> +	spin_unlock_bh(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* returns true if someone tried to get the receive queue while it was locked */
+> +static inline bool virtnet_rq_unlock_poll(struct receive_queue *rq)
+> +{
+> +	int rc = false;
+> +
+> +	spin_lock_bh(&rq->lock);
+> +	WARN_ON(rq->state & (VIRTNET_RQ_STATE_NAPI));
+> +
+> +	if (rq->state & VIRTNET_RQ_STATE_POLL_YIELD)
+> +		rc = true;
+> +	/* will reset state to idle, unless RQ is disabled */
+> +	rq->state &= VIRTNET_RQ_STATE_DISABLED;
+> +	spin_unlock_bh(&rq->lock);
+> +	return rc;
+> +}
+> +
+> +/* return false if RQ is currently owned */
+> +static inline bool virtnet_rq_disable(struct receive_queue *rq)
+> +{
+> +	int rc = true;
+> +
+> +	spin_lock_bh(&rq->lock);
+> +	if (rq->state & VIRTNET_RQ_OWNED)
+> +		rc = false;
+> +	rq->state |= VIRTNET_RQ_STATE_DISABLED;
+> +	spin_unlock_bh(&rq->lock);
+> +
+> +	return rc;
+> +}
+> +
+> +#else /* CONFIG_NET_RX_BUSY_POLL */
+> +static inline void virtnet_rq_init_lock(struct receive_queue *rq)
+> +{
+> +}
+> +
+> +static inline bool virtnet_rq_lock_napi_refill(struct receive_queue *rq)
+> +{
+> +	return true;
+> +}
+> +
+> +static inline bool virtnet_rq_unlock_napi_refill(struct receive_queue *rq)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline bool virtnet_rq_lock_poll(struct receive_queue *rq)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline bool virtnet_rq_unlock_poll(struct receive_queue *rq)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline bool virtnet_rq_disable(struct receive_queue *rq)
+> +{
+> +	return true;
+> +}
+> +
+> +#endif /* CONFIG_NET_RX_BUSY_POLL */
+> +
+>  struct virtnet_info {
+>  	struct virtio_device *vdev;
+>  	struct virtqueue *cvq;
+> @@ -521,6 +657,8 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+>  		skb_shinfo(skb)->gso_segs = 0;
+>  	}
+>  
+> +	skb_mark_napi_id(skb, &rq->napi);
+> +
+>  	netif_receive_skb(skb);
+>  	return;
+>  
+> @@ -714,7 +852,12 @@ static void refill_work(struct work_struct *work)
+>  		struct receive_queue *rq = &vi->rq[i];
+>  
+>  		napi_disable(&rq->napi);
+> +		if (!virtnet_rq_lock_napi_refill(rq)) {
+> +			virtnet_napi_enable(rq);
+> +			continue;
+> +		}
+>  		still_empty = !try_fill_recv(rq, GFP_KERNEL);
+> +		virtnet_rq_unlock_napi_refill(rq);
+>  		virtnet_napi_enable(rq);
+>  
+>  		/* In theory, this can happen: if we don't get any buffers in
+> @@ -752,8 +895,13 @@ static int virtnet_poll(struct napi_struct *napi, int budget)
+>  	unsigned int r, received = 0;
+>  
+>  again:
+> +	if (!virtnet_rq_lock_napi_refill(rq))
+> +		return budget;
+> +
+>  	received += virtnet_receive(rq, budget);
+>  
+> +	virtnet_rq_unlock_napi_refill(rq);
+> +
+>  	/* Out of packets? */
+>  	if (received < budget) {
+>  		r = virtqueue_enable_cb_prepare(rq->vq);
+> @@ -770,20 +918,50 @@ again:
+>  	return received;
+>  }
+>  
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +/* must be called with local_bh_disable()d */
+> +static int virtnet_low_latency_recv(struct napi_struct *napi)
+
+let's call it busy poll :)
+
+> +{
+> +	struct receive_queue *rq =
+> +		container_of(napi, struct receive_queue, napi);
+> +	struct virtnet_info *vi = rq->vq->vdev->priv;
+> +	int received;
+> +
+> +	if (!(vi->status & VIRTIO_NET_S_LINK_UP))
+> +		return LL_FLUSH_FAILED;
+> +
+> +	if (!virtnet_rq_lock_poll(rq))
+> +		return LL_FLUSH_BUSY;
+> +
+> +	received = virtnet_receive(rq, 4);
+
+Hmm why 4 exactly?
+
+> +
+> +	virtnet_rq_unlock_poll(rq);
+> +
+> +	return received;
+> +}
+> +#endif	/* CONFIG_NET_RX_BUSY_POLL */
+> +
+>  static void virtnet_napi_enable_all(struct virtnet_info *vi)
+>  {
+>  	int i;
+>  
+> -	for (i = 0; i < vi->max_queue_pairs; i++)
+> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> +		virtnet_rq_init_lock(&vi->rq[i]);
+>  		virtnet_napi_enable(&vi->rq[i]);
+> +	}
+>  }
+>  
+>  static void virtnet_napi_disable_all(struct virtnet_info *vi)
+>  {
+>  	int i;
+>  
+> -	for (i = 0; i < vi->max_queue_pairs; i++)
+> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+>  		napi_disable(&vi->rq[i].napi);
+> +		while (!virtnet_rq_disable(&vi->rq[i])) {
+> +			pr_info("RQ %d locked\n", i);
+> +			usleep_range(1000, 20000);
+
+What's going on here, exactly?
+
+> +		}
+> +	}
+>  }
+>  
+>  static int virtnet_open(struct net_device *dev)
+> @@ -1372,6 +1550,9 @@ static const struct net_device_ops virtnet_netdev = {
+>  #ifdef CONFIG_NET_POLL_CONTROLLER
+>  	.ndo_poll_controller = virtnet_netpoll,
+>  #endif
+> +#ifdef CONFIG_NET_RX_BUSY_POLL
+> +	.ndo_busy_poll		= virtnet_low_latency_recv,
+> +#endif
+>  };
+>  
+>  static void virtnet_config_changed_work(struct work_struct *work)
+> @@ -1577,6 +1758,7 @@ static int virtnet_alloc_queues(struct virtnet_info *vi)
+>  		vi->rq[i].pages = NULL;
+>  		netif_napi_add(vi->dev, &vi->rq[i].napi, virtnet_poll,
+>  			       napi_weight);
+> +		napi_hash_add(&vi->rq[i].napi);
+>  
+>  		sg_init_table(vi->rq[i].sg, ARRAY_SIZE(vi->rq[i].sg));
+>  		ewma_init(&vi->rq[i].mrg_avg_pkt_len, 1, RECEIVE_AVG_WEIGHT);
+> @@ -1880,8 +2062,10 @@ static int virtnet_freeze(struct virtio_device *vdev)
+>  
+>  	if (netif_running(vi->dev)) {
+>  		virtnet_napi_disable_all(vi);
+> -		for (i = 0; i < vi->max_queue_pairs; i++)
+> +		for (i = 0; i < vi->max_queue_pairs; i++) {
+> +			napi_hash_del(&vi->rq[i].napi);
+>  			netif_napi_del(&vi->rq[i].napi);
+> +		}
+>  	}
+>  
+>  	remove_vq_common(vi);
+> -- 
+> 1.8.3.1
