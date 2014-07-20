@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaGTOa6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 10:30:58 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:62322 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753554AbaGTO2p (ORCPT
+	id S1754044AbaGTObB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 10:31:01 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:21593 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752706AbaGTOa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 10:28:45 -0400
+	Sun, 20 Jul 2014 10:30:58 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIKAA/Ry1NXQ0aj/2dsb2JhbABZgw6BKa4jAQEBAQEFAW6dSAGBBBd2hAQBBVYjEFE5HhmIRgGwM5BxF4V7iVAHFoQwBZsllC+DRjsv
+X-IronPort-Anti-Spam-Result: AlgNAEfRy1NXQ0aj/2dsb2JhbABZgw6BKa4dBgEBAQEBBQEFaZ1IgQUXdoRgI4EaN4hGAbA0kHEXhXuJUB2EMAWbJYthiE6DRjsv
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: davem@davemloft.net, joe@perches.com, Fabian Frederick <fabf@skynet.be>,
-        Rasesh Mody <rmody@brocade.com>, netdev@vger.kernel.org
-Subject: [PATCH 23/30] bna: remove unnecessary break after return
-Date: Sun, 20 Jul 2014 16:27:48 +0200
-Message-Id: <1405866475-24754-4-git-send-email-fabf@skynet.be>
+        netdev@vger.kernel.org
+Subject: [PATCH 30/30] ps3_gelic: remove unnecessary break after return
+Date: Sun, 20 Jul 2014 16:30:48 +0200
+Message-Id: <1405866648-24870-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405866475-24754-1-git-send-email-fabf@skynet.be>
-References: <1405866475-24754-1-git-send-email-fabf@skynet.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/net/ethernet/brocade/bna/cna_fwimg.c | 4 ----
- 1 file changed, 4 deletions(-)
+ drivers/net/ethernet/toshiba/ps3_gelic_wireless.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/brocade/bna/cna_fwimg.c b/drivers/net/ethernet/brocade/bna/cna_fwimg.c
-index 6a68e8d..6f72771 100644
---- a/drivers/net/ethernet/brocade/bna/cna_fwimg.c
-+++ b/drivers/net/ethernet/brocade/bna/cna_fwimg.c
-@@ -68,10 +68,8 @@ bfa_cb_image_get_chunk(enum bfi_asic_gen asic_gen, u32 off)
- 	switch (asic_gen) {
- 	case BFI_ASIC_GEN_CT:
- 		return (bfi_image_ct_cna + off);
+diff --git a/drivers/net/ethernet/toshiba/ps3_gelic_wireless.c b/drivers/net/ethernet/toshiba/ps3_gelic_wireless.c
+index d568af1..1205472 100644
+--- a/drivers/net/ethernet/toshiba/ps3_gelic_wireless.c
++++ b/drivers/net/ethernet/toshiba/ps3_gelic_wireless.c
+@@ -1831,25 +1831,18 @@ static const char *wpasecstr(enum gelic_eurus_wpa_security sec)
+ 	switch (sec) {
+ 	case GELIC_EURUS_WPA_SEC_NONE:
+ 		return "NONE";
 -		break;
- 	case BFI_ASIC_GEN_CT2:
- 		return (bfi_image_ct2_cna + off);
+ 	case GELIC_EURUS_WPA_SEC_WPA_TKIP_TKIP:
+ 		return "WPA_TKIP_TKIP";
 -		break;
- 	default:
- 		return NULL;
+ 	case GELIC_EURUS_WPA_SEC_WPA_TKIP_AES:
+ 		return "WPA_TKIP_AES";
+-		break;
+ 	case GELIC_EURUS_WPA_SEC_WPA_AES_AES:
+ 		return "WPA_AES_AES";
+-		break;
+ 	case GELIC_EURUS_WPA_SEC_WPA2_TKIP_TKIP:
+ 		return "WPA2_TKIP_TKIP";
+-		break;
+ 	case GELIC_EURUS_WPA_SEC_WPA2_TKIP_AES:
+ 		return "WPA2_TKIP_AES";
+-		break;
+ 	case GELIC_EURUS_WPA_SEC_WPA2_AES_AES:
+ 		return "WPA2_AES_AES";
+-		break;
  	}
-@@ -83,10 +81,8 @@ bfa_cb_image_get_size(enum bfi_asic_gen asic_gen)
- 	switch (asic_gen) {
- 	case BFI_ASIC_GEN_CT:
- 		return bfi_image_ct_cna_size;
--		break;
- 	case BFI_ASIC_GEN_CT2:
- 		return bfi_image_ct2_cna_size;
--		break;
- 	default:
- 		return 0;
- 	}
+ 	return "";
+ };
 -- 
 1.9.1
 
