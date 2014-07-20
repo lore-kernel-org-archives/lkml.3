@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaGTVcu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:32:50 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50606 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750990AbaGTVcs (ORCPT
+	id S1751509AbaGTVg6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:36:58 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41889 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaGTVg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:32:48 -0400
-X-Sasl-enc: Q+DhzZVBwfD6UHiPHtzdB9m9wKUQ3UNFTcwOj90uW9xI 1405891966
-Message-ID: <1405891964.9562.42.camel@localhost>
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, tytso@mit.edu
-Date: Sun, 20 Jul 2014 23:32:44 +0200
-In-Reply-To: <20140720170306.15274.qmail@ns.horizon.com>
-References: <20140720170306.15274.qmail@ns.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Jul 2014 17:36:57 -0400
+Date: Mon, 21 Jul 2014 03:06:35 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org
+Subject: [PATCH] Coccinelle: Script to replace if and BUG with BUG_ON
+Message-ID: <20140720213635.GA12365@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On So, 2014-07-20 at 13:03 -0400, George Spelvin wrote:
-> > In the end people would just recall getentropy in a loop and fetch 256
-> > bytes each time. I don't think the artificial limit does make any sense.
-> > I agree that this allows a potential misuse of the interface, but
-> > doesn't a warning in dmesg suffice?
-> 
-> It makes their code not work, so they can are forced to think about
-> fixing it before adding the obvious workaround.
-> 
-> > It also makes it easier to port applications from open("/dev/*random"),
-> > read(...) to getentropy() by reusing the same limits.
-> 
-> But such an application *is broken*.  Making it easier to port is
-> an anti-goal.  The goal is to make it enough of a hassle that
-> people will *fix* their code.
-> 
-> There's a *reason* that the /dev/random man page explicitly tells
-> people not to trust software that reads more than 32 bytes at a time
-> from /dev/random:
-> 
-> > While some safety margin above that minimum is reasonable, as a guard
-> > against flaws in the CPRNG algorithm, no cryptographic primitive avail-
-> > able today can hope to promise more than 256 bits of security, so if
-> > any program reads more than 256 bits (32 bytes) from the kernel random
-> > pool per invocation, or per reasonable reseed interval (not less than
-> > one minute), that should be taken as a sign that its cryptography is
-> > *not* skillfully implemented.
-> 
-> ("not skilfuly implemented" was the phrase chosen after some discussion to
-> convey "either a quick hack or something you dhouldn't trust.")
-> 
-> To expand on what I said in my mail to Ted, 256 is too high.
-> I'd go with OpenBSD's 128 bytes or even drop it to 64.
+This script detects cases where BUG() follows an if condition on an
+expression and replaces the if condition and BUG() with a BUG_ON having
+the conditional expression of the if statement as argument.
 
-I don't like partial reads/writes and think that a lot of people get
-them wrong, because they often only check for negative return values.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ scripts/coccinelle/misc/bugon.cocci | 62 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+ create mode 100644 scripts/coccinelle/misc/bugon.cocci
 
-I thought about the following check (as replacement for the old check):
-
-/* we will always generate a partial buffer fill */
-if (flags & GRND_RANDOM && count > 512)
-	return -EINVAL;
-
-We could also be more conservative and return -EINVAL in case a stray
-write happened if one tried to extract less than 512 by checking the
-return values of random_read(), but somehow this sounds dangerous to me.
-
-In case of urandom extraction, I wouldn't actually limit the number of
-bytes. A lot of applications I have seen already extract more than 128
-out of urandom (not for seeding a prng but just to mess around with some
-memory). I don't see a reason why getrandom shouldn't be used for that.
-It just adds one more thing to look out for if using getrandom() in
-urandom mode, especially during porting an application over to this new
-interface.
-
-Bye,
-Hannes
-
+diff --git a/scripts/coccinelle/misc/bugon.cocci b/scripts/coccinelle/misc/bugon.cocci
+new file mode 100644
+index 0000000..556456c
+--- /dev/null
++++ b/scripts/coccinelle/misc/bugon.cocci
+@@ -0,0 +1,62 @@
++/// Use BUG_ON instead of a if condition followed by BUG.
++///
++//# This makes an effort to find cases where BUG() follows an if
++//# condition on an expression and replaces the if condition and BUG()
++//# with a BUG_ON having the conditional expression of the if statement
++//# as argument.
++//
++// Confidence: High
++// Copyright: (C) 2014 Himangi Saraogi.  GPLv2.
++// Comments:
++// Options: --no-includes, --include-headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++//----------------------------------------------------------
++//  For context mode
++//----------------------------------------------------------
++
++@depends on context@
++expression e;
++@@
++
++*if (e) BUG();
++
++//----------------------------------------------------------
++//  For patch mode
++//----------------------------------------------------------
++
++@depends on patch@
++expression e;
++@@
++
++-if (e) BUG();
+++BUG_ON(e);
++
++//----------------------------------------------------------
++//  For org and report mode
++//----------------------------------------------------------
++
++@r@
++expression e;
++position p;
++@@
++
++ if (e) BUG@p ();
++
++@script:python depends on org@
++p << r.p;
++@@
++
++coccilib.org.print_todo(p[0], "WARNING use BUG_ON")
++
++@script:python depends on report@
++p << r.p;
++@@
++
++msg="WARNING: Use BUG_ON"
++coccilib.report.print_report(p[0], msg)
++
+-- 
+1.9.1
 
