@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaGTOT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 10:19:27 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:45558 "EHLO
+	id S1752930AbaGTOUS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 10:20:18 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:41906 "EHLO
 	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752360AbaGTOTZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751147AbaGTOUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 10:19:25 -0400
+	Sun, 20 Jul 2014 10:20:16 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIKALLOy1NXQ0aj/2dsb2JhbABZgw6BKa4jAQEBAQEFAW6dSAGBBBd2hAQBBScvIxBROR4ZiEYBsDGQcBeFe4lQBxaEMAWbJZQvg0Y7Lw
+X-IronPort-Anti-Spam-Result: ApIKALLOy1NXQ0aj/2dsb2JhbABZgw6BKa4jAQEBAQEFAW6dSAGBBBd2hAQBBVYjEFE5HhmIRgGwMZBwF4V7iVAHFoQwBZsllC+DRjsv
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: davem@davemloft.net, joe@perches.com, Fabian Frederick <fabf@skynet.be>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
         "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org
-Subject: [PATCH 03/30] brcm80211: remove unnecessary break after return
-Date: Sun, 20 Jul 2014 16:16:11 +0200
-Message-Id: <1405865801-18806-4-git-send-email-fabf@skynet.be>
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 04/30] mwl8k: remove unnecessary break after return
+Date: Sun, 20 Jul 2014 16:16:12 +0200
+Message-Id: <1405865801-18806-5-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405865801-18806-1-git-send-email-fabf@skynet.be>
 References: <1405865801-18806-1-git-send-email-fabf@skynet.be>
@@ -32,34 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c       | 1 -
- drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c | 1 -
- 2 files changed, 2 deletions(-)
+ drivers/net/wireless/mwl8k.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-index f3445ac..c563c65 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-@@ -2364,7 +2364,6 @@ int brcmf_p2p_del_vif(struct wiphy *wiphy, struct wireless_dev *wdev)
- 		return 0;
+diff --git a/drivers/net/wireless/mwl8k.c b/drivers/net/wireless/mwl8k.c
+index 3c0a0a8..9a3d4d6 100644
+--- a/drivers/net/wireless/mwl8k.c
++++ b/drivers/net/wireless/mwl8k.c
+@@ -1633,22 +1633,17 @@ static int mwl8k_tid_queue_mapping(u8 tid)
+ 	case 0:
+ 	case 3:
+ 		return IEEE80211_AC_BE;
+-		break;
+ 	case 1:
+ 	case 2:
+ 		return IEEE80211_AC_BK;
+-		break;
+ 	case 4:
+ 	case 5:
+ 		return IEEE80211_AC_VI;
+-		break;
+ 	case 6:
+ 	case 7:
+ 		return IEEE80211_AC_VO;
+-		break;
  	default:
- 		return -ENOTSUPP;
+ 		return -1;
 -		break;
  	}
+ }
  
- 	clear_bit(BRCMF_P2P_STATUS_GO_NEG_PHASE, &p2p->status);
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c
-index 3e9f5b2..93869e8 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c
-@@ -22916,7 +22916,6 @@ static void wlc_phy_rssi_cal_nphy_rev2(struct brcms_phy *pi, u8 rssi_type)
- 		break;
- 	default:
- 		return;
--		break;
- 	}
- 
- 	classif_state = wlc_phy_classifier_nphy(pi, 0, 0);
 -- 
 1.9.1
 
