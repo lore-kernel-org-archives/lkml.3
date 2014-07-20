@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaGTEGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 00:06:25 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:61463 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaGTEGX (ORCPT
+	id S1751164AbaGTEKO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 00:10:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54820 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaGTEKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 00:06:23 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: linux@arm.linux.org.uk
-Cc: bhelgaas@google.com, wangyijing@huawei.com, jason@lakedaemon.net,
-        thierry.reding@gmail.com, yinghai@kernel.org, m-karicheri2@ti.com,
-        thomas.petazzoni@free-electrons.com, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: Fix me in bios32.c
-Date: Sun, 20 Jul 2014 00:06:19 -0400
-Message-Id: <1405829179-19476-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 20 Jul 2014 00:10:13 -0400
+Date: Sat, 19 Jul 2014 21:09:49 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sam Asadi <asadi.samuel@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: comedi: adv_pci1710.c line over 80 fixed
+Message-ID: <20140720040949.GB5875@kroah.com>
+References: <1405818950-9858-1-git-send-email-asadi.samuel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405818950-9858-1-git-send-email-asadi.samuel@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixs a fix me in bios32.c for pci_fixup_it8152 as this if
-statement is incorrect needs to be checked against the class bits
-not the whole address for the two or conditions and since they don't
-have define statements outside of their numeratical value.
+On Sun, Jul 20, 2014 at 04:15:50AM +0300, Sam Asadi wrote:
+> A line over 80 issue fixed, which is a comment.
+> 
+> Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/adv_pci1710.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+> index 602b7a1..13ff78c 100644
+> --- a/drivers/staging/comedi/drivers/adv_pci1710.c
+> +++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+> @@ -723,7 +723,8 @@ static int pci171x_ai_cancel(struct comedi_device *dev,
+>  		devpriv->CntrlReg &= Control_CNT0;
+>  		devpriv->CntrlReg |= Control_SW;
+>  
+> -		outw(devpriv->CntrlReg, dev->iobase + PCI171x_CONTROL);	/*  reset any operations */
+> +		outw(devpriv->CntrlReg, dev->iobase + PCI171x_CONTROL);
+> +						/* reset any operations */
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
----
- arch/arm/kernel/bios32.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+That really doesn't make any sense now, does it?
 
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 17a26c1..b2217af 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -254,11 +254,9 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_CONTAQ, PCI_DEVICE_ID_CONTAQ_82C693, pci_
- static void pci_fixup_it8152(struct pci_dev *dev)
- {
- 	int i;
--	/* fixup for ITE 8152 devices */
--	/* FIXME: add defines for class 0x68000 and 0x80103 */
- 	if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
--	    dev->class == 0x68000 ||
--	    dev->class == 0x80103) {
-+	   (dev->class >> 8) == 0x680 ||
-+	   (dev->class >> 8) == 0x801) {
- 		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
- 			dev->resource[i].start = 0;
- 			dev->resource[i].end   = 0;
--- 
-1.9.1
+Please put it _before_ the outw() call.
 
+thanks,
+
+greg k-h
