@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaGTVEv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:04:51 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:44688 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaGTVEu (ORCPT
+	id S1753970AbaGTVFT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:05:19 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:54261 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684AbaGTVFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:04:50 -0400
-Date: Sun, 20 Jul 2014 23:04:48 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Greg KH <gregkh@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, davem@davemloft.net,
-        sachin.kamat@linaro.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: staging/8821ae driver breaks allyes build in 3.16-rc*
-Message-ID: <20140720210448.GM18735@two.firstfloor.org>
-References: <20140720190523.GL18735@two.firstfloor.org>
- <20140720192511.GA3120@kroah.com>
+	Sun, 20 Jul 2014 17:05:16 -0400
+Date: Sun, 20 Jul 2014 23:04:58 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: =?iso-8859-1?Q?Vin=EDcius?= Tinti <viniciustinti@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Behan Webster <behanw@converseincode.com>
+Subject: Re: [PATCH] kbuild: add support to generate LLVM bitcode files
+Message-ID: <20140720210458.GA5019@ravnborg.org>
+References: <1405733677-16650-1-git-send-email-viniciustinti@gmail.com>
+ <20140720100239.GA3496@ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140720192511.GA3120@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140720100239.GA3496@ravnborg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 12:25:11PM -0700, Greg KH wrote:
-> On Sun, Jul 20, 2014 at 09:05:23PM +0200, Andi Kleen wrote:
-> > 
-> > Hi,
-> > 
-> > I cannot build make allyesconfig in current Linus mainline, because 
-> > drivers/staging/rtl8821ae has a lot of compile errors.
+> >  
+> > +ifeq ($(COMPILER),clang)
+> > +quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
+> > +cmd_cc_ll_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -emit-llvm -S -o $@ $<
 > 
-> allyesconfig should turn off the staging drivers, how did you turn it
-> on?
+> Can we drop the test for COMPILER here too?
+> Do -fverbose-asm make sense when generating .ll files?
+> It looks like a leftover from what you copied.
 
-I just ran allyesconfig, didnt do anything special.
+Also  $(DISABLE_LTO) looks like a left-over.
+It was added to avoid LTO when generating asm-offstes.s which
+the original rule is also used for.
+So this should be skipped too.
 
--Andi
+	Sam
