@@ -1,51 +1,581 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061AbaGSXxx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 19:53:53 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:61644 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaGSXxv (ORCPT
+	id S1755863AbaGTACK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 20:02:10 -0400
+Received: from nm40-vm1.bullet.mail.ir2.yahoo.com ([212.82.97.169]:43708 "EHLO
+	nm40-vm1.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751343AbaGTACH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 19:53:51 -0400
-From: Matt Rushton <mvrushton@gmail.com>
-X-Google-Original-From: Matt Rushton <mrushton@amazon.com>
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-Cc: msw@amazon.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenprojects.org, Matt Rushton <mrushton@amazon.com>
-Subject: [PATCH v2 1/2] xen/setup: Remove Identity Map Debug Message
-Date: Sat, 19 Jul 2014 16:51:45 -0700
-Message-Id: <1405813906-10290-1-git-send-email-mrushton@amazon.com>
+	Sat, 19 Jul 2014 20:02:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.com;
+	b=GuFq722qTvC7sP1S1W/KUhG8GTibrlptgVd3rkjwqLAUvV6uWGu9R0a+nCd/Dj2IlUgV2mBacjNv1jkjEaAiRgr4FQaYlN3mTlL127WzJibvrgEEsL5R8kebpP6YeLKIHwCuOtA69FRGO0DffQromu8WLrux6Q4eYBB3urT58YqgEEAIcZuUDFU9gnRYzwtORJmYI4Fzq3k+BhJmMEvgRUIxV2fqsD9VdI+vyEf5vnMynlTkdaSQCytObce1cjX2Ht4ObUz9DNyyhkW+9wOoiw0rexRsr2Y48eWKVbKkLBCP9epyzLoRn1SOVFKzR5ehgLB5IBBSF3I89SdgrPjnAA==;
+X-Yahoo-Newman-Id: 451051.16661.bm@smtp121.mail.ir2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: WAK7MKwVM1nZepXkeeLp5aRRCgDSKkgRyfjvWEzqu4E4jAT
+ bky04TgxuAxDeGgs9UBPmdjEqtZoPK86nbRWpXEV.6UpMt30kZY2qq_ya_aj
+ gP5VC2AjI1F73nb.mebgmSyPraXn4Q1SF6RvPQauvuonm4mEXJnoFCkd_JwH
+ SG_e1wQFATQzejBMCswi0Iab4YBJEEIeLrwV.ljQaHdUCnGXhbd.iHgaoGAl
+ sDowIJ84_80j9t5ZcExQOehgwprrxdfY93M5K7ZaeI5kadGsbAa7VpWObPm.
+ IFSfLP6UvS5nE.OKl4syWesVES03WBY35uT6Qxtdndi2OdI_AsZcU.R0OUQ6
+ CJgcM0AqORGNmPrhyirg388ulRINT2g3VrQTDEs3xJiOs_ZDCjy9XYTa0vI9
+ is31MbUBiL05HYTWKlc_srQPon4ybgnK6SV5g8fNx75iodD97vjDR8CycUyi
+ XWlmRd3GtxdfpB6EW4bMegR5gW33wJSX7E9NrpOsHyCFuaEd7uT5fuVCS2N0
+ LkB0dJoo1MxdmJXQ-
+X-Yahoo-SMTP: 1rv77aOswBAZXHe.sKY40dUsriU-
+From: Kieran Kunhya <kieran@kunhya.com>
+To: axboe@kernel.dk
+Cc: akpm@linux-foundation.org, jmoyer@redhat.com, rdunlap@infradead.org,
+        fabf@skynet.be, minchan@kernel.org, linus.walleij@linaro.org,
+        abhansali@stec-inc.com, gnomes@lxorguk.ukuu.org.uk, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org, Kieran Kunhya <kieran@kunhya.com>
+Subject: [PATCHv2] block: Add support for Sony SxS cards
+Date: Sun, 20 Jul 2014 01:01:39 +0100
+Message-Id: <1405814499-4163-1-git-send-email-kieran@kunhya.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <53BAB19C.7080703@infradead.org>
+References: <53BAB19C.7080703@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing a debug message for setting the identity map since it becomes
-rather noisy after rework of the identity map code.
 
-Signed-off-by: Matthew Rushton <mrushton@amazon.com>
+Signed-off-by: Kieran Kunhya <kieran@kunhya.com>
 ---
- arch/x86/xen/p2m.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/block/Kconfig  |    9 +
+ drivers/block/Makefile |    1 +
+ drivers/block/sxs.c    |  491 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 501 insertions(+)
+ create mode 100644 drivers/block/sxs.c
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 9bb3d82..3172692 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -841,10 +841,9 @@ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 			pfn = ALIGN(pfn, P2M_PER_PAGE);
- 	}
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 014a1cf..8ebb655 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -356,6 +356,15 @@ config BLK_DEV_SX8
  
--	if (!WARN((pfn - pfn_s) != (pfn_e - pfn_s),
-+	WARN((pfn - pfn_s) != (pfn_e - pfn_s),
- 		"Identity mapping failed. We are %ld short of 1-1 mappings!\n",
--		(pfn_e - pfn_s) - (pfn - pfn_s)))
--		printk(KERN_DEBUG "1-1 mapping on %lx->%lx\n", pfn_s, pfn);
-+		(pfn_e - pfn_s) - (pfn - pfn_s));
+ 	  Use devices /dev/sx8/$N and /dev/sx8/$Np$M.
  
- 	return pfn - pfn_s;
- }
++config BLK_DEV_SXS
++	tristate "Sony SxS card support"
++	depends on PCI
++	---help---
++	  Saying Y or M here will enable support for reading
++	  from Sony SxS cards.
++
++	  It creates a device called /dev/sxs
++
+ config BLK_DEV_RAM
+ 	tristate "RAM block device support"
+ 	---help---
+diff --git a/drivers/block/Makefile b/drivers/block/Makefile
+index 02b688d..59b9c79 100644
+--- a/drivers/block/Makefile
++++ b/drivers/block/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
+ 
+ obj-$(CONFIG_BLK_DEV_SX8)	+= sx8.o
+ obj-$(CONFIG_BLK_DEV_HD)	+= hd.o
++obj-$(CONFIG_BLK_DEV_SXS)	+= sxs.o
+ 
+ obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	+= xen-blkfront.o
+ obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= xen-blkback/
+diff --git a/drivers/block/sxs.c b/drivers/block/sxs.c
+new file mode 100644
+index 0000000..88ccd61
+--- /dev/null
++++ b/drivers/block/sxs.c
+@@ -0,0 +1,491 @@
++/*
++ *  sxs.c: Driver for Sony SxS cards
++ *
++ *  Copyright 2014 Kieran Kunhya
++ *
++ *  Author/maintainer:  Kieran Kunhya <kieran@kunhya.com>
++ *
++ *  This file is subject to the terms and conditions of the GNU General Public
++ *  License.  See the file "COPYING" in the main directory of this archive
++ *  for more details.
++ */
++
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/pci.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/blkdev.h>
++#include <linux/genhd.h>
++#include <linux/hdreg.h>
++#include <linux/bio.h>
++
++#include <linux/completion.h>
++#include <linux/dma-mapping.h>
++#include <linux/log2.h>
++
++#include <asm/byteorder.h>
++
++#define DRV_NAME "sxs"
++
++#define PCI_DEVICE_ID_SXS_81CE 0x81ce
++#define PCI_DEVICE_ID_SXS_905C 0x905c
++
++#define SXS_MASTER_LINK_REG_L 0x10
++#define SXS_MASTER_LINK_REG_H 0x14
++#define SXS_MASTER_ADDR_REG_L 0x18
++#define SXS_MASTER_ADDR_REG_H 0x1c
++#define SXS_MASTER_SIZE_REG   0x20
++#define SXS_ENABLE_REG  0x28
++#define SXS_CONTROL_REG 0x2c
++#define SXS_STATUS_REG  0x6c
++#define SXS_RESPONSE_BUF 0x40
++
++#define KERNEL_SECTOR_SIZE 512
++
++static struct pci_device_id ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SXS_81CE), },
++	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SXS_905C), },
++	{ 0, }
++};
++MODULE_DEVICE_TABLE(pci, ids);
++
++struct sxs_device {
++	struct pci_dev *pci_dev;
++	spinlock_t lock;
++	void __iomem *mmio;
++
++	int    sxs_major;
++	struct gendisk *disk;
++	int    sector_size;
++	int    num_sectors;
++	int    sector_shift;
++	struct request_queue *queue;
++
++	struct completion irq_response;
++};
++
++static int sxs_getgeo(struct block_device *bdev, struct hd_geometry *geo)
++{
++	struct sxs_device *dev = bdev->bd_disk->private_data;
++	long size;
++
++	/* Make something up here */
++	size = dev->num_sectors*(dev->sector_size/KERNEL_SECTOR_SIZE);
++	geo->cylinders = (size & ~0x3f) >> 6;
++	geo->heads = 4;
++	geo->sectors = 16;
++
++	return 0;
++}
++
++static const struct block_device_operations sxs_opts = {
++	.owner          = THIS_MODULE,
++	.getgeo         = sxs_getgeo
++};
++
++static void memcpy_read(struct sxs_device *dev, unsigned long sector,
++						unsigned long nsect, char *buffer)
++{
++	struct pci_dev *pdev = dev->pci_dev;
++	u32 status;
++	u32 data[4];
++	u16 *tmp;
++	u32 *tmp2;
++
++	void *dma2;
++	dma_addr_t dma2_handle;
++	void *dma3;
++	dma_addr_t dma3_handle;
++
++	sector >>= dev->sector_shift;
++	nsect >>= dev->sector_shift;
++
++	/* Read */
++	dma2 = pci_alloc_consistent(pdev, 8192, &dma2_handle);
++	memset(dma2, 0, 8192);
++
++	dma3 = pci_alloc_consistent(pdev, 8192, &dma3_handle);
++	memset(dma3, 0, 8192);
++
++	tmp = dma2;
++	tmp2 = dma3;
++	tmp2[0] = dma2_handle;
++	tmp2[2] = dma3_handle;
++
++	printk_ratelimited(KERN_DEBUG"CALL %lu %lu\n",
++			   sector & 0xffffffff, nsect & 0xffffffff);
++
++	INIT_COMPLETION(dev->irq_response);
++	status = readl(dev->mmio+SXS_STATUS_REG);
++	data[0] = cpu_to_le32(0x00010028);
++	data[1] = cpu_to_le32(sector & 0xffffffff);
++	data[2] = 0x0;
++	data[3] = cpu_to_le32(nsect & 0xffffffff);
++	memcpy_toio(dev->mmio, data, sizeof(data));
++	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
++	writel(0x80, dev->mmio+SXS_CONTROL_REG);
++
++	if (!wait_for_completion_timeout(&dev->irq_response,
++					 msecs_to_jiffies(5000))) {
++		pr_debug("No IRQ\n");
++	}
++
++	INIT_COMPLETION(dev->irq_response);
++	writel(dma3_handle, dev->mmio+SXS_MASTER_LINK_REG_L);
++	writel(0x0, dev->mmio+SXS_MASTER_LINK_REG_H);
++	writel(0x20, dev->mmio+SXS_CONTROL_REG);
++
++	if (!wait_for_completion_timeout(&dev->irq_response,
++					 msecs_to_jiffies(5000))) {
++		pr_debug("No IRQ\n");
++	}
++
++	/* FIXME: Use DMA properly */
++	memcpy(buffer, dma2, dev->sector_size * nsect);
++
++	printk_ratelimited(KERN_DEBUG"boot-signature %x\n", tmp[255]);
++
++	writel(0, dev->mmio+SXS_ENABLE_REG);
++
++	pci_free_consistent(pdev, 8192, dma3, dma3_handle);
++	pci_free_consistent(pdev, 8192, dma2, dma2_handle);
++}
++
++static void sxs_request(struct request_queue *q, struct bio *bio)
++{
++	int i;
++	struct bio_vec *bvec;
++	char *buffer;
++	unsigned long flags;
++	struct sxs_device *dev = q->queuedata;
++	sector_t sector = bio->bi_sector;
++
++	bio_for_each_segment(bvec, bio, i) {
++		printk_ratelimited(KERN_DEBUG"REQUEST %i %i %i\n",
++				   bio_cur_bytes(bio), bio->bi_vcnt,
++				   bvec->bv_len);
++		buffer = bvec_kmap_irq(bvec, &flags);
++		memcpy_read(dev, sector, bio_cur_bytes(bio) >> 9, buffer);
++		sector += bio_cur_bytes(bio) >> 9;
++		bvec_kunmap_irq(buffer, &flags);
++	}
++
++	bio_endio(bio, 0);
++}
++
++static int setup_disk(struct sxs_device *dev)
++{
++	int ret = 0;
++
++	dev->sxs_major = register_blkdev(0, "sxs");
++	if (!dev->sxs_major) {
++		ret = -EBUSY;
++		goto end;
++	}
++
++	dev->queue = blk_alloc_queue(GFP_KERNEL);
++	if (!dev->queue) {
++		ret = -ENOMEM;
++		goto end;
++	}
++
++	blk_queue_make_request(dev->queue, sxs_request);
++	blk_queue_logical_block_size(dev->queue, dev->sector_size);
++	dev->queue->queuedata = dev;
++
++	/* XXX: can SxS have more partitions? */
++	dev->disk = alloc_disk(4);
++	if (!dev->disk) {
++		pr_notice("could not allocate disk\n");
++		goto end;
++	}
++	dev->disk->major = dev->sxs_major;
++	dev->disk->first_minor = 0;
++	dev->disk->fops = &sxs_opts;
++	dev->disk->queue = dev->queue;
++	dev->disk->private_data = dev;
++	snprintf(dev->disk->disk_name, 32, "sxs");
++	set_capacity(dev->disk, dev->num_sectors*
++				(dev->sector_size/KERNEL_SECTOR_SIZE));
++	add_disk(dev->disk);
++
++end:
++	return ret;
++}
++
++static void read_response_buf(void __iomem *mmio, u32 *output)
++{
++	memcpy_fromio(output, mmio+SXS_RESPONSE_BUF, 4*4);
++}
++
++static int is_write_protected(struct sxs_device *dev)
++{
++	u32 status;
++
++	status = readl(dev->mmio+SXS_STATUS_REG);
++
++	return (status >> 8) & 1;
++}
++
++/* Setup the card exactly as the Windows driver does,
++ * even the strange parts! */
++static int boot_check(struct sxs_device *dev)
++{
++	int i, ret = 0;
++	u32 status;
++	u32 output[4];
++
++	status = readl(dev->mmio+SXS_STATUS_REG);
++	pr_debug("STATUS: %x", status);
++
++	if ((status & 0xa0) != 0xa0) {
++		if ((status & 0xff) != 0x20)
++			writel(1, dev->mmio+SXS_CONTROL_REG);
++
++		for (i = 0; i < 40; i++) {
++			status = readl(dev->mmio+SXS_STATUS_REG);
++			if (status & 0x80)
++				break;
++			msleep(100);
++		}
++		if (i == 40)
++			ret = -EBUSY;
++		else {
++			read_response_buf(dev->mmio, output);
++			/* Not clear what these values mean */
++			pr_debug("Boot Response %x %x %x %x\n",
++				 output[0], output[1],
++				 output[2], output[3]);
++		}
++	}
++
++	return ret;
++}
++
++static irqreturn_t sxs_irq(int irq, void *data)
++{
++	u32 status;
++	irqreturn_t ret = IRQ_HANDLED;
++	struct sxs_device *dev = data;
++	unsigned long flags;
++
++	spin_lock_irqsave(&dev->lock, flags);
++
++	status = readl(dev->mmio+SXS_STATUS_REG);
++
++	if (status != 0x80000000)
++		writel(0x80000000, dev->mmio+SXS_STATUS_REG);
++
++	printk_ratelimited(KERN_DEBUG"IRQ\n");
++
++	spin_unlock_irqrestore(&dev->lock, flags);
++
++	complete(&dev->irq_response);
++
++	return ret;
++}
++
++static void setup_card(struct sxs_device *dev)
++{
++	u32 status;
++	u32 data[4];
++
++	status = readl(dev->mmio+SXS_STATUS_REG);
++	memset(data, 0, sizeof(data));
++
++	memcpy_toio(dev->mmio, data, sizeof(data));
++	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
++	writel(0x80, dev->mmio+SXS_CONTROL_REG);
++
++	if (!wait_for_completion_timeout(&dev->irq_response,
++					 msecs_to_jiffies(1000))) {
++		pr_debug("No IRQ\n");
++	}
++
++	writel(0, dev->mmio+SXS_ENABLE_REG);
++}
++
++static int get_size(struct sxs_device *dev)
++{
++	struct pci_dev *pdev = dev->pci_dev;
++	u32 status;
++	u32 data[4];
++	int ret = 0;
++	u32 *tmp2;
++
++	void *dma;
++	dma_addr_t dma_handle;
++
++	dma = pci_alloc_consistent(pdev, 8192, &dma_handle);
++	memset(dma, 0, 8192);
++
++	INIT_COMPLETION(dev->irq_response);
++	status = readl(dev->mmio+SXS_STATUS_REG);
++	data[0] = cpu_to_le32(0x8);
++	data[1] = 0x0;
++	data[2] = 0x0;
++	data[3] = cpu_to_le32(0x1);
++	memcpy_toio(dev->mmio, data, sizeof(data));
++	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
++	writel(0x80, dev->mmio+SXS_CONTROL_REG);
++
++	if (!wait_for_completion_timeout(&dev->irq_response,
++					 msecs_to_jiffies(1000))) {
++		pr_debug("No IRQ\n");
++		return -EIO;
++	}
++
++	INIT_COMPLETION(dev->irq_response);
++	writel(dma_handle, dev->mmio+SXS_MASTER_ADDR_REG_L);
++	writel(0x0, dev->mmio+SXS_MASTER_ADDR_REG_H);
++	writel(0x800, dev->mmio+SXS_MASTER_SIZE_REG);
++	writel(0x20, dev->mmio+SXS_CONTROL_REG);
++
++	if (!wait_for_completion_timeout(&dev->irq_response,
++					 msecs_to_jiffies(1000))) {
++		pr_debug("No IRQ\n");
++		ret = -EIO;
++		goto error1;
++	}
++
++	tmp2 = dma;
++
++	writel(0, dev->mmio+SXS_ENABLE_REG);
++
++	/* XXX: this might be different for larger disks */
++	dev->sector_size = le32_to_cpu(tmp2[8]) & 0xffff;
++	dev->num_sectors = le32_to_cpu(tmp2[9]) * le32_to_cpu(tmp2[10]);
++	dev->sector_shift = ilog2(dev->sector_size /
++				  KERNEL_SECTOR_SIZE);
++	pr_debug("Sector size: %x Num sectors: %x\n",
++		 dev->sector_size, dev->num_sectors);
++
++error1:
++	pci_free_consistent(pdev, 8192, dma, dma_handle);
++
++	return ret;
++}
++
++static int probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	int error = 0;
++	struct sxs_device *dev;
++
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev)
++		goto error1;
++	spin_lock_init(&dev->lock);
++	dev->pci_dev = pdev;
++
++	error = pci_enable_device(pdev);
++	if (error < 0)
++		goto error2;
++
++	pci_enable_msi(pdev);
++
++	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
++	if (error)
++		goto error3;
++
++	error = pci_request_regions(pdev, DRV_NAME);
++	if (error)
++		goto error3;
++
++	dev->mmio = pci_ioremap_bar(pdev, 0);
++	if (!dev->mmio)
++		goto error4;
++
++	pci_set_master(pdev);
++
++	if (request_irq(pdev->irq, &sxs_irq, IRQF_SHARED, DRV_NAME, dev))
++		goto error5;
++
++	if (boot_check(dev) < 0)
++		goto error6;
++
++	init_completion(&dev->irq_response);
++
++	setup_card(dev);
++
++	if (get_size(dev) < 0)
++		goto error6;
++
++	if (setup_disk(dev) < 0)
++		goto error7;
++
++	pci_set_drvdata(pdev, dev);
++
++	pr_debug("sxs driver successfully loaded\n");
++	return 0;
++
++error7:
++	if (dev->sxs_major)
++		unregister_blkdev(dev->sxs_major, "sxs");
++
++	if (dev->disk) {
++		del_gendisk(dev->disk);
++		put_disk(dev->disk);
++	}
++
++	if (dev->queue)
++		blk_cleanup_queue(dev->queue);
++error6:
++	free_irq(pdev->irq, dev);
++error5:
++	iounmap(dev->mmio);
++error4:
++	pci_release_regions(pdev);
++error3:
++	pci_disable_device(pdev);
++error2:
++	kfree(dev);
++error1:
++	return error;
++}
++
++static void remove(struct pci_dev *pdev)
++{
++	struct sxs_device *dev = pci_get_drvdata(pdev);
++
++	if (dev->sxs_major)
++		unregister_blkdev(dev->sxs_major, "sxs");
++
++	if (dev->disk) {
++		del_gendisk(dev->disk);
++		put_disk(dev->disk);
++	}
++	if (dev->queue)
++		blk_cleanup_queue(dev->queue);
++	free_irq(pdev->irq, dev);
++	iounmap(dev->mmio);
++	pci_release_regions(pdev);
++	pci_disable_msi(pdev);
++	pci_disable_device(pdev);
++	kfree(dev);
++}
++
++static struct pci_driver sxs_driver = {
++	.name = DRV_NAME,
++	.id_table = ids,
++	.probe = probe,
++	.remove = remove,
++};
++
++static int __init sxs_init(void)
++{
++	return pci_register_driver(&sxs_driver);
++}
++
++static void __exit sxs_exit(void)
++{
++	pci_unregister_driver(&sxs_driver);
++}
++
++MODULE_AUTHOR("Kieran Kunhya");
++MODULE_LICENSE("GPL");
++
++module_init(sxs_init);
++module_exit(sxs_exit);
 -- 
 1.7.9.5
 
