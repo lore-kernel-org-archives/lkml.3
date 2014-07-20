@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaGTV3J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:29:09 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:54017 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaGTV3F convert rfc822-to-8bit (ORCPT
+	id S1751464AbaGTVac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:30:32 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:43988 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaGTVaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:29:05 -0400
+	Sun, 20 Jul 2014 17:30:30 -0400
+Date: Sun, 20 Jul 2014 23:30:26 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: =?iso-8859-1?Q?Vin=EDcius?= Tinti <viniciustinti@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Behan Webster <behanw@converseincode.com>
+Subject: Re: [PATCH] kbuild: add support to generate LLVM bitcode files
+Message-ID: <20140720213025.GA5103@ravnborg.org>
+References: <1405733677-16650-1-git-send-email-viniciustinti@gmail.com>
+ <20140720100239.GA3496@ravnborg.org>
+ <20140720210458.GA5019@ravnborg.org>
 MIME-Version: 1.0
-In-Reply-To: <CAA9xbM4fvo8uKrhJU8Mvp_3HQ=PcrBgq4p_JL0cy_-rX2nL_Bg@mail.gmail.com>
-References: <1405661102-11967-1-git-send-email-xerofoify@gmail.com>
-	<CAA9xbM4fvo8uKrhJU8Mvp_3HQ=PcrBgq4p_JL0cy_-rX2nL_Bg@mail.gmail.com>
-Date: Sun, 20 Jul 2014 17:29:04 -0400
-Message-ID: <CAPDOMVh59+sRfDOLw5VEHXdbaet5B2xv=REJUSUJ+um6jMoe0Q@mail.gmail.com>
-Subject: Re: [PATCH] ia64: Fix me add register r8
-From: Nick Krause <xerofoify@gmail.com>
-To: =?UTF-8?Q?=C3=89meric_MASCHINO?= <emeric.maschino@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140720210458.GA5019@ravnborg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 4:49 PM, Émeric MASCHINO
-<emeric.maschino@gmail.com> wrote:
-> Hi,
->
-> Well, I'm wondering why the original author of this FIXME comment
-> didn't fix the issue him/herself. Can you track down who added this
-> comment? I fear that this simple comment was actually here to point to
-> something more subtle...
->
->      Émeric
->
+On Sun, Jul 20, 2014 at 11:04:58PM +0200, Sam Ravnborg wrote:
+> > >  
+> > > +ifeq ($(COMPILER),clang)
+> > > +quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
+> > > +cmd_cc_ll_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -emit-llvm -S -o $@ $<
+> > 
+> > Can we drop the test for COMPILER here too?
+> > Do -fverbose-asm make sense when generating .ll files?
+> > It looks like a leftover from what you copied.
+> 
+> Also  $(DISABLE_LTO) looks like a left-over.
+> It was added to avoid LTO when generating asm-offstes.s which
+> the original rule is also used for.
+> So this should be skipped too.
+Third thing.
+In some places we indent the assignmnet like this:
+quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
+      cmd_cc_ll_c = $(CC) $(c_flags) ....
 
+This makes it more obvious that the "cmd_cc_ll_c" is actually the same.
+Makefile.build does not do this much but please do for these targets.
 
- Émeric,
-I ran git blame on the file and I got this name,  Shaohua Li
-for the fix me and the whole function .
-
-Nick
+	Sam
