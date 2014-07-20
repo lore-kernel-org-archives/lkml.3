@@ -1,43 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaGTR1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 13:27:50 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:60399 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaGTR1t (ORCPT
+	id S1753199AbaGTRf0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 13:35:26 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:36331 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470AbaGTRfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 13:27:49 -0400
-X-Auth-Info: k5/adMuK3GQtAs3q+0KFiFGEL+gWNFi5I5jNcAcmjLE=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-X-Yow: ..  the HIGHWAY is made out of LIME JELLO and my HONDA
- is a barbequed OYSTER!  Yum!
-Date: Sun, 20 Jul 2014 19:27:42 +0200
-In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu> (Theodore
-	Ts'o's message of "Thu, 17 Jul 2014 05:18:15 -0400")
-Message-ID: <87tx6cvt2p.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sun, 20 Jul 2014 13:35:24 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>, Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v4 0/6] File Sealing & memfd_create()
+Date: Sun, 20 Jul 2014 19:34:34 +0200
+Message-Id: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 2.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Ts'o <tytso@mit.edu> writes:
+Hi
 
-> ERRORS
-> 	EINVAL		The buflen value was invalid.
+This is v4 of the File-Sealing and memfd_create() patches. You can find v1 with
+a longer introduction at gmane [1], there's also v2 [2] and v3 [3] available.
+See also the article about sealing on LWN [4], and a high-level introduction on
+the new API in my blog [5]. Last but not least, man-page proposals are
+available in my private repository [6].
 
-Also on unknown flags?  Without that it would be impossible to probe for
-implemented flags.
+This series introduces two new APIs:
+  memfd_create(): Think of this syscall as malloc() but it returns a
+                  file-descriptor instead of a pointer. That file-descriptor is
+                  backed by anon-memory and can be memory-mapped for access.
+  sealing: The sealing API can be used to prevent a specific set of operations
+           on a file-descriptor. You 'seal' the file and give thus the
+           guarantee, that those operations will be rejected from now on.
 
-Andreas.
+This series adds the memfd_create(2) syscall only to x86 and x86-64. Patches for
+most other architectures are available in my private repository [7]. Missing
+architectures are:
+    alpha, avr32, blackfin, cris, frv, m32r, microblaze, mn10300, sh, sparc,
+    um, xtensa
+These architectures lack several newer syscalls, so those should be added first
+before adding memfd_create(2). I can provide patches for those, if required.
+However, I think it should be kept separate from this series.
+
+Changes in v4:
+  - drop page-isolation in favor of shmem_wait_for_pins()
+  - add unlikely(info->seals) to write_begin hot-path
+  - return EPERM for F_ADD_SEALS if file is not writable
+  - moved shmem_wait_for_pins() entirely into it's own commit
+  - make O_LARGEFILE mandatory part of memfd_create() ABI
+  - add lru_add_drain() to shmem_tag_pins() hot-path
+  - minor coding-style changes
+
+Thanks
+David
+
+
+[1]    memfd v1: http://thread.gmane.org/gmane.comp.video.dri.devel/102241
+[2]    memfd v2: http://thread.gmane.org/gmane.linux.kernel.mm/115713
+[3]    memfd v3: http://thread.gmane.org/gmane.linux.kernel.mm/118721
+[4] LWN article: https://lwn.net/Articles/593918/
+[5]   API Intro: http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+[6]   Man-pages: http://cgit.freedesktop.org/~dvdhrm/man-pages/log/?h=memfd
+[7]    Dev-repo: http://cgit.freedesktop.org/~dvdhrm/linux/log/?h=memfd
+
+
+David Herrmann (6):
+  mm: allow drivers to prevent new writable mappings
+  shm: add sealing API
+  shm: add memfd_create() syscall
+  selftests: add memfd_create() + sealing tests
+  selftests: add memfd/sealing page-pinning tests
+  shm: wait for pins to be released when sealing
+
+ arch/x86/syscalls/syscall_32.tbl               |   1 +
+ arch/x86/syscalls/syscall_64.tbl               |   1 +
+ fs/fcntl.c                                     |   5 +
+ fs/inode.c                                     |   1 +
+ include/linux/fs.h                             |  29 +-
+ include/linux/shmem_fs.h                       |  17 +
+ include/linux/syscalls.h                       |   1 +
+ include/uapi/linux/fcntl.h                     |  15 +
+ include/uapi/linux/memfd.h                     |   8 +
+ kernel/fork.c                                  |   2 +-
+ kernel/sys_ni.c                                |   1 +
+ mm/mmap.c                                      |  30 +-
+ mm/shmem.c                                     | 324 +++++++++
+ mm/swap_state.c                                |   1 +
+ tools/testing/selftests/Makefile               |   1 +
+ tools/testing/selftests/memfd/.gitignore       |   4 +
+ tools/testing/selftests/memfd/Makefile         |  41 ++
+ tools/testing/selftests/memfd/fuse_mnt.c       | 110 +++
+ tools/testing/selftests/memfd/fuse_test.c      | 311 +++++++++
+ tools/testing/selftests/memfd/memfd_test.c     | 913 +++++++++++++++++++++++++
+ tools/testing/selftests/memfd/run_fuse_test.sh |  14 +
+ 21 files changed, 1821 insertions(+), 9 deletions(-)
+ create mode 100644 include/uapi/linux/memfd.h
+ create mode 100644 tools/testing/selftests/memfd/.gitignore
+ create mode 100644 tools/testing/selftests/memfd/Makefile
+ create mode 100755 tools/testing/selftests/memfd/fuse_mnt.c
+ create mode 100644 tools/testing/selftests/memfd/fuse_test.c
+ create mode 100644 tools/testing/selftests/memfd/memfd_test.c
+ create mode 100755 tools/testing/selftests/memfd/run_fuse_test.sh
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+2.0.2
+
