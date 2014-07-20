@@ -1,581 +1,381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863AbaGTACK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 20:02:10 -0400
-Received: from nm40-vm1.bullet.mail.ir2.yahoo.com ([212.82.97.169]:43708 "EHLO
-	nm40-vm1.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751343AbaGTACH (ORCPT
+	id S1756250AbaGTACi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 20:02:38 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:35952 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaGTACg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 20:02:07 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.com;
-	b=GuFq722qTvC7sP1S1W/KUhG8GTibrlptgVd3rkjwqLAUvV6uWGu9R0a+nCd/Dj2IlUgV2mBacjNv1jkjEaAiRgr4FQaYlN3mTlL127WzJibvrgEEsL5R8kebpP6YeLKIHwCuOtA69FRGO0DffQromu8WLrux6Q4eYBB3urT58YqgEEAIcZuUDFU9gnRYzwtORJmYI4Fzq3k+BhJmMEvgRUIxV2fqsD9VdI+vyEf5vnMynlTkdaSQCytObce1cjX2Ht4ObUz9DNyyhkW+9wOoiw0rexRsr2Y48eWKVbKkLBCP9epyzLoRn1SOVFKzR5ehgLB5IBBSF3I89SdgrPjnAA==;
-X-Yahoo-Newman-Id: 451051.16661.bm@smtp121.mail.ir2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WAK7MKwVM1nZepXkeeLp5aRRCgDSKkgRyfjvWEzqu4E4jAT
- bky04TgxuAxDeGgs9UBPmdjEqtZoPK86nbRWpXEV.6UpMt30kZY2qq_ya_aj
- gP5VC2AjI1F73nb.mebgmSyPraXn4Q1SF6RvPQauvuonm4mEXJnoFCkd_JwH
- SG_e1wQFATQzejBMCswi0Iab4YBJEEIeLrwV.ljQaHdUCnGXhbd.iHgaoGAl
- sDowIJ84_80j9t5ZcExQOehgwprrxdfY93M5K7ZaeI5kadGsbAa7VpWObPm.
- IFSfLP6UvS5nE.OKl4syWesVES03WBY35uT6Qxtdndi2OdI_AsZcU.R0OUQ6
- CJgcM0AqORGNmPrhyirg388ulRINT2g3VrQTDEs3xJiOs_ZDCjy9XYTa0vI9
- is31MbUBiL05HYTWKlc_srQPon4ybgnK6SV5g8fNx75iodD97vjDR8CycUyi
- XWlmRd3GtxdfpB6EW4bMegR5gW33wJSX7E9NrpOsHyCFuaEd7uT5fuVCS2N0
- LkB0dJoo1MxdmJXQ-
-X-Yahoo-SMTP: 1rv77aOswBAZXHe.sKY40dUsriU-
-From: Kieran Kunhya <kieran@kunhya.com>
-To: axboe@kernel.dk
-Cc: akpm@linux-foundation.org, jmoyer@redhat.com, rdunlap@infradead.org,
-        fabf@skynet.be, minchan@kernel.org, linus.walleij@linaro.org,
-        abhansali@stec-inc.com, gnomes@lxorguk.ukuu.org.uk, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org, Kieran Kunhya <kieran@kunhya.com>
-Subject: [PATCHv2] block: Add support for Sony SxS cards
-Date: Sun, 20 Jul 2014 01:01:39 +0100
-Message-Id: <1405814499-4163-1-git-send-email-kieran@kunhya.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <53BAB19C.7080703@infradead.org>
-References: <53BAB19C.7080703@infradead.org>
+	Sat, 19 Jul 2014 20:02:36 -0400
+Date: Sun, 20 Jul 2014 08:01:31 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: linus.walleij@linaro.org
+Cc: gregkh@linuxfoundation.org, jhovold@gmail.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio:gpio-pl2303: add gpio driver for GPIOs on PL2303
+Message-ID: <20140720000131.GA2158@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	linus.walleij@linaro.org, gregkh@linuxfoundation.org,
+	jhovold@gmail.com, linux-usb@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+PL2303HX has two GPIOs, this patch add driver for it.
 
-Signed-off-by: Kieran Kunhya <kieran@kunhya.com>
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
- drivers/block/Kconfig  |    9 +
- drivers/block/Makefile |    1 +
- drivers/block/sxs.c    |  491 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 501 insertions(+)
- create mode 100644 drivers/block/sxs.c
+ MAINTAINERS                 |   5 +
+ drivers/gpio/Kconfig        |   7 ++
+ drivers/gpio/Makefile       |   1 +
+ drivers/gpio/gpio-pl2303.c  | 238 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/serial/pl2303.c |  19 ++++
+ 5 files changed, 270 insertions(+)
+ create mode 100644 drivers/gpio/gpio-pl2303.c
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 014a1cf..8ebb655 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -356,6 +356,15 @@ config BLK_DEV_SX8
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 53feaaf..4a9d764 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6903,6 +6903,11 @@ F:	drivers/i2c/busses/i2c-puv3.c
+ F:	drivers/video/fb-puv3.c
+ F:	drivers/rtc/rtc-puv3.c
  
- 	  Use devices /dev/sx8/$N and /dev/sx8/$Np$M.
- 
-+config BLK_DEV_SXS
-+	tristate "Sony SxS card support"
-+	depends on PCI
-+	---help---
-+	  Saying Y or M here will enable support for reading
-+	  from Sony SxS cards.
++PL2303 GPIO DRIVER
++M:	Wang YanQing <udknight@gmail.com>
++S:	Maintained
++F:	drivers/gpio/gpio-pl2303.c
 +
-+	  It creates a device called /dev/sxs
+ PMBUS HARDWARE MONITORING DRIVERS
+ M:	Guenter Roeck <linux@roeck-us.net>
+ L:	lm-sensors@lm-sensors.org
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 4a1b511..0f90950 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -110,6 +110,13 @@ config GPIO_DA9055
+ config GPIO_MAX730X
+ 	tristate
+ 
++config GPIO_PL2303
++	tristate "USB Prolific 2303 gpio support"
++	depends on USB_SERIAL_PL2303
++	help
++	  Enable support for GPIOs on USB Prolific 2303
++	  It support two GPIOs on PL2303HX currently.
 +
- config BLK_DEV_RAM
- 	tristate "RAM block device support"
- 	---help---
-diff --git a/drivers/block/Makefile b/drivers/block/Makefile
-index 02b688d..59b9c79 100644
---- a/drivers/block/Makefile
-+++ b/drivers/block/Makefile
-@@ -33,6 +33,7 @@ obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
+ comment "Memory mapped GPIO drivers:"
  
- obj-$(CONFIG_BLK_DEV_SX8)	+= sx8.o
- obj-$(CONFIG_BLK_DEV_HD)	+= hd.o
-+obj-$(CONFIG_BLK_DEV_SXS)	+= sxs.o
- 
- obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	+= xen-blkfront.o
- obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= xen-blkback/
-diff --git a/drivers/block/sxs.c b/drivers/block/sxs.c
+ config GPIO_CLPS711X
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index d10f6a9..4ff59f6 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -101,3 +101,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
+ obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
+ obj-$(CONFIG_GPIO_XTENSA)	+= gpio-xtensa.o
+ obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
++obj-$(CONFIG_GPIO_PL2303)	+= gpio-pl2303.o
+diff --git a/drivers/gpio/gpio-pl2303.c b/drivers/gpio/gpio-pl2303.c
 new file mode 100644
-index 0000000..88ccd61
+index 0000000..a703440
 --- /dev/null
-+++ b/drivers/block/sxs.c
-@@ -0,0 +1,491 @@
++++ b/drivers/gpio/gpio-pl2303.c
+@@ -0,0 +1,238 @@
 +/*
-+ *  sxs.c: Driver for Sony SxS cards
++ * PL2303 GPIO driver
 + *
-+ *  Copyright 2014 Kieran Kunhya
++ * Copyright (C) 2014 Wang YanQing <udknight@gmail.com>
 + *
-+ *  Author/maintainer:  Kieran Kunhya <kieran@kunhya.com>
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file "COPYING" in the main directory of this archive
-+ *  for more details.
++ * Check pl2303.c for further details.
 + */
 +
-+
-+#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/pci.h>
 +#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/blkdev.h>
-+#include <linux/genhd.h>
-+#include <linux/hdreg.h>
-+#include <linux/bio.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/usb.h>
++#include <linux/gpio.h>
 +
-+#include <linux/completion.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/log2.h>
++#define VENDOR_READ_REQUEST_TYPE	0xc0
++#define VENDOR_READ_REQUEST		0x01
 +
-+#include <asm/byteorder.h>
++#define VENDOR_WRITE_REQUEST_TYPE	0x40
++#define VENDOR_WRITE_REQUEST		0x01
 +
-+#define DRV_NAME "sxs"
-+
-+#define PCI_DEVICE_ID_SXS_81CE 0x81ce
-+#define PCI_DEVICE_ID_SXS_905C 0x905c
-+
-+#define SXS_MASTER_LINK_REG_L 0x10
-+#define SXS_MASTER_LINK_REG_H 0x14
-+#define SXS_MASTER_ADDR_REG_L 0x18
-+#define SXS_MASTER_ADDR_REG_H 0x1c
-+#define SXS_MASTER_SIZE_REG   0x20
-+#define SXS_ENABLE_REG  0x28
-+#define SXS_CONTROL_REG 0x2c
-+#define SXS_STATUS_REG  0x6c
-+#define SXS_RESPONSE_BUF 0x40
-+
-+#define KERNEL_SECTOR_SIZE 512
-+
-+static struct pci_device_id ids[] = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SXS_81CE), },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SXS_905C), },
-+	{ 0, }
-+};
-+MODULE_DEVICE_TABLE(pci, ids);
-+
-+struct sxs_device {
-+	struct pci_dev *pci_dev;
-+	spinlock_t lock;
-+	void __iomem *mmio;
-+
-+	int    sxs_major;
-+	struct gendisk *disk;
-+	int    sector_size;
-+	int    num_sectors;
-+	int    sector_shift;
-+	struct request_queue *queue;
-+
-+	struct completion irq_response;
++struct pl2303_gpio_data {
++	struct usb_device *pl2303;
++	/*
++	 * 0..3: unknown (zero)
++	 * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
++	 * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
++	 * 6: gp0 pin value
++	 * 7: gp1 pin value
++	 */
++	u8 index;
++	struct gpio_chip gpio_chip;
 +};
 +
-+static int sxs_getgeo(struct block_device *bdev, struct hd_geometry *geo)
++static inline struct pl2303_gpio_data *to_pl2303_gpio(struct gpio_chip *chip)
 +{
-+	struct sxs_device *dev = bdev->bd_disk->private_data;
-+	long size;
++	return container_of(chip, struct pl2303_gpio_data, gpio_chip);
++}
 +
-+	/* Make something up here */
-+	size = dev->num_sectors*(dev->sector_size/KERNEL_SECTOR_SIZE);
-+	geo->cylinders = (size & ~0x3f) >> 6;
-+	geo->heads = 4;
-+	geo->sectors = 16;
++static int pl2303_gpio_read(struct gpio_chip *chip, unsigned char buf[1])
++{
++	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
++	struct usb_device *pl2303 = pl2303_gpio->pl2303;
++	struct device *dev = chip->dev;
++	int res;
++
++	res = usb_control_msg(pl2303, usb_rcvctrlpipe(pl2303, 0),
++			VENDOR_READ_REQUEST, VENDOR_READ_REQUEST_TYPE,
++			0x0081, 0, buf, 1, 100);
++	if (res != 1) {
++		dev_err(dev, "%s - failed to read [%04x]: %d\n", __func__,
++			0x0081, res);
++		if (res >= 0)
++			res = -EIO;
++
++		return res;
++	}
++
++	dev_dbg(dev, "%s - [%04x] = %02x\n", __func__, 0x0081, buf[0]);
 +
 +	return 0;
 +}
 +
-+static const struct block_device_operations sxs_opts = {
-+	.owner          = THIS_MODULE,
-+	.getgeo         = sxs_getgeo
-+};
-+
-+static void memcpy_read(struct sxs_device *dev, unsigned long sector,
-+						unsigned long nsect, char *buffer)
++static int pl2303_gpio_write(struct gpio_chip *chip)
 +{
-+	struct pci_dev *pdev = dev->pci_dev;
-+	u32 status;
-+	u32 data[4];
-+	u16 *tmp;
-+	u32 *tmp2;
++	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
++	struct usb_device *pl2303 = pl2303_gpio->pl2303;
++	struct device *dev = chip->dev;
++	int res;
 +
-+	void *dma2;
-+	dma_addr_t dma2_handle;
-+	void *dma3;
-+	dma_addr_t dma3_handle;
++	dev_dbg(dev, "%s - [%04x] = %02x\n", __func__, 1, pl2303_gpio->index);
 +
-+	sector >>= dev->sector_shift;
-+	nsect >>= dev->sector_shift;
-+
-+	/* Read */
-+	dma2 = pci_alloc_consistent(pdev, 8192, &dma2_handle);
-+	memset(dma2, 0, 8192);
-+
-+	dma3 = pci_alloc_consistent(pdev, 8192, &dma3_handle);
-+	memset(dma3, 0, 8192);
-+
-+	tmp = dma2;
-+	tmp2 = dma3;
-+	tmp2[0] = dma2_handle;
-+	tmp2[2] = dma3_handle;
-+
-+	printk_ratelimited(KERN_DEBUG"CALL %lu %lu\n",
-+			   sector & 0xffffffff, nsect & 0xffffffff);
-+
-+	INIT_COMPLETION(dev->irq_response);
-+	status = readl(dev->mmio+SXS_STATUS_REG);
-+	data[0] = cpu_to_le32(0x00010028);
-+	data[1] = cpu_to_le32(sector & 0xffffffff);
-+	data[2] = 0x0;
-+	data[3] = cpu_to_le32(nsect & 0xffffffff);
-+	memcpy_toio(dev->mmio, data, sizeof(data));
-+	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
-+	writel(0x80, dev->mmio+SXS_CONTROL_REG);
-+
-+	if (!wait_for_completion_timeout(&dev->irq_response,
-+					 msecs_to_jiffies(5000))) {
-+		pr_debug("No IRQ\n");
++	res = usb_control_msg(pl2303, usb_sndctrlpipe(pl2303, 0),
++			VENDOR_WRITE_REQUEST, VENDOR_WRITE_REQUEST_TYPE,
++			1, pl2303_gpio->index, NULL, 0, 100);
++	if (res) {
++		dev_err(dev, "%s - failed to write [%04x] = %02x: %d\n", __func__,
++			1, pl2303_gpio->index, res);
++		return res;
 +	}
 +
-+	INIT_COMPLETION(dev->irq_response);
-+	writel(dma3_handle, dev->mmio+SXS_MASTER_LINK_REG_L);
-+	writel(0x0, dev->mmio+SXS_MASTER_LINK_REG_H);
-+	writel(0x20, dev->mmio+SXS_CONTROL_REG);
++	return 0;
++}
 +
-+	if (!wait_for_completion_timeout(&dev->irq_response,
-+					 msecs_to_jiffies(5000))) {
-+		pr_debug("No IRQ\n");
++static int pl2303_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
++{
++	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
++
++	if (offset == 0)
++		pl2303_gpio->index &= ~0x10;
++	else if (offset == 1)
++		pl2303_gpio->index &= ~0x20;
++	else
++		return -EINVAL;
++
++	pl2303_gpio_write(chip);
++	return 0;
++}
++
++static int pl2303_gpio_direction_out(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
++
++	if (offset == 0) {
++		pl2303_gpio->index |= 0x10;
++		if (value)
++			pl2303_gpio->index |= 0x40;
++		else
++			pl2303_gpio->index &= ~0x40;
++	} else if (offset == 1) {
++		pl2303_gpio->index |= 0x20;
++		if (value)
++			pl2303_gpio->index |= 0x80;
++		else
++			pl2303_gpio->index &= ~0x80;
++	} else {
++		return -EINVAL;
 +	}
 +
-+	/* FIXME: Use DMA properly */
-+	memcpy(buffer, dma2, dev->sector_size * nsect);
-+
-+	printk_ratelimited(KERN_DEBUG"boot-signature %x\n", tmp[255]);
-+
-+	writel(0, dev->mmio+SXS_ENABLE_REG);
-+
-+	pci_free_consistent(pdev, 8192, dma3, dma3_handle);
-+	pci_free_consistent(pdev, 8192, dma2, dma2_handle);
++	pl2303_gpio_write(chip);
++	return 0;
 +}
 +
-+static void sxs_request(struct request_queue *q, struct bio *bio)
++static void pl2303_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 +{
-+	int i;
-+	struct bio_vec *bvec;
-+	char *buffer;
-+	unsigned long flags;
-+	struct sxs_device *dev = q->queuedata;
-+	sector_t sector = bio->bi_sector;
++	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
 +
-+	bio_for_each_segment(bvec, bio, i) {
-+		printk_ratelimited(KERN_DEBUG"REQUEST %i %i %i\n",
-+				   bio_cur_bytes(bio), bio->bi_vcnt,
-+				   bvec->bv_len);
-+		buffer = bvec_kmap_irq(bvec, &flags);
-+		memcpy_read(dev, sector, bio_cur_bytes(bio) >> 9, buffer);
-+		sector += bio_cur_bytes(bio) >> 9;
-+		bvec_kunmap_irq(buffer, &flags);
++	if (offset == 0) {
++		if (value)
++			pl2303_gpio->index |= 0x40;
++		else
++			pl2303_gpio->index &= ~0x40;
++	} else if (offset == 1) {
++		if (value)
++			pl2303_gpio->index |= 0x80;
++		else
++			pl2303_gpio->index &= ~0x80;
++	} else {
++		return;
 +	}
 +
-+	bio_endio(bio, 0);
++	pl2303_gpio_write(chip);
 +}
 +
-+static int setup_disk(struct sxs_device *dev)
++static int pl2303_gpio_get(struct gpio_chip *chip, unsigned offset)
 +{
-+	int ret = 0;
++	unsigned char buf[1];
++	int value = 0;
 +
-+	dev->sxs_major = register_blkdev(0, "sxs");
-+	if (!dev->sxs_major) {
-+		ret = -EBUSY;
-+		goto end;
-+	}
-+
-+	dev->queue = blk_alloc_queue(GFP_KERNEL);
-+	if (!dev->queue) {
-+		ret = -ENOMEM;
-+		goto end;
-+	}
-+
-+	blk_queue_make_request(dev->queue, sxs_request);
-+	blk_queue_logical_block_size(dev->queue, dev->sector_size);
-+	dev->queue->queuedata = dev;
-+
-+	/* XXX: can SxS have more partitions? */
-+	dev->disk = alloc_disk(4);
-+	if (!dev->disk) {
-+		pr_notice("could not allocate disk\n");
-+		goto end;
-+	}
-+	dev->disk->major = dev->sxs_major;
-+	dev->disk->first_minor = 0;
-+	dev->disk->fops = &sxs_opts;
-+	dev->disk->queue = dev->queue;
-+	dev->disk->private_data = dev;
-+	snprintf(dev->disk->disk_name, 32, "sxs");
-+	set_capacity(dev->disk, dev->num_sectors*
-+				(dev->sector_size/KERNEL_SECTOR_SIZE));
-+	add_disk(dev->disk);
-+
-+end:
-+	return ret;
-+}
-+
-+static void read_response_buf(void __iomem *mmio, u32 *output)
-+{
-+	memcpy_fromio(output, mmio+SXS_RESPONSE_BUF, 4*4);
-+}
-+
-+static int is_write_protected(struct sxs_device *dev)
-+{
-+	u32 status;
-+
-+	status = readl(dev->mmio+SXS_STATUS_REG);
-+
-+	return (status >> 8) & 1;
-+}
-+
-+/* Setup the card exactly as the Windows driver does,
-+ * even the strange parts! */
-+static int boot_check(struct sxs_device *dev)
-+{
-+	int i, ret = 0;
-+	u32 status;
-+	u32 output[4];
-+
-+	status = readl(dev->mmio+SXS_STATUS_REG);
-+	pr_debug("STATUS: %x", status);
-+
-+	if ((status & 0xa0) != 0xa0) {
-+		if ((status & 0xff) != 0x20)
-+			writel(1, dev->mmio+SXS_CONTROL_REG);
-+
-+		for (i = 0; i < 40; i++) {
-+			status = readl(dev->mmio+SXS_STATUS_REG);
-+			if (status & 0x80)
-+				break;
-+			msleep(100);
-+		}
-+		if (i == 40)
-+			ret = -EBUSY;
-+		else {
-+			read_response_buf(dev->mmio, output);
-+			/* Not clear what these values mean */
-+			pr_debug("Boot Response %x %x %x %x\n",
-+				 output[0], output[1],
-+				 output[2], output[3]);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static irqreturn_t sxs_irq(int irq, void *data)
-+{
-+	u32 status;
-+	irqreturn_t ret = IRQ_HANDLED;
-+	struct sxs_device *dev = data;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+
-+	status = readl(dev->mmio+SXS_STATUS_REG);
-+
-+	if (status != 0x80000000)
-+		writel(0x80000000, dev->mmio+SXS_STATUS_REG);
-+
-+	printk_ratelimited(KERN_DEBUG"IRQ\n");
-+
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	complete(&dev->irq_response);
-+
-+	return ret;
-+}
-+
-+static void setup_card(struct sxs_device *dev)
-+{
-+	u32 status;
-+	u32 data[4];
-+
-+	status = readl(dev->mmio+SXS_STATUS_REG);
-+	memset(data, 0, sizeof(data));
-+
-+	memcpy_toio(dev->mmio, data, sizeof(data));
-+	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
-+	writel(0x80, dev->mmio+SXS_CONTROL_REG);
-+
-+	if (!wait_for_completion_timeout(&dev->irq_response,
-+					 msecs_to_jiffies(1000))) {
-+		pr_debug("No IRQ\n");
-+	}
-+
-+	writel(0, dev->mmio+SXS_ENABLE_REG);
-+}
-+
-+static int get_size(struct sxs_device *dev)
-+{
-+	struct pci_dev *pdev = dev->pci_dev;
-+	u32 status;
-+	u32 data[4];
-+	int ret = 0;
-+	u32 *tmp2;
-+
-+	void *dma;
-+	dma_addr_t dma_handle;
-+
-+	dma = pci_alloc_consistent(pdev, 8192, &dma_handle);
-+	memset(dma, 0, 8192);
-+
-+	INIT_COMPLETION(dev->irq_response);
-+	status = readl(dev->mmio+SXS_STATUS_REG);
-+	data[0] = cpu_to_le32(0x8);
-+	data[1] = 0x0;
-+	data[2] = 0x0;
-+	data[3] = cpu_to_le32(0x1);
-+	memcpy_toio(dev->mmio, data, sizeof(data));
-+	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
-+	writel(0x80, dev->mmio+SXS_CONTROL_REG);
-+
-+	if (!wait_for_completion_timeout(&dev->irq_response,
-+					 msecs_to_jiffies(1000))) {
-+		pr_debug("No IRQ\n");
++	if(pl2303_gpio_read(chip, buf) < 1)
 +		return -EIO;
++	if (offset == 0)
++		value = buf[0] & 0x40;
++	else if (offset == 1)
++		value = buf[0] & 0x80;
++	else
++		return -EINVAL;
++	return value;
++}
++
++static struct gpio_chip template_chip = {
++	.label			= "pl2303-gpio",
++	.owner			= THIS_MODULE,
++	.direction_input	= pl2303_gpio_direction_in,
++	.get			= pl2303_gpio_get,
++	.direction_output	= pl2303_gpio_direction_out,
++	.set			= pl2303_gpio_set,
++	.can_sleep		= 1,
++};
++
++static int pl2303_gpio_probe(struct platform_device *pdev)
++{
++	struct usb_device *pl2303 = platform_get_drvdata(pdev);
++	struct pl2303_gpio_data *pl2303_gpio;
++	int ret;
++
++	pl2303_gpio = kzalloc(sizeof(*pl2303_gpio), GFP_KERNEL);
++	if (pl2303_gpio == NULL)
++		return -ENOMEM;
++
++	/* initialize gpio0,gpio1 for input as default*/
++	pl2303_gpio->index = 0x00;
++	pl2303_gpio->pl2303 = pl2303;
++	pl2303_gpio->gpio_chip = template_chip;
++	pl2303_gpio->gpio_chip.ngpio = 2;
++	pl2303_gpio->gpio_chip.base = -1;
++	pl2303_gpio->gpio_chip.dev = &pdev->dev;
++	pl2303_gpio_write(&pl2303_gpio->gpio_chip);
++
++	ret = gpiochip_add(&pl2303_gpio->gpio_chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
++		return ret;
 +	}
-+
-+	INIT_COMPLETION(dev->irq_response);
-+	writel(dma_handle, dev->mmio+SXS_MASTER_ADDR_REG_L);
-+	writel(0x0, dev->mmio+SXS_MASTER_ADDR_REG_H);
-+	writel(0x800, dev->mmio+SXS_MASTER_SIZE_REG);
-+	writel(0x20, dev->mmio+SXS_CONTROL_REG);
-+
-+	if (!wait_for_completion_timeout(&dev->irq_response,
-+					 msecs_to_jiffies(1000))) {
-+		pr_debug("No IRQ\n");
-+		ret = -EIO;
-+		goto error1;
-+	}
-+
-+	tmp2 = dma;
-+
-+	writel(0, dev->mmio+SXS_ENABLE_REG);
-+
-+	/* XXX: this might be different for larger disks */
-+	dev->sector_size = le32_to_cpu(tmp2[8]) & 0xffff;
-+	dev->num_sectors = le32_to_cpu(tmp2[9]) * le32_to_cpu(tmp2[10]);
-+	dev->sector_shift = ilog2(dev->sector_size /
-+				  KERNEL_SECTOR_SIZE);
-+	pr_debug("Sector size: %x Num sectors: %x\n",
-+		 dev->sector_size, dev->num_sectors);
-+
-+error1:
-+	pci_free_consistent(pdev, 8192, dma, dma_handle);
++	platform_set_drvdata(pdev, pl2303_gpio);
 +
 +	return ret;
 +}
 +
-+static int probe(struct pci_dev *pdev, const struct pci_device_id *id)
++static int pl2303_gpio_remove(struct platform_device *pdev)
 +{
-+	int error = 0;
-+	struct sxs_device *dev;
++	struct pl2303_gpio_data *pl2303_gpio = platform_get_drvdata(pdev);
 +
-+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+	if (!dev)
-+		goto error1;
-+	spin_lock_init(&dev->lock);
-+	dev->pci_dev = pdev;
-+
-+	error = pci_enable_device(pdev);
-+	if (error < 0)
-+		goto error2;
-+
-+	pci_enable_msi(pdev);
-+
-+	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-+	if (error)
-+		goto error3;
-+
-+	error = pci_request_regions(pdev, DRV_NAME);
-+	if (error)
-+		goto error3;
-+
-+	dev->mmio = pci_ioremap_bar(pdev, 0);
-+	if (!dev->mmio)
-+		goto error4;
-+
-+	pci_set_master(pdev);
-+
-+	if (request_irq(pdev->irq, &sxs_irq, IRQF_SHARED, DRV_NAME, dev))
-+		goto error5;
-+
-+	if (boot_check(dev) < 0)
-+		goto error6;
-+
-+	init_completion(&dev->irq_response);
-+
-+	setup_card(dev);
-+
-+	if (get_size(dev) < 0)
-+		goto error6;
-+
-+	if (setup_disk(dev) < 0)
-+		goto error7;
-+
-+	pci_set_drvdata(pdev, dev);
-+
-+	pr_debug("sxs driver successfully loaded\n");
++	if (gpiochip_remove(&pl2303_gpio->gpio_chip))
++		dev_err(&pdev->dev, "unable to remove gpio_chip?\n");
++	platform_set_drvdata(pdev, NULL);
++	kfree(pl2303_gpio);
 +	return 0;
-+
-+error7:
-+	if (dev->sxs_major)
-+		unregister_blkdev(dev->sxs_major, "sxs");
-+
-+	if (dev->disk) {
-+		del_gendisk(dev->disk);
-+		put_disk(dev->disk);
-+	}
-+
-+	if (dev->queue)
-+		blk_cleanup_queue(dev->queue);
-+error6:
-+	free_irq(pdev->irq, dev);
-+error5:
-+	iounmap(dev->mmio);
-+error4:
-+	pci_release_regions(pdev);
-+error3:
-+	pci_disable_device(pdev);
-+error2:
-+	kfree(dev);
-+error1:
-+	return error;
 +}
 +
-+static void remove(struct pci_dev *pdev)
-+{
-+	struct sxs_device *dev = pci_get_drvdata(pdev);
-+
-+	if (dev->sxs_major)
-+		unregister_blkdev(dev->sxs_major, "sxs");
-+
-+	if (dev->disk) {
-+		del_gendisk(dev->disk);
-+		put_disk(dev->disk);
-+	}
-+	if (dev->queue)
-+		blk_cleanup_queue(dev->queue);
-+	free_irq(pdev->irq, dev);
-+	iounmap(dev->mmio);
-+	pci_release_regions(pdev);
-+	pci_disable_msi(pdev);
-+	pci_disable_device(pdev);
-+	kfree(dev);
-+}
-+
-+static struct pci_driver sxs_driver = {
-+	.name = DRV_NAME,
-+	.id_table = ids,
-+	.probe = probe,
-+	.remove = remove,
++static struct platform_driver pl2303_gpio_driver = {
++	.driver.name	= "pl2303-gpio",
++	.driver.owner	= THIS_MODULE,
++	.probe		= pl2303_gpio_probe,
++	.remove		= pl2303_gpio_remove,
 +};
 +
-+static int __init sxs_init(void)
++static int __init pl2303_gpio_init(void)
 +{
-+	return pci_register_driver(&sxs_driver);
++	return platform_driver_register(&pl2303_gpio_driver);
 +}
++module_init(pl2303_gpio_init);
 +
-+static void __exit sxs_exit(void)
++static void __exit pl2303_gpio_exit(void)
 +{
-+	pci_unregister_driver(&sxs_driver);
++	platform_driver_unregister(&pl2303_gpio_driver);
 +}
++module_exit(pl2303_gpio_exit);
 +
-+MODULE_AUTHOR("Kieran Kunhya");
++MODULE_AUTHOR("Wang YanQing <udknight@gmail.com>");
++MODULE_DESCRIPTION("GPIO driver for PL2303");
 +MODULE_LICENSE("GPL");
-+
-+module_init(sxs_init);
-+module_exit(sxs_exit);
++MODULE_DESCRIPTION("platform:pl2303-gpio");
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index b3d5a35..1bb8928 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -28,6 +28,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
+ #include <asm/unaligned.h>
++#include <linux/platform_device.h>
+ #include "pl2303.h"
+ 
+ 
+@@ -146,6 +147,7 @@ struct pl2303_type_data {
+ struct pl2303_serial_private {
+ 	const struct pl2303_type_data *type;
+ 	unsigned long quirks;
++	struct platform_device *pdev;
+ };
+ 
+ struct pl2303_private {
+@@ -261,7 +263,22 @@ static int pl2303_startup(struct usb_serial *serial)
+ 		pl2303_vendor_write(serial, 2, 0x44);
+ 
+ 	kfree(buf);
++	if (type != TYPE_HX)
++		return 0;
+ 
++	spriv->pdev = platform_device_alloc("pl2303-gpio", PLATFORM_DEVID_AUTO);
++	if (spriv->pdev == NULL) {
++		dev_err(&serial->interface->dev, "Failed to allocate %s\n", "pl2303-gpio");
++	} else {
++		spriv->pdev->dev.parent = &serial->interface->dev;
++		platform_set_drvdata(spriv->pdev, serial->dev);
++		platform_device_add(spriv->pdev);
++		if (platform_device_add(spriv->pdev) != 0) {
++			dev_err(&serial->interface->dev, "Failed to register %s\n", "pl2303-gpio");
++			platform_device_put(spriv->pdev);
++			spriv->pdev = NULL;
++		}
++	}
+ 	return 0;
+ }
+ 
+@@ -269,6 +286,8 @@ static void pl2303_release(struct usb_serial *serial)
+ {
+ 	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
+ 
++	if (spriv && spriv->pdev)
++		platform_device_unregister(spriv->pdev);
+ 	kfree(spriv);
+ }
+ 
 -- 
-1.7.9.5
-
+1.8.5.5.dirty
