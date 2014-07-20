@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaGTEvQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 00:51:16 -0400
-Received: from m12-12.163.com ([220.181.12.12]:41692 "EHLO m12-12.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778AbaGTEvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 00:51:14 -0400
-X-Coremail-DSSMTP: 180.110.162.144
-From: weiyj_lk@163.com
-To: Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Takashi Sakamoto <o-takashi@sakamocchi.jp>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>, alsa-devel@alsa-project.org,
+	id S932210AbaGTExR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 00:53:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37556 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaGTExQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 00:53:16 -0400
+Date: Sun, 20 Jul 2014 07:52:53 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Riccardo Lucchese <riccardo.lucchese@gmail.com>
+Cc: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, josh@joshtriplett.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -next] ALSA: bebob: Fix missing unlock on error in special_clk_ctl_put()
-Date: Sun, 20 Jul 2014 12:50:35 +0800
-Message-Id: <1405831835-26499-1-git-send-email-weiyj_lk@163.com>
-X-Mailer: git-send-email 1.9.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: DMCowEAZKX6cSstTtAsvAQ--.220S2
-X-Coremail-Antispam: 1Uf129KBjvdXoW7WryUCw45GF18GrW3Zw13Jwb_yoWfZwc_ur
-	W8Jr4vgr4YgF1fK348KrWfArsxtrn7ur47WFsIyay7C34qqFWvyFyjqryfZr97trWkt342
-	9rnakr40qrn7CjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IUYoSotUUUUU==
-X-Originating-IP: [180.110.162.144]
-X-CM-SenderInfo: pzhl5yxbonqiywtou0bp/xtbByh7O1lO+WvmthQAAsq
+Subject: Re: [PATCH 1/3] staging: lustre/lustre/lov: Remove unneeded 'if'
+ statement in lov_request.c/lov_check_set()
+Message-ID: <20140720045253.GK25880@mwanda>
+References: <1405798498-15754-1-git-send-email-riccardo.lucchese@gmail.com>
+ <1405798498-15754-2-git-send-email-riccardo.lucchese@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405798498-15754-2-git-send-email-riccardo.lucchese@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Sat, Jul 19, 2014 at 09:34:56PM +0200, Riccardo Lucchese wrote:
+> It is silly to go through an if statement to set a single boolean
+> value in function of a single boolean expression. In the function
+> lov_check_set, assign the return value directly.
+> 
+> Signed-off-by: Riccardo Lucchese <riccardo.lucchese@gmail.com>
+> ---
+>  drivers/staging/lustre/lustre/lov/lov_request.c | 11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
+> index ce830e4..90fc66a 100644
+> --- a/drivers/staging/lustre/lustre/lov/lov_request.c
+> +++ b/drivers/staging/lustre/lustre/lov/lov_request.c
+> @@ -140,14 +140,13 @@ void lov_set_add_req(struct lov_request *req, struct lov_request_set *set)
+>  
+>  static int lov_check_set(struct lov_obd *lov, int idx)
+>  {
+> -	int rc = 0;
+> +	int rc;
+>  	mutex_lock(&lov->lov_lock);
+>  
+> -	if (lov->lov_tgts[idx] == NULL ||
+> -	    lov->lov_tgts[idx]->ltd_active ||
+> -	    (lov->lov_tgts[idx]->ltd_exp != NULL &&
+> -	     class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried))
+> -		rc = 1;
+> +	rc = lov->lov_tgts[idx] == NULL ||
+> +		lov->lov_tgts[idx]->ltd_active ||
+> +		(lov->lov_tgts[idx]->ltd_exp != NULL &&
+> +		 class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried);
 
-Add the missing unlock before return from function special_clk_ctl_put()
-in the error handling case.
+I don't see how this makes the code more readable at all.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- sound/firewire/bebob/bebob_maudio.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/sound/firewire/bebob/bebob_maudio.c b/sound/firewire/bebob/bebob_maudio.c
-index 6af50eb..6748515 100644
---- a/sound/firewire/bebob/bebob_maudio.c
-+++ b/sound/firewire/bebob/bebob_maudio.c
-@@ -382,8 +382,10 @@ static int special_clk_ctl_put(struct snd_kcontrol *kctl,
- 	mutex_lock(&bebob->mutex);
- 
- 	id = uval->value.enumerated.item[0];
--	if (id >= ARRAY_SIZE(special_clk_labels))
-+	if (id >= ARRAY_SIZE(special_clk_labels)) {
-+		mutex_unlock(&bebob->mutex);
- 		return 0;
-+	}
- 
- 	err = avc_maudio_set_special_clk(bebob, id,
- 					 params->dig_in_fmt,
+regards,
+dan carpenter
 
