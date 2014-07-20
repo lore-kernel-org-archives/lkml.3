@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361AbaGTV5F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:57:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60789 "EHLO mx1.redhat.com"
+	id S1752453AbaGTV5O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:57:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2218 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247AbaGTV5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:57:01 -0400
+	id S1752412AbaGTV5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 17:57:10 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,17 +15,20 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 14/19] perf tools: Add perf_config_u64 function
-Date: Sun, 20 Jul 2014 23:55:58 +0200
-Message-Id: <1405893363-21967-15-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 17/19] perf tools: Always force PERF_RECORD_FINISHED_ROUND event
+Date: Sun, 20 Jul 2014 23:56:01 +0200
+Message-Id: <1405893363-21967-18-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
 References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf_config_u64 function to be able to parse
-'llong' values out of config file.
+The PERF_RECORD_FINISHED_ROUND governs queue flushing in
+reporting, so it needs to be stored for any kind of event.
+
+Forcing the PERF_RECORD_FINISHED_ROUND event to be stored any
+time we finish the round and wrote at least one event.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -38,64 +41,34 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/cache.h  |  1 +
- tools/perf/util/config.c | 24 ++++++++++++++++++++++++
- 2 files changed, 25 insertions(+)
+ tools/perf/builtin-record.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 7b176dd02e1a..5cf9e1b5989d 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -22,6 +22,7 @@ typedef int (*config_fn_t)(const char *, const char *, void *);
- extern int perf_default_config(const char *, const char *, void *);
- extern int perf_config(config_fn_t fn, void *);
- extern int perf_config_int(const char *, const char *);
-+extern u64 perf_config_u64(const char *, const char *);
- extern int perf_config_bool(const char *, const char *);
- extern int config_error_nonbool(const char *);
- extern const char *perf_config_dirname(const char *, const char *);
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index 1e5e2e5af6b1..9970b8b0190b 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -286,6 +286,21 @@ static int parse_unit_factor(const char *end, unsigned long *val)
- 	return 0;
- }
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 378b85b731a7..4869050e7194 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -238,6 +238,7 @@ static struct perf_event_header finished_round_event = {
  
-+static int perf_parse_llong(const char *value, long long *ret)
-+{
-+	if (value && *value) {
-+		char *end;
-+		long long val = strtoll(value, &end, 0);
-+		unsigned long factor = 1;
-+
-+		if (!parse_unit_factor(end, &factor))
-+			return 0;
-+		*ret = val * factor;
-+		return 1;
-+	}
-+	return 0;
-+}
-+
- static int perf_parse_long(const char *value, long *ret)
+ static int record__mmap_read_all(struct record *rec)
  {
- 	if (value && *value) {
-@@ -307,6 +322,15 @@ static void die_bad_config(const char *name)
- 	die("bad config value for '%s'", name);
- }
++	u64 bytes_written = rec->bytes_written;
+ 	int i;
+ 	int rc = 0;
  
-+u64 perf_config_u64(const char *name, const char *value)
-+{
-+	long long ret = 0;
-+
-+	if (!perf_parse_llong(value, &ret))
-+		die_bad_config(name);
-+	return (u64) ret;
-+}
-+
- int perf_config_int(const char *name, const char *value)
- {
- 	long ret = 0;
+@@ -250,7 +251,11 @@ static int record__mmap_read_all(struct record *rec)
+ 		}
+ 	}
+ 
+-	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
++	/*
++	 * Mark the round finished in case we wrote
++	 * at least one event.
++	 */
++	if (bytes_written != rec->bytes_written)
+ 		rc = record__write(rec, &finished_round_event, sizeof(finished_round_event));
+ 
+ out:
 -- 
 1.8.3.1
 
