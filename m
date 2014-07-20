@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaGTPa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 11:30:28 -0400
-Received: from smtprelay0004.hostedemail.com ([216.40.44.4]:49029 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751717AbaGTPa1 (ORCPT
+	id S1752740AbaGTPrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 11:47:24 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:65154 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaGTPrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 11:30:27 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2828:2914:3138:3139:3140:3141:3142:3353:3622:3653:3654:3865:3866:3867:3868:3870:3871:4321:4384:4605:5007:6119:7514:7522:7652:7875:7903:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12517:12519:12555:12663:12740:13095:13255:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainC
-X-HE-Tag: lake27_20ab9671a0813
-X-Filterd-Recvd-Size: 4174
-Message-ID: <1405870223.5135.6.camel@joe-AO725>
-Subject: Re: [PATCH v2 1/3] staging: lustre: lov: Cleanup lov_check_set() in
- lov_request.c
-From: Joe Perches <joe@perches.com>
-To: Riccardo Lucchese <riccardo.lucchese@gmail.com>
-Cc: gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
-        oleg.drokin@intel.com, josh@joshtriplett.org, dmitry.eremin@intel.com,
-        john.hammond@intel.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Date: Sun, 20 Jul 2014 08:30:23 -0700
-In-Reply-To: <1405862550-16694-2-git-send-email-riccardo.lucchese@gmail.com>
-References: <20140720113747.GG18338@mwanda>
-	 <1405862550-16694-1-git-send-email-riccardo.lucchese@gmail.com>
-	 <1405862550-16694-2-git-send-email-riccardo.lucchese@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Jul 2014 11:47:21 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: netdev@vger.kernel.org
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Max Schwarz <max.schwarz@online.de>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [RFC PATCH 0/2] net: arc_emac: fix tx issues
+Date: Sun, 20 Jul 2014 17:44:56 +0200
+Message-Id: <1405871098-5663-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-07-20 at 15:22 +0200, Riccardo Lucchese wrote:
-> Make the code clearer by introducing a local variable and removing the
-> unnecessary 'if' statement.
-> 
-> Signed-off-by: Riccardo Lucchese <riccardo.lucchese@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
-> Changes in v2:
->  - Improved the commit message:
->     - changed the subject line to follow the same convention used by
->       previous commits to the same file.
->     - rewrote the message body using a more formal language.
->  - Introduced a local variable to make the code clearer.
->  - Added Acked-by - Julia.
-> 
->  drivers/staging/lustre/lustre/lov/lov_request.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
-> index ce830e4..ae670bb 100644
-> --- a/drivers/staging/lustre/lustre/lov/lov_request.c
-> +++ b/drivers/staging/lustre/lustre/lov/lov_request.c
-> @@ -140,14 +140,14 @@ void lov_set_add_req(struct lov_request *req, struct lov_request_set *set)
->  
->  static int lov_check_set(struct lov_obd *lov, int idx)
->  {
-> -	int rc = 0;
-> +	int rc;
-> +	struct lov_tgt_desc *desc;
->  	mutex_lock(&lov->lov_lock);
->  
-> -	if (lov->lov_tgts[idx] == NULL ||
-> -	    lov->lov_tgts[idx]->ltd_active ||
-> -	    (lov->lov_tgts[idx]->ltd_exp != NULL &&
-> -	     class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried))
-> -		rc = 1;
-> +	desc = lov->lov_tgts[idx];
-> +	rc = !desc || desc->ltd_active ||
-> +		(desc->ltd_exp &&
-> +		 class_exp2cliimp(desc->ltd_exp)->imp_connect_tried);
->  
->  	mutex_unlock(&lov->lov_lock);
->  	return rc;
+Hi,
 
-desc is not a good temporary name here.
+I've found a strange behaviour of the ARC EMAC driver while doing some
+tests on a Rockchip based Radxa Rock board and the following patches
+are a try to solve the problem. I'm not sure if they are correct or if
+there's a better way to do the same thing, so I'd like to receive some
+feedback on this.
 
-For consistency with the rest of the code
-please use tgt
+The problem I'm facing is that the transmission of a UDP stream from
+the device stops immediately with the socket send buffer full and this
+seems due to the current implementation of tx reclaiming.
 
-$ git grep "= lov->lov_tgts.*];"
-drivers/staging/lustre/lustre/lov/lov_obd.c:                    tgt = lov->lov_tgts[i];
-drivers/staging/lustre/lustre/lov/lov_obd.c:            tgt = lov->lov_tgts[i];
-drivers/staging/lustre/lustre/lov/lov_obd.c:            tgt = lov->lov_tgts[index];
-drivers/staging/lustre/lustre/lov/lov_obd.c:            tgt = lov->lov_tgts[index];
-drivers/staging/lustre/lustre/lov/lov_obd.c:                    tgt = lov->lov_tgts[qctl->qc_idx];
-drivers/staging/lustre/lustre/lov/lov_obd.c:                            tgt = lov->lov_tgts[i];
-drivers/staging/lustre/lustre/lov/lov_obd.c:            tgt = lov->lov_tgts[info->idx];
-drivers/staging/lustre/lustre/lov/lov_obd.c:            tgt = lov->lov_tgts[ost_idx];
-drivers/staging/lustre/lustre/lov/lov_obd.c:                    tgt = lov->lov_tgts[((struct obd_id_info *)val)->idx];
-drivers/staging/lustre/lustre/lov/lov_obd.c:                    tgt = lov->lov_tgts[i];
-drivers/staging/lustre/lustre/lov/lov_obd.c:            tgt = lov->lov_tgts[i];
-drivers/staging/lustre/lustre/lov/lov_request.c:        tgt = lov->lov_tgts[ost_idx];
-drivers/staging/lustre/lustre/lov/lov_request.c:        tgt = lov->lov_tgts[lovreq->rq_idx];
+With the two patches below, which do the following:
 
+ - enable tx interrupts, which are used to trigger a napi poll and
+   thus a clean of tx ring
+ - fix a possible race between xmit and tx clean
+
+everything seems to work properly.
+
+Any comments are welcome,
+Beniamino
+
+Beniamino Galvani (2):
+  net: arc_emac: enable tx interrupts
+  net: arc_emac: prevent reuse of unreclaimed tx descriptors
+
+ drivers/net/ethernet/arc/emac_main.c |   56 +++++++++++++++++++++++-----------
+ 1 file changed, 38 insertions(+), 18 deletions(-)
+
+-- 
+1.7.10.4
 
