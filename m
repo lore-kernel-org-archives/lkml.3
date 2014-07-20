@@ -1,38 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbaGTMIp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 08:08:45 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483AbaGTMIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 08:08:43 -0400
-Message-ID: <53CBB143.1020206@nod.at>
-Date: Sun, 20 Jul 2014 14:08:35 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752239AbaGTM1k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 08:27:40 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34844 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418AbaGTM1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 08:27:39 -0400
+Date: Sun, 20 Jul 2014 14:27:34 +0200
+From: Riccardo Lucchese <riccardo.lucchese@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, josh@joshtriplett.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] staging: lustre/lustre/lov: Remove unneeded 'if'
+ statement in lov_request.c/lov_check_set()
+Message-ID: <20140720122734.GA13639@rlp>
+References: <1405798498-15754-1-git-send-email-riccardo.lucchese@gmail.com>
+ <1405798498-15754-2-git-send-email-riccardo.lucchese@gmail.com>
+ <20140720045253.GK25880@mwanda>
+ <20140720110836.GC12613@rlp>
+ <20140720113747.GG18338@mwanda>
 MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>
-CC: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ls -l /proc/1/exe -> Permission denied
-References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>	<87lhrpayl4.fsf@igel.home>	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>	<87fvhwxps6.fsf@igel.home>	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com> <87bnskxn7g.fsf@igel.home>
-In-Reply-To: <87bnskxn7g.fsf@igel.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140720113747.GG18338@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.07.2014 13:51, schrieb Andreas Schwab:
-> Richard Weinberger <richard.weinberger@gmail.com> writes:
->> Do you have an example?
+On Sun, Jul 20, 2014 at 02:37:47PM +0300, Dan Carpenter wrote:
+> On Sun, Jul 20, 2014 at 01:08:36PM +0200, Riccardo Lucchese wrote:
+> > Dan,
+> > 
+> > On Sun, Jul 20, 2014 at 07:52:53AM +0300, Dan Carpenter wrote:
+> > > On Sat, Jul 19, 2014 at 09:34:56PM +0200, Riccardo Lucchese wrote:
+[...]
+> > > I don't see how this makes the code more readable at all.
+> > 
+> > Thank you for the comment. Would you consider something like the
+> > following diff instead ? Otherwise, I will resend the series for
+> > review without this change.
+> > 
+> > riccardo
+> > 
+> > ---
+> > 
+> > diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
+> > index ce830e4..ae670bb 100644
+> > --- a/drivers/staging/lustre/lustre/lov/lov_request.c
+> > +++ b/drivers/staging/lustre/lustre/lov/lov_request.c
+> > @@ -140,14 +140,14 @@ void lov_set_add_req(struct lov_request *req, struct lov_request_set *set)
+> >  
+> >  static int lov_check_set(struct lov_obd *lov, int idx)
+> >  {
+> > -	int rc = 0;
+> > +	int rc;
+> > +	struct lov_tgt_desc *desc;
+> >  	mutex_lock(&lov->lov_lock);
+> >  
+> > -	if (lov->lov_tgts[idx] == NULL ||
+> > -	    lov->lov_tgts[idx]->ltd_active ||
+> > -	    (lov->lov_tgts[idx]->ltd_exp != NULL &&
+> > -	     class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried))
+> > -		rc = 1;
+> > +	desc = lov->lov_tgts[idx];
+> > +	rc = !desc || desc->ltd_active ||
+> > +		(desc->ltd_exp &&
+> > +		 class_exp2cliimp(desc->ltd_exp)->imp_connect_tried);
 > 
-> proc symlinks are special because they actually resolve to the inode.
+> Sure, I suppose.  Using "desc" is a clean up.  Otherwise the original
+> code was not "silly".  It was fine.
 
-Ah. If an attacker manages the kernel to follow the symlink he could
-indirectly access that file.
-Thanks for pointing this out!
+The adjective "silly" was inappropriate and misleading, sorry about
+that.
+
+> I'm curious why you think if statements are less readable than other
+> statements.  That seems like nonsense.
+
+Not in general but, in this case, I find the patched code clearer.
 
 Thanks,
-//richard
+riccardo
