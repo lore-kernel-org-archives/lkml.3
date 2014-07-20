@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaGTPrj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 11:47:39 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61004 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791AbaGTPrZ (ORCPT
+	id S1752987AbaGTPrm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 11:47:42 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:40892 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559AbaGTPrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 11:47:25 -0400
+	Sun, 20 Jul 2014 11:47:23 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: netdev@vger.kernel.org
 Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
@@ -19,9 +19,9 @@ Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
         "David S. Miller" <davem@davemloft.net>,
         Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [RFC PATCH 2/2] net: arc_emac: prevent reuse of unreclaimed tx descriptors
-Date: Sun, 20 Jul 2014 17:44:58 +0200
-Message-Id: <1405871098-5663-3-git-send-email-b.galvani@gmail.com>
+Subject: [RFC PATCH 1/2] net: arc_emac: enable tx interrupts
+Date: Sun, 20 Jul 2014 17:44:57 +0200
+Message-Id: <1405871098-5663-2-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1405871098-5663-1-git-send-email-b.galvani@gmail.com>
 References: <1405871098-5663-1-git-send-email-b.galvani@gmail.com>
@@ -29,105 +29,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After transmitting a frame, the current code stops the queue only when
-the next buffer descriptor in the ring is still owned by the device.
-This is not enough since the tx code must also wait that descriptors
-get reclaimed by arc_emacs_tx_clean() before using them again.
+arc_emac_tx_clean() is called by the the napi poll handler, which is
+scheduled only when a rx interrupt is raised. In absence of received
+packets the reclaim of used buffers is not executed, blocking further
+transmissions.
 
-This patch changes the logic in tx path to ensure that descriptors are
-used for transmission only after they have been reclaimed.
+This can be easily reproduced starting the transmission of a UDP flow
+with iperf, which blocks almost immediately because skbs are not freed
+and the socket send buffer becomes full:
+
+iperf           S c037a308     0    87     82 0x00000000
+[<c037a308>] (__schedule) from [<c0379da4>] (schedule_timeout+0x124/0x178)
+[<c0379da4>] (schedule_timeout) from [<c02c253c>] (sock_alloc_send_pskb+0x2a8/0x3a4)
+[<c02c253c>] (sock_alloc_send_pskb) from [<c02c265c>] (sock_alloc_send_skb+0x24/0x2c)
+[<c02c265c>] (sock_alloc_send_skb) from [<c02fd0e4>] (__ip_append_data+0x670/0x9b0)
+[<c02fd0e4>] (__ip_append_data) from [<c02ffd1c>] (ip_make_skb+0xb0/0xe4)
+[<c02ffd1c>] (ip_make_skb) from [<c0322c78>] (udp_sendmsg+0x210/0x7d4)
+[<c0322c78>] (udp_sendmsg) from [<c032c798>] (inet_sendmsg+0x7c/0xb4)
+[<c032c798>] (inet_sendmsg) from [<c02bf734>] (sock_aio_write+0xcc/0xec)
+[<c02bf734>] (sock_aio_write) from [<c00e0bfc>] (do_sync_write+0x84/0xac)
+[<c00e0bfc>] (do_sync_write) from [<c00e174c>] (vfs_write+0x108/0x1ac)
+[<c00e174c>] (vfs_write) from [<c00e1af8>] (SyS_write+0x40/0x8c)
+[<c00e1af8>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
+
+The patch schedules a napi poll after tx interrupts to allow the tx
+reclaim to run in the described situation.
 
 Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
- drivers/net/ethernet/arc/emac_main.c |   46 ++++++++++++++++++++++++----------
- 1 file changed, 33 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/arc/emac_main.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index 4adc01f..02fba2d 100644
+index 18e2fac..4adc01f 100644
 --- a/drivers/net/ethernet/arc/emac_main.c
 +++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -30,6 +30,17 @@
- #define DRV_VERSION	"1.0"
- 
- /**
-+ * arc_emac_tx_avail - Return the number of available slots in the tx ring.
-+ * @priv: Pointer to ARC EMAC private data structure.
-+ *
-+ * returns: the number of slots available for transmission in tx the ring.
-+ */
-+static inline int arc_emac_tx_avail(struct arc_emac_priv *priv)
-+{
-+	return (priv->txbd_dirty + TX_BD_NUM - priv->txbd_curr - 1) % TX_BD_NUM;
-+}
-+
-+/**
-  * arc_emac_adjust_link - Adjust the PHY link duplex.
-  * @ndev:	Pointer to the net_device structure.
-  *
-@@ -180,10 +191,15 @@ static void arc_emac_tx_clean(struct net_device *ndev)
- 		txbd->info = 0;
- 
- 		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
--
--		if (netif_queue_stopped(ndev))
--			netif_wake_queue(ndev);
- 	}
-+
-+	/* Ensure that txbd_dirty is visible to tx() before checking
-+	 * for queue stopped.
-+	 */
-+	smp_mb();
-+
-+	if (netif_queue_stopped(ndev) && arc_emac_tx_avail(priv))
-+		netif_wake_queue(ndev);
- }
- 
- /**
-@@ -574,11 +590,9 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
- 
- 	len = max_t(unsigned int, ETH_ZLEN, skb->len);
- 
--	/* EMAC still holds this buffer in its possession.
--	 * CPU must not modify this buffer descriptor
--	 */
--	if (unlikely((le32_to_cpu(*info) & OWN_MASK) == FOR_EMAC)) {
-+	if (unlikely(!arc_emac_tx_avail(priv))) {
- 		netif_stop_queue(ndev);
-+		netdev_err(ndev, "BUG! Tx Ring full when queue awake!\n");
- 		return NETDEV_TX_BUSY;
+@@ -298,7 +298,7 @@ static int arc_emac_poll(struct napi_struct *napi, int budget)
+ 	work_done = arc_emac_rx(ndev, budget);
+ 	if (work_done < budget) {
+ 		napi_complete(napi);
+-		arc_reg_or(priv, R_ENABLE, RXINT_MASK);
++		arc_reg_or(priv, R_ENABLE, RXINT_MASK | TXINT_MASK);
  	}
  
-@@ -603,18 +617,24 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
- 	skb_tx_timestamp(skb);
+ 	return work_done;
+@@ -327,9 +327,9 @@ static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
+ 	/* Reset all flags except "MDIO complete" */
+ 	arc_reg_set(priv, R_STATUS, status);
  
- 	*info = cpu_to_le32(FOR_EMAC | FIRST_OR_LAST_MASK | len);
-+	arc_reg_set(priv, R_STATUS, TXPL_MASK);
+-	if (status & RXINT_MASK) {
++	if (status & (RXINT_MASK | TXINT_MASK)) {
+ 		if (likely(napi_schedule_prep(&priv->napi))) {
+-			arc_reg_clr(priv, R_ENABLE, RXINT_MASK);
++			arc_reg_clr(priv, R_ENABLE, RXINT_MASK | TXINT_MASK);
+ 			__napi_schedule(&priv->napi);
+ 		}
+ 	}
+@@ -440,7 +440,7 @@ static int arc_emac_open(struct net_device *ndev)
+ 	arc_reg_set(priv, R_TX_RING, (unsigned int)priv->txbd_dma);
  
- 	/* Increment index to point to the next BD */
- 	*txbd_curr = (*txbd_curr + 1) % TX_BD_NUM;
+ 	/* Enable interrupts */
+-	arc_reg_set(priv, R_ENABLE, RXINT_MASK | ERR_MASK);
++	arc_reg_set(priv, R_ENABLE, RXINT_MASK | TXINT_MASK | ERR_MASK);
  
--	/* Get "info" of the next BD */
--	info = &priv->txbd[*txbd_curr].info;
-+	/* Ensure that tx_clean() sees the new txbd_curr before
-+	 * checking the queue status. This prevents an unneeded wake
-+	 * of the queue in tx_clean().
-+	 */
-+	smp_mb();
+ 	/* Set CONTROL */
+ 	arc_reg_set(priv, R_CTRL,
+@@ -511,7 +511,7 @@ static int arc_emac_stop(struct net_device *ndev)
+ 	netif_stop_queue(ndev);
  
--	/* Check if if Tx BD ring is full - next BD is still owned by EMAC */
--	if (unlikely((le32_to_cpu(*info) & OWN_MASK) == FOR_EMAC))
-+	if (!arc_emac_tx_avail(priv)) {
- 		netif_stop_queue(ndev);
--
--	arc_reg_set(priv, R_STATUS, TXPL_MASK);
-+		/* Refresh tx_dirty */
-+		smp_mb();
-+		if (arc_emac_tx_avail(priv))
-+			netif_start_queue(ndev);
-+	}
+ 	/* Disable interrupts */
+-	arc_reg_clr(priv, R_ENABLE, RXINT_MASK | ERR_MASK);
++	arc_reg_clr(priv, R_ENABLE, RXINT_MASK | TXINT_MASK | ERR_MASK);
  
- 	return NETDEV_TX_OK;
- }
+ 	/* Disable EMAC */
+ 	arc_reg_clr(priv, R_CTRL, EN_MASK);
 -- 
 1.7.10.4
 
