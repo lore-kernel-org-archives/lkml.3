@@ -1,54 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaGTRlZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 13:41:25 -0400
-Received: from imap.thunk.org ([74.207.234.97]:46186 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752415AbaGTRlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 13:41:22 -0400
-Date: Sun, 20 Jul 2014 13:41:04 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140720174104.GH5017@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andreas Schwab <schwab@linux-m68k.org>,
-	linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-	linux-crypto@vger.kernel.org, beck@openbsd.org
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <87tx6cvt2p.fsf@igel.home>
+	id S1753395AbaGTRn5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 13:43:57 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:44957 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157AbaGTRny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 13:43:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87tx6cvt2p.fsf@igel.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+	<1405373897-31671-7-git-send-email-keescook@chromium.org>
+	<CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
+Date: Sun, 20 Jul 2014 10:43:53 -0700
+X-Google-Sender-Auth: 8bU2BzBPlmbjyFh3Cc2rq3vVxtg
+Message-ID: <CAGXu5j+xx2exZdD64mXWzmvVUzBrFUOg-kZ5E4+tvKAuGTKW4w@mail.gmail.com>
+Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
+From: Kees Cook <keescook@chromium.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 07:27:42PM +0200, Andreas Schwab wrote:
-> Theodore Ts'o <tytso@mit.edu> writes:
-> 
-> > ERRORS
-> > 	EINVAL		The buflen value was invalid.
-> 
-> Also on unknown flags?  Without that it would be impossible to probe for
-> implemented flags.
+On Sat, Jul 19, 2014 at 8:04 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Tue, Jul 15, 2014 at 5:38 AM, Kees Cook <keescook@chromium.org> wrote:
+>> As an alternative to loading bytes from the "data" blob when reading
+>> firmware, let kernel read from an fd, so that the LSM can reason about
+>> the origin of firmware contents during userspace on-demand loading.
+>
+> From user space view, maybe it is better to keep previous usage and just
+> check if loading is from 'data' blob or fd in 'echo 0 > loading' of
+> firmware_loading_store(), then the 'fd' usage becomes very similar with
+> before.
 
-We removed the cap on the buflen size (although if someone gives
-something insanely large, it can get capped), so EINVAL will only
-happen for unknown flags.  I'll fix the suggested man page.
+I don't think this is a good idea because otherwise there isn't a good
+way to have an "atomic" check of the firmware contents. What does it
+means to write to "fd" several times, then write "data" a little,
+before writing "loading", etc? I originally wrote the patch series
+requiring the "loading" piece, and it ended up being very complicated
+due to needing to switch the memory buffer logic back and forth.
+Everything is much much cleaner if "fd" is single-shot, and not part
+of the loading/data interface semantics.
 
-	       	   	   	   	    - Ted
+And, as it turns out, the userspace changes are much simpler if
+"loading" isn't part of the picture for the "fd" interface, too.
 
-P.S. The reason why OpenBSD had a very strong opinion about returning
-EIO for buflen greater than 256 bytes was they really wanted to pound
-it into application writers than if they were trying to fetch more
-than 256 bytes, they were probably Doing Something Wrong, and they
-decided EIO was less subtle that EINVAL....
+-Kees
 
+>
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  Documentation/firmware_class/README |   10 +++++
+>>  drivers/base/firmware_class.c       |   77 ++++++++++++++++++++++++++++++++++-
+>>  2 files changed, 86 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
+>> index 71f86859d7d8..d899bdacba1e 100644
+>> --- a/Documentation/firmware_class/README
+>> +++ b/Documentation/firmware_class/README
+>> @@ -59,6 +59,16 @@
+>>   8), kernel(driver): Driver code calls release_firmware(fw_entry) releasing
+>>                  the firmware image and any related resource.
+>>
+>> + Alternative loading (via file descriptor):
+>> + ==========================================
+>> + Instead of "loading", and "data" above, firmware can be loaded through
+>> + an open file descriptor as well, via the "fd" file:
+>> +
+>> + Replacing steps 2 thorugh 6 above with the following userspace actions,
+>> + performs the same loading:
+>> +       - open firmware image file (e.g. as fd 3).
+>> +       - write fd (e.g. "3") to /sys/class/firmware/xxx/fd.
+>
+> Then as above, here should be just to replace step 4, 5 as
+>           - open image in user space
+>           - echo fd > /sys/class/firmware/xxx/fd
+>
+>> +
+>>   High level behavior (driver code):
+>>   ==================================
+>>
+>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>> index b38cbcd6ebb1..eac996447d28 100644
+>> --- a/drivers/base/firmware_class.c
+>> +++ b/drivers/base/firmware_class.c
+>> @@ -839,6 +839,70 @@ static struct bin_attribute firmware_attr_data = {
+>>         .write = firmware_data_write,
+>>  };
+>>
+>> +/**
+>> + * fd_store - set value in the 'fd' control file
+>> + * @dev: device pointer
+>> + * @attr: device attribute pointer
+>> + * @buf: buffer to scan for loading fd value
+>> + * @count: number of bytes in @buf
+>> + *
+>> + * Parses an fd number from buf, and then loads firmware bytes from
+>> + * the current process's matching open fd.
+>> + *
+>> + **/
+>> +static ssize_t fd_store(struct device *dev,
+>> +                                struct device_attribute *attr,
+>> +                                const char *buf, size_t count)
+>> +{
+>> +       struct firmware_priv *fw_priv = to_firmware_priv(dev);
+>> +       struct firmware_buf *fw_buf = fw_priv->buf;
+>> +       ssize_t retval;
+>> +       int fd;
+>> +       struct fd f;
+>> +
+>> +       if (!capable(CAP_SYS_RAWIO))
+>> +               return -EPERM;
+>> +
+>> +       retval = kstrtoint(buf, 10, &fd);
+>> +       if (retval)
+>> +               return retval;
+>> +
+>> +       f = fdget(fd);
+>> +       if (!f.file)
+>> +               return -EBADF;
+>> +
+>> +       mutex_lock(&fw_lock);
+>> +       /* If we raced another loader, we must fail. */
+>> +       if (test_bit(FW_STATUS_DONE, &fw_buf->status)) {
+>> +               retval = -EINVAL;
+>> +               goto unlock;
+>> +       }
+>> +
+>> +       fw_load_start(fw_buf);
+>> +       /* fw_read_file_contents uses vmalloc, not pages. */
+>> +       fw_buf->is_paged_buf = false;
+>> +       retval = fw_read_file_contents(f.file, fw_buf);
+>> +       if (retval) {
+>> +               /* If we called fw_load_start, we must abort on fail. */
+>> +               fw_load_abort(fw_priv);
+>> +               goto unlock;
+>> +       }
+>> +
+>> +       /* Success. */
+>> +       set_bit(FW_STATUS_DONE, &fw_buf->status);
+>> +       list_del_init(&fw_buf->pending_list);
+>> +       complete_all(&fw_buf->completion);
+>> +
+>> +unlock:
+>> +       mutex_unlock(&fw_lock);
+>> +       fdput(f);
+>> +
+>> +       if (retval)
+>> +               return retval;
+>> +       return count;
+>> +}
+>> +static DEVICE_ATTR_WO(fd);
+>> +
+>>  static void firmware_class_timeout_work(struct work_struct *work)
+>>  {
+>>         struct firmware_priv *fw_priv = container_of(work,
+>> @@ -912,10 +976,19 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+>>                 mutex_lock(&fw_lock);
+>>                 list_del_init(&buf->pending_list);
+>>                 mutex_unlock(&fw_lock);
+>> -               dev_err(f_dev, "%s: device_create_file failed\n", __func__);
+>> +               dev_err(f_dev, "%s: dev_attr_loading failed\n", __func__);
+>>                 goto err_del_bin_attr;
+>>         }
+>>
+>> +       retval = device_create_file(f_dev, &dev_attr_fd);
+>> +       if (retval) {
+>> +               mutex_lock(&fw_lock);
+>> +               list_del_init(&buf->pending_list);
+>> +               mutex_unlock(&fw_lock);
+>> +               dev_err(f_dev, "%s: &dev_attr_fd failed\n", __func__);
+>> +               goto err_del_loading;
+>> +       }
+>> +
+>>         if (opt_flags & FW_OPT_UEVENT) {
+>>                 buf->need_uevent = true;
+>>                 dev_set_uevent_suppress(f_dev, false);
+>> @@ -933,6 +1006,8 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+>>         if (!buf->data)
+>>                 retval = -ENOMEM;
+>>
+>> +       device_remove_file(f_dev, &dev_attr_fd);
+>> +err_del_loading:
+>>         device_remove_file(f_dev, &dev_attr_loading);
+>>  err_del_bin_attr:
+>>         device_remove_bin_file(f_dev, &firmware_attr_data);
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
