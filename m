@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaGTTzt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:55:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58404 "EHLO
+	id S1753741AbaGTT4K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:56:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaGTTzs (ORCPT
+	with ESMTP id S1753607AbaGTT4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:55:48 -0400
-Date: Sun, 20 Jul 2014 12:55:46 -0700
+	Sun, 20 Jul 2014 15:56:09 -0400
+Date: Sun, 20 Jul 2014 12:56:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] char/misc driver fixes for 3.16-rc6
-Message-ID: <20140720195546.GA4822@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [GIT PULL] Driver core fixes for 3.16-rc6
+Message-ID: <20140720195608.GA10437@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,28 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
+The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
 
-  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.16-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.16-rc6
 
-for you to fetch changes up to 2ef82d24f445e82f80e235f44eb9d1bc933e3670:
+for you to fetch changes up to aff008ad813c7cf3cfe7b532e7ba2c526c136f22:
 
-  Drivers: hv: hv_fcopy: fix a race condition for SMP guest (2014-07-17 18:43:10 -0700)
+  platform_get_irq: Revert to platform_get_resource if of_irq_get fails (2014-07-11 18:06:36 -0700)
 
 ----------------------------------------------------------------
-char/misc fix for 3.16-rc6
+driver core fix for 3.16-rc6
 
-Here's a single hyper-v driver fix for a reported issue.
+Here is a single driver core fix that reverts an older patch that has
+been causing a number of reported problems with the platform devices.
+
+This revert has been in linux-next for a while with no reported issues.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Dexuan Cui (1):
-      Drivers: hv: hv_fcopy: fix a race condition for SMP guest
+Guenter Roeck (1):
+      platform_get_irq: Revert to platform_get_resource if of_irq_get fails
 
- drivers/hv/hv_fcopy.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/platform.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
