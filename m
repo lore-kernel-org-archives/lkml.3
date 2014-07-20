@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaGTLsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 07:48:13 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36646 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaGTLsH (ORCPT
+	id S1752420AbaGTLvh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 07:51:37 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:46041 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaGTLvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 07:48:07 -0400
-Date: Sun, 20 Jul 2014 04:47:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
- for non-nohz_full= CPUs
-Message-ID: <20140720114759.GO8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140719165350.GA18411@linux.vnet.ibm.com>
- <20140719180120.GA20887@localhost.localdomain>
+	Sun, 20 Jul 2014 07:51:36 -0400
+X-Auth-Info: QtIXhXpp3eS8ugGiRcpy/h2yKGdO/FTM4fBpjz7PvcY=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ls -l /proc/1/exe -> Permission denied
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>
+	<87lhrpayl4.fsf@igel.home>
+	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>
+	<87fvhwxps6.fsf@igel.home>
+	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
+X-Yow: CHUBBY CHECKER just had a CHICKEN SANDWICH in downtown DULUTH!
+Date: Sun, 20 Jul 2014 13:51:31 +0200
+In-Reply-To: <CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
+	(Richard Weinberger's message of "Sun, 20 Jul 2014 13:06:30 +0200")
+Message-ID: <87bnskxn7g.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140719180120.GA20887@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072011-7164-0000-0000-000003428279
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 08:01:24PM +0200, Frederic Weisbecker wrote:
-> On Sat, Jul 19, 2014 at 09:53:50AM -0700, Paul E. McKenney wrote:
-> > If a non-nohz_full= CPU is non-idle, it will have a scheduling-clock
-> > interrupt, and therefore doesn't need the timekeeping CPU to keep
-> > its scheduling-clock interrupt going.  This commit therefore ignores
-> > the idle state of non-nohz_full CPUs when determining whether or not
-> > the timekeeping CPU can safely turn off its scheduling-clock interrupt.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Unfortunately that's not how things work. Running a CPU tick doesn't necessarily
-> imply to run the timekeeping duty.
-> 
-> Only the timekeeper can update the timekeeping. There is an exception though:
-> the timekeeping is also updated by dynticks idle CPUs when they wake up in an
-> interrupt from idle.
-> 
-> Here is in practice why it doesn't work:
-> 
-> So lets say CPU 0 is timekeeper, CPU 1 a non-nohz-full CPU and all others are full-nohz.
-> CPU 0 is sleeping. CPU 1 wakes up from idle, so it has an uptodate timekeeping but then
-> if it continues to execute further without waking up CPU 0, it risks stale timestamps.
-> 
-> This can be changed by allowing timekeeping duty from all non-nohz_full CPUs, that's
-> the initial direction I took, but it involved a lot of complications and scalability
-> issues.
+Richard Weinberger <richard.weinberger@gmail.com> writes:
 
-So we really have to have -all- the CPUs be idle to turn off the timekeeper.
-This won't make the battery-powered embedded guys happy...
+> On Sun, Jul 20, 2014 at 12:55 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+>> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
+>>
+>>> Andreas Schwab <schwab@linux-m68k.org> wrote on 2014/07/19 22:21:59:
+>>>>
+>>>> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
+>>>>
+>>>> > Trying to real /proc/<pid>/exe I noticed I could not read links not
+>>>> > belonging to my user such as:
+>>>> > jocke >  ls -l /proc/1/exe
+>>>> >              ls: cannot read symbolic link /proc/1/exe: Permission
+>>> denied
+>>>> >
+>>>> > Is this expected?
+>>>>
+>>>> Yes.  This information is considered private.
+>>>
+>>> I don't understand why though.
+>>
+>> It would allow bypassing access restrictions.
+>
+> Do you have an example?
 
-Other thoughts on this?  We really should not be setting
-CONFIG_NO_HZ_FULL_SYSIDLE by default until this is solved.
+proc symlinks are special because they actually resolve to the inode.
 
-								Thanx, Paul
+Andreas.
 
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index ddad959a9132..eaa32e4c228d 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -2789,8 +2789,13 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
-> >  	 * system-idle state.  This means that the timekeeping CPU must
-> >  	 * invoke rcu_sysidle_force_exit() directly if it does anything
-> >  	 * more than take a scheduling-clock interrupt.
-> > +	 *
-> > +	 * In addition if we are not a nohz_full= CPU, then when we are
-> > +	 * non-idle we have our own tick, so we don't need the timekeeping
-> > +	 * CPU to keep a tick on our behalf.  We assume that the timekeeping
-> > +	 * CPU is also a nohz_full= CPU.
-> >  	 */
-> > -	if (smp_processor_id() == tick_do_timer_cpu)
-> > +	if (!tick_nohz_full_cpu(smp_processor_id()))
-> >  		return;
-> >  
-> >  	/* Update system-idle state: We are clearly no longer fully idle! */
-> > @@ -2810,11 +2815,11 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
-> >  
-> >  	/*
-> >  	 * If some other CPU has already reported non-idle, if this is
-> > -	 * not the flavor of RCU that tracks sysidle state, or if this
-> > -	 * is an offline or the timekeeping CPU, nothing to do.
-> > +	 * not the flavor of RCU that tracks sysidle state, or if this is
-> > +	 * an offline or !nohz_full= or the timekeeping CPU, nothing to do.
-> >  	 */
-> >  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
-> > -	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
-> > +	    cpu_is_offline(rdp->cpu) || !tick_nohz_full_cpu(rdp->cpu))
-> >  		return;
-> >  	if (rcu_gp_in_progress(rdp->rsp))
-> >  		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> > 
-> 
-
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
