@@ -1,598 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501AbaGTAED (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 20:04:03 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47265 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749AbaGTAEB (ORCPT
+	id S1756104AbaGTAKh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 20:10:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53747 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504AbaGTAKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 20:04:01 -0400
-From: Matt Rushton <mvrushton@gmail.com>
-X-Google-Original-From: Matt Rushton <mrushton@amazon.com>
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-Cc: msw@amazon.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, Matt Rushton <mrushton@amazon.com>
-Subject: [PATCH v2 2/2] xen/setup: Remap Xen Identity Mapped RAM
-Date: Sat, 19 Jul 2014 17:01:35 -0700
-Message-Id: <1405814495-10868-2-git-send-email-mrushton@amazon.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405814495-10868-1-git-send-email-mrushton@amazon.com>
-References: <1405814495-10868-1-git-send-email-mrushton@amazon.com>
+	Sat, 19 Jul 2014 20:10:36 -0400
+Date: Sat, 19 Jul 2014 17:10:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Wang YanQing <udknight@gmail.com>, linus.walleij@linaro.org,
+        jhovold@gmail.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio:gpio-pl2303: add gpio driver for GPIOs on PL2303
+Message-ID: <20140720001011.GA2684@kroah.com>
+References: <20140720000131.GA2158@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140720000131.GA2158@udknight>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of ballooning up and down dom0 memory this remaps the existing mfns
-that were replaced by the identity map. The reason for this is that the
-existing implementation ballooned memory up and and down which caused dom0
-to have discontiguous pages. In some cases this resulted in the use of bounce
-buffers which reduced network I/O performance significantly. This change will
-honor the existing order of the pages with the exception of some boundary
-conditions.
+On Sun, Jul 20, 2014 at 08:01:31AM +0800, Wang YanQing wrote:
+> PL2303HX has two GPIOs, this patch add driver for it.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  MAINTAINERS                 |   5 +
+>  drivers/gpio/Kconfig        |   7 ++
+>  drivers/gpio/Makefile       |   1 +
+>  drivers/gpio/gpio-pl2303.c  | 238 ++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/usb/serial/pl2303.c |  19 ++++
+>  5 files changed, 270 insertions(+)
+>  create mode 100644 drivers/gpio/gpio-pl2303.c
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 53feaaf..4a9d764 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6903,6 +6903,11 @@ F:	drivers/i2c/busses/i2c-puv3.c
+>  F:	drivers/video/fb-puv3.c
+>  F:	drivers/rtc/rtc-puv3.c
+>  
+> +PL2303 GPIO DRIVER
+> +M:	Wang YanQing <udknight@gmail.com>
+> +S:	Maintained
+> +F:	drivers/gpio/gpio-pl2303.c
+> +
+>  PMBUS HARDWARE MONITORING DRIVERS
+>  M:	Guenter Roeck <linux@roeck-us.net>
+>  L:	lm-sensors@lm-sensors.org
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 4a1b511..0f90950 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -110,6 +110,13 @@ config GPIO_DA9055
+>  config GPIO_MAX730X
+>  	tristate
+>  
+> +config GPIO_PL2303
+> +	tristate "USB Prolific 2303 gpio support"
+> +	depends on USB_SERIAL_PL2303
+> +	help
+> +	  Enable support for GPIOs on USB Prolific 2303
+> +	  It support two GPIOs on PL2303HX currently.
+> +
+>  comment "Memory mapped GPIO drivers:"
+>  
+>  config GPIO_CLPS711X
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index d10f6a9..4ff59f6 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -101,3 +101,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
+>  obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
+>  obj-$(CONFIG_GPIO_XTENSA)	+= gpio-xtensa.o
+>  obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
+> +obj-$(CONFIG_GPIO_PL2303)	+= gpio-pl2303.o
+> diff --git a/drivers/gpio/gpio-pl2303.c b/drivers/gpio/gpio-pl2303.c
+> new file mode 100644
+> index 0000000..a703440
+> --- /dev/null
+> +++ b/drivers/gpio/gpio-pl2303.c
+> @@ -0,0 +1,238 @@
+> +/*
+> + * PL2303 GPIO driver
+> + *
+> + * Copyright (C) 2014 Wang YanQing <udknight@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * Check pl2303.c for further details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/usb.h>
+> +#include <linux/gpio.h>
+> +
+> +#define VENDOR_READ_REQUEST_TYPE	0xc0
+> +#define VENDOR_READ_REQUEST		0x01
+> +
+> +#define VENDOR_WRITE_REQUEST_TYPE	0x40
+> +#define VENDOR_WRITE_REQUEST		0x01
+> +
+> +struct pl2303_gpio_data {
+> +	struct usb_device *pl2303;
+> +	/*
+> +	 * 0..3: unknown (zero)
+> +	 * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
+> +	 * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
+> +	 * 6: gp0 pin value
+> +	 * 7: gp1 pin value
+> +	 */
+> +	u8 index;
+> +	struct gpio_chip gpio_chip;
+> +};
+> +
+> +static inline struct pl2303_gpio_data *to_pl2303_gpio(struct gpio_chip *chip)
+> +{
+> +	return container_of(chip, struct pl2303_gpio_data, gpio_chip);
+> +}
+> +
+> +static int pl2303_gpio_read(struct gpio_chip *chip, unsigned char buf[1])
+> +{
+> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
+> +	struct usb_device *pl2303 = pl2303_gpio->pl2303;
+> +	struct device *dev = chip->dev;
+> +	int res;
+> +
+> +	res = usb_control_msg(pl2303, usb_rcvctrlpipe(pl2303, 0),
+> +			VENDOR_READ_REQUEST, VENDOR_READ_REQUEST_TYPE,
+> +			0x0081, 0, buf, 1, 100);
+> +	if (res != 1) {
+> +		dev_err(dev, "%s - failed to read [%04x]: %d\n", __func__,
+> +			0x0081, res);
+> +		if (res >= 0)
+> +			res = -EIO;
+> +
+> +		return res;
+> +	}
+> +
+> +	dev_dbg(dev, "%s - [%04x] = %02x\n", __func__, 0x0081, buf[0]);
+> +
+> +	return 0;
+> +}
+> +
+> +static int pl2303_gpio_write(struct gpio_chip *chip)
+> +{
+> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
+> +	struct usb_device *pl2303 = pl2303_gpio->pl2303;
+> +	struct device *dev = chip->dev;
+> +	int res;
+> +
+> +	dev_dbg(dev, "%s - [%04x] = %02x\n", __func__, 1, pl2303_gpio->index);
+> +
+> +	res = usb_control_msg(pl2303, usb_sndctrlpipe(pl2303, 0),
+> +			VENDOR_WRITE_REQUEST, VENDOR_WRITE_REQUEST_TYPE,
+> +			1, pl2303_gpio->index, NULL, 0, 100);
+> +	if (res) {
+> +		dev_err(dev, "%s - failed to write [%04x] = %02x: %d\n", __func__,
+> +			1, pl2303_gpio->index, res);
+> +		return res;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int pl2303_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
+> +
+> +	if (offset == 0)
+> +		pl2303_gpio->index &= ~0x10;
+> +	else if (offset == 1)
+> +		pl2303_gpio->index &= ~0x20;
+> +	else
+> +		return -EINVAL;
+> +
+> +	pl2303_gpio_write(chip);
+> +	return 0;
+> +}
+> +
+> +static int pl2303_gpio_direction_out(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
+> +
+> +	if (offset == 0) {
+> +		pl2303_gpio->index |= 0x10;
+> +		if (value)
+> +			pl2303_gpio->index |= 0x40;
+> +		else
+> +			pl2303_gpio->index &= ~0x40;
+> +	} else if (offset == 1) {
+> +		pl2303_gpio->index |= 0x20;
+> +		if (value)
+> +			pl2303_gpio->index |= 0x80;
+> +		else
+> +			pl2303_gpio->index &= ~0x80;
+> +	} else {
+> +		return -EINVAL;
+> +	}
+> +
+> +	pl2303_gpio_write(chip);
+> +	return 0;
+> +}
+> +
+> +static void pl2303_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
+> +
+> +	if (offset == 0) {
+> +		if (value)
+> +			pl2303_gpio->index |= 0x40;
+> +		else
+> +			pl2303_gpio->index &= ~0x40;
+> +	} else if (offset == 1) {
+> +		if (value)
+> +			pl2303_gpio->index |= 0x80;
+> +		else
+> +			pl2303_gpio->index &= ~0x80;
+> +	} else {
+> +		return;
+> +	}
+> +
+> +	pl2303_gpio_write(chip);
+> +}
+> +
+> +static int pl2303_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	unsigned char buf[1];
+> +	int value = 0;
+> +
+> +	if(pl2303_gpio_read(chip, buf) < 1)
+> +		return -EIO;
+> +	if (offset == 0)
+> +		value = buf[0] & 0x40;
+> +	else if (offset == 1)
+> +		value = buf[0] & 0x80;
+> +	else
+> +		return -EINVAL;
+> +	return value;
+> +}
+> +
+> +static struct gpio_chip template_chip = {
+> +	.label			= "pl2303-gpio",
+> +	.owner			= THIS_MODULE,
+> +	.direction_input	= pl2303_gpio_direction_in,
+> +	.get			= pl2303_gpio_get,
+> +	.direction_output	= pl2303_gpio_direction_out,
+> +	.set			= pl2303_gpio_set,
+> +	.can_sleep		= 1,
+> +};
+> +
+> +static int pl2303_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct usb_device *pl2303 = platform_get_drvdata(pdev);
+> +	struct pl2303_gpio_data *pl2303_gpio;
+> +	int ret;
+> +
+> +	pl2303_gpio = kzalloc(sizeof(*pl2303_gpio), GFP_KERNEL);
+> +	if (pl2303_gpio == NULL)
+> +		return -ENOMEM;
+> +
+> +	/* initialize gpio0,gpio1 for input as default*/
+> +	pl2303_gpio->index = 0x00;
+> +	pl2303_gpio->pl2303 = pl2303;
+> +	pl2303_gpio->gpio_chip = template_chip;
+> +	pl2303_gpio->gpio_chip.ngpio = 2;
+> +	pl2303_gpio->gpio_chip.base = -1;
+> +	pl2303_gpio->gpio_chip.dev = &pdev->dev;
+> +	pl2303_gpio_write(&pl2303_gpio->gpio_chip);
+> +
+> +	ret = gpiochip_add(&pl2303_gpio->gpio_chip);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
+> +		return ret;
+> +	}
+> +	platform_set_drvdata(pdev, pl2303_gpio);
+> +
+> +	return ret;
+> +}
+> +
+> +static int pl2303_gpio_remove(struct platform_device *pdev)
+> +{
+> +	struct pl2303_gpio_data *pl2303_gpio = platform_get_drvdata(pdev);
+> +
+> +	if (gpiochip_remove(&pl2303_gpio->gpio_chip))
+> +		dev_err(&pdev->dev, "unable to remove gpio_chip?\n");
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(pl2303_gpio);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver pl2303_gpio_driver = {
+> +	.driver.name	= "pl2303-gpio",
+> +	.driver.owner	= THIS_MODULE,
+> +	.probe		= pl2303_gpio_probe,
+> +	.remove		= pl2303_gpio_remove,
+> +};
+> +
+> +static int __init pl2303_gpio_init(void)
+> +{
+> +	return platform_driver_register(&pl2303_gpio_driver);
+> +}
+> +module_init(pl2303_gpio_init);
+> +
+> +static void __exit pl2303_gpio_exit(void)
+> +{
+> +	platform_driver_unregister(&pl2303_gpio_driver);
+> +}
+> +module_exit(pl2303_gpio_exit);
+> +
+> +MODULE_AUTHOR("Wang YanQing <udknight@gmail.com>");
+> +MODULE_DESCRIPTION("GPIO driver for PL2303");
+> +MODULE_LICENSE("GPL");
+> +MODULE_DESCRIPTION("platform:pl2303-gpio");
+> diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+> index b3d5a35..1bb8928 100644
+> --- a/drivers/usb/serial/pl2303.c
+> +++ b/drivers/usb/serial/pl2303.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/usb.h>
+>  #include <linux/usb/serial.h>
+>  #include <asm/unaligned.h>
+> +#include <linux/platform_device.h>
+>  #include "pl2303.h"
+>  
+>  
+> @@ -146,6 +147,7 @@ struct pl2303_type_data {
+>  struct pl2303_serial_private {
+>  	const struct pl2303_type_data *type;
+>  	unsigned long quirks;
+> +	struct platform_device *pdev;
+>  };
+>  
+>  struct pl2303_private {
+> @@ -261,7 +263,22 @@ static int pl2303_startup(struct usb_serial *serial)
+>  		pl2303_vendor_write(serial, 2, 0x44);
+>  
+>  	kfree(buf);
+> +	if (type != TYPE_HX)
+> +		return 0;
+>  
+> +	spriv->pdev = platform_device_alloc("pl2303-gpio", PLATFORM_DEVID_AUTO);
 
-To do this we need to update both the Linux p2m table and the Xen m2p table.
-Particular care must be taken when updating the p2m table since it's important
-to limit table memory consumption and reuse the existing leaf pages which get
-freed when an entire leaf page is set to the identity map. To implement this,
-mapping updates are grouped into blocks with table entries getting cached
-temporarily and then released.
+It's a USB device, not a "platform" device at all, so don't try to fit
+it into the platform device model.
 
-On my test system before:
-Total pages: 2105014
-Total contiguous: 1640635
+Just add the gpio code here to the pl2303.c driver, and hang the gpio
+stuff off of the USB device, like it really is in the system, don't make
+things up.
 
-After:
-Total pages: 2105014
-Total contiguous: 2098904
+thanks,
 
-Signed-off-by: Matthew Rushton <mrushton@amazon.com>
----
- arch/x86/xen/p2m.c   |   23 +---
- arch/x86/xen/p2m.h   |   15 ++
- arch/x86/xen/setup.c |  370 +++++++++++++++++++++++++++++++++++++++-----------
- 3 files changed, 314 insertions(+), 94 deletions(-)
- create mode 100644 arch/x86/xen/p2m.h
-
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 3172692..9f5983b 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -173,6 +173,7 @@
- #include <xen/balloon.h>
- #include <xen/grant_table.h>
- 
-+#include "p2m.h"
- #include "multicalls.h"
- #include "xen-ops.h"
- 
-@@ -180,12 +181,6 @@ static void __init m2p_override_init(void);
- 
- unsigned long xen_max_p2m_pfn __read_mostly;
- 
--#define P2M_PER_PAGE		(PAGE_SIZE / sizeof(unsigned long))
--#define P2M_MID_PER_PAGE	(PAGE_SIZE / sizeof(unsigned long *))
--#define P2M_TOP_PER_PAGE	(PAGE_SIZE / sizeof(unsigned long **))
--
--#define MAX_P2M_PFN		(P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE)
--
- /* Placeholders for holes in the address space */
- static RESERVE_BRK_ARRAY(unsigned long, p2m_missing, P2M_PER_PAGE);
- static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_missing, P2M_MID_PER_PAGE);
-@@ -202,16 +197,12 @@ static RESERVE_BRK_ARRAY(unsigned long, p2m_mid_identity_mfn, P2M_MID_PER_PAGE);
- RESERVE_BRK(p2m_mid, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- 
--/* We might hit two boundary violations at the start and end, at max each
-- * boundary violation will require three middle nodes. */
--RESERVE_BRK(p2m_mid_extra, PAGE_SIZE * 2 * 3);
--
--/* When we populate back during bootup, the amount of pages can vary. The
-- * max we have is seen is 395979, but that does not mean it can't be more.
-- * Some machines can have 3GB I/O holes even. With early_can_reuse_p2m_middle
-- * it can re-use Xen provided mfn_list array, so we only need to allocate at
-- * most three P2M top nodes. */
--RESERVE_BRK(p2m_populated, PAGE_SIZE * 3);
-+/* For each I/O range remapped we may lose up to two leaf pages for the boundary
-+ * violations and three mid pages to cover up to 3GB. With
-+ * early_can_reuse_p2m_middle() most of the leaf pages will be reused by the
-+ * remapped region.
-+ */
-+RESERVE_BRK(p2m_identity_remap, PAGE_SIZE * 2 * 3 * MAX_REMAP_RANGES);
- 
- static inline unsigned p2m_top_index(unsigned long pfn)
- {
-diff --git a/arch/x86/xen/p2m.h b/arch/x86/xen/p2m.h
-new file mode 100644
-index 0000000..ad8aee2
---- /dev/null
-+++ b/arch/x86/xen/p2m.h
-@@ -0,0 +1,15 @@
-+#ifndef _XEN_P2M_H
-+#define _XEN_P2M_H
-+
-+#define P2M_PER_PAGE        (PAGE_SIZE / sizeof(unsigned long))
-+#define P2M_MID_PER_PAGE    (PAGE_SIZE / sizeof(unsigned long *))
-+#define P2M_TOP_PER_PAGE    (PAGE_SIZE / sizeof(unsigned long **))
-+
-+#define MAX_P2M_PFN         (P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE)
-+
-+#define MAX_REMAP_RANGES    10
-+
-+extern unsigned long __init set_phys_range_identity(unsigned long pfn_s,
-+                                      unsigned long pfn_e);
-+
-+#endif  /* _XEN_P2M_H */
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 2e555163..a58f16a 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -29,6 +29,7 @@
- #include <xen/features.h>
- #include "xen-ops.h"
- #include "vdso.h"
-+#include "p2m.h"
- 
- /* These are code, but not functions.  Defined in entry.S */
- extern const char xen_hypervisor_callback[];
-@@ -46,6 +47,9 @@ struct xen_memory_region xen_extra_mem[XEN_EXTRA_MEM_MAX_REGIONS] __initdata;
- /* Number of pages released from the initial allocation. */
- unsigned long xen_released_pages;
- 
-+/* Buffer used to remap identity mapped pages */
-+unsigned long xen_remap_buf[P2M_PER_PAGE] __initdata;
-+
- /* 
-  * The maximum amount of extra memory compared to the base size.  The
-  * main scaling factor is the size of struct page.  At extreme ratios
-@@ -151,107 +155,325 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 	return len;
- }
- 
--static unsigned long __init xen_release_chunk(unsigned long start,
--					      unsigned long end)
--{
--	return xen_do_chunk(start, end, true);
--}
--
--static unsigned long __init xen_populate_chunk(
-+/*
-+ * Finds the next RAM pfn available in the E820 map after min_pfn.
-+ * This function updates min_pfn with the pfn found and returns
-+ * the size of that range or zero if not found.
-+ */
-+static unsigned long __init xen_find_pfn_range(
- 	const struct e820entry *list, size_t map_size,
--	unsigned long max_pfn, unsigned long *last_pfn,
--	unsigned long credits_left)
-+	unsigned long *min_pfn)
- {
- 	const struct e820entry *entry;
- 	unsigned int i;
- 	unsigned long done = 0;
--	unsigned long dest_pfn;
- 
- 	for (i = 0, entry = list; i < map_size; i++, entry++) {
- 		unsigned long s_pfn;
- 		unsigned long e_pfn;
--		unsigned long pfns;
--		long capacity;
--
--		if (credits_left <= 0)
--			break;
- 
- 		if (entry->type != E820_RAM)
- 			continue;
- 
- 		e_pfn = PFN_DOWN(entry->addr + entry->size);
- 
--		/* We only care about E820 after the xen_start_info->nr_pages */
--		if (e_pfn <= max_pfn)
-+		/* We only care about E820 after this */
-+		if (e_pfn < *min_pfn)
- 			continue;
- 
- 		s_pfn = PFN_UP(entry->addr);
--		/* If the E820 falls within the nr_pages, we want to start
--		 * at the nr_pages PFN.
--		 * If that would mean going past the E820 entry, skip it
-+
-+		/* If min_pfn falls within the E820 entry, we want to start
-+		 * at the min_pfn PFN.
- 		 */
--		if (s_pfn <= max_pfn) {
--			capacity = e_pfn - max_pfn;
--			dest_pfn = max_pfn;
-+		if (s_pfn <= *min_pfn) {
-+			done = e_pfn - *min_pfn;
- 		} else {
--			capacity = e_pfn - s_pfn;
--			dest_pfn = s_pfn;
-+			done = e_pfn - s_pfn;
-+			*min_pfn = s_pfn;
- 		}
-+		break;
-+	}
- 
--		if (credits_left < capacity)
--			capacity = credits_left;
-+	return done;
-+}
- 
--		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
--		done += pfns;
--		*last_pfn = (dest_pfn + pfns);
--		if (pfns < capacity)
--			break;
--		credits_left -= pfns;
-+/*
-+ * This releases a chunk of memory and then does the identity map. It's used as
-+ * as a fallback if the remapping fails.
-+ */
-+static void __init xen_set_identity_and_release_chunk(unsigned long start_pfn,
-+	unsigned long end_pfn, unsigned long nr_pages, unsigned long *identity,
-+	unsigned long *released)
-+{
-+	WARN_ON(start_pfn > end_pfn);
-+
-+	/* Need to release pages first */
-+	*released += xen_do_chunk(start_pfn, min(end_pfn, nr_pages), true);
-+	*identity += set_phys_range_identity(start_pfn, end_pfn);
-+}
-+
-+/*
-+ * Helper function to update both the p2m and m2p tables.
-+ */
-+static unsigned long __init xen_update_mem_tables(unsigned long pfn,
-+						  unsigned long mfn)
-+{
-+	struct mmu_update update = {
-+		.ptr = (mfn << PAGE_SHIFT) | MMU_MACHPHYS_UPDATE,
-+		.val = pfn
-+	};
-+
-+	/* Update p2m */
-+	if (!early_set_phys_to_machine(pfn, mfn)) {
-+		WARN(1, "Failed to set p2m mapping for pfn=%ld mfn=%ld\n",
-+		     pfn, mfn);
-+		return false;
- 	}
--	return done;
-+
-+	/* Update m2p */
-+	if (HYPERVISOR_mmu_update(&update, 1, NULL, DOMID_SELF) < 0) {
-+		WARN(1, "Failed to set m2p mapping for mfn=%ld pfn=%ld\n",
-+		     mfn, pfn);
-+		return false;
-+	}
-+
-+	return true;
- }
- 
--static void __init xen_set_identity_and_release_chunk(
--	unsigned long start_pfn, unsigned long end_pfn, unsigned long nr_pages,
--	unsigned long *released, unsigned long *identity)
-+/*
-+ * This function updates the p2m and m2p tables with an identity map from
-+ * start_pfn to start_pfn+size and remaps the underlying RAM of the original
-+ * allocation at remap_pfn. It must do so carefully in P2M_PER_PAGE sized blocks
-+ * to not exhaust the reserved brk space. Doing it in properly aligned blocks
-+ * ensures we only allocate the minimum required leaf pages in the p2m table. It
-+ * copies the existing mfns from the p2m table under the 1:1 map, overwrites
-+ * them with the identity map and then updates the p2m and m2p tables with the
-+ * remapped memory.
-+ */
-+static unsigned long __init xen_do_set_identity_and_remap_chunk(
-+        unsigned long start_pfn, unsigned long size, unsigned long remap_pfn)
- {
--	unsigned long pfn;
-+	unsigned long ident_pfn_iter, remap_pfn_iter;
-+	unsigned long ident_start_pfn_align, remap_start_pfn_align;
-+	unsigned long ident_end_pfn_align, remap_end_pfn_align;
-+	unsigned long ident_boundary_pfn, remap_boundary_pfn;
-+	unsigned long ident_cnt = 0;
-+	unsigned long remap_cnt = 0;
-+	unsigned long left = size;
-+	unsigned long mod;
-+	int i;
-+
-+	WARN_ON(size == 0);
-+
-+	BUG_ON(xen_feature(XENFEAT_auto_translated_physmap));
- 
- 	/*
--	 * If the PFNs are currently mapped, clear the mappings
--	 * (except for the ISA region which must be 1:1 mapped) to
--	 * release the refcounts (in Xen) on the original frames.
-+	 * Determine the proper alignment to remap memory in P2M_PER_PAGE sized
-+	 * blocks. We need to keep track of both the existing pfn mapping and
-+	 * the new pfn remapping.
- 	 */
--	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
--		pte_t pte = __pte_ma(0);
-+	mod = start_pfn % P2M_PER_PAGE;
-+	ident_start_pfn_align =
-+		mod ? (start_pfn - mod + P2M_PER_PAGE) : start_pfn;
-+	mod = remap_pfn % P2M_PER_PAGE;
-+	remap_start_pfn_align =
-+		mod ? (remap_pfn - mod + P2M_PER_PAGE) : remap_pfn;
-+	mod = (start_pfn + size) % P2M_PER_PAGE;
-+	ident_end_pfn_align = start_pfn + size - mod;
-+	mod = (remap_pfn + size) % P2M_PER_PAGE;
-+	remap_end_pfn_align = remap_pfn + size - mod;
-+
-+	/* Iterate over each p2m leaf node in each range */
-+	for (ident_pfn_iter = ident_start_pfn_align, remap_pfn_iter = remap_start_pfn_align;
-+	     ident_pfn_iter < ident_end_pfn_align && remap_pfn_iter < remap_end_pfn_align;
-+	     ident_pfn_iter += P2M_PER_PAGE, remap_pfn_iter += P2M_PER_PAGE) {
-+		/* Check we aren't past the end */
-+		BUG_ON(ident_pfn_iter + P2M_PER_PAGE > start_pfn + size);
-+		BUG_ON(remap_pfn_iter + P2M_PER_PAGE > remap_pfn + size);
-+
-+		/* Save p2m mappings */
-+		for (i = 0; i < P2M_PER_PAGE; i++)
-+			xen_remap_buf[i] = pfn_to_mfn(ident_pfn_iter + i);
-+
-+		/* Set identity map which will free a p2m leaf */
-+		ident_cnt += set_phys_range_identity(ident_pfn_iter,
-+			ident_pfn_iter + P2M_PER_PAGE);
-+
-+#ifdef DEBUG
-+		/* Helps verify a p2m leaf has been freed */
-+		for (i = 0; i < P2M_PER_PAGE; i++) {
-+			unsigned int pfn = ident_pfn_iter + i;
-+			BUG_ON(pfn_to_mfn(pfn) != pfn);
-+		}
-+#endif
-+		/* Now remap memory */
-+		for (i = 0; i < P2M_PER_PAGE; i++) {
-+			unsigned long mfn = xen_remap_buf[i];
-+
-+			/* This will use the p2m leaf freed above */
-+			if (!xen_update_mem_tables(remap_pfn_iter + i, mfn)) {
-+				WARN(1, "Failed to update mem mapping for pfn=%ld mfn=%ld\n",
-+					remap_pfn_iter + i, mfn);
-+				return 0;
-+			}
-+
-+			remap_cnt++;
-+		}
- 
--		if (pfn < PFN_UP(ISA_END_ADDRESS))
--			pte = mfn_pte(pfn, PAGE_KERNEL_IO);
-+		left -= P2M_PER_PAGE;
-+	}
- 
--		(void)HYPERVISOR_update_va_mapping(
--			(unsigned long)__va(pfn << PAGE_SHIFT), pte, 0);
-+	/* Max boundary space possible */
-+	BUG_ON(left > (P2M_PER_PAGE - 1) * 2);
-+
-+	/* Now handle the boundary conditions */
-+	ident_boundary_pfn = start_pfn;
-+	remap_boundary_pfn = remap_pfn;
-+	for (i = 0; i < left; i++) {
-+		unsigned long mfn;
-+
-+		/* These two checks move from the start to end boundaries */
-+		if (ident_boundary_pfn == ident_start_pfn_align)
-+			ident_boundary_pfn = ident_pfn_iter;
-+		if (remap_boundary_pfn == remap_start_pfn_align)
-+			remap_boundary_pfn = remap_pfn_iter;
-+
-+		/* Check we aren't past the end */
-+		BUG_ON(ident_boundary_pfn >= start_pfn + size);
-+		BUG_ON(remap_boundary_pfn >= remap_pfn + size);
-+
-+		mfn = pfn_to_mfn(ident_boundary_pfn);
-+
-+		if (!xen_update_mem_tables(remap_boundary_pfn, mfn)) {
-+			WARN(1, "Failed to update mem mapping for pfn=%ld mfn=%ld\n",
-+				remap_pfn_iter + i, mfn);
-+			return 0;
-+		}
-+		remap_cnt++;
-+
-+		ident_boundary_pfn++;
-+		remap_boundary_pfn++;
- 	}
- 
--	if (start_pfn < nr_pages)
--		*released += xen_release_chunk(
--			start_pfn, min(end_pfn, nr_pages));
-+	/* Finish up the identity map */
-+	if (ident_start_pfn_align >= ident_end_pfn_align) {
-+		/*
-+                 * In this case we have an identity range which does not span an
-+                 * aligned block so everything needs to be identity mapped here.
-+                 * If we didn't check this we might remap too many pages since
-+                 * the align boundaries are not meaningful in this case.
-+	         */
-+		ident_cnt += set_phys_range_identity(start_pfn,
-+			start_pfn + size);
-+	} else {
-+		/* Remapped above so check each end of the chunk */
-+		if (start_pfn < ident_start_pfn_align)
-+			ident_cnt += set_phys_range_identity(start_pfn,
-+				ident_start_pfn_align);
-+		if (start_pfn + size > ident_pfn_iter)
-+			ident_cnt += set_phys_range_identity(ident_pfn_iter,
-+				start_pfn + size);
-+	}
- 
--	*identity += set_phys_range_identity(start_pfn, end_pfn);
-+	BUG_ON(ident_cnt != size);
-+	BUG_ON(remap_cnt != size);
-+
-+	return size;
- }
- 
--static unsigned long __init xen_set_identity_and_release(
--	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
-+/*
-+ * This function takes a contiguous pfn range that needs to be identity mapped
-+ * and:
-+ *
-+ *  1) Finds a new range of pfns to use to remap based on E820 and remap_pfn.
-+ *  2) Calls the do_ function to actually do the mapping/remapping work.
-+ *
-+ * The goal is to not allocate additional memory but to remap the existing
-+ * pages. In the case of an error the underlying memory is simply released back
-+ * to Xen and not remapped.
-+ */
-+static unsigned long __init xen_set_identity_and_remap_chunk(
-+        const struct e820entry *list, size_t map_size, unsigned long start_pfn,
-+	unsigned long end_pfn, unsigned long nr_pages, unsigned long remap_pfn,
-+	unsigned long *identity, unsigned long *remapped,
-+	unsigned long *released)
-+{
-+	unsigned long pfn;
-+	unsigned long i = 0;
-+	unsigned long n = end_pfn - start_pfn;
-+
-+	while (i < n) {
-+		unsigned long cur_pfn = start_pfn + i;
-+		unsigned long left = n - i;
-+		unsigned long size = left;
-+		unsigned long remap_range_size;
-+
-+		/* Do not remap pages beyond the current allocation */
-+		if (cur_pfn >= nr_pages) {
-+			/* Identity map remaining pages */
-+			*identity += set_phys_range_identity(cur_pfn,
-+				cur_pfn + size);
-+			break;
-+		}
-+		if (cur_pfn + size > nr_pages)
-+			size = nr_pages - cur_pfn;
-+
-+		remap_range_size = xen_find_pfn_range(list, map_size,
-+						      &remap_pfn);
-+		if (!remap_range_size) {
-+			pr_warning("Unable to find available pfn range, not remapping identity pages\n");
-+			xen_set_identity_and_release_chunk(cur_pfn,
-+				cur_pfn + left, nr_pages, identity, released);
-+			break;
-+		}
-+		/* Adjust size to fit in current e820 RAM region */
-+		if (size > remap_range_size)
-+			size = remap_range_size;
-+
-+		if (!xen_do_set_identity_and_remap_chunk(cur_pfn, size, remap_pfn)) {
-+			WARN(1, "Failed to remap 1:1 memory cur_pfn=%ld size=%ld remap_pfn=%ld\n",
-+				cur_pfn, size, remap_pfn);
-+			xen_set_identity_and_release_chunk(cur_pfn,
-+				cur_pfn + left, nr_pages, identity, released);
-+			break;
-+		}
-+
-+		/* Update variables to reflect new mappings. */
-+		i += size;
-+		remap_pfn += size;
-+		*identity += size;
-+		*remapped += size;
-+	}
-+
-+	/*
-+	 * If the PFNs are currently mapped, the VA mapping also needs
-+	 * to be updated to be 1:1.
-+	 */
-+	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
-+		(void)HYPERVISOR_update_va_mapping(
-+			(unsigned long)__va(pfn << PAGE_SHIFT),
-+			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
-+
-+	return remap_pfn;
-+}
-+
-+static unsigned long __init xen_set_identity_and_remap(
-+	const struct e820entry *list, size_t map_size, unsigned long nr_pages,
-+	unsigned long *released)
- {
- 	phys_addr_t start = 0;
--	unsigned long released = 0;
- 	unsigned long identity = 0;
-+	unsigned long remapped = 0;
-+	unsigned long last_pfn = nr_pages;
- 	const struct e820entry *entry;
-+	unsigned long num_released = 0;
- 	int i;
- 
- 	/*
- 	 * Combine non-RAM regions and gaps until a RAM region (or the
- 	 * end of the map) is reached, then set the 1:1 map and
--	 * release the pages (if available) in those non-RAM regions.
-+	 * remap the memory in those non-RAM regions.
- 	 *
- 	 * The combined non-RAM regions are rounded to a whole number
- 	 * of pages so any partial pages are accessible via the 1:1
-@@ -269,22 +491,24 @@ static unsigned long __init xen_set_identity_and_release(
- 				end_pfn = PFN_UP(entry->addr);
- 
- 			if (start_pfn < end_pfn)
--				xen_set_identity_and_release_chunk(
--					start_pfn, end_pfn, nr_pages,
--					&released, &identity);
--
-+				last_pfn = xen_set_identity_and_remap_chunk(
-+						list, map_size, start_pfn,
-+						end_pfn, nr_pages, last_pfn,
-+						&identity, &remapped,
-+						&num_released);
- 			start = end;
- 		}
- 	}
- 
--	if (released)
--		printk(KERN_INFO "Released %lu pages of unused memory\n", released);
--	if (identity)
--		printk(KERN_INFO "Set %ld page(s) to 1-1 mapping\n", identity);
-+	*released = num_released;
- 
--	return released;
--}
-+	pr_info("Set %ld page(s) to 1-1 mapping\n", identity);
-+	pr_info("Remapped %ld page(s), last_pfn=%ld\n", remapped,
-+		last_pfn);
-+	pr_info("Released %ld page(s)\n", num_released);
- 
-+	return last_pfn;
-+}
- static unsigned long __init xen_get_max_pages(void)
- {
- 	unsigned long max_pages = MAX_DOMAIN_PAGES;
-@@ -347,7 +571,6 @@ char * __init xen_memory_setup(void)
- 	unsigned long max_pages;
- 	unsigned long last_pfn = 0;
- 	unsigned long extra_pages = 0;
--	unsigned long populated;
- 	int i;
- 	int op;
- 
-@@ -392,20 +615,11 @@ char * __init xen_memory_setup(void)
- 		extra_pages += max_pages - max_pfn;
- 
- 	/*
--	 * Set P2M for all non-RAM pages and E820 gaps to be identity
--	 * type PFNs.  Any RAM pages that would be made inaccesible by
--	 * this are first released.
-+	 * Set identity map on non-RAM pages and remap the underlying RAM.
- 	 */
--	xen_released_pages = xen_set_identity_and_release(
--		map, memmap.nr_entries, max_pfn);
--
--	/*
--	 * Populate back the non-RAM pages and E820 gaps that had been
--	 * released. */
--	populated = xen_populate_chunk(map, memmap.nr_entries,
--			max_pfn, &last_pfn, xen_released_pages);
-+	last_pfn = xen_set_identity_and_remap(map, memmap.nr_entries, max_pfn,
-+					      &xen_released_pages);
- 
--	xen_released_pages -= populated;
- 	extra_pages += xen_released_pages;
- 
- 	if (last_pfn > max_pfn) {
--- 
-1.7.9.5
-
+greg k-h
