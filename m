@@ -1,108 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaGTPrm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 11:47:42 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:40892 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaGTPrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 11:47:23 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        Max Schwarz <max.schwarz@online.de>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [RFC PATCH 1/2] net: arc_emac: enable tx interrupts
-Date: Sun, 20 Jul 2014 17:44:57 +0200
-Message-Id: <1405871098-5663-2-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405871098-5663-1-git-send-email-b.galvani@gmail.com>
-References: <1405871098-5663-1-git-send-email-b.galvani@gmail.com>
+	id S1753133AbaGTPuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 11:50:09 -0400
+Received: from mga14.intel.com ([192.55.52.115]:1304 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191AbaGTPuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 11:50:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,695,1400050800"; 
+   d="scan'208";a="564602044"
+From: Andi Kleen <andi@firstfloor.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
+        linux-crypto@vger.kernel.org, beck@openbsd.org
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+Date: Sun, 20 Jul 2014 08:50:06 -0700
+In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu> (Theodore
+	Ts'o's message of "Thu, 17 Jul 2014 05:18:15 -0400")
+Message-ID: <871ttg3u8h.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arc_emac_tx_clean() is called by the the napi poll handler, which is
-scheduled only when a rx interrupt is raised. In absence of received
-packets the reclaim of used buffers is not executed, blocking further
-transmissions.
+Theodore Ts'o <tytso@mit.edu> writes:
+>  
+>  #undef __NR_syscalls
+> -#define __NR_syscalls 277
+> +#define __NR_syscalls 278
 
-This can be easily reproduced starting the transmission of a UDP flow
-with iperf, which blocks almost immediately because skbs are not freed
-and the socket send buffer becomes full:
+You need to add the syscall to kernel/sys_ni.c too, otherwise it will be
+impossible to build without random device.
 
-iperf           S c037a308     0    87     82 0x00000000
-[<c037a308>] (__schedule) from [<c0379da4>] (schedule_timeout+0x124/0x178)
-[<c0379da4>] (schedule_timeout) from [<c02c253c>] (sock_alloc_send_pskb+0x2a8/0x3a4)
-[<c02c253c>] (sock_alloc_send_pskb) from [<c02c265c>] (sock_alloc_send_skb+0x24/0x2c)
-[<c02c265c>] (sock_alloc_send_skb) from [<c02fd0e4>] (__ip_append_data+0x670/0x9b0)
-[<c02fd0e4>] (__ip_append_data) from [<c02ffd1c>] (ip_make_skb+0xb0/0xe4)
-[<c02ffd1c>] (ip_make_skb) from [<c0322c78>] (udp_sendmsg+0x210/0x7d4)
-[<c0322c78>] (udp_sendmsg) from [<c032c798>] (inet_sendmsg+0x7c/0xb4)
-[<c032c798>] (inet_sendmsg) from [<c02bf734>] (sock_aio_write+0xcc/0xec)
-[<c02bf734>] (sock_aio_write) from [<c00e0bfc>] (do_sync_write+0x84/0xac)
-[<c00e0bfc>] (do_sync_write) from [<c00e174c>] (vfs_write+0x108/0x1ac)
-[<c00e174c>] (vfs_write) from [<c00e1af8>] (SyS_write+0x40/0x8c)
-[<c00e1af8>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
+-Andi
 
-The patch schedules a napi poll after tx interrupts to allow the tx
-reclaim to run in the described situation.
-
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- drivers/net/ethernet/arc/emac_main.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index 18e2fac..4adc01f 100644
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -298,7 +298,7 @@ static int arc_emac_poll(struct napi_struct *napi, int budget)
- 	work_done = arc_emac_rx(ndev, budget);
- 	if (work_done < budget) {
- 		napi_complete(napi);
--		arc_reg_or(priv, R_ENABLE, RXINT_MASK);
-+		arc_reg_or(priv, R_ENABLE, RXINT_MASK | TXINT_MASK);
- 	}
- 
- 	return work_done;
-@@ -327,9 +327,9 @@ static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
- 	/* Reset all flags except "MDIO complete" */
- 	arc_reg_set(priv, R_STATUS, status);
- 
--	if (status & RXINT_MASK) {
-+	if (status & (RXINT_MASK | TXINT_MASK)) {
- 		if (likely(napi_schedule_prep(&priv->napi))) {
--			arc_reg_clr(priv, R_ENABLE, RXINT_MASK);
-+			arc_reg_clr(priv, R_ENABLE, RXINT_MASK | TXINT_MASK);
- 			__napi_schedule(&priv->napi);
- 		}
- 	}
-@@ -440,7 +440,7 @@ static int arc_emac_open(struct net_device *ndev)
- 	arc_reg_set(priv, R_TX_RING, (unsigned int)priv->txbd_dma);
- 
- 	/* Enable interrupts */
--	arc_reg_set(priv, R_ENABLE, RXINT_MASK | ERR_MASK);
-+	arc_reg_set(priv, R_ENABLE, RXINT_MASK | TXINT_MASK | ERR_MASK);
- 
- 	/* Set CONTROL */
- 	arc_reg_set(priv, R_CTRL,
-@@ -511,7 +511,7 @@ static int arc_emac_stop(struct net_device *ndev)
- 	netif_stop_queue(ndev);
- 
- 	/* Disable interrupts */
--	arc_reg_clr(priv, R_ENABLE, RXINT_MASK | ERR_MASK);
-+	arc_reg_clr(priv, R_ENABLE, RXINT_MASK | TXINT_MASK | ERR_MASK);
- 
- 	/* Disable EMAC */
- 	arc_reg_clr(priv, R_CTRL, EN_MASK);
 -- 
-1.7.10.4
-
+ak@linux.intel.com -- Speaking for myself only
