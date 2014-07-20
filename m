@@ -1,255 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaGTGjw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 02:39:52 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60622 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaGTGju (ORCPT
+	id S932368AbaGTGkN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 02:40:13 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:61205 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbaGTGjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 02:39:50 -0400
-Date: Sun, 20 Jul 2014 14:38:41 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linus.walleij@linaro.org, jhovold@gmail.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140720063841.GA28059@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-	jhovold@gmail.com, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	Sun, 20 Jul 2014 02:39:52 -0400
+Message-ID: <53CB6433.8010205@gmail.com>
+Date: Sun, 20 Jul 2014 08:39:47 +0200
+From: Corentin LABBE <clabbe.montjoie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>, mark.a.allyn@intel.com,
+        jayant.mangalampalli@intel.com
+CC: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
+        paul.gortmaker@windriver.com, jg1.han@samsung.com,
+        paulmck@linux.vnet.ibm.com, valentina.manea.m@gmail.com, jack@suse.cz,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging: sep: No else is necessary after a break
+ (reported by checkpatch)
+References: <1405791282-28023-1-git-send-email-clabbe.montjoie@gmail.com>	 <1405791282-28023-3-git-send-email-clabbe.montjoie@gmail.com> <1405792828.14358.110.camel@joe-AO725>
+In-Reply-To: <1405792828.14358.110.camel@joe-AO725>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PL2303HX has two GPIOs, this patch add interface for it.
+Le 19/07/2014 20:00, Joe Perches a écrit :
+> (Adding Mark Allyn and Jayant Mangalampalli)
+> 
+> Is this still project still active?
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- Changes v1-v2:
- 1:drop gpio-pl2303.c and relation stuff
- 2:hang gpio stuff off of pl2303.c
+I do not know
 
- drivers/usb/serial/Kconfig  |   7 ++
- drivers/usb/serial/pl2303.c | 153 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 160 insertions(+)
+> 
+> On Sat, 2014-07-19 at 19:34 +0200, LABBE Corentin wrote:
+>> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+>> ---
+>>  drivers/staging/sep/sep_main.c | 5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
+>> index 177e4b9..1580d95f 100644
+>> --- a/drivers/staging/sep/sep_main.c
+>> +++ b/drivers/staging/sep/sep_main.c
+>> @@ -2881,12 +2881,11 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
+>>  				if (is_kva) {
+>>  					error = -ENODEV;
+>>  					break;
+>> -				} else {
+>> -					error_temp = copy_to_user(
+>> +				}
+>> +				error_temp = copy_to_user(
+>>  						(void __user *)tail_pt,
+>>  						dcb_table_ptr->tail_data,
+>>  						dcb_table_ptr->tail_data_size);
+>> -				}
+>>  				if (error_temp) {
+>>  					/* Release the DMA resource */
+>>  					error = -EFAULT;
+> 
+> It'd be probably be better to rewrite the code to unindent
+> a level by using continue.  Something like below:
+> 
+> btw:
+> 
+> the is_kva test looks very odd and should probably be
+> moved outside the loop.
+> 
+> pt_hold should probably be void * not unsigned long
+> as it loses high order bits on x86-32.
+> 
+> definition:
+> 	aligned_u64 out_vr_tail_pt;
+> use:
+> +			pt_hold = (unsigned long)dcb_table_ptr->
+> +				out_vr_tail_pt;
+> 
 
-diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
-index 3ce5c74..099ff05 100644
---- a/drivers/usb/serial/Kconfig
-+++ b/drivers/usb/serial/Kconfig
-@@ -516,6 +516,13 @@ config USB_SERIAL_PL2303
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called pl2303.
- 
-+config USB_SERIAL_PL2303_GPIO
-+	bool "USB Prolific 2303 Single Port GPIOs support"
-+	depends on USB_SERIAL_PL2303
-+	help
-+	  Say Y here if you want to use the GPIOs on PL2303 USB Serial single port
-+	  adapter from Prolific.
-+
- config USB_SERIAL_OTI6858
- 	tristate "USB Ours Technology Inc. OTi-6858 USB To RS232 Bridge Controller"
- 	help
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index b3d5a35..1fbd338 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -28,6 +28,9 @@
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
- #include <asm/unaligned.h>
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+#include <linux/gpio.h>
-+#endif
- #include "pl2303.h"
- 
- 
-@@ -143,9 +146,27 @@ struct pl2303_type_data {
- 	unsigned long quirks;
- };
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+struct pl2303_gpio {
-+	/*
-+	 * 0..3: unknown (zero)
-+	 * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
-+	 * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
-+	 * 6: gp0 pin value
-+	 * 7: gp1 pin value
-+	 */
-+	u8 index;
-+	struct usb_serial *serial;
-+	struct gpio_chip gpio_chip;
-+};
-+#endif
-+
- struct pl2303_serial_private {
- 	const struct pl2303_type_data *type;
- 	unsigned long quirks;
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+	struct pl2303_gpio *gpio;
-+#endif
- };
- 
- struct pl2303_private {
-@@ -213,6 +234,100 @@ static int pl2303_probe(struct usb_serial *serial,
- 	return 0;
- }
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+static inline struct pl2303_gpio *to_pl2303_gpio(struct gpio_chip *chip)
-+{
-+	return container_of(chip, struct pl2303_gpio, gpio_chip);
-+}
-+
-+static int pl2303_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+
-+	if (offset == 0)
-+		gpio->index &= ~0x10;
-+	else if (offset == 1)
-+		gpio->index &= ~0x20;
-+	else
-+		return -EINVAL;
-+
-+	pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+	return 0;
-+}
-+
-+static int pl2303_gpio_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+
-+	if (offset == 0) {
-+		gpio->index |= 0x10;
-+		if (value)
-+			gpio->index |= 0x40;
-+		else
-+			gpio->index &= ~0x40;
-+	} else if (offset == 1) {
-+		gpio->index |= 0x20;
-+		if (value)
-+			gpio->index |= 0x80;
-+		else
-+			gpio->index &= ~0x80;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+	return 0;
-+}
-+
-+static void pl2303_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+
-+	if (offset == 0) {
-+		if (value)
-+			gpio->index |= 0x40;
-+		else
-+			gpio->index &= ~0x40;
-+	} else if (offset == 1) {
-+		if (value)
-+			gpio->index |= 0x80;
-+		else
-+			gpio->index &= ~0x80;
-+	} else {
-+		return;
-+	}
-+
-+	pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+}
-+
-+static int pl2303_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+	unsigned char buf[1];
-+	int value = 0;
-+
-+	if(pl2303_vendor_read(gpio->serial, 0x0081, buf) < 1)
-+		return -EIO;
-+	if (offset == 0)
-+		value = buf[0] & 0x40;
-+	else if (offset == 1)
-+		value = buf[0] & 0x80;
-+	else
-+		value = -EINVAL;
-+	return value;
-+}
-+
-+static struct gpio_chip template_chip = {
-+	.label                  = "pl2303-gpio",
-+	.owner                  = THIS_MODULE,
-+	.direction_input        = pl2303_gpio_direction_in,
-+	.get                    = pl2303_gpio_get,
-+	.direction_output       = pl2303_gpio_direction_out,
-+	.set                    = pl2303_gpio_set,
-+	.can_sleep              = 1,
-+};
-+#endif
-+
- static int pl2303_startup(struct usb_serial *serial)
- {
- 	struct pl2303_serial_private *spriv;
-@@ -262,6 +377,37 @@ static int pl2303_startup(struct usb_serial *serial)
- 
- 	kfree(buf);
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+	if (type == TYPE_HX)
-+	{
-+		struct pl2303_gpio *gpio;
-+
-+		gpio = kzalloc(sizeof(struct pl2303_gpio), GFP_KERNEL);
-+		if (gpio == NULL) {
-+			dev_err(&serial->interface->dev, "Failed to allocate pl2303_gpio\n");
-+		} else {
-+			int ret;
-+
-+			gpio->index = 0x00;
-+			gpio->serial = serial;
-+			gpio->gpio_chip = template_chip;
-+			gpio->gpio_chip.ngpio = 2;
-+			gpio->gpio_chip.base = -1;
-+			gpio->gpio_chip.dev = &serial->interface->dev;
-+			/* initialize GPIOs, input mode as default */
-+			pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+
-+			spriv->gpio = gpio;
-+			ret = gpiochip_add(&spriv->gpio->gpio_chip);
-+			if (ret < 0) {
-+				dev_err(&serial->interface->dev,
-+					"Could not register gpiochip, %d\n", ret);
-+				kfree(spriv->gpio);
-+				spriv->gpio = NULL;
-+			}
-+		}
-+	}
-+#endif
- 	return 0;
- }
- 
-@@ -269,6 +415,13 @@ static void pl2303_release(struct usb_serial *serial)
- {
- 	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+	if (spriv && spriv->gpio) {
-+		if (gpiochip_remove(&spriv->gpio->gpio_chip))
-+			dev_err(&serial->interface->dev, "unable to remove gpio_chip?\n");
-+		kfree(spriv->gpio);
-+	}
-+#endif
- 	kfree(spriv);
- }
- 
--- 
-1.8.5.5.dirty
+As I said in the introduction email, I have done thoses patch for the Eudyptula challenge,
+since I have not the hardware needed by this driver I cannot modify beyond simple style changes without testing
+
+Regards
+
+
+> ---
+>  drivers/staging/sep/sep_main.c | 37 +++++++++++++++++--------------------
+>  1 file changed, 17 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
+> index 75ca15e..24b4a54 100644
+> --- a/drivers/staging/sep/sep_main.c
+> +++ b/drivers/staging/sep/sep_main.c
+> @@ -2871,26 +2871,23 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
+>  		 * Go over each DCB and see if
+>  		 * tail pointer must be updated
+>  		 */
+> -		for (i = 0; i < (*dma_ctx)->nr_dcb_creat;
+> -		     i++, dcb_table_ptr++) {
+> -			if (dcb_table_ptr->out_vr_tail_pt) {
+> -				pt_hold = (unsigned long)dcb_table_ptr->
+> -					out_vr_tail_pt;
+> -				tail_pt = (void *)pt_hold;
+> -				if (is_kva) {
+> -					error = -ENODEV;
+> -					break;
+> -				} else {
+> -					error_temp = copy_to_user(
+> -						(void __user *)tail_pt,
+> -						dcb_table_ptr->tail_data,
+> -						dcb_table_ptr->tail_data_size);
+> -				}
+> -				if (error_temp) {
+> -					/* Release the DMA resource */
+> -					error = -EFAULT;
+> -					break;
+> -				}
+> +		for (i = 0; i < (*dma_ctx)->nr_dcb_creat; i++, dcb_table_ptr++) {
+> +			if (!dcb_table_ptr->out_vr_tail_pt)
+> +				continue;
+> +			pt_hold = (unsigned long)dcb_table_ptr->
+> +				out_vr_tail_pt;
+> +			tail_pt = (void *)pt_hold;
+> +			if (is_kva) {
+> +				error = -ENODEV;
+> +				break;
+> +			}
+> +			error_temp = copy_to_user((void __user *)tail_pt,
+> +						  dcb_table_ptr->tail_data,
+> +						  dcb_table_ptr->tail_data_size);
+> +			if (error_temp) {
+> +				/* Release the DMA resource */
+> +				error = -EFAULT;
+> +				break;
+>  			}
+>  		}
+>  	}
+> 
+> 
+
