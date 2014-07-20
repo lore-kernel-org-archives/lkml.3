@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaGTT42 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:56:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58411 "EHLO
+	id S1753945AbaGTT6P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:58:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58414 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823AbaGTT41 (ORCPT
+	with ESMTP id S1753327AbaGTT6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:56:27 -0400
-Date: Sun, 20 Jul 2014 12:56:26 -0700
+	Sun, 20 Jul 2014 15:58:14 -0400
+Date: Sun, 20 Jul 2014 12:58:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PULL] USB driver fixes for 3.16-rc6
-Message-ID: <20140720195626.GA13766@kroah.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PULL] Staging driver fixes for 3.16-rc6
+Message-ID: <20140720195813.GA27936@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,27 +28,29 @@ The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.16-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.16-rc6
 
-for you to fetch changes up to bb86cf569bbd7ad4dce581a37c7fbd748057e9dc:
+for you to fetch changes up to 9359003385a2faffa502d201771d45624037a4cd:
 
-  usb: Check if port status is equal to RxDetect (2014-07-17 17:14:01 -0700)
+  Merge tag 'iio-fixes-for-3.16d' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-07-13 15:47:26 -0700)
 
 ----------------------------------------------------------------
-USB fixes for 3.16-rc6
+Staging fixes for 3.16-rc6
 
-Here are 2 USB patches that resolve some reported issues, one with an
-odd HUB, and one in the chipidea driver.
+Here are 2 IIO driver fixes for 3.16-rc6 that resolve some reported issues.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Abbas Raza (1):
-      usb: chipidea: udc: Disable auto ZLP generation on ep0
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.16d' of git://git.kernel.org/.../jic23/iio into staging-linus
 
-Gavin Guo (1):
-      usb: Check if port status is equal to RxDetect
+Martin Fuzzey (1):
+      iio: mma8452: Use correct acceleration units.
 
- drivers/usb/chipidea/udc.c |  4 ++--
- drivers/usb/core/hub.c     | 19 +++++++++++++++++++
- 2 files changed, 21 insertions(+), 2 deletions(-)
+Srinivas Pandruvada (1):
+      iio:core: Handle error when mask type is not separate
+
+ drivers/iio/accel/mma8452.c      | 8 +++++++-
+ drivers/iio/industrialio-event.c | 3 +++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
