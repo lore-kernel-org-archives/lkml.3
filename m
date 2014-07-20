@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaGTTFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:05:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44020 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893AbaGTTFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:05:48 -0400
-Message-ID: <53CC1396.7000100@kernel.org>
-Date: Sun, 20 Jul 2014 20:08:06 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753573AbaGTTHg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:07:36 -0400
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:50350 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893AbaGTTHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 15:07:35 -0400
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
-Subject: Re: [PATCH v7 0/4] iio: Add support for rotation from north
-References: <1405879063-2292-1-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1405879063-2292-1-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <EB52686F-2B66-44CF-BE24-6E6278B7364A@holtmann.org>
+References: <84D489B9-FC60-40F1-A03F-996256F790A9@holtmann.org>
+	<CAGXu5jJbrEryxx7e48Mc0Pi18vEBfHWN-pOxrvDnC24Lr21ghQ@mail.gmail.com>
+	<EB52686F-2B66-44CF-BE24-6E6278B7364A@holtmann.org>
+Date: Sun, 20 Jul 2014 12:07:34 -0700
+X-Google-Sender-Auth: 3-jVzBBF6gPB2ZO6yWSCSnj9BZ8
+Message-ID: <CAGXu5jK6XzrMg_VPYm9LhBjmRHUe=HVbmaQjRdDQ5TrRbU7YpA@mail.gmail.com>
+Subject: Re: Commit d9e7972619334656 breaks KVM's virtio-rng-pci
+From: Kees Cook <keescook@chromium.org>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/07/14 18:57, Reyad Attiyat wrote:
-> This series of patches modifies magn-3d driver to handle the rotation
-> from north usage. This is done by scanning the report and then building
-> the iio arrays (vals and channels) dynamically.
+On Sun, Jul 20, 2014 at 11:32 AM, Marcel Holtmann <marcel@holtmann.org> wrote:
+> Hi Kees,
 >
-> Changes from V6
-> Remove sizeof from function hid_sensor_push_data as it is not used or
-> passed to iio_push_to_buffer
+>>> the commit d9e7972619334656 ends up being responsible that using "-device virtio-rng-pci" in KVM no longer works.
+>>>
+>>>        From: Kees Cook <keescook@chromium.org>
+>>>        Date: Mon, 3 Mar 2014 15:51:48 -0800
+>>>        Subject: [PATCH] hwrng: add randomness to system from rng sources
+>>>
+>>>        When bringing a new RNG source online, it seems like it would make sense
+>>>        to use some of its bytes to make the system entropy pool more random,
+>>>        as done with all sorts of other devices that contain per-device or
+>>>        per-boot differences.
+>>>
+>>> When providing "-device virtio-rng-pci" to a kernel with the above commit, the kernel never finishes booting. It just stops. My guess it is waiting for some magic entropy to appear.
+>>>
+>>> Maybe this is something that should be fixed in virtio-rng driver instead of reverting this patch, but I leave this to the experts in this area.
+>>
+>> Yup, this has already been handled. See various threads around:
+>> https://lkml.org/lkml/2014/7/5/14
 >
-Thanks.  Another zero day bug fix notched up to the Autobuilders before
-it went out.
+> I bisected 3.16-rc5 and it was not yet fixed there. It seems the fixes got merged less than 48 hours ago. Which means I just missed them. Tried with HEAD now and all looks good.
 
-Anyhow, v7 applied and pushed out as testing (again - just in case ;)
+Great! Thanks for testing.
 
-J
+-Kees
 
-
-> Reyad Attiyat (4):
->    iio: Documentation: Add documentation for rotation from north sensor
->      usage attributes
->    iio: types: Added support for rotation from north usage attributes
->    iio: hid-sensor-magn-3d: Scan for usage attributes before setting up
->      iio channels
->    iio: hid-sensor-magn-3d: Add support for rotation from north
->
->   Documentation/ABI/testing/sysfs-bus-iio       |  82 +++++++++++
->   drivers/iio/industrialio-core.c               |   4 +
->   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 199 ++++++++++++++++++++------
->   include/linux/iio/types.h                     |   4 +
->   4 files changed, 245 insertions(+), 44 deletions(-)
->
-
+-- 
+Kees Cook
+Chrome OS Security
