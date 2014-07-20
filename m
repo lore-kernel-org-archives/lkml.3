@@ -1,143 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066AbaGTHrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 03:47:55 -0400
-Received: from alpha.vorteksed.com.mk ([178.79.145.172]:59625 "EHLO
-	alpha.vorteksed.com.mk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaGTHry (ORCPT
+	id S1750986AbaGTIBF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 04:01:05 -0400
+Received: from smtp301.phy.lolipop.jp ([210.157.22.84]:52825 "EHLO
+	smtp301.phy.lolipop.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbaGTIBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 03:47:54 -0400
-X-Greylist: delayed 749 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jul 2014 03:47:54 EDT
-From: Petar Dimitrijevic <petar.dimitrijevic@vorteksed.com.mk>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Petar Dimitrijevic <petar.dimitrijevic@vorteksed.com.mk>
-Subject: [PATCH] staging: vt6655: Fixed checkpatch errors
-Date: Sun, 20 Jul 2014 09:34:55 +0200
-Message-Id: <1405841695-60623-1-git-send-email-petar.dimitrijevic@vorteksed.com.mk>
-X-Mailer: git-send-email 1.9.1
+	Sun, 20 Jul 2014 04:01:03 -0400
+X-Greylist: delayed 543 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jul 2014 04:01:03 EDT
+Message-ID: <53CB7518.9080502@sakamocchi.jp>
+Date: Sun, 20 Jul 2014 16:51:52 +0900
+From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: weiyj_lk@163.com, Clemens Ladisch <clemens@ladisch.de>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+CC: Wei Yongjun <yongjun_wei@trendmicro.com.cn>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] ALSA: bebob: Fix missing unlock on error in special_clk_ctl_put()
+References: <1405831835-26499-1-git-send-email-weiyj_lk@163.com>
+In-Reply-To: <1405831835-26499-1-git-send-email-weiyj_lk@163.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the errors report by the checkpatch script.
-Most of them are use of C99 comments.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-The checkpatch doesn't report any errors after the clean up.
-However, please not that there are still ton of warnings left.
+Hi Wei,
 
-Signed-off-by: Petar Dimitrijevic <petar.dimitrijevic@vorteksed.com.mk>
----
- drivers/staging/vt6655/datarate.c | 35 +++++++++++++++++++----------------
- 1 file changed, 19 insertions(+), 16 deletions(-)
+Thanks for this patch, while I found the other issues in this file. I
+would like to post new patches instead of yours, later.
 
-diff --git a/drivers/staging/vt6655/datarate.c b/drivers/staging/vt6655/datarate.c
-index f8420d6..83ad74c 100644
---- a/drivers/staging/vt6655/datarate.c
-+++ b/drivers/staging/vt6655/datarate.c
-@@ -47,11 +47,12 @@
- 
- /*---------------------  Static Classes  ----------------------------*/
- 
--extern unsigned short TxRate_iwconfig; //2008-5-8 <add> by chester
-+extern unsigned short TxRate_iwconfig; /* 2008-5-8 <add> by chester */
- /*---------------------  Static Variables  --------------------------*/
- static int msglevel = MSG_LEVEL_INFO;
--static const unsigned char acbyIERate[MAX_RATE] =
--{0x02, 0x04, 0x0B, 0x16, 0x0C, 0x12, 0x18, 0x24, 0x30, 0x48, 0x60, 0x6C};
-+static const unsigned char acbyIERate[MAX_RATE] = {
-+0x02, 0x04, 0x0B, 0x16, 0x0C, 0x12, 0x18, 0x24, 0x30, 0x48, 0x60, 0x6C
-+};
- 
- #define AUTORATE_TXOK_CNT       0x0400
- #define AUTORATE_TXFAIL_CNT     0x0064
-@@ -70,7 +71,7 @@ s_vResetCounter(
- {
- 	unsigned char ii;
- 
--	// clear statistic counter for auto_rate
-+	/* clear statistic counter for auto_rate */
- 	for (ii = 0; ii <= MAX_RATE; ii++) {
- 		psNodeDBTable->uTxOk[ii] = 0;
- 		psNodeDBTable->uTxFail[ii] = 0;
-@@ -102,8 +103,8 @@ DATARATEbyGetRateIdx(
- {
- 	unsigned char ii;
- 
--	//Erase basicRate flag.
--	byRate = byRate & 0x7F;//0111 1111
-+	/* Erase basicRate flag. */
-+	byRate = byRate & 0x7F;/* 0111 1111 */
- 
- 	for (ii = 0; ii < MAX_RATE; ii++) {
- 		if (acbyIERate[ii] == byRate)
-@@ -151,13 +152,14 @@ wGetRateIdx(
- {
- 	unsigned short ii;
- 
--	//Erase basicRate flag.
--	byRate = byRate & 0x7F;//0111 1111
-+	/* Erase basicRate flag. */
-+	byRate = byRate & 0x7F;/* 0111 1111 */
- 
- 	for (ii = 0; ii < MAX_RATE; ii++) {
- 		if (acbyIERate[ii] == byRate)
- 			return ii;
- 	}
-+
- 	return 0;
- }
- 
-@@ -218,7 +220,7 @@ RATEvParseMaxRate(
- 	for (ii = 0; ii < uRateLen; ii++) {
- 		byRate = (unsigned char)(pItemRates->abyRates[ii]);
- 		if (WLAN_MGMT_IS_BASICRATE(byRate) && bUpdateBasicRate)  {
--			// Add to basic rate set, update pDevice->byTopCCKBasicRate and pDevice->byTopOFDMBasicRate
-+			/* Add to basic rate set, update pDevice->byTopCCKBasicRate and pDevice->byTopOFDMBasicRate */
- 			CARDbAddBasicRate((void *)pDevice, wGetRateIdx(byRate));
- 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ParseMaxRate AddBasicRate: %d\n", wGetRateIdx(byRate));
- 		}
-@@ -238,9 +240,9 @@ RATEvParseMaxRate(
- 
- 		for (ii = 0; ii < uExtRateLen; ii++) {
- 			byRate = (unsigned char)(pItemExtRates->abyRates[ii]);
--			// select highest basic rate
-+			/* select highest basic rate */
- 			if (WLAN_MGMT_IS_BASICRATE(pItemExtRates->abyRates[ii])) {
--				// Add to basic rate set, update pDevice->byTopCCKBasicRate and pDevice->byTopOFDMBasicRate
-+				/* Add to basic rate set, update pDevice->byTopCCKBasicRate and pDevice->byTopOFDMBasicRate */
- 				CARDbAddBasicRate((void *)pDevice, wGetRateIdx(byRate));
- 				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ParseMaxRate AddBasicRate: %d\n", wGetRateIdx(byRate));
- 			}
-@@ -302,10 +304,9 @@ RATEvTxRateFallBack(
- 	unsigned short wIdxUpRate = 0;
- 	unsigned long dwTxDiff = 0;
- 
--	if (pDevice->pMgmt->eScanState != WMAC_NO_SCANNING) {
--		// Don't do Fallback when scanning Channel
-+	if (pDevice->pMgmt->eScanState != WMAC_NO_SCANNING)
-+		/* Don't do Fallback when scanning Channel */
- 		return;
--	}
- 
- 	psNodeDBTable->uTimeCount++;
- 
-@@ -357,11 +358,13 @@ RATEvTxRateFallBack(
- 		    (psNodeDBTable->uTxFail[MAX_RATE] * 4)) {
- 			psNodeDBTable->wTxDataRate = wIdxUpRate;
- 		}
--	} else { // adhoc, if uTxOk =0 & uTxFail = 0
-+	} else {
-+		/* adhoc, if uTxOk =0 & uTxFail = 0 */
- 		if (psNodeDBTable->uTxFail[MAX_RATE] == 0)
- 			psNodeDBTable->wTxDataRate = wIdxUpRate;
- 	}
--//2008-5-8 <add> by chester
-+
-+	/* 2008-5-8 <add> by chester */
- 	TxRate_iwconfig = psNodeDBTable->wTxDataRate;
- 	s_vResetCounter(psNodeDBTable);
- 
--- 
-1.9.1
 
+Thanks
+
+Takashi Sakamoto
+o-takashi@sakamocchi.jp
+
+(Jul 20 2014 13:50), weiyj_lk@163.com wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Add the missing unlock before return from function
+> special_clk_ctl_put() in the error handling case.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn> --- 
+> sound/firewire/bebob/bebob_maudio.c | 4 +++- 1 file changed, 3
+> insertions(+), 1 deletion(-)
+> 
+> diff --git a/sound/firewire/bebob/bebob_maudio.c
+> b/sound/firewire/bebob/bebob_maudio.c index 6af50eb..6748515
+> 100644 --- a/sound/firewire/bebob/bebob_maudio.c +++
+> b/sound/firewire/bebob/bebob_maudio.c @@ -382,8 +382,10 @@ static
+> int special_clk_ctl_put(struct snd_kcontrol *kctl, 
+> mutex_lock(&bebob->mutex);
+> 
+> id = uval->value.enumerated.item[0]; -	if (id >=
+> ARRAY_SIZE(special_clk_labels)) +	if (id >=
+> ARRAY_SIZE(special_clk_labels)) { +		mutex_unlock(&bebob->mutex); 
+> return 0; +	}
+> 
+> err = avc_maudio_set_special_clk(bebob, id, params->dig_in_fmt,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJTy3UIAAoJENbkvsBXhK8as9AH+wYN2lxFlzBdMhPgRigp/bkv
+mw770Hpyb50TE3ILkIcGpgec1TFrK/QwQjUmunmJLQnvXPBNVNGiVaKsOhhHwmqG
+7hDWp8swTSdxZQeSFWjjxAc+AntjEoUkOdiwclzT+1M1tO1vjZdRoXAos4o3G6Od
+xKSl0xO4Qi+Wv6ib1p5yneOKEGZLmEZTLJY2PXXKhHQjybzYS1cRRlK9+afJYLhT
+sEHPknz00OCbvFRAXIK0GMuaQzncZOFYA2Ovczei7Y+ugJuGJbvNfxhxYO6j7Zc6
+j1dE79iBY0hhH32zdUn7zcWR8Zbxbpfv8oA0dkeQRisV3RB9F2P7bSKHtNj0cOw=
+=Or5u
+-----END PGP SIGNATURE-----
