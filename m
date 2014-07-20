@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaGTXGJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 19:06:09 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:39565 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaGTXGH (ORCPT
+	id S1751675AbaGTXJT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 19:09:19 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61654 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaGTXJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 19:06:07 -0400
-Date: Sun, 20 Jul 2014 19:06:05 -0400
+	Sun, 20 Jul 2014 19:09:18 -0400
+Date: Sun, 20 Jul 2014 19:09:17 -0400
 From: Jerome Glisse <j.glisse@gmail.com>
 To: Oded Gabbay <oded.gabbay@amd.com>
 Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
@@ -20,242 +20,217 @@ Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
         Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>,
         Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2 13/25] amdkfd: Add queue module
-Message-ID: <20140720230604.GI3068@gmail.com>
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 21/25] amdkfd: Implement the create/destroy/update
+ queue IOCTLs
+Message-ID: <20140720230916.GJ3068@gmail.com>
 References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
- <1405603773-32688-14-git-send-email-oded.gabbay@amd.com>
+ <1405603773-32688-22-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405603773-32688-14-git-send-email-oded.gabbay@amd.com>
+In-Reply-To: <1405603773-32688-22-git-send-email-oded.gabbay@amd.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 04:29:20PM +0300, Oded Gabbay wrote:
+On Thu, Jul 17, 2014 at 04:29:28PM +0300, Oded Gabbay wrote:
 > From: Ben Goz <ben.goz@amd.com>
-> 
-> The queue module enables allocating and initializing queues uniformly.
 > 
 > Signed-off-by: Ben Goz <ben.goz@amd.com>
 > Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 > ---
->  drivers/gpu/drm/radeon/amdkfd/Makefile    |   2 +-
->  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h  |  48 +++++++++++++
->  drivers/gpu/drm/radeon/amdkfd/kfd_queue.c | 109 ++++++++++++++++++++++++++++++
->  3 files changed, 158 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_queue.c
+>  drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c | 133 +++++++++++++++++++++++++++-
+>  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h    |   8 ++
+>  2 files changed, 138 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/Makefile b/drivers/gpu/drm/radeon/amdkfd/Makefile
-> index daf75a8..dbff147 100644
-> --- a/drivers/gpu/drm/radeon/amdkfd/Makefile
-> +++ b/drivers/gpu/drm/radeon/amdkfd/Makefile
-> @@ -6,6 +6,6 @@ ccflags-y := -Iinclude/drm
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+> index d6580a6..a74693a 100644
+> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+> @@ -119,17 +119,144 @@ static int kfd_open(struct inode *inode, struct file *filep)
 >  
->  amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o \
->  		kfd_pasid.o kfd_doorbell.o kfd_vidmem.o kfd_aperture.o \
-> -		kfd_process.o
-> +		kfd_process.o kfd_queue.o
->  
->  obj-$(CONFIG_HSA_RADEON)	+= amdkfd.o
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> index 604c317..94ff1c3 100644
-> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> @@ -65,6 +65,9 @@ typedef unsigned int pasid_t;
->  /* Type that represents a HW doorbell slot. */
->  typedef u32 doorbell_t;
->  
-> +/* Type that represents queue pointer */
-> +typedef u32 qptr_t;
-> +
->  struct kfd_device_info {
->  	const struct kfd_scheduler_class *scheduler_class;
->  	unsigned int max_pasid_bits;
-> @@ -125,12 +128,57 @@ void kfd_vidmem_unkmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj);
->  int kfd_vidmem_alloc_map(struct kfd_dev *kfd, kfd_mem_obj *mem_obj, void **ptr,
->  			uint64_t *vmid0_address, size_t size);
->  void kfd_vidmem_free_unmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj);
-> +
->  /* Character device interface */
->  int kfd_chardev_init(void);
->  void kfd_chardev_exit(void);
->  struct device *kfd_chardev(void);
->  
->  
-> +enum kfd_queue_type  {
-> +	KFD_QUEUE_TYPE_COMPUTE,
-> +	KFD_QUEUE_TYPE_SDMA,
-> +	KFD_QUEUE_TYPE_HIQ,
-> +	KFD_QUEUE_TYPE_DIQ
-> +};
-> +
-> +struct queue_properties {
-> +	enum kfd_queue_type type;
+>  static long kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p, void __user *arg)
+>  {
+> -	return -ENODEV;
+> +	struct kfd_ioctl_create_queue_args args;
+> +	struct kfd_dev *dev;
+> +	int err = 0;
 > +	unsigned int queue_id;
-> +	uint64_t queue_address;
-> +	uint64_t  queue_size;
-> +	uint32_t priority;
-> +	uint32_t queue_percent;
-> +	qptr_t *read_ptr;
-> +	qptr_t *write_ptr;
-> +	qptr_t *doorbell_ptr;
-> +	qptr_t doorbell_off;
-> +	bool is_interop;
-> +	bool is_active;
-> +	/* Not relevant for user mode queues in cp scheduling */
-> +	unsigned int vmid;
-> +};
+> +	struct kfd_process_device *pdd;
+> +	struct queue_properties q_properties;
 > +
-> +struct queue {
-> +	struct list_head list;
-> +	void *mqd;
-> +	/* kfd_mem_obj contains the mqd */
-> +	kfd_mem_obj mqd_mem_obj;
-> +	uint64_t gart_mqd_addr; /* needed for cp scheduling */
-> +	struct queue_properties properties;
+> +	memset(&q_properties, 0, sizeof(struct queue_properties));
 > +
-> +	/*
-> +	 * Used by the queue device manager to track the hqd slot per queue
-> +	 * when using no cp scheduling
-> +	 */
-> +	uint32_t mec;
-> +	uint32_t pipe;
-> +	uint32_t queue;
+> +	if (copy_from_user(&args, arg, sizeof(args)))
+> +		return -EFAULT;
 > +
-> +	struct kfd_process	*process;
-> +	struct kfd_dev		*device;
-> +};
+> +	if (!access_ok(VERIFY_WRITE, args.read_pointer_address, sizeof(qptr_t))) {
+> +		pr_err("kfd: can't access read pointer");
+> +		return -EFAULT;
+> +	}
 > +
->  /* Data that is per-process-per device. */
->  struct kfd_process_device {
->  	/*
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_queue.c b/drivers/gpu/drm/radeon/amdkfd/kfd_queue.c
-> new file mode 100644
-> index 0000000..646b6d1
-> --- /dev/null
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_queue.c
-> @@ -0,0 +1,109 @@
-> +/*
-> + * Copyright 2014 Advanced Micro Devices, Inc.
-> + *
-> + * Permission is hereby granted, free of charge, to any person obtaining a
-> + * copy of this software and associated documentation files (the "Software"),
-> + * to deal in the Software without restriction, including without limitation
-> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-> + * and/or sell copies of the Software, and to permit persons to whom the
-> + * Software is furnished to do so, subject to the following conditions:
-> + *
-> + * The above copyright notice and this permission notice shall be included in
-> + * all copies or substantial portions of the Software.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-> + * OTHER DEALINGS IN THE SOFTWARE.
-> + *
-> + */
+> +	if (!access_ok(VERIFY_WRITE, args.write_pointer_address, sizeof(qptr_t))) {
+> +		pr_err("kfd: can't access write pointer");
+> +		return -EFAULT;
+> +	}
 > +
-> +#include <linux/slab.h>
-> +#include "kfd_priv.h"
+> +	q_properties.is_interop = false;
+> +	q_properties.queue_percent = args.queue_percentage;
+> +	q_properties.priority = args.queue_priority;
+> +	q_properties.queue_address = args.ring_base_address;
+> +	q_properties.queue_size = args.ring_size;
+> +	q_properties.read_ptr = (qptr_t *) args.read_pointer_address;
+> +	q_properties.write_ptr = (qptr_t *) args.write_pointer_address;
 > +
-> +void print_queue_properties(struct queue_properties *q)
-> +{
-> +	if (!q)
-> +		return;
-> +
-> +	pr_debug("Printing queue properties\n"
-> +			"Queue Type: %u\n"
-> +			"Queue Size: %llu\n"
-> +			"Queue percent: %u\n"
-> +			"Queue Address: 0x%llX\n"
-> +			"Queue Id: %u\n"
-> +			"Queue Process Vmid: %u\n"
-> +			"Queue Read Pointer: 0x%p\n"
-> +			"Queue Write Pointer: 0x%p\n"
-> +			"Queue Doorbell Pointer: 0x%p\n"
-> +			"Queue Doorbell Offset: %u\n",  q->type,
-> +							q->queue_size,
-> +							q->queue_percent,
-> +							q->queue_address,
-> +							q->queue_id,
-> +							q->vmid,
-> +							q->read_ptr,
-> +							q->write_ptr,
-> +							q->doorbell_ptr,
-> +							q->doorbell_off);
 
-One pr_debug call per line.
+So there is still no sanity check on any of the argument especialy the queue_size.
+I might have missed it, if so i think it really should be here inside the ioctl
+function as is simpler to find.
 
-> +}
 > +
-> +void print_queue(struct queue *q)
-> +{
-> +	if (!q)
-> +		return;
-> +	pr_debug("Printing queue\n"
-> +			"Queue Type: %u\n"
-> +			"Queue Size: %llu\n"
-> +			"Queue percent: %u\n"
-> +			"Queue Address: 0x%llX\n"
-> +			"Queue Id: %u\n"
-> +			"Queue Process Vmid: %u\n"
-> +			"Queue Read Pointer: 0x%p\n"
-> +			"Queue Write Pointer: 0x%p\n"
-> +			"Queue Doorbell Pointer: 0x%p\n"
-> +			"Queue Doorbell Offset: %u\n"
-> +			"Queue MQD Address: 0x%p\n"
-> +			"Queue MQD Gart: 0x%llX\n"
-> +			"Queue Process Address: 0x%p\n"
-> +			"Queue Device Address: 0x%p\n",
-> +					q->properties.type,
-> +					q->properties.queue_size,
-> +					q->properties.queue_percent,
-> +					q->properties.queue_address,
-> +					q->properties.queue_id,
-> +					q->properties.vmid,
-> +					q->properties.read_ptr,
-> +					q->properties.write_ptr,
-> +					q->properties.doorbell_ptr,
-> +					q->properties.doorbell_off,
-> +					q->mqd,
-> +					q->gart_mqd_addr,
-> +					q->process,
-> +					q->device);
+> +	pr_debug("%s Arguments: Queue Percentage (%d, %d)\n"
+> +			"Queue Priority (%d, %d)\n"
+> +			"Queue Address (0x%llX, 0x%llX)\n"
+> +			"Queue Size (0x%llX, %u)\n"
+> +			"Queue r/w Pointers (0x%llX, 0x%llX)\n",
+> +			__func__,
+> +			q_properties.queue_percent, args.queue_percentage,
+> +			q_properties.priority, args.queue_priority,
+> +			q_properties.queue_address, args.ring_base_address,
+> +			q_properties.queue_size, args.ring_size,
+> +			(uint64_t) q_properties.read_ptr,
+> +			(uint64_t) q_properties.write_ptr);
+
+One pr_debug call perline.
+
+> +
+> +	dev = kfd_device_by_id(args.gpu_id);
+> +	if (dev == NULL)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&p->mutex);
+> +
+> +	pdd = kfd_bind_process_to_device(dev, p);
+> +	if (IS_ERR(pdd) < 0) {
+> +		err = PTR_ERR(pdd);
+> +		goto err_bind_process;
+> +	}
+> +
+> +	pr_debug("kfd: creating queue for PASID %d on GPU 0x%x\n",
+> +			p->pasid,
+> +			dev->id);
+> +
+> +	err = pqm_create_queue(&p->pqm, dev, filep, &q_properties, 0, KFD_QUEUE_TYPE_COMPUTE, &queue_id);
+> +	if (err != 0)
+> +		goto err_create_queue;
+> +
+> +	args.queue_id = queue_id;
+> +	args.doorbell_address = (uint64_t)q_properties.doorbell_ptr;
+> +
+> +	if (copy_to_user(arg, &args, sizeof(args))) {
+> +		err = -EFAULT;
+> +		goto err_copy_args_out;
+> +	}
+> +
+> +	mutex_unlock(&p->mutex);
+> +
+> +	pr_debug("kfd: queue id %d was created successfully.\n"
+> +		 "     ring buffer address == 0x%016llX\n"
+> +		 "     read ptr address    == 0x%016llX\n"
+> +		 "     write ptr address   == 0x%016llX\n"
+> +		 "     doorbell address    == 0x%016llX\n",
+> +			args.queue_id,
+> +			args.ring_base_address,
+> +			args.read_pointer_address,
+> +			args.write_pointer_address,
+> +			args.doorbell_address);
+> +
 
 Ditto
 
-> +}
-> +
-> +int init_queue(struct queue **q, struct queue_properties properties)
-> +{
-> +	struct queue *tmp;
-> +
-> +	BUG_ON(!q);
-> +
-> +	tmp = kzalloc(sizeof(struct queue), GFP_KERNEL);
-> +	if (!tmp)
-> +		return -ENOMEM;
-> +
-> +	memset(&tmp->properties, 0, sizeof(struct queue_properties));
-
-memset uselss because of the memcpy below.
-
-> +	memcpy(&tmp->properties, &properties, sizeof(struct queue_properties));
-> +
-> +	*q = tmp;
 > +	return 0;
-> +}
 > +
-> +void uninit_queue(struct queue *q)
-> +{
-> +	kfree(q);
-> +}
+> +err_copy_args_out:
+> +	pqm_destroy_queue(&p->pqm, queue_id);
+> +err_create_queue:
+> +err_bind_process:
+> +	mutex_unlock(&p->mutex);
+> +	return err;
+>  }
+>  
+>  static int kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *arg)
+>  {
+> -	return -ENODEV;
+> +	int retval;
+> +	struct kfd_ioctl_destroy_queue_args args;
+> +
+> +	if (copy_from_user(&args, arg, sizeof(args)))
+> +		return -EFAULT;
+> +
+> +	pr_debug("kfd: destroying queue id %d for PASID %d\n",
+> +				args.queue_id,
+> +				p->pasid);
+> +
+> +	mutex_lock(&p->mutex);
+> +
+> +	retval = pqm_destroy_queue(&p->pqm, args.queue_id);
+> +
+> +	mutex_unlock(&p->mutex);
+> +	return retval;
+>  }
+>  
+>  static int kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p, void __user *arg)
+>  {
+> -	return -ENODEV;
+> +	int retval;
+> +	struct kfd_ioctl_update_queue_args args;
+> +	struct queue_properties properties;
+> +
+> +	if (copy_from_user(&args, arg, sizeof(args)))
+> +		return -EFAULT;
+> +
+> +	properties.queue_address = args.ring_base_address;
+> +	properties.queue_size = args.ring_size;
+> +	properties.queue_percent = args.queue_percentage;
+> +	properties.priority = args.queue_priority;
+> +
+
+Would need sanity check on argument.
+
+> +	pr_debug("kfd: updating queue id %d for PASID %d\n", args.queue_id, p->pasid);
+> +
+> +	mutex_lock(&p->mutex);
+> +
+> +	retval = pqm_update_queue(&p->pqm, args.queue_id, &properties);
+> +
+> +	mutex_unlock(&p->mutex);
+> +
+> +	return retval;
+>  }
+>  
+>  static long kfd_ioctl_set_memory_policy(struct file *filep, struct kfd_process *p, void __user *arg)
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+> index 8a1de68..7ea0e81 100644
+> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+> @@ -418,7 +418,15 @@ struct process_queue_node {
+>  
+>  int pqm_init(struct process_queue_manager *pqm, struct kfd_process *p);
+>  void pqm_uninit(struct process_queue_manager *pqm);
+> +int pqm_create_queue(struct process_queue_manager *pqm,
+> +			    struct kfd_dev *dev,
+> +			    struct file *f,
+> +			    struct queue_properties *properties,
+> +			    unsigned int flags,
+> +			    enum kfd_queue_type type,
+> +			    unsigned int *qid);
+>  int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid);
+> +int pqm_update_queue(struct process_queue_manager *pqm, unsigned int qid, struct queue_properties *p);
+>  
+>  /* Packet Manager */
+>  
 > -- 
 > 1.9.1
 > 
