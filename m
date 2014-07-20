@@ -1,111 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaGTLiM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 07:38:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29478 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907AbaGTLiL (ORCPT
+	id S1752220AbaGTLrz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 07:47:55 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:60781 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaGTLry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 07:38:11 -0400
-Date: Sun, 20 Jul 2014 14:37:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Riccardo Lucchese <riccardo.lucchese@gmail.com>
-Cc: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
-        devel@driverdev.osuosl.org, josh@joshtriplett.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging: lustre/lustre/lov: Remove unneeded 'if'
- statement in lov_request.c/lov_check_set()
-Message-ID: <20140720113747.GG18338@mwanda>
-References: <1405798498-15754-1-git-send-email-riccardo.lucchese@gmail.com>
- <1405798498-15754-2-git-send-email-riccardo.lucchese@gmail.com>
- <20140720045253.GK25880@mwanda>
- <20140720110836.GC12613@rlp>
+	Sun, 20 Jul 2014 07:47:54 -0400
+Message-ID: <53CBAC65.2040208@gmail.com>
+Date: Sun, 20 Jul 2014 14:47:49 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140720110836.GC12613@rlp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] block: support > 16 byte CDBs for SG_IO
+References: <1405851804-29096-1-git-send-email-hch@lst.de> <1405851804-29096-3-git-send-email-hch@lst.de>
+In-Reply-To: <1405851804-29096-3-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 01:08:36PM +0200, Riccardo Lucchese wrote:
-> Dan,
-> 
-> On Sun, Jul 20, 2014 at 07:52:53AM +0300, Dan Carpenter wrote:
-> > On Sat, Jul 19, 2014 at 09:34:56PM +0200, Riccardo Lucchese wrote:
-> > > It is silly to go through an if statement to set a single boolean
-> > > value in function of a single boolean expression. In the function
-> > > lov_check_set, assign the return value directly.
-> > > 
-> > > Signed-off-by: Riccardo Lucchese <riccardo.lucchese@gmail.com>
-> > > ---
-> > >  drivers/staging/lustre/lustre/lov/lov_request.c | 11 +++++------
-> > >  1 file changed, 5 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
-> > > index ce830e4..90fc66a 100644
-> > > --- a/drivers/staging/lustre/lustre/lov/lov_request.c
-> > > +++ b/drivers/staging/lustre/lustre/lov/lov_request.c
-> > > @@ -140,14 +140,13 @@ void lov_set_add_req(struct lov_request *req, struct lov_request_set *set)
-> > >  
-> > >  static int lov_check_set(struct lov_obd *lov, int idx)
-> > >  {
-> > > -	int rc = 0;
-> > > +	int rc;
-> > >  	mutex_lock(&lov->lov_lock);
-> > >  
-> > > -	if (lov->lov_tgts[idx] == NULL ||
-> > > -	    lov->lov_tgts[idx]->ltd_active ||
-> > > -	    (lov->lov_tgts[idx]->ltd_exp != NULL &&
-> > > -	     class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried))
-> > > -		rc = 1;
-> > > +	rc = lov->lov_tgts[idx] == NULL ||
-> > > +		lov->lov_tgts[idx]->ltd_active ||
-> > > +		(lov->lov_tgts[idx]->ltd_exp != NULL &&
-> > > +		 class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried);
-> > 
-> > I don't see how this makes the code more readable at all.
-> 
-> Thank you for the comment. Would you consider something like the
-> following diff instead ? Otherwise, I will resend the series for
-> review without this change.
-> 
-> riccardo
-> 
+On 07/20/2014 01:23 PM, Christoph Hellwig wrote:
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+
+Hi Christoph I've quickly reviewed your code and have a few questions
+
 > ---
+>  block/scsi_ioctl.c | 24 +++++++++++++++++-------
+>  1 file changed, 17 insertions(+), 7 deletions(-)
 > 
-> diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
-> index ce830e4..ae670bb 100644
-> --- a/drivers/staging/lustre/lustre/lov/lov_request.c
-> +++ b/drivers/staging/lustre/lustre/lov/lov_request.c
-> @@ -140,14 +140,14 @@ void lov_set_add_req(struct lov_request *req, struct lov_request_set *set)
+> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> index c4e6633..a804f3e 100644
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -288,8 +288,6 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
 >  
->  static int lov_check_set(struct lov_obd *lov, int idx)
->  {
-> -	int rc = 0;
-> +	int rc;
-> +	struct lov_tgt_desc *desc;
->  	mutex_lock(&lov->lov_lock);
+>  	if (hdr->interface_id != 'S')
+>  		return -EINVAL;
+> -	if (hdr->cmd_len > BLK_MAX_CDB)
+> -		return -EINVAL;
 >  
-> -	if (lov->lov_tgts[idx] == NULL ||
-> -	    lov->lov_tgts[idx]->ltd_active ||
-> -	    (lov->lov_tgts[idx]->ltd_exp != NULL &&
-> -	     class_exp2cliimp(lov->lov_tgts[idx]->ltd_exp)->imp_connect_tried))
-> -		rc = 1;
-> +	desc = lov->lov_tgts[idx];
-> +	rc = !desc || desc->ltd_active ||
-> +		(desc->ltd_exp &&
-> +		 class_exp2cliimp(desc->ltd_exp)->imp_connect_tried);
+>  	if (hdr->dxfer_len > (queue_max_hw_sectors(q) << 9))
+>  		return -EIO;
+> @@ -306,14 +304,21 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
+>  			break;
+>  		}
+>  
+> +	ret = -ENOMEM;
+>  	rq = blk_get_request(q, writing ? WRITE : READ, GFP_KERNEL);
+>  	if (!rq)
+> -		return -ENOMEM;
+> +		goto out;
+>  	blk_rq_set_block_pc(rq);
+>  
+> +	if (hdr->cmd_len > BLK_MAX_CDB) {
+> +		rq->cmd = kzalloc(hdr->cmd_len, GFP_KERNEL);
 
-Sure, I suppose.  Using "desc" is a clean up.  Otherwise the original
-code was not "silly".  It was fine.
+So two things here:
+- hdr->cmd_len is char so can be MAX of 255. I understand that 4 bytes alignment is a SCSI
+  thing so you found no point of checking any max size?
 
-I'm curious why you think if statements are less readable than other
-statements.  That seems like nonsense.
+- Why the zero alloc, if you are going to paste over it the exact same length. Now if like in scsi
+  you need 4 bytes alignment and zero padding yes, but here you do not do this (and probably shouldn't).
+  Hence why zero-alloc?
 
-regards,
-dan carpenter
+- Looking at sg.h where hdr->cmd_len is defined it stills has a comment of <= 16 you might want to
+  remove the comment by now.
 
+> +		if (!rq->cmd)
+> +			goto out_put_request;
+> +	}
+> +
+>  	ret = -EFAULT;
+>  	if (blk_fill_sghdr_rq(q, rq, hdr, mode))
+
+Inside here: blk_fill_sghdr_rq() calls blk_verify_command() which does:
+(Below cmd[] is the buffer copied from user)
+
+	/* Anybody who can open the device can do a read-safe command */
+	if (test_bit(cmd[0], filter->read_ok))
+		return 0;
+
+	/* Write-safe commands require a writable open */
+	if (test_bit(cmd[0], filter->write_ok) && has_write_perm)
+		return 0;
+
+Now I am not sure what type "Commands" you guys intend for these large commands
+but if they are say SCSI-VARLEN this test will not work. Also a user might fool
+the system with pretending to be "read" a device modifying command.
+
+I would pass len to this test function and only permit these above if command is
+<= 16. Any "special" large command is root only.
+
+Thanks
+Boaz
+
+> -		goto out;
+> +		goto out_free_cdb;
+>  
+>  	if (hdr->iovec_count) {
+>  		size_t iov_data_len;
+> @@ -323,7 +328,7 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
+>  					    0, NULL, &iov);
+>  		if (ret < 0) {
+>  			kfree(iov);
+> -			goto out;
+> +			goto out_free_cdb;
+>  		}
+>  
+>  		iov_data_len = ret;
+> @@ -346,7 +351,7 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
+>  				      GFP_KERNEL);
+>  
+>  	if (ret)
+> -		goto out;
+> +		goto out_free_cdb;
+>  
+>  	bio = rq->bio;
+>  	memset(sense, 0, sizeof(sense));
+> @@ -365,8 +370,13 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
+>  	hdr->duration = jiffies_to_msecs(jiffies - start_time);
+>  
+>  	ret = blk_complete_sghdr_rq(rq, hdr, bio);
+> -out:
+> +
+> +out_free_cdb:
+> +	if (rq->cmd != rq->__cmd)
+> +		kfree(rq->cmd);
+> +out_put_request:
+>  	blk_put_request(rq);
+> +out:
+>  	return ret;
+>  }
+>  
+> 
 
