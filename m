@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaGTTHg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:07:36 -0400
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:50350 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893AbaGTTHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:07:35 -0400
+	id S1753233AbaGTTPf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:15:35 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:58616 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802AbaGTTPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 15:15:34 -0400
+In-Reply-To: <53CBB095.6010705@nod.at>
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>	<87lhrpayl4.fsf@igel.home>
+	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>	<87fvhwxps6.fsf@igel.home>
+	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com> <87bnskxn7g.fsf@igel.home> <53CBB095.6010705@nod.at>
+To: Richard Weinberger <richard@nod.at>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@linux-m68k.org>
 MIME-Version: 1.0
-In-Reply-To: <EB52686F-2B66-44CF-BE24-6E6278B7364A@holtmann.org>
-References: <84D489B9-FC60-40F1-A03F-996256F790A9@holtmann.org>
-	<CAGXu5jJbrEryxx7e48Mc0Pi18vEBfHWN-pOxrvDnC24Lr21ghQ@mail.gmail.com>
-	<EB52686F-2B66-44CF-BE24-6E6278B7364A@holtmann.org>
-Date: Sun, 20 Jul 2014 12:07:34 -0700
-X-Google-Sender-Auth: 3-jVzBBF6gPB2ZO6yWSCSnj9BZ8
-Message-ID: <CAGXu5jK6XzrMg_VPYm9LhBjmRHUe=HVbmaQjRdDQ5TrRbU7YpA@mail.gmail.com>
-Subject: Re: Commit d9e7972619334656 breaks KVM's virtio-rng-pci
-From: Kees Cook <keescook@chromium.org>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: ls -l /proc/1/exe -> Permission denied
+X-KeepSent: 2729CE69:3EF22126-C1257D1B:0069427B;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Message-ID: <OF2729CE69.3EF22126-ONC1257D1B.0069427B-C1257D1B.0069CA17@transmode.se>
+Date: Sun, 20 Jul 2014 21:15:29 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
+ 20/07/2014 21:15:29,
+	Serialize complete at 20/07/2014 21:15:29
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 11:32 AM, Marcel Holtmann <marcel@holtmann.org> wrote:
-> Hi Kees,
->
->>> the commit d9e7972619334656 ends up being responsible that using "-device virtio-rng-pci" in KVM no longer works.
->>>
->>>        From: Kees Cook <keescook@chromium.org>
->>>        Date: Mon, 3 Mar 2014 15:51:48 -0800
->>>        Subject: [PATCH] hwrng: add randomness to system from rng sources
->>>
->>>        When bringing a new RNG source online, it seems like it would make sense
->>>        to use some of its bytes to make the system entropy pool more random,
->>>        as done with all sorts of other devices that contain per-device or
->>>        per-boot differences.
->>>
->>> When providing "-device virtio-rng-pci" to a kernel with the above commit, the kernel never finishes booting. It just stops. My guess it is waiting for some magic entropy to appear.
->>>
->>> Maybe this is something that should be fixed in virtio-rng driver instead of reverting this patch, but I leave this to the experts in this area.
->>
->> Yup, this has already been handled. See various threads around:
->> https://lkml.org/lkml/2014/7/5/14
->
-> I bisected 3.16-rc5 and it was not yet fixed there. It seems the fixes got merged less than 48 hours ago. Which means I just missed them. Tried with HEAD now and all looks good.
+Richard Weinberger <richard@nod.at> wrote on 2014/07/20 14:05:41:
+> 
+> Am 20.07.2014 13:51, schrieb Andreas Schwab:
+> > Richard Weinberger <richard.weinberger@gmail.com> writes:
+> >> Do you have an example?
+> > 
+> > proc symlinks are special because they actually resolve to the inode.
+> 
+> Ah. If an attacker manages the kernel to follow the symlink he could
+> indirectly access that file.
+> Thanks for pointing this out!
 
-Great! Thanks for testing.
+That is a big if, I read this as you don't trust the kernels impl.
+of proc sym links so paper over this with denying all other to read 
+trivial
+data such as the exe sym link.
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+ Jocke 
