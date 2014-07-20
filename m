@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaGTUTe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 16:19:34 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52156 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbaGTUTc (ORCPT
+	id S1753869AbaGTUUx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 16:20:53 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:55044 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945AbaGTUUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 16:19:32 -0400
-Date: Sun, 20 Jul 2014 13:19:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Bivolaru Catalin <bivolaru.catalin@gmail.com>,
-        kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com
-Subject: Re: [PATCH] staging: input: sunkbd.c: Fix coding style
-Message-ID: <20140720201924.GA18347@core.coreip.homeip.net>
-References: <20140720120103.GA5294@kalio-PC>
- <1405871574.5135.24.camel@joe-AO725>
+	Sun, 20 Jul 2014 16:20:52 -0400
+Date: Sun, 20 Jul 2014 22:20:48 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: Andreas Mohr <andi@lisas.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 1/6] acerhdf: Adding support for "manual mode"
+Message-ID: <20140720202048.GA14133@rhlx01.hs-esslingen.de>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1405817480-25347-1-git-send-email-peter@piie.net>
+ <1405817480-25347-2-git-send-email-peter@piie.net>
+ <20140720080420.GA28707@rhlx01.hs-esslingen.de>
+ <cone.1405852973.378940.3229.1000@galar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405871574.5135.24.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cone.1405852973.378940.3229.1000@galar>
+X-Priority: none
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 08:52:54AM -0700, Joe Perches wrote:
-> On Sun, 2014-07-20 at 15:01 +0300, Bivolaru Catalin wrote:
-> > Fix coding style with regard to missing spaces after , and the column limit
-> > that was violated after the first change.
-> 
-> Some checkpatch errors should be ignored.
-> 
-> These are some of them.
-> 
-> This change doesn't make it easier to read
-> or to find any array entry.
-> 
-> It's currently in groups of 16 (0x10).
-> 
-> This change would make it very difficult
-> to find any particular entry.
-> 
-> It might make some sense to change the last
-> line to add a trailing "  0,  0" entry as
-> the compiler does to make it a bit clearer
-> the table has 128 entries.
+Hi,
 
-I'd rather not change a thing in this table - it has been working as is
-for many years.
+On Sun, Jul 20, 2014 at 12:42:53PM +0200, Peter Feuerer wrote:
+> Hi Andreas,
+> 
+> Andreas Mohr writes:
+> >On Sun, Jul 20, 2014 at 02:51:15AM +0200, Peter Feuerer wrote:
+> >>@@ -127,105 +138,107 @@ struct bios_settings_t {
+> >> 	unsigned char fanreg;
+> >> 	unsigned char tempreg;
+> >> 	struct fancmd cmd;
+> >>+	int mcmd_enable;
+> >> };
+> >>+
+> >> /* Register addresses and values for different BIOS versions */
+> >> static const struct bios_settings_t bios_tbl[] = {
+> >
+> >Change-unrelated content here, might want to move away.
+> 
+> You mean this newline?
 
-Thanks.
+Yup.
 
--- 
-Dmitry
+> >Suggestion (if ok from a commit revision/history POV):
+> >git rebase -i s:/'acerhdf: Adding support for "manual mode"'~1
+> ><"e"dit first commit>
+> >git checkout -p s:/'acerhdf: Adding support for "manual mode"'
+> ><grab hunk [split as needed]>
+> >git commit -m "FIXUP"
+> >git rebase --continue
+> >git rebase -i s:/'acerhdf: Adding support for "manual mode"'~1
+> ><move FIXUP line post [PATCH v4 6/6] acerhdf: minor clean up>
+> ><do "f"ixup>
+> 
+> If I understand this correctly, you want me to move this new line
+> to patch 6, correct?
+
+Yup, to a suitable "other stuff" location, which patch 6 likely would be.
+
+> >Sorry that I didn't find worse breakage during my review
+> >than this si{mp|ng}le line ;)
+> 
+> No problem, as long as you give your Acked-by / Reviewed-by ;)
+
+Hmm, I'm unsure whether my involvement is sufficient for a full Reviewed-by
+(think full replacement of core driver mechanisms as in bang-bang governor,
+etc.).
+
+But yeah, at least I can say I did review things
+and I did not see any obvious issues.
+
+Thanks,
+
+Andreas
