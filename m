@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaGTLTl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 07:19:41 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61870 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaGTLTj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 07:19:39 -0400
-Message-ID: <1405855175.27371.1.camel@phoenix>
-Subject: [PATCH] regulator: da9211: Remove unnecessary
- devm_regulator_unregister() calls
-From: Axel Lin <axel.lin@ingics.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: James Ban <James.Ban.opensource@diasemi.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 20 Jul 2014 19:19:35 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752107AbaGTLUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 07:20:05 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:51447 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995AbaGTLUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 07:20:04 -0400
+In-Reply-To: <CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>	<87lhrpayl4.fsf@igel.home>
+	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>	<87fvhwxps6.fsf@igel.home> <CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@linux-m68k.org>
+MIME-Version: 1.0
+Subject: Re: ls -l /proc/1/exe -> Permission denied
+X-KeepSent: CEE18EFA:1A4893C0-C1257D1B:003DFC8D;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Message-ID: <OFCEE18EFA.1A4893C0-ONC1257D1B.003DFC8D-C1257D1B.003E4142@transmode.se>
+Date: Sun, 20 Jul 2014 13:19:58 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
+ 20/07/2014 13:19:58,
+	Serialize complete at 20/07/2014 13:19:58
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code uses devm_regulator_register(), so the resource management code
-will ensure that the resource is freed.
+Richard Weinberger <richard.weinberger@gmail.com> wrote on 2014/07/20 
+13:06:30:
+> 
+> On Sun, Jul 20, 2014 at 12:55 PM, Andreas Schwab <schwab@linux-m68k.org> 
+wrote:
+> > Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
+> >
+> >> Andreas Schwab <schwab@linux-m68k.org> wrote on 2014/07/19 22:21:59:
+> >>>
+> >>> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
+> >>>
+> >>> > Trying to real /proc/<pid>/exe I noticed I could not read links 
+not
+> >>> > belonging to my user such as:
+> >>> > jocke >  ls -l /proc/1/exe
+> >>> >              ls: cannot read symbolic link /proc/1/exe: Permission
+> >> denied
+> >>> >
+> >>> > Is this expected?
+> >>>
+> >>> Yes.  This information is considered private.
+> >>
+> >> I don't understand why though.
+> >
+> > It would allow bypassing access restrictions.
+> 
+> Do you have an example?
+> I'm asking because an attacker could make any symlink as he wants to.
+> A ln -s /etc/shadow lala still does not give me access to shadow...
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/da9211-regulator.c | 28 ++++------------------------
- 1 file changed, 4 insertions(+), 24 deletions(-)
+precisely, I just want to see what it is pointing too.
+Also, the links privs are inconsistent with current behaviour:
+ lrwxrwxrwx   1 root root 0 Jul 15 19:03 exe
 
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index bd18506..1482ada 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -245,7 +245,7 @@ static int da9211_regulator_init(struct da9211 *chip)
- 	ret = regmap_read(chip->regmap, DA9211_REG_CONFIG_E, &data);
- 	if (ret < 0) {
- 		dev_err(chip->dev, "Failed to read CONTROL_E reg: %d\n", ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	data &= DA9211_SLAVE_SEL;
-@@ -259,9 +259,8 @@ static int da9211_regulator_init(struct da9211 *chip)
- 		else
- 			chip->num_regulator = 2;
- 	} else {
--		ret = -EINVAL;
- 		dev_err(chip->dev, "Configuration is mismatched\n");
--		goto err;
-+		return -EINVAL;
- 	}
- 
- 	for (i = 0; i < chip->num_regulator; i++) {
-@@ -278,8 +277,7 @@ static int da9211_regulator_init(struct da9211 *chip)
- 		if (IS_ERR(chip->rdev[i])) {
- 			dev_err(chip->dev,
- 				"Failed to register DA9211 regulator\n");
--			ret = PTR_ERR(chip->rdev[i]);
--			goto err_regulator;
-+			return PTR_ERR(chip->rdev[i]);
- 		}
- 
- 		if (chip->chip_irq != 0) {
-@@ -288,18 +286,12 @@ static int da9211_regulator_init(struct da9211 *chip)
- 			if (ret < 0) {
- 				dev_err(chip->dev,
- 					"Failed to update mask reg: %d\n", ret);
--				goto err_regulator;
-+				return ret;
- 			}
- 		}
- 	}
- 
- 	return 0;
--
--err_regulator:
--	while (--i >= 0)
--		devm_regulator_unregister(chip->dev, chip->rdev[i]);
--err:
--	return ret;
- }
- /*
-  * I2C driver interface functions
-@@ -353,17 +345,6 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 	return ret;
- }
- 
--static int da9211_i2c_remove(struct i2c_client *i2c)
--{
--	struct da9211 *chip = i2c_get_clientdata(i2c);
--	int i;
--
--	for (i = 0; i < chip->num_regulator; i++)
--		devm_regulator_unregister(chip->dev, chip->rdev[i]);
--
--	return 0;
--}
--
- static const struct i2c_device_id da9211_i2c_id[] = {
- 	{"da9211", 0},
- 	{},
-@@ -377,7 +358,6 @@ static struct i2c_driver da9211_regulator_driver = {
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = da9211_i2c_probe,
--	.remove = da9211_i2c_remove,
- 	.id_table = da9211_i2c_id,
- };
- 
--- 
-1.9.1
-
-
-
+ Jocke
