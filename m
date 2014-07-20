@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaGTT4K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:56:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58408 "EHLO
+	id S1753903AbaGTT42 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:56:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607AbaGTT4J (ORCPT
+	with ESMTP id S1753823AbaGTT41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:56:09 -0400
-Date: Sun, 20 Jul 2014 12:56:08 -0700
+	Sun, 20 Jul 2014 15:56:27 -0400
+Date: Sun, 20 Jul 2014 12:56:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [GIT PULL] Driver core fixes for 3.16-rc6
-Message-ID: <20140720195608.GA10437@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PULL] USB driver fixes for 3.16-rc6
+Message-ID: <20140720195626.GA13766@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,31 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
+The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
 
-  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
+  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.16-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.16-rc6
 
-for you to fetch changes up to aff008ad813c7cf3cfe7b532e7ba2c526c136f22:
+for you to fetch changes up to bb86cf569bbd7ad4dce581a37c7fbd748057e9dc:
 
-  platform_get_irq: Revert to platform_get_resource if of_irq_get fails (2014-07-11 18:06:36 -0700)
+  usb: Check if port status is equal to RxDetect (2014-07-17 17:14:01 -0700)
 
 ----------------------------------------------------------------
-driver core fix for 3.16-rc6
+USB fixes for 3.16-rc6
 
-Here is a single driver core fix that reverts an older patch that has
-been causing a number of reported problems with the platform devices.
-
-This revert has been in linux-next for a while with no reported issues.
+Here are 2 USB patches that resolve some reported issues, one with an
+odd HUB, and one in the chipidea driver.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Guenter Roeck (1):
-      platform_get_irq: Revert to platform_get_resource if of_irq_get fails
+Abbas Raza (1):
+      usb: chipidea: udc: Disable auto ZLP generation on ep0
 
- drivers/base/platform.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+Gavin Guo (1):
+      usb: Check if port status is equal to RxDetect
+
+ drivers/usb/chipidea/udc.c |  4 ++--
+ drivers/usb/core/hub.c     | 19 +++++++++++++++++++
+ 2 files changed, 21 insertions(+), 2 deletions(-)
