@@ -1,65 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaGTLUF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 07:20:05 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:51447 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995AbaGTLUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 07:20:04 -0400
-In-Reply-To: <CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
-References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>	<87lhrpayl4.fsf@igel.home>
-	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>	<87fvhwxps6.fsf@igel.home> <CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@linux-m68k.org>
+	id S1752158AbaGTLYH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 07:24:07 -0400
+Received: from smtp-out-201.synserver.de ([212.40.185.201]:1074 "EHLO
+	smtp-out-201.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672AbaGTLYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 07:24:05 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 27003
+Message-ID: <53CBA6CB.501@metafoo.de>
+Date: Sun, 20 Jul 2014 13:23:55 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-Subject: Re: ls -l /proc/1/exe -> Permission denied
-X-KeepSent: CEE18EFA:1A4893C0-C1257D1B:003DFC8D;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Message-ID: <OFCEE18EFA.1A4893C0-ONC1257D1B.003DFC8D-C1257D1B.003E4142@transmode.se>
-Date: Sun, 20 Jul 2014 13:19:58 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
- 20/07/2014 13:19:58,
-	Serialize complete at 20/07/2014 13:19:58
-Content-Type: text/plain; charset="US-ASCII"
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?B?ImVkZGllKOiUoeaeqyki?= <cf@rock-chips.com>,
+        huangtao@rock-chips.com
+Subject: Re: [PATCH v5 1/2] iio: adc: add driver for Rockchip saradc
+References: <3234956.d4q5ZB3IB8@diego> <2386463.CW7L8vIufx@diego>
+In-Reply-To: <2386463.CW7L8vIufx@diego>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard.weinberger@gmail.com> wrote on 2014/07/20 
-13:06:30:
-> 
-> On Sun, Jul 20, 2014 at 12:55 PM, Andreas Schwab <schwab@linux-m68k.org> 
-wrote:
-> > Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
-> >
-> >> Andreas Schwab <schwab@linux-m68k.org> wrote on 2014/07/19 22:21:59:
-> >>>
-> >>> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
-> >>>
-> >>> > Trying to real /proc/<pid>/exe I noticed I could not read links 
-not
-> >>> > belonging to my user such as:
-> >>> > jocke >  ls -l /proc/1/exe
-> >>> >              ls: cannot read symbolic link /proc/1/exe: Permission
-> >> denied
-> >>> >
-> >>> > Is this expected?
-> >>>
-> >>> Yes.  This information is considered private.
-> >>
-> >> I don't understand why though.
-> >
-> > It would allow bypassing access restrictions.
-> 
-> Do you have an example?
-> I'm asking because an attacker could make any symlink as he wants to.
-> A ln -s /etc/shadow lala still does not give me access to shadow...
+On 07/14/2014 10:43 PM, Heiko Stübner wrote:
 
-precisely, I just want to see what it is pointing too.
-Also, the links privs are inconsistent with current behaviour:
- lrwxrwxrwx   1 root root 0 Jul 15 19:03 exe
+Looks really good overall.
 
- Jocke
+[...]
+> +static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
+> +				    struct iio_chan_spec const *chan,
+> +				    int *val, int *val2, long mask)
+> +{
+> +	struct rockchip_saradc *info = iio_priv(indio_dev);
+> +	int ret;
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		mutex_lock(&indio_dev->mlock);
+> +
+> +		/* 8 clock periods as delay between power up and start cmd */
+> +		writel_relaxed(8, info->regs + SARADC_DLY_PU_SOC);
+> +
+
+It makes sense to call reinit_completion() here.
+
+> +		/* Select the channel to be used and trigger conversion */
+> +		writel(SARADC_CTRL_POWER_CTRL
+> +				| (chan->channel & SARADC_CTRL_CHN_MASK)
+> +				| SARADC_CTRL_IRQ_ENABLE,
+> +		       info->regs + SARADC_CTRL);
+> +
+> +		if (!wait_for_completion_timeout(&info->completion,
+> +						 SARADC_TIMEOUT)) {
+> +			writel_relaxed(0, info->regs + SARADC_CTRL);
+> +			mutex_unlock(&indio_dev->mlock);
+> +			return -ETIMEDOUT;
+> +		}
+> +
+> +		*val = info->last_val;
+> +		mutex_unlock(&indio_dev->mlock);
+> +		return IIO_VAL_INT;
+[...]
+> +static int rockchip_saradc_probe(struct platform_device *pdev)
+> +{
+> +	struct rockchip_saradc *info = NULL;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct iio_dev *indio_dev = NULL;
+> +	struct resource	*mem;
+> +	int ret;
+> +	int irq;
+> +	u32 rate;
+> +
+> +	if (!np)
+> +		return -ENODEV;
+> +
+> +	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
+> +	if (!indio_dev) {
+> +		dev_err(&pdev->dev, "failed allocating iio device\n");
+> +		return -ENOMEM;
+> +	}
+> +	info = iio_priv(indio_dev);
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
+
+devm_request_and_ioremap() is deprecated an will be removed in the next 
+release[1]. Use devm_ioremap_resource(), note that devm_ioremap_resource() 
+returns a ERR_PTR instead of NULL on error.
+
+[1] https://lkml.org/lkml/2014/6/11/26
+
+> +	if (!info->regs)
+> +		return -ENOMEM;
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0) {
+> +		dev_err(&pdev->dev, "no irq resource?\n");
+> +		return irq;
+> +	}
+> +
+> +	ret = devm_request_irq(&pdev->dev, irq, rockchip_saradc_isr,
+> +			       0, dev_name(&pdev->dev), info);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed requesting irq %d\n", irq);
+> +		return ret;
+> +	}
+> +
+> +	init_completion(&info->completion);
+
+Since the completion is used in the interrupt callback it must be 
+initialized before the interrupt is requested.
+
+> +
+[...]
+> +	/* use a default of 1MHz for the converter clock */
+> +	ret = of_property_read_u32(np, "clock-frequency", &rate);
+> +	if (ret < 0)
+> +		rate = 1000000;
+
+Should this really be in the devicetree or shouldn't this be user 
+configurable at runtime?
+
+[...]
