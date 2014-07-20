@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361AbaGTHci (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 03:32:38 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3315 "EHLO relay.sw.ru"
+	id S1750898AbaGTHmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 03:42:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33565 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823AbaGTHch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 03:32:37 -0400
-Message-ID: <53CB708B.7010508@parallels.com>
-Date: Sun, 20 Jul 2014 11:32:27 +0400
-From: Vasily Averin <vvs@parallels.com>
-Organization: Parallels
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+	id S1750699AbaGTHmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 03:42:24 -0400
+Date: Sun, 20 Jul 2014 09:42:16 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: weiyj_lk@163.com
+Cc: Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         linux-kernel@vger.kernel.org
-Subject: [patch v2] fs: umount on symlinlk leaks mnt count
-Content-Type: multipart/mixed;
- boundary="------------040500000309090907090709"
+Subject: Re: [PATCH -next] HSI: ssi_protocol: Fix sparse non static symbol
+ warning
+Message-ID: <20140720074215.GB19112@earth.universe>
+References: <1405833440-6731-1-git-send-email-weiyj_lk@163.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="TakKZr9L6Hm6aLOc"
+Content-Disposition: inline
+In-Reply-To: <1405833440-6731-1-git-send-email-weiyj_lk@163.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040500000309090907090709
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 
-v2: mntget(path->mnt) should not be called if mountpoint_last() returns 1.
+--TakKZr9L6Hm6aLOc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Currently umount on symlink blocks following umount:
+Hi,
 
-/vz is separate mount
+On Sun, Jul 20, 2014 at 01:17:20PM +0800, weiyj_lk@163.com wrote:
+> Fixes the following sparse warning:
+>=20
+> drivers/hsi/clients/ssi_protocol.c:904:6: warning:
+>  symbol 'ssip_port_event' was not declared. Should it be static?
+>=20
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-# ls /vz/ -al | grep test
-drwxr-xr-x.  2 root root       4096 Jul 19 01:14 testdir
-lrwxrwxrwx.  1 root root         11 Jul 19 01:16 testlink -> /vz/testdir
+Applied to linux-hsi.git:
 
-# umount -l /vz/testlink
-umount: /vz/testlink: not mounted (expected)
+https://git.kernel.org/cgit/linux/kernel/git/sre/linux-hsi.git/commit/?h=3D=
+for-next&id=3D0a0ea07d3dff0918484f01c576f098dd4911b1af
 
-# lsof /vz
-# umount /vz
-umount: /vz: device is busy. (unexpected)
+-- Sebastian
 
-In this case mountpoint_last() gets an extra refcount on path->mnt
+--TakKZr9L6Hm6aLOc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by:	Vasily Averin <vvs@openvz.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBCgAGBQJTy3LWAAoJENju1/PIO/qaiPYQAJIgKq+ZE4hBFBqm0o0YbKI8
+ddVQeq4EB9vZFObpYJTcy5rQcXhuqmvJ6EHM9HPTcO7SC80nEIUit2uAEr/34sbU
+peQ4CCt45kQ1aiDKrBbNdJsUkBeTpyV6nEAKfDzFVLfXRLg/gnXkpbji/K3eHd1G
+wToqJAKcLHP7YDhpskJzkbyqph0ppHTCm1Mh+MfnkT0EUDVaYnXmN5X1vZxOKzMG
+63h0Z+IgO7PV3hDrV0c4YsN0KhQbEgUXPvxH+ybz1raI6lR7AdZ+o6+jUC+aC6Qa
+WfAAmf5Imiyi+gCUByghI+aUb3Ag364v2j1ruysOXkrw0iqcipjI6oGqqZWBGxVD
+vpYO9cUtzVVGmgOCQSlz9R0No+dRIb1vxccqobP0BiECCVhxoJoW2tbFzdhZPx3H
+pzLD4Mf2k1H0NTAMhUQykOwvTEMtr1WNL97Q1MVDp2KYu5B03enHjE3XV0uRnRX8
+ZFwsQoDaLaH4AmJBNdoyCoUjzvGUnapRhEED5QlooqtFP2ZiKU4xQxZQvKVah6Ii
+Kx3kHBkFnRb8APhzexr25wvJlZBntjPHSc1tcXLovXh3TxxVEUN26lp6jWWBzlbV
+W77gXRDbKMbWDKrRobNh71g5M9s2aiXo/WPMRGOYntGDvoQhhhfJKaqdpDRyIus2
+z8pFOvuLYMvor0ddUvzJ
+=QNtt
+-----END PGP SIGNATURE-----
 
---------------040500000309090907090709
-Content-Type: text/plain; charset=us-ascii;
- name="diff-umount-symlink-ms-2"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="diff-umount-symlink-ms-2"
-
-ZGlmZiAtLWdpdCBhL2ZzL25hbWVpLmMgYi9mcy9uYW1laS5jCmluZGV4IDk4NWM2ZjMuLjll
-Yjc4N2UgMTAwNjQ0Ci0tLSBhL2ZzL25hbWVpLmMKKysrIGIvZnMvbmFtZWkuYwpAQCAtMjI1
-Niw5ICsyMjU2LDEwIEBAIGRvbmU6CiAJCWdvdG8gb3V0OwogCX0KIAlwYXRoLT5kZW50cnkg
-PSBkZW50cnk7Ci0JcGF0aC0+bW50ID0gbW50Z2V0KG5kLT5wYXRoLm1udCk7CisJcGF0aC0+
-bW50ID0gbmQtPnBhdGgubW50OwogCWlmIChzaG91bGRfZm9sbG93X2xpbmsoZGVudHJ5LCBu
-ZC0+ZmxhZ3MgJiBMT09LVVBfRk9MTE9XKSkKIAkJcmV0dXJuIDE7CisJbW50Z2V0KHBhdGgt
-Pm1udCk7CiAJZm9sbG93X21vdW50KHBhdGgpOwogCWVycm9yID0gMDsKIG91dDoK
---------------040500000309090907090709--
+--TakKZr9L6Hm6aLOc--
