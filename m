@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbaGTPTs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 11:19:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50623 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734AbaGTPTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 11:19:47 -0400
-Date: Sun, 20 Jul 2014 17:18:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] ftrace: kill global_start_up
-Message-ID: <20140720151814.GA32439@redhat.com>
+	id S1752610AbaGTPZi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 11:25:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57273 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaGTPZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 11:25:36 -0400
+Date: Sun, 20 Jul 2014 08:25:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Usyskin, Alexander" <alexander.usyskin@intel.com>
+Subject: Re: [char-misc-next 4/5] mei: nfc: clean nfc internal struct on host
+ exit
+Message-ID: <20140720152512.GA31382@kroah.com>
+References: <1405583618-8229-1-git-send-email-tomas.winkler@intel.com>
+ <1405583618-8229-5-git-send-email-tomas.winkler@intel.com>
+ <20140718013758.GA31846@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1C379CCB@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1C379CCB@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-global_start_up is read-only and always zero. It seems that 4104d326
-"ftrace: Remove global function list and call function directly" simply
-forgot to remove this no longer used variable.
+On Sun, Jul 20, 2014 at 06:30:16AM +0000, Winkler, Tomas wrote:
+> > > @@ -553,6 +553,7 @@ void mei_nfc_host_exit(struct mei_device *dev)
+> > >  {
+> > >  	struct mei_nfc_dev *ndev = &nfc_dev;
+> > >  	cancel_work_sync(&ndev->init_work);
+> > > +	memset(ndev, 0, sizeof(struct mei_nfc_dev));
+> > 
+> > This implies that something is using a "static" device structure, which
+> > isn't allowed by the driver core.  So please fix the root cause here,
+> > don't paper over the bug.
+> >
+> You are partially correct as this is not the 'struct device' it just a nfc singleton in any case it is not really nice
+> and  we have the fix in queue but it is rather extensive rework and  I guess it won't be suitable for stable
+> so hence this one liner fix.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/ftrace.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+It shouldn't be a huge rework to make a static variable dynamic, right?
+Please do it correctly.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5b372e3..4586f8d 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2053,7 +2053,6 @@ static void ftrace_run_update_code(int command)
- 
- static ftrace_func_t saved_ftrace_func;
- static int ftrace_start_up;
--static int global_start_up;
- 
- static void control_ops_free(struct ftrace_ops *ops)
- {
-@@ -2117,8 +2116,7 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 
- 	ftrace_hash_rec_disable(ops, 1);
- 
--	if (!global_start_up)
--		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-+	ops->flags &= ~FTRACE_OPS_FL_ENABLED;
- 
- 	command |= FTRACE_UPDATE_CALLS;
- 
--- 
-1.5.5.1
+thanks,
 
-
+greg k-h
