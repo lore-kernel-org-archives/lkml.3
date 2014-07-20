@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420AbaGTLvh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 07:51:37 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:46041 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbaGTLvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 07:51:36 -0400
-X-Auth-Info: QtIXhXpp3eS8ugGiRcpy/h2yKGdO/FTM4fBpjz7PvcY=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ls -l /proc/1/exe -> Permission denied
-References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>
-	<87lhrpayl4.fsf@igel.home>
-	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>
-	<87fvhwxps6.fsf@igel.home>
-	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
-X-Yow: CHUBBY CHECKER just had a CHICKEN SANDWICH in downtown DULUTH!
-Date: Sun, 20 Jul 2014 13:51:31 +0200
-In-Reply-To: <CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
-	(Richard Weinberger's message of "Sun, 20 Jul 2014 13:06:30 +0200")
-Message-ID: <87bnskxn7g.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.92 (gnu/linux)
+	id S1752771AbaGTLw0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 07:52:26 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061AbaGTLwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 07:52:17 -0400
+Message-ID: <53CBAD68.8040504@nod.at>
+Date: Sun, 20 Jul 2014 13:52:08 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: [PULL] UML fixes
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="UV1rdKwJaKx97B3NACALBi7FEmWdWcqeL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard.weinberger@gmail.com> writes:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--UV1rdKwJaKx97B3NACALBi7FEmWdWcqeL
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-> On Sun, Jul 20, 2014 at 12:55 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
->> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
->>
->>> Andreas Schwab <schwab@linux-m68k.org> wrote on 2014/07/19 22:21:59:
->>>>
->>>> Joakim Tjernlund <joakim.tjernlund@transmode.se> writes:
->>>>
->>>> > Trying to real /proc/<pid>/exe I noticed I could not read links not
->>>> > belonging to my user such as:
->>>> > jocke >  ls -l /proc/1/exe
->>>> >              ls: cannot read symbolic link /proc/1/exe: Permission
->>> denied
->>>> >
->>>> > Is this expected?
->>>>
->>>> Yes.  This information is considered private.
->>>
->>> I don't understand why though.
->>
->> It would allow bypassing access restrictions.
->
-> Do you have an example?
+Linus,
 
-proc symlinks are special because they actually resolve to the inode.
+The following changes since commit d057190925d994b808e1d07e6c76b90a32caac=
+77:
 
-Andreas.
+  Merge branch 'locking-urgent-for-linus' of git://git.kernel.org/pub/scm=
+/linux/kernel/git/tip/tip (2014-07-19 06:27:55 -1000)
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus
+
+for you to fetch changes up to bb6a1b2e189f797c0e4a116aec7ce77c344f11e0:
+
+  um: segv: Save regs only in case of a kernel mode fault (2014-07-20 13:=
+39:27 +0200)
+
+----------------------------------------------------------------
+Four fixes, all discovered by Trinity.
+----------------------------------------------------------------
+Richard Weinberger (4):
+      Revert "um: Fix wait_stub_done() error handling"
+      um: Ensure that a stub page cannot get unmapped
+      um: Fix hung task in fix_range_common()
+      um: segv: Save regs only in case of a kernel mode fault
+
+ arch/um/kernel/tlb.c            | 9 ++++++++-
+ arch/um/kernel/trap.c           | 2 +-
+ arch/um/os-Linux/skas/process.c | 9 ++-------
+ 3 files changed, 11 insertions(+), 9 deletions(-)
+
+Thanks,
+//richard
+
+
+--UV1rdKwJaKx97B3NACALBi7FEmWdWcqeL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTy61uAAoJEPmeIjfg4UaatjEP/1Wwtvhcv23OabCQydop9TwP
+JmCVCQBNs4Z0ic5hKGCtZoPKP18nn5WUuF4vfCXjjpwoFS9YPq4WOiBdRG7a5tk2
+6ZY1zYZ3jkNFhrL+B5AGtq1gZ8mJDcacM0HgMINuDUhmGjGREDKHxLI8gievAQJK
+Q/CReyUaX268Xm0SdIe7iMONh7zgho/xsbHGJ5DI3BlaEp1FbEz1dfmCbgJ6I1nc
+r90kCzh/bnwXKOSEpfiH5hTSKU3PBFFkXUQ1DWvC1rG7WcyoWHmjXk3CDHwN0uJH
+RL1f1lpdTdWCdXLU1EpZhmPPhoXN0HHPMO7LPl9isuiNRiJATfOUZxK91SjDhpeG
+658gC4u/2ghctlif29pYt64RIvXXUkaONFTBmXSGWnWIhVx5GqVRZ2U5ttOtLSCF
+SqGpBCgAH2NhJJtJSYHA0Gs+alpNossVkS0APywSXU1FmLaeYOo2T+J+w4czO2xH
+afPCPHhWt7Y/hz2XSUTqWzxzogyiskvVAuEL7CbbL2SCV3pkNJ1WpPJezZe3IIZG
+lFFsTDP1SXMPx4L265yC5ZjxkS5sI1/TvFrqqrbA6Ss81oHxVun5VmklaAbdoZzc
+I9daZPiPxD5m01hKlshiU/UA+9LT5eYSfe991amXoyNZkzCQ7svo8DW0watM9Ojc
+nZdLvaXdEyaw8xkiBnIn
+=7aWA
+-----END PGP SIGNATURE-----
+
+--UV1rdKwJaKx97B3NACALBi7FEmWdWcqeL--
