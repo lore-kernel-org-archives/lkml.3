@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaGTJps (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 05:45:48 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091AbaGTJpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 05:45:45 -0400
-Message-ID: <53CB8FBF.2070206@nod.at>
-Date: Sun, 20 Jul 2014 11:45:35 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751617AbaGTJqF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 05:46:05 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:37469 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaGTJpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 05:45:53 -0400
+Message-ID: <53CB8FC4.4050009@gmail.com>
+Date: Sun, 20 Jul 2014 17:45:40 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>,
+To: Lennox Wu <lennox.wu@gmail.com>
+CC: Richard Weinberger <richard@nod.at>, Arnd Bergmann <arnd@arndb.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
         Guenter Roeck <linux@roeck-us.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-iio@vger.kernel.org,
@@ -24,22 +26,20 @@ CC: Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>,
         linux-input@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, cmetcalf@tilera.com,
+        heiko.carstens@de.ibm.com
 Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
  'devm_ioremap_resource'
 References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7A819.40403@metafoo.de> <6485666.LVFO2YCEQx@wuerfel> <53C8114D.30601@nod.at> <53C86C10.2000608@gmail.com> <53C8CE59.3060103@nod.at> <53C8FA78.1020501@gmail.com> <53C8FC1E.9090003@nod.at> <CAF0htA6Vvp+d4=wPuqJJhT+FxEUoT9mbJ3_NQuEJTP-hniS-KQ@mail.gmail.com> <53C9612E.3040001@gmail.com> <53CB801D.1030603@gmail.com>
 In-Reply-To: <53CB801D.1030603@gmail.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 20.07.2014 10:38, schrieb Chen Gang:
+On 07/20/2014 04:38 PM, Chen Gang wrote:
 > On 07/19/2014 02:02 AM, Chen Gang wrote:
 >>> 2014-07-18 18:51 GMT+08:00 Richard Weinberger <richard@nod.at>:
 >>>> Am 18.07.2014 12:44, schrieb Chen Gang:
@@ -97,14 +97,31 @@ Am 20.07.2014 10:38, schrieb Chen Gang:
 > Next, I shall:
 > 
 >  - Remove HAS_IOMEM and NO_IOMEM from kernel, firstly.
-
-This needs to be last, otherwise lot's of stuff will break.
-
+> 
 >  - Try to make dummy IOMEM functions for score architecture.
 > 
 >  - Continue discussing with UML for it.
+>
+ 
+Oh, sorry, I forgot, after remove IOMEM from kernel, also s390 and tile
+need implement dummy IOMEM if !PCI.
 
-If you find sane dummy functions for both UML and score I'm fine with it.
+If possible, I shall try to implement the dummy IOMEM in 'asm-generic',
+and let uml, score, s390 and tile use them when they need.
 
-Thanks,
-//richard
+> 
+> By the way: how about HAS_DMA? can we treat it as HAS_IOMEM (remove
+> it from kernel)? (for me, I guess we can not).
+> 
+> 
+> At present, I shall finish sending patch for removing IOMEM today, and
+> continue to welcome any ideas, suggestions or completions for IOMEM or
+> DMA.
+> 
+> 
+
+Thanks.
+-- 
+Chen Gang
+
+Open share and attitude like air water and life which God blessed
