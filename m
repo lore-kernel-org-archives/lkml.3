@@ -1,365 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaGTAKh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jul 2014 20:10:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53747 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504AbaGTAKg (ORCPT
+	id S1754810AbaGTA20 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jul 2014 20:28:26 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:54931 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504AbaGTA2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jul 2014 20:10:36 -0400
-Date: Sat, 19 Jul 2014 17:10:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Wang YanQing <udknight@gmail.com>, linus.walleij@linaro.org,
-        jhovold@gmail.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio:gpio-pl2303: add gpio driver for GPIOs on PL2303
-Message-ID: <20140720001011.GA2684@kroah.com>
-References: <20140720000131.GA2158@udknight>
+	Sat, 19 Jul 2014 20:28:24 -0400
+Message-ID: <53CB0D25.1030508@gmail.com>
+Date: Sat, 19 Jul 2014 17:28:21 -0700
+From: Matthew Rushton <mvrushton@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140720000131.GA2158@udknight>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, msw@amazon.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Matt Rushton <mrushton@amazon.com>
+Subject: Re: [PATCH] xen/setup: Remap Xen Identity Mapped RAM
+References: <1401993794-27084-1-git-send-email-mrushton@amazon.com> <20140610143055.GA31059@laptop.dumpdata.com> <53BA5FBE.1020401@gmail.com> <20140708155713.GD2863@laptop.dumpdata.com>
+In-Reply-To: <20140708155713.GD2863@laptop.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 08:01:31AM +0800, Wang YanQing wrote:
-> PL2303HX has two GPIOs, this patch add driver for it.
-> 
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
-> ---
->  MAINTAINERS                 |   5 +
->  drivers/gpio/Kconfig        |   7 ++
->  drivers/gpio/Makefile       |   1 +
->  drivers/gpio/gpio-pl2303.c  | 238 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/usb/serial/pl2303.c |  19 ++++
->  5 files changed, 270 insertions(+)
->  create mode 100644 drivers/gpio/gpio-pl2303.c
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 53feaaf..4a9d764 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6903,6 +6903,11 @@ F:	drivers/i2c/busses/i2c-puv3.c
->  F:	drivers/video/fb-puv3.c
->  F:	drivers/rtc/rtc-puv3.c
->  
-> +PL2303 GPIO DRIVER
-> +M:	Wang YanQing <udknight@gmail.com>
-> +S:	Maintained
-> +F:	drivers/gpio/gpio-pl2303.c
-> +
->  PMBUS HARDWARE MONITORING DRIVERS
->  M:	Guenter Roeck <linux@roeck-us.net>
->  L:	lm-sensors@lm-sensors.org
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 4a1b511..0f90950 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -110,6 +110,13 @@ config GPIO_DA9055
->  config GPIO_MAX730X
->  	tristate
->  
-> +config GPIO_PL2303
-> +	tristate "USB Prolific 2303 gpio support"
-> +	depends on USB_SERIAL_PL2303
-> +	help
-> +	  Enable support for GPIOs on USB Prolific 2303
-> +	  It support two GPIOs on PL2303HX currently.
-> +
->  comment "Memory mapped GPIO drivers:"
->  
->  config GPIO_CLPS711X
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index d10f6a9..4ff59f6 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -101,3 +101,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
->  obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
->  obj-$(CONFIG_GPIO_XTENSA)	+= gpio-xtensa.o
->  obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
-> +obj-$(CONFIG_GPIO_PL2303)	+= gpio-pl2303.o
-> diff --git a/drivers/gpio/gpio-pl2303.c b/drivers/gpio/gpio-pl2303.c
-> new file mode 100644
-> index 0000000..a703440
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-pl2303.c
-> @@ -0,0 +1,238 @@
-> +/*
-> + * PL2303 GPIO driver
-> + *
-> + * Copyright (C) 2014 Wang YanQing <udknight@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * Check pl2303.c for further details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/usb.h>
-> +#include <linux/gpio.h>
-> +
-> +#define VENDOR_READ_REQUEST_TYPE	0xc0
-> +#define VENDOR_READ_REQUEST		0x01
-> +
-> +#define VENDOR_WRITE_REQUEST_TYPE	0x40
-> +#define VENDOR_WRITE_REQUEST		0x01
-> +
-> +struct pl2303_gpio_data {
-> +	struct usb_device *pl2303;
-> +	/*
-> +	 * 0..3: unknown (zero)
-> +	 * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
-> +	 * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
-> +	 * 6: gp0 pin value
-> +	 * 7: gp1 pin value
-> +	 */
-> +	u8 index;
-> +	struct gpio_chip gpio_chip;
-> +};
-> +
-> +static inline struct pl2303_gpio_data *to_pl2303_gpio(struct gpio_chip *chip)
-> +{
-> +	return container_of(chip, struct pl2303_gpio_data, gpio_chip);
-> +}
-> +
-> +static int pl2303_gpio_read(struct gpio_chip *chip, unsigned char buf[1])
-> +{
-> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
-> +	struct usb_device *pl2303 = pl2303_gpio->pl2303;
-> +	struct device *dev = chip->dev;
-> +	int res;
-> +
-> +	res = usb_control_msg(pl2303, usb_rcvctrlpipe(pl2303, 0),
-> +			VENDOR_READ_REQUEST, VENDOR_READ_REQUEST_TYPE,
-> +			0x0081, 0, buf, 1, 100);
-> +	if (res != 1) {
-> +		dev_err(dev, "%s - failed to read [%04x]: %d\n", __func__,
-> +			0x0081, res);
-> +		if (res >= 0)
-> +			res = -EIO;
-> +
-> +		return res;
-> +	}
-> +
-> +	dev_dbg(dev, "%s - [%04x] = %02x\n", __func__, 0x0081, buf[0]);
-> +
-> +	return 0;
-> +}
-> +
-> +static int pl2303_gpio_write(struct gpio_chip *chip)
-> +{
-> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
-> +	struct usb_device *pl2303 = pl2303_gpio->pl2303;
-> +	struct device *dev = chip->dev;
-> +	int res;
-> +
-> +	dev_dbg(dev, "%s - [%04x] = %02x\n", __func__, 1, pl2303_gpio->index);
-> +
-> +	res = usb_control_msg(pl2303, usb_sndctrlpipe(pl2303, 0),
-> +			VENDOR_WRITE_REQUEST, VENDOR_WRITE_REQUEST_TYPE,
-> +			1, pl2303_gpio->index, NULL, 0, 100);
-> +	if (res) {
-> +		dev_err(dev, "%s - failed to write [%04x] = %02x: %d\n", __func__,
-> +			1, pl2303_gpio->index, res);
-> +		return res;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int pl2303_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
-> +
-> +	if (offset == 0)
-> +		pl2303_gpio->index &= ~0x10;
-> +	else if (offset == 1)
-> +		pl2303_gpio->index &= ~0x20;
-> +	else
-> +		return -EINVAL;
-> +
-> +	pl2303_gpio_write(chip);
-> +	return 0;
-> +}
-> +
-> +static int pl2303_gpio_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-> +{
-> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
-> +
-> +	if (offset == 0) {
-> +		pl2303_gpio->index |= 0x10;
-> +		if (value)
-> +			pl2303_gpio->index |= 0x40;
-> +		else
-> +			pl2303_gpio->index &= ~0x40;
-> +	} else if (offset == 1) {
-> +		pl2303_gpio->index |= 0x20;
-> +		if (value)
-> +			pl2303_gpio->index |= 0x80;
-> +		else
-> +			pl2303_gpio->index &= ~0x80;
-> +	} else {
-> +		return -EINVAL;
-> +	}
-> +
-> +	pl2303_gpio_write(chip);
-> +	return 0;
-> +}
-> +
-> +static void pl2303_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-> +{
-> +	struct pl2303_gpio_data *pl2303_gpio = to_pl2303_gpio(chip);
-> +
-> +	if (offset == 0) {
-> +		if (value)
-> +			pl2303_gpio->index |= 0x40;
-> +		else
-> +			pl2303_gpio->index &= ~0x40;
-> +	} else if (offset == 1) {
-> +		if (value)
-> +			pl2303_gpio->index |= 0x80;
-> +		else
-> +			pl2303_gpio->index &= ~0x80;
-> +	} else {
-> +		return;
-> +	}
-> +
-> +	pl2303_gpio_write(chip);
-> +}
-> +
-> +static int pl2303_gpio_get(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	unsigned char buf[1];
-> +	int value = 0;
-> +
-> +	if(pl2303_gpio_read(chip, buf) < 1)
-> +		return -EIO;
-> +	if (offset == 0)
-> +		value = buf[0] & 0x40;
-> +	else if (offset == 1)
-> +		value = buf[0] & 0x80;
-> +	else
-> +		return -EINVAL;
-> +	return value;
-> +}
-> +
-> +static struct gpio_chip template_chip = {
-> +	.label			= "pl2303-gpio",
-> +	.owner			= THIS_MODULE,
-> +	.direction_input	= pl2303_gpio_direction_in,
-> +	.get			= pl2303_gpio_get,
-> +	.direction_output	= pl2303_gpio_direction_out,
-> +	.set			= pl2303_gpio_set,
-> +	.can_sleep		= 1,
-> +};
-> +
-> +static int pl2303_gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct usb_device *pl2303 = platform_get_drvdata(pdev);
-> +	struct pl2303_gpio_data *pl2303_gpio;
-> +	int ret;
-> +
-> +	pl2303_gpio = kzalloc(sizeof(*pl2303_gpio), GFP_KERNEL);
-> +	if (pl2303_gpio == NULL)
-> +		return -ENOMEM;
-> +
-> +	/* initialize gpio0,gpio1 for input as default*/
-> +	pl2303_gpio->index = 0x00;
-> +	pl2303_gpio->pl2303 = pl2303;
-> +	pl2303_gpio->gpio_chip = template_chip;
-> +	pl2303_gpio->gpio_chip.ngpio = 2;
-> +	pl2303_gpio->gpio_chip.base = -1;
-> +	pl2303_gpio->gpio_chip.dev = &pdev->dev;
-> +	pl2303_gpio_write(&pl2303_gpio->gpio_chip);
-> +
-> +	ret = gpiochip_add(&pl2303_gpio->gpio_chip);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
-> +		return ret;
-> +	}
-> +	platform_set_drvdata(pdev, pl2303_gpio);
-> +
-> +	return ret;
-> +}
-> +
-> +static int pl2303_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct pl2303_gpio_data *pl2303_gpio = platform_get_drvdata(pdev);
-> +
-> +	if (gpiochip_remove(&pl2303_gpio->gpio_chip))
-> +		dev_err(&pdev->dev, "unable to remove gpio_chip?\n");
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(pl2303_gpio);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver pl2303_gpio_driver = {
-> +	.driver.name	= "pl2303-gpio",
-> +	.driver.owner	= THIS_MODULE,
-> +	.probe		= pl2303_gpio_probe,
-> +	.remove		= pl2303_gpio_remove,
-> +};
-> +
-> +static int __init pl2303_gpio_init(void)
-> +{
-> +	return platform_driver_register(&pl2303_gpio_driver);
-> +}
-> +module_init(pl2303_gpio_init);
-> +
-> +static void __exit pl2303_gpio_exit(void)
-> +{
-> +	platform_driver_unregister(&pl2303_gpio_driver);
-> +}
-> +module_exit(pl2303_gpio_exit);
-> +
-> +MODULE_AUTHOR("Wang YanQing <udknight@gmail.com>");
-> +MODULE_DESCRIPTION("GPIO driver for PL2303");
-> +MODULE_LICENSE("GPL");
-> +MODULE_DESCRIPTION("platform:pl2303-gpio");
-> diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-> index b3d5a35..1bb8928 100644
-> --- a/drivers/usb/serial/pl2303.c
-> +++ b/drivers/usb/serial/pl2303.c
-> @@ -28,6 +28,7 @@
->  #include <linux/usb.h>
->  #include <linux/usb/serial.h>
->  #include <asm/unaligned.h>
-> +#include <linux/platform_device.h>
->  #include "pl2303.h"
->  
->  
-> @@ -146,6 +147,7 @@ struct pl2303_type_data {
->  struct pl2303_serial_private {
->  	const struct pl2303_type_data *type;
->  	unsigned long quirks;
-> +	struct platform_device *pdev;
->  };
->  
->  struct pl2303_private {
-> @@ -261,7 +263,22 @@ static int pl2303_startup(struct usb_serial *serial)
->  		pl2303_vendor_write(serial, 2, 0x44);
->  
->  	kfree(buf);
-> +	if (type != TYPE_HX)
-> +		return 0;
->  
-> +	spriv->pdev = platform_device_alloc("pl2303-gpio", PLATFORM_DEVID_AUTO);
+On 07/08/14 08:57, Konrad Rzeszutek Wilk wrote:
+> Responding :-)
+>>
+>> @@ -797,10 +794,9 @@ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
+>>   		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
+>>   			break;
+>> -	if (!WARN((pfn - pfn_s) != (pfn_e - pfn_s),
+>> +	WARN((pfn - pfn_s) != (pfn_e - pfn_s),
+>>   		"Identity mapping failed. We are %ld short of 1-1 mappings!\n",
+>> -		(pfn_e - pfn_s) - (pfn - pfn_s)))
+>> -		printk(KERN_DEBUG "1-1 mapping on %lx->%lx\n", pfn_s, pfn);
+>> +		(pfn_e - pfn_s) - (pfn - pfn_s));
+>>> I would leave that as is. If you really want to modify it - spin another
+>>> patch for it.
+>> The problem is because we now call set_phys_range_identity() on small blocks
+>> the number of these messages printed is large. I can split it out to a
+>> separate patch if you'd like.
+> Please do. Also you would have to rebase all this code on the latest Linus's
+> tree as there are some changes there.
 
-It's a USB device, not a "platform" device at all, so don't try to fit
-it into the platform device model.
+I posted a v2 which split this patch out, addressed feedback and rebased 
+on Linus's tree.
 
-Just add the gpio code here to the pl2303.c driver, and hang the gpio
-stuff off of the USB device, like it really is in the system, don't make
-things up.
 
-thanks,
+>>>>   	return pfn - pfn_s;
+>>>>   }
+>>>> diff --git a/arch/x86/xen/p2m.h b/arch/x86/xen/p2m.h
+>>>> new file mode 100644
+>>>> index 0000000..9ce4d51
+>>>> --- /dev/null
+>>>> +++ b/arch/x86/xen/p2m.h
+>>>> @@ -0,0 +1,15 @@
+>>>> +#ifndef _XEN_P2M_H
+>>>> +#define _XEM_P2M_H
+>>>> +
+>>>> +#define P2M_PER_PAGE        (PAGE_SIZE / sizeof(unsigned long))
+>>>> +#define P2M_MID_PER_PAGE    (PAGE_SIZE / sizeof(unsigned long *))
+>>>> +#define P2M_TOP_PER_PAGE    (PAGE_SIZE / sizeof(unsigned long **))
+>>>> +
+>>>> +#define MAX_P2M_PFN         (P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE)
+>>>> +
+>>>> +#define MAX_REMAP_RANGES    10
+>>> Could you mention why 10 please?
+>> 10 is simply what I thought a reasonable max could ever be for the number of
+>> remapped ranges. A range here is defined as the combination of a contiguous
+>> e820 I/O range and a contiguous e820 RAM range where the underlying I/O
+>> memory will be remapped. I'm not really excited about this but I don't have
+>> a better solution. Any ideas? I believe the original implementation has a
+>> similar issue that it appears to ignore.
+> Is that based on a worst case scenario? As in could you write in the comment
+> an example of a worst case E820 and scenario and when would 10 be more than
+> enough to cover it?
+>
 
-greg k-h
+I changed reserved brk space slightly in my updated patch. Really 
+MAX_REMAP_RANGES in the worst case should be E820MAX. That seems like an 
+unrealistic worst case though and a lot of space to reserve. I'm fairly 
+certain the existing code also has a similar worst case which it doesn't 
+take into account. It currently seems to assume there is only one E820 
+I/O region that will be identity mapped? I think it works because in 
+practice we don't come close to the worst case. I'm still not sure how 
+to best handle this.
+
+>>>> +	mod = remap_pfn % P2M_PER_PAGE;
+>>>> +	remap_start_pfn_align =
+>>>> +		mod ? (remap_pfn - mod + P2M_PER_PAGE):remap_pfn;
+>>>> +	mod = (start_pfn + size) % P2M_PER_PAGE;
+>>>> +	ident_end_pfn_align = start_pfn + size - mod;
+>>>> +	mod = (remap_pfn + size) % P2M_PER_PAGE;
+>>>> +	remap_end_pfn_align = remap_pfn + size - mod;
+>>> Should you do a check to make sure that 'ident_[start|end]_pfn_align'
+>>> don't overlap with 'remap_[start|end]_pfn_align' ?
+>>>
+>>>> +
+>>>> +	/* Iterate over each p2m leaf node in each range */
+>>>> +	for (ident_pfn_iter = ident_start_pfn_align, remap_pfn_iter = remap_start_pfn_align;
+>>>> +	     ident_pfn_iter < ident_end_pfn_align && remap_pfn_iter < remap_end_pfn_align;
+>>>> +	     ident_pfn_iter += P2M_PER_PAGE, remap_pfn_iter += P2M_PER_PAGE) {
+>>>> +		/* Check we aren't past the end */
+>>>> +		BUG_ON(ident_pfn_iter + P2M_PER_PAGE > start_pfn + size);
+>>>> +		BUG_ON(remap_pfn_iter + P2M_PER_PAGE > remap_pfn + size);
+>>> Ah, here you check for it. But wouldn't it be easier to adjust the
+>>> remap_[start|end]_pfn_align above to check for this and make changes?
+>> The ident_* and remap_* address ranges will never overlap each other unless
+>> the e820 map is broken. I'm treating both ranges as independent and
+> Right.
+>> iterating over each seperately at the same time. Each range will have
+>> different boundary conditions potentially. Does that make sense? Am I
+>> understanding the comment correctly?
+> I was thinking that if the E820 is broken then try our best (and stop
+> trying to remap) and continue. The E820 is guaranteed to be sane (no
+> overlapping regions), but the sizes could be bogus (zero size for example).
+
+I think the current code does handle the zero case ok.
+
+>>>> +
+>>>> +		/* Save p2m mappings */
+>>>> +		for (i = 0; i < P2M_PER_PAGE; i++)
+>>>> +			xen_remap_buf[i] = pfn_to_mfn(ident_pfn_iter + i);
+>>>> +
+>>>> +		/* Set identity map which also frees a p2m leaf */
+>>>                                                 ^- might
+>> Under what conditions is this not true? The goal of processing these in
+>> blocks is to guarantee that a leaf is freed.
+> Perhaps change it 'also frees' to 'MUST free'
+> and then have (debug code) to double-check that Naturally
+> after calling the early_set_phys_identity?
+>
+> 	for (i = 0; i < P2M_PER_PAGE; i++) {
+> 		unsigned int pfn = ident_pfn_iter + i;
+> 		BUG_ON(pfn_to_mfn(pfn) != INVALID_P2M_ENTRY)
+> ?
+I added a debug check. It must check for the identity page and not 
+INVALID_P2M_ENTRY however.
+
+>>>> +		ident_cnt += set_phys_range_identity(ident_pfn_iter,
+>>>> +			ident_pfn_iter + P2M_PER_PAGE);
+>>>> +
+>>>> +		/* Now remap memory */
+>>>> +		for (i = 0; i < P2M_PER_PAGE; i++) {
+>>>> +			unsigned long mfn = xen_remap_buf[i];
+>>>> +			struct mmu_update update = {
+>>>> +				.ptr = (mfn << PAGE_SHIFT) |
+>>>> +					MMU_MACHPHYS_UPDATE,
+>>>> +				.val = remap_pfn_iter + i
+>>>> +			};
+>>>> +
+>>>> +			/* Update p2m, will use the page freed above */
+>>> What page freed above?
+>> See above comment.
+> Perhaps 'use the page free above' with 'use the P2M leaf freed above'.
+ACK
+
+
