@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaGTEKo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 00:10:44 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:38550 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaGTEKn (ORCPT
+	id S1752794AbaGTELS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 00:11:18 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43033 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaGTELR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 00:10:43 -0400
-Message-ID: <53CB413B.4090409@gmail.com>
-Date: Sun, 20 Jul 2014 00:10:35 -0400
-From: "Roberto J. Dohnert" <rjdohnert@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Arm Build Failing
-References: <CAPDOMVh9knmN1y-LZWvsAKcrKKPQsi0+skNG1D0aQgP+hg3ssQ@mail.gmail.com>
-In-Reply-To: <CAPDOMVh9knmN1y-LZWvsAKcrKKPQsi0+skNG1D0aQgP+hg3ssQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 20 Jul 2014 00:11:17 -0400
+From: Phong Tran <tranmanphong@gmail.com>
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org, ccross@android.com,
+        tranmanphong@gmail.com, fabio.estevam@freescale.com,
+        rebecca@android.com, benjamin.gaignard@linaro.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: android: ion: ion_cma_heap.c: Fix checkpatch warning
+Date: Sun, 20 Jul 2014 11:10:55 +0700
+Message-Id: <1405829455-5866-1-git-send-email-tranmanphong@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like its trying to invoke the native (x86) compiler, but 
-passing it options that only make sense to an ARM compiler.
+This patch fix coding style:
 
-Cheers
+- Remove "fail memory allocation" waring
+- Remove return of void function
 
-Roberto J. Dohnert
-Roberto J. Dohnert
-Lead Developer
-Black Lab Software Inc.
-PO Box 698
-Franklinton NC 27525
-http://www.pc-opensystems.com
-http://www.blacklablinux.org
+Tested by compilation only
 
-On 07/20/2014 12:03 AM, Nick Krause wrote:
-> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-m64’
-> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-mno-mmx’
-> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-mno-sse’
-> arm-linux-gnueabihf-gcc: error: unrecognized command line option ‘-mno-red-zone’
-> arm-linux-gnueabihf-gcc: error: unrecognized command line option
-> ‘-mcmodel=kernel’
-> This happens every time I try to build new arch code this week. Is there a easy
-> fix for this?
-> Cheers Nick
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Phong Tran <tranmanphong@gmail.com>
+---
+ drivers/staging/android/ion/ion_cma_heap.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/android/ion/ion_cma_heap.c b/drivers/staging/android/ion/ion_cma_heap.c
+index ce68ecf..f8cabcb 100644
+--- a/drivers/staging/android/ion/ion_cma_heap.c
++++ b/drivers/staging/android/ion/ion_cma_heap.c
+@@ -76,10 +76,8 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
+ 		return -EINVAL;
+ 
+ 	info = kzalloc(sizeof(struct ion_cma_buffer_info), GFP_KERNEL);
+-	if (!info) {
+-		dev_err(dev, "Can't allocate buffer info\n");
++	if (!info)
+ 		return ION_CMA_ALLOCATE_FAILED;
+-	}
+ 
+ 	info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
+ 						GFP_HIGHUSER | __GFP_ZERO);
+@@ -90,10 +88,8 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
+ 	}
+ 
+ 	info->table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
+-	if (!info->table) {
+-		dev_err(dev, "Fail to allocate sg table\n");
++	if (!info->table)
+ 		goto free_mem;
+-	}
+ 
+ 	if (ion_cma_get_sgtable
+ 	    (dev, info->table, info->cpu_addr, info->handle, len))
+@@ -155,7 +151,6 @@ static struct sg_table *ion_cma_heap_map_dma(struct ion_heap *heap,
+ static void ion_cma_heap_unmap_dma(struct ion_heap *heap,
+ 				   struct ion_buffer *buffer)
+ {
+-	return;
+ }
+ 
+ static int ion_cma_mmap(struct ion_heap *mapper, struct ion_buffer *buffer,
+-- 
+1.9.3
 
