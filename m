@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449AbaGTJeN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 05:34:13 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:42123 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaGTJeM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 05:34:12 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCHv2] Staging: vt6655: Remove redundant comments in wcmd.h
-Date: Sun, 20 Jul 2014 12:34:00 +0300
-Message-Id: <1405848840-5996-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751485AbaGTJps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 05:45:48 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091AbaGTJpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 05:45:45 -0400
+Message-ID: <53CB8FBF.2070206@nod.at>
+Date: Sun, 20 Jul 2014 11:45:35 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tom Gundersen <teg@jklm.no>, Thierry Reding <thierry.reding@gmail.com>,
+        Marek Vasut <marex@denx.de>, Liqin Chen <liqin.linux@gmail.com>,
+        msalter@redhat.com, linux-pwm@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+References: <201407130545.23004.marex@denx.de> <6823014.2plXDE9VA9@wuerfel> <53C7A819.40403@metafoo.de> <6485666.LVFO2YCEQx@wuerfel> <53C8114D.30601@nod.at> <53C86C10.2000608@gmail.com> <53C8CE59.3060103@nod.at> <53C8FA78.1020501@gmail.com> <53C8FC1E.9090003@nod.at> <CAF0htA6Vvp+d4=wPuqJJhT+FxEUoT9mbJ3_NQuEJTP-hniS-KQ@mail.gmail.com> <53C9612E.3040001@gmail.com> <53CB801D.1030603@gmail.com>
+In-Reply-To: <53CB801D.1030603@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant comments in the header file wcmd.h
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
----
-Changes v2: I've missed another redundant comment "//ms"
- so I've deleted it and added "vt6655" to the patch subject
 
- drivers/staging/vt6655/wcmd.h |   15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+Am 20.07.2014 10:38, schrieb Chen Gang:
+> On 07/19/2014 02:02 AM, Chen Gang wrote:
+>>> 2014-07-18 18:51 GMT+08:00 Richard Weinberger <richard@nod.at>:
+>>>> Am 18.07.2014 12:44, schrieb Chen Gang:
+>>>>> On 07/18/2014 03:35 PM, Richard Weinberger wrote:
+>>>>>> Am 18.07.2014 02:36, schrieb Chen Gang:
+>>>>>>>
+>>>>>>> On 07/18/2014 02:09 AM, Richard Weinberger wrote:
+>>>>>>>> Am 17.07.2014 12:48, schrieb Arnd Bergmann:
+>>>>>>>>> AFAICT, NO_IOMEM only has a real purpose on UML these days. Could we take
+>>>>>>>>> a shortcut here and make COMPILE_TEST depend on !UML? Getting random stuff
+>>>>>>>>> to build on UML seems pointless to me and we special-case it in a number of
+>>>>>>>>> places already.
+>>>>>>>>
+>>>>>>>> If UML is the only arch without io memory the dependency on !UML seems
+>>>>>>>> reasonable to me. :-)
+>>>>>>>>
+>>>>>>>
+>>>>>>> For me, if only uml left, I suggest to implement dummy functions within
+>>>>>>> uml instead of let CONFIG_UML appear in generic include directory. And
+>>>>>>> then remove all HAS_IOMEM and NO_IOMEM from kernel.
+>>>>>>
+>>>>>> Erm, this is something completely different.
+>>>>>> I thought we're focusing on COMPILE_TEST?
+>>>>>>
+>>>>>
+>>>>> COMPILE_TEST is none-architecture specific, but UML is. So in generic
+>>>>> include folder, if we're focusing on choosing whether COMPILE_TEST or
+>>>>> UML, for me, I will choose COMPILE_TEST.
+>>>>>
+>>>>> If we're not only focusing on COMPILE_TEST, for me, if something only
+>>>>> depend on one architecture, I'd like to put them under "arch/*/" folder.
+>>>>>
+>>>>> Especially, after that, we can remove all HAS_IOMEM and NO_IOMEM, nobody
+>>>>> has to think of them again. :-)
+>>>>
+>>>> And then we end up with a solution that on UML a lot of completely useless
+>>>> drivers are build which fail in various interesting manners because you'll
+>>>> add stubs for all kinds of io memory related functions to arch/um/?
+>>>> We had this kind of discussion already. You'll need more than ioremap...
+>>>>
+>>>> I like Arnd's idea *much* more to make COMPILE_TEST depend on !UML.
+>>>>
+>>
+>> That will let UML itself against COMPILE_TEST (but all the other
+>> architectures not).
+>>
+>> And if let COMPILE_TEST depend on !UML, can we still remove all
+>> HAS_IOMEM and NO_IOMEM from kernel? (I guess so).
+>>
+>> If we can remove them, we can send related patch firstly -- that will
+>> let current discussion be in UML architecture wide instead of kernel
+>> wide.
+>>
+> 
+> Next, I shall:
+> 
+>  - Remove HAS_IOMEM and NO_IOMEM from kernel, firstly.
 
-diff --git a/drivers/staging/vt6655/wcmd.h b/drivers/staging/vt6655/wcmd.h
-index 2844476..126b61c 100644
---- a/drivers/staging/vt6655/wcmd.h
-+++ b/drivers/staging/vt6655/wcmd.h
-@@ -33,12 +33,9 @@
- #include "80211hdr.h"
- #include "80211mgr.h"
- 
--/*---------------------  Export Definitions -------------------------*/
-+#define AUTHENTICATE_TIMEOUT   1000
-+#define ASSOCIATE_TIMEOUT      1000
- 
--#define AUTHENTICATE_TIMEOUT   1000 //ms
--#define ASSOCIATE_TIMEOUT      1000 //ms
--
--// Command code
- typedef enum tagCMD_CODE {
- 	WLAN_CMD_BSSID_SCAN,
- 	WLAN_CMD_SSID,
-@@ -76,7 +73,6 @@ typedef struct tagCMD_ITEM {
- 	bool bForceSCAN;
- } CMD_ITEM, *PCMD_ITEM;
- 
--// Command state
- typedef enum tagCMD_STATE {
- 	WLAN_CMD_SCAN_START,
- 	WLAN_CMD_SCAN_END,
-@@ -92,13 +88,6 @@ typedef enum tagCMD_STATE {
- 	WLAN_CMD_IDLE
- } CMD_STATE, *PCMD_STATE;
- 
--/*---------------------  Export Classes  ----------------------------*/
--
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Types  ------------------------------*/
--
--/*---------------------  Export Functions  --------------------------*/
- void
- vResetCommandTimer(
- 	void *hDeviceContext
--- 
-1.7.9.5
+This needs to be last, otherwise lot's of stuff will break.
 
+>  - Try to make dummy IOMEM functions for score architecture.
+> 
+>  - Continue discussing with UML for it.
+
+If you find sane dummy functions for both UML and score I'm fine with it.
+
+Thanks,
+//richard
