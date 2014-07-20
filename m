@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaGTWho (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 18:37:44 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:33867 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaGTWhl (ORCPT
+	id S1751353AbaGTXCo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 19:02:44 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:38892 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaGTXCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 18:37:41 -0400
-Date: Sun, 20 Jul 2014 18:37:39 -0400
+	Sun, 20 Jul 2014 19:02:42 -0400
+Date: Sun, 20 Jul 2014 19:02:40 -0400
 From: Jerome Glisse <j.glisse@gmail.com>
 To: Oded Gabbay <oded.gabbay@amd.com>
 Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
@@ -21,75 +21,327 @@ Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
         Alex Deucher <alexander.deucher@amd.com>,
         Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
         linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2 10/25] amdkfd: Add topology module to amdkfd
-Message-ID: <20140720223737.GF3068@gmail.com>
+Subject: Re: [PATCH v2 11/25] amdkfd: Add basic modules to amdkfd
+Message-ID: <20140720230239.GG3068@gmail.com>
 References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
- <1405603773-32688-11-git-send-email-oded.gabbay@amd.com>
+ <1405603773-32688-12-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405603773-32688-11-git-send-email-oded.gabbay@amd.com>
+In-Reply-To: <1405603773-32688-12-git-send-email-oded.gabbay@amd.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 04:29:17PM +0300, Oded Gabbay wrote:
-> From: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
+On Thu, Jul 17, 2014 at 04:29:18PM +0300, Oded Gabbay wrote:
+> From: Andrew Lewycky <Andrew.Lewycky@amd.com>
 > 
-> This patch adds the topology module to the driver. The topology is exposed to
-> userspace through the sysfs.
+> This patch adds the process module and 4 helper modules:
 > 
-> The calls to add and remove a device to/from topology are done by the radeon
-> driver.
+> - kfd_process, which handles process which open /dev/kfd
+> - kfd_doorbell, which provides helper functions for doorbell allocation, release and mapping to userspace
+> - kfd_pasid, which provides helper functions for pasid allocation and release
+> - kfd_vidmem, which provides helper functions for allocation and release of memory from the gfx driver
+> - kfd_aperture, which provides helper functions for managing the LDS, Local GPU memory and Scratch memory apertures of the process
+> 
+> This patch only contains the basic kfd_process module, which doesn't contain the reference to the queue scheduler. This was done to allow easier code review.
+> 
+> Also, this patch doesn't contain the calls to the IOMMU driver for binding the pasid to the device. Again, this was done to allow easier code review
+> 
+> The kfd_process object is created when a process opens /dev/kfd and is closed when the mm_struct of that process is teared-down.
 
-So overall we already said that we do not want to see the cpu architecture
-re-expose by hsa in its own format. This pacth is NACK. Only expose additional
-non existent information and also follow the number one rules of sysfs which
-is one value -> one file.
+So i valid argument were made to have one file per device and because this is not
+a common hsa architecture i am rather reluctant to add the /dev/kfd directory just
+for a temporary solution until people inside the HSA foundation get there act to-
+gether and work on a common API.
 
-I understand the temptation to rexpose the cpu topology in your own way to
-make life simpler but there is already api for this so please use what exist
-today and if there is short coming than i am sure they can be fixed.
-
-See :
-
-/sys/devices/system/cpu/cpu*
+So i rather have all kfd temporary solution inside the radeon driver under the
+drm folder. I think we have enough ioctl left to accomodate you.
 
 > 
-> Signed-off-by: Evgeny Pinchuk <evgeny.pinchuk@amd.com>
+> Signed-off-by: Andrew Lewycky <Andrew.Lewycky@amd.com>
 > Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 > ---
->  drivers/gpu/drm/radeon/amdkfd/Makefile       |    2 +-
->  drivers/gpu/drm/radeon/amdkfd/kfd_crat.h     |  294 +++++++
->  drivers/gpu/drm/radeon/amdkfd/kfd_device.c   |    7 +
->  drivers/gpu/drm/radeon/amdkfd/kfd_module.c   |    7 +
->  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h     |   17 +
->  drivers/gpu/drm/radeon/amdkfd/kfd_topology.c | 1207 ++++++++++++++++++++++++++
->  drivers/gpu/drm/radeon/amdkfd/kfd_topology.h |  168 ++++
->  7 files changed, 1701 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_crat.h
->  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.c
->  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.h
+>  drivers/gpu/drm/radeon/amdkfd/Makefile       |   4 +-
+>  drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c | 123 +++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c  |  36 ++-
+>  drivers/gpu/drm/radeon/amdkfd/kfd_device.c   |   2 +
+>  drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c | 264 +++++++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_module.c   |  22 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c    |  97 +++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h     | 148 +++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_process.c  | 374 +++++++++++++++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c   |  96 +++++++
+>  10 files changed, 1163 insertions(+), 3 deletions(-)
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c
 > 
 > diff --git a/drivers/gpu/drm/radeon/amdkfd/Makefile b/drivers/gpu/drm/radeon/amdkfd/Makefile
-> index 9564e75..08ecfcd 100644
+> index 08ecfcd..daf75a8 100644
 > --- a/drivers/gpu/drm/radeon/amdkfd/Makefile
 > +++ b/drivers/gpu/drm/radeon/amdkfd/Makefile
-> @@ -4,6 +4,6 @@
+> @@ -4,6 +4,8 @@
 >  
 >  ccflags-y := -Iinclude/drm
 >  
-> -amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o
-> +amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o
+> -amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o
+> +amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o \
+> +		kfd_pasid.o kfd_doorbell.o kfd_vidmem.o kfd_aperture.o \
+> +		kfd_process.o
 >  
 >  obj-$(CONFIG_HSA_RADEON)	+= amdkfd.o
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_crat.h b/drivers/gpu/drm/radeon/amdkfd/kfd_crat.h
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c b/drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c
 > new file mode 100644
-> index 0000000..a374fa3
+> index 0000000..0468114
 > --- /dev/null
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_crat.h
-> @@ -0,0 +1,294 @@
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c
+> @@ -0,0 +1,123 @@
+> +/*
+> + * Copyright 2014 Advanced Micro Devices, Inc.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + * OTHER DEALINGS IN THE SOFTWARE.
+> + *
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/export.h>
+> +#include <linux/err.h>
+> +#include <linux/fs.h>
+> +#include <linux/sched.h>
+> +#include <linux/slab.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/compat.h>
+> +#include <uapi/linux/kfd_ioctl.h>
+> +#include <linux/time.h>
+> +#include "kfd_priv.h"
+> +#include <linux/mm.h>
+> +#include <uapi/asm-generic/mman-common.h>
+> +#include <asm/processor.h>
+> +
+> +
+> +#define MAKE_GPUVM_APP_BASE(gpu_num) (((uint64_t)(gpu_num) << 61) + 0x1000000000000)
+> +#define MAKE_GPUVM_APP_LIMIT(base) (((uint64_t)(base) & 0xFFFFFF0000000000) | 0xFFFFFFFFFF)
+> +#define MAKE_SCRATCH_APP_BASE(gpu_num) (((uint64_t)(gpu_num) << 61) + 0x100000000)
+> +#define MAKE_SCRATCH_APP_LIMIT(base) (((uint64_t)base & 0xFFFFFFFF00000000) | 0xFFFFFFFF)
+> +#define MAKE_LDS_APP_BASE(gpu_num) (((uint64_t)(gpu_num) << 61) + 0x0)
+> +#define MAKE_LDS_APP_LIMIT(base) (((uint64_t)(base) & 0xFFFFFFFF00000000) | 0xFFFFFFFF)
+> +
+> +#define HSA_32BIT_LDS_APP_SIZE 0x10000
+> +#define HSA_32BIT_LDS_APP_ALIGNMENT 0x10000
+> +
+> +static unsigned long kfd_reserve_aperture(struct kfd_process *process, unsigned long len, unsigned long alignment)
+> +{
+> +
+> +	unsigned long addr = 0;
+> +	unsigned long start_address;
+> +
+> +	/*
+> +	 * Go bottom up and find the first available aligned address.
+> +	 * We may narrow space to scan by getting mmap range limits.
+> +	 */
+> +	for (start_address =  alignment; start_address < (TASK_SIZE - alignment); start_address += alignment) {
+> +		addr = vm_mmap(NULL, start_address, len, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, 0);
+
+So this forcing aperture into address space process is not really
+welcome. Userspace have no idea this will happen and valid existing
+program may already staticly allocate those address through mmap
+either after or before they might trigger this code.
+
+As i said in the general answer, i think best here is to use the
+kernel reserved area to map this. You can work around the gate
+page if gate page matter to you.
+
+This of course beg the question what happen if gpu try to access
+inside the kernel region ? Does the iommu respect the system flag
+of the page table ? Or does it just happily allow the gpu to access
+the whole kernel area ?
+
+I guess i should go dive into the iommuv2 datasheet to find out.
+
+> +		if (!IS_ERR_VALUE(addr)) {
+> +			if (addr == start_address)
+> +				return addr;
+> +			vm_munmap(addr, len);
+> +		}
+> +	}
+> +	return 0;
+> +
+> +}
+> +
+> +int kfd_init_apertures(struct kfd_process *process)
+> +{
+> +	uint8_t id  = 0;
+> +	struct kfd_dev *dev;
+> +	struct kfd_process_device *pdd;
+> +
+> +	mutex_lock(&process->mutex);
+> +
+> +	/*Iterating over all devices*/
+> +	while ((dev = kfd_topology_enum_kfd_devices(id)) != NULL && id < NUM_OF_SUPPORTED_GPUS) {
+> +
+> +		pdd = kfd_get_process_device_data(dev, process);
+> +
+> +		/*for 64 bit process aperture will be statically reserved in the non canonical process address space
+
+What does non canonical process address space means ? This is the x86-64 terminology
+or something else ?
+
+> +		 *for 32 bit process the aperture will be reserved in the process address space
+> +		 */
+> +		if (process->is_32bit_user_mode) {
+> +			/*try to reserve aperture. continue on failure, just put the aperture size to be 0*/
+> +			pdd->lds_base = kfd_reserve_aperture(
+> +						process,
+> +						HSA_32BIT_LDS_APP_SIZE,
+> +						HSA_32BIT_LDS_APP_ALIGNMENT);
+> +
+> +			if (pdd->lds_base)
+> +				pdd->lds_limit = pdd->lds_base + HSA_32BIT_LDS_APP_SIZE - 1;
+> +			else
+> +				pdd->lds_limit = 0;
+> +
+> +			/*GPUVM and Scratch apertures are not supported*/
+> +			pdd->gpuvm_base = pdd->gpuvm_limit = pdd->scratch_base = pdd->scratch_limit = 0;
+> +		} else {
+> +			/*node id couldn't be 0 - the three MSB bits of aperture shoudn't be 0*/
+> +			pdd->lds_base = MAKE_LDS_APP_BASE(id + 1);
+> +			pdd->lds_limit = MAKE_LDS_APP_LIMIT(pdd->lds_base);
+> +			pdd->gpuvm_base = MAKE_GPUVM_APP_BASE(id + 1);
+> +			pdd->gpuvm_limit = MAKE_GPUVM_APP_LIMIT(pdd->gpuvm_base);
+> +			pdd->scratch_base = MAKE_SCRATCH_APP_BASE(id + 1);
+> +			pdd->scratch_limit = MAKE_SCRATCH_APP_LIMIT(pdd->scratch_base);
+> +		}
+> +
+> +		dev_dbg(kfd_device, "node id %u, gpu id %u, lds_base %llX lds_limit %llX gpuvm_base %llX gpuvm_limit %llX scratch_base %llX scratch_limit %llX",
+> +				id, pdd->dev->id, pdd->lds_base, pdd->lds_limit, pdd->gpuvm_base, pdd->gpuvm_limit, pdd->scratch_base, pdd->scratch_limit);
+
+Break this debug output into several debug message. Not all of us have 30"
+monitor.
+
+> +
+> +		id++;
+> +	}
+> +
+> +	mutex_unlock(&process->mutex);
+> +
+> +	return 0;
+> +}
+> +
+> +
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+> index b98bcb7..d6580a6 100644
+> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+> @@ -38,6 +38,7 @@
+>  
+>  static long kfd_ioctl(struct file *, unsigned int, unsigned long);
+>  static int kfd_open(struct inode *, struct file *);
+> +static int kfd_mmap(struct file *, struct vm_area_struct *);
+>  
+>  static const char kfd_dev_name[] = "kfd";
+>  
+> @@ -46,6 +47,7 @@ static const struct file_operations kfd_fops = {
+>  	.unlocked_ioctl = kfd_ioctl,
+>  	.compat_ioctl = kfd_ioctl,
+>  	.open = kfd_open,
+> +	.mmap = kfd_mmap,
+>  };
+>  
+>  static int kfd_char_dev_major = -1;
+> @@ -96,9 +98,22 @@ struct device *kfd_chardev(void)
+>  
+>  static int kfd_open(struct inode *inode, struct file *filep)
+>  {
+> +	struct kfd_process *process;
+> +
+>  	if (iminor(inode) != 0)
+>  		return -ENODEV;
+>  
+> +	process = kfd_create_process(current);
+> +	if (IS_ERR(process))
+> +		return PTR_ERR(process);
+> +
+> +	process->is_32bit_user_mode = is_compat_task();
+> +
+> +	dev_dbg(kfd_device, "process %d opened, compat mode (32 bit) - %d\n",
+> +		process->pasid, process->is_32bit_user_mode);
+> +
+> +	kfd_init_apertures(process);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -152,8 +167,9 @@ static long kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+>  		"ioctl cmd 0x%x (#%d), arg 0x%lx\n",
+>  		cmd, _IOC_NR(cmd), arg);
+>  
+> -	/* TODO: add function that retrieves process */
+> -	process = NULL;
+> +	process = kfd_get_process(current);
+> +	if (IS_ERR(process))
+> +		return PTR_ERR(process);
+>  
+>  	switch (cmd) {
+>  	case KFD_IOC_CREATE_QUEUE:
+> @@ -201,3 +217,19 @@ static long kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+>  
+>  	return err;
+>  }
+> +
+> +static int
+> +kfd_mmap(struct file *filp, struct vm_area_struct *vma)
+> +{
+> +	unsigned long pgoff = vma->vm_pgoff;
+> +	struct kfd_process *process;
+> +
+> +	process = kfd_get_process(current);
+> +	if (IS_ERR(process))
+> +		return PTR_ERR(process);
+> +
+> +	if (pgoff >= KFD_MMAP_DOORBELL_START && pgoff < KFD_MMAP_DOORBELL_END)
+> +		return kfd_doorbell_mmap(process, vma);
+> +
+> +	return -EINVAL;
+> +}
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
+> index 4138694..f6a7cf7 100644
+> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
+> @@ -100,6 +100,8 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
+>  {
+>  	kfd->shared_resources = *gpu_resources;
+>  
+> +	kfd_doorbell_init(kfd);
+> +
+>  	if (kfd_topology_add_device(kfd) != 0)
+>  		return false;
+>  
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c b/drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c
+> new file mode 100644
+> index 0000000..972eaea
+> --- /dev/null
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c
+> @@ -0,0 +1,264 @@
 > +/*
 > + * Copyright 2014 Advanced Micro Devices, Inc.
 > + *
@@ -112,375 +364,637 @@ See :
 > + * OTHER DEALINGS IN THE SOFTWARE.
 > + */
 > +
-> +#ifndef KFD_CRAT_H_INCLUDED
-> +#define KFD_CRAT_H_INCLUDED
+> +#include "kfd_priv.h"
+> +#include <linux/mm.h>
+> +#include <linux/mman.h>
+> +#include <linux/slab.h>
 > +
-> +#include <linux/types.h>
+> +/*
+> + * This extension supports a kernel level doorbells management for
+> + * the kernel queues.
+> + * Basically the last doorbells page is devoted to kernel queues
+> + * and that's assures that any user process won't get access to the
+> + * kernel doorbells page
+> + */
+> +static DEFINE_MUTEX(doorbell_mutex);
+> +static unsigned long doorbell_available_index[DIV_ROUND_UP(MAX_PROCESS_QUEUES, BITS_PER_LONG)] = { 0 };
+> +#define KERNEL_DOORBELL_PASID 1
 > +
-> +#pragma pack(1)
+> +/*
+> + * Each device exposes a doorbell aperture, a PCI MMIO aperture that
+> + * receives 32-bit writes that are passed to queues as wptr values.
+> + * The doorbells are intended to be written by applications as part
+> + * of queueing work on user-mode queues.
+> + * We assign doorbells to applications in PAGE_SIZE-sized and aligned chunks.
+> + * We map the doorbell address space into user-mode when a process creates
+> + * its first queue on each device.
+> + * Although the mapping is done by KFD, it is equivalent to an mmap of
+> + * the /dev/kfd with the particular device encoded in the mmap offset.
+> + * There will be other uses for mmap of /dev/kfd, so only a range of
+> + * offsets (KFD_MMAP_DOORBELL_START-END) is used for doorbells.
+> + */
 
-No pragma
+Mapping should not be done by the driver instead you should provide the
+offset to userspace and have userspace call mmap with proper argument.
+I do not think having device driver doing mmap in the back of an ioctl
+would be a welcome idea.
 
 > +
-> +/*
-> + * 4CC signature values for the CRAT and CDIT ACPI tables
-> + */
+> +/* # of doorbell bytes allocated for each process. */
+> +static inline size_t doorbell_process_allocation(void)
+> +{
+> +	return roundup(sizeof(doorbell_t) * MAX_PROCESS_QUEUES, PAGE_SIZE);
+> +}
+
+This whole doorbell situation needs some cleanup instead of passing every
+things as byte and byte offset you should rather pass everything as pfn and
+pgoffset so it is clear that a doorbell is on page granularity and you will
+not have to clutter all kind of align and round up accross code. Just cleaner
+and safer.
+
 > +
-> +#define CRAT_SIGNATURE	"CRAT"
-> +#define CDIT_SIGNATURE	"CDIT"
+> +/* Doorbell calculations for device init. */
+> +void kfd_doorbell_init(struct kfd_dev *kfd)
+> +{
+> +	size_t doorbell_start_offset;
+> +	size_t doorbell_aperture_size;
+> +	size_t doorbell_process_limit;
 > +
-> +/*
-> + * Component Resource Association Table (CRAT)
-> + */
+> +	/*
+> +	 * We start with calculations in bytes because the input data might
+> +	 * only be byte-aligned.
+> +	 * Only after we have done the rounding can we assume any alignment.
+> +	 */
 > +
-> +#define CRAT_OEMID_LENGTH	6
-> +#define CRAT_OEMTABLEID_LENGTH	8
-> +#define CRAT_RESERVED_LENGTH	6
+> +	doorbell_start_offset = roundup(kfd->shared_resources.doorbell_start_offset,
+> +					doorbell_process_allocation());
+> +	doorbell_aperture_size = rounddown(kfd->shared_resources.doorbell_aperture_size,
+> +					doorbell_process_allocation());
 > +
-> +#define CRAT_OEMID_64BIT_MASK ((1ULL << (CRAT_OEMID_LENGTH * 8)) - 1)
+> +	if (doorbell_aperture_size > doorbell_start_offset)
+> +		doorbell_process_limit =
+> +			(doorbell_aperture_size - doorbell_start_offset) / doorbell_process_allocation();
+> +	else
+> +		doorbell_process_limit = 0;
 > +
-> +struct crat_header {
-> +	uint32_t	signature;
-> +	uint32_t	length;
-> +	uint8_t		revision;
-> +	uint8_t		checksum;
-> +	uint8_t		oem_id[CRAT_OEMID_LENGTH];
-> +	uint8_t		oem_table_id[CRAT_OEMTABLEID_LENGTH];
-> +	uint32_t	oem_revision;
-> +	uint32_t	creator_id;
-> +	uint32_t	creator_revision;
-> +	uint32_t	total_entries;
-> +	uint16_t	num_domains;
-> +	uint8_t		reserved[CRAT_RESERVED_LENGTH];
-> +};
+> +	kfd->doorbell_base = kfd->shared_resources.doorbell_physical_address + doorbell_start_offset;
+> +	kfd->doorbell_id_offset = doorbell_start_offset / sizeof(doorbell_t);
+> +	kfd->doorbell_process_limit = doorbell_process_limit - 1;
 > +
-> +/*
-> + * The header structure is immediately followed by total_entries of the
-> + * data definitions
-> + */
+> +	kfd->doorbell_kernel_ptr = ioremap(kfd->doorbell_base, doorbell_process_allocation());
+> +	BUG_ON(!kfd->doorbell_kernel_ptr);
 > +
-> +/*
-> + * The currently defined subtype entries in the CRAT
-> + */
-> +#define CRAT_SUBTYPE_COMPUTEUNIT_AFFINITY	0
-> +#define CRAT_SUBTYPE_MEMORY_AFFINITY		1
-> +#define CRAT_SUBTYPE_CACHE_AFFINITY		2
-> +#define CRAT_SUBTYPE_TLB_AFFINITY		3
-> +#define CRAT_SUBTYPE_CCOMPUTE_AFFINITY		4
-> +#define CRAT_SUBTYPE_IOLINK_AFFINITY		5
-> +#define CRAT_SUBTYPE_MAX			6
+> +	pr_debug("kfd: doorbell initialization\n"
+> +				 "     doorbell base           == 0x%08lX\n"
+> +				 "     doorbell_id_offset      == 0x%08lu\n"
+> +				 "     doorbell_process_limit  == 0x%08lu\n"
+> +				 "     doorbell_kernel_offset  == 0x%08lX\n"
+> +				 "     doorbell aperture size  == 0x%08lX\n"
+> +				 "     doorbell kernel address == 0x%08lX\n",
+> +				 (uintptr_t)kfd->doorbell_base,
+> +				 kfd->doorbell_id_offset,
+> +				 doorbell_process_limit,
+> +				 (uintptr_t)kfd->doorbell_base,
+> +				 kfd->shared_resources.doorbell_aperture_size,
+> +				 (uintptr_t)kfd->doorbell_kernel_ptr);
+
+Kind of ugly, will break some of the kernel log manager, you need to do one
+pr_debug call per line.
+
 > +
-> +#define CRAT_SIBLINGMAP_SIZE	32
-> +
-> +/*
-> + * ComputeUnit Affinity structure and definitions
-> + */
-> +#define CRAT_CU_FLAGS_ENABLED		0x00000001
-> +#define CRAT_CU_FLAGS_HOT_PLUGGABLE	0x00000002
-> +#define CRAT_CU_FLAGS_CPU_PRESENT	0x00000004
-> +#define CRAT_CU_FLAGS_GPU_PRESENT	0x00000008
-> +#define CRAT_CU_FLAGS_IOMMU_PRESENT	0x00000010
-> +#define CRAT_CU_FLAGS_RESERVED		0xffffffe0
-> +
-> +#define CRAT_COMPUTEUNIT_RESERVED_LENGTH 4
-> +
-> +struct crat_subtype_computeunit {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +	uint32_t	proximity_domain;
-> +	uint32_t	processor_id_low;
-> +	uint16_t	num_cpu_cores;
-> +	uint16_t	num_simd_cores;
-> +	uint16_t	max_waves_simd;
-> +	uint16_t	io_count;
-> +	uint16_t	hsa_capability;
-> +	uint16_t	lds_size_in_kb;
-> +	uint8_t		wave_front_size;
-> +	uint8_t		num_banks;
-> +	uint16_t	micro_engine_id;
-> +	uint8_t		num_arrays;
-> +	uint8_t		num_cu_per_array;
-> +	uint8_t		num_simd_per_cu;
-> +	uint8_t		max_slots_scatch_cu;
-> +	uint8_t		reserved2[CRAT_COMPUTEUNIT_RESERVED_LENGTH];
-> +};
+> +}
 > +
 > +/*
-> + * HSA Memory Affinity structure and definitions
+> + * This is the /dev/kfd mmap (for doorbell) implementation.
+> + * We intend that this is only called through map_doorbells, not through
+> + * user-mode mmap of /dev/kfd
 > + */
-> +#define CRAT_MEM_FLAGS_ENABLED		0x00000001
-> +#define CRAT_MEM_FLAGS_HOT_PLUGGABLE	0x00000002
-> +#define CRAT_MEM_FLAGS_NON_VOLATILE	0x00000004
-> +#define CRAT_MEM_FLAGS_RESERVED		0xfffffff8
+> +int kfd_doorbell_mmap(struct kfd_process *process, struct vm_area_struct *vma)
+> +{
+> +	unsigned int device_index;
+> +	struct kfd_dev *dev;
+> +	phys_addr_t start;
 > +
-> +#define CRAT_MEMORY_RESERVED_LENGTH 8
+> +	BUG_ON(vma->vm_pgoff < KFD_MMAP_DOORBELL_START || vma->vm_pgoff >= KFD_MMAP_DOORBELL_END);
 > +
-> +struct crat_subtype_memory {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +	uint32_t	promixity_domain;
-> +	uint32_t	base_addr_low;
-> +	uint32_t	base_addr_high;
-> +	uint32_t	length_low;
-> +	uint32_t	length_high;
-> +	uint32_t	width;
-> +	uint8_t		reserved2[CRAT_MEMORY_RESERVED_LENGTH];
-> +};
+> +	/* For simplicitly we only allow mapping of the entire doorbell allocation of a single device & process. */
+> +	if (vma->vm_end - vma->vm_start != doorbell_process_allocation())
+> +		return -EINVAL;
+> +
+> +	/* device_index must be GPU ID!! */
+> +	device_index = vma->vm_pgoff - KFD_MMAP_DOORBELL_START;
+> +
+> +	dev = kfd_device_by_id(device_index);
+> +	if (dev == NULL)
+> +		return -EINVAL;
+> +
+> +	vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_NORESERVE | VM_DONTDUMP | VM_PFNMAP;
+> +	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+> +
+> +	start = dev->doorbell_base + process->pasid * doorbell_process_allocation();
+> +
+> +	pr_debug("kfd: mapping doorbell page in kfd_doorbell_mmap\n"
+> +		 "     target user address == 0x%016llX\n"
+> +		 "     physical address    == 0x%016llX\n"
+> +		 "     vm_flags            == 0x%08lX\n"
+> +		 "     size                == 0x%08lX\n",
+> +		 (long long unsigned int) vma->vm_start, start, vma->vm_flags,
+> +		 doorbell_process_allocation());
+> +
+> +	return io_remap_pfn_range(vma,
+> +				vma->vm_start,
+> +				start >> PAGE_SHIFT,
+> +				doorbell_process_allocation(),
+> +				vma->vm_page_prot);
+> +}
 > +
 > +/*
-> + * HSA Cache Affinity structure and definitions
+> + * Map the doorbells for a single process & device.
+> + * This will indirectly call kfd_doorbell_mmap.
+> + * This assumes that the process mutex is being held.
 > + */
-> +#define CRAT_CACHE_FLAGS_ENABLED	0x00000001
-> +#define CRAT_CACHE_FLAGS_DATA_CACHE	0x00000002
-> +#define CRAT_CACHE_FLAGS_INST_CACHE	0x00000004
-> +#define CRAT_CACHE_FLAGS_CPU_CACHE	0x00000008
-> +#define CRAT_CACHE_FLAGS_SIMD_CACHE	0x00000010
-> +#define CRAT_CACHE_FLAGS_RESERVED	0xffffffe0
+> +static int map_doorbells(struct file *devkfd, struct kfd_process *process,
+> +				struct kfd_dev *dev)
+> +{
+> +	struct kfd_process_device *pdd = kfd_get_process_device_data(dev, process);
 > +
-> +#define CRAT_CACHE_RESERVED_LENGTH 8
+> +	if (pdd == NULL)
+> +		return -ENOMEM;
 > +
-> +struct crat_subtype_cache {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +	uint32_t	processor_id_low;
-> +	uint8_t		sibling_map[CRAT_SIBLINGMAP_SIZE];
-> +	uint32_t	cache_size;
-> +	uint8_t		cache_level;
-> +	uint8_t		lines_per_tag;
-> +	uint16_t	cache_line_size;
-> +	uint8_t		associativity;
-> +	uint8_t		cache_properties;
-> +	uint16_t	cache_latency;
-> +	uint8_t		reserved2[CRAT_CACHE_RESERVED_LENGTH];
-> +};
+> +	if (pdd->doorbell_mapping == NULL) {
+> +		unsigned long offset = (KFD_MMAP_DOORBELL_START + dev->id) << PAGE_SHIFT;
+> +		doorbell_t __user *doorbell_mapping;
+> +
+> +		doorbell_mapping = (doorbell_t __user *)vm_mmap(devkfd, 0, doorbell_process_allocation(), PROT_WRITE,
+> +								MAP_SHARED, offset);
+
+Like said above have the userspace do that. Do not do it inside
+the kernel.
+
+> +		if (IS_ERR(doorbell_mapping))
+> +			return PTR_ERR(doorbell_mapping);
+> +
+> +		pdd->doorbell_mapping = doorbell_mapping;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* get kernel iomem pointer for a doorbell */
+> +u32 __iomem *kfd_get_kernel_doorbell(struct kfd_dev *kfd, unsigned int *doorbell_off)
+> +{
+> +	u32 inx;
+> +
+> +	BUG_ON(!kfd || !doorbell_off);
+> +
+> +	mutex_lock(&doorbell_mutex);
+> +	inx = find_first_zero_bit(doorbell_available_index, MAX_PROCESS_QUEUES);
+> +	__set_bit(inx, doorbell_available_index);
+> +	mutex_unlock(&doorbell_mutex);
+> +
+> +	if (inx >= MAX_PROCESS_QUEUES)
+> +		return NULL;
+> +
+> +	/* caluculating the kernel doorbell offset using "faked" kernel pasid that allocated for kernel queues only */
+> +	*doorbell_off = KERNEL_DOORBELL_PASID * (doorbell_process_allocation()/sizeof(doorbell_t)) + inx;
+> +
+> +	pr_debug("kfd: get kernel queue doorbell\n"
+> +			 "     doorbell offset   == 0x%08d\n"
+> +			 "     kernel address    == 0x%08lX\n",
+> +			 *doorbell_off, (uintptr_t)(kfd->doorbell_kernel_ptr + inx));
+> +
+> +	return kfd->doorbell_kernel_ptr + inx;
+> +}
+> +
+> +void kfd_release_kernel_doorbell(struct kfd_dev *kfd, u32 __iomem *db_addr)
+> +{
+> +	unsigned int inx;
+> +
+> +	BUG_ON(!kfd || !db_addr);
+> +
+> +	inx = (unsigned int)(db_addr - kfd->doorbell_kernel_ptr);
+> +
+> +	mutex_lock(&doorbell_mutex);
+> +	__clear_bit(inx, doorbell_available_index);
+> +	mutex_unlock(&doorbell_mutex);
+> +}
+> +
+> +inline void write_kernel_doorbell(u32 __iomem *db, u32 value)
+> +{
+> +	if (db) {
+> +		writel(value, db);
+> +		pr_debug("writing %d to doorbell address 0x%p\n", value, db);
+> +	}
+> +}
 > +
 > +/*
-> + * HSA TLB Affinity structure and definitions
+> + * Get the user-mode address of a doorbell.
+> + * Assumes that the process mutex is being held.
 > + */
-> +#define CRAT_TLB_FLAGS_ENABLED	0x00000001
-> +#define CRAT_TLB_FLAGS_DATA_TLB	0x00000002
-> +#define CRAT_TLB_FLAGS_INST_TLB	0x00000004
-> +#define CRAT_TLB_FLAGS_CPU_TLB	0x00000008
-> +#define CRAT_TLB_FLAGS_SIMD_TLB	0x00000010
-> +#define CRAT_TLB_FLAGS_RESERVED	0xffffffe0
+> +doorbell_t __user *kfd_get_doorbell(struct file *devkfd,
+> +					struct kfd_process *process,
+> +					struct kfd_dev *dev,
+> +					unsigned int doorbell_index)
+> +{
+> +	struct kfd_process_device *pdd;
+> +	int err;
 > +
-> +#define CRAT_TLB_RESERVED_LENGTH 4
+> +	BUG_ON(doorbell_index > MAX_DOORBELL_INDEX);
 > +
-> +struct crat_subtype_tlb {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +	uint32_t	processor_id_low;
-> +	uint8_t		sibling_map[CRAT_SIBLINGMAP_SIZE];
-> +	uint32_t	tlb_level;
-> +	uint8_t		data_tlb_associativity_2mb;
-> +	uint8_t		data_tlb_size_2mb;
-> +	uint8_t		instruction_tlb_associativity_2mb;
-> +	uint8_t		instruction_tlb_size_2mb;
-> +	uint8_t		data_tlb_associativity_4k;
-> +	uint8_t		data_tlb_size_4k;
-> +	uint8_t		instruction_tlb_associativity_4k;
-> +	uint8_t		instruction_tlb_size_4k;
-> +	uint8_t		data_tlb_associativity_1gb;
-> +	uint8_t		data_tlb_size_1gb;
-> +	uint8_t		instruction_tlb_associativity_1gb;
-> +	uint8_t		instruction_tlb_size_1gb;
-> +	uint8_t		reserved2[CRAT_TLB_RESERVED_LENGTH];
-> +};
+> +	err = map_doorbells(devkfd, process, dev);
+> +	if (err)
+> +		return ERR_PTR(err);
+> +
+> +	pdd = kfd_get_process_device_data(dev, process);
+> +	BUG_ON(pdd == NULL); /* map_doorbells would have failed otherwise */
+> +
+> +	pr_debug("doorbell value on creation 0x%x\n", pdd->doorbell_mapping[doorbell_index]);
+> +
+> +	return &pdd->doorbell_mapping[doorbell_index];
+> +}
 > +
 > +/*
-> + * HSA CCompute/APU Affinity structure and definitions
+> + * queue_ids are in the range [0,MAX_PROCESS_QUEUES) and are mapped 1:1
+> + * to doorbells with the process's doorbell page
 > + */
-> +#define CRAT_CCOMPUTE_FLAGS_ENABLED	0x00000001
-> +#define CRAT_CCOMPUTE_FLAGS_RESERVED	0xfffffffe
+> +unsigned int kfd_queue_id_to_doorbell(struct kfd_dev *kfd, struct kfd_process *process, unsigned int queue_id)
+> +{
+> +	/*
+> +	 * doorbell_id_offset accounts for doorbells taken by KGD.
+> +	 * pasid * doorbell_process_allocation/sizeof(doorbell_t) adjusts
+> +	 * to the process's doorbells
+> +	 */
+> +	return kfd->doorbell_id_offset + process->pasid * (doorbell_process_allocation()/sizeof(doorbell_t)) + queue_id;
+> +}
 > +
-> +#define CRAT_CCOMPUTE_RESERVED_LENGTH 16
-> +
-> +struct crat_subtype_ccompute {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +	uint32_t	processor_id_low;
-> +	uint8_t		sibling_map[CRAT_SIBLINGMAP_SIZE];
-> +	uint32_t	apu_size;
-> +	uint8_t		reserved2[CRAT_CCOMPUTE_RESERVED_LENGTH];
-> +};
-> +
-> +/*
-> + * HSA IO Link Affinity structure and definitions
-> + */
-> +#define CRAT_IOLINK_FLAGS_ENABLED	0x00000001
-> +#define CRAT_IOLINK_FLAGS_COHERENCY	0x00000002
-> +#define CRAT_IOLINK_FLAGS_RESERVED	0xfffffffc
-> +
-> +/*
-> + * IO interface types
-> + */
-> +#define CRAT_IOLINK_TYPE_UNDEFINED	0
-> +#define CRAT_IOLINK_TYPE_HYPERTRANSPORT	1
-> +#define CRAT_IOLINK_TYPE_PCIEXPRESS	2
-> +#define CRAT_IOLINK_TYPE_OTHER		3
-> +#define CRAT_IOLINK_TYPE_MAX		255
-> +
-> +#define CRAT_IOLINK_RESERVED_LENGTH 24
-> +
-> +struct crat_subtype_iolink {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +	uint32_t	proximity_domain_from;
-> +	uint32_t	proximity_domain_to;
-> +	uint8_t		io_interface_type;
-> +	uint8_t		version_major;
-> +	uint16_t	version_minor;
-> +	uint32_t	minimum_latency;
-> +	uint32_t	maximum_latency;
-> +	uint32_t	minimum_bandwidth_mbs;
-> +	uint32_t	maximum_bandwidth_mbs;
-> +	uint32_t	recommended_transfer_size;
-> +	uint8_t		reserved2[CRAT_IOLINK_RESERVED_LENGTH];
-> +};
-> +
-> +/*
-> + * HSA generic sub-type header
-> + */
-> +
-> +#define CRAT_SUBTYPE_FLAGS_ENABLED 0x00000001
-> +
-> +struct crat_subtype_generic {
-> +	uint8_t		type;
-> +	uint8_t		length;
-> +	uint16_t	reserved;
-> +	uint32_t	flags;
-> +};
-> +
-> +/*
-> + * Component Locality Distance Information Table (CDIT)
-> + */
-> +#define CDIT_OEMID_LENGTH	6
-> +#define CDIT_OEMTABLEID_LENGTH	8
-> +
-> +struct cdit_header {
-> +	uint32_t	signature;
-> +	uint32_t	length;
-> +	uint8_t		revision;
-> +	uint8_t		checksum;
-> +	uint8_t		oem_id[CDIT_OEMID_LENGTH];
-> +	uint8_t		oem_table_id[CDIT_OEMTABLEID_LENGTH];
-> +	uint32_t	oem_revision;
-> +	uint32_t	creator_id;
-> +	uint32_t	creator_revision;
-> +	uint32_t	total_entries;
-> +	uint16_t	num_domains;
-> +	uint8_t		entry[1];
-> +};
-> +
-> +#pragma pack()
-> +
-> +#endif /* KFD_CRAT_H_INCLUDED */
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-> index dd63ce09..4138694 100644
-> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-> @@ -100,6 +100,9 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
->  {
->  	kfd->shared_resources = *gpu_resources;
->  
-> +	if (kfd_topology_add_device(kfd) != 0)
-> +		return false;
-> +
->  	kfd->init_complete = true;
->  	dev_info(kfd_device, "added device (%x:%x)\n", kfd->pdev->vendor,
->  		 kfd->pdev->device);
-> @@ -109,6 +112,10 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
->  
->  void kgd2kfd_device_exit(struct kfd_dev *kfd)
->  {
-> +	int err = kfd_topology_remove_device(kfd);
-> +
-> +	BUG_ON(err != 0);
-> +
->  	kfree(kfd);
->  }
->  
 > diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_module.c b/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-> index c7faac6..c51f981 100644
+> index c51f981..dc08f51 100644
 > --- a/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
 > +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-> @@ -73,16 +73,23 @@ static int __init kfd_module_init(void)
+> @@ -65,14 +65,30 @@ void kgd2kfd_exit(void)
+>  {
+>  }
+>  
+> +extern int kfd_process_exit(struct notifier_block *nb,
+> +				unsigned long action, void *data);
+> +
+> +static struct notifier_block kfd_mmput_nb = {
+> +	.notifier_call		= kfd_process_exit,
+> +	.priority		= 3,
+> +};
+> +
+>  static int __init kfd_module_init(void)
+>  {
+>  	int err;
+>  
+> +	err = kfd_pasid_init();
+> +	if (err < 0)
+> +		goto err_pasid;
+> +
+>  	err = kfd_chardev_init();
 >  	if (err < 0)
 >  		goto err_ioctl;
 >  
-> +	err = kfd_topology_init();
-> +	if (err < 0)
-> +		goto err_topology;
+> +	err = mmput_register_notifier(&kfd_mmput_nb);
+> +	if (err)
+> +		goto err_mmu_notifier;
 > +
->  	dev_info(kfd_device, "Initialized module\n");
->  
+>  	err = kfd_topology_init();
+>  	if (err < 0)
+>  		goto err_topology;
+> @@ -82,15 +98,21 @@ static int __init kfd_module_init(void)
 >  	return 0;
 >  
-> +err_topology:
-> +	kfd_chardev_exit();
+>  err_topology:
+> +	mmput_unregister_notifier(&kfd_mmput_nb);
+> +err_mmu_notifier:
+>  	kfd_chardev_exit();
 >  err_ioctl:
+> +	kfd_pasid_exit();
+> +err_pasid:
 >  	return err;
 >  }
 >  
 >  static void __exit kfd_module_exit(void)
 >  {
-> +	kfd_topology_shutdown();
+>  	kfd_topology_shutdown();
+> +	mmput_unregister_notifier(&kfd_mmput_nb);
 >  	kfd_chardev_exit();
+> +	kfd_pasid_exit();
 >  	dev_info(kfd_device, "Removed module\n");
 >  }
+>  
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c b/drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c
+> new file mode 100644
+> index 0000000..0b594e4
+> --- /dev/null
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c
+> @@ -0,0 +1,97 @@
+> +/*
+> + * Copyright 2014 Advanced Micro Devices, Inc.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + * OTHER DEALINGS IN THE SOFTWARE.
+> + */
+> +
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include "kfd_priv.h"
+> +
+> +#define INITIAL_PASID_LIMIT (1<<20)
+> +
+> +static unsigned long *pasid_bitmap;
+> +static pasid_t pasid_limit;
+> +static DEFINE_MUTEX(pasid_mutex);
+> +
+> +int kfd_pasid_init(void)
+> +{
+> +	pasid_limit = INITIAL_PASID_LIMIT;
+> +
+> +	pasid_bitmap = kzalloc(DIV_ROUND_UP(INITIAL_PASID_LIMIT, BITS_PER_BYTE), GFP_KERNEL);
+> +	if (!pasid_bitmap)
+> +		return -ENOMEM;
+> +
+> +	set_bit(0, pasid_bitmap); /* PASID 0 is reserved. */
+> +
+> +	return 0;
+> +}
+> +
+> +void kfd_pasid_exit(void)
+> +{
+> +	kfree(pasid_bitmap);
+> +}
+> +
+> +bool kfd_set_pasid_limit(pasid_t new_limit)
+> +{
+> +	if (new_limit < pasid_limit) {
+> +		bool ok;
+> +
+> +		mutex_lock(&pasid_mutex);
+> +
+> +		/* ensure that no pasids >= new_limit are in-use */
+> +		ok = (find_next_bit(pasid_bitmap, pasid_limit, new_limit) == pasid_limit);
+> +		if (ok)
+> +			pasid_limit = new_limit;
+> +
+> +		mutex_unlock(&pasid_mutex);
+> +
+> +		return ok;
+> +	}
+> +
+> +	return true;
+> +}
+> +
+> +inline pasid_t kfd_get_pasid_limit(void)
+> +{
+> +	return pasid_limit;
+> +}
+> +
+> +pasid_t kfd_pasid_alloc(void)
+> +{
+> +	pasid_t found;
+> +
+> +	mutex_lock(&pasid_mutex);
+> +
+> +	found = find_first_zero_bit(pasid_bitmap, pasid_limit);
+> +	if (found == pasid_limit)
+> +		found = 0;
+> +	else
+> +		set_bit(found, pasid_bitmap);
+> +
+> +	mutex_unlock(&pasid_mutex);
+> +
+> +	return found;
+> +}
+> +
+> +void kfd_pasid_free(pasid_t pasid)
+> +{
+> +	BUG_ON(pasid == 0 || pasid >= pasid_limit);
+> +	clear_bit(pasid, pasid_bitmap);
+> +}
 > diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> index 05e892f..b391e24 100644
+> index b391e24..af5a5e4 100644
 > --- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
 > +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> @@ -32,6 +32,14 @@
+> @@ -32,14 +32,39 @@
 >  #include <linux/spinlock.h>
 >  #include "../radeon_kfd.h"
 >  
-> +#define KFD_SYSFS_FILE_MODE 0444
+> +/*
+> + * Per-process limit. Each process can only
+> + * create MAX_PROCESS_QUEUES across all devices
+> + */
+> +#define MAX_PROCESS_QUEUES 1024
 > +
-> +/* GPU ID hash width in bits */
-> +#define KFD_GPU_ID_HASH_WIDTH 16
+> +#define MAX_DOORBELL_INDEX MAX_PROCESS_QUEUES
+>  #define KFD_SYSFS_FILE_MODE 0444
+>  
+> +/*
+> + * We multiplex different sorts of mmap-able memory onto /dev/kfd.
+> + * We figure out what type of memory the caller wanted by comparing
+> + * the mmap page offset to known ranges.
+> + */
+> +#define KFD_MMAP_DOORBELL_START	(((1ULL << 32)*1) >> PAGE_SHIFT)
+> +#define KFD_MMAP_DOORBELL_END	(((1ULL << 32)*2) >> PAGE_SHIFT)
 > +
-> +/* Macro for allocating structures */
-> +#define kfd_alloc_struct(ptr_to_struct)	((typeof(ptr_to_struct)) kzalloc(sizeof(*ptr_to_struct), GFP_KERNEL))
+>  /* GPU ID hash width in bits */
+>  #define KFD_GPU_ID_HASH_WIDTH 16
+>  
+>  /* Macro for allocating structures */
+>  #define kfd_alloc_struct(ptr_to_struct)	((typeof(ptr_to_struct)) kzalloc(sizeof(*ptr_to_struct), GFP_KERNEL))
+>  
+> +/*
+> + * Large enough to hold the maximum usable pasid + 1.
+> + * It must also be able to store the number of doorbells
+> + * reported by a KFD device.
+> + */
+> +typedef unsigned int pasid_t;
+> +
+> +/* Type that represents a HW doorbell slot. */
+> +typedef u32 doorbell_t;
 > +
 >  struct kfd_device_info {
 >  	const struct kfd_scheduler_class *scheduler_class;
 >  	unsigned int max_pasid_bits;
-> @@ -71,6 +79,15 @@ struct kfd_process {
+> @@ -56,6 +81,17 @@ struct kfd_dev {
 >  
+>  	unsigned int id;		/* topology stub index */
+>  
+> +	phys_addr_t doorbell_base;	/* Start of actual doorbells used by
+> +					 * KFD. It is aligned for mapping
+> +					 * into user mode
+> +					 */
+> +	size_t doorbell_id_offset;	/* Doorbell offset (from KFD doorbell
+> +					 * to HW doorbell, GFX reserved some
+> +					 * at the start)
+> +					 */
+> +	size_t doorbell_process_limit;	/* Number of processes we have doorbell space for. */
+> +	u32 __iomem *doorbell_kernel_ptr; /* this is a pointer for a doorbells page used by kernel queue */
+> +
+>  	struct kgd2kfd_shared_resources shared_resources;
+>  };
+>  
+> @@ -68,15 +104,124 @@ void kgd2kfd_device_exit(struct kfd_dev *kfd);
+>  
+>  extern const struct kfd2kgd_calls *kfd2kgd;
+>  
+> +/* Dummy struct just to make kfd_mem_obj* a unique pointer type. */
+> +struct kfd_mem_obj_s;
+> +typedef struct kfd_mem_obj_s *kfd_mem_obj;
+
+IIRC the rule is no more typedef in kernel. Or maybe i just dreamt
+that rule.
+
+> +
+> +enum kfd_mempool {
+> +	KFD_MEMPOOL_SYSTEM_CACHEABLE = 1,
+> +	KFD_MEMPOOL_SYSTEM_WRITECOMBINE = 2,
+> +	KFD_MEMPOOL_FRAMEBUFFER = 3,
+> +};
+> +
+> +
+> +int kfd_vidmem_alloc(struct kfd_dev *kfd, size_t size, size_t alignment,
+> +			enum kfd_mempool pool, kfd_mem_obj *mem_obj);
+> +void kfd_vidmem_free(struct kfd_dev *kfd, kfd_mem_obj mem_obj);
+> +int kfd_vidmem_gpumap(struct kfd_dev *kfd, kfd_mem_obj mem_obj, uint64_t *vmid0_address);
+> +void kfd_vidmem_ungpumap(struct kfd_dev *kfd, kfd_mem_obj mem_obj);
+> +int kfd_vidmem_kmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj, void **ptr);
+> +void kfd_vidmem_unkmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj);
+> +int kfd_vidmem_alloc_map(struct kfd_dev *kfd, kfd_mem_obj *mem_obj, void **ptr,
+> +			uint64_t *vmid0_address, size_t size);
+> +void kfd_vidmem_free_unmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj);
+>  /* Character device interface */
+>  int kfd_chardev_init(void);
+>  void kfd_chardev_exit(void);
+>  struct device *kfd_chardev(void);
+>  
+> +
+> +/* Data that is per-process-per device. */
+> +struct kfd_process_device {
+> +	/*
+> +	 * List of all per-device data for a process.
+> +	 * Starts from kfd_process.per_device_data.
+> +	 */
+> +	struct list_head per_device_list;
+> +
+> +	/* The device that owns this data. */
+> +	struct kfd_dev *dev;
+> +
+> +	/* The user-mode address of the doorbell mapping for this device. */
+> +	doorbell_t __user *doorbell_mapping;
+> +
+> +	/* Is this process/pasid bound to this device? (amd_iommu_bind_pasid) */
+> +	bool bound;
+
+Best to put the boolean at the end of the structure ...
+
+> +
+> +	/*Apertures*/
+> +	uint64_t lds_base;
+> +	uint64_t lds_limit;
+> +	uint64_t gpuvm_base;
+> +	uint64_t gpuvm_limit;
+> +	uint64_t scratch_base;
+> +	uint64_t scratch_limit;
+> +};
+> +
+>  /* Process data */
+>  struct kfd_process {
+> +	struct list_head processes_list;
+> +
+> +	struct mm_struct *mm;
+> +
+> +	struct mutex mutex;
+> +
+> +	/*
+> +	 * In any process, the thread that started main() is the lead
+> +	 * thread and outlives the rest.
+> +	 * It is here because amd_iommu_bind_pasid wants a task_struct.
+> +	 */
+> +	struct task_struct *lead_thread;
+> +
+> +	pasid_t pasid;
+> +
+> +	/*
+> +	 * List of kfd_process_device structures,
+> +	 * one for each device the process is using.
+> +	 */
+> +	struct list_head per_device_data;
+> +
+> +	/* The process's queues. */
+> +	size_t queue_array_size;
+> +
+> +	/* Size is queue_array_size, up to MAX_PROCESS_QUEUES. */
+> +	struct kfd_queue **queues;
+> +
+> +	unsigned long allocated_queue_bitmap[DIV_ROUND_UP(MAX_PROCESS_QUEUES, BITS_PER_LONG)];
+> +
+> +	/*Is the user space process 32 bit?*/
+> +	bool is_32bit_user_mode;
+>  };
+>  
+> +struct kfd_process *kfd_create_process(const struct task_struct *);
+> +struct kfd_process *kfd_get_process(const struct task_struct *);
+> +
+> +struct kfd_process_device *kfd_get_process_device_data(struct kfd_dev *dev,
+> +							struct kfd_process *p);
+> +
+> +/* PASIDs */
+> +int kfd_pasid_init(void);
+> +void kfd_pasid_exit(void);
+> +bool kfd_set_pasid_limit(pasid_t new_limit);
+> +pasid_t kfd_get_pasid_limit(void);
+> +pasid_t kfd_pasid_alloc(void);
+> +void kfd_pasid_free(pasid_t pasid);
+> +
+> +/* Doorbells */
+> +void kfd_doorbell_init(struct kfd_dev *kfd);
+> +int kfd_doorbell_mmap(struct kfd_process *process, struct vm_area_struct *vma);
+> +doorbell_t __user *kfd_get_doorbell(struct file *devkfd,
+> +					struct kfd_process *process,
+> +					struct kfd_dev *dev,
+> +					unsigned int doorbell_index);
+> +u32 __iomem *kfd_get_kernel_doorbell(struct kfd_dev *kfd,
+> +					unsigned int *doorbell_off);
+> +void kfd_release_kernel_doorbell(struct kfd_dev *kfd, u32 __iomem *db_addr);
+> +u32 read_kernel_doorbell(u32 __iomem *db);
+> +void write_kernel_doorbell(u32 __iomem *db, u32 value);
+> +unsigned int kfd_queue_id_to_doorbell(struct kfd_dev *kfd,
+> +					struct kfd_process *process,
+> +					unsigned int queue_id);
+> +
 >  extern struct device *kfd_device;
 >  
-> +/* Topology */
-> +int kfd_topology_init(void);
-> +void kfd_topology_shutdown(void);
-> +int kfd_topology_add_device(struct kfd_dev *gpu);
-> +int kfd_topology_remove_device(struct kfd_dev *gpu);
-> +struct kfd_dev *kfd_device_by_id(uint32_t gpu_id);
-> +struct kfd_dev *kfd_device_by_pci_dev(const struct pci_dev *pdev);
-> +struct kfd_dev *kfd_topology_enum_kfd_devices(uint8_t idx);
-> +
->  /* Interrupts */
->  void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
+>  /* Topology */
+> @@ -95,4 +240,7 @@ void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
+>  void kgd2kfd_suspend(struct kfd_dev *dev);
+>  int kgd2kfd_resume(struct kfd_dev *dev);
 >  
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_topology.c b/drivers/gpu/drm/radeon/amdkfd/kfd_topology.c
+> +/* amdkfd Apertures */
+> +int kfd_init_apertures(struct kfd_process *process);
+> +
+>  #endif
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_process.c b/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
 > new file mode 100644
-> index 0000000..30da4c3
+> index 0000000..5efbce0
 > --- /dev/null
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_topology.c
-> @@ -0,0 +1,1207 @@
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
+> @@ -0,0 +1,374 @@
 > +/*
 > + * Copyright 2014 Advanced Micro Devices, Inc.
 > + *
@@ -503,1197 +1017,364 @@ No pragma
 > + * OTHER DEALINGS IN THE SOFTWARE.
 > + */
 > +
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/pci.h>
-> +#include <linux/errno.h>
-> +#include <linux/acpi.h>
-> +#include <linux/hash.h>
-> +#include <linux/cpufreq.h>
+> +#include <linux/mutex.h>
+> +#include <linux/log2.h>
+> +#include <linux/sched.h>
+> +#include <linux/slab.h>
+> +#include <linux/notifier.h>
+> +struct mm_struct;
 > +
 > +#include "kfd_priv.h"
-> +#include "kfd_crat.h"
-> +#include "kfd_topology.h"
 > +
-> +static struct list_head topology_device_list;
-> +static int topology_crat_parsed;
-> +static struct kfd_system_properties sys_props;
+> +/*
+> + * Initial size for the array of queues.
+> + * The allocated size is doubled each time
+> + * it is exceeded up to MAX_PROCESS_QUEUES.
+> + */
+> +#define INITIAL_QUEUE_ARRAY_SIZE 16
 > +
-> +static DECLARE_RWSEM(topology_lock);
+> +/* List of struct kfd_process */
+> +static struct list_head kfd_processes_list = LIST_HEAD_INIT(kfd_processes_list);
 > +
-> +struct kfd_dev *kfd_device_by_id(uint32_t gpu_id)
+> +static DEFINE_MUTEX(kfd_processes_mutex);
+> +
+> +static struct kfd_process *create_process(const struct task_struct *thread);
+> +
+> +struct kfd_process *kfd_create_process(const struct task_struct *thread)
 > +{
-> +	struct kfd_topology_device *top_dev;
-> +	struct kfd_dev *device = NULL;
+> +	struct kfd_process *process;
 > +
-> +	down_read(&topology_lock);
+> +	if (thread->mm == NULL)
+> +		return ERR_PTR(-EINVAL);
 > +
-> +	list_for_each_entry(top_dev, &topology_device_list, list)
-> +		if (top_dev->gpu_id == gpu_id) {
-> +			device = top_dev->gpu;
-> +			break;
-> +		}
-> +
-> +	up_read(&topology_lock);
-> +
-> +	return device;
-> +}
-> +
-> +struct kfd_dev *kfd_device_by_pci_dev(const struct pci_dev *pdev)
-> +{
-> +	struct kfd_topology_device *top_dev;
-> +	struct kfd_dev *device = NULL;
-> +
-> +	down_read(&topology_lock);
-> +
-> +	list_for_each_entry(top_dev, &topology_device_list, list)
-> +		if (top_dev->gpu->pdev == pdev) {
-> +			device = top_dev->gpu;
-> +			break;
-> +		}
-> +
-> +	up_read(&topology_lock);
-> +
-> +	return device;
-> +}
-> +
-> +static int kfd_topology_get_crat_acpi(void *crat_image, size_t *size)
-> +{
-> +	struct acpi_table_header *crat_table;
-> +	acpi_status status;
-> +
-> +	if (!size)
-> +		return -EINVAL;
+> +	/* Only the pthreads threading model is supported. */
+> +	if (thread->group_leader->mm != thread->mm)
+> +		return ERR_PTR(-EINVAL);
 > +
 > +	/*
-> +	 * Fetch the CRAT table from ACPI
+> +	 * take kfd processes mutex before starting of process creation
+> +	 * so there won't be a case where two threads of the same process
+> +	 * create two kfd_process structures
 > +	 */
-> +	status = acpi_get_table(CRAT_SIGNATURE, 0, &crat_table);
-> +	if (status == AE_NOT_FOUND) {
-> +		pr_warn("CRAT table not found\n");
-> +		return -ENODATA;
-> +	} else if (ACPI_FAILURE(status)) {
-> +		const char *err = acpi_format_exception(status);
+> +	mutex_lock(&kfd_processes_mutex);
 > +
-> +		pr_err("CRAT table error: %s\n", err);
-> +		return -EINVAL;
+> +	/* A prior open of /dev/kfd could have already created the process. */
+> +	process = thread->mm->kfd_process;
+> +	if (process)
+> +		pr_debug("kfd: process already found\n");
+> +
+> +	if (!process)
+> +		process = create_process(thread);
+> +
+> +	mutex_unlock(&kfd_processes_mutex);
+> +
+> +	return process;
+> +}
+> +
+> +struct kfd_process *kfd_get_process(const struct task_struct *thread)
+> +{
+> +	struct kfd_process *process;
+> +
+> +	if (thread->mm == NULL)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	/* Only the pthreads threading model is supported. */
+> +	if (thread->group_leader->mm != thread->mm)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	process = thread->mm->kfd_process;
+> +
+> +	return process;
+> +}
+> +
+> +static void free_process(struct kfd_process *p)
+> +{
+> +	struct kfd_process_device *pdd, *temp;
+> +
+> +	BUG_ON(p == NULL);
+> +
+> +	list_for_each_entry_safe(pdd, temp, &p->per_device_data, per_device_list) {
+> +		list_del(&pdd->per_device_list);
+> +		kfree(pdd);
 > +	}
 > +
-> +	if (*size >= crat_table->length && crat_image != 0)
-> +		memcpy(crat_image, crat_table, crat_table->length);
+> +	kfd_pasid_free(p->pasid);
 > +
-> +	*size = crat_table->length;
+> +	mutex_destroy(&p->mutex);
+> +
+> +	kfree(p->queues);
+> +
+> +	list_del(&p->processes_list);
+> +
+> +	kfree(p);
+> +}
+> +
+> +int kfd_process_exit(struct notifier_block *nb,
+> +			unsigned long action, void *data)
+> +{
+> +	struct mm_struct *mm = data;
+> +	struct kfd_process *p;
+> +
+> +	mutex_lock(&kfd_processes_mutex);
+> +
+> +	p = mm->kfd_process;
+> +	if (p) {
+> +		free_process(p);
+> +		mm->kfd_process = NULL;
+> +	}
+> +
+> +	mutex_unlock(&kfd_processes_mutex);
 > +
 > +	return 0;
 > +}
 > +
-> +static void kfd_populated_cu_info_cpu(struct kfd_topology_device *dev,
-> +		struct crat_subtype_computeunit *cu)
+> +static struct kfd_process *create_process(const struct task_struct *thread)
 > +{
-> +	BUG_ON(!dev);
-> +	BUG_ON(!cu);
+> +	struct kfd_process *process;
+> +	int err = -ENOMEM;
 > +
-> +	dev->node_props.cpu_cores_count = cu->num_cpu_cores;
-> +	dev->node_props.cpu_core_id_base = cu->processor_id_low;
-> +	if (cu->hsa_capability & CRAT_CU_FLAGS_IOMMU_PRESENT)
-> +		dev->node_props.capability |= HSA_CAP_ATS_PRESENT;
+> +	process = kzalloc(sizeof(*process), GFP_KERNEL);
 > +
-> +	pr_info("CU CPU: cores=%d id_base=%d\n", cu->num_cpu_cores,
-> +			cu->processor_id_low);
+> +	if (!process)
+> +		goto err_alloc_process;
+> +
+> +	process->queues = kmalloc_array(INITIAL_QUEUE_ARRAY_SIZE, sizeof(process->queues[0]), GFP_KERNEL);
+> +	if (!process->queues)
+> +		goto err_alloc_queues;
+> +
+> +	process->pasid = kfd_pasid_alloc();
+> +	if (process->pasid == 0)
+> +		goto err_alloc_pasid;
+> +
+> +	mutex_init(&process->mutex);
+> +
+> +	process->mm = thread->mm;
+> +	thread->mm->kfd_process = process;
+> +	list_add_tail(&process->processes_list, &kfd_processes_list);
+> +
+> +	process->lead_thread = thread->group_leader;
+> +
+> +	process->queue_array_size = INITIAL_QUEUE_ARRAY_SIZE;
+> +
+> +	INIT_LIST_HEAD(&process->per_device_data);
+> +
+> +	return process;
+> +
+> +err_alloc_pasid:
+> +	kfree(process->queues);
+> +err_alloc_queues:
+> +	kfree(process);
+> +err_alloc_process:
+> +	return ERR_PTR(err);
 > +}
 > +
-> +static void kfd_populated_cu_info_gpu(struct kfd_topology_device *dev,
-> +		struct crat_subtype_computeunit *cu)
+> +struct kfd_process_device *kfd_get_process_device_data(struct kfd_dev *dev,
+> +							struct kfd_process *p)
 > +{
-> +	BUG_ON(!dev);
-> +	BUG_ON(!cu);
+> +	struct kfd_process_device *pdd;
 > +
-> +	dev->node_props.simd_id_base = cu->processor_id_low;
-> +	dev->node_props.simd_count = cu->num_simd_cores;
-> +	dev->node_props.lds_size_in_kb = cu->lds_size_in_kb;
-> +	dev->node_props.max_waves_per_simd = cu->max_waves_simd;
-> +	dev->node_props.wave_front_size = cu->wave_front_size;
-> +	dev->node_props.mem_banks_count = cu->num_banks;
-> +	dev->node_props.array_count = cu->num_arrays;
-> +	dev->node_props.cu_per_simd_array = cu->num_cu_per_array;
-> +	dev->node_props.simd_per_cu = cu->num_simd_per_cu;
-> +	dev->node_props.max_slots_scratch_cu = cu->max_slots_scatch_cu;
-> +	if (cu->hsa_capability & CRAT_CU_FLAGS_HOT_PLUGGABLE)
-> +		dev->node_props.capability |= HSA_CAP_HOT_PLUGGABLE;
-> +	pr_info("CU GPU: simds=%d id_base=%d\n", cu->num_simd_cores,
-> +				cu->processor_id_low);
-> +}
+> +	list_for_each_entry(pdd, &p->per_device_data, per_device_list)
+> +		if (pdd->dev == dev)
+> +			return pdd;
 > +
-> +/* kfd_parse_subtype_cu is called when the topology mutex is already acquired */
-> +static int kfd_parse_subtype_cu(struct crat_subtype_computeunit *cu)
-> +{
-> +	struct kfd_topology_device *dev;
-> +	int i = 0;
-> +
-> +	BUG_ON(!cu);
-> +
-> +	pr_info("Found CU entry in CRAT table with proximity_domain=%d caps=%x\n",
-> +			cu->proximity_domain, cu->hsa_capability);
-> +	list_for_each_entry(dev, &topology_device_list, list) {
-> +		if (cu->proximity_domain == i) {
-> +			if (cu->flags & CRAT_CU_FLAGS_CPU_PRESENT)
-> +				kfd_populated_cu_info_cpu(dev, cu);
-> +
-> +			if (cu->flags & CRAT_CU_FLAGS_GPU_PRESENT)
-> +				kfd_populated_cu_info_gpu(dev, cu);
-> +			break;
-> +		}
-> +		i++;
+> +	pdd = kzalloc(sizeof(*pdd), GFP_KERNEL);
+> +	if (pdd != NULL) {
+> +		pdd->dev = dev;
+> +		list_add(&pdd->per_device_list, &p->per_device_data);
 > +	}
 > +
-> +	return 0;
-> +}
-> +
-> +/* kfd_parse_subtype_mem is called when the topology mutex is already acquired */
-> +static int kfd_parse_subtype_mem(struct crat_subtype_memory *mem)
-> +{
-> +	struct kfd_mem_properties *props;
-> +	struct kfd_topology_device *dev;
-> +	int i = 0;
-> +
-> +	BUG_ON(!mem);
-> +
-> +	pr_info("Found memory entry in CRAT table with proximity_domain=%d\n",
-> +			mem->promixity_domain);
-> +	list_for_each_entry(dev, &topology_device_list, list) {
-> +		if (mem->promixity_domain == i) {
-> +			props = kfd_alloc_struct(props);
-> +			if (props == 0)
-> +				return -ENOMEM;
-> +
-> +			if (dev->node_props.cpu_cores_count == 0)
-> +				props->heap_type = HSA_MEM_HEAP_TYPE_FB_PRIVATE;
-> +			else
-> +				props->heap_type = HSA_MEM_HEAP_TYPE_SYSTEM;
-> +
-> +			if (mem->flags & CRAT_MEM_FLAGS_HOT_PLUGGABLE)
-> +				props->flags |= HSA_MEM_FLAGS_HOT_PLUGGABLE;
-> +			if (mem->flags & CRAT_MEM_FLAGS_NON_VOLATILE)
-> +				props->flags |= HSA_MEM_FLAGS_NON_VOLATILE;
-> +
-> +			props->size_in_bytes = ((uint64_t)mem->length_high << 32) +
-> +						mem->length_low;
-> +			props->width = mem->width;
-> +
-> +			dev->mem_bank_count++;
-> +			list_add_tail(&props->list, &dev->mem_props);
-> +
-> +			break;
-> +		}
-> +		i++;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/* kfd_parse_subtype_cache is called when the topology mutex is already acquired */
-> +static int kfd_parse_subtype_cache(struct crat_subtype_cache *cache)
-> +{
-> +	struct kfd_cache_properties *props;
-> +	struct kfd_topology_device *dev;
-> +	uint32_t id;
-> +
-> +	BUG_ON(!cache);
-> +
-> +	id = cache->processor_id_low;
-> +
-> +	pr_info("Found cache entry in CRAT table with processor_id=%d\n", id);
-> +	list_for_each_entry(dev, &topology_device_list, list)
-> +		if (id == dev->node_props.cpu_core_id_base ||
-> +		    id == dev->node_props.simd_id_base) {
-> +			props = kfd_alloc_struct(props);
-> +			if (props == 0)
-> +				return -ENOMEM;
-> +
-> +			props->processor_id_low = id;
-> +			props->cache_level = cache->cache_level;
-> +			props->cache_size = cache->cache_size;
-> +			props->cacheline_size = cache->cache_line_size;
-> +			props->cachelines_per_tag = cache->lines_per_tag;
-> +			props->cache_assoc = cache->associativity;
-> +			props->cache_latency = cache->cache_latency;
-> +
-> +			if (cache->flags & CRAT_CACHE_FLAGS_DATA_CACHE)
-> +				props->cache_type |= HSA_CACHE_TYPE_DATA;
-> +			if (cache->flags & CRAT_CACHE_FLAGS_INST_CACHE)
-> +				props->cache_type |= HSA_CACHE_TYPE_INSTRUCTION;
-> +			if (cache->flags & CRAT_CACHE_FLAGS_CPU_CACHE)
-> +				props->cache_type |= HSA_CACHE_TYPE_CPU;
-> +			if (cache->flags & CRAT_CACHE_FLAGS_SIMD_CACHE)
-> +				props->cache_type |= HSA_CACHE_TYPE_HSACU;
-> +
-> +			dev->cache_count++;
-> +			dev->node_props.caches_count++;
-> +			list_add_tail(&props->list, &dev->cache_props);
-> +
-> +			break;
-> +		}
-> +
-> +	return 0;
-> +}
-> +
-> +/* kfd_parse_subtype_iolink is called when the topology mutex is already acquired */
-> +static int kfd_parse_subtype_iolink(struct crat_subtype_iolink *iolink)
-> +{
-> +	struct kfd_iolink_properties *props;
-> +	struct kfd_topology_device *dev;
-> +	uint32_t i = 0;
-> +	uint32_t id_from;
-> +	uint32_t id_to;
-> +
-> +	BUG_ON(!iolink);
-> +
-> +	id_from = iolink->proximity_domain_from;
-> +	id_to = iolink->proximity_domain_to;
-> +
-> +	pr_info("Found IO link entry in CRAT table with id_from=%d\n", id_from);
-> +	list_for_each_entry(dev, &topology_device_list, list) {
-> +		if (id_from == i) {
-> +			props = kfd_alloc_struct(props);
-> +			if (props == 0)
-> +				return -ENOMEM;
-> +
-> +			props->node_from = id_from;
-> +			props->node_to = id_to;
-> +			props->ver_maj = iolink->version_major;
-> +			props->ver_min = iolink->version_minor;
-> +
-> +			/*
-> +			 * weight factor (derived from CDIR), currently always 1
-> +			 */
-> +			props->weight = 1;
-> +
-> +			props->min_latency = iolink->minimum_latency;
-> +			props->max_latency = iolink->maximum_latency;
-> +			props->min_bandwidth = iolink->minimum_bandwidth_mbs;
-> +			props->max_bandwidth = iolink->maximum_bandwidth_mbs;
-> +			props->rec_transfer_size =
-> +					iolink->recommended_transfer_size;
-> +
-> +			dev->io_link_count++;
-> +			dev->node_props.io_links_count++;
-> +			list_add_tail(&props->list, &dev->io_link_props);
-> +
-> +			break;
-> +		}
-> +		i++;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int kfd_parse_subtype(struct crat_subtype_generic *sub_type_hdr)
-> +{
-> +	struct crat_subtype_computeunit *cu;
-> +	struct crat_subtype_memory *mem;
-> +	struct crat_subtype_cache *cache;
-> +	struct crat_subtype_iolink *iolink;
-> +	int ret = 0;
-> +
-> +	BUG_ON(!sub_type_hdr);
-> +
-> +	switch (sub_type_hdr->type) {
-> +	case CRAT_SUBTYPE_COMPUTEUNIT_AFFINITY:
-> +		cu = (struct crat_subtype_computeunit *)sub_type_hdr;
-> +		ret = kfd_parse_subtype_cu(cu);
-> +		break;
-> +	case CRAT_SUBTYPE_MEMORY_AFFINITY:
-> +		mem = (struct crat_subtype_memory *)sub_type_hdr;
-> +		ret = kfd_parse_subtype_mem(mem);
-> +		break;
-> +	case CRAT_SUBTYPE_CACHE_AFFINITY:
-> +		cache = (struct crat_subtype_cache *)sub_type_hdr;
-> +		ret = kfd_parse_subtype_cache(cache);
-> +		break;
-> +	case CRAT_SUBTYPE_TLB_AFFINITY:
-> +		/*
-> +		 * For now, nothing to do here
-> +		 */
-> +		pr_info("Found TLB entry in CRAT table (not processing)\n");
-> +		break;
-> +	case CRAT_SUBTYPE_CCOMPUTE_AFFINITY:
-> +		/*
-> +		 * For now, nothing to do here
-> +		 */
-> +		pr_info("Found CCOMPUTE entry in CRAT table (not processing)\n");
-> +		break;
-> +	case CRAT_SUBTYPE_IOLINK_AFFINITY:
-> +		iolink = (struct crat_subtype_iolink *)sub_type_hdr;
-> +		ret = kfd_parse_subtype_iolink(iolink);
-> +		break;
-> +	default:
-> +		pr_warn("Unknown subtype (%d) in CRAT\n",
-> +				sub_type_hdr->type);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static void kfd_release_topology_device(struct kfd_topology_device *dev)
-> +{
-> +	struct kfd_mem_properties *mem;
-> +	struct kfd_cache_properties *cache;
-> +	struct kfd_iolink_properties *iolink;
-> +
-> +	BUG_ON(!dev);
-> +
-> +	list_del(&dev->list);
-> +
-> +	while (dev->mem_props.next != &dev->mem_props) {
-> +		mem = container_of(dev->mem_props.next,
-> +				struct kfd_mem_properties, list);
-> +		list_del(&mem->list);
-> +		kfree(mem);
-> +	}
-> +
-> +	while (dev->cache_props.next != &dev->cache_props) {
-> +		cache = container_of(dev->cache_props.next,
-> +				struct kfd_cache_properties, list);
-> +		list_del(&cache->list);
-> +		kfree(cache);
-> +	}
-> +
-> +	while (dev->io_link_props.next != &dev->io_link_props) {
-> +		iolink = container_of(dev->io_link_props.next,
-> +				struct kfd_iolink_properties, list);
-> +		list_del(&iolink->list);
-> +		kfree(iolink);
-> +	}
-> +
-> +	kfree(dev);
-> +
-> +	sys_props.num_devices--;
-> +}
-> +
-> +static void kfd_release_live_view(void)
-> +{
-> +	struct kfd_topology_device *dev;
-> +
-> +	while (topology_device_list.next != &topology_device_list) {
-> +		dev = container_of(topology_device_list.next,
-> +				 struct kfd_topology_device, list);
-> +		kfd_release_topology_device(dev);
-> +}
-> +
-> +	memset(&sys_props, 0, sizeof(sys_props));
-> +}
-> +
-> +static struct kfd_topology_device *kfd_create_topology_device(void)
-> +{
-> +	struct kfd_topology_device *dev;
-> +
-> +	dev = kfd_alloc_struct(dev);
-> +	if (dev == 0) {
-> +		pr_err("No memory to allocate a topology device");
-> +		return 0;
-> +	}
-> +
-> +	INIT_LIST_HEAD(&dev->mem_props);
-> +	INIT_LIST_HEAD(&dev->cache_props);
-> +	INIT_LIST_HEAD(&dev->io_link_props);
-> +
-> +	list_add_tail(&dev->list, &topology_device_list);
-> +	sys_props.num_devices++;
-> +
-> +	return dev;
-> +	}
-> +
-> +static int kfd_parse_crat_table(void *crat_image)
-> +{
-> +	struct kfd_topology_device *top_dev;
-> +	struct crat_subtype_generic *sub_type_hdr;
-> +	uint16_t node_id;
-> +	int ret;
-> +	struct crat_header *crat_table = (struct crat_header *)crat_image;
-> +	uint16_t num_nodes;
-> +	uint32_t image_len;
-> +
-> +	if (!crat_image)
-> +		return -EINVAL;
-> +
-> +	num_nodes = crat_table->num_domains;
-> +	image_len = crat_table->length;
-> +
-> +	pr_info("Parsing CRAT table with %d nodes\n", num_nodes);
-> +
-> +	for (node_id = 0; node_id < num_nodes; node_id++) {
-> +		top_dev = kfd_create_topology_device();
-> +		if (!top_dev) {
-> +			kfd_release_live_view();
-> +			return -ENOMEM;
-> +		}
-> +	}
-> +
-> +	sys_props.platform_id = (*((uint64_t *)crat_table->oem_id)) & CRAT_OEMID_64BIT_MASK;
-> +	sys_props.platform_oem = *((uint64_t *)crat_table->oem_table_id);
-> +	sys_props.platform_rev = crat_table->revision;
-> +
-> +	sub_type_hdr = (struct crat_subtype_generic *)(crat_table+1);
-> +	while ((char *)sub_type_hdr + sizeof(struct crat_subtype_generic) <
-> +			((char *)crat_image) + image_len) {
-> +		if (sub_type_hdr->flags & CRAT_SUBTYPE_FLAGS_ENABLED) {
-> +			ret = kfd_parse_subtype(sub_type_hdr);
-> +			if (ret != 0) {
-> +				kfd_release_live_view();
-> +				return ret;
-> +			}
-> +		}
-> +
-> +		sub_type_hdr = (typeof(sub_type_hdr))((char *)sub_type_hdr +
-> +				sub_type_hdr->length);
-> +	}
-> +
-> +	sys_props.generation_count++;
-> +	topology_crat_parsed = 1;
-> +
-> +	return 0;
-> +}
-> +
-> +
-> +#define sysfs_show_gen_prop(buffer, fmt, ...) \
-> +		snprintf(buffer, PAGE_SIZE, "%s"fmt, buffer, __VA_ARGS__)
-> +#define sysfs_show_32bit_prop(buffer, name, value) \
-> +		sysfs_show_gen_prop(buffer, "%s %u\n", name, value)
-> +#define sysfs_show_64bit_prop(buffer, name, value) \
-> +		sysfs_show_gen_prop(buffer, "%s %llu\n", name, value)
-> +#define sysfs_show_32bit_val(buffer, value) \
-> +		sysfs_show_gen_prop(buffer, "%u\n", value)
-> +#define sysfs_show_str_val(buffer, value) \
-> +		sysfs_show_gen_prop(buffer, "%s\n", value)
-> +
-> +static ssize_t sysprops_show(struct kobject *kobj, struct attribute *attr,
-> +		char *buffer)
-> +{
-> +	ssize_t ret;
-> +
-> +	/* Making sure that the buffer is an empty string */
-> +	buffer[0] = 0;
-> +
-> +	if (attr == &sys_props.attr_genid) {
-> +		ret = sysfs_show_32bit_val(buffer, sys_props.generation_count);
-> +	} else if (attr == &sys_props.attr_props) {
-> +		sysfs_show_64bit_prop(buffer, "platform_oem",
-> +				sys_props.platform_oem);
-> +		sysfs_show_64bit_prop(buffer, "platform_id",
-> +				sys_props.platform_id);
-> +		ret = sysfs_show_64bit_prop(buffer, "platform_rev",
-> +				sys_props.platform_rev);
-> +	} else {
-> +		ret = -EINVAL;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct sysfs_ops sysprops_ops = {
-> +	.show = sysprops_show,
-> +};
-> +
-> +static struct kobj_type sysprops_type = {
-> +	.sysfs_ops = &sysprops_ops,
-> +};
-> +
-> +static ssize_t iolink_show(struct kobject *kobj, struct attribute *attr,
-> +		char *buffer)
-> +{
-> +	ssize_t ret;
-> +	struct kfd_iolink_properties *iolink;
-> +
-> +	/* Making sure that the buffer is an empty string */
-> +	buffer[0] = 0;
-> +
-> +	iolink = container_of(attr, struct kfd_iolink_properties, attr);
-> +	sysfs_show_32bit_prop(buffer, "type", iolink->iolink_type);
-> +	sysfs_show_32bit_prop(buffer, "version_major", iolink->ver_maj);
-> +	sysfs_show_32bit_prop(buffer, "version_minor", iolink->ver_min);
-> +	sysfs_show_32bit_prop(buffer, "node_from", iolink->node_from);
-> +	sysfs_show_32bit_prop(buffer, "node_to", iolink->node_to);
-> +	sysfs_show_32bit_prop(buffer, "weight", iolink->weight);
-> +	sysfs_show_32bit_prop(buffer, "min_latency", iolink->min_latency);
-> +	sysfs_show_32bit_prop(buffer, "max_latency", iolink->max_latency);
-> +	sysfs_show_32bit_prop(buffer, "min_bandwidth", iolink->min_bandwidth);
-> +	sysfs_show_32bit_prop(buffer, "max_bandwidth", iolink->max_bandwidth);
-> +	sysfs_show_32bit_prop(buffer, "recommended_transfer_size",
-> +			iolink->rec_transfer_size);
-> +	ret = sysfs_show_32bit_prop(buffer, "flags", iolink->flags);
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct sysfs_ops iolink_ops = {
-> +	.show = iolink_show,
-> +};
-> +
-> +static struct kobj_type iolink_type = {
-> +	.sysfs_ops = &iolink_ops,
-> +};
-> +
-> +static ssize_t mem_show(struct kobject *kobj, struct attribute *attr,
-> +		char *buffer)
-> +{
-> +	ssize_t ret;
-> +	struct kfd_mem_properties *mem;
-> +
-> +	/* Making sure that the buffer is an empty string */
-> +	buffer[0] = 0;
-> +
-> +	mem = container_of(attr, struct kfd_mem_properties, attr);
-> +	sysfs_show_32bit_prop(buffer, "heap_type", mem->heap_type);
-> +	sysfs_show_64bit_prop(buffer, "size_in_bytes", mem->size_in_bytes);
-> +	sysfs_show_32bit_prop(buffer, "flags", mem->flags);
-> +	sysfs_show_32bit_prop(buffer, "width", mem->width);
-> +	ret = sysfs_show_32bit_prop(buffer, "mem_clk_max", mem->mem_clk_max);
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct sysfs_ops mem_ops = {
-> +	.show = mem_show,
-> +};
-> +
-> +static struct kobj_type mem_type = {
-> +	.sysfs_ops = &mem_ops,
-> +};
-> +
-> +static ssize_t kfd_cache_show(struct kobject *kobj, struct attribute *attr,
-> +		char *buffer)
-> +{
-> +	ssize_t ret;
-> +	uint32_t i;
-> +	struct kfd_cache_properties *cache;
-> +
-> +	/* Making sure that the buffer is an empty string */
-> +	buffer[0] = 0;
-> +
-> +	cache = container_of(attr, struct kfd_cache_properties, attr);
-> +	sysfs_show_32bit_prop(buffer, "processor_id_low",
-> +			cache->processor_id_low);
-> +	sysfs_show_32bit_prop(buffer, "level", cache->cache_level);
-> +	sysfs_show_32bit_prop(buffer, "size", cache->cache_size);
-> +	sysfs_show_32bit_prop(buffer, "cache_line_size", cache->cacheline_size);
-> +	sysfs_show_32bit_prop(buffer, "cache_lines_per_tag",
-> +			cache->cachelines_per_tag);
-> +	sysfs_show_32bit_prop(buffer, "association", cache->cache_assoc);
-> +	sysfs_show_32bit_prop(buffer, "latency", cache->cache_latency);
-> +	sysfs_show_32bit_prop(buffer, "type", cache->cache_type);
-> +	snprintf(buffer, PAGE_SIZE, "%ssibling_map ", buffer);
-> +	for (i = 0; i < KFD_TOPOLOGY_CPU_SIBLINGS; i++)
-> +		ret = snprintf(buffer, PAGE_SIZE, "%s%d%s",
-> +				buffer, cache->sibling_map[i],
-> +				(i == KFD_TOPOLOGY_CPU_SIBLINGS-1) ?
-> +						"\n" : ",");
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct sysfs_ops cache_ops = {
-> +	.show = kfd_cache_show,
-> +};
-> +
-> +static struct kobj_type cache_type = {
-> +	.sysfs_ops = &cache_ops,
-> +};
-> +
-> +static ssize_t node_show(struct kobject *kobj, struct attribute *attr,
-> +		char *buffer)
-> +{
-> +	ssize_t ret;
-> +	struct kfd_topology_device *dev;
-> +	char public_name[KFD_TOPOLOGY_PUBLIC_NAME_SIZE];
-> +	uint32_t i;
-> +
-> +	/* Making sure that the buffer is an empty string */
-> +	buffer[0] = 0;
-> +
-> +	if (strcmp(attr->name, "gpu_id") == 0) {
-> +		dev = container_of(attr, struct kfd_topology_device,
-> +				attr_gpuid);
-> +		ret = sysfs_show_32bit_val(buffer, dev->gpu_id);
-> +	} else if (strcmp(attr->name, "name") == 0) {
-> +		dev = container_of(attr, struct kfd_topology_device,
-> +				attr_name);
-> +		for (i = 0; i < KFD_TOPOLOGY_PUBLIC_NAME_SIZE; i++) {
-> +			public_name[i] =
-> +					(char)dev->node_props.marketing_name[i];
-> +			if (dev->node_props.marketing_name[i] == 0)
-> +				break;
-> +		}
-> +		public_name[KFD_TOPOLOGY_PUBLIC_NAME_SIZE-1] = 0x0;
-> +		ret = sysfs_show_str_val(buffer, public_name);
-> +	} else {
-> +		dev = container_of(attr, struct kfd_topology_device,
-> +				attr_props);
-> +		sysfs_show_32bit_prop(buffer, "cpu_cores_count",
-> +				dev->node_props.cpu_cores_count);
-> +		sysfs_show_32bit_prop(buffer, "simd_count",
-> +				dev->node_props.simd_count);
-> +		sysfs_show_32bit_prop(buffer, "mem_banks_count",
-> +				dev->node_props.mem_banks_count);
-> +		sysfs_show_32bit_prop(buffer, "caches_count",
-> +				dev->node_props.caches_count);
-> +		sysfs_show_32bit_prop(buffer, "io_links_count",
-> +				dev->node_props.io_links_count);
-> +		sysfs_show_32bit_prop(buffer, "cpu_core_id_base",
-> +				dev->node_props.cpu_core_id_base);
-> +		sysfs_show_32bit_prop(buffer, "simd_id_base",
-> +				dev->node_props.simd_id_base);
-> +		sysfs_show_32bit_prop(buffer, "capability",
-> +				dev->node_props.capability);
-> +		sysfs_show_32bit_prop(buffer, "max_waves_per_simd",
-> +				dev->node_props.max_waves_per_simd);
-> +		sysfs_show_32bit_prop(buffer, "lds_size_in_kb",
-> +				dev->node_props.lds_size_in_kb);
-> +		sysfs_show_32bit_prop(buffer, "gds_size_in_kb",
-> +				dev->node_props.gds_size_in_kb);
-> +		sysfs_show_32bit_prop(buffer, "wave_front_size",
-> +				dev->node_props.wave_front_size);
-> +		sysfs_show_32bit_prop(buffer, "array_count",
-> +				dev->node_props.array_count);
-> +		sysfs_show_32bit_prop(buffer, "simd_arrays_per_engine",
-> +				dev->node_props.simd_arrays_per_engine);
-> +		sysfs_show_32bit_prop(buffer, "cu_per_simd_array",
-> +				dev->node_props.cu_per_simd_array);
-> +		sysfs_show_32bit_prop(buffer, "simd_per_cu",
-> +				dev->node_props.simd_per_cu);
-> +		sysfs_show_32bit_prop(buffer, "max_slots_scratch_cu",
-> +				dev->node_props.max_slots_scratch_cu);
-> +		sysfs_show_32bit_prop(buffer, "engine_id",
-> +				dev->node_props.engine_id);
-> +		sysfs_show_32bit_prop(buffer, "vendor_id",
-> +				dev->node_props.vendor_id);
-> +		sysfs_show_32bit_prop(buffer, "device_id",
-> +				dev->node_props.device_id);
-> +		sysfs_show_32bit_prop(buffer, "location_id",
-> +				dev->node_props.location_id);
-> +		sysfs_show_32bit_prop(buffer, "max_engine_clk_fcompute",
-> +				kfd2kgd->get_max_engine_clock_in_mhz(
-> +					dev->gpu->kgd));
-> +		sysfs_show_64bit_prop(buffer, "local_mem_size",
-> +				kfd2kgd->get_vmem_size(dev->gpu->kgd));
-> +		ret = sysfs_show_32bit_prop(buffer, "max_engine_clk_ccompute",
-> +				cpufreq_quick_get_max(0)/1000);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct sysfs_ops node_ops = {
-> +	.show = node_show,
-> +};
-> +
-> +static struct kobj_type node_type = {
-> +	.sysfs_ops = &node_ops,
-> +};
-> +
-> +static void kfd_remove_sysfs_file(struct kobject *kobj, struct attribute *attr)
-> +{
-> +	sysfs_remove_file(kobj, attr);
-> +	kobject_del(kobj);
-> +	kobject_put(kobj);
-> +}
-> +
-> +static void kfd_remove_sysfs_node_entry(struct kfd_topology_device *dev)
-> +{
-> +	struct kfd_iolink_properties *iolink;
-> +	struct kfd_cache_properties *cache;
-> +	struct kfd_mem_properties *mem;
-> +
-> +	BUG_ON(!dev);
-> +
-> +	if (dev->kobj_iolink) {
-> +		list_for_each_entry(iolink, &dev->io_link_props, list)
-> +			if (iolink->kobj) {
-> +				kfd_remove_sysfs_file(iolink->kobj, &iolink->attr);
-> +				iolink->kobj = 0;
-> +			}
-> +		kobject_del(dev->kobj_iolink);
-> +		kobject_put(dev->kobj_iolink);
-> +		dev->kobj_iolink = 0;
-> +	}
-> +
-> +	if (dev->kobj_cache) {
-> +		list_for_each_entry(cache, &dev->cache_props, list)
-> +			if (cache->kobj) {
-> +				kfd_remove_sysfs_file(cache->kobj, &cache->attr);
-> +				cache->kobj = 0;
-> +			}
-> +		kobject_del(dev->kobj_cache);
-> +		kobject_put(dev->kobj_cache);
-> +		dev->kobj_cache = 0;
-> +	}
-> +
-> +	if (dev->kobj_mem) {
-> +		list_for_each_entry(mem, &dev->mem_props, list)
-> +			if (mem->kobj) {
-> +				kfd_remove_sysfs_file(mem->kobj, &mem->attr);
-> +				mem->kobj = 0;
-> +			}
-> +		kobject_del(dev->kobj_mem);
-> +		kobject_put(dev->kobj_mem);
-> +		dev->kobj_mem = 0;
-> +	}
-> +
-> +	if (dev->kobj_node) {
-> +		sysfs_remove_file(dev->kobj_node, &dev->attr_gpuid);
-> +		sysfs_remove_file(dev->kobj_node, &dev->attr_name);
-> +		sysfs_remove_file(dev->kobj_node, &dev->attr_props);
-> +		kobject_del(dev->kobj_node);
-> +		kobject_put(dev->kobj_node);
-> +		dev->kobj_node = 0;
-> +	}
-> +}
-> +
-> +static int kfd_build_sysfs_node_entry(struct kfd_topology_device *dev,
-> +		uint32_t id)
-> +{
-> +	struct kfd_iolink_properties *iolink;
-> +	struct kfd_cache_properties *cache;
-> +	struct kfd_mem_properties *mem;
-> +	int ret;
-> +	uint32_t i;
-> +
-> +	BUG_ON(!dev);
-> +
-> +	/*
-> +	 * Creating the sysfs folders
-> +	 */
-> +	BUG_ON(dev->kobj_node);
-> +	dev->kobj_node = kfd_alloc_struct(dev->kobj_node);
-> +	if (!dev->kobj_node)
-> +		return -ENOMEM;
-> +
-> +	ret = kobject_init_and_add(dev->kobj_node, &node_type,
-> +			sys_props.kobj_nodes, "%d", id);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	dev->kobj_mem = kobject_create_and_add("mem_banks", dev->kobj_node);
-> +	if (!dev->kobj_mem)
-> +		return -ENOMEM;
-> +
-> +	dev->kobj_cache = kobject_create_and_add("caches", dev->kobj_node);
-> +	if (!dev->kobj_cache)
-> +		return -ENOMEM;
-> +
-> +	dev->kobj_iolink = kobject_create_and_add("io_links", dev->kobj_node);
-> +	if (!dev->kobj_iolink)
-> +		return -ENOMEM;
-> +
-> +	/*
-> +	 * Creating sysfs files for node properties
-> +	 */
-> +	dev->attr_gpuid.name = "gpu_id";
-> +	dev->attr_gpuid.mode = KFD_SYSFS_FILE_MODE;
-> +	sysfs_attr_init(&dev->attr_gpuid);
-> +	dev->attr_name.name = "name";
-> +	dev->attr_name.mode = KFD_SYSFS_FILE_MODE;
-> +	sysfs_attr_init(&dev->attr_name);
-> +	dev->attr_props.name = "properties";
-> +	dev->attr_props.mode = KFD_SYSFS_FILE_MODE;
-> +	sysfs_attr_init(&dev->attr_props);
-> +	ret = sysfs_create_file(dev->kobj_node, &dev->attr_gpuid);
-> +	if (ret < 0)
-> +		return ret;
-> +	ret = sysfs_create_file(dev->kobj_node, &dev->attr_name);
-> +	if (ret < 0)
-> +		return ret;
-> +	ret = sysfs_create_file(dev->kobj_node, &dev->attr_props);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	i = 0;
-> +	list_for_each_entry(mem, &dev->mem_props, list) {
-> +		mem->kobj = kzalloc(sizeof(struct kobject), GFP_KERNEL);
-> +		if (!mem->kobj)
-> +			return -ENOMEM;
-> +		ret = kobject_init_and_add(mem->kobj, &mem_type,
-> +				dev->kobj_mem, "%d", i);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		mem->attr.name = "properties";
-> +		mem->attr.mode = KFD_SYSFS_FILE_MODE;
-> +		sysfs_attr_init(&mem->attr);
-> +		ret = sysfs_create_file(mem->kobj, &mem->attr);
-> +		if (ret < 0)
-> +			return ret;
-> +		i++;
-> +	}
-> +
-> +	i = 0;
-> +	list_for_each_entry(cache, &dev->cache_props, list) {
-> +		cache->kobj = kzalloc(sizeof(struct kobject), GFP_KERNEL);
-> +		if (!cache->kobj)
-> +			return -ENOMEM;
-> +		ret = kobject_init_and_add(cache->kobj, &cache_type,
-> +				dev->kobj_cache, "%d", i);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		cache->attr.name = "properties";
-> +		cache->attr.mode = KFD_SYSFS_FILE_MODE;
-> +		sysfs_attr_init(&cache->attr);
-> +		ret = sysfs_create_file(cache->kobj, &cache->attr);
-> +		if (ret < 0)
-> +			return ret;
-> +		i++;
-> +	}
-> +
-> +	i = 0;
-> +	list_for_each_entry(iolink, &dev->io_link_props, list) {
-> +		iolink->kobj = kzalloc(sizeof(struct kobject), GFP_KERNEL);
-> +		if (!iolink->kobj)
-> +			return -ENOMEM;
-> +		ret = kobject_init_and_add(iolink->kobj, &iolink_type,
-> +				dev->kobj_iolink, "%d", i);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		iolink->attr.name = "properties";
-> +		iolink->attr.mode = KFD_SYSFS_FILE_MODE;
-> +		sysfs_attr_init(&iolink->attr);
-> +		ret = sysfs_create_file(iolink->kobj, &iolink->attr);
-> +		if (ret < 0)
-> +			return ret;
-> +		i++;
-> +}
-> +
-> +	return 0;
-> +}
-> +
-> +static int kfd_build_sysfs_node_tree(void)
-> +{
-> +	struct kfd_topology_device *dev;
-> +	int ret;
-> +	uint32_t i = 0;
-> +
-> +	list_for_each_entry(dev, &topology_device_list, list) {
-> +		ret = kfd_build_sysfs_node_entry(dev, 0);
-> +		if (ret < 0)
-> +			return ret;
-> +		i++;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void kfd_remove_sysfs_node_tree(void)
-> +{
-> +	struct kfd_topology_device *dev;
-> +
-> +	list_for_each_entry(dev, &topology_device_list, list)
-> +		kfd_remove_sysfs_node_entry(dev);
-> +}
-> +
-> +static int kfd_topology_update_sysfs(void)
-> +{
-> +	int ret;
-> +
-> +	pr_info("Creating topology SYSFS entries\n");
-> +	if (sys_props.kobj_topology == 0) {
-> +		sys_props.kobj_topology = kfd_alloc_struct(sys_props.kobj_topology);
-> +		if (!sys_props.kobj_topology)
-> +			return -ENOMEM;
-> +
-> +		ret = kobject_init_and_add(sys_props.kobj_topology,
-> +				&sysprops_type,  &kfd_device->kobj,
-> +				"topology");
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		sys_props.kobj_nodes = kobject_create_and_add("nodes",
-> +				sys_props.kobj_topology);
-> +		if (!sys_props.kobj_nodes)
-> +			return -ENOMEM;
-> +
-> +		sys_props.attr_genid.name = "generation_id";
-> +		sys_props.attr_genid.mode = KFD_SYSFS_FILE_MODE;
-> +		sysfs_attr_init(&sys_props.attr_genid);
-> +		ret = sysfs_create_file(sys_props.kobj_topology,
-> +				&sys_props.attr_genid);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		sys_props.attr_props.name = "system_properties";
-> +		sys_props.attr_props.mode = KFD_SYSFS_FILE_MODE;
-> +		sysfs_attr_init(&sys_props.attr_props);
-> +		ret = sysfs_create_file(sys_props.kobj_topology,
-> +				&sys_props.attr_props);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	kfd_remove_sysfs_node_tree();
-> +
-> +	return kfd_build_sysfs_node_tree();
-> +}
-> +
-> +static void kfd_topology_release_sysfs(void)
-> +{
-> +	kfd_remove_sysfs_node_tree();
-> +	if (sys_props.kobj_topology) {
-> +		sysfs_remove_file(sys_props.kobj_topology,
-> +				&sys_props.attr_genid);
-> +		sysfs_remove_file(sys_props.kobj_topology,
-> +				&sys_props.attr_props);
-> +		if (sys_props.kobj_nodes) {
-> +			kobject_del(sys_props.kobj_nodes);
-> +			kobject_put(sys_props.kobj_nodes);
-> +			sys_props.kobj_nodes = 0;
-> +		}
-> +		kobject_del(sys_props.kobj_topology);
-> +		kobject_put(sys_props.kobj_topology);
-> +		sys_props.kobj_topology = 0;
-> +	}
-> +}
-> +
-> +int kfd_topology_init(void)
-> +{
-> +	void *crat_image = 0;
-> +	size_t image_size = 0;
-> +	int ret;
-> +
-> +	/*
-> +	 * Initialize the head for the topology device list
-> +	 */
-> +	INIT_LIST_HEAD(&topology_device_list);
-> +	init_rwsem(&topology_lock);
-> +	topology_crat_parsed = 0;
-> +
-> +	memset(&sys_props, 0, sizeof(sys_props));
-> +
-> +	/*
-> +	 * Get the CRAT image from the ACPI
-> +	 */
-> +	ret = kfd_topology_get_crat_acpi(crat_image, &image_size);
-> +	if (ret == 0 && image_size > 0) {
-> +		pr_info("Found CRAT image with size=%zd\n", image_size);
-> +		crat_image = kmalloc(image_size, GFP_KERNEL);
-> +		if (!crat_image) {
-> +			ret = -ENOMEM;
-> +			pr_err("No memory for allocating CRAT image\n");
-> +			goto err;
-> +		}
-> +		ret = kfd_topology_get_crat_acpi(crat_image, &image_size);
-> +
-> +		if (ret == 0) {
-> +			down_write(&topology_lock);
-> +			ret = kfd_parse_crat_table(crat_image);
-> +			if (ret == 0)
-> +				ret = kfd_topology_update_sysfs();
-> +			up_write(&topology_lock);
-> +		} else {
-> +			pr_err("Couldn't get CRAT table size from ACPI\n");
-> +		}
-> +		kfree(crat_image);
-> +	} else if (ret == -ENODATA) {
-> +		ret = 0;
-> +	} else {
-> +		pr_err("Couldn't get CRAT table size from ACPI\n");
-> +	}
-> +
-> +err:
-> +	pr_info("Finished initializing topology ret=%d\n", ret);
-> +	return ret;
-> +}
-> +
-> +void kfd_topology_shutdown(void)
-> +{
-> +	kfd_topology_release_sysfs();
-> +	kfd_release_live_view();
-> +}
-> +
-> +static void kfd_debug_print_topology(void)
-> +{
-> +	struct kfd_topology_device *dev;
-> +	uint32_t i = 0;
-> +
-> +	pr_info("DEBUG PRINT OF TOPOLOGY:");
-> +	list_for_each_entry(dev, &topology_device_list, list) {
-> +		pr_info("Node: %d\n", i);
-> +		pr_info("\tGPU assigned: %s\n", (dev->gpu ? "yes" : "no"));
-> +		pr_info("\tCPU count: %d\n", dev->node_props.cpu_cores_count);
-> +		pr_info("\tSIMD count: %d", dev->node_props.simd_count);
-> +		i++;
-> +	}
-> +}
-> +
-> +static uint32_t kfd_generate_gpu_id(struct kfd_dev *gpu)
-> +{
-> +	uint32_t hashout;
-> +	uint32_t buf[7];
-> +	int i;
-> +
-> +	if (!gpu)
-> +		return 0;
-> +
-> +	buf[0] = gpu->pdev->devfn;
-> +	buf[1] = gpu->pdev->subsystem_vendor;
-> +	buf[2] = gpu->pdev->subsystem_device;
-> +	buf[3] = gpu->pdev->device;
-> +	buf[4] = gpu->pdev->bus->number;
-> +	buf[5] = (uint32_t)(kfd2kgd->get_vmem_size(gpu->kgd) & 0xffffffff);
-> +	buf[6] = (uint32_t)(kfd2kgd->get_vmem_size(gpu->kgd) >> 32);
-> +
-> +	for (i = 0, hashout = 0; i < 7; i++)
-> +		hashout ^= hash_32(buf[i], KFD_GPU_ID_HASH_WIDTH);
-> +
-> +	return hashout;
-> +}
-> +
-> +static struct kfd_topology_device *kfd_assign_gpu(struct kfd_dev *gpu)
-> +{
-> +	struct kfd_topology_device *dev;
-> +	struct kfd_topology_device *out_dev = 0;
-> +
-> +	BUG_ON(!gpu);
-> +
-> +	list_for_each_entry(dev, &topology_device_list, list)
-> +		if (dev->gpu == 0 && dev->node_props.simd_count > 0) {
-> +			dev->gpu = gpu;
-> +			out_dev = dev;
-> +			break;
-> +		}
-> +
-> +	return out_dev;
-> +}
-> +
-> +static void kfd_notify_gpu_change(uint32_t gpu_id, int arrival)
-> +{
-> +	/*
-> +	 * TODO: Generate an event for thunk about the arrival/removal
-> +	 * of the GPU
-> +	 */
-> +}
-> +
-> +int kfd_topology_add_device(struct kfd_dev *gpu)
-> +{
-> +	uint32_t gpu_id;
-> +	struct kfd_topology_device *dev;
-> +	int res;
-> +
-> +	BUG_ON(!gpu);
-> +
-> +	gpu_id = kfd_generate_gpu_id(gpu);
-> +
-> +	pr_debug("kfd: Adding new GPU (ID: 0x%x) to topology\n", gpu_id);
-> +
-> +	down_write(&topology_lock);
-> +	/*
-> +	 * Try to assign the GPU to existing topology device (generated from
-> +	 * CRAT table
-> +	 */
-> +	dev = kfd_assign_gpu(gpu);
-> +	if (!dev) {
-> +		pr_info("GPU was not found in the current topology. Extending.\n");
-> +		kfd_debug_print_topology();
-> +		dev = kfd_create_topology_device();
-> +		if (!dev) {
-> +			res = -ENOMEM;
-> +			goto err;
-> +		}
-> +		dev->gpu = gpu;
-> +
-> +		/*
-> +		 * TODO: Make a call to retrieve topology information from the
-> +		 * GPU vBIOS
-> +		 */
-> +
-> +		/*
-> +		 * Update the SYSFS tree, since we added another topology device
-> +		 */
-> +		if (kfd_topology_update_sysfs() < 0)
-> +			kfd_topology_release_sysfs();
-> +
-> +	}
-> +
-> +	dev->gpu_id = gpu_id;
-> +	gpu->id = gpu_id;
-> +	dev->node_props.vendor_id = gpu->pdev->vendor;
-> +	dev->node_props.device_id = gpu->pdev->device;
-> +	dev->node_props.location_id = (gpu->pdev->bus->number << 24) +
-> +			(gpu->pdev->devfn & 0xffffff);
-> +	/*
-> +	 * TODO: Retrieve max engine clock values from KGD
-> +	 */
-> +
-> +	res = 0;
-> +
-> +err:
-> +	up_write(&topology_lock);
-> +
-> +	if (res == 0)
-> +		kfd_notify_gpu_change(gpu_id, 1);
-> +
-> +	return res;
-> +}
-> +
-> +int kfd_topology_remove_device(struct kfd_dev *gpu)
-> +{
-> +	struct kfd_topology_device *dev;
-> +	uint32_t gpu_id;
-> +	int res = -ENODEV;
-> +
-> +	BUG_ON(!gpu);
-> +
-> +	down_write(&topology_lock);
-> +
-> +	list_for_each_entry(dev, &topology_device_list, list)
-> +		if (dev->gpu == gpu) {
-> +			gpu_id = dev->gpu_id;
-> +			kfd_remove_sysfs_node_entry(dev);
-> +			kfd_release_topology_device(dev);
-> +			res = 0;
-> +			if (kfd_topology_update_sysfs() < 0)
-> +				kfd_topology_release_sysfs();
-> +			break;
-> +		}
-> +
-> +	up_write(&topology_lock);
-> +
-> +	if (res == 0)
-> +		kfd_notify_gpu_change(gpu_id, 0);
-> +
-> +	return res;
+> +	return pdd;
 > +}
 > +
 > +/*
-> + * When idx is out of bounds, the function will return NULL
+> + * Direct the IOMMU to bind the process (specifically the pasid->mm) to the device.
+> + * Unbinding occurs when the process dies or the device is removed.
+> + *
+> + * Assumes that the process lock is held.
 > + */
-> +struct kfd_dev *kfd_topology_enum_kfd_devices(uint8_t idx)
+> +struct kfd_process_device *kfd_bind_process_to_device(struct kfd_dev *dev,
+> +							struct kfd_process *p)
 > +{
+> +	struct kfd_process_device *pdd = kfd_get_process_device_data(dev, p);
 > +
-> +	struct kfd_topology_device *top_dev;
-> +	struct kfd_dev *device = NULL;
-> +	uint8_t device_idx = 0;
+> +	if (pdd == NULL)
+> +		return ERR_PTR(-ENOMEM);
 > +
-> +	down_read(&topology_lock);
+> +	if (pdd->bound)
+> +		return pdd;
 > +
-> +	list_for_each_entry(top_dev, &topology_device_list, list) {
-> +		if (device_idx == idx) {
-> +			device = top_dev->gpu;
-> +			break;
-> +		}
+> +	pdd->bound = true;
 > +
-> +		device_idx++;
-> +	}
-> +
-> +	up_read(&topology_lock);
-> +
-> +	return device;
-> +
+> +	return pdd;
 > +}
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_topology.h b/drivers/gpu/drm/radeon/amdkfd/kfd_topology.h
+> +
+> +void kfd_unbind_process_from_device(struct kfd_dev *dev, pasid_t pasid)
+> +{
+> +	struct kfd_process *p;
+> +	struct kfd_process_device *pdd;
+> +
+> +	BUG_ON(dev == NULL);
+> +
+> +	mutex_lock(&kfd_processes_mutex);
+> +
+> +	list_for_each_entry(p, &kfd_processes_list, processes_list)
+> +		if (p->pasid == pasid)
+> +			break;
+> +
+> +	mutex_unlock(&kfd_processes_mutex);
+> +
+> +	BUG_ON(p->pasid != pasid);
+> +
+> +	pdd = kfd_get_process_device_data(dev, p);
+> +
+> +	BUG_ON(pdd == NULL);
+> +
+> +	mutex_lock(&p->mutex);
+> +
+> +	/*
+> +	 * Just mark pdd as unbound, because we still need it to call
+> +	 * amd_iommu_unbind_pasid() in when the process exits.
+> +	 * We don't call amd_iommu_unbind_pasid() here
+> +	 * because the IOMMU called us.
+> +	 */
+> +	pdd->bound = false;
+> +
+> +	mutex_unlock(&p->mutex);
+> +}
+> +
+> +/*
+> + * Ensure that the process's queue array is large enough to hold
+> + * the queue at queue_id.
+> + * Assumes that the process lock is held.
+> + */
+> +static bool ensure_queue_array_size(struct kfd_process *p, unsigned int queue_id)
+> +{
+> +	size_t desired_size;
+> +	struct kfd_queue **new_queues;
+> +
+> +	compiletime_assert(INITIAL_QUEUE_ARRAY_SIZE > 0, "INITIAL_QUEUE_ARRAY_SIZE must not be 0");
+> +	compiletime_assert(INITIAL_QUEUE_ARRAY_SIZE <= MAX_PROCESS_QUEUES,
+> +			   "INITIAL_QUEUE_ARRAY_SIZE must be less than MAX_PROCESS_QUEUES");
+> +	/* Ensure that doubling the current size won't ever overflow. */
+> +	compiletime_assert(MAX_PROCESS_QUEUES < SIZE_MAX / 2, "MAX_PROCESS_QUEUES must be less than SIZE_MAX/2");
+> +
+> +	/*
+> +	 * These & queue_id < MAX_PROCESS_QUEUES guarantee that
+> +	 * the desired_size calculation will end up <= MAX_PROCESS_QUEUES
+> +	 */
+> +	compiletime_assert(is_power_of_2(INITIAL_QUEUE_ARRAY_SIZE), "INITIAL_QUEUE_ARRAY_SIZE must be power of 2.");
+> +	compiletime_assert(MAX_PROCESS_QUEUES % INITIAL_QUEUE_ARRAY_SIZE == 0,
+> +			   "MAX_PROCESS_QUEUES must be multiple of INITIAL_QUEUE_ARRAY_SIZE.");
+> +	compiletime_assert(is_power_of_2(MAX_PROCESS_QUEUES / INITIAL_QUEUE_ARRAY_SIZE),
+> +			   "MAX_PROCESS_QUEUES must be a power-of-2 multiple of INITIAL_QUEUE_ARRAY_SIZE.");
+> +
+> +	if (queue_id < p->queue_array_size)
+> +		return true;
+> +
+> +	if (queue_id >= MAX_PROCESS_QUEUES)
+> +		return false;
+> +
+> +	desired_size = p->queue_array_size;
+> +	while (desired_size <= queue_id)
+> +		desired_size *= 2;
+> +
+> +	BUG_ON(desired_size < queue_id || desired_size > MAX_PROCESS_QUEUES);
+> +	BUG_ON(desired_size % INITIAL_QUEUE_ARRAY_SIZE != 0 || !is_power_of_2(desired_size / INITIAL_QUEUE_ARRAY_SIZE));
+> +
+> +	new_queues = kmalloc_array(desired_size, sizeof(p->queues[0]), GFP_KERNEL);
+> +	if (!new_queues)
+> +		return false;
+> +
+> +	memcpy(new_queues, p->queues, p->queue_array_size * sizeof(p->queues[0]));
+> +
+> +	kfree(p->queues);
+> +	p->queues = new_queues;
+> +	p->queue_array_size = desired_size;
+> +
+> +	return true;
+> +}
+> +
+> +/* Assumes that the process lock is held. */
+> +bool kfd_allocate_queue_id(struct kfd_process *p, unsigned int *queue_id)
+> +{
+> +	unsigned int qid = find_first_zero_bit(p->allocated_queue_bitmap, MAX_PROCESS_QUEUES);
+> +
+> +	if (qid >= MAX_PROCESS_QUEUES)
+> +		return false;
+> +
+> +	if (!ensure_queue_array_size(p, qid))
+> +		return false;
+> +
+> +	__set_bit(qid, p->allocated_queue_bitmap);
+> +
+> +	p->queues[qid] = NULL;
+> +	*queue_id = qid;
+> +
+> +	return true;
+> +}
+> +
+> +/*
+> + * Install a queue into a previously-allocated queue id.
+> + * Assumes that the process lock is held.
+> + */
+> +void kfd_install_queue(struct kfd_process *p, unsigned int queue_id, struct kfd_queue *queue)
+> +{
+> +	/* Have to call allocate_queue_id before install_queue. */
+> +	BUG_ON(queue_id >= p->queue_array_size);
+> +	BUG_ON(queue == NULL);
+> +
+> +	p->queues[queue_id] = queue;
+> +}
+> +
+> +/*
+> + * Remove a queue from the open queue list and deallocate the queue id.
+> + * This can be called whether or not a queue was installed.
+> + * Assumes that the process lock is held.
+> + */
+> +void kfd_remove_queue(struct kfd_process *p, unsigned int queue_id)
+> +{
+> +	BUG_ON(!test_bit(queue_id, p->allocated_queue_bitmap));
+> +	BUG_ON(queue_id >= p->queue_array_size);
+> +
+> +	__clear_bit(queue_id, p->allocated_queue_bitmap);
+> +}
+> +
+> +/* Assumes that the process lock is held. */
+> +struct kfd_queue *kfd_get_queue(struct kfd_process *p, unsigned int queue_id)
+> +{
+> +	/*
+> +	 * test_bit because the contents of unallocated
+> +	 * queue slots are undefined.
+> +	 * Otherwise ensure_queue_array_size would have to clear new entries and
+> +	 * remove_queue would have to NULL removed queues.
+> +	 */
+> +	return (queue_id < p->queue_array_size &&
+> +		test_bit(queue_id, p->allocated_queue_bitmap)) ?
+> +			p->queues[queue_id] : NULL;
+> +}
+> +
+> +struct kfd_process_device *kfd_get_first_process_device_data(struct kfd_process *p)
+> +{
+> +	return list_first_entry(&p->per_device_data, struct kfd_process_device, per_device_list);
+> +}
+> +
+> +struct kfd_process_device *kfd_get_next_process_device_data(struct kfd_process *p, struct kfd_process_device *pdd)
+> +{
+> +	if (list_is_last(&pdd->per_device_list, &p->per_device_data))
+> +		return NULL;
+> +	return list_next_entry(pdd, per_device_list);
+> +}
+> +
+> +bool kfd_has_process_device_data(struct kfd_process *p)
+> +{
+> +	return !(list_empty(&p->per_device_data));
+> +}
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c b/drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c
 > new file mode 100644
-> index 0000000..989624b
+> index 0000000..a2c4d30
 > --- /dev/null
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_topology.h
-> @@ -0,0 +1,168 @@
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c
+> @@ -0,0 +1,96 @@
 > +/*
 > + * Copyright 2014 Advanced Micro Devices, Inc.
 > + *
@@ -1716,152 +1397,83 @@ No pragma
 > + * OTHER DEALINGS IN THE SOFTWARE.
 > + */
 > +
-> +#ifndef __KFD_TOPOLOGY_H__
-> +#define __KFD_TOPOLOGY_H__
-> +
-> +#include <linux/types.h>
-> +#include <linux/list.h>
 > +#include "kfd_priv.h"
 > +
-> +#define KFD_TOPOLOGY_PUBLIC_NAME_SIZE 128
+> +int kfd_vidmem_alloc(struct kfd_dev *kfd, size_t size, size_t alignment,
+> +			enum kfd_mempool pool, kfd_mem_obj *mem_obj)
+> +{
+> +	return kfd2kgd->allocate_mem(kfd->kgd,
+> +					size,
+> +					alignment,
+> +					(enum kgd_memory_pool)pool,
+> +					(struct kgd_mem **)mem_obj);
+> +}
 > +
-> +#define HSA_CAP_HOT_PLUGGABLE			0x00000001
-> +#define HSA_CAP_ATS_PRESENT			0x00000002
-> +#define HSA_CAP_SHARED_WITH_GRAPHICS		0x00000004
-> +#define HSA_CAP_QUEUE_SIZE_POW2			0x00000008
-> +#define HSA_CAP_QUEUE_SIZE_32BIT		0x00000010
-> +#define HSA_CAP_QUEUE_IDLE_EVENT		0x00000020
-> +#define HSA_CAP_VA_LIMIT			0x00000040
-> +#define HSA_CAP_WATCH_POINTS_SUPPORTED		0x00000080
-> +#define HSA_CAP_WATCH_POINTS_TOTALBITS_MASK	0x00000f00
-> +#define HSA_CAP_WATCH_POINTS_TOTALBITS_SHIFT	8
-> +#define HSA_CAP_RESERVED			0xfffff000
+> +void kfd_vidmem_free(struct kfd_dev *kfd, kfd_mem_obj mem_obj)
+> +{
+> +	kfd2kgd->free_mem(kfd->kgd, (struct kgd_mem *)mem_obj);
+> +}
 > +
-> +struct kfd_node_properties {
-> +	uint32_t cpu_cores_count;
-> +	uint32_t simd_count;
-> +	uint32_t mem_banks_count;
-> +	uint32_t caches_count;
-> +	uint32_t io_links_count;
-> +	uint32_t cpu_core_id_base;
-> +	uint32_t simd_id_base;
-> +	uint32_t capability;
-> +	uint32_t max_waves_per_simd;
-> +	uint32_t lds_size_in_kb;
-> +	uint32_t gds_size_in_kb;
-> +	uint32_t wave_front_size;
-> +	uint32_t array_count;
-> +	uint32_t simd_arrays_per_engine;
-> +	uint32_t cu_per_simd_array;
-> +	uint32_t simd_per_cu;
-> +	uint32_t max_slots_scratch_cu;
-> +	uint32_t engine_id;
-> +	uint32_t vendor_id;
-> +	uint32_t device_id;
-> +	uint32_t location_id;
-> +	uint32_t max_engine_clk_fcompute;
-> +	uint32_t max_engine_clk_ccompute;
-> +	uint16_t marketing_name[KFD_TOPOLOGY_PUBLIC_NAME_SIZE];
-> +};
+> +int kfd_vidmem_gpumap(struct kfd_dev *kfd, kfd_mem_obj mem_obj,
+> +			uint64_t *vmid0_address)
+> +{
+> +	return kfd2kgd->gpumap_mem(kfd->kgd,
+> +					(struct kgd_mem *)mem_obj,
+> +					vmid0_address);
+
+As discussed previously this will not fly, pinning gpu memory is a big NACK.
+
+> +}
 > +
-> +#define HSA_MEM_HEAP_TYPE_SYSTEM	0
-> +#define HSA_MEM_HEAP_TYPE_FB_PUBLIC	1
-> +#define HSA_MEM_HEAP_TYPE_FB_PRIVATE	2
-> +#define HSA_MEM_HEAP_TYPE_GPU_GDS	3
-> +#define HSA_MEM_HEAP_TYPE_GPU_LDS	4
-> +#define HSA_MEM_HEAP_TYPE_GPU_SCRATCH	5
+> +void kfd_vidmem_ungpumap(struct kfd_dev *kfd, kfd_mem_obj mem_obj)
+> +{
+> +	kfd2kgd->ungpumap_mem(kfd->kgd, (struct kgd_mem *)mem_obj);
+> +}
 > +
-> +#define HSA_MEM_FLAGS_HOT_PLUGGABLE	0x00000001
-> +#define HSA_MEM_FLAGS_NON_VOLATILE	0x00000002
-> +#define HSA_MEM_FLAGS_RESERVED		0xfffffffc
+> +int kfd_vidmem_kmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj, void **ptr)
+> +{
+> +	return kfd2kgd->kmap_mem(kfd->kgd, (struct kgd_mem *)mem_obj, ptr);
+> +}
 > +
-> +struct kfd_mem_properties {
-> +	struct list_head	list;
-> +	uint32_t		heap_type;
-> +	uint64_t		size_in_bytes;
-> +	uint32_t		flags;
-> +	uint32_t		width;
-> +	uint32_t		mem_clk_max;
-> +	struct kobject		*kobj;
-> +	struct attribute	attr;
-> +};
+> +void kfd_vidmem_unkmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj)
+> +{
+> +	kfd2kgd->unkmap_mem(kfd->kgd, (struct kgd_mem *)mem_obj);
+> +}
 > +
-> +#define KFD_TOPOLOGY_CPU_SIBLINGS 256
+> +int kfd_vidmem_alloc_map(struct kfd_dev *kfd, kfd_mem_obj *mem_obj,
+> +			void **ptr, uint64_t *vmid0_address, size_t size)
+> +{
+> +	int retval;
 > +
-> +#define HSA_CACHE_TYPE_DATA		0x00000001
-> +#define HSA_CACHE_TYPE_INSTRUCTION	0x00000002
-> +#define HSA_CACHE_TYPE_CPU		0x00000004
-> +#define HSA_CACHE_TYPE_HSACU		0x00000008
-> +#define HSA_CACHE_TYPE_RESERVED		0xfffffff0
+> +	retval = kfd_vidmem_alloc(kfd, size, PAGE_SIZE,
+> +				KFD_MEMPOOL_SYSTEM_WRITECOMBINE, mem_obj);
+> +	if (retval != 0)
+> +		goto fail_vidmem_alloc;
 > +
-> +struct kfd_cache_properties {
-> +	struct list_head	list;
-> +	uint32_t		processor_id_low;
-> +	uint32_t		cache_level;
-> +	uint32_t		cache_size;
-> +	uint32_t		cacheline_size;
-> +	uint32_t		cachelines_per_tag;
-> +	uint32_t		cache_assoc;
-> +	uint32_t		cache_latency;
-> +	uint32_t		cache_type;
-> +	uint8_t			sibling_map[KFD_TOPOLOGY_CPU_SIBLINGS];
-> +	struct kobject		*kobj;
-> +	struct attribute	attr;
-> +};
+> +	retval = kfd_vidmem_kmap(kfd, *mem_obj, ptr);
+> +	if (retval != 0)
+> +		goto fail_vidmem_kmap;
 > +
-> +struct kfd_iolink_properties {
-> +	struct list_head	list;
-> +	uint32_t		iolink_type;
-> +	uint32_t		ver_maj;
-> +	uint32_t		ver_min;
-> +	uint32_t		node_from;
-> +	uint32_t		node_to;
-> +	uint32_t		weight;
-> +	uint32_t		min_latency;
-> +	uint32_t		max_latency;
-> +	uint32_t		min_bandwidth;
-> +	uint32_t		max_bandwidth;
-> +	uint32_t		rec_transfer_size;
-> +	uint32_t		flags;
-> +	struct kobject		*kobj;
-> +	struct attribute	attr;
-> +};
+> +	retval = kfd_vidmem_gpumap(kfd, *mem_obj, vmid0_address);
+> +	if (retval != 0)
+> +		goto fail_vidmem_gpumap;
 > +
-> +struct kfd_topology_device {
-> +	struct list_head		list;
-> +	uint32_t			gpu_id;
-> +	struct kfd_node_properties	node_props;
-> +	uint32_t			mem_bank_count;
-> +	struct list_head		mem_props;
-> +	uint32_t			cache_count;
-> +	struct list_head		cache_props;
-> +	uint32_t			io_link_count;
-> +	struct list_head		io_link_props;
-> +	struct kfd_dev			*gpu;
-> +	struct kobject			*kobj_node;
-> +	struct kobject			*kobj_mem;
-> +	struct kobject			*kobj_cache;
-> +	struct kobject			*kobj_iolink;
-> +	struct attribute		attr_gpuid;
-> +	struct attribute		attr_name;
-> +	struct attribute		attr_props;
-> +};
+> +	return 0;
 > +
-> +struct kfd_system_properties {
-> +	uint32_t		num_devices;     /* Number of H-NUMA nodes */
-> +	uint32_t		generation_count;
-> +	uint64_t		platform_oem;
-> +	uint64_t		platform_id;
-> +	uint64_t		platform_rev;
-> +	struct kobject		*kobj_topology;
-> +	struct kobject		*kobj_nodes;
-> +	struct attribute	attr_genid;
-> +	struct attribute	attr_props;
-> +};
+> +fail_vidmem_gpumap:
+> +	kfd_vidmem_unkmap(kfd, *mem_obj);
+> +fail_vidmem_kmap:
+> +	kfd_vidmem_free(kfd, *mem_obj);
+> +fail_vidmem_alloc:
+> +	return retval;
+> +}
 > +
-> +
-> +
-> +#endif /* __KFD_TOPOLOGY_H__ */
+> +void kfd_vidmem_free_unmap(struct kfd_dev *kfd, kfd_mem_obj mem_obj)
+> +{
+> +	kfd_vidmem_ungpumap(kfd, mem_obj);
+> +	kfd_vidmem_unkmap(kfd, mem_obj);
+> +	kfd_vidmem_free(kfd, mem_obj);
+> +}
 > -- 
 > 1.9.1
 > 
