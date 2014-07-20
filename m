@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437AbaGTJJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 05:09:58 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45262 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751029AbaGTJJ4 (ORCPT
+	id S1751418AbaGTJUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 05:20:00 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:33361 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbaGTJT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 05:09:56 -0400
-Date: Sun, 20 Jul 2014 10:09:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: bhelgaas@google.com, wangyijing@huawei.com, jason@lakedaemon.net,
-        thierry.reding@gmail.com, yinghai@kernel.org, m-karicheri2@ti.com,
-        thomas.petazzoni@free-electrons.com, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: Fix me in bios32.c
-Message-ID: <20140720090935.GD21766@n2100.arm.linux.org.uk>
-References: <1405829179-19476-1-git-send-email-xerofoify@gmail.com>
+	Sun, 20 Jul 2014 05:19:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405829179-19476-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140720063841.GA28059@udknight>
+References: <20140720063841.GA28059@udknight>
+Date: Sun, 20 Jul 2014 11:19:56 +0200
+Message-ID: <CAN_we7Nuze_8tWqADGrhpeCtixssTzqf_wOZAYuAg+sv8nHJYA@mail.gmail.com>
+Subject: Re: [PATCH v2] usb:serial:pl2303: add GPIOs interface on PL2303
+From: Daniele Forsi <dforsi@gmail.com>
+To: Wang YanQing <udknight@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linus.walleij@linaro.org, Johan Hovold <jhovold@gmail.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 12:06:19AM -0400, Nicholas Krause wrote:
-> This fixs a fix me in bios32.c for pci_fixup_it8152 as this if
-> statement is incorrect needs to be checked against the class bits
-> not the whole address for the two or conditions and since they don't
-> have define statements outside of their numeratical value.
+2014-07-20 8:38 GMT+02:00 Wang YanQing:
 
-Unfortunately, this does not address the FIXME at all.  The FIXME does
-not state that the if statement is incorrect at all.
+> PL2303HX has two GPIOs, this patch add interface for it.
 
-> -	/* fixup for ITE 8152 devices */
-> -	/* FIXME: add defines for class 0x68000 and 0x80103 */
->  	if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
-> -	    dev->class == 0x68000 ||
-> -	    dev->class == 0x80103) {
-> +	   (dev->class >> 8) == 0x680 ||
-> +	   (dev->class >> 8) == 0x801) {
+checkpatch.pl shows 2 errors:
+ERROR: space required before the open parenthesis '('
+#218: FILE: drivers/usb/serial/pl2303.c:309:
++ if(pl2303_vendor_read(gpio->serial, 0x0081, buf) < 1)
 
-The FIXME states that there should be defines for these values (0x68000
-and 0x80103).
+ERROR: that open brace { should be on the previous line
+#248: FILE: drivers/usb/serial/pl2303.c:381:
++ if (type == TYPE_HX)
++ {
 
-The FIXME statement itself is slightly wrong in that these values are
-*not* class IDs.  0x680 and 0x801 are the class ID values.
+it also shows 3 warnings
 
-We have definitions for class IDs 0x680 and 0x801 in
-include/linux/pci_ids.h, which are:
+> +#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
+> +struct pl2303_gpio {
+> +       /*
+> +        * 0..3: unknown (zero)
+> +        * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
+> +        * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
+> +        * 6: gp0 pin value
+> +        * 7: gp1 pin value
+> +        */
+> +       u8 index;
+> +       struct usb_serial *serial;
+> +       struct gpio_chip gpio_chip;
+> +};
+> +#endif
 
-#define PCI_CLASS_BRIDGE_OTHER          0x0680
-#define PCI_CLASS_SYSTEM_DMA            0x0801
+it would be nice to state what happens if you read pin 6 and 7 when
+they are set for output
 
-So, to fix the stated issue, without changing the functionality of the
-code, this is what I expected you to produce:
+> @@ -262,6 +377,37 @@ static int pl2303_startup(struct usb_serial *serial)
 
-	/* fixup for ITE 8152 devices */
-	if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
-	    dev->class == PCI_CLASS_BRIDGE_OTHER << 8 ||
-	    def->class == PCI_CLASS_SYSTEM_DMA << 8 | 0x03)
+> +                       gpio->gpio_chip.ngpio = 2;
 
-The reason is that "PCI_CLASS_BRIDGE_OTHER << 8" evaluates to 0x68000
-and "PCI_CLASS_SYSTEM_DMA << 8 | 0x03" evaluates to 0x80103.  Therefore,
-the compiled code is the same as the original, because the actual
-numerical check is the same as it always was.
+you set ngpio but you don't use it
+you would save some code if each function that use "index" has
+if (index >= gpio->gpio_chip.ngpio)
+  return -EINVAL;
 
-As your solution results in a functional change to the code, that would
-introduce a new bug - it results in this test matching any PCI device
-with any programming interface for class "Bridge other" and "System DMA",
-whereas before the code was looking for a specific value there.
+and then read the constants from 2 arrays in file scope:
+gpio_index_mask = {0x10, 0x20};
+gpio_value_mask = {0x40, 0x80};
 
-Whether this results in the code incorrectly matching devices on the
-system(s) which use this code is difficult to know, so my only choice
-here is to reject your change.
+so you can change this:
+> +       if (offset == 0) {
+> +               gpio->index |= 0x10;
+> +               if (value)
+> +                       gpio->index |= 0x40;
+> +               else
+> +                       gpio->index &= ~0x40;
+> +       } else if (offset == 1) {
+> +               gpio->index |= 0x20;
+> +               if (value)
+> +                       gpio->index |= 0x80;
+> +               else
+> +                       gpio->index &= ~0x80;
+> +       } else {
+> +               return -EINVAL;
+> +       }
 
-This is why my fellow kernel developers are asking you to stop trying to
-fix this stuff - unless you can produce provably correct patches (or at
-least patches that appear to have no functional change) then you are
-burdening people with your education, and you will get yourself an
-undesirable reputation.
+to this:
+               if (index >= gpio->gpio_chip.ngpio)
+                       return -EINVAL;
 
-Even with patches which appear to have no functional change, some
-maintainers won't take them unless they have actually been tested on
-real hardware, or that other people agree that the change is a correct
-one.  That is because there is a long history of apparantly correct
-changes being made which result in subtle bugs.
+              gpio->index |= gpio_index_mask[offset];
+               if (value)
+                       gpio->index |= gpio_value_mask[offset];
+               else
+                       gpio->index &= ~gpio_value_mask[offset];
 
-Bear in mind that a "FIXME" comment indicates that something is not
-fully correct in some way, and even though it may not be fully correct,
-the resulting code _works_ on the devices that it has been tested with.
-Fixing the "FIXME" may result in the code stopping working on those
-devices - especially if it changes the functionality of the code like
-your patch above.
-
-So, it's often best to leave FIXMEs alone if you don't know what the
-right solution should be.
-
-I hope you will pause, and think about the issues I've raised before
-continuing with your current project of trying to fix FIXMEs.
-
+do you find it less readable or less efficient?
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Daniele Forsi
