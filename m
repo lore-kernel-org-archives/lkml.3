@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaGTTWL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 15:22:11 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:41097 "EHLO
-	Ishtar.hs.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaGTTWK (ORCPT
+	id S1753513AbaGTTXV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 15:23:21 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:43104 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042AbaGTTXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 15:22:10 -0400
-X-Greylist: delayed 2100 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jul 2014 15:22:10 EDT
-Message-ID: <53CC0EAA.2010202@tlinx.org>
-Date: Sun, 20 Jul 2014 11:47:06 -0700
-From: "Linda A. Walsh" <lkml@tlinx.org>
-User-Agent: Thunderbird
+	Sun, 20 Jul 2014 15:23:19 -0400
+Date: Sun, 20 Jul 2014 21:23:15 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] Kbuild: Add a option to enable dwarf4
+Message-ID: <20140720192315.GA4679@ravnborg.org>
+References: <1405466172-17055-1-git-send-email-andi@firstfloor.org>
+ <1405466172-17055-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-To: Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Howto tell kernel to use 4096 as granularity & minimum size?
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405466172-17055-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a hard disk with a "512e" sector size: emulated 512, really 4096.
+On Wed, Jul 16, 2014 at 01:16:12AM +0200, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> I found that a lot of unresolvable variables when using gdb on the kernel
+> become resolvable when dwarf4 is enabled. So add a Kconfig flag to enable it.
+> 
+> It definitely increases the debug information size, but on the other
+> hand this isn't so bad when debug fusion is used.
 
-The disk returns a 512-byte size to drivers for compatibility.
+Would it not make sense to try to enable degug info like this:
+First try -gdwarf-4
+If this fails try -gdwarf-3
+If this fails try -gdwarf-2
+And if this also fails fallback to -g
 
-I can partition the disk and setup the allocation size
-to 4096, but I'd like to tell the kernel to use a
-virtual-size of 4096 for the sector as an additional
-performance 'hint', so nothing will even try to use
-smaller i/o's than that.
+We could then us a Kconfig option to enable the highest debug level - where 4 for now is the highest.
+On the other hand if most people have revent utils then they all have -gdwarf-4 supported
+and then it is no big deal.
 
-However, this doesn't seem to work ("# prompt" does mean root):
+	Sam
 
-/sys/block/sdd/queue#   echo 4096 >minimum_io_size    
-bash: minimum_io_size: Permission denied
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  Makefile          | 3 +++
+>  lib/Kconfig.debug | 9 +++++++++
+>  2 files changed, 12 insertions(+)
+> 
+> diff --git a/Makefile b/Makefile
+> index 953659e..9c4080b 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -690,6 +690,9 @@ KBUILD_CFLAGS	+= -g
+>  KBUILD_AFLAGS	+= -Wa,-gdwarf-2
+>  endif
+>  endif
+> +ifdef CONFIG_DEBUG_INFO_DWARF4
+> +KBUILD_CFLAGS	+= -gdwarf-4
+> +endif
+Should we sue $(call cc-option ...) here as not all gcc's supports this today?
 
-I realize this is probably implemented as a R-O value,
-but it there a reason it needs to be if an admin
-wants to increase it to a multiple of an emulated
-I/O size so as to have it represent the physical
-sector size?
-
-I.e. if the "/sys" code was patched to allow modification
-of this variable, would it work for the purpose
-I am describing (i.e. ignoring emulated 512 size and
-using the real 4096 size as a minimum (I wouldn't
-intend or want this to affect the sector# addressing,
-which would still be done using 512B sector blocks.
-
-Thanks!
-
-
+	Sam
