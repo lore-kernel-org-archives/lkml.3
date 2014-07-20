@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaGTMc7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 08:32:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37644 "EHLO mail.kernel.org"
+	id S1752626AbaGTMgB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 08:36:01 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37725 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699AbaGTMc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 08:32:58 -0400
-Message-ID: <53CBB785.2080207@kernel.org>
-Date: Sun, 20 Jul 2014 13:35:17 +0100
+	id S1751611AbaGTMf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 08:35:59 -0400
+Message-ID: <53CBB83B.9040405@kernel.org>
+Date: Sun, 20 Jul 2014 13:38:19 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -33,9 +33,7 @@ On 20/07/14 00:26, Srinivas Pandruvada wrote:
 > Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 Applied to the togreg branch of iio.git
 
-Thanks,
-
-J
+Thanks
 >> ---
 >>   drivers/iio/industrialio-core.c | 4 ++++
 >>   include/linux/iio/types.h       | 4 ++++
