@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaGTV4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 17:56:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42738 "EHLO mx1.redhat.com"
+	id S1751237AbaGTV4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 17:56:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58610 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846AbaGTV4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 17:56:35 -0400
+	id S1752089AbaGTV4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 17:56:45 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,17 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 06/19] perf tools: Factor ordered_events_flush to be more generic
-Date: Sun, 20 Jul 2014 23:55:50 +0200
-Message-Id: <1405893363-21967-7-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 09/19] perf tools: Make perf_session_deliver_event global
+Date: Sun, 20 Jul 2014 23:55:53 +0200
+Message-Id: <1405893363-21967-10-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
 References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Centralizing the next_flush calculation under the
-ordered_events_flush function.
+Making perf_session_deliver_event global function, as it will
+be called from another object in following patch.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -38,102 +38,61 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/session.c | 47 ++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 36 insertions(+), 11 deletions(-)
+ tools/perf/util/session.c | 16 +++++-----------
+ tools/perf/util/session.h |  6 ++++++
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 12b72bc90125..f94ec7e55749 100644
+index 64c58e6f0923..a601f2aa8990 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -453,6 +453,11 @@ struct ordered_event {
- 	struct list_head	list;
- };
- 
-+enum oe_flush {
-+	OE_FLUSH__FINAL,
-+	OE_FLUSH__ROUND,
-+};
-+
- static void perf_session_free_sample_buffers(struct perf_session *session)
- {
- 	struct ordered_events *oe = &session->ordered_events;
-@@ -566,8 +571,8 @@ static int perf_session_deliver_event(struct perf_session *session,
- 				      struct perf_tool *tool,
- 				      u64 file_offset);
- 
--static int ordered_events_flush(struct perf_session *s,
--		       struct perf_tool *tool)
-+static int __ordered_events_flush(struct perf_session *s,
-+				  struct perf_tool *tool)
- {
- 	struct ordered_events *oe = &s->ordered_events;
- 	struct list_head *head = &oe->events;
-@@ -617,6 +622,32 @@ static int ordered_events_flush(struct perf_session *s,
- 	return 0;
+@@ -573,12 +573,6 @@ ordered_events_delete(struct ordered_events *oe, struct ordered_event *event)
+ 	oe->nr_events--;
  }
  
-+static int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
-+				enum oe_flush how)
-+{
-+	struct ordered_events *oe = &s->ordered_events;
-+	int err;
-+
-+	switch (how) {
-+	case OE_FLUSH__FINAL:
-+		oe->next_flush = ULLONG_MAX;
-+		break;
-+
-+	case OE_FLUSH__ROUND:
-+	default:
-+		break;
-+	};
-+
-+	err = __ordered_events_flush(s, tool);
-+
-+	if (!err) {
-+		if (how == OE_FLUSH__ROUND)
-+			oe->next_flush = oe->max_timestamp;
-+	}
-+
-+	return err;
-+}
-+
- /*
-  * When perf record finishes a pass on every buffers, it records this pseudo
-  * event.
-@@ -660,11 +691,7 @@ static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event __maybe_unused,
- 				  struct perf_session *session)
- {
--	int ret = ordered_events_flush(session, tool);
--	if (!ret)
--		session->ordered_events.next_flush = session->ordered_events.max_timestamp;
+-static int perf_session_deliver_event(struct perf_session *session,
+-				      union perf_event *event,
+-				      struct perf_sample *sample,
+-				      struct perf_tool *tool,
+-				      u64 file_offset);
 -
--	return ret;
-+	return ordered_events_flush(session, tool, OE_FLUSH__ROUND);
+ static int __ordered_events_flush(struct perf_session *s,
+ 				  struct perf_tool *tool)
+ {
+@@ -1005,11 +999,11 @@ perf_session__deliver_sample(struct perf_session *session,
+ 					    &sample->read.one, machine);
  }
  
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
-@@ -1247,8 +1274,7 @@ more:
- 		goto more;
- done:
- 	/* do the final flush for ordered samples */
--	session->ordered_events.next_flush = ULLONG_MAX;
--	err = ordered_events_flush(session, tool);
-+	err = ordered_events_flush(session, tool, OE_FLUSH__FINAL);
- out_err:
- 	free(buf);
- 	perf_session__warn_about_errors(session, tool);
-@@ -1389,8 +1415,7 @@ more:
+-static int perf_session_deliver_event(struct perf_session *session,
+-				      union perf_event *event,
+-				      struct perf_sample *sample,
+-				      struct perf_tool *tool,
+-				      u64 file_offset)
++int perf_session_deliver_event(struct perf_session *session,
++			       union perf_event *event,
++			       struct perf_sample *sample,
++			       struct perf_tool *tool,
++			       u64 file_offset)
+ {
+ 	struct perf_evsel *evsel;
+ 	struct machine *machine;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index a09e3c8d825a..07d1a6d94f67 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -72,6 +72,12 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
  
- out:
- 	/* do the final flush for ordered samples */
--	session->ordered_events.next_flush = ULLONG_MAX;
--	err = ordered_events_flush(session, tool);
-+	err = ordered_events_flush(session, tool, OE_FLUSH__FINAL);
- out_err:
- 	ui_progress__finish();
- 	perf_session__warn_about_errors(session, tool);
+ void perf_tool__fill_defaults(struct perf_tool *tool);
+ 
++int perf_session_deliver_event(struct perf_session *session,
++			       union perf_event *event,
++			       struct perf_sample *sample,
++			       struct perf_tool *tool,
++			       u64 file_offset);
++
+ int perf_session__resolve_callchain(struct perf_session *session,
+ 				    struct perf_evsel *evsel,
+ 				    struct thread *thread,
 -- 
 1.8.3.1
 
