@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaGTUnd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 16:43:33 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:60908 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157AbaGTUn3 (ORCPT
+	id S1753766AbaGTUtE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 16:49:04 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:34928 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaGTUtC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 16:43:29 -0400
-Date: Sun, 20 Jul 2014 13:43:25 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/1] input: remove unnecessary break after goto
-Message-ID: <20140720204325.GD18347@core.coreip.homeip.net>
-References: <1404837456-7321-1-git-send-email-fabf@skynet.be>
+	Sun, 20 Jul 2014 16:49:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404837456-7321-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405661102-11967-1-git-send-email-xerofoify@gmail.com>
+References: <1405661102-11967-1-git-send-email-xerofoify@gmail.com>
+Date: Sun, 20 Jul 2014 22:49:01 +0200
+Message-ID: <CAA9xbM4fvo8uKrhJU8Mvp_3HQ=PcrBgq4p_JL0cy_-rX2nL_Bg@mail.gmail.com>
+Subject: Re: [PATCH] ia64: Fix me add register r8
+From: =?UTF-8?Q?=C3=89meric_MASCHINO?= <emeric.maschino@gmail.com>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 06:37:36PM +0200, Fabian Frederick wrote:
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: linux-input@vger.kernel.org
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Hi,
 
-Applied, thank you.
+Well, I'm wondering why the original author of this FIXME comment
+didn't fix the issue him/herself. Can you track down who added this
+comment? I fear that this simple comment was actually here to point to
+something more subtle...
 
+     Émeric
+
+2014-07-18 7:25 GMT+02:00 Nicholas Krause <xerofoify@gmail.com>:
+> The function user_stack_pointer was not returning the correct value \
+> as stated by a Fix Me message before the function declaration. I
+> fixed the return value to add register r8 as that register stores
+> dirty pages.
+>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 > ---
->  drivers/input/misc/keyspan_remote.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/input/misc/keyspan_remote.c b/drivers/input/misc/keyspan_remote.c
-> index 01f3b5b..a3fe4a9 100644
-> --- a/drivers/input/misc/keyspan_remote.c
-> +++ b/drivers/input/misc/keyspan_remote.c
-> @@ -392,7 +392,6 @@ static void keyspan_irq_recv(struct urb *urb)
->  
->  	default:
->  		goto resubmit;
-> -		break;
->  	}
->  
->  	if (debug)
-> -- 
-> 1.8.4.5
-> 
-
--- 
-Dmitry
+>  arch/ia64/include/asm/ptrace.h | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/arch/ia64/include/asm/ptrace.h b/arch/ia64/include/asm/ptrace.h
+> index 8451439..eaef692 100644
+> --- a/arch/ia64/include/asm/ptrace.h
+> +++ b/arch/ia64/include/asm/ptrace.h
+> @@ -53,8 +53,7 @@
+>
+>  static inline unsigned long user_stack_pointer(struct pt_regs *regs)
+>  {
+> -       /* FIXME: should this be bspstore + nr_dirty regs? */
+> -       return regs->ar_bspstore;
+> +       return regs->ar_bspstore + regs->r8;
+>  }
+>
+>  static inline int is_syscall_success(struct pt_regs *regs)
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ia64" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
