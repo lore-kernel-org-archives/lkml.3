@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523AbaGUOy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:54:29 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40354 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332AbaGUOy2 (ORCPT
+	id S1755219AbaGUO6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:58:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33527 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaGUO6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:54:28 -0400
-Date: Mon, 21 Jul 2014 15:54:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Allow case labels with ranges
-Message-ID: <20140721145421.GA28529@lee--X1>
-References: <20140721113948.GX30888@lee--X1>
- <1405948406.21586.10.camel@joe-AO725>
- <20140721132116.GZ30888@lee--X1>
- <1405952929.27900.7.camel@joe-AO725>
+	Mon, 21 Jul 2014 10:58:22 -0400
+Date: Mon, 21 Jul 2014 07:58:17 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: poma <pomidorabelisima@gmail.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
+ kmem_cache_create+0x1a9/0x330()
+Message-ID: <20140721145817.GA15433@infradead.org>
+References: <53C8DF7F.5060707@gmail.com>
+ <53C8FD95.5020302@gmail.com>
+ <20140718132104.GK27940@esperanza>
+ <20140718141747.GA23272@lst.de>
+ <53C97D34.5040707@gmail.com>
+ <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
+ <20140719164454.GA24530@lst.de>
+ <53CCDFC3.5010802@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405952929.27900.7.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53CCDFC3.5010802@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Joe Perches wrote:
+On Mon, Jul 21, 2014 at 11:39:15AM +0200, poma wrote:
+> Thanks for the tip.
+> Is there a patch somewhere?
 
-> On Mon, 2014-07-21 at 14:21 +0100, Lee Jones wrote:
-> > On Mon, 21 Jul 2014, Joe Perches wrote:
-> > > The MISSING_BREAK / fallthrough test does not support
-> > > gcc's extension for case labels with ranges.
-> []
-> > Yep, that's much worse [1] - I wish I never mentioned it. ;)
-> 
-> I'm glad you did actually.
-> 
-> The code itself:
-> 
-> bool foo(int bar)
-> {
-> 	case (bar) {
-> 	case 1:
-> 	case 2:
-> 	case 4:
-> 		return true;
-> 	default:
-> 		return false;
-> }
-> 
-> should not emit any error.
+James sent the patch earlier and you replied to it.
 
-That's why I submitted the report.
-
-> I'll fix it soon.
-
-Brilliant, thanks Joe!
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
