@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaGUHj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 03:39:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7282 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476AbaGUHj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 03:39:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
-   d="scan'208";a="459388818"
-Message-ID: <53CCC336.4040302@intel.com>
-Date: Mon, 21 Jul 2014 15:37:26 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753104AbaGUHkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 03:40:11 -0400
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:57354 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028AbaGUHkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 03:40:05 -0400
+Date: Mon, 21 Jul 2014 08:39:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Kishon Vijay Abraham I <kishon@uda0393678>
+Cc: linux-arm-kernel@lists.infrared.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, kernel@stlinux.com
+Subject: Re: [PATCH v3 0/5] phy: miphy365x: Introduce support for MiPHY365x
+Message-ID: <20140721073959.GR30888@lee--X1>
+References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>
+ <20140721062805.GA8781@uda0393678>
 MIME-Version: 1.0
-To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH] ACPI/NVS: Not save NVS region for new machines to accelerate
- S3
-References: <1405662922-23606-1-git-send-email-tianyu.lan@intel.com> <20140718080056.GA2037@gchen.bj.intel.com> <53CC7787.2070302@intel.com> <20140721050105.GA21503@gchen.bj.intel.com> <53CCAB30.405@intel.com> <20140721062556.GA23297@gchen.bj.intel.com>
-In-Reply-To: <20140721062556.GA23297@gchen.bj.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140721062805.GA8781@uda0393678>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年07月21日 14:25, Chen, Gong wrote:
-> On Mon, Jul 21, 2014 at 01:54:56PM +0800, Lan Tianyu wrote:
->> Date: Mon, 21 Jul 2014 13:54:56 +0800
->> From: Lan Tianyu <tianyu.lan@intel.com>
->> To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
->>  linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
->> Subject: Re: [PATCH] ACPI/NVS: Not save NVS region for new machines to
->>  accelerate S3
->> User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714
->>  Thunderbird/14.0
->>
->> On 2014年07月21日 13:01, Chen, Gong wrote:
->>> On Mon, Jul 21, 2014 at 10:14:31AM +0800, Lan Tianyu wrote:
->>>> Date: Mon, 21 Jul 2014 10:14:31 +0800
->>>> From: Lan Tianyu <tianyu.lan@intel.com>
->>>> To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
->>>>  linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
->>>> Subject: Re: [PATCH] ACPI/NVS: Not save NVS region for new machines to
->>>>  accelerate S3
->>>> User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714
->>>>  Thunderbird/14.0
->>>>
->>>> On 2014年07月18日 16:00, Chen, Gong wrote:
->>>>> On Fri, Jul 18, 2014 at 01:55:22PM +0800, Lan Tianyu wrote:
->>>>>> Date:	Fri, 18 Jul 2014 13:55:22 +0800
->>>>>> From: Lan Tianyu <tianyu.lan@intel.com>
->>>>>> To: rjw@rjwysocki.net, lenb@kernel.org
->>>>>> Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
->>>>>>  linux-kernel@vger.kernel.org
->>>>>> Subject: [PATCH] ACPI/NVS: Not save NVS region for new machines to
->>>>>>  accelerate S3
->>>>>> X-Mailer: git-send-email 1.7.9.5
->>>>>>
->>>>>> NVS region is saved and restored unconditionally for machines without
->>>>>> nvs_nosave quirk during S3. Tested some new machines and the operation
->>>>>> is not necessary. Saving NVS region also affects S2RAM speed. The time of
->>>>>> NVS saving and restoring depends on the size of NVS region and it consumes
->>>>>> 7~10ms normally.
->>>>>>
->>>>>> This patch is to make machines produced from 2012 to now not saving NVS region
->>>>>> to accelerate S3.
->>>>>>
->>>>> The year 2012 is a mandatory value in the spec?
->>>>>
->>>>
->>>> No, spec indicates that this is only required for S4 and commit 2a6b697
->>>> added this behavior because this can fix S3 bug on some machines. But
->>>> this isn't necessary for all machines and waster time for S3. So this
->>>> patch is to add time base quirk to change default behavior for new machines.
->>>>
->>> If so, I don't think a hard-coded valud in the kernel is a good idea.
->>> Why not providing a quirk via a command line parameter or module parameter.
->>>
->>
->> There is already a kernel command "acpi_sleep=nonvs_s3" to do that. But
->> this needs to be set by user. Otherwise, saving/restoring NVS region
->> also breaks system suspend on some machines and we have added 14
->> nonvs quirks in the acpisleep_dmi_table.
->>
-> 14 quriks! What a terrible BIOS, isn't it? It's time to cleanup so
-> many hacks.
+Hi Kishon,
 
-If change the default behavior for old machines, that may cause some
-regressions and need to add new quirks to save/restore nvs region again.
-
-> I'm not ACPI expert, but such yet another hack is not
-> acceptable from my point of view.
+> > This patchset is based on the two core patches you sent to the
+> > list which facilitate creating PHYs residing on multi-channel
+> > controllers.  The changes since the last submission centre
+> > around dynamic PHY creation based solely on what is provided via
+> > Device Tree, as requested.  The other review comments have also
+> > been addressed in this set.
 > 
+> Merged the first four patches of this series. (merged v3+1 for 1st patch).
+> I'm not sure who would be merging the dt patch (5/5). But for now I've merged
+> 2/5 in linux-phy tree since the phy patch seems to be dependent on it.
+> So the dt patch can be merged only after -rc1. However if whoever merges
+> dt wants to get it merged during the merge window, I can prepare a common
+> branch which both of us can merge to. Either ways, dt Maintainer should
+> let me know.
 
+Thanks for applying.  It would be really helpful if you could put just
+patch 2/5 onto an immutable branch and provide a tag e that Maxime
+could pull from.
+
+Kind regards,
+Lee
+
+> >  .../devicetree/bindings/phy/phy-miphy365x.txt      |  76 +++
+> >  arch/arm/boot/dts/stih416-b2020-revE.dts           |  10 +
+> >  arch/arm/boot/dts/stih416-b2020.dts                |  12 +
+> >  arch/arm/boot/dts/stih416.dtsi                     |  22 +
+> >  drivers/phy/Kconfig                                |  10 +
+> >  drivers/phy/Makefile                               |   1 +
+> >  drivers/phy/phy-miphy365x.c                        | 636 +++++++++++++++++++++
+> >  include/dt-bindings/phy/phy-miphy365x.h            |  14 +
+> >  8 files changed, 781 insertions(+)
 
 -- 
-Best regards
-Tianyu Lan
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
