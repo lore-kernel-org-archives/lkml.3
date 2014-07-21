@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaGULq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:46:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34228 "EHLO mx1.redhat.com"
+	id S932144AbaGULrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:47:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48245 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754607AbaGULq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:46:57 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, jason@lakedaemon.net,
-        Amos Kong <akong@redhat.com>, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v2 4/4] Revert "hwrng: virtio - ensure reads happen after successful probe"
-Date: Mon, 21 Jul 2014 17:15:52 +0530
-Message-Id: <89b24452bd0f3038b8170ad7c5095a243e6d5217.1405942162.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1405942162.git.amit.shah@redhat.com>
-References: <cover.1405942162.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1405942162.git.amit.shah@redhat.com>
-References: <cover.1405942162.git.amit.shah@redhat.com>
+	id S1754984AbaGULrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 07:47:07 -0400
+Date: Mon, 21 Jul 2014 13:46:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
+Message-ID: <20140721114655.GB8393@dhcp22.suse.cz>
+References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
+ <20140716155814.GZ29639@cmpxchg.org>
+ <20140718154443.GM27940@esperanza>
+ <20140721090724.GA8393@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721090724.GA8393@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit e052dbf554610e2104c5a7518c4d8374bed701bb.
+On Mon 21-07-14 11:07:24, Michal Hocko wrote:
+> On Fri 18-07-14 19:44:43, Vladimir Davydov wrote:
+> > On Wed, Jul 16, 2014 at 11:58:14AM -0400, Johannes Weiner wrote:
+> > > On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
+> > > > +#ifdef CONFIG_MEMCG_KMEM
+> > > > +	{
+> > > > +		.name = "kmem.limit_in_bytes",
+> > > > +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
+> > > > +		.write = mem_cgroup_write,
+> > > > +		.read_u64 = mem_cgroup_read_u64,
+> > > > +	},
+> > > 
+> > > Does it really make sense to have a separate limit for kmem only?
+> > > IIRC, the reason we introduced this was that this memory is not
+> > > reclaimable and so we need to limit it.
+> > > 
+> > > But the opposite effect happened: because it's not reclaimable, the
+> > > separate kmem limit is actually unusable for any values smaller than
+> > > the overall memory limit: because there is no reclaim mechanism for
+> > > that limit, once you hit it, it's over, there is nothing you can do
+> > > anymore.  The problem isn't so much unreclaimable memory, the problem
+> > > is unreclaimable limits.
+> > > 
+> > > If the global case produces memory pressure through kernel memory
+> > > allocations, we reclaim page cache, anonymous pages, inodes, dentries
+> > > etc.  I think the same should happen for kmem: kmem should just be
+> > > accounted and limited in the overall memory limit of a group, and when
+> > > pressure arises, we go after anything that's reclaimable.
+> > 
+> > Personally, I don't think there's much sense in having a separate knob
+> > for kmem limit either. Until we have a user with a sane use case for it,
+> > let's not propagate it to the new interface.
+> 
+> What about fork-bomb forks protection? I thought that was the primary usecase
+> for K < U? Or how can we handle that use case with a single limit? A
+> special gfp flag to not trigger OOM path when called from some kmem
+> charge paths?
 
-Now that we use the virtio ->scan() function to register with the hwrng
-core, we will not get read requests till probe is successfully finished.
-
-So revert the workaround we had in place to refuse read requests while
-we were not yet setup completely.
-
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/char/hw_random/core.c       | 6 ------
- drivers/char/hw_random/virtio-rng.c | 9 ---------
- 2 files changed, 15 deletions(-)
-
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index c4419ea..2a451b1 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -68,12 +68,6 @@ static void add_early_randomness(struct hwrng *rng)
- 	unsigned char bytes[16];
- 	int bytes_read;
- 
--	/*
--	 * Currently only virtio-rng cannot return data during device
--	 * probe, and that's handled in virtio-rng.c itself.  If there
--	 * are more such devices, this call to rng_get_data can be
--	 * made conditional here instead of doing it per-device.
--	 */
- 	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
- 	if (bytes_read > 0)
- 		add_device_randomness(bytes, bytes_read);
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-index d9927eb..0027137 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -38,7 +38,6 @@ struct virtrng_info {
- 	bool hwrng_register_done;
- };
- 
--static bool probe_done;
- 
- static void random_recv_done(struct virtqueue *vq)
- {
-@@ -69,13 +68,6 @@ static int virtio_read(struct hwrng *rng, void *buf, size_t size, bool wait)
- 	int ret;
- 	struct virtrng_info *vi = (struct virtrng_info *)rng->priv;
- 
--	/*
--	 * Don't ask host for data till we're setup.  This call can
--	 * happen during hwrng_register(), after commit d9e7972619.
--	 */
--	if (unlikely(!probe_done))
--		return 0;
--
- 	if (!vi->busy) {
- 		vi->busy = true;
- 		init_completion(&vi->have_data);
-@@ -137,7 +129,6 @@ static int probe_common(struct virtio_device *vdev)
- 		return err;
- 	}
- 
--	probe_done = true;
- 	return 0;
- }
- 
+Even then, I do not see how would this fork-bomb prevention work without
+causing OOMs and killing other processes within the group. The danger
+would be still contained in the group and prevent from the system wide
+disruption. Do we really want only such a narrow usecase?
 -- 
-1.9.3
-
+Michal Hocko
+SUSE Labs
