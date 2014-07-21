@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaGUMRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:17:47 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:57996 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036AbaGUMRq (ORCPT
+	id S1754948AbaGUMSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:18:41 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47823 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854AbaGUMSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:17:46 -0400
-Date: Mon, 21 Jul 2014 08:17:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [GIT PULL] libata fixes for v3.16-rc6
-Message-ID: <20140721121740.GB12921@htj.dyndns.org>
+	Mon, 21 Jul 2014 08:18:40 -0400
+Date: Mon, 21 Jul 2014 13:18:20 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>, Charulatha V <charu@ti.com>
+Message-ID: <20140721121820.GW17528@sirena.org.uk>
+References: <1405683053-14104-1-git-send-email-LW@KARO-electronics.de>
+ <20140718171035.GQ17528@sirena.org.uk>
+ <20140721075144.251bb67d@ipc1.ka-ro>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="H25ow1gEc5p8sQPX"
 Content-Disposition: inline
+In-Reply-To: <20140721075144.251bb67d@ipc1.ka-ro>
+X-Cookie: 98% lean.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: omap2-mcspi: fix blatant abuse of the resource
+ subsystem
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
 
-Late libata fixes.
+--H25ow1gEc5p8sQPX
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The most important one is from Kevin Hao which makes sure that libata
-only allocates tags inside the max tag number the controller supports.
-libata always had this problem but the recent tag allocation change
-and addition of support for sata_fsl which only supports queue depth
-of 16 exposed the issue.
+On Mon, Jul 21, 2014 at 07:51:44AM +0200, Lothar Wa=DFmann wrote:
+> Mark Brown wrote:
 
-Hans de Goede agreed to become the maintainer of libahci_platform
-which is under higher than usual development pressure from all the new
-controllers popping up from the ARM world.
+> > I'm not going to apply this with a commit message such as the above.
+> > Quite aside from the tone the fact that it doesn't describe the issue
+> > is not helpful for review, one of the things done in review is to try to
+> > check that the change has the intended effect.
 
-Thanks.
+> Maybe the original author or the maintainer who accepted this can come
+> up with a decent fix for this.
 
-The following changes since commit 2a0bdff6b958d1b2523d2754b6cd5e0ea4053016:
+Just to be clear the issue is with the presentation of your change, it
+is not appropriate to provide a changelog which consists mainly of
+widely directed personal insults especially given that it omits basic
+technical content.
 
-  ahci_xgene: fix the dma state machine lockup for the IDENTIFY DEVICE PIO mode command. (2014-07-08 11:46:05 -0400)
+--H25ow1gEc5p8sQPX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git 
+iQIcBAEBAgAGBQJTzQUIAAoJELSic+t+oim9Q58P/jC360Y7iq9npvSiol1xL6hH
+vja+q9PZe6hZBdjqsvM2mhIaCmTcKGexOTlquBkafYZlZrFUxUpH4LkgE9TZBOz8
+X4UUr1M1N1bi3gCUYlNYiGPl0cx7tar4r2iv1xEclI3DvN2Q/jFGOQEFzwFrtJcY
+L8DQjOn6TIwl/S43mYcly5E7AobuZGkmghMc6h8gEyhZQ+imSA/xj8KvvKGf4lAF
+UX8L76X2cuaArCr1aEVp5orgaOnGxmeewmJPfyZ5pxPTZjNCFz/W7OjfOkPVlS97
+Alc/4drzhyMRiJu4IfrUaDqsuLOkJVqoV7zir/ltS6PmDgRKcife6SphZx4kABss
+FL69UO5H1TvUqnpTF/qevg+2Yo+UyzzxDkkHGWfso8YyuSb0xClEAJ0mjF9MBwsx
+VRxl9bnfi1vOB5pkryZ97s0TaLnH4DOZYi78D0AwHAFY3CE4xqf+UUOfFcuw9oOI
+Kdj3LedOfQvwDIZJ/99AzF/dmTBuGgVuGj68PJ35DX9dmZ7RMO7NdWCQmzY0wPAX
+JfQQlhw2SgcuZ2AEmRHMIduSiWvi2nNokoqSd7lYzvnAnY8JlO9JFKjLx6zU7Utx
+AR+q46BAtju6oF4zbvVgu5zvP6blHP2qfVoQAU2LEXvUnUwoDUkUVcCLiN7ZOc3G
+eXBk1FwoiafhpRn0HEuq
+=HS4X
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to b32bfc06aefab61acc872dec3222624e6cd867ed:
-
-  ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode) (2014-07-18 18:00:50 -0400)
-
-----------------------------------------------------------------
-Alexey Asemov (1):
-      libata: EH should handle AMNF error condition as a media error
-
-Andrey Utkin (1):
-      drivers/ata/pata_ep93xx.c: use signed int type for result of platform_get_irq()
-
-Hans de Goede (1):
-      MAINTAINERS: Add Hans de Goede as ahci-platform maintainer
-
-Kevin Hao (1):
-      libata: support the ata host which implements a queue depth less than 32
-
-Romain Degez (1):
-      ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode)
-
- MAINTAINERS               | 10 ++++++++++
- drivers/ata/ahci.c        |  1 +
- drivers/ata/libata-core.c | 22 +++++++++++++++++++---
- drivers/ata/libata-eh.c   |  9 +++++----
- drivers/ata/pata_ep93xx.c |  2 +-
- 5 files changed, 36 insertions(+), 8 deletions(-)
-
--- 
-tejun
+--H25ow1gEc5p8sQPX--
