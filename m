@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343AbaGULlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:41:49 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:56522 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754835AbaGULlG (ORCPT
+	id S1754556AbaGULpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:45:11 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36991 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937AbaGULpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:41:06 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjcBAKb7zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBXkQUVeIW7gnhkwXj0sHFoQwBYpfqDw
-X-IPAS-Result: AjcBAKb7zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBXkQUVeIW7gnhkwXj0sHFoQwBYpfqDw
-X-IronPort-AV: E=Sophos;i="5.01,700,1400014800"; 
-   d="scan'208";a="116353625"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: pbonzini@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH kvm-unit-tests 0/3] x86: Test rflags.rf clearing/setting
-Date: Mon, 21 Jul 2014 14:39:51 +0300
-Message-Id: <1405942794-22681-1-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
-References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
+	Mon, 21 Jul 2014 07:45:09 -0400
+Date: Mon, 21 Jul 2014 13:45:07 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140721114507.GA13921@amd.pavel.ucw.cz>
+References: <1405684643-30234-1-git-send-email-joro@8bytes.org>
+ <20140719134904.GA2852@amd.pavel.ucw.cz>
+ <20140721083211.GK30979@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721083211.GK30979@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches introduces checks for rflags.rf and whether it is
-cleared after emulation, and set correctly.  The last (third) patch fails even
-with recent fixes, since there is no easy way for the hypervisor to determine
-whether any iteration of rep-string was executed before. RFLAGS.RF should be
-cleared before the first iteration, and set otherwise.
+On Mon 2014-07-21 10:32:11, Joerg Roedel wrote:
+> On Sat, Jul 19, 2014 at 03:49:04PM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > These patches improve the data structure by adding a radix
+> > > tree to the linked list structure to improve random access
+> > > performance from O(n) to O(log_b(n)), where b depends on the
+> > > architecture (b=512 on amd64, 1024 in i386).
+> > 
+> > Are you sure? From your other mail, you said you are adding just a
+> > single page. I'd expect random access performance to go from
+> > 
+> > O(n) to O(n/1024) in such case?
+> 
+> No, for the 4GB case the additional page is used as an index page into
+> the block-bitmap pages. On AM64 a page can hold 512 references and a
+> single block-bitmap page is enough for 128MB of RAM. This means that for
+> systems with up to 64GB of RAM we can get the block-bitmap page directly
+> from the index page. For systems with more than 64GB of RAM we need
+> another level of index pages, and now we need two memory accesses to get
+> to the block-bitmap page (okay, with this implementation its actually 2
+> memory accesses per level, because the index-pages refer to a struct
+> rtree_node which itself contains the pointer to the index/data page).
+> 
+> A two-level radix tree would be enough for systems with up to 32TB of
+> RAM. After that we need 3 levels, but you can already see that this
+> doesn't scale linearly anymore but with log_512(n), where n is the
+> number of block-bitmap pages required.
 
-Nadav Amit (3):
-  x86: Check rflags.rf is cleared after emulation
-  x86: Test rflags.rf is set upon faults
-  x86: Check RFLAGS.RF on interrupt during REP-str
+Ok, so you have sped it up from O(n) to O(log(n)) speed, and increased
+memory requirements from O(n) to O(n * log(n)), right?
 
- lib/x86/desc.c | 14 +++++++++++---
- lib/x86/desc.h |  1 +
- x86/eventinj.c | 16 ++++++++++++++++
- x86/idt_test.c | 13 +++++++++----
- x86/realmode.c |  3 ++-
- 5 files changed, 39 insertions(+), 8 deletions(-)
+does enough_swap() or reqd_free_pages() need to be updated?
+
+Best regards,
+								Pavel
 
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
