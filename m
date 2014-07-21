@@ -1,238 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaGUGQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 02:16:15 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:52274 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaGUGQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 02:16:13 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53CCB02A.7070301@lge.com>
-Date: Mon, 21 Jul 2014 15:16:10 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753470AbaGUGSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 02:18:44 -0400
+Received: from goedel.dlitz.net ([64.5.53.201]:47113 "EHLO goedel.dlitz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752054AbaGUGSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 02:18:42 -0400
+Date: Sun, 20 Jul 2014 23:18:39 -0700
+From: Dwayne Litzenberger <dlitz@dlitz.net>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
+        linux-crypto@vger.kernel.org, beck@openbsd.org
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+Message-ID: <20140721061839.GA19200@rivest.lan>
+References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?J+q5gOykgOyImCc=?= <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-References: <53C8C290.90503@lge.com> <20140721025047.GA7707@bbox>
-In-Reply-To: <20140721025047.GA7707@bbox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
+Content-Disposition: inline
+In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+X-Homepage: https://www.dlitz.net/
+X-OpenPGP: url=https://www.dlitz.net/go/gpgkey/;
+ id=19E11FE8B3CFF273ED174A24928CEC1339C25CF7; preference=signencrypt
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--3V7upXqbjpZ4EhLz
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2014-07-21 오전 11:50, Minchan Kim 쓴 글:
-> Hi Gioh,
+On Thu, Jul 17, 2014 at 05:18:15AM -0400, Theodore Ts'o wrote:
+>SYNOPSIS
+>	#include <linux/random.h>
 >
-> On Fri, Jul 18, 2014 at 03:45:36PM +0900, Gioh Kim wrote:
->>
->> Hi,
->>
->> For page migration of CMA, buffer-heads of lru should be dropped.
->> Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
+>	int getrandom(void *buf, size_t buflen, unsigned int flags);
 >
-> Just nit:
-> Please write *problem* in description instead of URL link.
+>DESCRIPTION
 >
->>
->> I have two solution to drop bhs.
->> One is invalidating entire lru.
->
-> You mean? All of percpu bh_lrus so if the system has N cpu,
-> it invalidates N * 8?
+>	The system call getrandom() fills the buffer pointed to by buf
+>	with up to buflen random bytes which can be used to seed user
+>	space random number generators (i.e., DRBG's) or for other
+>	cryptographic processes.  It should not be used Monte Carlo
+>	simulations or for other probabilistic sampling applications.
 
-Yes, every bh_lru of all cpus.
+Aside from poor performance for the offending application, will anything
+actually break if an application ignores this warning and makes heavy
+use of getrandom(2)?  It would be helpful if the documentation made this
+clearer, rather than just saying, "don't do that".
 
+As the developer of a userspace crypto library, I can't always prevent
+downstream developers from doing silly things, and many developers
+simply don't understand different "kinds" of random numbers, so I prefer
+to tell them to just use the kernel CSPRNG by default, and to ask for
+help once they run into performance problems.  It's not ideal, but it's
+safer than the alternative.[1]
+
+>	If the GRND_RANDOM flags bit is set, then draw from the
+>	/dev/random pool instead of /dev/urandom pool.  The /dev/random
+>	pool is limited based on the entropy that can be obtained from
+>	environmental noise, so if there is insufficient entropy, the
+>	requested number of bytes may not be returned.  If there is no
+>	entropy available at all, getrandom(2) will either return an
+>	error with errno set to EAGAIN, or block if the GRND_BLOCK flags
+>	bit is set.
 >
->> Another is searching the lru and dropping only one bh that Laura proposed
->> at https://lkml.org/lkml/2012/8/31/313.
->>
->> I'm not sure which has better performance.
+>	If the GRND_RANDOM flags bit is not set, then the /dev/raundom
+>	pool will be used.  Unlike reading from the /dev/urandom, if
+>	the urandom pool has not been sufficiently initialized,
+>	getrandom(2) will either return an error with errno set to
+>	EGAIN, or block if the GRND_BLOCK flags bit is set.
 >
-> For whom? system or requestor of CMA?
-
-For system performance.
-
+>RETURN VALUE
+>       On success, the number of bytes that was returned is returned.
 >
->> So I did performance test on my cortex-a7 platform with Lmbench
->> that has "File & VM system latencies" test.
->> I am attaching the results.
->> The first line is of invalidating entire lru and the second is dropping selected bh.
->
-> You mean you did Lmbench with background CMA allocation?
-> Could you describe in detail?
+>       On error, -1 is returned, and errno is set appropriately
 
-I'm sorry not to mention the background.
-I did the test without CMA allocation because I wanted to check how it affects system performance.
+Hm.  Is it correct that, in blocking mode, the call is guaranteed either
+to return -EINVAL immediately, or to block until the buffer is
+*completely* populated with buflen bytes?  If so, I think a few small
+changes could make this a really nice interface to work with:
 
-The first test, invalidating entire lru, is adding invalidate_bh_lrus() at alloc_contig_range().
-This is not affecting system performance because alloc_contig_range() is not called
-for usual file-system management.
-The resulf of the first test is the *default system performance.*
+* Use blocking mode by default.
 
-The second test, dropping all bh in lru, is adding drop_buffers().
-Every call of drop_buffers drops all bhs in lru of every cpu.
-It can affect system performance. *But* it does not affect system performance,
-because it drops only bh of migrated pages.
+* Add a new flag called GRND_PARTIAL (replacing GRND_BLOCK), which
+  indicates that the caller is prepared to handle a partial/incomplete
+  result.
 
+* On success with GRND_PARTIAL, return the number of bytes that were
+  written into buf.  (Or -EAGAIN, as is currently done.)
 
->
->>
->> File & VM system latencies in microseconds - smaller is better
->> -------------------------------------------------------------------------------
->> Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
->>                          Create Delete Create Delete Latency Fault  Fault  selct
->> --------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
->> 10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
->> 10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
->>
->>
->> I tried several times but the result tells that they are the same under 1% gap
->> except Protection Fault.
->> But the latency of Protection Fault is very small and I think it has little effect.
->>
->> Therefore we can choose anything but I choose invalidating entire lru.
->
-> Not sure we can conclude like that.
->
-> A few weeks ago, I saw a patch which increases bh_lrus's size.
-> https://lkml.org/lkml/2014/7/4/107
-> IOW, some of workloads really affects by percpu bh_lrus so it would be
-> better to be careful to drain, I think.
->
-> You want to argue CMA allocation is rare so the cost is marginable.
-> It might but some of usecase might call it frequently with small request
-> (ie, 8K, 16K).
->
-> Anyway, why cannot CMA have the cost without affecting other subsystem?
-> I mean it's okay for CMA to consume more time to shoot out the bh
-> instead of simple all bh_lru invalidation because big order allocation is
-> kinds of slow thing in the VM and everybody already know that and even
-> sometime get failed so it's okay to add more code that extremly slow path.
+* If GRND_PARTIAL is *not* set, just return 0 on success.  (This avoids
+  all signed-unsigned confusion when buflen > INT_MAX.)
 
-There are 2 reasons to invalidate entire bh_lru.
+With those changes, it would be trivial for a userspace library to
+implement a reliable RNG interface as recommended in [2] or [3]:
 
-1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
-How do you think about it? My platform does not call CMA allocation often.
-Is the CMA allocation or Memory-Hotplug called often?
+/*
+ * memzap(3)
+ *
+ * Fills the buffer pointed to by buf with exactly buflen random bytes
+ * suitable for cryptographic purposes.  Nothing is returned.
+ *
+ * This function is thread-safe, and is safe to call from inside a
+ * signal handler.
+ *
+ * It blocks if the kernel random number generator is not yet fully
+ * initialized (e.g. early in the boot process), and it may trigger
+ * abort(3) if invoked on an old kernel version that does not support
+ * the getrandom(2) system call.
+ */
+void memzap(void *buf, size_t buflen)
+{
+        int     ret;
 
-2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
-because the drop_buffers does not have a way to distinguish migrate type.
-Even-though the lmbech results that it has almost the same performance.
-But I am afraid that it can be changed.
-As you said if bh_lru size can be changed it affects more than now.
-SO I do not want to touch non-CMA related code.
+        ret =3D getrandom(buf, buflen, 0);
+        if (ret !=3D 0) {
+                perror("getrandom(2) failed");
+                abort();
+        }
+}
 
+Best,
+- Dwayne
 
->
->> The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
->> So I think inserting codes in drop_buffers() can affect the system.
->> And also we cannot distinguish migration type in drop_buffers().
->>
->> In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
->> I think alloc_contig_range() is proper to deal with bh like following patch.
->>
->> Laura, can I have you name on Acked-by line?
->> Please let me represent my thanks.
->>
->> Thanks for any feedback.
->>
->> ------------------------------- 8< ----------------------------------
->>
->> >From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
->> From: Gioh Kim <gioh.kim@lge.com>
->> Date: Fri, 18 Jul 2014 13:40:01 +0900
->> Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
->>
->> The bh must be free to migrate a page at which bh is mapped.
->> The reference count of bh is increased when it is installed
->> into lru so that the bh of lru must be freed before migrating the page.
->>
->> This frees every bh of lru. We could free only bh of migrating page.
->> But searching lru costs more than invalidating entire lru.
->>
->> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
->> Acked-by: Laura Abbott <lauraa@codeaurora.org>
->> ---
->>   mm/page_alloc.c |    3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index b99643d4..3b474e0 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
->>          if (ret)
->>                  return ret;
->>
->> +       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
->> +               invalidate_bh_lrus();
->> +
->
-> Q1. It's a only CMA problem? Memory-Hotplug is not a problem? Or other places?
->
-> I mean it would be better to handle in generic way.
-
-Only CMA and Memory-Hotplug needs it.
-And I think invalidate_bh_lrus() is general.
-
->
-> Q2. Why do you call it right before calling __alloc_contig_migrate_range?
->
-> Some of pages will go bh_lrus by __alloc_contig_migrate_ranges.
-> In that case, it is useless without caller's retry logic.
-> Even you do it from caller's retrial logic, it's not a good idea because
-> you makes new binding alloc_contig_range and uppder layer.
->
-> So, IMHO, it would be better to handle it in migrate_pages.
-> Maybe we could define new API try_to_drop_buffers which calls
-> try_to_free_buffers and then only if the function fails due to
-> percpu lru count, we could drain only the bh in percpu lru list instead of
-> all bh draining. And places in migration path should use it rather than
-> try_to_relese_page.
->
-> But the problem from this approach invents new API which should be
-> maintained so not sure Andrew think it's worth.
-> Maybe we should see the code and diffstat.
-
-I also consider to making new function, drop_bh_of_migrate_page in migrate_page(), just before unmap_and_move().
-The migrate_page() has an argument reason that distinguish migrate-type, MR_CMA or MR_MEMORY_HOTPLUG or others.
-
-But I DO NOT WATN TO touch non-CMA related code.
-Current CMA and Memory-Hotplug code is not mature so that I am not sure it is ok to touch non-CMA related code for CMA/MemoryHotplug.
+P.S.  If I had my way, I would also drop GRND_RANDOM.  Most software
+won't use it, there's no legacy installed base, and no developer who
+still wants that behavior can legitimately claim to care about RNG
+availability guarantees, IMHO.  Anyone who really wants the old
+/dev/random behavior can always just continue to use the existing
+character device.  I don't really care enough to put up a fight about
+it, though, as long as it doesn't affect the quality of the
+non-GRND_RANDOM interface.
 
 
-My point is:
-1. CMA/Memory-hotplug is rare and invalidating bh-lru is also rare.
-2. Only change CMA/Memory-hotplig related code.
+[1] On more than one occasion, I've seen developers use Python's
+    standard "random" module to generate IVs.  I mean, why not?  IVs are
+    public, right?
+[2] http://cr.yp.to/highspeed/coolnacl-20120725.pdf
+[3] https://groups.google.com/forum/#!msg/randomness-generation/4opmDHA6_3w=
+/__TyKhbnNWsJ
 
->
-> Overenginnering?
->
->>          ret = __alloc_contig_migrate_range(&cc, start, end);
->>          if (ret)
->>                  goto done;
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+--=20
+Dwayne C. Litzenberger <dlitz@dlitz.net>
+ OpenPGP: 19E1 1FE8 B3CF F273 ED17  4A24 928C EC13 39C2 5CF7
+
+--3V7upXqbjpZ4EhLz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iFYEAREKAAYFAlPMsL8ACgkQm4qoyix3/7CyzQDbBEwr2ZIjtJCKX1gXI3evDAx2
+fs4tOr0sMV2iJgDfba0TIs7If1OUmHRbcH3HhqvCn+eOMZrCu+LyqQ==
+=gXvl
+-----END PGP SIGNATURE-----
+
+--3V7upXqbjpZ4EhLz--
