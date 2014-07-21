@@ -1,190 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaGUNxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:53:55 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59020 "EHLO mail.mev.co.uk"
+	id S932377AbaGUNzX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:55:23 -0400
+Received: from smtp206.alice.it ([82.57.200.102]:51277 "EHLO smtp206.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957AbaGUNxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:53:54 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: comedi: ni_65xx: don't invert outputs by default
-Date: Mon, 21 Jul 2014 14:53:31 +0100
-Message-Id: <1405950811-5200-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
+	id S932099AbaGUNzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:55:21 -0400
+Date: Mon, 21 Jul 2014 15:55:01 +0200
+From: Antonio Ospite <ao2@ao2.it>
+To: Jamie Lentin <jm@lentin.co.uk>
+Cc: Jiri Kosina <jkosina@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/4] Rename hid-lenovo-tpkbd to hid-lenovo
+Message-Id: <20140721155501.5c223e1e00518c7bb94d0835@ao2.it>
+In-Reply-To: <alpine.DEB.2.02.1407181016170.17078@marmot.wormnet.eu>
+References: <1405236262-8070-1-git-send-email-jm@lentin.co.uk>
+	<1405236262-8070-2-git-send-email-jm@lentin.co.uk>
+	<20140714114227.161b4bf0767e1bbf3268852c@ao2.it>
+	<alpine.DEB.2.02.1407181016170.17078@marmot.wormnet.eu>
+X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver currently inverts the outputs for the DO (digital output)
-subdevice for some of the boards it supports, indicated by the
-`invert_outputs` member in the board-specific data being initialized to
-1.  It seems this driver shouldn't really be inverting outputs for these
-boards at all, but has done so since the driver was first written back
-in October 2006.  I've had confirmation that for the PCI-6515 at least,
-the output voltage levels are opposite to the values set by the user
-program.
+On Fri, 18 Jul 2014 10:35:35 +0100 (BST)
+Jamie Lentin <jm@lentin.co.uk> wrote:
 
-The driver by Jon Grierson originally supported only PCI-6514 and
-PXI-6514 (and was originally called "ni_6514").  The driver was based on
-"ni_6527", which is where the inversion of outputs appears to have come
-from.  Over a period of a few days, the driver was enhanced by Frank
-Mori Hess to support other boards.  Some of these plainly didn't require
-inverted outputs and some guesswork was used to decide which boards
-should have inverted outputs.  Some of the boards in question are
-described in the manual as having "Sink Outputs" and others are
-described as having "Source Outputs", but this does not correspond in
-any way with which boards are marked as having inverted outputs, so the
-criterion that Frank used is a bit of a mystery!
+> On Mon, 14 Jul 2014, Antonio Ospite wrote:
+> 
+> > On Sun, 13 Jul 2014 08:24:19 +0100
+> > Jamie Lentin <jm@lentin.co.uk> wrote:
+> >
+> >> Rename module and all functions within so we can add support for other
+> >> keyboards in the same file. Rename the _tp postfix to _tpkbd, to
+> >> signify functions relevant to the TP USB keyboard.
+> >>
+> >> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
+> >
+> > Reviewed-by: Antonio Ospite <ao2@ao2.it>
+> >
+> > Patch looks good to me, easier to validate now :)
+> >
+> > A few ideas below for some possible _future_ cleanups, but no reason to
+> > hold this one any longer IMHO.
+> >
+> > Ciao,
+> >   Antonio
+> >
+> >> ---
+> >>  ...er-hid-lenovo-tpkbd => sysfs-driver-hid-lenovo} |   0
+> >>  drivers/hid/Kconfig                                |  14 +-
+> >>  drivers/hid/Makefile                               |   2 +-
+> >>  drivers/hid/hid-core.c                             |   2 +-
+> >>  drivers/hid/{hid-lenovo-tpkbd.c => hid-lenovo.c}   | 185 +++++++++++----------
+> >>  5 files changed, 102 insertions(+), 101 deletions(-)
+> >>  rename Documentation/ABI/testing/{sysfs-driver-hid-lenovo-tpkbd => sysfs-driver-hid-lenovo} (100%)
+> >>  rename drivers/hid/{hid-lenovo-tpkbd.c => hid-lenovo.c} (64%)
+> >>
 
-Change the driver so it doesn't invert the outputs of these by boards by
-default, but add a module parameter, "legacy_invert_outputs", that can
-be set to 'true' to restore the old behaviour.  Also rename the
-`invert_outputs` member of `struct ni_65xx_board` to `legacy_invert`.
+[...]
+> >> -static int tpkbd_features_set(struct hid_device *hdev)
+> >> +static int lenovo_features_set_tpkbd(struct hid_device *hdev)
+> >>  {
+> >>  	struct hid_report *report;
+> >> -	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
+> >> +	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
+> >
+> >
+> > I think the word "pointer" here is misleading, sometimes in other parts
+> > of the driver it is used as a synonym of trackpoint, but
+> > lenovo_drvdata_tpkbd also contains data about leds, so here it looks
+> > like it refers to C pointers. I'd call the variable tpkbd_data or
+> > tpkbd_drvdata, throughout the driver. What do you think?
+> 
+> Yes, the rationale behind the name really isn't obvious but all meanings 
+> are sorta correct, so it's not that bad :P
+> 
+> I like tpkbd_drvdata better though, and can correct it in the compact 
+> keyboard code too. I wanted to make the variable names match, but didn't 
+> get around to it, so will do it next time around.
+>
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/ni_65xx.c | 47 ++++++++++++++++++++++----------
- 1 file changed, 33 insertions(+), 14 deletions(-)
+IMHO you can very well use data_pointer for now so the names are
+consistent with the current ones; a cleanup can be done later to make
+the naming more straightforward too.
 
-diff --git a/drivers/staging/comedi/drivers/ni_65xx.c b/drivers/staging/comedi/drivers/ni_65xx.c
-index cad2c28..aba6fbb 100644
---- a/drivers/staging/comedi/drivers/ni_65xx.c
-+++ b/drivers/staging/comedi/drivers/ni_65xx.c
-@@ -47,13 +47,21 @@
-  *	    (National Instruments) PXI-6521 [ni_65xx]
-  *	    (National Instruments) PCI-6528 [ni_65xx]
-  *	    (National Instruments) PXI-6528 [ni_65xx]
-- * Updated: Wed Oct 18 08:59:11 EDT 2006
-+ * Updated: Mon, 21 Jul 2014 12:49:58 +0000
-  *
-  * Configuration Options: not applicable, uses PCI auto config
-  *
-  * Based on the PCI-6527 driver by ds.
-  * The interrupt subdevice (subdevice 3) is probably broken for all
-  * boards except maybe the 6514.
-+ *
-+ * This driver previously inverted the outputs on PCI-6513 through to
-+ * PCI-6519 and on PXI-6513 through to PXI-6515.  It no longer inverts
-+ * outputs on those cards by default as it didn't make much sense.  If
-+ * you require the outputs to be inverted on those cards for legacy
-+ * reasons, set the module parameter "legacy_invert_outputs=true" when
-+ * loading the module, or set "ni_65xx.legacy_invert_outputs=true" on
-+ * the kernel command line if the driver is built in to the kernel.
-  */
- 
- /*
-@@ -163,7 +171,7 @@ struct ni_65xx_board {
- 	unsigned num_dio_ports;
- 	unsigned num_di_ports;
- 	unsigned num_do_ports;
--	unsigned invert_outputs:1;
-+	unsigned legacy_invert:1;
- };
- 
- static const struct ni_65xx_board ni_65xx_boards[] = {
-@@ -198,58 +206,58 @@ static const struct ni_65xx_board ni_65xx_boards[] = {
- 	[BOARD_PCI6513] = {
- 		.name		= "pci-6513",
- 		.num_do_ports	= 8,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PXI6513] = {
- 		.name		= "pxi-6513",
- 		.num_do_ports	= 8,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6514] = {
- 		.name		= "pci-6514",
- 		.num_di_ports	= 4,
- 		.num_do_ports	= 4,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PXI6514] = {
- 		.name		= "pxi-6514",
- 		.num_di_ports	= 4,
- 		.num_do_ports	= 4,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6515] = {
- 		.name		= "pci-6515",
- 		.num_di_ports	= 4,
- 		.num_do_ports	= 4,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PXI6515] = {
- 		.name		= "pxi-6515",
- 		.num_di_ports	= 4,
- 		.num_do_ports	= 4,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6516] = {
- 		.name		= "pci-6516",
- 		.num_do_ports	= 4,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6517] = {
- 		.name		= "pci-6517",
- 		.num_do_ports	= 4,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6518] = {
- 		.name		= "pci-6518",
- 		.num_di_ports	= 2,
- 		.num_do_ports	= 2,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6519] = {
- 		.name		= "pci-6519",
- 		.num_di_ports	= 2,
- 		.num_do_ports	= 2,
--		.invert_outputs	= 1,
-+		.legacy_invert	= 1,
- 	},
- 	[BOARD_PCI6520] = {
- 		.name		= "pci-6520",
-@@ -278,6 +286,12 @@ static const struct ni_65xx_board ni_65xx_boards[] = {
- 	},
- };
- 
-+static bool ni_65xx_legacy_invert_outputs;
-+module_param_named(legacy_invert_outputs, ni_65xx_legacy_invert_outputs,
-+		   bool, 0444);
-+MODULE_PARM_DESC(legacy_invert_outputs,
-+		 "invert outputs of PCI/PXI-6513/6514/6515/6516/6517/6518/6519 for compatibility with old user code");
-+
- struct ni_65xx_private {
- 	void __iomem *mmio;
- };
-@@ -670,8 +684,13 @@ static int ni_65xx_auto_attach(struct comedi_device *dev,
- 		/* the output ports always start after the input ports */
- 		s->private = (void *)(unsigned long)board->num_di_ports;
- 
--		/* use the io_bits to handle the inverted outputs */
--		s->io_bits	= (board->invert_outputs) ? 0xff : 0x00;
-+		/*
-+		 * Use the io_bits to handle the inverted outputs.  Inverted
-+		 * outputs are only supported if the "legacy_invert_outputs"
-+		 * module parameter is set to "true".
-+		 */
-+		if (ni_65xx_legacy_invert_outputs && board->legacy_invert)
-+			s->io_bits = 0xff;
- 
- 		/* reset all output ports to comedi '0' */
- 		for (i = 0; i < board->num_do_ports; ++i) {
+> > And the driver could standardize on the word "trackpoint" where
+> > appropriate in order to eliminate any ambiguity.
+> 
+> The key other place I can think of that this happens is for the USB 
+> compact keyboard, for it's HID_TYPE_USBMOUSE half (versus the keyboard 
+> half). Saying trackpoint there is a mis-truth, since it's also where all 
+> the extra keys hide. But I'll have a look through anyway.
+> 
+
+I meant: where "pointer" means trackpoint let's just use "trackpoint",
+where pointer means "not keyboard" (like in data_pointer apparently)
+something else can be used if "trackpoint" is too specific.
+
+But again, this is cleanup: it'd be nice to have it eventually but not
+worth blocking this patchset.
+
+Thanks,
+   Antonio
+
 -- 
-2.0.0
+Antonio Ospite
+http://ao2.it
 
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
