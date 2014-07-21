@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaGUL5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:57:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48444 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871AbaGUL5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:57:10 -0400
-Date: Mon, 21 Jul 2014 13:57:06 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, kay@vrfy.org, bp@suse.de,
-        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] printk: insert newline for truncated records
-Message-ID: <20140721115706.GC20751@pathway.suse.cz>
-References: <1405718885-11227-1-git-send-email-elder@linaro.org>
- <1405718885-11227-7-git-send-email-elder@linaro.org>
+	id S1754584AbaGUMA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:00:56 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37488 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002AbaGUMAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:00:55 -0400
+Date: Mon, 21 Jul 2014 14:00:53 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140721120053.GA14069@amd.pavel.ucw.cz>
+References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405718885-11227-7-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1405938422-21900-1-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-07-18 16:28:04, Alex Elder wrote:
-> If a log record has LOG_PREFIX set, its predecessor record should be
-> terminated if it was marked LOG_CONT.
+Hi!
+
+> * Rebased to v3.16-rc6
+> * Fixed the style issues in Patch 1 mentioned by Rafael
 > 
-> In devkmsg_read(), this condition was being ignored, which would
-> lead to such records showing up combined when reading /dev/kmsg.
-> Fix this oversight.
+> Hi,
 > 
-> We should similarly insert a newline in msg_print_text() in this
-> case, to avoid formatted records getting merged.
+> here is the revised patch set to improve the scalability of
+> the memory bitmap implementation used for hibernation. The
+> current implementation does not scale well to machines with
+> several TB of memory. A resume on those machines may cause
+> soft lockups to be reported.
 > 
-> Suggested-by: Petr Mládek <pmladek@suse.cz>
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> ---
->  kernel/printk/printk.c | 18 +++++++++++++++---
->  1 file changed, 15 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index e9f0632..a5ad81c 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -575,6 +575,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->  	char cont;
->  	size_t len;
->  	ssize_t ret;
-> +	bool insert_newline;
->  
->  	if (!user)
->  		return -EBADF;
-> @@ -626,7 +627,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->  	else
->  		cont = '-';
->  
-> -	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
-> +	/* Insert a newline if the previous line was not terminated properly */
-> +	insert_newline = (user->prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
-> +	len = sprintf(user->buf, "%s%u,%llu,%llu,%c;",
-> +		      insert_newline ? "\n" : "",
->  		      (msg->facility << 3) | msg->level,
->  		      user->seq, ts_usec, cont);
->  	user->prev = msg->flags;
-> @@ -999,10 +1003,12 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
->  {
->  	const char *text = log_text(msg);
->  	size_t text_size = msg->text_len;
-> +	size_t len = 0;
-> +	bool insert_newline;
->  	bool prefix = true;
->  	bool newline = true;
-> -	size_t len = 0;
->  
-> +	insert_newline = (prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
->  	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
->  		prefix = false;
->  
-> @@ -1023,9 +1029,13 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
->  
->  		if (buf) {
->  			if (print_prefix(msg, syslog, NULL) +
-> -			    text_len + 1 >= size - len)
-> +			    text_len + 2 >= size - len)
+> These patches improve the data structure by adding a radix
+> tree to the linked list structure to improve random access
+> performance from O(n) to O(log_b(n)), where b depends on the
+> architecture (b=512 on amd64, 1024 in i386).
 
-It counts the '\n' even when it is not used.
-I think that it is even wrong that it calculates prefix when it is not used.
+Why are we doing random access there?
 
+Is the improvement from fact that normally very little memory is used
+on big memory machines?
 
->  				break;
->  
-> +			if (insert_newline) {
-> +				insert_newline = false;
-> +				buf[len++] = '\n';
-> +			}
->  			if (prefix)
->  				len += print_prefix(msg, syslog, buf + len);
->  			memcpy(buf + len, text, text_len);
-> @@ -1034,6 +1044,8 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
->  				buf[len++] = '\n';
->  		} else {
->  			/* SYSLOG_ACTION_* buffer size only calculation */
-> +			if (insert_newline)
-> +				len++;
+> A test on a 12TB machine showed an improvement in resume
+> time from 76s with the old implementation to 2.4s with the
+> radix tree and the improved swsusp_free function. See below
+> for details of this test.
 
-You forgot "insert_newline = false" here.
+Actually... how long does it take to hibernate 12TB machine? That
+should be many hours, right? You just can't hibernate machine that
+big.
 
->  			if (prefix)
->  				len += print_prefix(msg, syslog, NULL);
->  			len += text_len;
+> The last patch adds touching the soft lockup watchdog in
+> rtree_next_node. This is necessary because the worst case
+> performance (all bits set in the forbidden_pages_map and
+> free_pages_map) is the same as with the old implementation
+> and may still cause soft lockups. Patch 6 avoids this.
 
-It is just matter of personal style but I would suggest to do this
-before the do-while cycle:
+Ok, so what about simpler patch? Just touch the watchdog?
 
-	/* Force newline if the previous text was not properly finished */
-	if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && (len < size)) {
-		if (buf)
-			buf[len++] = '\n';
-		else
-			len++;
-	}
-
-IMHO, it is more clear. The do-while cycle already is complex enough.
-
-BTW: This is relared to the first patch. I would either patch all
-three locations in one patch or better split it into three patches.
-
-
-Best Regards,
-Petr
+Additional 70 seconds will be lost in noise if you write 12TB of RAM
+to (even quite fast) disk.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
