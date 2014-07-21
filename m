@@ -1,1014 +1,443 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180AbaGURNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:13:04 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:44111 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933034AbaGURNB (ORCPT
+	id S933210AbaGURPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:15:39 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:30519 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932679AbaGURPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:13:01 -0400
-To: linux-mmc@vger.kernel.org
-Subject: [PATCH] [RESEND] mmc: add Toshiba PCI SD controller driver
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Mon, 21 Jul 2014 19:12:29 +0200
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Mon, 21 Jul 2014 13:15:37 -0400
+Message-ID: <1405962929.11927.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [RFC PATCH 2/5] futex: add optimistic spinning to
+ FUTEX_SPIN_LOCK
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Date: Mon, 21 Jul 2014 10:15:29 -0700
+In-Reply-To: <1405956271-34339-3-git-send-email-Waiman.Long@hp.com>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+	 <1405956271-34339-3-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201407211912.30233.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch resurrects an old never-finished driver for Toshiba PCI SD
-controllers found in some older Toshiba laptops (such as Portege R100):
+On Mon, 2014-07-21 at 11:24 -0400, Waiman Long wrote:
+> This patch adds code to do optimistic spinning for the FUTEX_SPIN_LOCK
+> primitive on the futex value when the lock owner is running. It is
+> the same optimistic spinning technique that is done in the mutex and
+> rw semaphore code to improve their performance especially on large
+> systems with large number of CPUs. When the lock owner is not running,
+> the spinning tasks will go to sleep.
+> 
+> There is 2 major advantages of doing optimistic spinning here:
+>  1) It eliminates the context switching latency and overhead (at
+>     least a few us) associated with sleeping and wakeup.
+>  2) It eliminates most of the need to call futex(2) with
+>     FUTEX_SPIN_UNLOCK as spinning is done without the need to set
+>     the FUTEX_WAITERS bit.
 
-02:0d.0 System peripheral [0880]: Toshiba America Info Systems SD TypA Controller [1179:0805] (rev 05)
+I think this belongs with Patch 1: optimistic spinning feature should be
+in the same patch when you add the new futex commands.
 
-The hardware is slow (around 2 MB/s - same in Windows) because it does not
-support bus mastering (busmaster enable bit cannot be set in PCI control reg).
-Also the card clock is limited to 16MHz (33MHz PCI clock divided by 2).
+> Active spinning, however, does consume time in the current quantum of
+> time slice, make it a bit more likely to be preempted while running
+> in the critcal section due to time slice expiration. The heavy spinlock
+> contention of a wait-wake futex has the same effect. So it is not
+> specific
+> to this new primitive.
+> 
+> With the addition of optimistic spinning, it can significantly speed
+> up the amount of mutex operations that can be done in a certain unit
+> of time. With a userspace mutex microbenchmark running 10 million
+> mutex operations with 256 threads on a 4-socket 40-core server, the
+> spinning futex can achieve a rate of about 4.9 Mops/s with a critical
+> section load of 10 pause instructions. Whereas the wait-wake futex can
+> only achieve a rate of 3.7 Mops/s. When increasing the load to 100,
+> the corresponding rates become 2.8 Mops/s and 0.8 Mops/s respectively.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> ---
+>  kernel/futex.c |  190 ++++++++++++++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 172 insertions(+), 18 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index ec9b6ee..ddc24d1 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -71,6 +71,7 @@
+>  #include <asm/futex.h>
+>  
+>  #include "locking/rtmutex_common.h"
+> +#include "locking/mcs_spinlock.h"
+>  
+>  /*
+>   * READ this before attempting to hack on futexes!
+> @@ -2995,30 +2996,51 @@ void exit_robust_list(struct task_struct *curr)
+>  #define FUTEX_TID(u)		(pid_t)((u) & FUTEX_TID_MASK)
+>  #define FUTEX_HAS_WAITERS(u)	((u) & FUTEX_WAITERS)
+>  
+> +/*
+> + * Bit usage of the locker count:
+> + * bit  0-23: number of lockers (spinners + waiters)
+> + * bit 24-30: number of spinners
+> + */
+> +#define FUTEX_SPINCNT_MAX	64	/* Maximum # of spinners */
+> +#define FUTEX_SPINCNT_SHIFT	24
+> +#define FUTEX_SPINCNT_BIAS	(1U << FUTEX_SPINCNT_SHIFT)
+> +#define FUTEX_LOCKCNT_MASK	(FUTEX_SPINCNT_BIAS - 1)
+> +#define FUTEX_LOCKCNT(qh)	(atomic_read(&(qh)->lcnt) & FUTEX_LOCKCNT_MASK)
+> +#define FUTEX_SPINCNT(qh)	(atomic_read(&(qh)->lcnt)>>FUTEX_SPINCNT_SHIFT)
 
-SD, SDHC and also MMC cards work. (MMC cards don't work in Windows)
-SDIO is not supported (don't have any SDIO card).
+Both FUTEX_LOCKCNT and FUTEX_SPINCNT should be static inline functions.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- drivers/mmc/host/Kconfig  |    5
- drivers/mmc/host/Makefile |    1
- drivers/mmc/host/toshsd.c |  751 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/host/toshsd.h |  178 ++++++++++++++
- 4 files changed, 935 insertions(+)
+>  /**
+>   * struct futex_q_head - head of the optspin futex queue, one per unique key
+>   * @hnode:	list entry from the hash bucket
+>   * @waitq:	a list of waiting tasks
+>   * @key:	the key the futex is hashed on
+> + * @osq:	pointer to optimisitic spinning queue
+> + * @owner:	task_struct pointer of the futex owner
+> + * @otid:	TID of the futex owner
+>   * @wlock:	spinlock for managing wait queue
+> - * @lcnt:	locker count
+> + * @lcnt:	locker count (spinners + waiters)
+>   *
+>   * Locking sequence
+>   * ----------------
+>   * 1) Lock hash bucket spinlock, locate the futex queue head
+>   * 2) Inc lcnt (lock) or read lcnt (unlock), release hash bucket spinlock
+> - * 3) For waiter:
+> + * 3) For spinner:
+> + *    - enqueue into the spinner queue and wait for its turn.
+> + * 4) For waiter:
+>   *    - lock futex queue head spinlock
+>   *    - enqueue into the wait queue
+>   *    - release the lock & sleep
+> - * 4) For unlocker:
+> + * 5) For unlocker:
+>   *    - locate the queue head just like a locker does
+> - *    - Take the queue head lock and wake up the first waiter there.
+> + *    - clear the owner field if it is the current owner
+> + *    - if the locker count is not 0 & osq is empty, take the queue head lock
+> + *      and wake up the first waiter.
+>   */
+>  struct futex_q_head {
+>  	struct list_head	      hnode;
+>  	struct list_head	      waitq;
+>  	union futex_key		      key;
+> +	struct optimistic_spin_queue *osq;
+> +	struct task_struct	     *owner;
+>  	pid_t			      otid;
+>  	spinlock_t		      wlock;
+>  	atomic_t		      lcnt;
+> @@ -3034,6 +3056,13 @@ struct futex_q_node {
+>  	struct task_struct     *task;
+>  };
+>  
+> +/*
+> + * The maximum number of tasks that can be a futex spin queue
+> + *
+> + * It is set to the lesser of half of the total number of CPUs and
+> + * FUTEX_SPINCNT_MAX to avoid locking up all the CPUs in spinning.
+> + */
+> +static int __read_mostly futex_spincnt_max;
+>  
+>  /*
+>   * find_qhead - Find a queue head structure with the matching key
+> @@ -3061,7 +3090,7 @@ find_qhead(struct futex_hash_bucket *hb, union futex_key *key)
+>   * contention with no hash bucket collision.
+>   */
+>  static inline struct futex_q_head *
+> -qhead_alloc_init(struct futex_hash_bucket *hb, union futex_key *key)
+> +qhead_alloc_init(struct futex_hash_bucket *hb, union futex_key *key, u32 uval)
+>  {
+>  	struct futex_q_head *qh = NULL;
+>  	static const struct futex_q_head qh0 = { { 0 } };
+> @@ -3073,10 +3102,16 @@ qhead_alloc_init(struct futex_hash_bucket *hb, union futex_key *key)
+>  
+>  	/*
+>  	 * Initialize the queue head structure
+> +	 * The lock owner field may be NULL if the task has released the lock
+> +	 * and exit.
+>  	 */
+>  	if (qh) {
+> -		*qh = qh0;
+> -		qh->key = *key;
+> +		*qh	  = qh0;
+> +		qh->key   = *key;
+> +		qh->otid  = FUTEX_TID(uval);
+> +		qh->owner = futex_find_get_task(qh->otid);
+> +		if (unlikely(!qh->owner))
+> +			qh->otid = 0;
+>  		atomic_set(&qh->lcnt, 1);
+>  		INIT_LIST_HEAD(&qh->waitq);
+>  		spin_lock_init(&qh->wlock);
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index 7fc5099..29dc4ef 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -665,3 +665,8 @@ config MMC_REALTEK_PCI
- 	help
- 	  Say Y here to include driver code to support SD/MMC card interface
- 	  of Realtek PCI-E card reader
-+
-+config MMC_TOSHIBA_PCI
-+	tristate "Toshiba Type A SD/MMC Card Interface Driver"
-+	depends on PCI
-+	help
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index c41d0c3..2dd1617 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_MMC_USHC)		+= ushc.o
- obj-$(CONFIG_MMC_WMT)		+= wmt-sdmmc.o
- 
- obj-$(CONFIG_MMC_REALTEK_PCI)	+= rtsx_pci_sdmmc.o
-+obj-$(CONFIG_MMC_TOSHIBA_PCI)	+= toshsd.o
- 
- obj-$(CONFIG_MMC_SDHCI_PLTFM)		+= sdhci-pltfm.o
- obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
-diff --git a/drivers/mmc/host/toshsd.c b/drivers/mmc/host/toshsd.c
-new file mode 100644
-index 0000000..1fe007a
---- /dev/null
-+++ b/drivers/mmc/host/toshsd.c
-@@ -0,0 +1,751 @@
-+/*
-+ *  Toshiba PCI Secure Digital Host Controller Interface driver
-+ *
-+ *  Copyright (C) 2014 Ondrej Zary
-+ *  Copyright (C) 2007 Richard Betts, All Rights Reserved.
-+ *
-+ *	Based on asic3_mmc.c, copyright (c) 2005 SDG Systems, LLC and,
-+ *	sdhci.c, copyright (C) 2005-2006 Pierre Ossman
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or (at
-+ * your option) any later version.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/scatterlist.h>
-+#include <linux/interrupt.h>
-+
-+#include <linux/mmc/host.h>
-+#include <linux/mmc/mmc.h>
-+
-+#include "toshsd.h"
-+
-+#define DRIVER_NAME "toshsd"
-+
-+static const struct pci_device_id pci_ids[] = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA, 0x0805) },
-+	{ /* end: all zeroes */ },
-+};
-+
-+MODULE_DEVICE_TABLE(pci, pci_ids);
-+
-+static void toshsd_init(struct toshsd_host *host);
-+static void toshsd_set_ios_unlocked(struct mmc_host *mmc, struct mmc_ios *ios);
-+
-+static inline u16 toshsd_readw(struct toshsd_host *host, u16 reg)
-+{
-+	return ioread16(host->ioaddr + reg);
-+}
-+
-+static inline u32 toshsd_readl(struct toshsd_host *host, u16 reg)
-+{
-+	return ioread32(host->ioaddr + reg);
-+}
-+
-+static inline void toshsd_writew(struct toshsd_host *host, u16 reg, u16 val)
-+{
-+	iowrite16(val, host->ioaddr + reg);
-+}
-+
-+static inline void toshsd_writel(struct toshsd_host *host, u16 reg, u32 val)
-+{
-+	iowrite32(val, host->ioaddr + reg);
-+}
-+
-+static inline void toshsd_readl_rep(struct toshsd_host *host, u16 reg,
-+				    void *dst, unsigned long count)
-+{
-+	ioread32_rep(host->ioaddr + reg, dst, count);
-+}
-+
-+static inline void toshsd_writel_rep(struct toshsd_host *host, u16 reg,
-+				     const void *src, unsigned long count)
-+{
-+	iowrite32_rep(host->ioaddr + reg, src, count);
-+}
-+
-+static void toshsd_set_led(struct toshsd_host *host, unsigned char state)
-+{
-+	toshsd_writew(host, SDIO_BASE + SDIO_LEDCTRL, state);
-+}
-+
-+static void toshsd_finish_request(struct toshsd_host *host)
-+{
-+	struct mmc_request *mrq = host->mrq;
-+
-+	/* Write something to end the command */
-+	host->mrq = NULL;
-+	host->cmd = NULL;
-+	host->data = NULL;
-+
-+	toshsd_set_led(host, 0);
-+	mmc_request_done(host->mmc, mrq);
-+}
-+
-+static void toshsd_data_transfer(unsigned long h)
-+{
-+	struct toshsd_host *host = (struct toshsd_host *) h;
-+	struct mmc_data *data = host->data;
-+	struct sg_mapping_iter *sg_miter = &host->sg_miter;
-+	unsigned short *buf;
-+	int count;
-+	unsigned long flags;
-+
-+	if (!data) {
-+		dev_warn(&host->pdev->dev, "Spurious Data IRQ\n");
-+		if (host->cmd) {
-+			host->cmd->error = -EIO;
-+			toshsd_finish_request(host);
-+		}
-+		return;
-+	}
-+	spin_lock_irqsave(&host->lock, flags);
-+
-+	if (!sg_miter_next(sg_miter))
-+		return;
-+	buf = sg_miter->addr;
-+
-+	/* Ensure we dont read more than one block. The chip will interrupt us
-+	 * When the next block is available.
-+	 */
-+	count = sg_miter->length;
-+	if (count > data->blksz)
-+		count = data->blksz;
-+
-+	dev_dbg(&host->pdev->dev, "count: %08x, flags %08x\n", count,
-+		data->flags);
-+
-+	/* Transfer the data */
-+	if (data->flags & MMC_DATA_READ)
-+		toshsd_readl_rep(host, SD_DATAPORT, buf, count >> 2);
-+	else
-+		toshsd_writel_rep(host, SD_DATAPORT, buf, count >> 2);
-+
-+	sg_miter->consumed = count;
-+	sg_miter_stop(sg_miter);
-+
-+	spin_unlock_irqrestore(&host->lock, flags);
-+}
-+
-+static void toshsd_cmd_irq(struct toshsd_host *host)
-+{
-+	struct mmc_command *cmd = host->cmd;
-+	u8 *buf = (u8 *) cmd->resp;
-+	u16 data;
-+
-+	if (!host->cmd) {
-+		dev_warn(&host->pdev->dev, "Spurious CMD irq\n");
-+		return;
-+	}
-+
-+	host->cmd = NULL;
-+
-+	if (cmd->flags & MMC_RSP_PRESENT && cmd->flags & MMC_RSP_136) {
-+		/* R2 */
-+		buf[12] = 0xff;
-+		data = toshsd_readw(host, SD_RESPONSE0);
-+		buf[13] = data & 0xff;
-+		buf[14] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE1);
-+		buf[15] = data & 0xff;
-+		buf[8] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE2);
-+		buf[9] = data & 0xff;
-+		buf[10] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE3);
-+		buf[11] = data & 0xff;
-+		buf[4] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE4);
-+		buf[5] = data & 0xff;
-+		buf[6] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE5);
-+		buf[7] = data & 0xff;
-+		buf[0] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE6);
-+		buf[1] = data & 0xff;
-+		buf[2] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE7);
-+		buf[3] = data & 0xff;
-+	} else if (cmd->flags & MMC_RSP_PRESENT) {
-+		/* R1, R1B, R3, R6, R7 */
-+		data = toshsd_readw(host, SD_RESPONSE0);
-+		buf[0] = data & 0xff;
-+		buf[1] = data >> 8;
-+		data = toshsd_readw(host, SD_RESPONSE1);
-+		buf[2] = data & 0xff;
-+		buf[3] = data >> 8;
-+	}
-+
-+	dev_dbg(&host->pdev->dev, "Command IRQ complete %d %d %x\n",
-+		cmd->opcode, cmd->error, cmd->flags);
-+
-+	/* If there is data to handle we will
-+	 * finish the request in the mmc_data_end_irq handler.*/
-+	if (host->data)
-+		return;
-+
-+	toshsd_finish_request(host);
-+}
-+
-+static void toshsd_data_end_irq(struct toshsd_host *host)
-+{
-+	struct mmc_data *data = host->data;
-+
-+	host->data = NULL;
-+
-+	if (!data) {
-+		dev_warn(&host->pdev->dev, "Spurious data end IRQ\n");
-+		return;
-+	}
-+
-+	if (data->error == 0)
-+		data->bytes_xfered = data->blocks * data->blksz;
-+	else
-+		data->bytes_xfered = 0;
-+
-+	dev_dbg(&host->pdev->dev, "Completed data request xfr=%d\n",
-+		data->bytes_xfered);
-+
-+	toshsd_writew(host, SD_STOPINTERNAL, 0);
-+
-+	toshsd_finish_request(host);
-+}
-+
-+static irqreturn_t toshsd_irq(int irq, void *dev_id)
-+{
-+	struct toshsd_host *host = dev_id;
-+	u32 int_reg, int_mask, int_status, detail;
-+	int error = 0;
-+
-+	spin_lock(&host->lock);
-+	int_status = toshsd_readl(host, SD_CARDSTATUS);
-+	int_mask = toshsd_readl(host, SD_INTMASKCARD);
-+	int_reg = int_status & ~int_mask & ~IRQ_DONT_CARE_BITS;
-+
-+	dev_dbg(&host->pdev->dev, "IRQ status:%x mask:%x\n",
-+		int_status, int_mask);
-+
-+	/* nothing to do: it's not our IRQ */
-+	if (!int_reg) {
-+		spin_unlock(&host->lock);
-+		return IRQ_NONE;
-+	}
-+
-+	if (int_reg & SD_BUF_CMD_TIMEOUT) {
-+		error = -ETIMEDOUT;
-+		dev_dbg(&host->pdev->dev, "Timeout\n");
-+	} else if (int_reg & SD_BUF_CRC_ERR) {
-+		error = -EILSEQ;
-+		dev_err(&host->pdev->dev, "BadCRC\n");
-+	} else if (int_reg & (SD_BUF_ILLEGAL_ACCESS
-+				| SD_BUF_CMD_INDEX_ERR
-+				| SD_BUF_STOP_BIT_END_ERR
-+				| SD_BUF_OVERFLOW
-+				| SD_BUF_UNDERFLOW
-+				| SD_BUF_DATA_TIMEOUT)) {
-+		dev_err(&host->pdev->dev, "Buffer status error: { %s%s%s%s%s%s}\n",
-+			int_reg & SD_BUF_ILLEGAL_ACCESS ? "ILLEGAL_ACC " : "",
-+			int_reg & SD_BUF_CMD_INDEX_ERR ? "CMD_INDEX " : "",
-+			int_reg & SD_BUF_STOP_BIT_END_ERR ? "STOPBIT_END " : "",
-+			int_reg & SD_BUF_OVERFLOW ? "OVERFLOW " : "",
-+			int_reg & SD_BUF_UNDERFLOW ? "UNDERFLOW " : "",
-+			int_reg & SD_BUF_DATA_TIMEOUT ? "DATA_TIMEOUT " : "");
-+
-+		detail = toshsd_readl(host, SD_ERRORSTATUS0);
-+		dev_err(&host->pdev->dev, "detail error status { %s%s%s%s%s%s%s%s%s%s%s%s%s}\n",
-+			detail & SD_ERR0_RESP_CMD_ERR ? "RESP_CMD " : "",
-+			detail & SD_ERR0_RESP_NON_CMD12_END_BIT_ERR ? "RESP_END_BIT " : "",
-+			detail & SD_ERR0_RESP_CMD12_END_BIT_ERR ? "RESP_END_BIT " : "",
-+			detail & SD_ERR0_READ_DATA_END_BIT_ERR ? "READ_DATA_END_BIT " : "",
-+			detail & SD_ERR0_WRITE_CRC_STATUS_END_BIT_ERR ? "WRITE_CMD_END_BIT " : "",
-+			detail & SD_ERR0_RESP_NON_CMD12_CRC_ERR ? "RESP_CRC " : "",
-+			detail & SD_ERR0_RESP_CMD12_CRC_ERR ? "RESP_CRC " : "",
-+			detail & SD_ERR0_READ_DATA_CRC_ERR ? "READ_DATA_CRC " : "",
-+			detail & SD_ERR0_WRITE_CMD_CRC_ERR ? "WRITE_CMD_CRC " : "",
-+			detail & SD_ERR1_NO_CMD_RESP ? "NO_CMD_RESP " : "",
-+			detail & SD_ERR1_TIMEOUT_READ_DATA ? "READ_DATA_TIMEOUT " : "",
-+			detail & SD_ERR1_TIMEOUT_CRS_STATUS ? "CRS_STATUS_TIMEOUT " : "",
-+			detail & SD_ERR1_TIMEOUT_CRC_BUSY ? "CRC_BUSY_TIMEOUT " : "");
-+		error = -EIO;
-+	}
-+
-+	if (error) {
-+		if (host->cmd)
-+			host->cmd->error = error;
-+
-+		if (error == -ETIMEDOUT) {
-+			toshsd_writel(host, SD_CARDSTATUS, int_status &
-+				~(SD_BUF_CMD_TIMEOUT | SD_CARD_RESP_END));
-+		} else {
-+			toshsd_init(host);
-+			toshsd_set_ios_unlocked(host->mmc, &host->mmc->ios);
-+			goto irq_end;
-+		}
-+	}
-+
-+	/* Card insert/remove. The mmc controlling code is stateless. */
-+	if (int_reg & (SD_CARD_CARD_INSERTED_0 | SD_CARD_CARD_REMOVED_0)) {
-+		toshsd_writel(host, SD_CARDSTATUS, int_status &
-+			      ~(SD_CARD_CARD_REMOVED_0 |
-+				SD_CARD_CARD_INSERTED_0));
-+
-+		if (int_reg & SD_CARD_CARD_INSERTED_0)
-+			toshsd_init(host);
-+
-+		mmc_detect_change(host->mmc, 1);
-+	}
-+
-+	/* Data transfer */
-+	if (int_reg & (SD_BUF_READ_ENABLE | SD_BUF_WRITE_ENABLE)) {
-+		toshsd_writel(host, SD_CARDSTATUS, int_status &
-+			      ~(SD_BUF_WRITE_ENABLE | SD_BUF_READ_ENABLE));
-+
-+		tasklet_schedule(&host->data_read_tasklet);
-+	}
-+
-+	/* Command completion */
-+	if (int_reg & SD_CARD_RESP_END) {
-+		toshsd_writel(host, SD_CARDSTATUS, int_status &
-+			      ~(SD_CARD_RESP_END));
-+		toshsd_cmd_irq(host);
-+	}
-+
-+	/* Data transfer completion */
-+	if (int_reg & SD_CARD_RW_END) {
-+		toshsd_writel(host, SD_CARDSTATUS, int_status &
-+			      ~(SD_CARD_RW_END));
-+		toshsd_data_end_irq(host);
-+	}
-+irq_end:
-+	spin_unlock(&host->lock);
-+	return IRQ_HANDLED;
-+}
-+
-+static void toshsd_start_cmd(struct toshsd_host *host, struct mmc_command *cmd)
-+{
-+	struct mmc_data *data = host->data;
-+	int c = cmd->opcode;
-+
-+	dev_dbg(&host->pdev->dev, "Command opcode: %d\n", cmd->opcode);
-+
-+	if (cmd->opcode == MMC_STOP_TRANSMISSION) {
-+		toshsd_writew(host, SD_STOPINTERNAL,
-+			      SD_STOPINT_ISSSUE_CMD12);
-+
-+		cmd->resp[0] = cmd->opcode;
-+		cmd->resp[1] = 0;
-+		cmd->resp[2] = 0;
-+		cmd->resp[3] = 0;
-+
-+		toshsd_finish_request(host);
-+		return;
-+	}
-+
-+	switch (mmc_resp_type(cmd)) {
-+	case MMC_RSP_NONE:
-+		c |= SD_CMD_RESP_TYPE_NORMAL;
-+		break;
-+
-+	case MMC_RSP_R1:
-+		c |= SD_CMD_RESP_TYPE_EXT_R1;
-+		break;
-+	case MMC_RSP_R1B:
-+		c |= SD_CMD_RESP_TYPE_EXT_R1B;
-+		break;
-+	case MMC_RSP_R2:
-+		c |= SD_CMD_RESP_TYPE_EXT_R2;
-+		break;
-+	case MMC_RSP_R3:
-+		c |= SD_CMD_RESP_TYPE_EXT_R3;
-+		break;
-+
-+	default:
-+		dev_err(&host->pdev->dev, "Unknown response type %d\n",
-+			mmc_resp_type(cmd));
-+		break;
-+	}
-+
-+	host->cmd = cmd;
-+
-+	if (cmd->opcode == MMC_APP_CMD)
-+		c |= SD_CMD_TYPE_ACMD;
-+
-+	if (cmd->opcode == MMC_GO_IDLE_STATE)
-+		c |= (3 << 8);  /* removed from ipaq-asic3.h for some reason */
-+
-+	if (data) {
-+		c |= SD_CMD_DATA_PRESENT;
-+
-+		if (data->blocks > 1) {
-+			toshsd_writew(host, SD_STOPINTERNAL,
-+				      SD_STOPINT_AUTO_ISSUE_CMD12);
-+			c |= SD_CMD_MULTI_BLOCK;
-+		}
-+
-+		if (data->flags & MMC_DATA_READ)
-+			c |= SD_CMD_TRANSFER_READ;
-+
-+		/* MMC_DATA_WRITE does not require a bit to be set */
-+	}
-+
-+	/* Send the command */
-+	toshsd_writel(host, SD_ARG0, cmd->arg);
-+	toshsd_writew(host, SD_CMD, c);
-+}
-+
-+static void toshsd_start_data(struct toshsd_host *host, struct mmc_data *data)
-+{
-+	unsigned int flags = SG_MITER_ATOMIC;
-+
-+	dev_dbg(&host->pdev->dev, "setup data transfer: blocksize %08x  nr_blocks %d, offset: %08x\n",
-+		data->blksz, data->blocks, data->sg->offset);
-+
-+	host->data = data;
-+
-+	if (data->flags & MMC_DATA_READ)
-+		flags |= SG_MITER_TO_SG;
-+	else
-+		flags |= SG_MITER_FROM_SG;
-+
-+	sg_miter_start(&host->sg_miter, data->sg, data->sg_len, flags);
-+
-+	/* Set transfer length and blocksize */
-+	toshsd_writew(host, SD_BLOCKCOUNT, data->blocks);
-+	toshsd_writew(host, SD_CARDXFERDATALEN, data->blksz);
-+}
-+
-+/* Process requests from the MMC layer */
-+static void toshsd_request(struct mmc_host *mmc, struct mmc_request *mrq)
-+{
-+	struct toshsd_host *host = mmc_priv(mmc);
-+	unsigned long flags;
-+
-+	/* abort if card not present */
-+	if (!(toshsd_readw(host, SD_CARDSTATUS) & SD_CARD_PRESENT_0)) {
-+		mrq->cmd->error = -ENOMEDIUM;
-+		mmc_request_done(mmc, mrq);
-+		return;
-+	}
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+
-+	WARN_ON(host->mrq != NULL);
-+
-+	host->mrq = mrq;
-+
-+	if (mrq->data)
-+		toshsd_start_data(host, mrq->data);
-+
-+	toshsd_set_led(host, 1);
-+
-+	toshsd_start_cmd(host, mrq->cmd);
-+
-+	spin_unlock_irqrestore(&host->lock, flags);
-+}
-+
-+/* Set MMC clock / power.
-+ * Note: This controller uses a simple divider scheme therefore it cannot run
-+ * SD/MMC cards at full speed (24/20MHz). HCLK (=33MHz PCI clock?) is too high
-+ * and the next slowest is 16MHz (div=2).
-+ */
-+static void toshsd_set_ios_unlocked(struct mmc_host *mmc, struct mmc_ios *ios)
-+{
-+	struct toshsd_host *host = mmc_priv(mmc);
-+
-+	if (ios->clock) {
-+		u16 clk;
-+		int div = 1;
-+
-+		while (ios->clock < HCLK / div)
-+			div *= 2;
-+
-+		clk = div >> 2;
-+
-+		if (div == 1) { /* disable the divider */
-+			pci_write_config_byte(host->pdev, SD_PCICFG_CLKMODE,
-+					      SD_PCICFG_CLKMODE_DIV_DISABLE);
-+			clk |= SD_CARDCLK_DIV_DISABLE;
-+		} else
-+			pci_write_config_byte(host->pdev, SD_PCICFG_CLKMODE, 0);
-+
-+		clk |= SD_CARDCLK_ENABLE_CLOCK;
-+		toshsd_writew(host, SD_CARDCLOCKCTRL, clk);
-+
-+		mdelay(10);
-+	} else
-+		toshsd_writew(host, SD_CARDCLOCKCTRL, 0);
-+
-+	switch (ios->power_mode) {
-+	case MMC_POWER_OFF:
-+		pci_write_config_byte(host->pdev, SD_PCICFG_POWER1,
-+					SD_PCICFG_PWR1_OFF);
-+		mdelay(1);
-+		break;
-+	case MMC_POWER_UP:
-+		break;
-+	case MMC_POWER_ON:
-+		pci_write_config_byte(host->pdev, SD_PCICFG_POWER1,
-+					SD_PCICFG_PWR1_33V);
-+		pci_write_config_byte(host->pdev, SD_PCICFG_POWER2,
-+					SD_PCICFG_PWR2_AUTO);
-+		mdelay(20);
-+		break;
-+	}
-+
-+	switch (ios->bus_width) {
-+	case MMC_BUS_WIDTH_1:
-+		toshsd_writew(host, SD_CARDOPTIONSETUP, SD_CARDOPT_REQUIRED
-+				| SD_CARDOPT_DATA_RESP_TIMEOUT(14)
-+				| SD_CARDOPT_C2_MODULE_ABSENT
-+				| SD_CARDOPT_DATA_XFR_WIDTH_1);
-+		break;
-+	case MMC_BUS_WIDTH_4:
-+		toshsd_writew(host, SD_CARDOPTIONSETUP, SD_CARDOPT_REQUIRED
-+				| SD_CARDOPT_DATA_RESP_TIMEOUT(14)
-+				| SD_CARDOPT_C2_MODULE_ABSENT
-+				| SD_CARDOPT_DATA_XFR_WIDTH_4);
-+		break;
-+	}
-+}
-+
-+static void toshsd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-+{
-+	struct toshsd_host *host = mmc_priv(mmc);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+	toshsd_set_ios_unlocked(mmc, ios);
-+	spin_unlock_irqrestore(&host->lock, flags);
-+}
-+
-+static int toshsd_get_ro(struct mmc_host *mmc)
-+{
-+	struct toshsd_host *host = mmc_priv(mmc);
-+
-+	/* active low */
-+	return !(toshsd_readw(host, SD_CARDSTATUS) & SD_CARD_WRITE_PROTECT);
-+}
-+
-+static int toshsd_get_cd(struct mmc_host *mmc)
-+{
-+	struct toshsd_host *host = mmc_priv(mmc);
-+
-+	return !!(toshsd_readw(host, SD_CARDSTATUS) & SD_CARD_PRESENT_0);
-+}
-+
-+static struct mmc_host_ops toshsd_ops = {
-+	.request = toshsd_request,
-+	.set_ios = toshsd_set_ios,
-+	.get_ro = toshsd_get_ro,
-+	.get_cd = toshsd_get_cd,
-+};
-+
-+static void toshsd_init(struct toshsd_host *host)
-+{
-+	/* enable clock */
-+	pci_write_config_byte(host->pdev, SD_PCICFG_CLKSTOP,
-+					SD_PCICFG_CLKSTOP_ENABLE_ALL);
-+	pci_write_config_byte(host->pdev, SD_PCICFG_CARDDETECT, 2);
-+
-+	/* reset */
-+	toshsd_writew(host, SD_SOFTWARERESET, 0); /* assert */
-+	mdelay(2);
-+	toshsd_writew(host, SD_SOFTWARERESET, 1); /* deassert */
-+	mdelay(2);
-+
-+	/* Clear card registers */
-+	toshsd_writew(host, SD_CARDCLOCKCTRL, 0);
-+	toshsd_writel(host, SD_CARDSTATUS, 0);
-+	toshsd_writel(host, SD_ERRORSTATUS0, 0);
-+	toshsd_writew(host, SD_STOPINTERNAL, 0);
-+
-+	/* SDIO clock? */
-+	toshsd_writew(host, SDIO_BASE + SDIO_CLOCKNWAITCTRL, 0x100);
-+
-+	/* enable LED */
-+	pci_write_config_byte(host->pdev, SD_PCICFG_SDLED_ENABLE1,
-+					SD_PCICFG_LED_ENABLE1_START);
-+	pci_write_config_byte(host->pdev, SD_PCICFG_SDLED_ENABLE2,
-+					SD_PCICFG_LED_ENABLE2_START);
-+
-+	/* set interrupt masks */
-+	toshsd_writel(host, SD_INTMASKCARD, ~(SD_CARD_RESP_END
-+					      | SD_CARD_RW_END
-+					      | SD_CARD_CARD_REMOVED_0
-+					      | SD_CARD_CARD_INSERTED_0
-+					      | SD_BUF_READ_ENABLE
-+					      | SD_BUF_WRITE_ENABLE
-+					      | SD_BUF_CMD_TIMEOUT));
-+
-+	toshsd_writew(host, SD_TRANSACTIONCTRL, 0x1000);
-+}
-+
-+static void toshsd_powerdown(struct toshsd_host *host)
-+{
-+	/* mask all interrupts */
-+	toshsd_writel(host, SD_INTMASKCARD, 0xffffffff);
-+	/* disable card clock */
-+	toshsd_writew(host, SDIO_BASE + SDIO_CLOCKNWAITCTRL, 0x000);
-+	toshsd_writew(host, SD_CARDCLOCKCTRL, 0);
-+	/* power down card */
-+	pci_write_config_byte(host->pdev, SD_PCICFG_POWER1, SD_PCICFG_PWR1_OFF);
-+	/* disable clock */
-+	pci_write_config_byte(host->pdev, SD_PCICFG_CLKSTOP, 0);
-+}
-+
-+#ifdef CONFIG_PM
-+
-+static int toshsd_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	struct toshsd_host *host = pci_get_drvdata(pdev);
-+
-+	toshsd_powerdown(host);
-+
-+	pci_save_state(pdev);
-+	pci_enable_wake(pdev, pci_choose_state(pdev, state), 0);
-+	pci_disable_device(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+
-+	return 0;
-+}
-+
-+static int toshsd_resume(struct pci_dev *pdev)
-+{
-+	struct toshsd_host *host = pci_get_drvdata(pdev);
-+	int ret;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_restore_state(pdev);
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		return ret;
-+
-+	toshsd_init(host);
-+
-+	return 0;
-+}
-+
-+#else /* CONFIG_PM */
-+
-+#define toshsd_suspend NULL
-+#define toshsd_resume NULL
-+
-+#endif /* CONFIG_PM */
-+
-+static int toshsd_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
-+{
-+	int ret;
-+	struct toshsd_host *host;
-+	struct mmc_host *mmc;
-+	resource_size_t base;
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		return ret;
-+
-+	mmc = mmc_alloc_host(sizeof(struct toshsd_host), &pdev->dev);
-+	if (!mmc) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	host = mmc_priv(mmc);
-+	host->mmc = mmc;
-+
-+	host->pdev = pdev;
-+	pci_set_drvdata(pdev, host);
-+
-+	ret = pci_request_regions(pdev, DRIVER_NAME);
-+	if (ret)
-+		goto free;
-+
-+	host->ioaddr = pci_iomap(pdev, 0, 0);
-+	if (!host->ioaddr) {
-+		ret = -ENOMEM;
-+		goto release;
-+	}
-+
-+	/* Set MMC host parameters */
-+	mmc->ops = &toshsd_ops;
-+	mmc->caps = MMC_CAP_4_BIT_DATA;
-+	mmc->ocr_avail = MMC_VDD_32_33;
-+
-+	mmc->f_min = HCLK / 512;
-+	mmc->f_max = HCLK;
-+
-+	spin_lock_init(&host->lock);
-+
-+	tasklet_init(&host->data_read_tasklet, toshsd_data_transfer,
-+		     (unsigned long) host);
-+
-+	toshsd_init(host);
-+
-+	ret = request_irq(pdev->irq, toshsd_irq, IRQF_SHARED, DRIVER_NAME,
-+			  host);
-+	if (ret)
-+		goto untasklet;
-+
-+	mmc_add_host(mmc);
-+
-+	base = pci_resource_start(pdev, 0);
-+	dev_dbg(&pdev->dev, "MMIO %pa, IRQ %d\n", &base, pdev->irq);
-+
-+	return 0;
-+
-+untasklet:
-+	tasklet_kill(&host->data_read_tasklet);
-+	pci_iounmap(pdev, host->ioaddr);
-+release:
-+	pci_release_regions(pdev);
-+free:
-+	mmc_free_host(mmc);
-+	pci_set_drvdata(pdev, NULL);
-+err:
-+	pci_disable_device(pdev);
-+	return ret;
-+}
-+
-+static void toshsd_remove(struct pci_dev *pdev)
-+{
-+	struct toshsd_host *host = pci_get_drvdata(pdev);
-+
-+	mmc_remove_host(host->mmc);
-+	tasklet_kill(&host->data_read_tasklet);
-+	toshsd_powerdown(host);
-+	free_irq(pdev->irq, host);
-+	pci_iounmap(pdev, host->ioaddr);
-+	pci_release_regions(pdev);
-+	mmc_free_host(host->mmc);
-+	pci_set_drvdata(pdev, NULL);
-+	pci_disable_device(pdev);
-+}
-+
-+static struct pci_driver toshsd_driver = {
-+	.name = DRIVER_NAME,
-+	.id_table = pci_ids,
-+	.probe = toshsd_probe,
-+	.remove = toshsd_remove,
-+	.suspend = toshsd_suspend,
-+	.resume = toshsd_resume,
-+};
-+
-+static int __init toshsd_drv_init(void)
-+{
-+	return pci_register_driver(&toshsd_driver);
-+}
-+
-+static void __exit toshsd_drv_exit(void)
-+{
-+	pci_unregister_driver(&toshsd_driver);
-+}
-+
-+module_init(toshsd_drv_init);
-+module_exit(toshsd_drv_exit);
-+
-+MODULE_AUTHOR("Ondrej Zary, Richard Betts");
-+MODULE_DESCRIPTION("Toshiba PCI Secure Digital Host Controller Interface driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/mmc/host/toshsd.h b/drivers/mmc/host/toshsd.h
-new file mode 100644
-index 0000000..2796211
---- /dev/null
-+++ b/drivers/mmc/host/toshsd.h
-@@ -0,0 +1,178 @@
-+/*
-+ *  Toshiba PCI Secure Digital Host Controller Interface driver
-+ *
-+ *  Copyright (C) 2014 Ondrej Zary
-+ *  Copyright (C) 2007 Richard Betts, All Rights Reserved.
-+ *
-+ *      Based on asic3_mmc.c Copyright (c) 2005 SDG Systems, LLC
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or (at
-+ * your option) any later version.
-+ */
-+
-+#define HCLK	33000000	/* 33 MHz (PCI clock) */
-+
-+#define SD_PCICFG_CLKSTOP	0x40	/* 0x1f = clock controller, 0 = stop */
-+#define SD_PCICFG_GATEDCLK	0x41	/* Gated clock */
-+#define SD_PCICFG_CLKMODE	0x42	/* Control clock of SD controller */
-+#define SD_PCICFG_PINSTATUS	0x44	/* R/O: read status of SD pins */
-+#define SD_PCICFG_POWER1	0x48
-+#define SD_PCICFG_POWER2	0x49
-+#define SD_PCICFG_POWER3	0x4a
-+#define SD_PCICFG_CARDDETECT	0x4c
-+#define SD_PCICFG_SLOTS		0x50	/* R/O: define support slot number */
-+#define SD_PCICFG_EXTGATECLK1	0xf0	/* Could be used for gated clock */
-+#define SD_PCICFG_EXTGATECLK2	0xf1	/* Could be used for gated clock */
-+#define SD_PCICFG_EXTGATECLK3	0xf9	/* Bit 1: double buffer/single buffer */
-+#define SD_PCICFG_SDLED_ENABLE1	0xfa
-+#define SD_PCICFG_SDLED_ENABLE2	0xfe
-+
-+#define SD_PCICFG_CLKMODE_DIV_DISABLE	(1 << 0)
-+#define SD_PCICFG_CLKSTOP_ENABLE_ALL	0x1f
-+#define SD_PCICFG_LED_ENABLE1_START	0x12
-+#define SD_PCICFG_LED_ENABLE2_START	0x80
-+
-+#define SD_PCICFG_PWR1_33V	0x08	/* Set for 3.3 volts */
-+#define SD_PCICFG_PWR1_OFF	0x00	/* Turn off power */
-+#define SD_PCICFG_PWR2_AUTO	0x02
-+
-+#define SD_CMD			0x00	/* also for SDIO */
-+#define SD_ARG0			0x04	/* also for SDIO */
-+#define SD_ARG1			0x06	/* also for SDIO */
-+#define SD_STOPINTERNAL		0x08
-+#define SD_BLOCKCOUNT		0x0a	/* also for SDIO */
-+#define SD_RESPONSE0		0x0c	/* also for SDIO */
-+#define SD_RESPONSE1		0x0e	/* also for SDIO */
-+#define SD_RESPONSE2		0x10	/* also for SDIO */
-+#define SD_RESPONSE3		0x12	/* also for SDIO */
-+#define SD_RESPONSE4		0x14	/* also for SDIO */
-+#define SD_RESPONSE5		0x16	/* also for SDIO */
-+#define SD_RESPONSE6		0x18	/* also for SDIO */
-+#define SD_RESPONSE7		0x1a	/* also for SDIO */
-+#define SD_CARDSTATUS		0x1c	/* also for SDIO */
-+#define SD_BUFFERCTRL		0x1e	/* also for SDIO */
-+#define SD_INTMASKCARD		0x20	/* also for SDIO */
-+#define SD_INTMASKBUFFER	0x22	/* also for SDIO */
-+#define SD_CARDCLOCKCTRL	0x24
-+#define SD_CARDXFERDATALEN	0x26	/* also for SDIO */
-+#define SD_CARDOPTIONSETUP	0x28	/* also for SDIO */
-+#define SD_ERRORSTATUS0		0x2c	/* also for SDIO */
-+#define SD_ERRORSTATUS1		0x2e	/* also for SDIO */
-+#define SD_DATAPORT		0x30	/* also for SDIO */
-+#define SD_TRANSACTIONCTRL	0x34	/* also for SDIO */
-+#define SD_SOFTWARERESET	0xe0	/* also for SDIO */
-+
-+/* registers above marked "also for SDIO" and all SDIO registers below can be
-+ * accessed at SDIO_BASE + reg address */
-+#define SDIO_BASE	 0x100
-+
-+#define SDIO_CARDPORTSEL	0x02
-+#define SDIO_CARDINTCTRL	0x36
-+#define SDIO_CLOCKNWAITCTRL	0x38
-+#define SDIO_HOSTINFORMATION	0x3a
-+#define SDIO_ERRORCTRL		0x3c
-+#define SDIO_LEDCTRL		0x3e
-+
-+#define SD_TRANSCTL_SET		(1 << 8)
-+
-+#define SD_CARDCLK_DIV_DISABLE	(1 << 15)
-+#define SD_CARDCLK_ENABLE_CLOCK	(1 << 8)
-+#define SD_CARDCLK_CLK_DIV_512	(1 << 7)
-+#define SD_CARDCLK_CLK_DIV_256	(1 << 6)
-+#define SD_CARDCLK_CLK_DIV_128	(1 << 5)
-+#define SD_CARDCLK_CLK_DIV_64	(1 << 4)
-+#define SD_CARDCLK_CLK_DIV_32	(1 << 3)
-+#define SD_CARDCLK_CLK_DIV_16	(1 << 2)
-+#define SD_CARDCLK_CLK_DIV_8	(1 << 1)
-+#define SD_CARDCLK_CLK_DIV_4	(1 << 0)
-+#define SD_CARDCLK_CLK_DIV_2	(0 << 0)
-+
-+#define SD_CARDOPT_REQUIRED		0x000e
-+#define SD_CARDOPT_DATA_RESP_TIMEOUT(x)	(((x) & 0x0f) << 4) /* 4 bits */
-+#define SD_CARDOPT_C2_MODULE_ABSENT	(1 << 14)
-+#define SD_CARDOPT_DATA_XFR_WIDTH_1	(1 << 15)
-+#define SD_CARDOPT_DATA_XFR_WIDTH_4	(0 << 15)
-+
-+#define SD_CMD_TYPE_CMD			(0 << 6)
-+#define SD_CMD_TYPE_ACMD		(1 << 6)
-+#define SD_CMD_TYPE_AUTHEN		(2 << 6)
-+#define SD_CMD_RESP_TYPE_NORMAL		(0 << 8)
-+#define SD_CMD_RESP_TYPE_EXT_R1		(4 << 8)
-+#define SD_CMD_RESP_TYPE_EXT_R1B	(5 << 8)
-+#define SD_CMD_RESP_TYPE_EXT_R2		(6 << 8)
-+#define SD_CMD_RESP_TYPE_EXT_R3		(7 << 8)
-+#define SD_CMD_RESP_TYPE_EXT_R6		(4 << 8)
-+#define SD_CMD_RESP_TYPE_EXT_R7		(4 << 8)
-+#define SD_CMD_DATA_PRESENT		(1 << 11)
-+#define SD_CMD_TRANSFER_READ		(1 << 12)
-+#define SD_CMD_MULTI_BLOCK		(1 << 13)
-+#define SD_CMD_SECURITY_CMD		(1 << 14)
-+
-+#define SD_STOPINT_ISSSUE_CMD12		(1 << 0)
-+#define SD_STOPINT_AUTO_ISSUE_CMD12	(1 << 8)
-+
-+#define SD_CARD_RESP_END	(1 << 0)
-+#define SD_CARD_RW_END		(1 << 2)
-+#define SD_CARD_CARD_REMOVED_0	(1 << 3)
-+#define SD_CARD_CARD_INSERTED_0	(1 << 4)
-+#define SD_CARD_PRESENT_0	(1 << 5)
-+#define SD_CARD_UNK6		(1 << 6)
-+#define SD_CARD_WRITE_PROTECT	(1 << 7)
-+#define SD_CARD_CARD_REMOVED_3	(1 << 8)
-+#define SD_CARD_CARD_INSERTED_3	(1 << 9)
-+#define SD_CARD_PRESENT_3	(1 << 10)
-+
-+#define SD_BUF_CMD_INDEX_ERR	(1 << 16)
-+#define SD_BUF_CRC_ERR		(1 << 17)
-+#define SD_BUF_STOP_BIT_END_ERR	(1 << 18)
-+#define SD_BUF_DATA_TIMEOUT	(1 << 19)
-+#define SD_BUF_OVERFLOW		(1 << 20)
-+#define SD_BUF_UNDERFLOW	(1 << 21)
-+#define SD_BUF_CMD_TIMEOUT	(1 << 22)
-+#define SD_BUF_UNK7		(1 << 23)
-+#define SD_BUF_READ_ENABLE	(1 << 24)
-+#define SD_BUF_WRITE_ENABLE	(1 << 25)
-+#define SD_BUF_ILLEGAL_FUNCTION	(1 << 29)
-+#define SD_BUF_CMD_BUSY		(1 << 30)
-+#define SD_BUF_ILLEGAL_ACCESS	(1 << 31)
-+
-+#define SD_ERR0_RESP_CMD_ERR			(1 << 0)
-+#define SD_ERR0_RESP_NON_CMD12_END_BIT_ERR	(1 << 2)
-+#define SD_ERR0_RESP_CMD12_END_BIT_ERR		(1 << 3)
-+#define SD_ERR0_READ_DATA_END_BIT_ERR		(1 << 4)
-+#define SD_ERR0_WRITE_CRC_STATUS_END_BIT_ERR	(1 << 5)
-+#define SD_ERR0_RESP_NON_CMD12_CRC_ERR		(1 << 8)
-+#define SD_ERR0_RESP_CMD12_CRC_ERR		(1 << 9)
-+#define SD_ERR0_READ_DATA_CRC_ERR		(1 << 10)
-+#define SD_ERR0_WRITE_CMD_CRC_ERR		(1 << 11)
-+
-+#define SD_ERR1_NO_CMD_RESP		(1 << 16)
-+#define SD_ERR1_TIMEOUT_READ_DATA	(1 << 20)
-+#define SD_ERR1_TIMEOUT_CRS_STATUS	(1 << 21)
-+#define SD_ERR1_TIMEOUT_CRC_BUSY	(1 << 22)
-+
-+#define IRQ_DONT_CARE_BITS (SD_CARD_PRESENT_3 \
-+	| SD_CARD_WRITE_PROTECT \
-+	| SD_CARD_UNK6 \
-+	| SD_CARD_PRESENT_0 \
-+	| SD_BUF_UNK7 \
-+	| SD_BUF_CMD_BUSY)
-+
-+struct toshsd_host {
-+	struct pci_dev *pdev;
-+	struct mmc_host *mmc;
-+
-+	spinlock_t lock;
-+
-+	struct mmc_request *mrq;/* Current request */
-+	struct mmc_command *cmd;/* Current command */
-+	struct mmc_data *data;	/* Current data request */
-+
-+	struct sg_mapping_iter sg_miter; /* for PIO */
-+
-+	void __iomem *ioaddr; /* mapped address */
-+
-+	struct tasklet_struct data_read_tasklet;
-+};
+All this can be a single qh setup function.
 
+> @@ -3120,9 +3155,11 @@ qhead_free(struct futex_q_head *qh, struct futex_hash_bucket *hb)
+>  	/*
+>  	 * Free the queue head structure
+>  	 */
+> -	BUG_ON(!list_empty(&qh->waitq));
+> +	BUG_ON(!list_empty(&qh->waitq) || qh->osq);
+>  	list_del(&qh->hnode);
+>  	spin_unlock(&hb->lock);
+> +	if (qh->owner)
+> +		put_task_struct(qh->owner);
+>  
+>  	if (!hb->qhcache && (cmpxchg(&hb->qhcache, NULL, qh) == NULL))
+>  		return;
+> @@ -3134,14 +3171,19 @@ qhead_free(struct futex_q_head *qh, struct futex_hash_bucket *hb)
+>   * Return: 1 if successful or an error happen
+>   *	   0 otherwise
+>   *
+> + * Optimistic spinning is done without holding lock, but with page fault
+> + * explicitly disabled. So different functions need to be used to access
+> + * the userspace futex value.
+> + *
+>   * Side effect: The uval and ret will be updated.
+>   */
+>  static inline int futex_spin_trylock(u32 __user *uaddr, u32 *puval,
+> -				       int *pret, u32 vpid)
+> +				     int *pret, u32 vpid, bool spinning)
+>  {
+> -	u32	  old;
+> +	u32 old;
+>  
+> -	*pret = get_futex_value_locked(puval, uaddr);
+> +	*pret = spinning ? __copy_from_user_inatomic(puval, uaddr, sizeof(u32))
+> +			 : get_futex_value_locked(puval, uaddr);
+>  	if (*pret)
+>  		return 1;
+>  
+> @@ -3150,18 +3192,102 @@ static inline int futex_spin_trylock(u32 __user *uaddr, u32 *puval,
+>  
+>  	old = *puval;
+>  
+> -	*pret = cmpxchg_futex_value_locked(puval, uaddr, old, vpid | old);
+> +	*pret = spinning
+> +	      ? futex_atomic_cmpxchg_inatomic(puval, uaddr, old, vpid)
+> +	      : cmpxchg_futex_value_locked(puval, uaddr, old, vpid | old);
+> +
+>  	if (*pret)
+>  		return 1;
+>  	if (*puval == old) {
+>  		/* Adjust uval to reflect current value */
+> -		*puval = vpid | old;
+> +		*puval = spinning ? vpid : (vpid | old);
+>  		return 1;
+>  	}
+>  	return 0;
+>  }
+>  
+>  /*
+> + * futex_optspin - optimistic spinning loop
+> + * Return: 1 if lock successfully acquired
+> + *	   0 if need to fall back to waiting
+> + *
+> + * Page fault and preemption are disabled in the optimistic spinning
+> + * loop. Preemption should have been disabled before calling this function.
+> + *
+> + * The number of spinners may temporarily exceed the threshold due to
+> + * racing (the spin count check and add aren't atomic), but that shouldn't
+> + * be a big problem.
+> + */
+> +static inline int futex_optspin(struct futex_q_head *qh,
+> +				struct futex_q_node *qn,
+> +				u32 __user	    *uaddr,
+> +				u32		     vpid)
+> +{
+> +	u32 uval;
+> +	int ret, gotlock = false;
+> +	struct task_struct *owner;
+> +
+> +	/*
+> +	 * Increment the spinner count
+> +	 */
+> +	atomic_add(FUTEX_SPINCNT_BIAS, &qh->lcnt);
+> +	if (!osq_lock(&qh->osq)) {
+> +		atomic_sub(FUTEX_SPINCNT_BIAS, &qh->lcnt);
+> +		return gotlock;
+> +	}
+> +	pagefault_disable();
 
--- 
-Ondrej Zary
+How about a comment to why pf is disabled.
+
+> +	for (;; cpu_relax()) {
+
+while(true) {
+
+> +		if (futex_spin_trylock(uaddr, &uval, &ret, vpid, true)) {
+> +			/*
+> +			 * Fall back to waiting if an error happen
+> +			 */
+> +			if (ret)
+> +				break;
+> +			qh->otid  = vpid;
+> +			owner     = xchg(&qh->owner, qn->task);
+> +			get_task_struct(qn->task);
+> +			if (owner)
+> +				put_task_struct(owner);
+> +			gotlock = true;
+> +			break;
+> +		} else if (unlikely(FUTEX_HAS_WAITERS(uval))) {
+
+Branch predictions have a time and place, please do not use
+likely/unlikely just for anything.
+
+> +			/*
+> +			 * Try to turn off the waiter bit as it now has a
+> +			 * spinner. It doesn't matter if it fails as it will
+> +			 * try again in the next iteration.
+> +			 */
+> +			(void)futex_atomic_cmpxchg_inatomic
+> +			      (&uval, uaddr, uval, uval & ~FUTEX_WAITERS);
+> +		}
+> +
+> +		if (unlikely(FUTEX_TID(uval) != qh->otid)) {
+> +			/*
+> +			 * Owner has changed
+> +			 */
+> +			qh->otid = FUTEX_TID(uval);
+> +			owner = xchg(&qh->owner, futex_find_get_task(qh->otid));
+> +			if (owner)
+> +				put_task_struct(owner);
+> +		}
+> +		owner = ACCESS_ONCE(qh->owner);
+> +		if ((owner && !ACCESS_ONCE(owner->on_cpu)) || need_resched())
+> +			break;
+> +	}
+> +	pagefault_enable();
+> +	osq_unlock(&qh->osq);
+> +	atomic_sub(FUTEX_SPINCNT_BIAS, &qh->lcnt);
+> +
+> +	/*
+> +	 * If we fell out of the spin path because of need_resched(),
+> +	 * reschedule now.
+> +	 */
+> +	if (!gotlock && need_resched())
+> +		schedule_preempt_disabled();
+> +
+> +	return gotlock;
+> +}
+> +
+> +/*
+>   * futex_spin_lock
+>   */
+>  static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+> @@ -3170,6 +3296,7 @@ static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+>  	struct futex_q_head	 *qh = NULL;
+>  	struct futex_q_node	  qnode;
+>  	union futex_key		  key;
+> +	struct task_struct	 *owner;
+>  	bool			  gotlock;
+>  	int			  ret, cnt;
+>  	u32			  uval, vpid, old;
+> @@ -3193,7 +3320,7 @@ static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+>  	 * Check the futex value under the hash bucket lock as it might
+>  	 * be changed.
+>  	 */
+> -	if (futex_spin_trylock(uaddr, &uval, &ret, vpid))
+> +	if (futex_spin_trylock(uaddr, &uval, &ret, vpid, false))
+>  		goto hbunlock_out;
+>  
+>  	if (!qh) {
+> @@ -3201,7 +3328,7 @@ static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+>  		 * First waiter:
+>  		 * Allocate a queue head structure & initialize it
+>  		 */
+> -		qh = qhead_alloc_init(hb, &key);
+> +		qh = qhead_alloc_init(hb, &key, uval);
+>  		if (unlikely(!qh)) {
+>  			ret = -ENOMEM;
+>  			goto hbunlock_out;
+> @@ -3212,9 +3339,18 @@ static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+>  	spin_unlock(&hb->lock);
+>  
+>  	/*
+> -	 * Put the task into the wait queue and sleep
+> +	 * Perform optimisitic spinning if the owner is running.
+>  	 */
+>  	preempt_disable();
+> +	owner = ACCESS_ONCE(qh->owner);
+> +	if ((FUTEX_SPINCNT(qh) < futex_spincnt_max) &&
+> +	    (!owner || owner->on_cpu))
+> +		if (futex_optspin(qh, &qnode, uaddr, vpid))
+> +			goto penable_out;
+> +
+> +	/*
+> +	 * Put the task into the wait queue and sleep
+> +	 */
+>  	get_task_struct(qnode.task);
+>  	spin_lock(&qh->wlock);
+>  	list_add_tail(&qnode.wnode, &qh->waitq);
+> @@ -3238,6 +3374,11 @@ static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+>  					goto dequeue;
+>  				} else if (uval == old) {
+>  					gotlock = true;
+> +					qh->otid = vpid;
+> +					owner = xchg(&qh->owner, qnode.task);
+> +					get_task_struct(qnode.task);
+> +					if (owner)
+> +						put_task_struct(owner);
+>  					goto dequeue;
+>  				}
+>  				continue;
+> @@ -3286,15 +3427,17 @@ dequeue:
+>  		}
+>  	}
+>  	spin_unlock(&qh->wlock);
+> +
+> +penable_out:
+>  	preempt_enable();
+>  
+>  	cnt = atomic_dec_return(&qh->lcnt);
+>  	if (cnt == 0)
+>  		qhead_free(qh, hb);
+>  	/*
+> -	 * Need to set the waiters bit there are still waiters
+> +	 * Need to set the waiters bit there no spinner running
+>  	 */
+> -	else if (!ret)
+> +	else if (!ret && ((cnt >> FUTEX_SPINCNT_SHIFT) == 0))
+>  		ret = put_user(vpid | FUTEX_WAITERS, uaddr);
+>  out:
+>  	put_futex_key(&key);
+> @@ -3356,6 +3499,13 @@ static noinline int futex_spin_unlock(u32 __user *uaddr, unsigned int flags)
+>  	}
+>  
+>  	/*
+> +	 * Clear the owner field
+> +	 */
+> +	if ((qh->owner == current) &&
+> +	    (cmpxchg(&qh->owner, current, NULL) == current))
+> +		put_task_struct(current);
+> +
+> +	/*
+>  	 * The hash bucket lock is being hold while retrieving the task
+>  	 * structure from the queue head to make sure that the qh structure
+>  	 * won't go away under the hood.
+> @@ -3520,6 +3670,10 @@ static int __init futex_init(void)
+>  
+>  	futex_detect_cmpxchg();
+>  
+> +	futex_spincnt_max = num_possible_cpus()/2;
+> +	if (futex_spincnt_max > FUTEX_SPINCNT_MAX)
+> +		futex_spincnt_max = FUTEX_SPINCNT_MAX;
+
+This threshold needs commenting as well.
+
+Thanks,
+Davidlohr
+
