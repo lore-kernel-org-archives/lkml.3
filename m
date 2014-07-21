@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbaGUNGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:06:34 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39046 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690AbaGUNGb (ORCPT
+	id S932317AbaGUNJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:09:17 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:56717 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541AbaGUNJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:06:31 -0400
-Date: Mon, 21 Jul 2014 15:06:29 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
- improvements
-Message-ID: <20140721130629.GA15122@amd.pavel.ucw.cz>
-References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
- <20140721120053.GA14069@amd.pavel.ucw.cz>
- <20140721123613.GL30979@8bytes.org>
+	Mon, 21 Jul 2014 09:09:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140721123613.GL30979@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140721124725.GB111224@ubuntu-hedt>
+References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+	<1405365496-58404-4-git-send-email-seth.forshee@canonical.com>
+	<CAJfpegvMeiZG09U3aXvxKV+GPSn6zFgLbUwXGpTuoVSbnvgfmw@mail.gmail.com>
+	<20140721124725.GB111224@ubuntu-hedt>
+Date: Mon, 21 Jul 2014 15:09:14 +0200
+Message-ID: <CAJfpegs=V5BpNdgn1JSLsvUsAnmhPvGJZobF1y_NAysb==Z1-A@mail.gmail.com>
+Subject: Re: [PATCH 3/3] fuse: Allow mounts from user namespaces
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        lxc-devel@lists.linuxcontainers.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Jul 21, 2014 at 2:47 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Fri, Jul 18, 2014 at 05:33:23PM +0200, Miklos Szeredi wrote:
+>> On Mon, Jul 14, 2014 at 9:18 PM, Seth Forshee
+>> <seth.forshee@canonical.com> wrote:
+>> > Update fuse to allow mounts from user namespaces. During mount
+>> > current_user_ns() is stashed away,
+>>
+>> Same thing here.  While practically this may work, it's theoretically
+>> wrong, and possibly may go wrong in special situations.   In fuse
+>> there's no official "server process", so storing information, like
+>> namespace, about one is going to be wrong.
+>
+> What you're suggesting would probably work fine when dealing with pids.
+> It's not going to work though for the checks I've added in
+> fuse_allow_current_process() that the process is in the mount owner's
+> user ns, and without those checks or something similar I don't think
+> it's safe to permit allow_other for user ns mounts.
 
-> > > The last patch adds touching the soft lockup watchdog in
-> > > rtree_next_node. This is necessary because the worst case
-> > > performance (all bits set in the forbidden_pages_map and
-> > > free_pages_map) is the same as with the old implementation
-> > > and may still cause soft lockups. Patch 6 avoids this.
-> > 
-> > Ok, so what about simpler patch? Just touch the watchdog?
-> 
-> That would just cover the problem that the bitmap data structure and the
-> algorithm in swsusp_free do not scale well on bigmem machines.
+You can add that check in fuse_dev_do_read() as well.  If the
+fsuid/fsgid doesn't exist in the "server's" namespace, then set
+req->out.h.error and call request_end().
 
-And is it a problem? Hibernation of 12TB machine will take 6 hours if
-you back your swap with SSDs.
+> Can you elaborate on what special situations might violate these
+> assumptions or otherwise cause problems?
 
-Does not scale == burns additional 60 seconds of CPU time. I think we
-can live with that...
+What's preventing a fuse fs implementation from handling FUSE_INIT in
+one process and then handling the rest in a different process
+(possibly in a different namespace)?
 
-...because noone sane will hibernate 12TB machine.
-
-> > Additional 70 seconds will be lost in noise if you write 12TB of RAM
-> > to (even quite fast) disk.
-> 
-> Sure, but you would still get the soft lockup warnings when swsusp_free
-> runs in the end.
-
-Yes, that's why I propose to apply just patch 6 -- to avoid soft
-lockup warnings.
-
-Best regards,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Miklos
