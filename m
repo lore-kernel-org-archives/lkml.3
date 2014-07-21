@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaGUVnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:43:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52641 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278AbaGUVnN (ORCPT
+	id S1754671AbaGUVoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:44:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33962 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958AbaGUVoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:43:13 -0400
-Message-ID: <53CD896C.3030605@wwwdotorg.org>
-Date: Mon, 21 Jul 2014 15:43:08 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 21 Jul 2014 17:44:12 -0400
+Date: Mon, 21 Jul 2014 23:43:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Darren Hart <dvhart@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+In-Reply-To: <20140721212740.GS3935@laptop>
+Message-ID: <alpine.DEB.2.10.1407212341290.20847@nanos>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos>
+ <20140721212740.GS3935@laptop>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/6] clk: tegra: make tegra_clocks_apply_init_table arch_initcall
-References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com> <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com> <20140716071932.GB7978@ulmo> <20140716082740.GK23218@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140716082740.GK23218@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 02:27 AM, Peter De Schrijver wrote:
-> On Wed, Jul 16, 2014 at 09:19:33AM +0200, Thierry Reding wrote:
->> * PGP Signed by an unknown key
->>
->> On Tue, Jul 15, 2014 at 06:24:32PM +0300, Peter De Schrijver wrote:
->> [...]
->>> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
->>> index d081732..65cde4e 100644
->>> --- a/drivers/clk/tegra/clk.c
->>> +++ b/drivers/clk/tegra/clk.c
->>> @@ -290,10 +290,13 @@ struct clk ** __init tegra_lookup_dt_id(int clk_id,
->>>  
->>>  tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
->>>  
->>> -void __init tegra_clocks_apply_init_table(void)
->>> +static int __init tegra_clocks_apply_init_table(void)
->>>  {
->>>  	if (!tegra_clk_apply_init_table)
->>> -		return;
->>> +		return 0;
->>
->> Shouldn't this be an error? Or perhaps WARN()? To make sure this gets
+
+
+On Mon, 21 Jul 2014, Peter Zijlstra wrote:
+
+> On Mon, Jul 21, 2014 at 10:16:37PM +0200, Thomas Gleixner wrote:
+> > On Mon, 21 Jul 2014, Darren Hart wrote:
+> > > We observed some significant improvements under some very specific use
+> > > cases, but a more thorough dive into performance impact in the other cases
+> > > as well as security implications with the vdso is still wanting.
+> > 
+> > The security implication is that the feature can only be available for
+> > process private futexes. There is no way to expose information which
+> > crosses the process spaces.
+> > 
+> > But the way worse issue is storage.
+> > 
+> > While you can cache the namespace specific TID of a thread in the
+> > task_struct, you still need a O(1) zero overhead mechanism to update
+> > the thread state (only on/off cpu is interesting) in a per process
+> > shared data structure from the guts of schedule()
+> > 
+> > For that you have basically two choices:
+> > 
+> > 1) cpu_thread_id[NR_CPUS]
+> > 
+> >    Simple to update from the scheduler, and a halfways moderate
+> >    storage size (NR_CPUS * 4 bytes) in the worst case, i.e. 16k
+> >    today. Set to 0 on scheduling out and to the namespace specific TID
+> >    on scheduling in.
+> > 
+> >    But that requires a linear search in the user space spin loop. And
+> >    that's required for every iteration of the loop. Can you imagine
+> >    how well that works performance wise?
+> > 
+> > 2) Bitmap threads_on_cpu
+> >    
+> >    Again, simple to update from the scheduler, cache line bouncing
+> >    issues aside. Clear the bit on schedule out and set it on schedule
+> >    in.
+> > 
+> >    But the bitmap needs the size of PID_MAX_LIMIT, which is a whopping
+> >    512k per process in the worst case.
+> > 
+> > Anything else would involve search/lookup schemes which are just
+> > overkill in both the scheduler and the user space loop.
+> >    
+> > Now for enhanced fun you need immutable pages for that storage, as you
+> > can't have pagefaults in the guts of schedule().
+> > 
+> > So once you found a way to make that opt-in as you don't want inflict
+> > any of this to all processes by default, it might be a worthwhile
+> > optimization. So the probably tolerable impact on schedule() would be
+> > 
+> > schedule_out()
+> > 	if (curr->threads_on_cpu)
+> > 		clear_bit(curr->ns_tid, curr->threads_on_cpu);
+> > and
+> > 
+> > schedule_in()
+> > 	if (curr->threads_on_cpu)
+> > 		clear_bit(curr->ns_tid, curr->threads_on_cpu);
+> > 
+> > Anything more complex is just going to defeat the whole purpose.
 > 
-> An arch_initcall will be called for every ARM platform I think? In case
-> this gets called on a non-Tegra platform, tegra_clk_apply_init_table will not
-> be set and therefore a silent return 0; seems the most appropriate thing to do
-> to me?
+> All this is predicated on the fact that syscalls are 'expensive'.
+> Weren't syscalls only 100s of cycles? All this bitmap mucking is far
+> more expensive due to cacheline misses, which due to the size of the
+> things is almost guaranteed.
 
-This is one reason that doing all the initialization from separate
-initcalls sucks. Much better to have a single top-level initialization
-function that calls exactly what is needed, only what is needed, and
-only runs on the correct SoCs.
+I completely agree.
 
-But failing that, I guess you need to say something like
-of_is_compatible(root node, "nvidia Tegra"), but of course the
-definition of "nvidia Tegra" is an ever-growing list of possible values
-that needs to be used from each separate initcall...
+This wants to backed by proper numbers taken from a proper
+implementation and not from some randomly cobbled together works for
+me hackery.
+
+As I said: It might be a worthwhile optimization....
+
+Thanks,
+
+	tglx
+
