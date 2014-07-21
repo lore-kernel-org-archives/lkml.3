@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaGUJ0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:26:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41020 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031AbaGUJ0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:26:12 -0400
-Date: Mon, 21 Jul 2014 10:16:23 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
-Message-ID: <20140721091623.GA16122@arm.com>
-References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
+	id S1754126AbaGUJ35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:29:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50041 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919AbaGUJ34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:29:56 -0400
+Date: Mon, 21 Jul 2014 11:29:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
+        Borislav Petkov <bp@suse.de>, Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
+Message-ID: <20140721092950.GB10016@pd.tnic>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1405817480-25347-1-git-send-email-peter@piie.net>
+ <1405817480-25347-4-git-send-email-peter@piie.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
+In-Reply-To: <1405817480-25347-4-git-send-email-peter@piie.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
-> This series implements eBPF JIT compiler for arm64.
-> Please see [14/14] for change log.
+On Sun, Jul 20, 2014 at 02:51:17AM +0200, Peter Feuerer wrote:
+> The bang-bang thermal governor uses a hysteresis to switch abruptly on
+> or off a cooling device.  It is intended to control fans, which can
+> not be throttled but just switched on or off.
+> Bang-bang cannot be set as default governor as it is intended for
+> special devices only.  For those special devices the driver needs to
+> explicitely request it.
 > 
-> Patches [1-13/14] implement code generation functions.
-> Patch [14/14] implements the actual eBPF JIT compiler.
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Andreas Mohr <andi@lisas.de>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Javi Merino <javi.merino@arm.com>
+> Signed-off-by: Peter Feuerer <peter@piie.net>
+> ---
+>  drivers/thermal/Kconfig         |  10 +++
+>  drivers/thermal/Makefile        |   1 +
+>  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/thermal/thermal_core.c  |   5 ++
+>  drivers/thermal/thermal_core.h  |   8 +++
+>  5 files changed, 155 insertions(+)
+>  create mode 100644 drivers/thermal/gov_bang_bang.c
 > 
-> Many thanks to everyone who's reviewed the code from
-> RFCv1->RFCv3, especially Alexei for BPF bits, and Will
-> for ARM64 codegen bits :)
-> 
-> BTW, I'm happy to maintain arch/arm64/net (i.e. arm64 BPF bits).
-> Should I add a patch updating MAINTAINERS as Patch 15?
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index f9a1386..cdddf09 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
+>  	  Enable this to manage platform thermals using a simple linear
+>  	  governor.
+>  
+> +config THERMAL_GOV_BANG_BANG
+> +	bool "Bang Bang thermal governor"
+> +	default y
 
-I don't think that's necessary at the moment, but if we start seeing an
-influx of patches to arch/arm64/net, then that could make sense in the
-future.
+Right, this is problematic.
 
-> This series requires a patch that exports a function
-> from net/core (resulting from RFCv1 discussion). This patch
-> has been merged into net-next @ 9f12fbe603f7
-> ("net: filter: move load_pointer() into filter.h").
-> 
-> This series applies against net-next and is tested working
-> with lib/test_bpf on ARMv8 Foundation Model.
+When people are faced with the new selection after doing oldconfig, they
+can say yes or no.
 
-Looks like it works on my Juno board too, so:
+However, as acerhdf depends on it now, prompting the user to
+unconditionally says yes is kinda redundant. Especially as this governor
+is not supposed to be default anyway.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+Actually you don't need the Kconfig prompt at all as this is a sort-of
+"internal" governor and devices select it. IOW, it should be "default n"
+and ACERHDF will do "select THERMAL_GOV_BANG_BANG". Something like that
+at least.
 
-for the series.
+-- 
+Regards/Gruss,
+    Boris.
 
-It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
-also means the dependency on -next isn't an issue). Perhaps you could repost
-around -rc3?
-
-Cheers,
-
-Will
+Sent from a fat crate under my desk. Formatting is fine.
+--
