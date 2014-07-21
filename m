@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaGUMoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:44:17 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:51833 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074AbaGUMoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:44:15 -0400
-Message-ID: <53CD0B17.5040706@collabora.co.uk>
-Date: Mon, 21 Jul 2014 14:44:07 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1755079AbaGUMrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:47:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49586 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754478AbaGUMrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:47:03 -0400
+Date: Mon, 21 Jul 2014 14:47:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: use page lists for uncharge batching
+Message-ID: <20140721124700.GD8393@dhcp22.suse.cz>
+References: <1404759358-29331-1-git-send-email-hannes@cmpxchg.org>
+ <20140717152936.GF8011@dhcp22.suse.cz>
+ <20140718150719.GH29639@cmpxchg.org>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 00/13] Add Maxim 77802 PMIC support
-References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140718150719.GH29639@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lee,
-
-On 07/14/2014 01:35 PM, Javier Martinez Canillas wrote:
+On Fri 18-07-14 11:07:19, Johannes Weiner wrote:
+> On Thu, Jul 17, 2014 at 05:29:36PM +0200, Michal Hocko wrote:
+> > On Mon 07-07-14 14:55:58, Johannes Weiner wrote:
+> > > Pages are now uncharged at release time, and all sources of batched
+> > > uncharges operate on lists of pages.  Directly use those lists, and
+> > > get rid of the per-task batching state.
+> > > 
+> > > This also batches statistics accounting, in addition to the res
+> > > counter charges, to reduce IRQ-disabling and re-enabling.
+> > 
+> > It is probably worth noticing that there is a higher chance of missing
+> > threshold events now when we can accumulate huge number of uncharges
+> > during munmaps. I do not think this is earth shattering and the overall
+> > improvement is worth it but changelog should mention it.
 > 
-> * Patches 1-7 from v7 are not included since those were improvements to
-> the max77686 mfd driver and can be applied independently. Lee Jones said
-> that he is going to pick them from the posted v7 series.
+> Does this actually matter, though?  We might deliver events a few
+> pages later than before, but as I read the threshold code, once
+> invoked it catches up from the last delivered threshold to the new
+> usage.  So we shouldn't *miss* any events.
+
+You are right. I have completely miss this aspect of threshold
+implementation. I should have looked into the code before claiming that
+:/ and not focus only on the triggering code. Sorry about that!
+
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > 
+> > With the follow up fix from
+> > http://marc.info/?l=linux-mm&m=140552814228135&w=2
+> > 
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
 > 
-
-Thanks a lot for picking the max77686 preparatory patches.
-
+> Thanks!
 > 
-> Since there are cross-subsystems dependencies, I think that the best way to
-> sort this out is if relevant maintainers ack the patches so 01/13 to 012/13
-> can be merged through the mfd tree. The patches and the relevant acks are:
+> > > +static void uncharge_list(struct list_head *page_list)
+> > > +{
+> > > +	struct mem_cgroup *memcg = NULL;
+> > > +	unsigned long nr_memsw = 0;
+> > > +	unsigned long nr_anon = 0;
+> > > +	unsigned long nr_file = 0;
+> > > +	unsigned long nr_huge = 0;
+> > > +	unsigned long pgpgout = 0;
+> > > +	unsigned long nr_mem = 0;
+> > > +	struct list_head *next;
+> > > +	struct page *page;
+> > > +
+> > > +	next = page_list->next;
+> > > +	do {
+> > 
+> > I would use list_for_each_entry here which would also save list_empty
+> > check in mem_cgroup_uncharge_list
 > 
-> Patch 03/13 (regulator - Mark Brown)
-> Patches 04/13 to 09/13 (clk - Mike Turquette)
-> Patches 10/13 to 12/13 (rtc - Alessandro Zummo)
+> list_for_each_entry() wouldn't work for the singleton list where we
+> pass in page->lru.  That's why it's a do-while that always does the
+> first page before checking whether it looped back to the list head.
 > 
+> Do we need a comment for that?  I'm not convinced, there are only two
+> callsites, and the one that passes the singleton page->lru is right
+> below this function.
 
-Mark, Mike and Alessandro,
-
-This is a gentle reminder to look at the patches that touches your subsystems
-and provide acks if possible so Lee can merge the remainder set through the mfd
-tree.
-
-There were only trivial changes for the regulator, clock and rtc drivers since
-v5 (posted almost a month ago in Jun 26) and this series is blocking a lot of
-other patch-sets so is hurting forward progress on the chromebook2 platform as a
-whole.
-
-Lee,
-
-Since I may not be able to get the acks before the merge window opens, do you
-think that is possible to merge patch 01/13 "mfd: max77686: Add Maxim 77802 PMIC
-support" which already has your ack?
-
-So at least we can get the dependency for the other drivers in 3.17 and avoid
-this cross subsystem churn for 3.18 since the rest of the drivers will be able
-to go through the relevant trees.
-
-Thanks a lot and best regards,
-Javier
+-- 
+Michal Hocko
+SUSE Labs
