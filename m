@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107AbaGUQdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:33:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46159 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755210AbaGUQdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:33:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,702,1400050800"; 
-   d="scan'208";a="576528735"
-From: Andi Kleen <andi@firstfloor.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
-	<53CCB6AE.6020505@intel.com> <20140721080219.GA4183@krava.redhat.com>
-	<53CCD3A7.5070002@intel.com> <20140721095415.GB8865@krava.redhat.com>
-5ATo: Jiri Olsa <jolsa@redhat.com>
-Date: Mon, 21 Jul 2014 09:31:41 -0700
-In-Reply-To: <20140721095415.GB8865@krava.redhat.com> (Jiri Olsa's message of
-	"Mon, 21 Jul 2014 11:54:15 +0200")
-Message-ID: <87d2cy3c7m.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S932959AbaGUQgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:36:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38050 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412AbaGUQgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:36:47 -0400
+Date: Mon, 21 Jul 2014 09:36:46 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kees Cook <kees@outflux.net>
+Cc: Kees Cook <keescook@chromium.org>, Ming Lei <ming.lei@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
+Message-ID: <20140721163646.GA14431@kroah.com>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+ <1405373897-31671-7-git-send-email-keescook@chromium.org>
+ <CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
+ <CAGXu5j+xx2exZdD64mXWzmvVUzBrFUOg-kZ5E4+tvKAuGTKW4w@mail.gmail.com>
+ <CACVXFVMk5hTAvMgL0V2ycy-P=LCtOktimw5Hst+aFYLS6jewXw@mail.gmail.com>
+ <CAGXu5jLD=9cqzV90JKEBJjwzTXVzGhz9_1nnwFCG_0zcA1TE8A@mail.gmail.com>
+ <20140721152635.GB6363@kroah.com>
+ <20140721154307.GG5412@outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721154307.GG5412@outflux.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa <jolsa@redhat.com> writes:
->
-> [jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
-> Timestamp below last timeslice flush
-> 0x2276f58 [0x68]: failed to process type: 9
+On Mon, Jul 21, 2014 at 08:43:07AM -0700, Kees Cook wrote:
+> On Mon, Jul 21, 2014 at 08:26:35AM -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Jul 21, 2014 at 08:08:16AM -0700, Kees Cook wrote:
+> > > Perhaps it would be easier if I also sent the patch to udev's helper,
+> > > so you could see how I propose handling the userspace change to using
+> > > the new interface?
+> > 
+> > As there is no more "udev firmware helper", I don't know what you would
+> > be patching here.  Firmware should always be loaded by the kernel
+> > directly, udev isn't involved anyore at all.
+> > 
+> > confused,
+> > 
+> > greg k-h
+> 
+> The kernel _can_ load directly (when the paths are configured correctly),
+> but I'm not sure why you say udev isn't involved any more. It's been like
+> this for years, and even the latest systemd shows the udev rule is still in
+> place:
+> http://cgit.freedesktop.org/systemd/systemd/tree/rules/50-firmware.rules
+> and that the firmware loader is still in the source tree:
+> http://cgit.freedesktop.org/systemd/systemd/tree/src/udev/udev-builtin-firmware.c
 
-FWIW we're seeing this frequently too.
+Ah, I thought that I had seen patches to delete this code on the systemd
+mailing list in the past, I didn't realize they hadn't been accepted
+yet.
 
+But, with my current tree, in linux-next, it's really hard to select the
+"external firmware loader" on purpose, as we want people to use the
+in-kernel one if at all possible, and only fall back to the "legacy"
+udev userspace loader if they are running on old userspace systems.
 
--Andi
+> Here's the patch for the new interface...
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+I'd really not like to add a new interface for this model when we are
+trying to delete it entirely.  Why not just rely on the in-kernel loader
+instead for this new feature?
+
+thanks,
+
+greg k-h
