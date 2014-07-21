@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933437AbaGURnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:43:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38529 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629AbaGURnk (ORCPT
+	id S933450AbaGURoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:44:14 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:3005 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932629AbaGURoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:43:40 -0400
-Date: Mon, 21 Jul 2014 10:43:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>, linux-doc@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 4/7] firmware_class: perform new LSM checks
-Message-ID: <20140721174339.GA16156@kroah.com>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
- <1405373897-31671-5-git-send-email-keescook@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405373897-31671-5-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 21 Jul 2014 13:44:12 -0400
+Message-ID: <1405964011.31163.1.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
+From: Toshi Kani <toshi.kani@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, tglx@linutronix.de,
+        mingo@redhat.com, akpm@linux-foundation.org, arnd@arndb.de,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stefan.bader@canonical.com,
+        luto@amacapital.net, airlied@gmail.com, bp@alien8.de
+Date: Mon, 21 Jul 2014 11:33:31 -0600
+In-Reply-To: <53CD4EB2.5020709@zytor.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+			 <53C58A69.3070207@zytor.com> <1405459404.28702.17.camel@misato.fc.hp.com>
+			 <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>
+			 <1405546127.28702.85.camel@misato.fc.hp.com>
+		 <1405960298.30151.10.camel@misato.fc.hp.com> <53CD443A.6050804@zytor.com>
+	 <1405962993.30151.35.camel@misato.fc.hp.com> <53CD4EB2.5020709@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 02:38:14PM -0700, Kees Cook wrote:
-> This attaches LSM hooks to the existing firmware loading interfaces:
-> filesystem-found firmware and demand-loaded blobs.
+On Mon, 2014-07-21 at 10:32 -0700, H. Peter Anvin wrote:
+> On 07/21/2014 10:16 AM, Toshi Kani wrote:
+ :
+> >> I would also like a systematic way to deal with the fact
+> >> that Xen (sigh) is stuck with a separate mapping system.
+> >>
+> >> I guess Linux could adopt the Xen mappings if that makes it easier, as
+> >> long as that doesn't have a negative impact on native hardware -- we can
+> >> possibly deal with some older chips not being optimal.  
+> > 
+> > I see.  I agree that supporting the PAT bit is the right direction, but
+> > I do not know how much effort we need.  I will study on this.
+> > 
+> >> However, my thinking has been to have a "reverse PAT" table in memory of memory
+> >> types to encodings, both for regular and large pages.
+> > 
+> > I am not clear about your idea of the "reverse PAT" table.  Would you
+> > care to elaborate?  How is it different from using pte_val() being a
+> > paravirt function on Xen?
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
+> First of all, paravirt functions are the root of all evil, and we want
+> to reduce and eliminate them to the utmost level possible.  But yes, we
+> could plumb that up that way if we really need to.
+> 
+> What I'm thinking of is a table which can deal with both the moving PTE
+> bit, Xen, and the scattered encodings by having a small table from types
+> to encodings, and not use the encodings directly until fairly late it
+> the pipe.  I suspect, but I'm not sure, that we would also need the
+> inverse operation.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks for the explanation!  I will think about it as well.
+-Toshi
 
