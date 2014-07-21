@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaGUC3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 22:29:43 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:53883 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaGUC3m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 22:29:42 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
-Subject: Re: [PATCH v2 0/3] perf/sdt : Support for SDT markers
-References: <20140717054826.19995.61782.stgit@hemant-fedora>
-	<53C903B7.6070905@hitachi.com> <53CAABCB.5080202@linux.vnet.ibm.com>
-	<53CB349E.50609@hitachi.com>
-Date: Mon, 21 Jul 2014 11:29:39 +0900
-In-Reply-To: <53CB349E.50609@hitachi.com> (Masami Hiramatsu's message of "Sun,
-	20 Jul 2014 12:16:46 +0900")
-Message-ID: <874mybla0c.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752263AbaGUCbi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 22:31:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59822 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751483AbaGUCbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 22:31:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,697,1400050800"; 
+   d="scan'208";a="576225012"
+Message-ID: <53CC7B85.6040209@linux.intel.com>
+Date: Mon, 21 Jul 2014 10:31:33 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH v1] x86: fix kernel crash on boot due to NULL dereference
+References: <1405609181-12831-1-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1405609181-12831-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami and Hemant,
+Hi Andy,
+	Have you encountered any issue with another call site of
+setup_irq() in arch/x86/kernel/time.c?
+	void __init setup_default_timer_irq(void)
+	{
+	        setup_irq(0, &irq0);
+	}
+	Seems it may need the same protection for system without
+legacy IRQ controller.
+Regards!
+Gerry
 
-On Sun, 20 Jul 2014 12:16:46 +0900, Masami Hiramatsu wrote:
-> (2014/07/20 2:32), Hemant Kumar wrote:
->>>> We have lots of applications which use SDT markers today, like:
->>>> Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
->>>>
->>>> To add SDT markers into user applications:
->>>> We need to have this header sys/sdt.h present.
->>>> sys/sdt.h used is version 3.
->>>> If not present, install systemtap-sdt-devel package (for fedora-18).
->>>>
->>>> Please refer to the Documentation patch to see how the SDT markers are added into
->>>> a program.
->>>>
->>>> With this patchset,
->>>> - Use perf to list the markers in the app:
->>>> # perf list sdt ./user_app
->>>>
->>>> ./user_app :
->>>> %user_app:foo_start
->>>> %user_app:fun_start
->>>>
->>>> - Also, we can see the SDT markers present in our system in the usual binaries.
->>>> These usual binaries are libraries (dsos) listed by ldconfig --print-cache and some
->>>> binaries present in PATH environment variable.
->>>>
->>>> First, scan the binaries using :
->>>> # perf list sdt --scan
->>> At a glance, maybe we'd better have perf sdt-cache as like as perf buildid-cache
->>> for manage sdt information. what would you think?
->>>
->> 
->> I agree with you having perf sdt-cache similar to perf buildid-cache.
->> But I think if the functionality of perf sdt-cache is only to build the 
->> cache, then we can
->> go with the perf list sdt --scan. Since, "perf list sdt" is used for 
->> other purposes too, it
->> should be less confusing for the users to just add another option 
->> (--scan) to create/modify
->> the cache. What do you suggest?
->
-> I think there may be some other cases, for example adding user local build
-> binary to the cache, or remove/update it locally. :)
->
-> And also, in user's mental model of perf-list, it doesn't take an "active"
-> action, that always does "passive" action. So adding such "active" scan option
-> will be more confusing.
->
-> But I also think it is OK that if the sdt is never scanned, the perf-list
-> automatically scans in background (without any option) or suggests user
-> to run "perf sdt-cache --scan". (it depends on how long time it may take)
->
-> To summarize it, I'd like to suggest adding below functions;
->
-> perf list sdt : shows all cached SDT events
-> perf list sdt <file> : shows SDT events in <file>
-> perf sdt-cache --scan/-s : scans all system binaries/libraries + added files
-> perf sdt-cache --add/-a <file(s)> : add SDT events in <file> to cache
-> perf sdt-cache --remove/-r <file(s)>: remove SDT events in <file> from cache
->
-> And if perf list can't find sdt-cache, it would suggest to run
-> perf sdt-cache --scan or run it silently. :)
->
-> What would you think about this?
-
-I agree with Masami's idea.  Maybe we can add a config option for the
-auto-scan thing.
-
-And I think this series can be split to pieces for ease review. :)
-IOW, please consider make it something like below steps:
-
-  1. add raw SDT parsing code
-  2. support perf list to print SDT markers from a single file
-  3. implement perf sdt-cache like Masami suggested
-  4. improve perf list sdt to use cached result
-
-
-I guess it's easy to make a progress on step 1 and 2.  And we can
-discuss further how to shape/improve step 3 and 4 later.
-
-Thanks,
-Namhyung
+On 2014/7/17 22:59, Andy Shevchenko wrote:
+> The patch "x86, irq: Count legacy IRQs by legacy_pic->nr_legacy_irqs instead of
+> NR_IRQS_LEGACY" (linux-next commit 95d76acc7518d566df18d67c1343bb375b78d1f3)
+> removed reserved interrupts for the platforms that do not have a legacy IOAPIC.
+> Meanwhile it breks a boot on Intel MID platforms such as Medfield.
+> 
+> [    0.000000] BUG: unable to handle kernel NULL pointer dereference at 0000003a
+> [    0.000000] IP: [<c107079a>] setup_irq+0xf/0x4d
+> [    0.000000] *pdpt = 0000000000000000 *pde = 9bbf32453167e510
+> [    0.000000] Oops: 0000 [#1] PREEMPT SMP
+> [    0.000000] Modules linked in:
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc5-next-20140717-00043-g6ab7e8d-dirty #497
+> [    0.000000] task: c184bc80 ti: c183e000 task.ti: c183e000
+> [    0.000000] EIP: 0060:[<c107079a>] EFLAGS: 00210046 CPU: 0
+> [    0.000000] EIP is at setup_irq+0xf/0x4d
+> [    0.000000] EAX: 00000000 EBX: 00000002 ECX: 00000000 EDX: 00000002
+> [    0.000000] ESI: 000000d5 EDI: c184e280 EBP: c183ffc0 ESP: c183ffb4
+> [    0.000000]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> [    0.000000] CR0: 8005003b CR2: 0000003a CR3: 0195b000 CR4: 000006b0
+> [    0.000000] Stack:
+> [    0.000000]  00000100 000000d5 c195c800 c183ffd0 c18eff07 c1935100 00010800 c183ffd8
+> [    0.000000]  c18efca0 c183ffe8 c18ec92e c1935100 00020800 c183fff8 c18ec2b4 00020800
+> [    0.000000]  c195c800 025e5003 00000000
+> [    0.000000] Call Trace:
+> [    0.000000]  [<c18eff07>] native_init_IRQ+0x265/0x273
+> [    0.000000]  [<c18efca0>] init_IRQ+0x2c/0x2e
+> [    0.000000]  [<c18ec92e>] start_kernel+0x1e4/0x32a
+> [    0.000000]  [<c18ec2b4>] i386_start_kernel+0x82/0x86
+> [    0.000000] Code: eb 05 bf ea ff ff ff 8b 83 c4 00 00 00 e8 f6 a3 01 00 8d 65 f4 89 f8 5b 5e 5f 5d c3 55 89 e5 57 89 d7 56 53 89 c3 e8 4b e4 ff ff <f6> 40 3a 02 89 c6 74 16 b8 2b 3e 77 c1 ba 0a 05 00 00 e8 83 60
+> [    0.000000] EIP: [<c107079a>] setup_irq+0xf/0x4d SS:ESP 0068:c183ffb4
+> [    0.000000] CR2: 000000000000003a
+> [    0.000000] ---[ end trace cb88537fdc8fa200 ]---
+> [    0.000000] Kernel panic - not syncing: Attempted to kill the idle task!
+> [    0.000000] ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
+> 
+> The culprit is an uncoditional setting of the IRQ2 which is used as cascade IRQ
+> on legacy platforms. It seems we have to check if we have enough legacy IRQs
+> reserved before we can call setup_irq().
+> 
+> The proposed patch adds such check.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  arch/x86/kernel/irqinit.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+> index 1e6cff5..44f1ed4 100644
+> --- a/arch/x86/kernel/irqinit.c
+> +++ b/arch/x86/kernel/irqinit.c
+> @@ -203,7 +203,7 @@ void __init native_init_IRQ(void)
+>  		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
+>  	}
+>  
+> -	if (!acpi_ioapic && !of_ioapic)
+> +	if (!acpi_ioapic && !of_ioapic && nr_legacy_irqs())
+>  		setup_irq(2, &irq2);
+>  
+>  #ifdef CONFIG_X86_32
+> 
