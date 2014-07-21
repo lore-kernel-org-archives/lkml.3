@@ -1,141 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaGUVI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:08:57 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:56779 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaGUVIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:08:55 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Cc: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Gregory Fong <gregory.0xf0@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v8 00/11] ARM: brcmstb: Add Broadcom STB SoC support
-Date: Mon, 21 Jul 2014 14:07:55 -0700
-Message-Id: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1754731AbaGUVJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:09:13 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59636 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753213AbaGUVJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 17:09:08 -0400
+Date: Mon, 21 Jul 2014 14:09:00 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Alexander Duyck <alexander.duyck@gmail.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Netdev <netdev@vger.kernel.org>
+Subject: Re: [RFC Patch V1 15/30] mm, igb: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+Message-ID: <20140721210900.GI4156@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-16-git-send-email-jiang.liu@linux.intel.com>
+ <20140721174218.GD4156@linux.vnet.ibm.com>
+ <CAKgT0UdZdbduP-=R7uRCxJVxt1yCDoHpnercnDoyrCbWNtx=6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgT0UdZdbduP-=R7uRCxJVxt1yCDoHpnercnDoyrCbWNtx=6Q@mail.gmail.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072121-0320-0000-0000-0000000B1365
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 21.07.2014 [12:53:33 -0700], Alexander Duyck wrote:
+> I do agree the description should probably be changed.  There shouldn't be
+> any panics involved, only a performance impact as it will be reallocating
+> always if it is on a node with no memory.
 
-I'm taking over the latest resubmission of this patch series.
-There are a few moderate changes for v8 (noted below), but we
-are waiting mostly for an Ack for the reboot driver.
+Yep, thanks for the review.
 
-This patchset contains the board support package for the
-Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
-minimal set of code needed for a BCM7445-based board to boot
-the Linux kernel.
+> My intention on this was to make certain that the memory used is from the
+> closest node possible.  As such I believe this change likely honours that.
 
-These changes heavily leverage the OF/devicetree framework. The
-machine is also built into the multi-platform ARMv7 image.
+Absolutely, just wanted to make it explicit that it's not a functional
+fix, just a performance fix (presuming this shows up at all on systems
+that have memoryless NUMA nodes).
 
-Changes are also available here:
+I'd suggest an update to the comments, as well.
 
-  https://github.com/brcm/linux/tree/brcmstb-v8
-  git://github.com/brcm/linux.git +brcmstb-v8
-
-v8:
-- rebase to v3.16-rc6
-- convert SMP bringup to use CPU_METHOD_OF_DECLARE
-- add MAINTAINERS entries
-- select a few new drivers for the ARCH_BRCMSTB platform
-
-v7 (https://lkml.org/lkml/2014/2/26/133):
-- rebase to v3.14-rc4
-- detect and apply ARM erratum 798181 to Brahma15 CPUs
-- split-up bcm7445.dts into a common dtsi and board-specific dts
-
-v6 (https://lkml.org/lkml/2014/2/3/493):
-- rebased to v3.14-rc1
-- utilize common APIs for handling CPU power-down
-- drop deprecated __cpuinit attributes
-
-v5 (https://lkml.org/lkml/2014/1/21/640):
-- rebased to v3.13 tag
-- make UART DT node a child of 'rdb' node
-- fix ordering of debug UART entries
-
-v4 (https://lkml.org/lkml/2014/1/17/455):
-- make a reboot driver and put it in the drivers folder
-- rework DT bindings to leverage 'syscon'
-- rework BSP code to use 'syscon' for all register mappings
-- misc. tweaks per suggestions from v3
-
-v3 (https://lkml.org/lkml/2014/1/14/696):
-- rebased to v3.13-rc8
-- switched to using 'multi_v7_defconfig'
-- eliminated dependence on compile-time peripheral register access
-- moved DT node iomap out from 'init_early'
-- misc. minor cleanups from mailing-list discussion for v2
-
-v2 (https://lkml.org/lkml/2013/11/26/570):
-- rebased to v3.13-rc1
-- moved implementation to 'mach-bcm' folder
-- added CPU init for B16RM
-
-v1:
-- initial submission
-
-[1] http://www.broadcom.com/products/Cable/Cable-Set-Top-Box-Solutions/BCM7445
-
-Brian Norris (2):
-  ARM: brcmstb: select GISB arbiter and interrupt drivers
-  MAINTAINERS: add entry for Broadcom ARM STB architecture
-
-Gregory Fong (1):
-  ARM: Enable erratum 798181 for Broadcom Brahma-B15
-
-Marc Carino (8):
-  ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
-  power: reset: Add reboot driver for brcmstb
-  ARM: brcmstb: add debug UART for earlyprintk support
-  ARM: do CPU-specific init for Broadcom Brahma15 cores
-  ARM: brcmstb: add CPU binding for Broadcom Brahma15
-  ARM: brcmstb: add misc. DT bindings for brcmstb
-  ARM: brcmstb: gic: add compatible string for Broadcom Brahma15
-  ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
-
- .../devicetree/bindings/arm/brcm-brcmstb.txt       |  95 ++++++
- Documentation/devicetree/bindings/arm/cpus.txt     |   2 +
- Documentation/devicetree/bindings/arm/gic.txt      |   1 +
- MAINTAINERS                                        |   9 +
- arch/arm/Kconfig.debug                             |  16 +-
- arch/arm/boot/dts/Makefile                         |   2 +
- arch/arm/boot/dts/bcm7445-bcm97445svmb.dts         |  14 +
- arch/arm/boot/dts/bcm7445.dtsi                     | 111 +++++++
- arch/arm/configs/multi_v7_defconfig                |   1 +
- arch/arm/kernel/smp_tlb.c                          |  20 +-
- arch/arm/mach-bcm/Kconfig                          |  17 +
- arch/arm/mach-bcm/Makefile                         |   5 +
- arch/arm/mach-bcm/brcmstb.c                        |  28 ++
- arch/arm/mach-bcm/brcmstb.h                        |  19 ++
- arch/arm/mach-bcm/headsmp-brcmstb.S                |  33 ++
- arch/arm/mach-bcm/platsmp-brcmstb.c                | 363 +++++++++++++++++++++
- arch/arm/mm/proc-v7.S                              |  11 +
- drivers/power/reset/Kconfig                        |  10 +
- drivers/power/reset/Makefile                       |   1 +
- drivers/power/reset/brcmstb-reboot.c               | 120 +++++++
- 20 files changed, 869 insertions(+), 9 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
- create mode 100644 arch/arm/boot/dts/bcm7445-bcm97445svmb.dts
- create mode 100644 arch/arm/boot/dts/bcm7445.dtsi
- create mode 100644 arch/arm/mach-bcm/brcmstb.c
- create mode 100644 arch/arm/mach-bcm/brcmstb.h
- create mode 100644 arch/arm/mach-bcm/headsmp-brcmstb.S
- create mode 100644 arch/arm/mach-bcm/platsmp-brcmstb.c
- create mode 100644 drivers/power/reset/brcmstb-reboot.c
-
--- 
-1.9.1
+Thanks,
+Nish
 
