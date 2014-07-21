@@ -1,462 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543AbaGUSg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 14:36:59 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:43474
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933404AbaGUSg5 convert rfc822-to-8bit (ORCPT
+	id S933512AbaGUSgz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 14:36:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:45829 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933395AbaGUSgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 14:36:57 -0400
-X-WSS-ID: 0N92RPE-07-BQK-02
-X-M-MSG: 
-Message-ID: <53CD5DBC.7010301@amd.com>
-Date: Mon, 21 Jul 2014 21:36:44 +0300
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 21 Jul 2014 14:36:54 -0400
+Date: Mon, 21 Jul 2014 14:33:31 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stefan.bader@canonical.com,
+        luto@amacapital.net, airlied@gmail.com, bp@alien8.de
+Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
+Message-ID: <20140721183331.GB13420@laptop.dumpdata.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+ <53C58A69.3070207@zytor.com>
+ <1405459404.28702.17.camel@misato.fc.hp.com>
+ <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>
+ <1405546127.28702.85.camel@misato.fc.hp.com>
+ <1405960298.30151.10.camel@misato.fc.hp.com>
+ <53CD443A.6050804@zytor.com>
+ <1405962993.30151.35.camel@misato.fc.hp.com>
+ <53CD4EB2.5020709@zytor.com>
 MIME-Version: 1.0
-To: Jerome Glisse <j.glisse@gmail.com>
-CC: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
-        "David Airlie" <airlied@linux.ie>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        =?UTF-8?B?TWljaGVsIETDpG56ZXI=?= <michel.daenzer@amd.com>,
-        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-References: <53C7D645.3070607@amd.com> <20140720174652.GE3068@gmail.com>
- <53CD0961.4070505@amd.com> <53CD17FD.3000908@vodafone.de>
- <53CD1FB6.1000602@amd.com> <20140721155437.GA4519@gmail.com>
- <53CD5122.5040804@amd.com> <20140721181433.GA5196@gmail.com>
-In-Reply-To: <20140721181433.GA5196@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Originating-IP: [10.224.155.153]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51914003)(24454002)(51704005)(479174003)(189002)(199002)(80022001)(81342001)(81542001)(83322001)(19580405001)(19580395003)(65816999)(64126003)(105586002)(85306003)(77982001)(15975445006)(83506001)(4396001)(44976005)(20776003)(64706001)(65956001)(68736004)(65806001)(102836001)(47776003)(79102001)(101416001)(87936001)(15202345003)(85852003)(83072002)(110136001)(21056001)(23676002)(97736001)(31966008)(107046002)(86362001)(84676001)(87266999)(76482001)(74502001)(74662001)(33656002)(106466001)(95666004)(50466002)(36756003)(93886003)(92566001)(92726001)(99396002)(46102001)(50986999)(54356999)(76176999);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB034;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0279B3DD0D
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CD4EB2.5020709@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/07/14 21:14, Jerome Glisse wrote:
-> On Mon, Jul 21, 2014 at 08:42:58PM +0300, Oded Gabbay wrote:
->> On 21/07/14 18:54, Jerome Glisse wrote:
->>> On Mon, Jul 21, 2014 at 05:12:06PM +0300, Oded Gabbay wrote:
->>>> On 21/07/14 16:39, Christian König wrote:
->>>>> Am 21.07.2014 14:36, schrieb Oded Gabbay:
->>>>>> On 20/07/14 20:46, Jerome Glisse wrote:
->>>>>>> On Thu, Jul 17, 2014 at 04:57:25PM +0300, Oded Gabbay wrote:
->>>>>>>> Forgot to cc mailing list on cover letter. Sorry.
->>>>>>>>
->>>>>>>> As a continuation to the existing discussion, here is a v2 patch series
->>>>>>>> restructured with a cleaner history and no totally-different-early-versions
->>>>>>>> of the code.
->>>>>>>>
->>>>>>>> Instead of 83 patches, there are now a total of 25 patches, where 5 of them
->>>>>>>> are modifications to radeon driver and 18 of them include only amdkfd code.
->>>>>>>> There is no code going away or even modified between patches, only added.
->>>>>>>>
->>>>>>>> The driver was renamed from radeon_kfd to amdkfd and moved to reside under
->>>>>>>> drm/radeon/amdkfd. This move was done to emphasize the fact that this driver
->>>>>>>> is an AMD-only driver at this point. Having said that, we do foresee a
->>>>>>>> generic hsa framework being implemented in the future and in that case, we
->>>>>>>> will adjust amdkfd to work within that framework.
->>>>>>>>
->>>>>>>> As the amdkfd driver should support multiple AMD gfx drivers, we want to
->>>>>>>> keep it as a seperate driver from radeon. Therefore, the amdkfd code is
->>>>>>>> contained in its own folder. The amdkfd folder was put under the radeon
->>>>>>>> folder because the only AMD gfx driver in the Linux kernel at this point
->>>>>>>> is the radeon driver. Having said that, we will probably need to move it
->>>>>>>> (maybe to be directly under drm) after we integrate with additional AMD gfx
->>>>>>>> drivers.
->>>>>>>>
->>>>>>>> For people who like to review using git, the v2 patch set is located at:
->>>>>>>> http://cgit.freedesktop.org/~gabbayo/linux/log/?h=kfd-next-3.17-v2
->>>>>>>>
->>>>>>>> Written by Oded Gabbayh <oded.gabbay@amd.com>
->>>>>>>
->>>>>>> So quick comments before i finish going over all patches. There is many
->>>>>>> things that need more documentation espacialy as of right now there is
->>>>>>> no userspace i can go look at.
->>>>>> So quick comments on some of your questions but first of all, thanks for the
->>>>>> time you dedicated to review the code.
->>>>>>>
->>>>>>> There few show stopper, biggest one is gpu memory pinning this is a big
->>>>>>> no, that would need serious arguments for any hope of convincing me on
->>>>>>> that side.
->>>>>> We only do gpu memory pinning for kernel objects. There are no userspace
->>>>>> objects that are pinned on the gpu memory in our driver. If that is the case,
->>>>>> is it still a show stopper ?
->>>>>>
->>>>>> The kernel objects are:
->>>>>> - pipelines (4 per device)
->>>>>> - mqd per hiq (only 1 per device)
->>>>>> - mqd per userspace queue. On KV, we support up to 1K queues per process, for
->>>>>> a total of 512K queues. Each mqd is 151 bytes, but the allocation is done in
->>>>>> 256 alignment. So total *possible* memory is 128MB
->>>>>> - kernel queue (only 1 per device)
->>>>>> - fence address for kernel queue
->>>>>> - runlists for the CP (1 or 2 per device)
->>>>>
->>>>> The main questions here are if it's avoid able to pin down the memory and if the
->>>>> memory is pinned down at driver load, by request from userspace or by anything
->>>>> else.
->>>>>
->>>>> As far as I can see only the "mqd per userspace queue" might be a bit
->>>>> questionable, everything else sounds reasonable.
->>>>>
->>>>> Christian.
->>>>
->>>> Most of the pin downs are done on device initialization.
->>>> The "mqd per userspace" is done per userspace queue creation. However, as I
->>>> said, it has an upper limit of 128MB on KV, and considering the 2G local
->>>> memory, I think it is OK.
->>>> The runlists are also done on userspace queue creation/deletion, but we only
->>>> have 1 or 2 runlists per device, so it is not that bad.
->>>
->>> 2G local memory ? You can not assume anything on userside configuration some
->>> one might build an hsa computer with 512M and still expect a functioning
->>> desktop.
->> First of all, I'm only considering Kaveri computer, not "hsa" computer.
->> Second, I would imagine we can build some protection around it, like
->> checking total local memory and limit number of queues based on some
->> percentage of that total local memory. So, if someone will have only
->> 512M, he will be able to open less queues.
->>
->>
->>>
->>> I need to go look into what all this mqd is for, what it does and what it is
->>> about. But pinning is really bad and this is an issue with userspace command
->>> scheduling an issue that obviously AMD fails to take into account in design
->>> phase.
->> Maybe, but that is the H/W design non-the-less. We can't very well
->> change the H/W.
+On Mon, Jul 21, 2014 at 10:32:34AM -0700, H. Peter Anvin wrote:
+> On 07/21/2014 10:16 AM, Toshi Kani wrote:
+> > 
+> > You are right.  I was under a wrong impression that
+> > __change_page_attr() always splits a large pages into 4KB pages, but I
+> > overlooked the fact that it can handle a large page as well.  So, this
+> > approach does not work...
+> > 
 > 
-> You can not change the hardware but it is not an excuse to allow bad design to
-> sneak in software to work around that. So i would rather penalize bad hardware
-> design and have command submission in the kernel, until AMD fix its hardware to
-> allow proper scheduling by the kernel and proper control by the kernel. 
-I'm sorry but I do *not* think this is a bad design. S/W scheduling in
-the kernel can not, IMO, scale well to 100K queues and 10K processes.
-
-> Because really where we want to go is having GPU closer to a CPU in term of scheduling
-> capacity and once we get there we want the kernel to always be able to take over
-> and do whatever it wants behind process back.
-Who do you refer to when you say "we" ? AFAIK, the hw scheduling
-direction is where AMD is now and where it is heading in the future.
-That doesn't preclude the option to allow the kernel to take over and do
-what he wants. I agree that in KV we have a problem where we can't do a
-mid-wave preemption, so theoretically, a long running compute kernel can
-make things messy, but in Carrizo, we will have this ability. Having
-said that, it will only be through the CP H/W scheduling. So AMD is
-_not_ going to abandon H/W scheduling. You can dislike it, but this is
-the situation.
+> If it did it would be a major fail.
 > 
->>>>>
->>>>>>>
->>>>>>> It might be better to add a drivers/gpu/drm/amd directory and add common
->>>>>>> stuff there.
->>>>>>>
->>>>>>> Given that this is not intended to be final HSA api AFAICT then i would
->>>>>>> say this far better to avoid the whole kfd module and add ioctl to radeon.
->>>>>>> This would avoid crazy communication btw radeon and kfd.
->>>>>>>
->>>>>>> The whole aperture business needs some serious explanation. Especialy as
->>>>>>> you want to use userspace address there is nothing to prevent userspace
->>>>>>> program from allocating things at address you reserve for lds, scratch,
->>>>>>> ... only sane way would be to move those lds, scratch inside the virtual
->>>>>>> address reserved for kernel (see kernel memory map).
->>>>>>>
->>>>>>> The whole business of locking performance counter for exclusive per process
->>>>>>> access is a big NO. Which leads me to the questionable usefullness of user
->>>>>>> space command ring.
->>>>>> That's like saying: "Which leads me to the questionable usefulness of HSA". I
->>>>>> find it analogous to a situation where a network maintainer nacking a driver
->>>>>> for a network card, which is slower than a different network card. Doesn't
->>>>>> seem reasonable this situation is would happen. He would still put both the
->>>>>> drivers in the kernel because people want to use the H/W and its features. So,
->>>>>> I don't think this is a valid reason to NACK the driver.
->>>
->>> Let me rephrase, drop the the performance counter ioctl and modulo memory pinning
->>> i see no objection. In other word, i am not NACKING whole patchset i am NACKING
->>> the performance ioctl.
->>>
->>> Again this is another argument for round trip to the kernel. As inside kernel you
->>> could properly do exclusive gpu counter access accross single user cmd buffer
->>> execution.
->>>
->>>>>>
->>>>>>> I only see issues with that. First and foremost i would
->>>>>>> need to see solid figures that kernel ioctl or syscall has a higher an
->>>>>>> overhead that is measurable in any meaning full way against a simple
->>>>>>> function call. I know the userspace command ring is a big marketing features
->>>>>>> that please ignorant userspace programmer. But really this only brings issues
->>>>>>> and for absolutely not upside afaict.
->>>>>> Really ? You think that doing a context switch to kernel space, with all its
->>>>>> overhead, is _not_ more expansive than just calling a function in userspace
->>>>>> which only puts a buffer on a ring and writes a doorbell ?
->>>
->>> I am saying the overhead is not that big and it probably will not matter in most
->>> usecase. For instance i did wrote the most useless kernel module that add two
->>> number through an ioctl (http://people.freedesktop.org/~glisse/adder.tar) and
->>> it takes ~0.35microseconds with ioctl while function is ~0.025microseconds so
->>> ioctl is 13 times slower.
->>>
->>> Now if there is enough data that shows that a significant percentage of jobs
->>> submited to the GPU will take less that 0.35microsecond then yes userspace
->>> scheduling does make sense. But so far all we have is handwaving with no data
->>> to support any facts.
->>>
->>>
->>> Now if we want to schedule from userspace than you will need to do something
->>> about the pinning, something that gives control to kernel so that kernel can
->>> unpin when it wants and move object when it wants no matter what userspace is
->>> doing.
->>>
->>>>>>>
->>>>>>> So i would rather see a very simple ioctl that write the doorbell and might
->>>>>>> do more than that in case of ring/queue overcommit where it would first have
->>>>>>> to wait for a free ring/queue to schedule stuff. This would also allow sane
->>>>>>> implementation of things like performance counter that could be acquire by
->>>>>>> kernel for duration of a job submitted by userspace. While still not optimal
->>>>>>> this would be better that userspace locking.
->>>>>>>
->>>>>>>
->>>>>>> I might have more thoughts once i am done with all the patches.
->>>>>>>
->>>>>>> Cheers,
->>>>>>> Jérôme
->>>>>>>
->>>>>>>>
->>>>>>>> Original Cover Letter:
->>>>>>>>
->>>>>>>> This patch set implements a Heterogeneous System Architecture (HSA) driver
->>>>>>>> for radeon-family GPUs.
->>>>>>>> HSA allows different processor types (CPUs, DSPs, GPUs, etc..) to share
->>>>>>>> system resources more effectively via HW features including shared pageable
->>>>>>>> memory, userspace-accessible work queues, and platform-level atomics. In
->>>>>>>> addition to the memory protection mechanisms in GPUVM and IOMMUv2, the Sea
->>>>>>>> Islands family of GPUs also performs HW-level validation of commands passed
->>>>>>>> in through the queues (aka rings).
->>>>>>>>
->>>>>>>> The code in this patch set is intended to serve both as a sample driver for
->>>>>>>> other HSA-compatible hardware devices and as a production driver for
->>>>>>>> radeon-family processors. The code is architected to support multiple CPUs
->>>>>>>> each with connected GPUs, although the current implementation focuses on a
->>>>>>>> single Kaveri/Berlin APU, and works alongside the existing radeon kernel
->>>>>>>> graphics driver (kgd).
->>>>>>>> AMD GPUs designed for use with HSA (Sea Islands and up) share some hardware
->>>>>>>> functionality between HSA compute and regular gfx/compute (memory,
->>>>>>>> interrupts, registers), while other functionality has been added
->>>>>>>> specifically for HSA compute  (hw scheduler for virtualized compute rings).
->>>>>>>> All shared hardware is owned by the radeon graphics driver, and an interface
->>>>>>>> between kfd and kgd allows the kfd to make use of those shared resources,
->>>>>>>> while HSA-specific functionality is managed directly by kfd by submitting
->>>>>>>> packets into an HSA-specific command queue (the "HIQ").
->>>>>>>>
->>>>>>>> During kfd module initialization a char device node (/dev/kfd) is created
->>>>>>>> (surviving until module exit), with ioctls for queue creation & management,
->>>>>>>> and data structures are initialized for managing HSA device topology.
->>>>>>>> The rest of the initialization is driven by calls from the radeon kgd at the
->>>>>>>> following points :
->>>>>>>>
->>>>>>>> - radeon_init (kfd_init)
->>>>>>>> - radeon_exit (kfd_fini)
->>>>>>>> - radeon_driver_load_kms (kfd_device_probe, kfd_device_init)
->>>>>>>> - radeon_driver_unload_kms (kfd_device_fini)
->>>>>>>>
->>>>>>>> During the probe and init processing per-device data structures are
->>>>>>>> established which connect to the associated graphics kernel driver. This
->>>>>>>> information is exposed to userspace via sysfs, along with a version number
->>>>>>>> allowing userspace to determine if a topology change has occurred while it
->>>>>>>> was reading from sysfs.
->>>>>>>> The interface between kfd and kgd also allows the kfd to request buffer
->>>>>>>> management services from kgd, and allows kgd to route interrupt requests to
->>>>>>>> kfd code since the interrupt block is shared between regular
->>>>>>>> graphics/compute and HSA compute subsystems in the GPU.
->>>>>>>>
->>>>>>>> The kfd code works with an open source usermode library ("libhsakmt") which
->>>>>>>> is in the final stages of IP review and should be published in a separate
->>>>>>>> repo over the next few days.
->>>>>>>> The code operates in one of three modes, selectable via the sched_policy
->>>>>>>> module parameter :
->>>>>>>>
->>>>>>>> - sched_policy=0 uses a hardware scheduler running in the MEC block within
->>>>>>>> CP, and allows oversubscription (more queues than HW slots)
->>>>>>>> - sched_policy=1 also uses HW scheduling but does not allow
->>>>>>>> oversubscription, so create_queue requests fail when we run out of HW slots
->>>>>>>> - sched_policy=2 does not use HW scheduling, so the driver manually assigns
->>>>>>>> queues to HW slots by programming registers
->>>>>>>>
->>>>>>>> The "no HW scheduling" option is for debug & new hardware bringup only, so
->>>>>>>> has less test coverage than the other options. Default in the current code
->>>>>>>> is "HW scheduling without oversubscription" since that is where we have the
->>>>>>>> most test coverage but we expect to change the default to "HW scheduling
->>>>>>>> with oversubscription" after further testing. This effectively removes the
->>>>>>>> HW limit on the number of work queues available to applications.
->>>>>>>>
->>>>>>>> Programs running on the GPU are associated with an address space through the
->>>>>>>> VMID field, which is translated to a unique PASID at access time via a set
->>>>>>>> of 16 VMID-to-PASID mapping registers. The available VMIDs (currently 16)
->>>>>>>> are partitioned (under control of the radeon kgd) between current
->>>>>>>> gfx/compute and HSA compute, with each getting 8 in the current code. The
->>>>>>>> VMID-to-PASID mapping registers are updated by the HW scheduler when used,
->>>>>>>> and by driver code if HW scheduling is not being used.
->>>>>>>> The Sea Islands compute queues use a new "doorbell" mechanism instead of the
->>>>>>>> earlier kernel-managed write pointer registers. Doorbells use a separate BAR
->>>>>>>> dedicated for this purpose, and pages within the doorbell aperture are
->>>>>>>> mapped to userspace (each page mapped to only one user address space).
->>>>>>>> Writes to the doorbell aperture are intercepted by GPU hardware, allowing
->>>>>>>> userspace code to safely manage work queues (rings) without requiring a
->>>>>>>> kernel call for every ring update.
->>>>>>>> First step for an application process is to open the kfd device. Calls to
->>>>>>>> open create a kfd "process" structure only for the first thread of the
->>>>>>>> process. Subsequent open calls are checked to see if they are from processes
->>>>>>>> using the same mm_struct and, if so, don't do anything. The kfd per-process
->>>>>>>> data lives as long as the mm_struct exists. Each mm_struct is associated
->>>>>>>> with a unique PASID, allowing the IOMMUv2 to make userspace process memory
->>>>>>>> accessible to the GPU.
->>>>>>>> Next step is for the application to collect topology information via sysfs.
->>>>>>>> This gives userspace enough information to be able to identify specific
->>>>>>>> nodes (processors) in subsequent queue management calls. Application
->>>>>>>> processes can create queues on multiple processors, and processors support
->>>>>>>> queues from multiple processes.
->>>>>>>> At this point the application can create work queues in userspace memory and
->>>>>>>> pass them through the usermode library to kfd to have them mapped onto HW
->>>>>>>> queue slots so that commands written to the queues can be executed by the
->>>>>>>> GPU. Queue operations specify a processor node, and so the bulk of this code
->>>>>>>> is device-specific.
->>>>>>>> Written by John Bridgman <John.Bridgman@amd.com>
->>>>>>>>
->>>>>>>>
->>>>>>>> Alexey Skidanov (1):
->>>>>>>>   amdkfd: Implement the Get Process Aperture IOCTL
->>>>>>>>
->>>>>>>> Andrew Lewycky (3):
->>>>>>>>   amdkfd: Add basic modules to amdkfd
->>>>>>>>   amdkfd: Add interrupt handling module
->>>>>>>>   amdkfd: Implement the Set Memory Policy IOCTL
->>>>>>>>
->>>>>>>> Ben Goz (8):
->>>>>>>>   amdkfd: Add queue module
->>>>>>>>   amdkfd: Add mqd_manager module
->>>>>>>>   amdkfd: Add kernel queue module
->>>>>>>>   amdkfd: Add module parameter of scheduling policy
->>>>>>>>   amdkfd: Add packet manager module
->>>>>>>>   amdkfd: Add process queue manager module
->>>>>>>>   amdkfd: Add device queue manager module
->>>>>>>>   amdkfd: Implement the create/destroy/update queue IOCTLs
->>>>>>>>
->>>>>>>> Evgeny Pinchuk (3):
->>>>>>>>   amdkfd: Add topology module to amdkfd
->>>>>>>>   amdkfd: Implement the Get Clock Counters IOCTL
->>>>>>>>   amdkfd: Implement the PMC Acquire/Release IOCTLs
->>>>>>>>
->>>>>>>> Oded Gabbay (10):
->>>>>>>>   mm: Add kfd_process pointer to mm_struct
->>>>>>>>   drm/radeon: reduce number of free VMIDs and pipes in KV
->>>>>>>>   drm/radeon/cik: Don't touch int of pipes 1-7
->>>>>>>>   drm/radeon: Report doorbell configuration to amdkfd
->>>>>>>>   drm/radeon: adding synchronization for GRBM GFX
->>>>>>>>   drm/radeon: Add radeon <--> amdkfd interface
->>>>>>>>   Update MAINTAINERS and CREDITS files with amdkfd info
->>>>>>>>   amdkfd: Add IOCTL set definitions of amdkfd
->>>>>>>>   amdkfd: Add amdkfd skeleton driver
->>>>>>>>   amdkfd: Add binding/unbinding calls to amd_iommu driver
->>>>>>>>
->>>>>>>>  CREDITS                                            |    7 +
->>>>>>>>  MAINTAINERS                                        |   10 +
->>>>>>>>  drivers/gpu/drm/radeon/Kconfig                     |    2 +
->>>>>>>>  drivers/gpu/drm/radeon/Makefile                    |    3 +
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/Kconfig              |   10 +
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/Makefile             |   14 +
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/cik_mqds.h           |  185 +++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/cik_regs.h           |  220 ++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c       |  123 ++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c        |  518 +++++++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_crat.h           |  294 +++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_device.c         |  254 ++++
->>>>>>>>  .../drm/radeon/amdkfd/kfd_device_queue_manager.c   |  985 ++++++++++++++++
->>>>>>>>  .../drm/radeon/amdkfd/kfd_device_queue_manager.h   |  101 ++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c       |  264 +++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_interrupt.c      |  161 +++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.c   |  305 +++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.h   |   66 ++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_module.c         |  131 +++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c    |  291 +++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h    |   54 +
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c |  488 ++++++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c          |   97 ++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_pm4_headers.h    |  682 +++++++++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_pm4_opcodes.h    |  107 ++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h           |  466 ++++++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_process.c        |  405 +++++++
->>>>>>>>  .../drm/radeon/amdkfd/kfd_process_queue_manager.c  |  343 ++++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_queue.c          |  109 ++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_topology.c       | 1207
->>>>>>>> ++++++++++++++++++++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_topology.h       |  168 +++
->>>>>>>>  drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c         |   96 ++
->>>>>>>>  drivers/gpu/drm/radeon/cik.c                       |  154 +--
->>>>>>>>  drivers/gpu/drm/radeon/cik_reg.h                   |   65 ++
->>>>>>>>  drivers/gpu/drm/radeon/cikd.h                      |   51 +-
->>>>>>>>  drivers/gpu/drm/radeon/radeon.h                    |    9 +
->>>>>>>>  drivers/gpu/drm/radeon/radeon_device.c             |   32 +
->>>>>>>>  drivers/gpu/drm/radeon/radeon_drv.c                |    5 +
->>>>>>>>  drivers/gpu/drm/radeon/radeon_kfd.c                |  566 +++++++++
->>>>>>>>  drivers/gpu/drm/radeon/radeon_kfd.h                |  119 ++
->>>>>>>>  drivers/gpu/drm/radeon/radeon_kms.c                |    7 +
->>>>>>>>  include/linux/mm_types.h                           |   14 +
->>>>>>>>  include/uapi/linux/kfd_ioctl.h                     |  133 +++
->>>>>>>>  43 files changed, 9226 insertions(+), 95 deletions(-)
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/Kconfig
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/Makefile
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_mqds.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_regs.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_crat.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device_queue_manager.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device_queue_manager.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_interrupt.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_module.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pm4_headers.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pm4_opcodes.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_queue.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.h
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_vidmem.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.c
->>>>>>>>  create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.h
->>>>>>>>  create mode 100644 include/uapi/linux/kfd_ioctl.h
->>>>>>>>
->>>>>>>> --
->>>>>>>> 1.9.1
->>>>>>>>
->>>>>>
->>>>>
->>>>
->>
+> >> I would also like a systematic way to deal with the fact
+> >> that Xen (sigh) is stuck with a separate mapping system.
+> >>
+> >> I guess Linux could adopt the Xen mappings if that makes it easier, as
+> >> long as that doesn't have a negative impact on native hardware -- we can
+> >> possibly deal with some older chips not being optimal.  
+> > 
+> > I see.  I agree that supporting the PAT bit is the right direction, but
+> > I do not know how much effort we need.  I will study on this.
+> > 
+> >> However, my thinking has been to have a "reverse PAT" table in memory of memory
+> >> types to encodings, both for regular and large pages.
+> > 
+> > I am not clear about your idea of the "reverse PAT" table.  Would you
+> > care to elaborate?  How is it different from using pte_val() being a
+> > paravirt function on Xen?
+> 
+> First of all, paravirt functions are the root of all evil, and we want
 
+Here I was thinking to actually put an entry in the MAINTAINERS
+file for me to become the owner of it - as the folks listed there
+are busy with other things.
+
+The Maintainer of 'All Evil' has an interesting ring to it :-)
+
+> to reduce and eliminate them to the utmost level possible.  But yes, we
+> could plumb that up that way if we really need to.
+> 
+> What I'm thinking of is a table which can deal with both the moving PTE
+> bit, Xen, and the scattered encodings by having a small table from types
+> to encodings, and not use the encodings directly until fairly late it
+> the pipe.  I suspect, but I'm not sure, that we would also need the
+> inverse operation.
+
+Mr Toshi-san,
+
+This link: http://xenbits.xen.org/gitweb/?p=xen.git;a=blob;f=xen/arch/x86/hvm/mtrr.c;h=ee18553cdac58dd16836011ee714517fbc16368d;hb=HEAD#l74 might help you in figuring how this can be done.
+
+Thought I have to say that the code is quite complex so it might
+be more confusing then helpful.
