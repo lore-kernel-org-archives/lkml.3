@@ -1,307 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaGUIAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:00:07 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:65384 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611AbaGUIAF (ORCPT
+	id S1753146AbaGUIAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:00:41 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:61191 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036AbaGUIAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:00:05 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 21 Jul 2014 17:00:53 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        =?utf-8?B?J+q5gOykgOyImCc=?= <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-Message-ID: <20140721080053.GB15912@bbox>
-References: <53C8C290.90503@lge.com>
- <20140721025047.GA7707@bbox>
- <53CCB02A.7070301@lge.com>
- <20140721073651.GA15912@bbox>
+	Mon, 21 Jul 2014 04:00:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Chanwoo Choi <cwchoi00@gmail.com>, jic23@kernel.org,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for Exynos3250 ADC
+Date: Mon, 21 Jul 2014 10:00:24 +0200
+Message-ID: <7477106.gq1AqisQx4@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53CC725C.9010406@samsung.com>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <5381273.c6GzlyQ7Ea@wuerfel> <53CC725C.9010406@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140721073651.GA15912@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:1vLm2K+8+ewPWKYKuwD56nDghX2LKGrFbrDPlfNaJfC
+ HJrGb8owBtTYdsTsdsw9CQl12W6b6w6GeQeQjQU2q1WDykdZb2
+ n5I89bt/2XUQhl8vXhh6FO6iIrZmvyJpdPvMV5eoORRbZawdmB
+ W3ZjjTCDpSOqUbk6L5X89mA11+XRSl1mrFSgt7xPzAH7zrOkZF
+ loTUcURSCZ4VlhcUQsnJn/BLfQc8lO+cKPxCXbpdJf+/hqGAEK
+ 7cMPhl4r85ogOnOYyqhUaJqkMudzvZNzIosBLiMAyJ7uU4Ss0x
+ d2Ky+hC4JtrqYLm91tUcSaeMeAoV0fPimee72Etem6CjsZ1m8m
+ 5TV3sv2qgZ9eKAsC6ItY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
-> On Mon, Jul 21, 2014 at 03:16:10PM +0900, Gioh Kim wrote:
+On Monday 21 July 2014 10:52:28 Chanwoo Choi wrote:
+> > Yes, your current version is certainly better than this, but another way
+> > to address Tomasz' comment would be to change the binding to list the "sclk"
+> > as optional for any device and make the code silently ignore missing sclk
+> > entries, like:
 > > 
 > > 
-> > 2014-07-21 오전 11:50, Minchan Kim 쓴 글:
-> > >Hi Gioh,
-> > >
-> > >On Fri, Jul 18, 2014 at 03:45:36PM +0900, Gioh Kim wrote:
-> > >>
-> > >>Hi,
-> > >>
-> > >>For page migration of CMA, buffer-heads of lru should be dropped.
-> > >>Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
-> > >
-> > >Just nit:
-> > >Please write *problem* in description instead of URL link.
-> > >
-> > >>
-> > >>I have two solution to drop bhs.
-> > >>One is invalidating entire lru.
-> > >
-> > >You mean? All of percpu bh_lrus so if the system has N cpu,
-> > >it invalidates N * 8?
-> > 
-> > Yes, every bh_lru of all cpus.
-> > 
-> > >
-> > >>Another is searching the lru and dropping only one bh that Laura proposed
-> > >>at https://lkml.org/lkml/2012/8/31/313.
-> > >>
-> > >>I'm not sure which has better performance.
-> > >
-> > >For whom? system or requestor of CMA?
-> > 
-> > For system performance.
-> > 
-> > >
-> > >>So I did performance test on my cortex-a7 platform with Lmbench
-> > >>that has "File & VM system latencies" test.
-> > >>I am attaching the results.
-> > >>The first line is of invalidating entire lru and the second is dropping selected bh.
-> > >
-> > >You mean you did Lmbench with background CMA allocation?
-> > >Could you describe in detail?
-> > 
-> > I'm sorry not to mention the background.
-> > I did the test without CMA allocation because I wanted to check how it affects system performance.
-> > 
-> > The first test, invalidating entire lru, is adding invalidate_bh_lrus() at alloc_contig_range().
-> > This is not affecting system performance because alloc_contig_range() is not called
-> > for usual file-system management.
-> > The resulf of the first test is the *default system performance.*
-> > 
-> > The second test, dropping all bh in lru, is adding drop_buffers().
-> > Every call of drop_buffers drops all bhs in lru of every cpu.
-> > It can affect system performance. *But* it does not affect system performance,
-> > because it drops only bh of migrated pages.
-> > 
-> > 
-> > >
-> > >>
-> > >>File & VM system latencies in microseconds - smaller is better
-> > >>-------------------------------------------------------------------------------
-> > >>Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
-> > >>                         Create Delete Create Delete Latency Fault  Fault  selct
-> > >>--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
-> > >>10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
-> > >>10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
-> > >>
-> > >>
-> > >>I tried several times but the result tells that they are the same under 1% gap
-> > >>except Protection Fault.
-> > >>But the latency of Protection Fault is very small and I think it has little effect.
-> > >>
-> > >>Therefore we can choose anything but I choose invalidating entire lru.
-> > >
-> > >Not sure we can conclude like that.
-> > >
-> > >A few weeks ago, I saw a patch which increases bh_lrus's size.
-> > >https://lkml.org/lkml/2014/7/4/107
-> > >IOW, some of workloads really affects by percpu bh_lrus so it would be
-> > >better to be careful to drain, I think.
-> > >
-> > >You want to argue CMA allocation is rare so the cost is marginable.
-> > >It might but some of usecase might call it frequently with small request
-> > >(ie, 8K, 16K).
-> > >
-> > >Anyway, why cannot CMA have the cost without affecting other subsystem?
-> > >I mean it's okay for CMA to consume more time to shoot out the bh
-> > >instead of simple all bh_lru invalidation because big order allocation is
-> > >kinds of slow thing in the VM and everybody already know that and even
-> > >sometime get failed so it's okay to add more code that extremly slow path.
-> > 
-> > There are 2 reasons to invalidate entire bh_lru.
-> > 
-> > 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
-> > How do you think about it? My platform does not call CMA allocation often.
-> > Is the CMA allocation or Memory-Hotplug called often?
+> >       info->sclk = devm_clk_get(&pdev->dev, "sclk");
+> >       if (IS_ERR(info->sclk)) {
+> >               switch (PTR_ERR(info->sclk)) {
+> >               case -EPROBE_DEFER:
+> >                       /* silently return error so we can retry */
+> >                       return -EPROBE_DEFER:
+> >               case -ENOENT:
+> >                       /* silently ignore missing optional clk */
+> >                       info->sclk = NULL;
+> >                       break;
+> >               default:
+> >                       /* any other error: clk is defined by doesn't work  */
+> >                       dev_err(&pdev->dev, "failed getting sclk clock, err = %ld\n",
+> >                               PTR_ERR(info->sclk));
+> >                       return PTR_ERR(info->sclk));
+> >               }
+> >       }
 > 
-> It depends on usecase and you couldn't assume anyting because we couldn't
-> ask every people in the world. "Please ask to us whenever you try to use CMA".
+> I tested this patch suggested by you.
+> But, devm_clk_get returns always '-ENOENT' on follwong two cases:
 > 
-> The key point is how the patch is maintainable.
-> If it's too complicate to maintain, maybe we could go with simple solution
-> but if it's not too complicate, we can go with more smart thing to consider
-> other cases in future. Why not?
+> Case 1.
+> ADC dt node in exynos3250.dtsi don't include 'sclk' clock as following:
 > 
-> Another point is that how user can detect where the regression is from.
-> If we cannot notice the regression, it's not a good idea to go with simple
-> version.
+>                 adc: adc@126C0000 {
+>                         compatible = "samsung,exynos3250-adc";
+>                         reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+>                         interrupts = <0 137 0>;
+>                         clock-names = "adc";
+>                         clocks = <&cmu CLK_TSADC>;
+>                         #io-channel-cells = <1>;
+>                         io-channel-ranges;
+>                 };
 > 
-> > 
-> > 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
-> > because the drop_buffers does not have a way to distinguish migrate type.
-> > Even-though the lmbech results that it has almost the same performance.
-> > But I am afraid that it can be changed.
-> > As you said if bh_lru size can be changed it affects more than now.
-> > SO I do not want to touch non-CMA related code.
+> Case 2.
+> ADC dt node in exynos3250.dtsi don't include 'sclk' clock
+> but, exynos3250 clock controller don't support CLK_SCLK_TSADC clock as following:
 > 
-> I'm not saying to add hook in drop_buffers.
-> What I suggest is to handle failure by bh_lrus in migrate_pages
-> because it's not a problem only in CMA.
-> There is already retry logic in migrate_pages so I can think you could
-> handle it.
-> 
-> > 
-> > 
-> > >
-> > >>The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
-> > >>So I think inserting codes in drop_buffers() can affect the system.
-> > >>And also we cannot distinguish migration type in drop_buffers().
-> > >>
-> > >>In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
-> > >>I think alloc_contig_range() is proper to deal with bh like following patch.
-> > >>
-> > >>Laura, can I have you name on Acked-by line?
-> > >>Please let me represent my thanks.
-> > >>
-> > >>Thanks for any feedback.
-> > >>
-> > >>------------------------------- 8< ----------------------------------
-> > >>
-> > >>>From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
-> > >>From: Gioh Kim <gioh.kim@lge.com>
-> > >>Date: Fri, 18 Jul 2014 13:40:01 +0900
-> > >>Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-> > >>
-> > >>The bh must be free to migrate a page at which bh is mapped.
-> > >>The reference count of bh is increased when it is installed
-> > >>into lru so that the bh of lru must be freed before migrating the page.
-> > >>
-> > >>This frees every bh of lru. We could free only bh of migrating page.
-> > >>But searching lru costs more than invalidating entire lru.
-> > >>
-> > >>Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> > >>Acked-by: Laura Abbott <lauraa@codeaurora.org>
-> > >>---
-> > >>  mm/page_alloc.c |    3 +++
-> > >>  1 file changed, 3 insertions(+)
-> > >>
-> > >>diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > >>index b99643d4..3b474e0 100644
-> > >>--- a/mm/page_alloc.c
-> > >>+++ b/mm/page_alloc.c
-> > >>@@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
-> > >>         if (ret)
-> > >>                 return ret;
-> > >>
-> > >>+       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
-> > >>+               invalidate_bh_lrus();
-> > >>+
-> > >
-> > >Q1. It's a only CMA problem? Memory-Hotplug is not a problem? Or other places?
-> > >
-> > >I mean it would be better to handle in generic way.
-> > 
-> > Only CMA and Memory-Hotplug needs it.
-> 
-> Memory-hotplug uses alloc_contig_range?
-> You are adding the logic in alloc_contig_range and it is used for
-> hugetlb and cma.
-> 
-> > And I think invalidate_bh_lrus() is general.
-> 
-> It couldn't handle memory-hotplug.
-> 
-> > 
-> > >
-> > >Q2. Why do you call it right before calling __alloc_contig_migrate_range?
-> > >
-> > >Some of pages will go bh_lrus by __alloc_contig_migrate_ranges.
-> > >In that case, it is useless without caller's retry logic.
-> > >Even you do it from caller's retrial logic, it's not a good idea because
-> > >you makes new binding alloc_contig_range and uppder layer.
-> > >
-> > >So, IMHO, it would be better to handle it in migrate_pages.
-> > >Maybe we could define new API try_to_drop_buffers which calls
-> > >try_to_free_buffers and then only if the function fails due to
-> > >percpu lru count, we could drain only the bh in percpu lru list instead of
-> > >all bh draining. And places in migration path should use it rather than
-> > >try_to_relese_page.
-> > >
-> > >But the problem from this approach invents new API which should be
-> > >maintained so not sure Andrew think it's worth.
-> > >Maybe we should see the code and diffstat.
-> > 
-> > I also consider to making new function, drop_bh_of_migrate_page in migrate_page(), just before unmap_and_move().
-> > The migrate_page() has an argument reason that distinguish migrate-type, MR_CMA or MR_MEMORY_HOTPLUG or others.
-> 
-> Yes, that's what I suggested. If you see -EAGIN, maybe you could do it.
-> Even, we could enhance it with extending target bh invalidation instead of
-> all bhs invalidation so you could make two patches.
-> 
-> 1. use invalidate_bh_lrus in migrate pages
-> 2. invalidate only failed bh intead of all CPU percpu bh_blrus flushing.
+>                 adc: adc@126C0000 {
+>                         compatible = "samsung,exynos3250-adc";
+>                         reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+>                         interrupts = <0 137 0>;
+>                         clock-names = "adc", "sclk";
+>                         clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+>                         #io-channel-cells = <1>;
+>                         io-channel-ranges;
+>                 };
 
-Otherwise,
-  2-1. create try_to_drop_buffers and use it in migration path intead of
-       try_to_release_buffers.
+But neither of those cases is actually a correct DT representation for
+exynos3250: The first case describes an ADC that doesn't need a second
+clock, so if the hardware actually needs it to function, it is clearly
+unsufficiently described. The second case is even worse because it refers
+to a clock that isn't there. Actually that should probably return a different
+error code, but that's a different matter.
 
-> 
-> So, if guys hate 2 which is rather overdesigned, we could drop 2 but 1 is
-> mergable still.
-> 
-> > 
-> > But I DO NOT WATN TO touch non-CMA related code.
-> > Current CMA and Memory-Hotplug code is not mature so that I am not sure it is ok to touch non-CMA related code for CMA/MemoryHotplug.
-> > 
-> > My point is:
-> > 1. CMA/Memory-hotplug is rare and invalidating bh-lru is also rare.
-> > 2. Only change CMA/Memory-hotplig related code.
-> > 
-> > >
-> > >Overenginnering?
-> > >
-> > >>         ret = __alloc_contig_migrate_range(&cc, start, end);
-> > >>         if (ret)
-> > >>                 goto done;
-> > >>--
-> > >>1.7.9.5
-> > >>
-> > >>--
-> > >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > >>the body to majordomo@kvack.org.  For more info on Linux MM,
-> > >>see: http://www.linux-mm.org/ .
-> > >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > >
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> So, I think exynos-adc needs to use 'needs_sclk' field suggested by Tomasz Figa.
 
--- 
-Kind regards,
-Minchan Kim
+I don't mind you adding a field to the data, especially since you already
+need to have separate structures to encode the different number of channels.
+However, I don't see it as necessary either. What you do here is just
+checking the DT representation for correctness and consistency. It's not
+harmful but we don't normally do that because passing incorrect DT blobs
+can cause an infinite number of other problems that we don't check for.
+
+	Arnd
