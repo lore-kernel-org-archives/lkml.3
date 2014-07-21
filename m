@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaGUWfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:35:41 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:56875 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551AbaGUWfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:35:39 -0400
-Date: Mon, 21 Jul 2014 18:35:37 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 4/4] (RFC) X86: add IPI tracepoints
-In-Reply-To: <1405887954.11927.5.camel@buesod1.americas.hpqcorp.net>
-Message-ID: <alpine.LFD.2.11.1407211833330.3647@knanqh.ubzr>
-References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org> <1405660735-13408-5-git-send-email-nicolas.pitre@linaro.org> <1405887954.11927.5.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1754341AbaGUWgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:36:41 -0400
+Received: from 8bytes.org ([81.169.241.247]:52065 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010AbaGUWgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 18:36:39 -0400
+Date: Tue, 22 Jul 2014 00:36:37 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH 1/6] PM / Hibernate: Create a Radix-Tree to store memory
+ bitmap
+Message-ID: <20140721223637.GU30979@8bytes.org>
+References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
+ <1405938422-21900-2-git-send-email-joro@8bytes.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405938422-21900-2-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jul 2014, Davidlohr Bueso wrote:
+Pavel,
 
-> On Fri, 2014-07-18 at 01:18 -0400, Nicolas Pitre wrote:
-> > On X86 there are already tracepoints for IRQ vectors through which IPIs
-> > are handled.  However this is highly X86 specific, and the IPI signaling
-> > is not currently traced.
-> > 
-> > This is an attempt at adding generic IPI tracepoints to X86.
-> 
-> I welcome this, and fwiw have been trying out this patch. One thing I
-> would like to see, but due to overhead would probably be better suited
-> in userspace (trace-cmd, maybe?), is a more packed description of the
-> IPI. Ie: unifying ipi_init and ipi_exit and show overall cost of the
-> IPI.
+On Mon, Jul 21, 2014 at 12:26:57PM +0200, Joerg Roedel wrote:
+>  unsigned int snapshot_additional_pages(struct zone *zone)
+>  {
+> +	unsigned int rtree, nodes;
+>  	unsigned int res;
+>  
+>  	res = DIV_ROUND_UP(zone->spanned_pages, BM_BITS_PER_BLOCK);
+>  	res += DIV_ROUND_UP(res * sizeof(struct bm_block),
+>  			    LINKED_PAGE_DATA_SIZE);
+> -	return 2 * res;
+> +	rtree = nodes = DIV_ROUND_UP(zone->spanned_pages, BM_BITS_PER_BLOCK);
+> +	rtree += DIV_ROUND_UP(rtree * sizeof(struct rtree_node),
+> +			      LINKED_PAGE_DATA_SIZE);
+> +	while (nodes > 1) {
+> +		nodes = DIV_ROUND_UP(nodes, BM_ENTRIES_PER_LEVEL);
+> +		rtree += nodes;
+> +	}
+> +
+> +	return 2 * (res + rtree);
+>  }
 
-That's best suited for the tool consuming the log in user space.  The 
-same is done with IRQ events already.
+Since you asked in another mail if I took the new data structure size
+requirements into account, here is the code I added for this
+computation.
+
+Note that the above diff leaves the old code around because the old
+memory bitmap implementation is not removed before patch 5/6 (which also
+removes the old computation). So the final code will only have the new
+size calculation in it.
+
+Do you have any more concerns?
 
 
-Nicolas
+	Joerg
+
