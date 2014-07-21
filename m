@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaGUVrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:47:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33980 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019AbaGUVrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:47:21 -0400
-Date: Mon, 21 Jul 2014 23:47:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-In-Reply-To: <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1407212344130.20847@nanos>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos>
- <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1754696AbaGUVrw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:47:52 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:17436 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754143AbaGUVru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 17:47:50 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-next@vger.kernel.org, linux-cifs@vger.kernel.org
+Cc: samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Steve French <sfrench@samba.org>
+Subject: [PATCH linux-next] cifs: remove unused function cifs_oplock_break_wait
+Date: Mon, 21 Jul 2014 23:47:36 +0200
+Message-Id: <1405979256-8921-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 2.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Andy Lutomirski wrote:
-> On Mon, Jul 21, 2014 at 2:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > All this is predicated on the fact that syscalls are 'expensive'.
-> > Weren't syscalls only 100s of cycles? All this bitmap mucking is far
-> > more expensive due to cacheline misses, which due to the size of the
-> > things is almost guaranteed.
-> 
-> 120 - 300 cycles for me, unless tracing happens, and I'm working on
-> reducing the incidence of tracing.
+Commit 743162013d40 ("sched: Remove proliferation of wait_on_bit() action
+functions") has removed the call to cifs_oplock_break_wait, making this
+function unused; remove it.
 
-So it's a non issue indeed and definitely not worth the trouble of
-that extra storage, the scheduler overhead, etc.
+This fixes the following compilation warning:
 
-Summary: Once you can't take it atomically in user space, you've lost
-	 anyway. And we are better off to do the magic spinning in
-	 kernel where we have all the information accessible already.
+  fs/cifs/misc.c:578:1: warning: ‘cifs_oplock_break_wait’ defined but not used [-Wunused-function]
 
-Thanks,
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Steve French <sfrench@samba.org>
+---
 
-	tglx
+Hi,
+
+This can be seen with e.g. linux next-20140721 and arm allmodconfig.
+
+Best regards,
+
+V.
+
+ fs/cifs/misc.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
+index 9a70792..65c2682 100644
+--- a/fs/cifs/misc.c
++++ b/fs/cifs/misc.c
+@@ -574,13 +574,6 @@ void cifs_set_oplock_level(struct cifsInodeInfo *cinode, __u32 oplock)
+ 		cinode->oplock = 0;
+ }
+ 
+-static int
+-cifs_oplock_break_wait(void *unused)
+-{
+-	schedule();
+-	return signal_pending(current) ? -ERESTARTSYS : 0;
+-}
+-
+ /*
+  * We wait for oplock breaks to be processed before we attempt to perform
+  * writes.
+-- 
+2.0.1
+
