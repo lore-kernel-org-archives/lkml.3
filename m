@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961AbaGUWn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:43:59 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:59501 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535AbaGUWn5 (ORCPT
+	id S1750803AbaGUWpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:45:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40501 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaGUWpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:43:57 -0400
+	Mon, 21 Jul 2014 18:45:15 -0400
+Message-ID: <53CD95F2.10008@wwwdotorg.org>
+Date: Mon, 21 Jul 2014 16:36:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140721223009.GF11555@pd.tnic>
-References: <20140719130602.GA5101@pd.tnic> <53CD6B50.5010404@mit.edu>
- <20140721213534.GB11555@pd.tnic> <CALCETrW91Q=ivYRVFb0WKXgHQO7O+x_HHDy67e90TU6Bte_ecg@mail.gmail.com>
- <20140721215225.GD11555@pd.tnic> <CALCETrX1LbZAiPH4x2Uby_cUUj2wgN92wc+5wvf-B3_9XdObWQ@mail.gmail.com>
- <20140721220825.GE11555@pd.tnic> <CALCETrXOpcegDp+eUTWqDkO0jWqgJNYhKJW=HbzvT1ga4Ekxog@mail.gmail.com>
- <20140721223009.GF11555@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 21 Jul 2014 15:43:36 -0700
-Message-ID: <CALCETrU1BWJ5h=GDRFKg_CXh4pQvB6MyCoRP=H3z8XGirhQDsQ@mail.gmail.com>
-Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
-To: Borislav Petkov <bp@alien8.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, x86-ml <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mikko Perttunen <mperttunen@nvidia.com>, pdeschrijver@nvidia.com,
+        pgaikwad@nvidia.com, mturquette@linaro.org, thierry.reding@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 3:30 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Jul 21, 2014 at 03:13:33PM -0700, Andy Lutomirski wrote:
->> Ha.  Ha ha.  Muahaha.  Because IIRC this box is synced until the first
->> time it suspends.
->
-> Sweet, TSCs get fumbled in some S-state or maybe SMI... Who TF knows.
->
-> Well, I'm thinking upon resume, we run through smpboot which should do
-> the tsc sync check again. Will have to test to see.
+On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
+> Add binding documentation for the nvidia,tegra124-emc device tree
+> node.
 
-I have some reason to believe that this is almost an intentional bug
-on the part of the BIOS vendor.
+> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
 
->
->> > diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
->> > index 94605c0e9cee..ad7d5e449c0b 100644
->> > --- a/arch/x86/include/asm/tsc.h
->> > +++ b/arch/x86/include/asm/tsc.h
->> > @@ -27,7 +27,9 @@ static inline cycles_t get_cycles(void)
->> >         if (!cpu_has_tsc)
->> >                 return 0;
->> >  #endif
->> > +       rdtsc_barrier();
->> >         rdtscll(ret);
->> > +       rdtsc_barrier();
->> >
->>
->> Only the first of these is necessary.  There was a long thread on this
->> a couple of years ago, and the conclusion was that the code in
->> vread_tsc in vclock_gettime.c is correct.
->
->          * The various CPU manuals are unclear
->          * as to whether rdtsc can be reordered with later loads,
->          * but no one has ever seen it happen.
->
-> until some future uarch proves you wrong. :-)
->
-> I guess we can try with one pre-fence only first although if we're doing
-> one already, I can't imagine the post-one to be all that expensive since
-> we've retired the whole inflight crap already anyway.
->
+> +Required properties :
+> +- compatible : "nvidia,tegra124-emc".
+> +- reg : Should contain 1 or 2 entries:
+> +  - EMC register set
+> +  - MC register set : Required only if no node with
+> +    'compatible = "nvidia,tegra124-mc"' exists. The MC register set
+> +    is first read from the MC node. If it doesn't exist, it is read
+> +    from this property.
 
-IIRC it was actually quite expensive, at least on Sandy Bridge.  Maybe
-AMD is different.
+I echo what Thierry said about the MC register sharing.
 
-Anyway, if some future uarch breaks this, I could resurrect my old
-hack: do a TSC-dependent load prior to returning.  Loads are ordered,
-and the hackish load can't be reordered wrt RDTSC due to
-data-dependency, so we're in business :)
+> +- timings : Should contain 1 entry for each supported clock rate.
 
---Andy
+s/entry/node/ I think.
+
+> +  Entries should be named "timing@n" where n is a 0-based increasing
+> +  number. The timings must be listed in rate-ascending order.
+
+That implies that #address-cells and #size-cells are required too.
+
+> +Required properties for timings :
+
+... and a reg property is needed here.
+
+> +- clock-frequency : Should contain the memory clock rate.
+> +- nvidia,parent-clock-frequency : Should contain the rate of the EMC
+> +  clock's parent clock.
+
+> +- clocks : Must contain an entry for each entry in clock-names.
+> +  See ../clocks/clock-bindings.txt for details.
+> +- clock-names : Must include the following entries:
+> +  - emc-parent : EMC's parent clock.
+
+Shouldn't clocks/clock-names be part of the main node, not the
+per-timing node?
+
+> +- The following properties contain EMC timing characterization values:
+> +  - nvidia,emc-zcal-cnt-long
+> +  - nvidia,emc-auto-cal-interval
+> +  - nvidia,emc-ctt-term-ctrl
+> +  - nvidia,emc-cfg
+> +  - nvidia,emc-cfg-2
+> +  - nvidia,emc-sel-dpd-ctrl
+> +  - nvidia,emc-cfg-dig-dll
+> +  - nvidia,emc-bgbias-ctl0
+> +  - nvidia,emc-auto-cal-config
+> +  - nvidia,emc-auto-cal-config2
+> +  - nvidia,emc-auto-cal-config3
+> +  - nvidia,emc-mode-reset
+> +  - nvidia,emc-mode-1
+> +  - nvidia,emc-mode-2
+> +  - nvidia,emc-mode-4
+> +- nvidia,emc-burst-data : EMC timing characterization data written to
+> +                          EMC registers.
+> +- nvidia,mc-burst-data : EMC timing characterization data written to
+> +                         MC registers.
+> 
+
