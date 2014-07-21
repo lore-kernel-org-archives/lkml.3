@@ -1,65 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477AbaGUWLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:11:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34097 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaGUWLc (ORCPT
+	id S1754819AbaGUWLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:11:49 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43997 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705AbaGUWLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:11:32 -0400
-Date: Tue, 22 Jul 2014 00:11:19 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
-In-Reply-To: <alpine.DEB.2.10.1407220000080.20847@nanos>
-Message-ID: <alpine.DEB.2.10.1407220006470.20847@nanos>
-References: <20140719130602.GA5101@pd.tnic> <53CD6B50.5010404@mit.edu> <20140721213534.GB11555@pd.tnic> <CALCETrW91Q=ivYRVFb0WKXgHQO7O+x_HHDy67e90TU6Bte_ecg@mail.gmail.com> <20140721215225.GD11555@pd.tnic> <CALCETrX1LbZAiPH4x2Uby_cUUj2wgN92wc+5wvf-B3_9XdObWQ@mail.gmail.com>
- <alpine.DEB.2.10.1407220000080.20847@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 21 Jul 2014 18:11:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CALCETrVeeL71sfVdbzRx0FpGrvQKbviEmUcMEosbUU+UJNQu9w@mail.gmail.com>
+References: <1405626731-12220-1-git-send-email-adityakali@google.com>
+ <1405626731-12220-6-git-send-email-adityakali@google.com> <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
+ <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
+ <CALCETrW6YpyJBmr3sZC6KL03GP4dcGYavQF5DFZfys6Cok-vpw@mail.gmail.com>
+ <CAGr1F2GwZvZLPGLWKPPOt3vREwwVNbVPrgE6YJ01bACKejbc4Q@mail.gmail.com> <CALCETrVeeL71sfVdbzRx0FpGrvQKbviEmUcMEosbUU+UJNQu9w@mail.gmail.com>
+From: Aditya Kali <adityakali@google.com>
+Date: Mon, 21 Jul 2014 15:11:25 -0700
+Message-ID: <CAGr1F2Fd_4=WUm4STPd4kdd5tNLO6aQ1OOQMKnRqyOKZSGvCpg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] cgroup: introduce cgroup namespaces
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Linux API <linux-api@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Thomas Gleixner wrote:
-> On Mon, 21 Jul 2014, Andy Lutomirski wrote:
-> > On Mon, Jul 21, 2014 at 2:52 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > > On Mon, Jul 21, 2014 at 02:41:50PM -0700, Andy Lutomirski wrote:
-> > >> How will this be compatible with the vdso?
-> > >
-> > > I've never thought about it yet. How compatible would you want it to be
-> > > and what do you expect from it?
-> > 
-> > I expect that users of __vdso_clock_gettime (e.g. glibc) will get the
-> > correct time :)  They use vread_tsc, and they can't use
-> > preempt_disable, because they're in userspace.  They also can't
-> > directly access per-cpu variables.
-> > 
-> > Turning off vdso tsc support on these machines would be an option.
-> 
-> Correct. 
-> 
-> So if we make the TSC usable that way we need to mark it unusable for
-> the VDSO and force vdso_*gettime* into the kernel. That will be way
-> better than forcing the whole machine onto HPET.
-> 
-> And once we are using the real syscall, the whole thing just works ...
+On Fri, Jul 18, 2014 at 11:57 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jul 18, 2014 at 11:51 AM, Aditya Kali <adityakali@google.com> wrote:
+>> On Fri, Jul 18, 2014 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Jul 17, 2014 1:56 PM, "Aditya Kali" <adityakali@google.com> wrote:
+>>>>
+>>>> On Thu, Jul 17, 2014 at 12:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> > What happens if someone moves a task in a cgroup namespace outside of
+>>>> > the namespace root cgroup?
+>>>> >
+>>>>
+>>>> Attempt to move a task outside of cgroupns root will fail with EPERM.
+>>>> This is true irrespective of the privileges of the process attempting
+>>>> this. Once cgroupns is created, the task will be confined to the
+>>>> cgroup hierarchy under its cgroupns root until it dies.
+>>>
+>>> Can a task in a non-init userns create a cgroupns?  If not, that's
+>>> unusual.  If so, is it problematic if they can prevent themselves from
+>>> being moved?
+>>>
+>>
+>> Currently, only a task with CAP_SYS_ADMIN in the init-userns can
+>> create cgroupns. It is stricter than for other namespaces, yes.
+>
+> I'm slightly hesitant to have unshare(CLONE_NEWUSER |
+> CLONE_NEWCGROUPNS | ...) start having weird side effects that are
+> visible outside the namespace, especially when those side effects
+> don't happen (because the call fails entirely) if
+> unshare(CLONE_NEWUSER) happens first.  I don't see a real problem with
+> it, but it's weird.
+>
 
-So all it needs is to do
+I expect this to be only in the initial version of the patch. We can
+make this consistent with other namespaces once we figure out how
+cgroupns can be safely enabled for non-init-userns.
 
-    clocksource_tsc.archdata.vclock_mode = VCLOCK_NONE;
+>>
+>>> I hate to say it, but it might be worth requiring explicit permission
+>>> from the cgroup manager for this.  For example, there could be a new
+>>> cgroup attribute may_unshare, and any attempt to unshare the cgroup ns
+>>> will fail with -EPERM unless the caller is in a may_share=1 cgroup.
+>>> may_unshare in a parent cgroup would not give child cgroups the
+>>> ability to unshare.
+>>>
+>>
+>> What you suggest can be done. The current patch-set punts the problem
+>> of permission checking by only allowing unshare from a
+>> capable(CAP_SYS_ADMIN) process. This can be implemented as a follow-up
+>> improvement to cgroupns feature if we want to open it to non-init
+>> userns.
+>>
+>> Being said that, I would argue that even if we don't have this
+>> explicit permission and relax the check to non-init userns, it should
+>> be 'OK' to let ns_capable(current_user_ns(), CAP_SYS_ADMIN) tasks to
+>> unshare cgroupns (basically, if you can "create" a cgroup hierarchy,
+>> you should probably be allowed to unshare() it).
+>
+> But non-init-userns tasks can't create cgroup hierarchies, unless I
+> misunderstand the current code.  And, if they can, I bet I can find
+> three or four serious security issues in an hour or two. :)
+>
 
-if we do the magic per cpu offset trick to make the fcked up TSC
-usable.
+Task running in non-init userns can create cgroup hierarchies if you
+chown/chgrp their cgroup root to the task user:
 
-Thanks,
+# while running as 'root' (uid=0)
+$ cd  $CGROUP_MOUNT
+$ mkdir -p batchjobs/c_job_id1/
 
-	tglx
+# transfer ownership to the user (in this case 'nobody' (uid=99)).
+$ chown nobody batchjobs/c_job_id1/
+$ chgrp nobody batchjobs/c_job_id1/
+$ ls -ld batchjobs/c_job_id1/
+drwxr-xr-x 2 nobody nobody 0 2014-07-21 12:47 batchjobs/c_job_id1/
 
+# enter container cgroup
+$ echo 0 > batchjobs/c_job_id1/cgroup.procs
+
+# unshare both userns and cgroupns
+$ unshare -u -c
+# setup uid_map and gid_map and export user '99' in the userns
+#    $ cat /proc/<pid>/uid_map
+#         0          0          1
+#        99         99          1
+#    $ cat /proc/<pid>/gid_map
+#         0          0          1
+#        99         99          1
+# switch to user 'nobody'
+$ su nobody
+$ id
+uid=99(nobody) gid=99(nobody) groups=99(nobody)
+
+# Now user nobody running under non-init userns can create sub-cgroups
+# under "batchjobs/c_job_id1/".
+# PWD=$CGROUP_MOUNT/batchjobs/c_job_id1
+$ mkdir sub_cgroup1
+$ ls -ld sub_cgroup1/
+drwxr-xr-x 2 nobody nobody 0 2014-07-21 13:11 sub_cgroup1/
+$ echo 0 > sub_cgroup1/cgroup.procs
+$ cat /proc/self/cgroup
+0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgroup1
+$ ls -l sub_cgroup1/
+total 0
+-r--r--r-- 1 nobody nobody 0 2014-07-21 13:11 cgroup.controllers
+-r--r--r-- 1 nobody nobody 0 2014-07-21 13:11 cgroup.populated
+-rw-r--r-- 1 nobody nobody 0 2014-07-21 13:12 cgroup.procs
+-rw-r--r-- 1 nobody nobody 0 2014-07-21 13:11 cgroup.subtree_control
+
+
+This is a powerful feature as it allows non-root tasks to run
+container-management tools and provision their resources properly. But
+this makes implementing your suggestion of having 'cgroup.may_unshare'
+file tricky as the cgroup owner (task) will be able to set it and
+still unshare cgroupns. Instead, may be we could just check if the
+task has appropriate (write?) permissions on the cgroup directory
+before allowing nested cgroupns creation.
+
+>> By unsharing
+>> cgroupns, the tasks can only confine themselves further under its
+>> cgroupns-root. As long as it cannot escape that hierarchy, it should
+>> be fine.
+>
+> But they can also *lock* their hierarchy.
+>
+
+But locking the tasks inside the hierarchy is really what cgroupns
+feature is trying to provide. I understand that this is a change in
+expectation, but with unified hierarchy, there are already
+restrictions on where tasks can be moved (only to leaf cgroups). With
+cgroup namespaces, this becomes: "only to leaf cgroups within task's
+cgroupns".
+
+>> In my experience, there is seldom a need to move tasks out of their
+>> cgroup. At most, we create a sub-cgroup and move the task there (which
+>> is allowed in their cgroupns). Even for a cgroup manager, I can't
+>> think of a case where it will be useful to move a task from one cgroup
+>> hierarchy to another. Such move seems overly complicated (even without
+>> cgroup namespaces). The cgroup manager can just modify the settings of
+>> the task's cgroup as needed or simply kill & restart the task in a new
+>> container.
+>>
+>
+> I do this all the time.  Maybe my new systemd overlords will make me
+> stop doing it, at which point my current production setup will blow
+> up.
+>
+
+[shudder]
+I am surprised that this even works correctly.
+
+Either way, may be checking cgroup directory permissions will work for
+you? i.e., if you "chown" a cgroup directory to the user, it should be
+OK if the user's task unshares cgroupns under that cgroup and you
+don't care about moving tasks from under that cgroup. Without
+ownership of the cgroup directory, creation of cgroupns will be
+disallowed. What do you think?
+
+
+> --Andy
+
+
+
+-- 
+Aditya
