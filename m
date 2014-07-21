@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaGUVcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:32:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36608 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaGUVcc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:32:32 -0400
-Date: Mon, 21 Jul 2014 14:32:25 -0700 (PDT)
-Message-Id: <20140721.143225.2040366896972949930.davem@davemloft.net>
-To: olaf@aepfle.de
-Cc: richard@nod.at, yuezha@microsoft.com, netdev@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, jasowang@redhat.com,
-        haiyangz@microsoft.com, kys@microsoft.com, huishao@microsoft.com,
-        decui@microsoft.com
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140721091851.GA28171@aepfle.de>
-References: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
-	<53CCD6F2.6020909@nod.at>
-	<20140721091851.GA28171@aepfle.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 14:32:30 -0700 (PDT)
+	id S1754099AbaGUVfl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:35:41 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46595 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753115AbaGUVfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 17:35:39 -0400
+Date: Mon, 21 Jul 2014 23:35:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
+Message-ID: <20140721213534.GB11555@pd.tnic>
+References: <20140719130602.GA5101@pd.tnic>
+ <53CD6B50.5010404@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53CD6B50.5010404@mit.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de>
-Date: Mon, 21 Jul 2014 11:18:51 +0200
+On Mon, Jul 21, 2014 at 12:34:40PM -0700, Andy Lutomirski wrote:
+> I'm sure I'm missing something, but where is tsc_offset used outside
+> the tsc startup code? Is it somehow getting programmed into the TSC
+> config registers?
 
-> On Mon, Jul 21, Richard Weinberger wrote:
-> 
->> My concern is that 10 seconds is maybe not a the right choice.
->> (As we cannot know all implementations)
-> 
-> Until someone reports an issue with it, 10 is fine. Just like 20 or 666.
+Nah, we're programming the CPU number into the TSC_AUX MSR. However,
+that approach might become obsolete for a simpler, preempt-disable
+version which Peter suggested today. It should be comparatively cheap
+and work on all CPUs, not only RDTSCP-supporting ones:
 
-Wrong, this is policy and belongs in userspace.
+get_cycles() {
+	preempt_disable();
+	rdtscll() + this_cpu_read(tsc_offset);
+	preempt_disable()
+}
+
+So, to answer your question, the TSC offset will be used in get_cycles(). So
+even on machines with a skewed TSC, we will have a stable TSC counter by
+adding the per-cpu offset each time we read the TSC.
+
+We'll see how it plays out in testing. :)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
