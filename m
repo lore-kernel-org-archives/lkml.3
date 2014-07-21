@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaGUMJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:09:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:29600 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754324AbaGUMJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:09:14 -0400
-Date: Mon, 21 Jul 2014 08:09:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	id S1754912AbaGUMJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:09:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48645 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754825AbaGUMJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:09:41 -0400
+Date: Mon, 21 Jul 2014 14:09:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        Glauber Costa <glommer@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [for-next][PATCH 20/32] sh: ftrace: Remove check of obsolete
- variable function_trace_stop
-Message-ID: <20140721080900.54feea34@gandalf.local.home>
-In-Reply-To: <20140721110529.GA32428@console-pimps.org>
-References: <20140719131524.009152325@goodmis.org>
-	<20140719131612.883904957@goodmis.org>
-	<20140721110529.GA32428@console-pimps.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
+Message-ID: <20140721120938.GC8393@dhcp22.suse.cz>
+References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
+ <20140716155814.GZ29639@cmpxchg.org>
+ <20140718154443.GM27940@esperanza>
+ <20140721090724.GA8393@dhcp22.suse.cz>
+ <20140721114839.GA11848@esperanza>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721114839.GA11848@esperanza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014 12:05:29 +0100
-Matt Fleming <matt@console-pimps.org> wrote:
-
-> On Sat, 19 Jul, at 09:15:44AM, Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Mon 21-07-14 15:48:39, Vladimir Davydov wrote:
+> On Mon, Jul 21, 2014 at 11:07:24AM +0200, Michal Hocko wrote:
+> > On Fri 18-07-14 19:44:43, Vladimir Davydov wrote:
+> > > On Wed, Jul 16, 2014 at 11:58:14AM -0400, Johannes Weiner wrote:
+> > > > On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
+> > > > > +#ifdef CONFIG_MEMCG_KMEM
+> > > > > +	{
+> > > > > +		.name = "kmem.limit_in_bytes",
+> > > > > +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
+> > > > > +		.write = mem_cgroup_write,
+> > > > > +		.read_u64 = mem_cgroup_read_u64,
+> > > > > +	},
+> > > > 
+> > > > Does it really make sense to have a separate limit for kmem only?
+> > > > IIRC, the reason we introduced this was that this memory is not
+> > > > reclaimable and so we need to limit it.
+> > > > 
+> > > > But the opposite effect happened: because it's not reclaimable, the
+> > > > separate kmem limit is actually unusable for any values smaller than
+> > > > the overall memory limit: because there is no reclaim mechanism for
+> > > > that limit, once you hit it, it's over, there is nothing you can do
+> > > > anymore.  The problem isn't so much unreclaimable memory, the problem
+> > > > is unreclaimable limits.
+> > > > 
+> > > > If the global case produces memory pressure through kernel memory
+> > > > allocations, we reclaim page cache, anonymous pages, inodes, dentries
+> > > > etc.  I think the same should happen for kmem: kmem should just be
+> > > > accounted and limited in the overall memory limit of a group, and when
+> > > > pressure arises, we go after anything that's reclaimable.
+> > > 
+> > > Personally, I don't think there's much sense in having a separate knob
+> > > for kmem limit either. Until we have a user with a sane use case for it,
+> > > let's not propagate it to the new interface.
 > > 
-> > Nothing sets function_trace_stop to disable function tracing anymore.
-> > Remove the check for it in the arch code.
-> > 
-> > [ Please test this on your arch ]
-> > 
-> > Cc: Matt Fleming <matt@console-pimps.org>
-> > Cc: Paul Mundt <lethal@linux-sh.org>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  arch/sh/Kconfig      |  1 -
-> >  arch/sh/lib/mcount.S | 24 ++----------------------
-> >  2 files changed, 2 insertions(+), 23 deletions(-)
+> > What about fork-bomb forks protection? I thought that was the primary usecase
+> > for K < U? Or how can we handle that use case with a single limit? A
+> > special gfp flag to not trigger OOM path when called from some kmem
+> > charge paths?
 > 
-> I no longer have hardware to test this on, but it looks pretty straight
-> forward.
+> Hmm, for a moment I thought that putting a fork-bomb inside a memory
+> cgroup with kmem accounting enabled and K=U will isolate it from the
+> rest of the system and therefore there's no need in K<U, but now I
+> realize it's not quite right.
 > 
+> In contrast to user memory, thread stack allocations have costly order,
+> they cannot be swapped out, and on 32-bit systems they will consume a
+> limited resource of low mem. Although the latter two doesn't look like
+> being of much concern, costly order of stack pages certainly does I
+> think.
+> 
+> Is this what you mean by saying we have to disable OOM from some kmem
+> charge paths? To prevent OOM on the global level that might trigger due
+> to lack of high order pages for task stack?
 
-Thanks.
+No, I meant it for a different reason. If you simply cause OOM from e.g.
+stack charge then you simply DoS your cgroup before you start
+effectively stopping fork-bomb because the fork-bomb will usually have
+much smaller RSS than anything else in the group. So this is a case
+where you really want to fail the allocation.
 
-I've already pushed this to my next repo, so it's going to keep the
-"Please test this on your arch" ;-)
+Maybe I just didn't understand what a single-limit proposal meant...
 
-Anyway, the arch has been orphaned, thus it's not really that important.
+> > What about task_count or what was the name of the controller which was
+> > dropped and suggested to be replaced by kmem accounting? I can imagine
+> > that to be implemented by a separate K limit which would be roughtly
+> > stack_size * task_count + pillow for slab.
+> 
+> I wonder how big this pillow for slab should be...
 
--- Steve
+Well, it obviously depends on the load running in the group. It depends
+on the amount of unreclaimable slab + reclaimable_and_still_not_trashing
+amount of slab. So the pillow should be quite large but that shouldn't
+be a big deal as the kernel allocations usually are a small part of the
+U.
+-- 
+Michal Hocko
+SUSE Labs
