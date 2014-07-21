@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436AbaGUSd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 14:33:27 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:63857 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933219AbaGUSd0 (ORCPT
+	id S933471AbaGUSez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 14:34:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38939 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933219AbaGUSey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 14:33:26 -0400
-Date: Mon, 21 Jul 2014 14:33:22 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	Mon, 21 Jul 2014 14:34:54 -0400
+Date: Mon, 21 Jul 2014 11:34:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [GIT PULL] libata fixes for v3.16-rc6
-Message-ID: <20140721183322.GA29601@mtj.dyndns.org>
-References: <20140721121740.GB12921@htj.dyndns.org>
- <CA+55aFwzZoef-fXj1D57N9ywxWBF0bj2cWgOQMQDLM=NAH7hrA@mail.gmail.com>
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PULL] USB changes for v3.17
+Message-ID: <20140721183450.GA9849@kroah.com>
+References: <1405956929-10169-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwzZoef-fXj1D57N9ywxWBF0bj2cWgOQMQDLM=NAH7hrA@mail.gmail.com>
+In-Reply-To: <1405956929-10169-1-git-send-email-balbi@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
-
-On Mon, Jul 21, 2014 at 11:27:18AM -0700, Linus Torvalds wrote:
-> On Mon, Jul 21, 2014 at 5:17 AM, Tejun Heo <tj@kernel.org> wrote:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
-> >
-> > for you to fetch changes up to b32bfc06aefab61acc872dec3222624e6cd867ed:
+On Mon, Jul 21, 2014 at 10:35:29AM -0500, Felipe Balbi wrote:
+> Hi Greg,
 > 
-> Nope, nothing like that there.
+> Here's my big set of patches containing 97 commits. While it looks big and
+> all, most commits are just cleanups moving code around, using devm_*, etc.
 > 
-> Did you perhaps mean for me to pull the "for-3.16-fixes" branch?
-> Because that does indeed match what you are speaking of...
+> I tested these patches on a couple TI platforms and couldn't find any regressions
+> on my setup.
 > 
-> I pulled the correct branch, but please, please, *please* fix your
-> scripts to have the right branch name.
+> This tree has also been on linux-next for a while.
+> 
+> Please consider merging on top of your usb-next branch or let me know if you
+> want anything to change.
+> 
+> cheers
+> 
+> The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+> 
+>   Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/usb-for-v3.17
 
-Urgh... sorry about that.  This is the same git-request-pull problem
-that occurred the last time.  I forgot adding cc:stable to the last
-patch and force-pushed that out before generating the pull request (I
-had it sitting in my local branch for some days) and git-request-pull
-dropped the branch name because the commit IDs of local and remote
-disagreed.  git --version says 1.9.3.  Maybe it's not fixed in this
-version yet?
+I've now merged and pushed this out.  I did have some merge conflicts in
+these files:
+	drivers/usb/musb/musb_core.c
+	drivers/usb/musb/musb_cppi41.c
+	include/uapi/linux/usb/functionfs.h
 
-Thanks.
+and I _think_ I resolved them properly, but getting verification of this
+would be great.
 
--- 
-tejun
+thanks,
+
+greg k-h
