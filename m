@@ -1,118 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377AbaGUNzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:55:23 -0400
-Received: from smtp206.alice.it ([82.57.200.102]:51277 "EHLO smtp206.alice.it"
+	id S932413AbaGUN5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:57:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51323 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099AbaGUNzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:55:21 -0400
-Date: Mon, 21 Jul 2014 15:55:01 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Jamie Lentin <jm@lentin.co.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/4] Rename hid-lenovo-tpkbd to hid-lenovo
-Message-Id: <20140721155501.5c223e1e00518c7bb94d0835@ao2.it>
-In-Reply-To: <alpine.DEB.2.02.1407181016170.17078@marmot.wormnet.eu>
-References: <1405236262-8070-1-git-send-email-jm@lentin.co.uk>
-	<1405236262-8070-2-git-send-email-jm@lentin.co.uk>
-	<20140714114227.161b4bf0767e1bbf3268852c@ao2.it>
-	<alpine.DEB.2.02.1407181016170.17078@marmot.wormnet.eu>
-X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752522AbaGUN5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:57:08 -0400
+Date: Mon, 21 Jul 2014 15:57:03 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Alex Elder <elder@linaro.org>
+Cc: akpm@linux-foundation.org, kay@vrfy.org, bp@suse.de,
+        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/7] printk: insert newline for truncated records
+Message-ID: <20140721135703.GE20751@pathway.suse.cz>
+References: <1405718885-11227-1-git-send-email-elder@linaro.org>
+ <1405718885-11227-7-git-send-email-elder@linaro.org>
+ <20140721115706.GC20751@pathway.suse.cz>
+ <53CD0852.2030706@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53CD0852.2030706@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 10:35:35 +0100 (BST)
-Jamie Lentin <jm@lentin.co.uk> wrote:
-
-> On Mon, 14 Jul 2014, Antonio Ospite wrote:
-> 
-> > On Sun, 13 Jul 2014 08:24:19 +0100
-> > Jamie Lentin <jm@lentin.co.uk> wrote:
-> >
-> >> Rename module and all functions within so we can add support for other
-> >> keyboards in the same file. Rename the _tp postfix to _tpkbd, to
-> >> signify functions relevant to the TP USB keyboard.
+On Mon 2014-07-21 07:32:18, Alex Elder wrote:
+> On 07/21/2014 06:57 AM, Petr Mládek wrote:
+> > On Fri 2014-07-18 16:28:04, Alex Elder wrote:
+> >> If a log record has LOG_PREFIX set, its predecessor record should be
+> >> terminated if it was marked LOG_CONT.
 > >>
-> >> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
-> >
-> > Reviewed-by: Antonio Ospite <ao2@ao2.it>
-> >
-> > Patch looks good to me, easier to validate now :)
-> >
-> > A few ideas below for some possible _future_ cleanups, but no reason to
-> > hold this one any longer IMHO.
-> >
-> > Ciao,
-> >   Antonio
-> >
+> >> In devkmsg_read(), this condition was being ignored, which would
+> >> lead to such records showing up combined when reading /dev/kmsg.
+> >> Fix this oversight.
+> >>
+> >> We should similarly insert a newline in msg_print_text() in this
+> >> case, to avoid formatted records getting merged.
+> >>
+> >> Suggested-by: Petr Mládek <pmladek@suse.cz>
+> >> Signed-off-by: Alex Elder <elder@linaro.org>
 > >> ---
-> >>  ...er-hid-lenovo-tpkbd => sysfs-driver-hid-lenovo} |   0
-> >>  drivers/hid/Kconfig                                |  14 +-
-> >>  drivers/hid/Makefile                               |   2 +-
-> >>  drivers/hid/hid-core.c                             |   2 +-
-> >>  drivers/hid/{hid-lenovo-tpkbd.c => hid-lenovo.c}   | 185 +++++++++++----------
-> >>  5 files changed, 102 insertions(+), 101 deletions(-)
-> >>  rename Documentation/ABI/testing/{sysfs-driver-hid-lenovo-tpkbd => sysfs-driver-hid-lenovo} (100%)
-> >>  rename drivers/hid/{hid-lenovo-tpkbd.c => hid-lenovo.c} (64%)
+> >>  kernel/printk/printk.c | 18 +++++++++++++++---
+> >>  1 file changed, 15 insertions(+), 3 deletions(-)
 > >>
-
-[...]
-> >> -static int tpkbd_features_set(struct hid_device *hdev)
-> >> +static int lenovo_features_set_tpkbd(struct hid_device *hdev)
+> >> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> >> index e9f0632..a5ad81c 100644
+> >> --- a/kernel/printk/printk.c
+> >> +++ b/kernel/printk/printk.c
+> >> @@ -575,6 +575,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+> >>  	char cont;
+> >>  	size_t len;
+> >>  	ssize_t ret;
+> >> +	bool insert_newline;
+> >>  
+> >>  	if (!user)
+> >>  		return -EBADF;
+> >> @@ -626,7 +627,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+> >>  	else
+> >>  		cont = '-';
+> >>  
+> >> -	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+> >> +	/* Insert a newline if the previous line was not terminated properly */
+> >> +	insert_newline = (user->prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
+> >> +	len = sprintf(user->buf, "%s%u,%llu,%llu,%c;",
+> >> +		      insert_newline ? "\n" : "",
+> >>  		      (msg->facility << 3) | msg->level,
+> >>  		      user->seq, ts_usec, cont);
+> >>  	user->prev = msg->flags;
+> >> @@ -999,10 +1003,12 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
 > >>  {
-> >>  	struct hid_report *report;
-> >> -	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-> >> +	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
-> >
-> >
-> > I think the word "pointer" here is misleading, sometimes in other parts
-> > of the driver it is used as a synonym of trackpoint, but
-> > lenovo_drvdata_tpkbd also contains data about leds, so here it looks
-> > like it refers to C pointers. I'd call the variable tpkbd_data or
-> > tpkbd_drvdata, throughout the driver. What do you think?
+> >>  	const char *text = log_text(msg);
+> >>  	size_t text_size = msg->text_len;
+> >> +	size_t len = 0;
+> >> +	bool insert_newline;
+> >>  	bool prefix = true;
+> >>  	bool newline = true;
+> >> -	size_t len = 0;
+> >>  
+> >> +	insert_newline = (prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
+> >>  	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
+> >>  		prefix = false;
+> >>  
+> >> @@ -1023,9 +1029,13 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+> >>  
+> >>  		if (buf) {
+> >>  			if (print_prefix(msg, syslog, NULL) +
+> >> -			    text_len + 1 >= size - len)
+> >> +			    text_len + 2 >= size - len)
+> > 
+> > It counts the '\n' even when it is not used.
+> > I think that it is even wrong that it calculates prefix when it is not used.
 > 
-> Yes, the rationale behind the name really isn't obvious but all meanings 
-> are sorta correct, so it's not that bad :P
+> That's true, and I have yet another un-posted patch that
+> addresses this problem (well the second one).  I am not
+> going to fix this problem in this patch, but the fix is
+> coming.
 > 
-> I like tpkbd_drvdata better though, and can correct it in the compact 
-> keyboard code too. I wanted to make the variable names match, but didn't 
-> get around to it, so will do it next time around.
->
-
-IMHO you can very well use data_pointer for now so the names are
-consistent with the current ones; a cleanup can be done later to make
-the naming more straightforward too.
-
-> > And the driver could standardize on the word "trackpoint" where
-> > appropriate in order to eliminate any ambiguity.
+> Now that you're looking at the code I'm touching, you're
+> seeing the same things I did...
 > 
-> The key other place I can think of that this happens is for the USB 
-> compact keyboard, for it's HID_TYPE_USBMOUSE half (versus the keyboard 
-> half). Saying trackpoint there is a mis-truth, since it's also where all 
-> the extra keys hide. But I'll have a look through anyway.
+> I think I'll start posting that series later today or
+> tomorrow.   I just hate to get too far ahead of myself.
+
+I suggest to always wait at least 24 hours before sending another
+version. I think that it is very hard for others to follow if there
+are too many versions in the wild and the code is too changing.
+This is why you get comments basically only from me.
+
+Also a night usually helps to sort ideas and go the right direction.
+In fact, I was too fast myself as well. I am going to comment only one
+version per-day from now on :-)
+
+
+> >>  				break;
+> >>  
+> >> +			if (insert_newline) {
+> >> +				insert_newline = false;
+> >> +				buf[len++] = '\n';
+> >> +			}
+> >>  			if (prefix)
+> >>  				len += print_prefix(msg, syslog, buf + len);
+> >>  			memcpy(buf + len, text, text_len);
+> >> @@ -1034,6 +1044,8 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
+> >>  				buf[len++] = '\n';
+> >>  		} else {
+> >>  			/* SYSLOG_ACTION_* buffer size only calculation */
+> >> +			if (insert_newline)
+> >> +				len++;
+> > 
+> > You forgot "insert_newline = false" here.
 > 
+> Yes you're right.  It's good that you're reviewing this.
+> (The patches I have not yet posted affect this area of
+> code, and should eliminate this block...)
+> 
+> >>  			if (prefix)
+> >>  				len += print_prefix(msg, syslog, NULL);
+> >>  			len += text_len;
+> > 
+> > It is just matter of personal style but I would suggest to do this
+> > before the do-while cycle:
+> > 
+> > 	/* Force newline if the previous text was not properly finished */
+> > 	if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && (len < size)) {
+> > 		if (buf)
+> > 			buf[len++] = '\n';
+> > 		else
+> > 			len++;
+> > 	}
+> > 
+> > IMHO, it is more clear. The do-while cycle already is complex enough.
+> 
+> I agree with this.  It's a one-time thing and doesn't belong in
+> the loop.  When you suggested inserting the newline I think I
+> didn't think it through completely.  I will do this.
+> 
+> > BTW: This is relared to the first patch. I would either patch all
+> > three locations in one patch or better split it into three patches.
+> 
+> I am keeping the first patch separate from this one.  I think
+> the first is related (in that we improve readability by inserting
+> some newlines) but it's really addressing a different problem.
 
-I meant: where "pointer" means trackpoint let's just use "trackpoint",
-where pointer means "not keyboard" (like in data_pointer apparently)
-something else can be used if "trackpoint" is too specific.
+You are right that the problem is different but it is quite similar.
+In each case, I would keep the patches closer.
 
-But again, this is cleanup: it'd be nice to have it eventually but not
-worth blocking this patchset.
 
-Thanks,
-   Antonio
+> Meanwhile, this patch is addressing essentially the same problem
+> in two spots, so I'd like to keep these together rather than
+> splitting it in two.
 
--- 
-Antonio Ospite
-http://ao2.it
+I do not have strong opinion here.
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+
+> I will move this patch earlier in the series, however, making
+> it follow patch 1.
+
+Sounds good.
+
+Best Regards,
+Petr
