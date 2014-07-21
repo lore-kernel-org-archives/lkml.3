@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaGULRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:17:47 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:45245 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561AbaGULRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:17:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <53C9198B.1020808@imgtec.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<1405413956-2772-16-git-send-email-lftan@altera.com>
-	<53C9198B.1020808@imgtec.com>
-Date: Mon, 21 Jul 2014 19:17:42 +0800
-X-Google-Sender-Auth: GEF4b_99Vabq31913htKK1b82gk
-Message-ID: <CAFiDJ59Aj9Hdp3C9d-2XhUdCGVwn9aYm2yY=sUHDCZFCv8XhOw@mail.gmail.com>
-Subject: Re: [PATCH v2 15/29] nios2: System calls handling
-From: Ley Foon Tan <lftan@altera.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>, Arnd <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1754808AbaGULVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:21:06 -0400
+Received: from ns.horizon.com ([71.41.210.147]:59318 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754504AbaGULVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 07:21:04 -0400
+Date: 21 Jul 2014 07:21:02 -0400
+Message-ID: <20140721112102.19300.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hannes@stressinduktion.org, linux@horizon.com
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, tytso@mit.edu
+In-Reply-To: <1405891964.9562.42.camel@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 8:56 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> Hi,
->
-> On 15/07/14 09:45, Ley Foon Tan wrote:
->> This patch adds support for system calls from userspaces. It uses the
->> asm-generic/unistd.h definitions with architecture spcific syscall. The sys_call_table
->> is just an array defined in a C file and it contains pointers to the syscall functions.
->
-> I don't think you need the renameat syscall now that renameat2 exists.
->
-> Can I suggest preceding your patchset with this patch:
-> https://lkml.org/lkml/2014/4/23/197
-> ([RFC 3/3] asm-generic: Drop renameat syscall from default list)
->
-> which drops renameat from the generic list unless __ARCH_WANT_RENAMEAT
-> is defined in the arch's uapi/asm/unistd.h.
-Yes, we don't need renameat syscall. Will add this patch.
+> I don't like partial reads/writes and think that a lot of people get
+> them wrong, because they often only check for negative return values.
 
-Thanks.
+The v1 patch, which did it right IMHO, didn't do partial reads in the
+case we're talking about:
 
-Regards
-Ley Foon
++	if (count > 256)
++		return -EINVAL;
+
+> In case of urandom extraction, I wouldn't actually limit the number of
+> bytes. A lot of applications I have seen already extract more than 128
+> out of urandom (not for seeding a prng but just to mess around with some
+> memory). I don't see a reason why getrandom shouldn't be used for that.
+> It just adds one more thing to look out for if using getrandom() in
+> urandom mode, especially during porting an application over to this new
+> interface.
+
+Again, I disagree.  If it's "just messing around" code, use /dev/urandom.
+It's more portable and you don't care about the fd exhaustion attacks.
+
+If it's actual code to be used in anger, fix it to not abuse /dev/urandom.
+
+You're right that a quick hack might be "broken on purpose", but without
+exception, *all* code that I have seen which reads 64 or more bytes from
+/dev/*random is broken, and highlighting the brokenness is a highly
+desirable thing.
+
+The sole and exclusive reason for this syscall to exist at all is to
+solve a security problem.  Supporting broken security code does no favors
+to anyone.
