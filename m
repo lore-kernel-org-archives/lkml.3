@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaGUVVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:21:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37234 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115AbaGUVVs (ORCPT
+	id S1754210AbaGUVWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:22:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43076 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaGUVWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:21:48 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
-Subject: [3.8.y.z extended stable] Patch "NFS: populate ->net in mount data when remounting" has been added to staging queue
-Date: Mon, 21 Jul 2014 14:21:44 -0700
-Message-Id: <1405977704-2628-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-X-Extended-Stable: 3.8
+	Mon, 21 Jul 2014 17:22:35 -0400
+Message-ID: <53CD849A.1000800@codeaurora.org>
+Date: Mon, 21 Jul 2014 14:22:34 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Riley <davidriley@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ritesh Harjain <ritesh.harjani@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv4 4/5] arm: use genalloc for the atomic pool
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org> <1404324218-4743-5-git-send-email-lauraa@codeaurora.org> <20140704134254.GA4142@ulmo>
+In-Reply-To: <20140704134254.GA4142@ulmo>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On 7/4/2014 6:42 AM, Thierry Reding wrote:
+> On Wed, Jul 02, 2014 at 11:03:37AM -0700, Laura Abbott wrote:
+> [...]
+>> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> [...]
+>> index f5190ac..02a1939 100644
+>> --- a/arch/arm/mm/dma-mapping.c
+>> +++ b/arch/arm/mm/dma-mapping.c
+>> @@ -26,6 +26,7 @@
+>>  #include <linux/io.h>
+>>  #include <linux/vmalloc.h>
+>>  #include <linux/sizes.h>
+>> +#include <linux/genalloc.h>
+> 
+> Includes should be sorted alphabetically. I realize that's not the case
+> for this particular file, but the downside of that is that your patch no
+> longer applies cleanly on top of linux-next because some other patch did
+> add linux/cma.h at the same location.
+> 
 
-    NFS: populate ->net in mount data when remounting
+Yes, I'll fix that up. I'll put genalloc.h before gfp.h.
 
-to the linux-3.8.y-queue branch of the 3.8.y.z extended stable tree 
-which can be found at:
+>>  static int __init early_coherent_pool(char *p)
+>>  {
+>> -	atomic_pool.size = memparse(p, &p);
+>> +	atomic_pool_size = memparse(p, &p);
+>>  	return 0;
+>>  }
+>>  early_param("coherent_pool", early_coherent_pool);
+>>  
+>> +
+> 
+> There's a gratuituous blank line her.
+> 
+> I also need the below hunk on top of you patch to make this compile on
+> ARM.
+> 
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.8.y-queue
+Yes, that does indeed need to be fixed up.
 
-This patch is scheduled to be released in version 3.8.13.27.
+Thanks,
+Laura
 
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
-
-For more information about the 3.8.y.z tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Kamal
-
-------
-
->From e6468e9aa021873e938ae5b44c09b873e42bee91 Mon Sep 17 00:00:00 2001
-From: Mateusz Guzik <mguzik@redhat.com>
-Date: Tue, 10 Jun 2014 12:44:12 +0200
-Subject: NFS: populate ->net in mount data when remounting
-
-commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
-
-Otherwise the kernel oopses when remounting with IPv6 server because
-net is dereferenced in dev_get_by_name.
-
-Use net ns of current thread so that dev_get_by_name does not operate on
-foreign ns. Changing the address is prohibited anyway so this should not
-affect anything.
-
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/nfs/super.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index b056b16..f4d000a 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2167,6 +2167,7 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
- 	data->timeo = 10U * nfss->client->cl_timeout->to_initval / HZ;
- 	data->nfs_server.port = nfss->port;
- 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
-+	data->net = current->nsproxy->net_ns;
- 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
- 		data->nfs_server.addrlen);
-
---
-1.9.1
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
