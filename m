@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaGUIgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:36:40 -0400
+	id S1753759AbaGUIgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:36:39 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:31028 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaGUIgh (ORCPT
+	with ESMTP id S1753036AbaGUIgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:36:37 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-bc-53ccd1131ec6
+	Mon, 21 Jul 2014 04:36:36 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-ab-53ccd110eaf0
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -22,53 +22,52 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3/3] ARM: exynos_defconfig: Enable cpuidle driver
-Date: Mon, 21 Jul 2014 10:36:11 +0200
-Message-id: <1405931771-24100-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 1/3] cpuidle: exynos: Allow to use the driver without AFTR
+Date: Mon, 21 Jul 2014 10:36:09 +0200
+Message-id: <1405931771-24100-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1405931771-24100-1-git-send-email-k.kozlowski@samsung.com>
-References: <1405931771-24100-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xy7rCF88EG0y+amaxccZ6Vot5n2Ut
-	Xr8wtOhdcJXN4mzTG3aLTY+vsVpc3jWHzeJz7xFGixnn9zFZ3L7Ma7H2yF12izOnL7FaXLl0
-	is1i/YzXLBbtf/eyOfB7tDT3sHncubaHzWPzknqPLVfbWTz6tqxi9Pi8SS6ALYrLJiU1J7Ms
-	tUjfLoEr41zXUuaCl+wVR74ZNTB+ZOti5OSQEDCROPttHjuELSZx4d56oDgXh5DAUkaJKdO2
-	Qjl9TBKnvi5gAqliEzCW2Lx8CVhCRKCJWeLV8tNgo5gFnjNKPP0eDmILCzhKzP45GWwsi4Cq
-	xJHLrWDNvALuEjcPn4VaLSdx8thkVhCbU8BD4vL5z2C2EFDNiv+7WCYw8i5gZFjFKJpamlxQ
-	nJSea6RXnJhbXJqXrpecn7uJERKoX3cwLj1mdYhRgINRiYeX48WpYCHWxLLiytxDjBIczEoi
-	vCcyzgQL8aYkVlalFuXHF5XmpBYfYmTi4JRqYGQXV/cJstD3b/Le5n9A+s2HVema56qcbvzq
-	8ouLjBLWPbz7z+vS/Xo74lq/f5/z7t69DfPr7oVnBy5liq4uY1i7rI3/xYX4av/p/rP0854e
-	49msI+1h8fiN3GXZj9YM7RtOMByQY77tIPVBVNh+/+5w1xmPz2dnOVz7cMW0oXqLYvqNozs6
-	S5VYijMSDbWYi4oTASn7m6wyAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnluLIzCtJLcpLzFFi42I5/e/4ZV2Bi2eCDSb/MLTYOGM9q8W8z7IW
+	r18YWvQuuMpmcbbpDbvFpsfXWC0u75rDZvG59wijxYzz+5gsbl/mtVh75C67xZnTl1gtrlw6
+	xWaxfsZrFov2v3vZHPg9Wpp72DzuXNvD5rF5Sb3HlqvtLB59W1YxenzeJBfAFsVlk5Kak1mW
+	WqRvl8CV0XP4CHPBZfaK+6cmMTcwrmfrYuTgkBAwkfj/y72LkRPIFJO4cA8kzMUhJLCUUaLz
+	6xsop49JYv3qhSwgVWwCxhKbly8BS4gINDFLvFp+mg0kwSzwnFHi6fdwEFtYwEvicMN8dhCb
+	RUBVYv+OK2A2r4C7xNfl05kh1slJnDw2mXUCI/cCRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ
+	+bmbGCGB93UH49JjVocYBTgYlXh4OV6cChZiTSwrrsw9xCjBwawkwnsi40ywEG9KYmVValF+
+	fFFpTmrxIUYmDk6pBkaZYmF1haCPa7lO7soXf1i9s42vtLRSuPPPRB8XxXsP08y+NbwOZY2e
+	8narmHzeqTWrjaz+H59wpHmSjLlzrI5BdsVaxU2zJK47/lU05k3RjlBM7p7nGyDFpO/B6TXj
+	y8zDDwpue/2+Kxvv6MOXHqA+gZUlOGw1L+N0qQ9zc1fsqHTjDzZar8RSnJFoqMVcVJwIAHJv
+	63AaAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpuidle driver for Exynos supports all SoCs now. AFTR is supported
-only on Exynos4210 and Exynos5250 (WFI is used on other). Add the driver
-to default exynos config.
+Allow the driver to be used when AFTR enter function is not provided
+(device platform data is NULL).
+
+This actually does not give any special energy-saving benefits but
+allows to track the idle time of each core. Additionally it is a safe
+way to validate supplied platform data.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/configs/exynos_defconfig | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/cpuidle/cpuidle-exynos.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-index fc7d1683bf67..237434e26565 100644
---- a/arch/arm/configs/exynos_defconfig
-+++ b/arch/arm/configs/exynos_defconfig
-@@ -24,6 +24,12 @@ CONFIG_ZBOOT_ROM_BSS=0x0
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc mem=256M"
-+CONFIG_CPU_IDLE=y
-+CONFIG_CPU_IDLE_MULTIPLE_DRIVERS=y
-+CONFIG_CPU_IDLE_GOV_LADDER=y
-+CONFIG_CPU_IDLE_GOV_MENU=y
-+CONFIG_ARM_BIG_LITTLE_CPUIDLE=y
-+CONFIG_ARM_EXYNOS_CPUIDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_PM_RUNTIME=y
+diff --git a/drivers/cpuidle/cpuidle-exynos.c b/drivers/cpuidle/cpuidle-exynos.c
+index 7c0151263828..5325a394be7e 100644
+--- a/drivers/cpuidle/cpuidle-exynos.c
++++ b/drivers/cpuidle/cpuidle-exynos.c
+@@ -77,7 +77,10 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+ 
++	/* If NULL enter only WFI */
+ 	exynos_enter_aftr = (void *)(pdev->dev.platform_data);
++	if (!exynos_enter_aftr)
++		exynos_idle_driver.state_count = 1;
+ 
+ 	ret = cpuidle_register(&exynos_idle_driver, NULL);
+ 	if (ret) {
 -- 
 1.9.1
 
