@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750803AbaGUWpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:45:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40501 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaGUWpP (ORCPT
+	id S1750862AbaGUWqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:46:19 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:42844 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaGUWqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:45:15 -0400
-Message-ID: <53CD95F2.10008@wwwdotorg.org>
-Date: Mon, 21 Jul 2014 16:36:34 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 21 Jul 2014 18:46:17 -0400
+Date: Mon, 21 Jul 2014 15:46:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Huangpeng (Peter)" <peter.huangpeng@huawei.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "liwanp@linux.vnet.ibm.com" <liwanp@linux.vnet.ibm.com>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Wulizhen (Pss)" <pss.wulizhen@huawei.com>
+Subject: =?UTF-8?Q?Re=3A_=5BPATCH=5D_mm=EF=BC=9Abugfix=2C_pfn=5Fvalid_sometimes_return_incorrect_when_memmap_parameter_specified?=
+In-Reply-To: <615092B2FD0E7648B6E4B43E029BCFB852D66798@SZXEMA503-MBS.china.huawei.com>
+Message-ID: <alpine.DEB.2.02.1407211544280.29389@chino.kir.corp.google.com>
+References: <615092B2FD0E7648B6E4B43E029BCFB852D66798@SZXEMA503-MBS.china.huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>, pdeschrijver@nvidia.com,
-        pgaikwad@nvidia.com, mturquette@linaro.org, thierry.reding@gmail.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
-In-Reply-To: <1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
-> Add binding documentation for the nvidia,tegra124-emc device tree
-> node.
+On Mon, 21 Jul 2014, Huangpeng (Peter) wrote:
 
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 835aa3d..c54284b 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -1199,7 +1199,7 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
+>  #ifndef CONFIG_HAVE_ARCH_PFN_VALID
+>  static inline int pfn_valid(unsigned long pfn)
+>  {
+> - if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+> + if (pfn >= max_pfn || pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+>   return 0;
+>   return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+>  }
 
-> +Required properties :
-> +- compatible : "nvidia,tegra124-emc".
-> +- reg : Should contain 1 or 2 entries:
-> +  - EMC register set
-> +  - MC register set : Required only if no node with
-> +    'compatible = "nvidia,tegra124-mc"' exists. The MC register set
-> +    is first read from the MC node. If it doesn't exist, it is read
-> +    from this property.
+Why should valid_section() return non-zero for sparsemem if it is above 
+max_pfn?  (I think you're modifying the wrong function.)
 
-I echo what Thierry said about the MC register sharing.
+Your patch is also whitespace damaged and cannot be applied, please see 
+Documentation/SubmittingPatches which also references 
+Documentation/email-clients.txt.
 
-> +- timings : Should contain 1 entry for each supported clock rate.
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index 04a9d94..7eb273e 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -31,7 +31,7 @@ EXPORT_SYMBOL(contig_page_data);
+>  unsigned long max_low_pfn;
+>  unsigned long min_low_pfn;
+>  unsigned long max_pfn;
+> -
+> +EXPORT_SYMBOL(max_pfn);
+>  static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+>   u64 goal, u64 limit)
+>  {
 
-s/entry/node/ I think.
-
-> +  Entries should be named "timing@n" where n is a 0-based increasing
-> +  number. The timings must be listed in rate-ascending order.
-
-That implies that #address-cells and #size-cells are required too.
-
-> +Required properties for timings :
-
-... and a reg property is needed here.
-
-> +- clock-frequency : Should contain the memory clock rate.
-> +- nvidia,parent-clock-frequency : Should contain the rate of the EMC
-> +  clock's parent clock.
-
-> +- clocks : Must contain an entry for each entry in clock-names.
-> +  See ../clocks/clock-bindings.txt for details.
-> +- clock-names : Must include the following entries:
-> +  - emc-parent : EMC's parent clock.
-
-Shouldn't clocks/clock-names be part of the main node, not the
-per-timing node?
-
-> +- The following properties contain EMC timing characterization values:
-> +  - nvidia,emc-zcal-cnt-long
-> +  - nvidia,emc-auto-cal-interval
-> +  - nvidia,emc-ctt-term-ctrl
-> +  - nvidia,emc-cfg
-> +  - nvidia,emc-cfg-2
-> +  - nvidia,emc-sel-dpd-ctrl
-> +  - nvidia,emc-cfg-dig-dll
-> +  - nvidia,emc-bgbias-ctl0
-> +  - nvidia,emc-auto-cal-config
-> +  - nvidia,emc-auto-cal-config2
-> +  - nvidia,emc-auto-cal-config3
-> +  - nvidia,emc-mode-reset
-> +  - nvidia,emc-mode-1
-> +  - nvidia,emc-mode-2
-> +  - nvidia,emc-mode-4
-> +- nvidia,emc-burst-data : EMC timing characterization data written to
-> +                          EMC registers.
-> +- nvidia,mc-burst-data : EMC timing characterization data written to
-> +                         MC registers.
-> 
-
+This is an unrelated change.
