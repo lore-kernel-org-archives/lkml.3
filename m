@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaGUFKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 01:10:42 -0400
-Received: from ozlabs.org ([103.22.144.67]:43821 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187AbaGUFKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 01:10:41 -0400
-Date: Mon, 21 Jul 2014 15:10:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: please clean up the audit tree
-Message-ID: <20140721151033.1c9c2bcc@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752299AbaGUFRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 01:17:13 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:53847 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750817AbaGUFRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 01:17:12 -0400
+From: Amit Virdi <amit.virdi@st.com>
+To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Cc: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        <rdunlap@infradead.org>, <ming.lei@canonical.com>,
+        <hdegoede@redhat.com>, <spear-devel@list.st.com>,
+        Amit Virdi <amit.virdi@st.com>
+Subject: [PATCH V2] usb: core: allow zero packet flag for interrupt urbs
+Date: Mon, 21 Jul 2014 10:46:18 +0530
+Message-ID: <c6287280f42a976eed5c3fe46901f40e3f5db816.1405919768.git.amit.virdi@st.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <53CCA019.7030007@st.com>
+References: <53CCA019.7030007@st.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/UB1R5Zy3r.X3btkhNi4xqZI"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-20_03:2014-07-18,2014-07-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/UB1R5Zy3r.X3btkhNi4xqZI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Section 4.4.7.2 "Interrupt Transfer Bandwidth Requirements" of the USB3.0 spec
+says:
+	A zero-length data payload is a valid transfer and may be useful for
+	some implementations.
 
-Hi Eric,
+So, extend the logic of allowing URB_ZERO_PACKET to interrupt urbs too.
+Otherwise, the kernel throws warning of BOGUS transfer flags.
 
-The last commit to the audit tree
-(git://git.infradead.org/users/eparis/audit.git#master) is from April
-and it is now causing more and more conflicts with other trees in
-linux-next.  Please have a look at it and clean it up.
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/usb/core/urb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
+index 991386ceb4ec..c9e8ee81b6b7 100644
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -454,6 +454,7 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
+ 			URB_FREE_BUFFER);
+ 	switch (xfertype) {
+ 	case USB_ENDPOINT_XFER_BULK:
++	case USB_ENDPOINT_XFER_INT:
+ 		if (is_out)
+ 			allowed |= URB_ZERO_PACKET;
+ 		/* FALLTHROUGH */
+-- 
+1.8.0
 
---Sig_/UB1R5Zy3r.X3btkhNi4xqZI
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTzKDOAAoJEMDTa8Ir7ZwVSLMP/2WDBiX6insBfngE70QWjUqg
-tm6ZvcmK921CAE+PydmznTjg2sLFuezCsCj0fFL7Z8XPH91rlD0IjeHWv569y0gh
-3e2phlhBQrC4gv6f7XQYstys/ZWxFJuTvw0HUakn55639L3t76WdPOkhxUohFKTe
-gwpcmnyBsYe+mqe2pZAQpSFPM9KjEG/CUpSMLjZMUF/2RwFfOPARdmSQsJYKoPdI
-zCFhog3EFYnzaQRZDnPq+X+jmisTIX8z8N85enUzdTRu+xdGgqQqRgxclY0FDq2i
-Db1XBZzPLaE114LNhq3zP+hv55MZM6tLK71uLcpMZqb+GHZhaiZwHQaCB/odQIfT
-TNUFilu4G4TP7NrelkalPobY8JpmzZ+Nmh4csL51+PZ5R7RNJJbpEuZNNi1EFNXM
-GVaMLJ5qr1a+ac7U5fq/oLxHD2+2aYt564aNqyUDajT9ThUuN2r7k86r4A1ncVgN
-mb+xam/YF6Y7g5v5Bc/FJU1ginVX9eW12+7e92ZTDqR2r5Fkhd61sOpxz1UY1lje
-0SLzUGvCxT88D/FQDaZ7ZK7FKUYElt1dLO0Rsb5XRlUgm7YmRAZziHgtwkyGEsDM
-8y0f+yFNqAlpnI+RgqSfn3nlEfMEK4S7slma/ezueYLF3X0A7uLBnO6LnXAY7/pD
-RBx6dfV/WyiyucDVHSre
-=3rAh
------END PGP SIGNATURE-----
-
---Sig_/UB1R5Zy3r.X3btkhNi4xqZI--
