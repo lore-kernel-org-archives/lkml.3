@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188AbaGUNBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:01:54 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55301 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754904AbaGUNBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:01:52 -0400
-Date: Mon, 21 Jul 2014 14:01:46 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "'?????????'" <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-Message-ID: <20140721130146.GO10544@csn.ul.ie>
-References: <53C8C290.90503@lge.com>
- <20140721025047.GA7707@bbox>
- <53CCB02A.7070301@lge.com>
- <20140721073651.GA15912@bbox>
+	id S932257AbaGUNCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:02:39 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:56181 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118AbaGUNCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:02:38 -0400
+From: Alex Elder <elder@linaro.org>
+To: akpm@linux-foundation.org
+Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/7] printk: start simplifying some flags
+Date: Mon, 21 Jul 2014 08:02:34 -0500
+Message-Id: <1405947761-26004-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140721073651.GA15912@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
+Each log record has a "flags" field.  The flags keep track of, for
+instance, whether the record was saved in its entirety (as opposed
+to being one of multiple records that should be merged as a single
+unit).  A log record's flags field alone is not currently sufficient
+to know how the record should be formatted; you need to know the
+previous record's flags field as well.  I found understanding the
+real effect of various combinations of these flags to be very
+difficult, and was moved to try to do something about that.
 
-I'm not reviewing this in detail at all, didn't even look at the patch
-but two things popped out at me during the discussion.
+This series includes three patches that begin the process of
+simplifying how these flags are used and interpreted.  They include
+very long, detailed explanations (as small patches often do) because
+I want my reasoning to be very clear and examined very closely.  I
+really don't want to break printk()...
 
-> > >Anyway, why cannot CMA have the cost without affecting other subsystem?
-> > >I mean it's okay for CMA to consume more time to shoot out the bh
-> > >instead of simple all bh_lru invalidation because big order allocation is
-> > >kinds of slow thing in the VM and everybody already know that and even
-> > >sometime get failed so it's okay to add more code that extremly slow path.
-> > 
-> > There are 2 reasons to invalidate entire bh_lru.
-> > 
-> > 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
-> > How do you think about it? My platform does not call CMA allocation often.
-> > Is the CMA allocation or Memory-Hotplug called often?
-> 
-> It depends on usecase and you couldn't assume anyting because we couldn't
-> ask every people in the world. "Please ask to us whenever you try to use CMA".
-> 
-> The key point is how the patch is maintainable.
-> If it's too complicate to maintain, maybe we could go with simple solution
-> but if it's not too complicate, we can go with more smart thing to consider
-> other cases in future. Why not?
-> 
-> Another point is that how user can detect where the regression is from.
-> If we cannot notice the regression, it's not a good idea to go with simple
-> version.
-> 
+The first patch surrounds a "*** XXX printk messages dropped ***"
+message with newlines, to improve readability.
 
-The buffer LRU avoids a lookup of a radix tree. If the LRU hit rate is
-low then the performance penalty of repeated radix tree lookups is
-severe but the cost of missing one hot lookup because CMA invalidate it
-is not.
+The second patch inserts a newline in /dev/kmsg output in the
+event a LOG_PREFIX record follows a LOG_CONT record.
 
-The real cost to be concerned with is the cost of performing the
-invalidation not the fact a lookup in the LRU was missed. It's because
-the cost of invalidation is high that this is being pushed to CMA because
-for CMA an allocation failure can be a functional failure and not just a
-performance problem.
+The third patch changes how two global variables are initialized,
+allowing the second patch to assume they always hold certain values.
 
-> > 
-> > 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
-> > because the drop_buffers does not have a way to distinguish migrate type.
-> > Even-though the lmbech results that it has almost the same performance.
-> > But I am afraid that it can be changed.
-> > As you said if bh_lru size can be changed it affects more than now.
-> > SO I do not want to touch non-CMA related code.
-> 
-> I'm not saying to add hook in drop_buffers.
-> What I suggest is to handle failure by bh_lrus in migrate_pages
-> because it's not a problem only in CMA.
+The fourth patch simplifies some code based on the observation that
+the LOG_CONT and LOG_NEWLINE flags are mutually exclusive.
 
-No, please do not insert a global IPI to invalidate buffer heads in the
-general migration case. It's too expensive for either THP allocations or
-automatic NUMA migrates. The global IPI cost is justified for rare events
-where it causes functional problems if it fails to migreate -- CMA, memory
-hot-remove, memory poisoning etc.
+The fifth and sixth patches fix a bug in two places.  The bug is
+that a LOG_PREFIX in a record should implicitly terminate its
+predecessor, even if the predecessor was marked LOG_CONT.
+
+One trivial final patch is included at the end of the series.
+
+					-Alex
+
+History:
+v5: - Initialized "prev" variables to LOG_NEWLINE in two more
+      spots, as suggested.
+    - Preserve previous flags when re-initializing "prev"
+      variables when previous log messages have been reused.
+    - Insert newline in msg_print_text() outside loop.
+    - Moved "insert newline" patch earlier in series.
+    - Rebased on v3.16-rc6.
+v4: - Fixed two things I messed up in v3:
+        - Fixed a sprintf() warning I mistakenly created.
+        - Re-added a hunk inadvertently dropped from patch 3.
+v3: - Inserted a patch to report dropped message on a new line.
+    - Dropped a hunk from the (now) third patch, as requested.
+    - Now insert a newline in msg_print_text() in addition to
+      devkmsg_read().
+    - Added Reviewed-by tags where appropriate.
+v2: - Added a patch to initialize two globals with LOG_NEWLINE.
+    - Changed the (now) second patch to argue that LOG_CONT and
+      LOG_NEWLINES are mutally exclusive.
+    - Added a patch to insert a newline in one case in devkmsg_read().
+    - Added some extra parentheses in some conditions, as requested.
+    - Fixed and updated some header commentary.
+    - Deleted a hunk in the typo patch, as requested.
+
+This series, based on v3.16-rc6, is available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/printk-flags-v5
+
+Alex Elder (7):
+  printk: report dropped messages on separate line
+  printk: insert newline for truncated records
+  printk: initialize syslog_prev and console_prev
+  printk: LOG_CONT and LOG_NEWLINE are opposites
+  printk: honor LOG_PREFIX in devkmsg_read()
+  printk: honor LOG_PREFIX in msg_print_text()
+  printk: correct some more typos
+
+ kernel/printk/printk.c | 104 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 66 insertions(+), 38 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+1.9.1
+
