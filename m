@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353AbaGULsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:48:50 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:57673 "EHLO
+	id S1755005AbaGULs5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:48:57 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:59355 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148AbaGULrf (ORCPT
+	with ESMTP id S932148AbaGULsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:47:35 -0400
+	Mon, 21 Jul 2014 07:48:54 -0400
+Date: Mon, 21 Jul 2014 15:48:39 +0400
 From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 4/6] memcg: add pointer to owner cache to memcg_cache_params
-Date: Mon, 21 Jul 2014 15:47:14 +0400
-Message-ID: <86f8969053a7abf5ae35286a8980896d3175ea65.1405941342.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1405941342.git.vdavydov@parallels.com>
-References: <cover.1405941342.git.vdavydov@parallels.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
+Message-ID: <20140721114839.GA11848@esperanza>
+References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
+ <20140716155814.GZ29639@cmpxchg.org>
+ <20140718154443.GM27940@esperanza>
+ <20140721090724.GA8393@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140721090724.GA8393@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't keep a pointer to the owner kmem cache in the
-memcg_cache_params struct, because we can always get the cache by
-reading the slot corresponding to the owner memcg in the root cache's
-memcg_caches array (see memcg_params_to_cache).
+On Mon, Jul 21, 2014 at 11:07:24AM +0200, Michal Hocko wrote:
+> On Fri 18-07-14 19:44:43, Vladimir Davydov wrote:
+> > On Wed, Jul 16, 2014 at 11:58:14AM -0400, Johannes Weiner wrote:
+> > > On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
+> > > > +#ifdef CONFIG_MEMCG_KMEM
+> > > > +	{
+> > > > +		.name = "kmem.limit_in_bytes",
+> > > > +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
+> > > > +		.write = mem_cgroup_write,
+> > > > +		.read_u64 = mem_cgroup_read_u64,
+> > > > +	},
+> > > 
+> > > Does it really make sense to have a separate limit for kmem only?
+> > > IIRC, the reason we introduced this was that this memory is not
+> > > reclaimable and so we need to limit it.
+> > > 
+> > > But the opposite effect happened: because it's not reclaimable, the
+> > > separate kmem limit is actually unusable for any values smaller than
+> > > the overall memory limit: because there is no reclaim mechanism for
+> > > that limit, once you hit it, it's over, there is nothing you can do
+> > > anymore.  The problem isn't so much unreclaimable memory, the problem
+> > > is unreclaimable limits.
+> > > 
+> > > If the global case produces memory pressure through kernel memory
+> > > allocations, we reclaim page cache, anonymous pages, inodes, dentries
+> > > etc.  I think the same should happen for kmem: kmem should just be
+> > > accounted and limited in the overall memory limit of a group, and when
+> > > pressure arises, we go after anything that's reclaimable.
+> > 
+> > Personally, I don't think there's much sense in having a separate knob
+> > for kmem limit either. Until we have a user with a sane use case for it,
+> > let's not propagate it to the new interface.
+> 
+> What about fork-bomb forks protection? I thought that was the primary usecase
+> for K < U? Or how can we handle that use case with a single limit? A
+> special gfp flag to not trigger OOM path when called from some kmem
+> charge paths?
 
-However, this means that offline css's, which can be zombieing around
-for quite a long time, will occupy slots in memcg_caches arrays, making
-them grow larger and larger, which doesn't sound good. Therefore I'm
-going to make memcg release the slots on offline, which will render
-memcg_params_to_cache invalid. So I'm removing it and adding a back
-pointer to memcg_cache_params instead.
+Hmm, for a moment I thought that putting a fork-bomb inside a memory
+cgroup with kmem accounting enabled and K=U will isolate it from the
+rest of the system and therefore there's no need in K<U, but now I
+realize it's not quite right.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- include/linux/slab.h |    2 ++
- mm/memcontrol.c      |   20 ++++----------------
- 2 files changed, 6 insertions(+), 16 deletions(-)
+In contrast to user memory, thread stack allocations have costly order,
+they cannot be swapped out, and on 32-bit systems they will consume a
+limited resource of low mem. Although the latter two doesn't look like
+being of much concern, costly order of stack pages certainly does I
+think.
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 14888328e96b..e6e6ddb769c7 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -523,6 +523,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  *
-  * Child caches will hold extra metadata needed for its operation. Fields are:
-  *
-+ * @cachep: cache which this struct is for
-  * @memcg: pointer to the memcg this cache belongs to
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-@@ -536,6 +537,7 @@ struct memcg_cache_params {
- 			struct kmem_cache *memcg_caches[0];
- 		};
- 		struct {
-+			struct kmem_cache *cachep;
- 			struct mem_cgroup *memcg;
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cc1064a504cc..aa3111ac3b7e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2790,19 +2790,6 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
- 	return memcg ? memcg->kmemcg_id : -1;
- }
- 
--/*
-- * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-- * in the memcg_cache_params struct.
-- */
--static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
--{
--	struct kmem_cache *cachep;
--
--	VM_BUG_ON(p->is_root_cache);
--	cachep = p->root_cache;
--	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
--}
--
- #ifdef CONFIG_SLABINFO
- static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- {
-@@ -2816,7 +2803,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- 
- 	mutex_lock(&memcg_slab_mutex);
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
--		cache_show(memcg_params_to_cache(params), m);
-+		cache_show(params->cachep, m);
- 	mutex_unlock(&memcg_slab_mutex);
- 
- 	return 0;
-@@ -2979,6 +2966,7 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 		return -ENOMEM;
- 
- 	if (memcg) {
-+		s->memcg_params->cachep = s;
- 		s->memcg_params->memcg = memcg;
- 		s->memcg_params->root_cache = root_cache;
- 		css_get(&memcg->css);
-@@ -3124,7 +3112,6 @@ int __memcg_cleanup_cache_params(struct kmem_cache *s)
- 
- static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- {
--	struct kmem_cache *cachep;
- 	struct memcg_cache_params *params, *tmp;
- 
- 	if (!memcg_kmem_is_active(memcg))
-@@ -3132,7 +3119,8 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- 
- 	mutex_lock(&memcg_slab_mutex);
- 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
--		cachep = memcg_params_to_cache(params);
-+		struct kmem_cache *cachep = params->cachep;
-+
- 		kmem_cache_shrink(cachep);
- 		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
- 			memcg_unregister_cache(cachep);
--- 
-1.7.10.4
+Is this what you mean by saying we have to disable OOM from some kmem
+charge paths? To prevent OOM on the global level that might trigger due
+to lack of high order pages for task stack?
 
+> What about task_count or what was the name of the controller which was
+> dropped and suggested to be replaced by kmem accounting? I can imagine
+> that to be implemented by a separate K limit which would be roughtly
+> stack_size * task_count + pillow for slab.
+
+I wonder how big this pillow for slab should be...
+
+Thanks.
