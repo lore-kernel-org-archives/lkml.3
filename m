@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaGUWOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:14:33 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:35809 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577AbaGUWOc (ORCPT
+	id S1754841AbaGUWQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:16:44 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:44370 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaGUWQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:14:32 -0400
+	Mon, 21 Jul 2014 18:16:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1407220006470.20847@nanos>
-References: <20140719130602.GA5101@pd.tnic> <53CD6B50.5010404@mit.edu>
- <20140721213534.GB11555@pd.tnic> <CALCETrW91Q=ivYRVFb0WKXgHQO7O+x_HHDy67e90TU6Bte_ecg@mail.gmail.com>
- <20140721215225.GD11555@pd.tnic> <CALCETrX1LbZAiPH4x2Uby_cUUj2wgN92wc+5wvf-B3_9XdObWQ@mail.gmail.com>
- <alpine.DEB.2.10.1407220000080.20847@nanos> <alpine.DEB.2.10.1407220006470.20847@nanos>
+In-Reply-To: <CAGr1F2Fd_4=WUm4STPd4kdd5tNLO6aQ1OOQMKnRqyOKZSGvCpg@mail.gmail.com>
+References: <1405626731-12220-1-git-send-email-adityakali@google.com>
+ <1405626731-12220-6-git-send-email-adityakali@google.com> <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
+ <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
+ <CALCETrW6YpyJBmr3sZC6KL03GP4dcGYavQF5DFZfys6Cok-vpw@mail.gmail.com>
+ <CAGr1F2GwZvZLPGLWKPPOt3vREwwVNbVPrgE6YJ01bACKejbc4Q@mail.gmail.com>
+ <CALCETrVeeL71sfVdbzRx0FpGrvQKbviEmUcMEosbUU+UJNQu9w@mail.gmail.com> <CAGr1F2Fd_4=WUm4STPd4kdd5tNLO6aQ1OOQMKnRqyOKZSGvCpg@mail.gmail.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 21 Jul 2014 15:14:09 -0700
-Message-ID: <CALCETrV93BkGJSj9CWpsVHedax8ypo-a5qEQ6+ZsowvQB0jkJw@mail.gmail.com>
-Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 21 Jul 2014 15:16:20 -0700
+Message-ID: <CALCETrUhd41LFfF9epbVYJSOwqBq308Z8RZG9tzyPfx+Joe15Q@mail.gmail.com>
+Subject: Re: [PATCH 5/5] cgroup: introduce cgroup namespaces
+To: Aditya Kali <adityakali@google.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Linux API <linux-api@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 3:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 22 Jul 2014, Thomas Gleixner wrote:
->> On Mon, 21 Jul 2014, Andy Lutomirski wrote:
->> > On Mon, Jul 21, 2014 at 2:52 PM, Borislav Petkov <bp@alien8.de> wrote:
->> > > On Mon, Jul 21, 2014 at 02:41:50PM -0700, Andy Lutomirski wrote:
->> > >> How will this be compatible with the vdso?
->> > >
->> > > I've never thought about it yet. How compatible would you want it to be
->> > > and what do you expect from it?
->> >
->> > I expect that users of __vdso_clock_gettime (e.g. glibc) will get the
->> > correct time :)  They use vread_tsc, and they can't use
->> > preempt_disable, because they're in userspace.  They also can't
->> > directly access per-cpu variables.
->> >
->> > Turning off vdso tsc support on these machines would be an option.
+On Mon, Jul 21, 2014 at 3:11 PM, Aditya Kali <adityakali@google.com> wrote:
+> On Fri, Jul 18, 2014 at 11:57 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jul 18, 2014 at 11:51 AM, Aditya Kali <adityakali@google.com> wrote:
+>>> On Fri, Jul 18, 2014 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Jul 17, 2014 1:56 PM, "Aditya Kali" <adityakali@google.com> wrote:
+>>>>>
+>>>>> On Thu, Jul 17, 2014 at 12:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>> > What happens if someone moves a task in a cgroup namespace outside of
+>>>>> > the namespace root cgroup?
+>>>>> >
+>>>>>
+>>>>> Attempt to move a task outside of cgroupns root will fail with EPERM.
+>>>>> This is true irrespective of the privileges of the process attempting
+>>>>> this. Once cgroupns is created, the task will be confined to the
+>>>>> cgroup hierarchy under its cgroupns root until it dies.
+>>>>
+>>>> Can a task in a non-init userns create a cgroupns?  If not, that's
+>>>> unusual.  If so, is it problematic if they can prevent themselves from
+>>>> being moved?
+>>>>
+>>>
+>>> Currently, only a task with CAP_SYS_ADMIN in the init-userns can
+>>> create cgroupns. It is stricter than for other namespaces, yes.
 >>
->> Correct.
+>> I'm slightly hesitant to have unshare(CLONE_NEWUSER |
+>> CLONE_NEWCGROUPNS | ...) start having weird side effects that are
+>> visible outside the namespace, especially when those side effects
+>> don't happen (because the call fails entirely) if
+>> unshare(CLONE_NEWUSER) happens first.  I don't see a real problem with
+>> it, but it's weird.
 >>
->> So if we make the TSC usable that way we need to mark it unusable for
->> the VDSO and force vdso_*gettime* into the kernel. That will be way
->> better than forcing the whole machine onto HPET.
+>
+> I expect this to be only in the initial version of the patch. We can
+> make this consistent with other namespaces once we figure out how
+> cgroupns can be safely enabled for non-init-userns.
+>
+>>>
+>>>> I hate to say it, but it might be worth requiring explicit permission
+>>>> from the cgroup manager for this.  For example, there could be a new
+>>>> cgroup attribute may_unshare, and any attempt to unshare the cgroup ns
+>>>> will fail with -EPERM unless the caller is in a may_share=1 cgroup.
+>>>> may_unshare in a parent cgroup would not give child cgroups the
+>>>> ability to unshare.
+>>>>
+>>>
+>>> What you suggest can be done. The current patch-set punts the problem
+>>> of permission checking by only allowing unshare from a
+>>> capable(CAP_SYS_ADMIN) process. This can be implemented as a follow-up
+>>> improvement to cgroupns feature if we want to open it to non-init
+>>> userns.
+>>>
+>>> Being said that, I would argue that even if we don't have this
+>>> explicit permission and relax the check to non-init userns, it should
+>>> be 'OK' to let ns_capable(current_user_ns(), CAP_SYS_ADMIN) tasks to
+>>> unshare cgroupns (basically, if you can "create" a cgroup hierarchy,
+>>> you should probably be allowed to unshare() it).
 >>
->> And once we are using the real syscall, the whole thing just works ...
+>> But non-init-userns tasks can't create cgroup hierarchies, unless I
+>> misunderstand the current code.  And, if they can, I bet I can find
+>> three or four serious security issues in an hour or two. :)
+>>
 >
-> So all it needs is to do
->
->     clocksource_tsc.archdata.vclock_mode = VCLOCK_NONE;
->
-> if we do the magic per cpu offset trick to make the fcked up TSC
-> usable.
+> Task running in non-init userns can create cgroup hierarchies if you
+> chown/chgrp their cgroup root to the task user:
 
-Just make sure this happens every time the tsc clocksource is selected
--- it's possible to go back and forth.
-
->
-> Thanks,
->
->         tglx
->
+Won't the systemd people hate you forever for this suggestion?  (I do
+exactly this myself...)
 
 
+> This is a powerful feature as it allows non-root tasks to run
+> container-management tools and provision their resources properly. But
+> this makes implementing your suggestion of having 'cgroup.may_unshare'
+> file tricky as the cgroup owner (task) will be able to set it and
+> still unshare cgroupns. Instead, may be we could just check if the
+> task has appropriate (write?) permissions on the cgroup directory
+> before allowing nested cgroupns creation.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I bet that systemd will want to set may_unshare but not give write
+access.  Who knows?
+
+> [shudder]
+> I am surprised that this even works correctly.
+>
+> Either way, may be checking cgroup directory permissions will work for
+> you? i.e., if you "chown" a cgroup directory to the user, it should be
+> OK if the user's task unshares cgroupns under that cgroup and you
+> don't care about moving tasks from under that cgroup. Without
+> ownership of the cgroup directory, creation of cgroupns will be
+> disallowed. What do you think?
+
+I think this is *safe* but may not useful for eventual systemd stuff.
+Not really sure.
+
+--Andy
