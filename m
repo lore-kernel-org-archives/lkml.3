@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933252AbaGURYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:24:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44686 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932502AbaGURYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:24:00 -0400
-Message-ID: <53CD4BE8.5030603@zytor.com>
-Date: Mon, 21 Jul 2014 10:20:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Sven Wegener <sven.wegener@stealer.net>,
-        Richard Weinberger <richard@nod.at>, X86 ML <x86@kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        stable <stable@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: Re: [PATCH] x86_32, entry: store badsys error code in %eax
-References: <alpine.LNX.2.11.1407202330420.31021@titan.int.lan.stealer.net> <90404aa5-cab6-44aa-9eab-4106cb16e7ab@email.android.com> <CALCETrUijU1f+WJ5RkOa0X1y9K1UYWEQGdVwwGfBHdVS9iBciA@mail.gmail.com>
-In-Reply-To: <CALCETrUijU1f+WJ5RkOa0X1y9K1UYWEQGdVwwGfBHdVS9iBciA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S933181AbaGUR0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:26:25 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:35766 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755206AbaGUR0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:26:24 -0400
+Message-ID: <1405962993.30151.35.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
+From: Toshi Kani <toshi.kani@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, tglx@linutronix.de,
+        mingo@redhat.com, akpm@linux-foundation.org, arnd@arndb.de,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stefan.bader@canonical.com,
+        luto@amacapital.net, airlied@gmail.com, bp@alien8.de
+Date: Mon, 21 Jul 2014 11:16:33 -0600
+In-Reply-To: <53CD443A.6050804@zytor.com>
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
+		 <53C58A69.3070207@zytor.com> <1405459404.28702.17.camel@misato.fc.hp.com>
+		 <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>
+		 <1405546127.28702.85.camel@misato.fc.hp.com>
+	 <1405960298.30151.10.camel@misato.fc.hp.com> <53CD443A.6050804@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 09:53 AM, Andy Lutomirski wrote:
-> On Sun, Jul 20, 2014 at 3:07 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> This is not a subtle regression at all.  It is in fact a very very serious one.
+On Mon, 2014-07-21 at 09:47 -0700, H. Peter Anvin wrote:
+> On 07/21/2014 09:31 AM, Toshi Kani wrote:
+> > Do you have any comments / suggestions for this approach?
 > 
-> Indeed.
-> 
-> Does this really work correctly on sysenter?  It sure looks like the
-> sysenter path has the same problem.
-> 
-> Grr.  I'm not set up to properly test 32-bit kernels.  The patch looks
-> correct, but I'm obviously not an infallible authority on "looking
-> correct" when it comes to entry_32.S.
-> 
-> --Andy
-> 
+> Approach to what, specifically?
+>
+> Keep in mind the PAT bit is different for large pages.  This needs to be
+> dealt with.  
 
-KVM is great for that sort of things.
+You are right.  I was under a wrong impression that
+__change_page_attr() always splits a large pages into 4KB pages, but I
+overlooked the fact that it can handle a large page as well.  So, this
+approach does not work...
 
-	-hpa
+> I would also like a systematic way to deal with the fact
+> that Xen (sigh) is stuck with a separate mapping system.
+>
+> I guess Linux could adopt the Xen mappings if that makes it easier, as
+> long as that doesn't have a negative impact on native hardware -- we can
+> possibly deal with some older chips not being optimal.  
 
+I see.  I agree that supporting the PAT bit is the right direction, but
+I do not know how much effort we need.  I will study on this.
+
+> However, my thinking has been to have a "reverse PAT" table in memory of memory
+> types to encodings, both for regular and large pages.
+
+I am not clear about your idea of the "reverse PAT" table.  Would you
+care to elaborate?  How is it different from using pte_val() being a
+paravirt function on Xen?
+
+Thanks,
+-Toshi
 
