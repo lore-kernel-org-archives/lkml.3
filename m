@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182AbaGULrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:47:35 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:57591 "EHLO
+	id S932353AbaGULsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:48:50 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:57673 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148AbaGULrc (ORCPT
+	with ESMTP id S932148AbaGULrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:47:32 -0400
+	Mon, 21 Jul 2014 07:47:35 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <cl@linux.com>,
         <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 1/6] slub: remove kmemcg id from create_unique_id
-Date: Mon, 21 Jul 2014 15:47:11 +0400
-Message-ID: <b86712dab8660717e841bb7c9b8a79de91645d3a.1405941342.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 4/6] memcg: add pointer to owner cache to memcg_cache_params
+Date: Mon, 21 Jul 2014 15:47:14 +0400
+Message-ID: <86f8969053a7abf5ae35286a8980896d3175ea65.1405941342.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1405941342.git.vdavydov@parallels.com>
 References: <cover.1405941342.git.vdavydov@parallels.com>
@@ -23,31 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is never called for memcg caches, because they are
-unmergeable, so remove the dead code.
+We don't keep a pointer to the owner kmem cache in the
+memcg_cache_params struct, because we can always get the cache by
+reading the slot corresponding to the owner memcg in the root cache's
+memcg_caches array (see memcg_params_to_cache).
+
+However, this means that offline css's, which can be zombieing around
+for quite a long time, will occupy slots in memcg_caches arrays, making
+them grow larger and larger, which doesn't sound good. Therefore I'm
+going to make memcg release the slots on offline, which will render
+memcg_params_to_cache invalid. So I'm removing it and adding a back
+pointer to memcg_cache_params instead.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/slub.c |    6 ------
- 1 file changed, 6 deletions(-)
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |   20 ++++----------------
+ 2 files changed, 6 insertions(+), 16 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 2b068c3638aa..a1cdbad02f0c 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5130,12 +5130,6 @@ static char *create_unique_id(struct kmem_cache *s)
- 		*p++ = '-';
- 	p += sprintf(p, "%07d", s->size);
- 
--#ifdef CONFIG_MEMCG_KMEM
--	if (!is_root_cache(s))
--		p += sprintf(p, "-%08d",
--				memcg_cache_id(s->memcg_params->memcg));
--#endif
--
- 	BUG_ON(p > name + ID_STR_LENGTH - 1);
- 	return name;
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 14888328e96b..e6e6ddb769c7 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -523,6 +523,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  *
+  * Child caches will hold extra metadata needed for its operation. Fields are:
+  *
++ * @cachep: cache which this struct is for
+  * @memcg: pointer to the memcg this cache belongs to
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+@@ -536,6 +537,7 @@ struct memcg_cache_params {
+ 			struct kmem_cache *memcg_caches[0];
+ 		};
+ 		struct {
++			struct kmem_cache *cachep;
+ 			struct mem_cgroup *memcg;
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index cc1064a504cc..aa3111ac3b7e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2790,19 +2790,6 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
+ 	return memcg ? memcg->kmemcg_id : -1;
  }
+ 
+-/*
+- * This is a bit cumbersome, but it is rarely used and avoids a backpointer
+- * in the memcg_cache_params struct.
+- */
+-static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
+-{
+-	struct kmem_cache *cachep;
+-
+-	VM_BUG_ON(p->is_root_cache);
+-	cachep = p->root_cache;
+-	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
+-}
+-
+ #ifdef CONFIG_SLABINFO
+ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+ {
+@@ -2816,7 +2803,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+ 
+ 	mutex_lock(&memcg_slab_mutex);
+ 	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
+-		cache_show(memcg_params_to_cache(params), m);
++		cache_show(params->cachep, m);
+ 	mutex_unlock(&memcg_slab_mutex);
+ 
+ 	return 0;
+@@ -2979,6 +2966,7 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 		return -ENOMEM;
+ 
+ 	if (memcg) {
++		s->memcg_params->cachep = s;
+ 		s->memcg_params->memcg = memcg;
+ 		s->memcg_params->root_cache = root_cache;
+ 		css_get(&memcg->css);
+@@ -3124,7 +3112,6 @@ int __memcg_cleanup_cache_params(struct kmem_cache *s)
+ 
+ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ {
+-	struct kmem_cache *cachep;
+ 	struct memcg_cache_params *params, *tmp;
+ 
+ 	if (!memcg_kmem_is_active(memcg))
+@@ -3132,7 +3119,8 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 
+ 	mutex_lock(&memcg_slab_mutex);
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+-		cachep = memcg_params_to_cache(params);
++		struct kmem_cache *cachep = params->cachep;
++
+ 		kmem_cache_shrink(cachep);
+ 		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
+ 			memcg_unregister_cache(cachep);
 -- 
 1.7.10.4
 
