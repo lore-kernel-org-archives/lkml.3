@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaGUEhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 00:37:01 -0400
-Received: from seketeli.net ([94.23.218.202]:59311 "EHLO ms.seketeli.fr"
+	id S1752769AbaGUEhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 00:37:00 -0400
+Received: from seketeli.net ([94.23.218.202]:59310 "EHLO ms.seketeli.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294AbaGUEg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752218AbaGUEg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jul 2014 00:36:58 -0400
 From: Apelete Seketeli <apelete@seketeli.net>
 To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
@@ -15,250 +15,116 @@ To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v6 2/2] mmc: jz4740: prepare next dma transfer in parallel with current transfer
-Date: Mon, 21 Jul 2014 06:37:45 +0200
-Message-Id: <1405917465-18185-3-git-send-email-apelete@seketeli.net>
+Subject: [PATCH v6 0/2] Use DMA for data transfers in JZ4740 MMC driver
+Date: Mon, 21 Jul 2014 06:37:43 +0200
+Message-Id: <1405917465-18185-1-git-send-email-apelete@seketeli.net>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1405917465-18185-1-git-send-email-apelete@seketeli.net>
-References: <1405917465-18185-1-git-send-email-apelete@seketeli.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the MMC asynchronous request capability to prepare the
-next DMA transfer request in parallel with the current transfer.
-This is done by adding pre-request and post-request callbacks that are
-used by the MMC framework during an active data transfer.
+Hello,
 
-It should help reduce the impact of DMA preparation overhead on the SD
-card performance.
+MMC driver for JZ4740 SoC is currently relying on PIO mode only for
+data transfers.
 
-Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
----
- drivers/mmc/host/jz4740_mmc.c |  138 ++++++++++++++++++++++++++++++++++-------
- 1 file changed, 116 insertions(+), 22 deletions(-)
+The patches that come as a follow-up of this message allow the use of
+DMA for data transfers.
 
-diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
-index 049b133..14738cd 100644
---- a/drivers/mmc/host/jz4740_mmc.c
-+++ b/drivers/mmc/host/jz4740_mmc.c
-@@ -114,6 +114,11 @@ enum jz4740_mmc_state {
- 	JZ4740_MMC_STATE_DONE,
- };
- 
-+struct jz4740_mmc_host_next {
-+	int sg_len;
-+	s32 cookie;
-+};
-+
- struct jz4740_mmc_host {
- 	struct mmc_host *mmc;
- 	struct platform_device *pdev;
-@@ -143,6 +148,7 @@ struct jz4740_mmc_host {
- 	/* DMA support */
- 	struct dma_chan *dma_rx;
- 	struct dma_chan *dma_tx;
-+	struct jz4740_mmc_host_next next_data;
- 	bool use_dma;
- 	int sg_len;
- 
-@@ -184,6 +190,9 @@ static int jz4740_mmc_acquire_dma_channels(struct jz4740_mmc_host *host)
- 		goto free_master_write;
- 	}
- 
-+	/* Initialize DMA pre request cookie */
-+	host->next_data.cookie = 1;
-+
- 	return 0;
- 
- free_master_write:
-@@ -196,23 +205,72 @@ static inline int jz4740_mmc_get_dma_dir(struct mmc_data *data)
- 	return (data->flags & MMC_DATA_READ) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
- }
- 
-+static inline struct dma_chan *jz4740_mmc_get_dma_chan(struct jz4740_mmc_host *host,
-+						       struct mmc_data *data)
-+{
-+	return (data->flags & MMC_DATA_READ) ? host->dma_rx : host->dma_tx;
-+}
-+
- static void jz4740_mmc_dma_unmap(struct jz4740_mmc_host *host,
- 				 struct mmc_data *data)
- {
--	struct dma_chan *chan;
-+	struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
- 	enum dma_data_direction dir = jz4740_mmc_get_dma_dir(data);
- 
--	if (dir == DMA_TO_DEVICE)
--		chan = host->dma_tx;
--	else
--		chan = host->dma_rx;
--
- 	dma_unmap_sg(chan->device->dev, data->sg, data->sg_len, dir);
- }
- 
-+/* Prepares DMA data for current/next transfer, returns non-zero on failure */
-+static int jz4740_mmc_prepare_dma_data(struct jz4740_mmc_host *host,
-+				       struct mmc_data *data,
-+				       struct jz4740_mmc_host_next *next,
-+				       struct dma_chan *chan)
-+{
-+	struct jz4740_mmc_host_next *next_data = &host->next_data;
-+	enum dma_data_direction dir = jz4740_mmc_get_dma_dir(data);
-+	int sg_len;
-+
-+	if (!next && data->host_cookie &&
-+	    data->host_cookie != host->next_data.cookie) {
-+		dev_warn(mmc_dev(host->mmc),
-+			 "[%s] invalid cookie: data->host_cookie %d host->next_data.cookie %d\n",
-+			 __func__,
-+			 data->host_cookie,
-+			 host->next_data.cookie);
-+		data->host_cookie = 0;
-+	}
-+
-+	/* Check if next job is already prepared */
-+	if (next || data->host_cookie != host->next_data.cookie) {
-+		sg_len = dma_map_sg(chan->device->dev,
-+				    data->sg,
-+				    data->sg_len,
-+				    dir);
-+
-+	} else {
-+		sg_len = next_data->sg_len;
-+		next_data->sg_len = 0;
-+	}
-+
-+	if (sg_len <= 0) {
-+		dev_err(mmc_dev(host->mmc),
-+			"Failed to map scatterlist for DMA operation\n");
-+		return -EINVAL;
-+	}
-+
-+	if (next) {
-+		next->sg_len = sg_len;
-+		data->host_cookie = ++next->cookie < 0 ? 1 : next->cookie;
-+	} else
-+		host->sg_len = sg_len;
-+
-+	return 0;
-+}
-+
- static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
- 					 struct mmc_data *data)
- {
-+	int ret;
- 	struct dma_chan *chan;
- 	struct dma_async_tx_descriptor *desc;
- 	struct dma_slave_config conf = {
-@@ -221,9 +279,8 @@ static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
- 		.src_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
- 		.dst_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
- 	};
--	enum dma_data_direction dir = jz4740_mmc_get_dma_dir(data);
- 
--	if (dir == DMA_TO_DEVICE) {
-+	if (data->flags & MMC_DATA_WRITE) {
- 		conf.direction = DMA_MEM_TO_DEV;
- 		conf.dst_addr = host->mem_res->start + JZ_REG_MMC_TXFIFO;
- 		conf.slave_id = JZ4740_DMA_TYPE_MMC_TRANSMIT;
-@@ -235,16 +292,9 @@ static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
- 		chan = host->dma_rx;
- 	}
- 
--	host->sg_len = dma_map_sg(chan->device->dev,
--				  data->sg,
--				  data->sg_len,
--				  dir);
--
--	if (host->sg_len == 0) {
--		dev_err(mmc_dev(host->mmc),
--			"Failed to map scatterlist for DMA operation\n");
--		return -EINVAL;
--	}
-+	ret = jz4740_mmc_prepare_dma_data(host, data, NULL, chan);
-+	if (ret)
-+		return ret;
- 
- 	dmaengine_slave_config(chan, &conf);
- 	desc = dmaengine_prep_slave_sg(chan,
-@@ -269,6 +319,43 @@ dma_unmap:
- 	return -ENOMEM;
- }
- 
-+static void jz4740_mmc_pre_request(struct mmc_host *mmc,
-+				   struct mmc_request *mrq,
-+				   bool is_first_req)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+	struct mmc_data *data = mrq->data;
-+	struct jz4740_mmc_host_next *next_data = &host->next_data;
-+
-+	BUG_ON(data->host_cookie);
-+
-+	if (host->use_dma) {
-+		struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
-+
-+		if (jz4740_mmc_prepare_dma_data(host, data, next_data, chan))
-+			data->host_cookie = 0;
-+	}
-+}
-+
-+static void jz4740_mmc_post_request(struct mmc_host *mmc,
-+				    struct mmc_request *mrq,
-+				    int err)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+	struct mmc_data *data = mrq->data;
-+
-+	if (host->use_dma && data->host_cookie) {
-+		jz4740_mmc_dma_unmap(host, data);
-+		data->host_cookie = 0;
-+	}
-+
-+	if (err) {
-+		struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
-+
-+		dmaengine_terminate_all(chan);
-+	}
-+}
-+
- /*----------------------------------------------------------------------------*/
- 
- static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
-@@ -627,14 +714,19 @@ static irqreturn_t jz_mmc_irq_worker(int irq, void *devid)
- 
- 	case JZ4740_MMC_STATE_TRANSFER_DATA:
- 		if (host->use_dma) {
--			/* Use DMA if enabled, data transfer direction was
--			 * defined  before in jz_mmc_prepare_data_transfer().
-+			/* Use DMA if enabled.
-+			 * Data transfer direction is defined later by
-+			 * relying on data flags in
-+			 * jz4740_mmc_prepare_dma_data() and
-+			 * jz4740_mmc_start_dma_transfer().
- 			 */
- 			timeout = jz4740_mmc_start_dma_transfer(host, data);
- 			data->bytes_xfered = data->blocks * data->blksz;
- 		} else if (data->flags & MMC_DATA_READ)
--			/* If DMA is not enabled, rely on data flags
--			 * to establish data transfer direction.
-+			/* Use PIO if DMA is not enabled.
-+			 * Data transfer direction was defined before
-+			 * by relying on data flags in
-+			 * jz_mmc_prepare_data_transfer().
- 			 */
- 			timeout = jz4740_mmc_read_data(host, data);
- 		else
-@@ -809,6 +901,8 @@ static void jz4740_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable)
- 
- static const struct mmc_host_ops jz4740_mmc_ops = {
- 	.request	= jz4740_mmc_request,
-+	.pre_req	= jz4740_mmc_pre_request,
-+	.post_req	= jz4740_mmc_post_request,
- 	.set_ios	= jz4740_mmc_set_ios,
- 	.get_ro		= mmc_gpio_get_ro,
- 	.get_cd		= mmc_gpio_get_cd,
+Changes since v5:
+  - added a new patch to this series, on top of the previous one, to
+    prepare next dma transfer in parallel with current transfer,
+
+  - updated the benchmarks in this cover letter for the aforementioned
+    patch.
+
+Changes since v4:
+  - prefix functions with jz4740_mmc_ instead of jz4740_ to keep
+    consistency with the rest of the code,
+
+  - test (host->sg_len == 0) instead of (host->sg_len < 0) after
+    dma_map_sg() in jz4740_mmc_start_dma_transfer() according to
+    dmaengine.txt instructions.
+
+Changes since v3:
+  - use DMA engine device instead of MMC device in dma_map_sg() and
+    dma_unmap_sg() as the memory transfers will be performed by the
+    DMA engine,
+
+  - remove unnecessary mem_res == NULL check in jz4740_mmc_probe()
+    since devm_ioremap_resource() handles the mem_res == NULL case and
+    print a message,
+
+  - added a check to host->use_dma in jz4740_mmc_remove() to avoid
+    calling jz4740_release_dma_channels() unnecessarily.
+
+Changes since v2:
+  - declare sg_len member of struct jz4740_mmc_host as int instead of
+    unsigned int.
+
+Changes since v1:
+  - remove blank line added by mistake in jz_mmc_prepare_data_transfer().
+
+According to the following PIO vs DMA benchmarks there seems to be a
+slight improvement in transfer speed with the Ben NanoNote booting
+from SD card, while load average seems to be roughly on par.
+
+No noticeable improvement in the DMA vs DMA + MMC asynchronous
+requests case. The latter change should help reduce the impact of DMA
+preparation overhead on fast SD cards performance though:
+
+* With DMA + MMC asynchronous requests:
+
+Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+Test run 1 | 00:01:35 up 1 min,  load average: 1.31, 0.44, 0.15  |  00:06:46 up 6 min,  load average: 2.53, 1.75, 0.81
+Test run 2 | 00:10:09 up 1 min,  load average: 1.26, 0.42, 0.14  |  00:15:20 up 6 min,  load average: 2.46, 1.73, 0.80
+Test run 3 | 00:31:22 up 1 min,  load average: 1.30, 0.44, 0.15  |  00:36:33 up 6 min,  load average: 2.45, 1.73, 0.80
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+  Average  |             1 min,  load average: 1.29, 0.43, 0.14  |              6 min,  load average: 2.48, 1.73, 0.80
+
+
+* With DMA:
+
+Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+Test run 1 | 00:20:55 up 1 min,  load average: 1.26, 0.42, 0.14  |  00:26:10 up 6 min,  load average: 2.89, 1.94, 0.89
+Test run 2 | 00:30:22 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:35:34 up 6 min,  load average: 2.68, 1.86, 0.85
+Test run 3 | 00:39:56 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:45:06 up 6 min,  load average: 2.57, 1.76, 0.81
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+  Average  |             1 min,  load average: 1.19, 0.39, 0.13  |              6 min,  load average: 2.71, 1.85, 0.85
+
+
+* With PIO:
+
+Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
+----------------------------------------------------------------------------------------------------------------------------------------------
+Test run 1 | 00:50:47 up 1 min,  load average: 1.42, 0.49, 0.17  |  00:56:52 up 7 min,  load average: 2.47, 2.00, 0.98
+Test run 2 | 01:00:19 up 1 min,  load average: 1.21, 0.39, 0.14  |  01:06:29 up 7 min,  load average: 2.45, 1.96, 0.96
+Test run 3 | 01:11:27 up 1 min,  load average: 1.15, 0.36, 0.12  |  01:17:33 up 7 min,  load average: 2.63, 2.01, 0.97
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+  Average  |             1 min,  load average: 1.26, 0.41, 0.14  |              7 min,  load average: 2.52, 1.99, 0.97
+
+
+Changes were rebased on top of linux master branch, built and tested
+successfully.
+
+The following changes since commit 9a3c414:
+
+  Linux 3.16-rc6
+
+are available in the git repository at:
+
+  git://git.seketeli.net/~apelete/linux.git jz4740-mmc-dma
+
+Apelete Seketeli (2):
+  mmc: jz4740: add dma infrastructure for data transfers
+  mmc: jz4740: prepare next dma transfer in parallel with current
+    transfer
+
+ drivers/mmc/host/jz4740_mmc.c |  268 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 260 insertions(+), 8 deletions(-)
+
 -- 
 1.7.10.4
 
