@@ -1,300 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935AbaGUOLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:11:46 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:37587 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932396AbaGUOLn (ORCPT
+	id S932553AbaGUOEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:04:16 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14386 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932529AbaGUOEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:11:43 -0400
-Message-ID: <53CD1FC1.4020100@iki.fi>
-Date: Mon, 21 Jul 2014 17:12:17 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:29.0) Gecko/20100101 SeaMonkey/2.26.1
-MIME-Version: 1.0
-To: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Andrzej Hajda <a.hajda@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        SangYoung Son <hello.son@smasung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH/RFC v4 16/21] leds: Add support for max77693 mfd flash
- cell
-References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com> <1405087464-13762-17-git-send-email-j.anaszewski@samsung.com>
-In-Reply-To: <1405087464-13762-17-git-send-email-j.anaszewski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jul 2014 10:04:12 -0400
+From: Richard Weinberger <richard@sigma-star.at>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>, cmetcalf@tilera.com
+Subject: [PATCH 20/43] tile: Use get_signal() signal_setup_done()
+Date: Mon, 21 Jul 2014 16:03:06 +0200
+Message-Id: <1405951409-16953-21-git-send-email-richard@sigma-star.at>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+From: Richard Weinberger <richard@nod.at>
 
-Thanks for the patchset.
+Use the more generic functions get_signal() signal_setup_done()
+for signal delivery.
 
-Jacek Anaszewski wrote:
-> This patch adds led-flash support to Maxim max77693 chipset.
-> A device can be exposed to user space through LED subsystem
-> sysfs interface or through V4L2 subdevice when the support
-> for V4L2 Flash sub-devices is enabled. Device supports up to
-> two leds which can work in flash and torch mode. Leds can
-> be triggered externally or by software.
-> 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: SangYoung Son <hello.son@smasung.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->  drivers/leds/Kconfig         |    9 +
->  drivers/leds/Makefile        |    1 +
->  drivers/leds/leds-max77693.c | 1070 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/mfd/max77693.c       |    5 +-
->  include/linux/mfd/max77693.h |   40 ++
->  5 files changed, 1124 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/leds/leds-max77693.c
-> 
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index 5032c6f..794055e 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -457,6 +457,15 @@ config LEDS_TCA6507
->  	  LED driver chips accessed via the I2C bus.
->  	  Driver support brightness control and hardware-assisted blinking.
->  
-> +config LEDS_MAX77693
-> +	tristate "LED support for MAX77693 Flash"
-> +	depends on LEDS_CLASS_FLASH
-> +	depends on MFD_MAX77693
-> +	help
-> +	  This option enables support for the flash part of the MAX77693
-> +	  multifunction device. It has build in control for two leds in flash
-> +	  and torch mode.
-> +
->  config LEDS_MAX8997
->  	tristate "LED support for MAX8997 PMIC"
->  	depends on LEDS_CLASS && MFD_MAX8997
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index 237c5ba..da1a4ba 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -55,6 +55,7 @@ obj-$(CONFIG_LEDS_MC13783)		+= leds-mc13783.o
->  obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
->  obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
->  obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
-> +obj-$(CONFIG_LEDS_MAX77693)		+= leds-max77693.o
->  obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
->  obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
->  obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
-> diff --git a/drivers/leds/leds-max77693.c b/drivers/leds/leds-max77693.c
-> new file mode 100644
-> index 0000000..38a2398
-> --- /dev/null
-> +++ b/drivers/leds/leds-max77693.c
-> @@ -0,0 +1,1070 @@
-> +/*
-> + * LED Flash Class driver for the flash cell of max77693 mfd.
-> + *
-> + *	Copyright (C) 2014, Samsung Electronics Co., Ltd.
-> + *
-> + *	Authors: Jacek Anaszewski <j.anaszewski@samsung.com>
-> + *		 Andrzej Hajda <a.hajda@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + */
-> +
-> +#include <asm/div64.h>
-> +#include <linux/led-class-flash.h>
-> +#include <linux/led-flash-manager.h>
-> +#include <linux/mfd/max77693.h>
-> +#include <linux/mfd/max77693-private.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/slab.h>
-> +#include <linux/workqueue.h>
-> +#include <media/v4l2-flash.h>
-> +
-> +#define MAX77693_LED_NAME_1		"max77693-flash_1"
-> +#define MAX77693_LED_NAME_2		"max77693-flash_2"
-> +
-> +#define MAX77693_TORCH_IOUT_BITS	4
-> +
-> +#define MAX77693_TORCH_NO_TIMER		0x40
-> +#define MAX77693_FLASH_TIMER_LEVEL	0x80
-> +
-> +#define MAX77693_FLASH_EN_OFF		0
-> +#define MAX77693_FLASH_EN_FLASH		1
-> +#define MAX77693_FLASH_EN_TORCH		2
-> +#define MAX77693_FLASH_EN_ON		3
-> +
-> +#define MAX77693_FLASH_EN1_SHIFT	6
-> +#define MAX77693_FLASH_EN2_SHIFT	4
-> +#define MAX77693_TORCH_EN1_SHIFT	2
-> +#define MAX77693_TORCH_EN2_SHIFT	0
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/tile/include/asm/compat.h   |  3 +--
+ arch/tile/kernel/compat_signal.c | 29 ++++++++++-----------
+ arch/tile/kernel/signal.c        | 54 ++++++++++++++++++----------------------
+ 3 files changed, 40 insertions(+), 46 deletions(-)
 
-Which registers are these definitions related to? Could they be defined
-next to the registers instead?
-
-You could parameterise these macros, e.g.
-
-#define MAX77693_FLASH_EN_SHIFT(a)	(6 - ((a) - 1) * 2)
-
-> +#define MAX77693_FLASH_LOW_BATTERY_EN	0x80
-> +
-> +#define MAX77693_FLASH_BOOST_FIXED	0x04
-> +#define MAX77693_FLASH_BOOST_LEDNUM_2	0x80
-> +
-> +#define MAX77693_FLASH_TIMEOUT_MIN	62500
-> +#define MAX77693_FLASH_TIMEOUT_MAX	1000000
-> +#define MAX77693_FLASH_TIMEOUT_STEP	62500
-> +
-> +#define MAX77693_TORCH_TIMEOUT_MIN	262000
-> +#define MAX77693_TORCH_TIMEOUT_MAX	15728000
-> +
-> +#define MAX77693_FLASH_IOUT_MIN		15625
-> +#define MAX77693_FLASH_IOUT_MAX_1LED	1000000
-> +#define MAX77693_FLASH_IOUT_MAX_2LEDS	625000
-> +#define MAX77693_FLASH_IOUT_STEP	15625
-> +
-> +#define MAX77693_TORCH_IOUT_MIN		15625
-> +#define MAX77693_TORCH_IOUT_MAX		250000
-> +#define MAX77693_TORCH_IOUT_STEP	15625
-> +
-> +#define MAX77693_FLASH_VSYS_MIN		2400
-> +#define MAX77693_FLASH_VSYS_MAX		3400
-> +#define MAX77693_FLASH_VSYS_STEP	33
-> +
-> +#define MAX77693_FLASH_VOUT_MIN		3300
-> +#define MAX77693_FLASH_VOUT_MAX		5500
-> +#define MAX77693_FLASH_VOUT_STEP	25
-> +#define MAX77693_FLASH_VOUT_RMIN	0x0c
-> +
-> +#define MAX77693_LED_STATUS_FLASH_ON	(1 << 3)
-> +#define MAX77693_LED_STATUS_TORCH_ON	(1 << 2)
-> +
-> +#define MAX77693_LED_FLASH_INT_FLED2_OPEN	(1 << 0)
-> +#define MAX77693_LED_FLASH_INT_FLED2_SHORT	(1 << 1)
-> +#define MAX77693_LED_FLASH_INT_FLED1_OPEN	(1 << 2)
-> +#define MAX77693_LED_FLASH_INT_FLED1_SHORT	(1 << 3)
-> +#define MAX77693_LED_FLASH_INT_OVER_CURRENT	(1 << 4)
-> +
-> +#define MAX77693_MODE_OFF			0
-> +#define MAX77693_MODE_FLASH1			(1 << 0)
-> +#define MAX77693_MODE_FLASH2			(1 << 1)
-> +#define MAX77693_MODE_TORCH1			(1 << 2)
-> +#define MAX77693_MODE_TORCH2			(1 << 3)
-> +#define MAX77693_MODE_FLASH_EXTERNAL1		(1 << 4)
-> +#define MAX77693_MODE_FLASH_EXTERNAL2		(1 << 5)
-> +
-> +enum {
-> +	FLED1,
-> +	FLED2
-> +};
-> +
-> +enum {
-> +	FLASH,
-> +	TORCH
-> +};
-> +
-> +struct max77693_led {
-> +	struct regmap *regmap;
-> +	struct platform_device *pdev;
-> +	struct max77693_led_platform_data *pdata;
-> +	struct mutex lock;
-> +
-> +	struct led_classdev_flash ldev1;
-> +	struct work_struct work1_brightness_set;
-> +	struct v4l2_flash *v4l2_flash1;
-> +
-> +	struct led_classdev_flash ldev2;
-> +	struct work_struct work2_brightness_set;
-> +	struct v4l2_flash *v4l2_flash2;
-> +
-> +	unsigned int torch1_brightness;
-> +	unsigned int torch2_brightness;
-> +	unsigned int flash1_timeout;
-> +	unsigned int flash2_timeout;
-
-Could you use e.g. an array of structs instead? You could remove a lot
-of redundant code operating on the other led.
-
-> +	unsigned int current_flash_timeout;
-> +	unsigned int mode_flags;
-> +	u8 torch_iout_reg;
-> +	bool iout_joint;
-> +};
-
-...
-
-> +static int max77693_led_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct max77693_dev *iodev = dev_get_drvdata(dev->parent);
-> +	struct max77693_led *led;
-> +	struct max77693_led_platform_data *p;
-> +	int ret;
-> +
-> +	led = devm_kzalloc(dev, sizeof(*led), GFP_KERNEL);
-> +	if (!led)
-> +		return -ENOMEM;
-> +
-> +	led->pdev = pdev;
-> +	led->regmap = iodev->regmap;
-> +	platform_set_drvdata(pdev, led);
-> +	ret = max77693_led_get_platform_data(led);
-> +	if (ret < 0)
-> +		return -EINVAL;
-> +
-> +	p = led->pdata;
-> +	mutex_init(&led->lock);
-> +
-> +	if (p->num_leds == 1 && p->fleds[FLED1] && p->fleds[FLED2])
-> +		led->iout_joint = true;
-> +
-> +	ret = max77693_setup(led);
-> +	if (ret < 0)
-> +		return ret;
-
-goto err_register_led1;
-
-> +	if (led->iout_joint || p->fleds[FLED1]) {
-> +		ret = max77693_register_led1(led);
-> +		if (ret < 0)
-> +			goto err_register_led1;
-> +	}
-> +
-> +	if (!led->iout_joint && p->fleds[FLED2]) {
-> +		ret = max77693_register_led2(led);
-> +		if (ret < 0)
-> +			goto err_register_led2;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_register_led2:
-> +	if (!p->fleds[FLED1])
-> +		goto err_register_led1;
-> +	v4l2_flash_release(led->v4l2_flash1);
-> +	led_classdev_flash_unregister(&led->ldev1);
-> +err_register_led1:
-> +	mutex_destroy(&led->lock);
-> +
-> +	return ret;
-> +}
-
-...
-
+diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
+index ffd4493..c14e36f 100644
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -267,8 +267,7 @@ static inline int is_compat_task(void)
+ 	return current_thread_info()->status & TS_COMPAT;
+ }
+ 
+-extern int compat_setup_rt_frame(int sig, struct k_sigaction *ka,
+-				 siginfo_t *info, sigset_t *set,
++extern int compat_setup_rt_frame(struct ksignal *ksig, sigset_t *set,
+ 				 struct pt_regs *regs);
+ 
+ /* Compat syscalls. */
+diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
+index 19c04b5..8c5abf2 100644
+--- a/arch/tile/kernel/compat_signal.c
++++ b/arch/tile/kernel/compat_signal.c
+@@ -190,18 +190,18 @@ static inline void __user *compat_get_sigframe(struct k_sigaction *ka,
+ 	return (void __user *) sp;
+ }
+ 
+-int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-			  sigset_t *set, struct pt_regs *regs)
++int compat_setup_rt_frame(struct ksignal *ksig, sigset_t *set,
++			  struct pt_regs *regs)
+ {
+ 	unsigned long restorer;
+ 	struct compat_rt_sigframe __user *frame;
+-	int err = 0;
++	int err = 0, sig = ksig->sig;
+ 	int usig;
+ 
+-	frame = compat_get_sigframe(ka, regs, sizeof(*frame));
++	frame = compat_get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		goto err;
+ 
+ 	usig = current_thread_info()->exec_domain
+ 		&& current_thread_info()->exec_domain->signal_invmap
+@@ -210,12 +210,12 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		: sig;
+ 
+ 	/* Always write at least the signal number for the stack backtracer. */
+-	if (ka->sa.sa_flags & SA_SIGINFO) {
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO) {
+ 		/* At sigreturn time, restore the callee-save registers too. */
+-		err |= copy_siginfo_to_user32(&frame->info, info);
++		err |= copy_siginfo_to_user32(&frame->info, &ksig->info);
+ 		regs->flags |= PT_FLAGS_RESTORE_REGS;
+ 	} else {
+-		err |= __put_user(info->si_signo, &frame->info.si_signo);
++		err |= __put_user(ksig->info.si_signo, &frame->info.si_signo);
+ 	}
+ 
+ 	/* Create the ucontext.  */
+@@ -226,11 +226,11 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err |= setup_sigcontext(&frame->uc.uc_mcontext, regs);
+ 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+ 	if (err)
+-		goto give_sigsegv;
++		goto err;
+ 
+ 	restorer = VDSO_SYM(&__vdso_rt_sigreturn);
+-	if (ka->sa.sa_flags & SA_RESTORER)
+-		restorer = ptr_to_compat_reg(ka->sa.sa_restorer);
++	if (ksig->ka.sa.sa_flags & SA_RESTORER)
++		restorer = ptr_to_compat_reg(ksig->ka.sa.sa_restorer);
+ 
+ 	/*
+ 	 * Set up registers for signal handler.
+@@ -239,7 +239,7 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
+ 	 * since some things rely on this (e.g. glibc's debug/segfault.c).
+ 	 */
+-	regs->pc = ptr_to_compat_reg(ka->sa.sa_handler);
++	regs->pc = ptr_to_compat_reg(ksig->ka.sa.sa_handler);
+ 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
+ 	regs->sp = ptr_to_compat_reg(frame);
+ 	regs->lr = restorer;
+@@ -249,7 +249,8 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	regs->flags |= PT_FLAGS_CALLER_SAVES;
+ 	return 0;
+ 
+-give_sigsegv:
+-	signal_fault("bad setup frame", regs, frame, sig);
++err:
++	trace_unhandled_signal("bad sigreturn frame", regs,
++			      (unsigned long)frame, SIGSEGV);
+ 	return -EFAULT;
+ }
+diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
+index d1d026f..7c2fecc 100644
+--- a/arch/tile/kernel/signal.c
++++ b/arch/tile/kernel/signal.c
+@@ -153,18 +153,18 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
+ 	return (void __user *) sp;
+ }
+ 
+-static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-			   sigset_t *set, struct pt_regs *regs)
++static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
++			  struct pt_regs *regs)
+ {
+ 	unsigned long restorer;
+ 	struct rt_sigframe __user *frame;
+-	int err = 0;
++	int err = 0, sig = ksig->sig;
+ 	int usig;
+ 
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		goto err;
+ 
+ 	usig = current_thread_info()->exec_domain
+ 		&& current_thread_info()->exec_domain->signal_invmap
+@@ -173,12 +173,12 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		: sig;
+ 
+ 	/* Always write at least the signal number for the stack backtracer. */
+-	if (ka->sa.sa_flags & SA_SIGINFO) {
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO) {
+ 		/* At sigreturn time, restore the callee-save registers too. */
+-		err |= copy_siginfo_to_user(&frame->info, info);
++		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 		regs->flags |= PT_FLAGS_RESTORE_REGS;
+ 	} else {
+-		err |= __put_user(info->si_signo, &frame->info.si_signo);
++		err |= __put_user(ksig->info.si_signo, &frame->info.si_signo);
+ 	}
+ 
+ 	/* Create the ucontext.  */
+@@ -189,11 +189,11 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err |= setup_sigcontext(&frame->uc.uc_mcontext, regs);
+ 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+ 	if (err)
+-		goto give_sigsegv;
++		goto err;
+ 
+ 	restorer = VDSO_SYM(&__vdso_rt_sigreturn);
+-	if (ka->sa.sa_flags & SA_RESTORER)
+-		restorer = (unsigned long) ka->sa.sa_restorer;
++	if (ksig->ka.sa.sa_flags & SA_RESTORER)
++		restorer = (unsigned long) ksig->ka.sa.sa_restorer;
+ 
+ 	/*
+ 	 * Set up registers for signal handler.
+@@ -202,7 +202,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
+ 	 * since some things rely on this (e.g. glibc's debug/segfault.c).
+ 	 */
+-	regs->pc = (unsigned long) ka->sa.sa_handler;
++	regs->pc = (unsigned long) ksig->ka.sa.sa_handler;
+ 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
+ 	regs->sp = (unsigned long) frame;
+ 	regs->lr = restorer;
+@@ -212,8 +212,9 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	regs->flags |= PT_FLAGS_CALLER_SAVES;
+ 	return 0;
+ 
+-give_sigsegv:
+-	signal_fault("bad setup frame", regs, frame, sig);
++err:
++	trace_unhandled_signal("bad sigreturn frame", regs,
++			      (unsigned long)frame, SIGSEGV);
+ 	return -EFAULT;
+ }
+ 
+@@ -221,9 +222,7 @@ give_sigsegv:
+  * OK, we're invoking a handler
+  */
+ 
+-static void handle_signal(unsigned long sig, siginfo_t *info,
+-			 struct k_sigaction *ka,
+-			 struct pt_regs *regs)
++static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ {
+ 	sigset_t *oldset = sigmask_to_save();
+ 	int ret;
+@@ -238,7 +237,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
+ 			break;
+ 
+ 		case -ERESTARTSYS:
+-			if (!(ka->sa.sa_flags & SA_RESTART)) {
++			if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
+ 				regs->regs[0] = -EINTR;
+ 				break;
+ 			}
+@@ -254,14 +253,12 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
+ 	/* Set up the stack frame */
+ #ifdef CONFIG_COMPAT
+ 	if (is_compat_task())
+-		ret = compat_setup_rt_frame(sig, ka, info, oldset, regs);
++		ret = compat_setup_rt_frame(ksig, oldset, regs);
+ 	else
+ #endif
+-		ret = setup_rt_frame(sig, ka, info, oldset, regs);
+-	if (ret)
+-		return;
+-	signal_delivered(sig, info, ka, regs,
+-			test_thread_flag(TIF_SINGLESTEP));
++		ret = setup_rt_frame(ksig, oldset, regs);
++
++	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+ 
+ /*
+@@ -271,9 +268,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
+  */
+ void do_signal(struct pt_regs *regs)
+ {
+-	siginfo_t info;
+-	int signr;
+-	struct k_sigaction ka;
++	struct ksignal ksig;
+ 
+ 	/*
+ 	 * i386 will check if we're coming from kernel mode and bail out
+@@ -282,10 +277,9 @@ void do_signal(struct pt_regs *regs)
+ 	 * helpful, we can reinstate the check on "!user_mode(regs)".
+ 	 */
+ 
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-	if (signr > 0) {
++	if (get_signal(&ksig)) {
+ 		/* Whee! Actually deliver the signal.  */
+-		handle_signal(signr, &info, &ka, regs);
++		handle_signal(&ksig, regs);
+ 		goto done;
+ 	}
+ 
 -- 
-Kind regards,
+1.8.4.5
 
-Sakari Ailus
-sakari.ailus@iki.fi
