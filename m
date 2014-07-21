@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232AbaGULjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:39:20 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:48127 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932194AbaGULjR (ORCPT
+	id S932267AbaGULj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:39:56 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:35932 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916AbaGULjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:39:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjcBAIb6zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBSdSEFFXGYhCuCiGTBePSwcWhDAFil+oPGk
-X-IPAS-Result: AjcBAIb6zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBSdSEFFXGYhCuCiGTBePSwcWhDAFil+oPGk
-X-IronPort-AV: E=Sophos;i="5.01,700,1400014800"; 
-   d="scan'208";a="116353346"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: pbonzini@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH 6/7] KVM: x86: Clear rflags.rf on emulated instructions
-Date: Mon, 21 Jul 2014 14:37:29 +0300
-Message-Id: <1405942650-22589-7-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
-References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
+	Mon, 21 Jul 2014 07:39:54 -0400
+Date: Mon, 21 Jul 2014 12:39:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Checkpatch query
+Message-ID: <20140721113948.GX30888@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an instruction is emulated RFLAGS.RF should be cleared. KVM previously did
-not do so. This patch clears RFLAGS.RF after interception is done.  If a fault
-occurs during the instruction, RFLAGS.RF will be set by a previous patch.  This
-patch does not handle the case of traps/interrupts during rep-strings. Traps
-are only expected to occur on debug watchpoints, and those are anyhow not
-handled by the emulator.
+Hi Andy, Joe,
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
----
- arch/x86/kvm/emulate.c | 3 +++
- 1 file changed, 3 insertions(+)
+When running checkpatch on drivers/mfd/tps80031.c I recieve the
+following warning:
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index cf117bf..189b8bd8 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4640,6 +4640,7 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
- 			/* All REP prefixes have the same first termination condition */
- 			if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
- 				ctxt->eip = ctxt->_eip;
-+				ctxt->eflags &= ~EFLG_RF;
- 				goto done;
- 			}
- 		}
-@@ -4682,6 +4683,8 @@ special_insn:
- 			goto done;
- 	}
- 
-+	ctxt->eflags &= ~EFLG_RF;
-+
- 	if (ctxt->execute) {
- 		if (ctxt->d & Fastop) {
- 			void (*fop)(struct fastop *) = (void *)ctxt->execute;
+> WARNING: Possible switch case/default not preceeded by break or
+>          fallthrough comment
+> #337: FILE: drivers/mfd/tps80031.c:337:
+> +       case TPS80031_BACKUP_REG:
+> 
+> total: 0 errors, 1 warnings, 573 lines checked
+
+... but we use switch statement fall through all the time when
+identifying different types of registers used with Regmap.  Placing a
+fall-through comment between them all sounds very messy to me.
+
+Also, the warning only fires on 'case's which do not use '...'
+notation, which seems a little odd.
+
+Anyway, I'm not sure placing a 'fall through' comment makes the code
+any cleaner or reduces possible failure rate in any way.  Is there any
+chance that this check can be removed?
+
+> static bool rd_wr_reg_id0(struct device *dev, unsigned int reg)
+> {
+> 	switch (reg) {
+> 	case TPS80031_SMPS1_CFG_FORCE ... TPS80031_SMPS2_CFG_VOLTAGE:
+> 		return true;
+> 	default:
+> 		return false;
+> 	}
+> }
+> 
+> static bool rd_wr_reg_id1(struct device *dev, unsigned int reg)
+> {
+> 	switch (reg) {
+> 	case TPS80031_SECONDS_REG ... TPS80031_RTC_RESET_STATUS_REG:
+> 	case TPS80031_VALIDITY0 ... TPS80031_VALIDITY7:
+> 	case TPS80031_PHOENIX_START_CONDITION ... TPS80031_KEY_PRESS_DUR_CFG:
+> 	case TPS80031_SMPS4_CFG_TRANS ... TPS80031_SMPS3_CFG_VOLTAGE:
+> 	case TPS80031_BROADCAST_ADDR_ALL ... TPS80031_BROADCAST_ADDR_CLK_RST:
+> 	case TPS80031_VANA_CFG_TRANS ... TPS80031_LDO7_CFG_VOLTAGE:
+> 	case TPS80031_REGEN1_CFG_TRANS ... TPS80031_TMP_CFG_STATE:
+> 	case TPS80031_PREQ1_RES_ASS_A ... TPS80031_PREQ3_RES_ASS_C:
+> 	case TPS80031_SMPS_OFFSET ... TPS80031_BATDEBOUNCING:
+> 	case TPS80031_CFG_INPUT_PUPD1 ... TPS80031_CFG_SMPS_PD:
+> 	case TPS80031_BACKUP_REG:
+> 		return true;
+> 	default:
+> 		return false;
+> 	}
+> }
+> 
+> static bool is_volatile_reg_id1(struct device *dev, unsigned int reg)
+> {
+> 	switch (reg) {
+> 	case TPS80031_SMPS4_CFG_TRANS ... TPS80031_SMPS3_CFG_VOLTAGE:
+> 	case TPS80031_VANA_CFG_TRANS ... TPS80031_LDO7_CFG_VOLTAGE:
+> 	case TPS80031_REGEN1_CFG_TRANS ... TPS80031_TMP_CFG_STATE:
+> 	case TPS80031_PREQ1_RES_ASS_A ... TPS80031_PREQ3_RES_ASS_C:
+> 	case TPS80031_SMPS_OFFSET ... TPS80031_BATDEBOUNCING:
+> 	case TPS80031_CFG_INPUT_PUPD1 ... TPS80031_CFG_SMPS_PD:
+> 		return true;
+> 	default:
+> 		return false;
+> 	}
+> }
+
+
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
