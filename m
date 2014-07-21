@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaGUJIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:08:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965AbaGUJIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:08:09 -0400
-Date: Mon, 21 Jul 2014 11:07:55 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET 0/6] perf tools: Honor column width setting
-Message-ID: <20140721090755.GA8865@krava.redhat.com>
-References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+	id S1754035AbaGUJKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:10:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51427 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753266AbaGUJJ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:09:57 -0400
+Date: Mon, 21 Jul 2014 11:09:53 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 0/8] ARM: berlin: add AHCI support
+Message-ID: <20140721090953.GE32208@kwain>
+References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
+ <20140718135758.GB13012@htj.dyndns.org>
+ <53CA4608.3040208@redhat.com>
+ <53CA48F7.5020405@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53CA48F7.5020405@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 02:28:08PM +0900, Namhyung Kim wrote:
-> Hello,
+Hi Hans,
+
+On Sat, Jul 19, 2014 at 12:31:19PM +0200, Hans de Goede wrote:
+> On 07/19/2014 12:18 PM, Hans de Goede wrote:
 > 
-> This patchset is to control perf report/top output column width by
-> -w/--column-widths option so that it can fit into the terminal size.
-> The -w option is there for perf report but it ignored by recent output
-> field changed due to some reason.  This patchset fixes it and supports
-> perf top also.
+> >The problem is that:
+> >
+> >1) We need to enable resources before we can do ahci_save_initial_config()
+> >2) We must do ahci_save_initial_config() before we can do ata_host_alloc_pinfo()
+> >3) Therefor we don't have port_info at enable_resources time, which is when we
+> >want to enable the phys (and we cannot just enable the phys elsewhere as
+> >enable_resouces gets used on e.g. resume too).
+> >
+> >So I think it is best to just make the phy pointers an array inside
+> >ahci_host_priv, with a comment that the array indexes must match port
+> >indexes.
 > 
-> This is sometimes useful if your terminal is small and there's some
-> C++ applications which have amazingly long symbol names.  Without this
-> patchset user might not see those symbols on TUI, since it maps
-> left/right arrow keys to other functions.
+> So looking at "[PATCH v10 4/8] ata: libahci: allow to use multiple PHYs"
+> I see that currently the phy array indexes do not necessarily match the
+> port indexes. Since you already allocate the phys array at nports size,
+> I suggest simply making the array sparse, leaving in NULL entries for
+> unused ports, and adjusting enable / disable_phys to check for NULL
+> pointers. This way we still have a 1:1 way to map ports <-> phys if
+> we want to do something with phys on a per port basis in the future.
 > 
-> The -w option sets column width starting from the first column
-> (overhead or optional overhead_children column unless -F option is
-> given).  It doesn't make sense to limit those overhead columns so it's
-> not a hard-limit for them.  But it *is* a hard-limit for other columns
-> such as comm, dso, symbol, and so on.  One can use 0 not to
-> limit/force a width for those columns.
+> Note please also add a check that reg < nports so that we don't use
+> the array out of bounds if there is an error in the dts.
 
-hi,
-I've got broken TUI output for "perf report --group" 
+Ok. I'll rework patch 4 along with the other modifications requested,
+and I'll send a new version early this week.
 
-Samples: 17  of event 'anon group { cycles, instructions }', Event count (approx.): 9145256
- 56.44% 31.59%  ls  libc-2.17.so       [.] __strcoll_l
- 39.94% 0.00%  ls  ld-2.17.so         [.] _dl_new_object
- 3.48% 0.00%  ls  [kernel.kallsyms]  [k] setup_arg_pages
- 0.14% 0.33%  ls  [kernel.kallsyms]  [k] native_write_msr_safe
- 0.00% 30.17%  ls  [kernel.kallsyms]  [k] security_inode_permission
- 0.00% 29.78%  ls  ls                 [.] indent
- 0.00% 8.12%  ls  [kernel.kallsyms]  [k] __slab_alloc
+Antoine
 
-I have 'show-headers' set to false in ~/.perfconfig and the output
-got fixed after displaying headers by pressing 'H'
-
-jirka
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
