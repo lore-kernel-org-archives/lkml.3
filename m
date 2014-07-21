@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaGUNAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:00:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50763 "EHLO mga11.intel.com"
+	id S932188AbaGUNBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:01:54 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55301 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753934AbaGUNAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:00:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,701,1400050800"; 
-   d="scan'208";a="564908976"
-Message-ID: <53CD0E91.9020100@intel.com>
-Date: Mon, 21 Jul 2014 15:58:57 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754904AbaGUNBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:01:52 -0400
+Date: Mon, 21 Jul 2014 14:01:46 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "'?????????'" <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+Message-ID: <20140721130146.GO10544@csn.ul.ie>
+References: <53C8C290.90503@lge.com>
+ <20140721025047.GA7707@bbox>
+ <53CCB02A.7070301@lge.com>
+ <20140721073651.GA15912@bbox>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org> <53CCB6AE.6020505@intel.com> <20140721080219.GA4183@krava.redhat.com> <53CCD3A7.5070002@intel.com> <20140721095415.GB8865@krava.redhat.com> <53CD02E3.6090509@intel.com> <20140721123513.GA14929@krava.redhat.com>
-In-Reply-To: <20140721123513.GA14929@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140721073651.GA15912@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 03:35 PM, Jiri Olsa wrote:
-> On Mon, Jul 21, 2014 at 03:09:07PM +0300, Adrian Hunter wrote:
-> 
-> SNIP
-> 
->>>>
->>>> ...so is the 100MB limit needed at all if you have ROUND
->>>> events?
->>>
->>> for data files captured without the ROUND events fix
->>
->> I am not sure it should be the default then, if it is
->> not needed going forward.
-> 
-> I'd be ok with not setting 100MB limit by default, just need a way
-> to configure it.. so without following patch:
->   perf tools: Limit the ordered events queue by default to 100MB
+On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
 
-Ok then.  Also it would be good to have a warning if a premature flush
-is forced, so that you can distinguish the cause of out-of-order
-messages.
+I'm not reviewing this in detail at all, didn't even look at the patch
+but two things popped out at me during the discussion.
 
+> > >Anyway, why cannot CMA have the cost without affecting other subsystem?
+> > >I mean it's okay for CMA to consume more time to shoot out the bh
+> > >instead of simple all bh_lru invalidation because big order allocation is
+> > >kinds of slow thing in the VM and everybody already know that and even
+> > >sometime get failed so it's okay to add more code that extremly slow path.
+> > 
+> > There are 2 reasons to invalidate entire bh_lru.
+> > 
+> > 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
+> > How do you think about it? My platform does not call CMA allocation often.
+> > Is the CMA allocation or Memory-Hotplug called often?
+> 
+> It depends on usecase and you couldn't assume anyting because we couldn't
+> ask every people in the world. "Please ask to us whenever you try to use CMA".
+> 
+> The key point is how the patch is maintainable.
+> If it's too complicate to maintain, maybe we could go with simple solution
+> but if it's not too complicate, we can go with more smart thing to consider
+> other cases in future. Why not?
+> 
+> Another point is that how user can detect where the regression is from.
+> If we cannot notice the regression, it's not a good idea to go with simple
+> version.
+> 
+
+The buffer LRU avoids a lookup of a radix tree. If the LRU hit rate is
+low then the performance penalty of repeated radix tree lookups is
+severe but the cost of missing one hot lookup because CMA invalidate it
+is not.
+
+The real cost to be concerned with is the cost of performing the
+invalidation not the fact a lookup in the LRU was missed. It's because
+the cost of invalidation is high that this is being pushed to CMA because
+for CMA an allocation failure can be a functional failure and not just a
+performance problem.
+
+> > 
+> > 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
+> > because the drop_buffers does not have a way to distinguish migrate type.
+> > Even-though the lmbech results that it has almost the same performance.
+> > But I am afraid that it can be changed.
+> > As you said if bh_lru size can be changed it affects more than now.
+> > SO I do not want to touch non-CMA related code.
+> 
+> I'm not saying to add hook in drop_buffers.
+> What I suggest is to handle failure by bh_lrus in migrate_pages
+> because it's not a problem only in CMA.
+
+No, please do not insert a global IPI to invalidate buffer heads in the
+general migration case. It's too expensive for either THP allocations or
+automatic NUMA migrates. The global IPI cost is justified for rare events
+where it causes functional problems if it fails to migreate -- CMA, memory
+hot-remove, memory poisoning etc.
+
+-- 
+Mel Gorman
+SUSE Labs
