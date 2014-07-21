@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaGUUpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 16:45:36 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:59384 "EHLO
-	Ishtar.hs.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144AbaGUUpf (ORCPT
+	id S1754267AbaGUUt3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 16:49:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36300 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160AbaGUUt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 16:45:35 -0400
-Message-ID: <53CD7BE2.3040909@tlinx.org>
-Date: Mon, 21 Jul 2014 13:45:22 -0700
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Thunderbird
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Howto tell kernel to use 4096 as granularity & minimum size?
-References: <53CC0EAA.2010202@tlinx.org> <20140720222818.GM4453@dastard>
-In-Reply-To: <20140720222818.GM4453@dastard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 21 Jul 2014 16:49:28 -0400
+Date: Mon, 21 Jul 2014 13:49:12 -0700 (PDT)
+Message-Id: <20140721.134912.539764884744342514.davem@davemloft.net>
+To: quentin@armitage.org.uk
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipv4: Make IP_MULTICAST_ALL and IP_MSFILTER work on
+ raw sockets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1405932178.3485.66.camel@samson1.armitage.org.uk>
+References: <1405701503.3485.49.camel@samson1.armitage.org.uk>
+	<20140720.212728.2235972803070688024.davem@davemloft.net>
+	<1405932178.3485.66.camel@samson1.armitage.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 13:49:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
->
->> I can partition the disk and setup the allocation size
->> to 4096, but I'd like to tell the kernel to use a
->> virtual-size of 4096 for the sector as an additional
->> performance 'hint', so nothing will even try to use
->> smaller i/o's than that.
->>     
->
-> Just format the filesystem with 4k sector size.
----
-    Good idea,  though.. I wanted to set it for the whole "disk"(array)
-as it (multiple 4T drives) will be subdivided into multiple filesystems
-and have lvm and a partition table under the file system(s),
-so telling the kernel to only do 4K alloc+io's to the whole thing
-would cover the most with the least.
+From: Quentin Armitage <quentin@armitage.org.uk>
+Date: Mon, 21 Jul 2014 09:42:58 +0100
 
+> Subsystem ipv4: added to subject.
 
+Sorry, that's not going to work.
 
+When you are asked to make changes to any apsect of a change,
+you must make a new, fresh, patch posting, with the change
+integrated.
 
+If the patch is part of a series, you must also resend the
+entire series, not just the patch which has changed.
