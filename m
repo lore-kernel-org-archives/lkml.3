@@ -1,37 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaGUJkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:40:31 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:45014 "EHLO sipsolutions.net"
+	id S1754369AbaGUJkz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:40:55 -0400
+Received: from mga14.intel.com ([192.55.52.115]:26353 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754066AbaGUJka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:40:30 -0400
-Message-ID: <1405935610.32255.5.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH v7 08/33] net: nl80211 - make rdev_add_virtual_intf take
- name_assign_type
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Tom Gundersen <teg@jklm.no>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        John Linville <linville@tuxdriver.com>
-Date: Mon, 21 Jul 2014 11:40:10 +0200
-In-Reply-To: <1404980258-30853-9-git-send-email-teg@jklm.no> (sfid-20140710_101817_648059_1F1D29C5)
-References: <1404980258-30853-1-git-send-email-teg@jklm.no>
-	 <1404980258-30853-9-git-send-email-teg@jklm.no>
-	 (sfid-20140710_101817_648059_1F1D29C5)
+	id S1754146AbaGUJkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:40:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,699,1400050800"; 
+   d="scan'208";a="564840154"
+Message-ID: <1405935627.2455.6.camel@rzhang1-toshiba>
+Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
+From: Zhang Rui <rui.zhang@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
+        Javi Merino <javi.merino@arm.com>
+Date: Mon, 21 Jul 2014 17:40:27 +0800
+In-Reply-To: <20140721092950.GB10016@pd.tnic>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+	 <1405817480-25347-1-git-send-email-peter@piie.net>
+	 <1405817480-25347-4-git-send-email-peter@piie.net>
+	 <20140721092950.GB10016@pd.tnic>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-10 at 10:17 +0200, Tom Gundersen wrote:
-> Pass the value down and set it at the same place the name itself is set.
+On Mon, 2014-07-21 at 11:29 +0200, Borislav Petkov wrote:
+> On Sun, Jul 20, 2014 at 02:51:17AM +0200, Peter Feuerer wrote:
+> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
+> > or off a cooling device.  It is intended to control fans, which can
+> > not be throttled but just switched on or off.
+> > Bang-bang cannot be set as default governor as it is intended for
+> > special devices only.  For those special devices the driver needs to
+> > explicitely request it.
+> > 
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Andreas Mohr <andi@lisas.de>
+> > Cc: Borislav Petkov <bp@suse.de>
+> > Cc: Javi Merino <javi.merino@arm.com>
+> > Signed-off-by: Peter Feuerer <peter@piie.net>
+> > ---
+> >  drivers/thermal/Kconfig         |  10 +++
+> >  drivers/thermal/Makefile        |   1 +
+> >  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
+> >  drivers/thermal/thermal_core.c  |   5 ++
+> >  drivers/thermal/thermal_core.h  |   8 +++
+> >  5 files changed, 155 insertions(+)
+> >  create mode 100644 drivers/thermal/gov_bang_bang.c
+> > 
+> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> > index f9a1386..cdddf09 100644
+> > --- a/drivers/thermal/Kconfig
+> > +++ b/drivers/thermal/Kconfig
+> > @@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
+> >  	  Enable this to manage platform thermals using a simple linear
+> >  	  governor.
+> >  
+> > +config THERMAL_GOV_BANG_BANG
+> > +	bool "Bang Bang thermal governor"
+> > +	default y
+> 
+> Right, this is problematic.
+> 
+> When people are faced with the new selection after doing oldconfig, they
+> can say yes or no.
+> 
+> However, as acerhdf depends on it now, prompting the user to
+> unconditionally says yes is kinda redundant. Especially as this governor
+> is not supposed to be default anyway.
+> 
+> Actually you don't need the Kconfig prompt at all as this is a sort-of
+> "internal" governor and devices select it. IOW, it should be "default n"
+> and ACERHDF will do "select THERMAL_GOV_BANG_BANG". Something like that
+> at least.
+> 
+I agree with this approach.
 
-Is this going to be applied as part of one bigger series?
+thanks,
+rui
 
-johannes
 
