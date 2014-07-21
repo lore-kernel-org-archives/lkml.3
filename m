@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887AbaGUQTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:19:39 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53451 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647AbaGUQTg (ORCPT
+	id S1755274AbaGUQZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:25:07 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48086 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184AbaGUQZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:19:36 -0400
-Date: Mon, 21 Jul 2014 09:19:32 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, kgene.kim@samsung.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
-        t.figa@samsung.com, rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>, kyungmin.park@samsung.com,
-        linux-samsung-soc@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, galak@codeaurora.org,
-        ch.naveen@samsung.com, linux-input <linux-input@vger.kernel.org>,
-        heiko.stuebner@bq.com
-Subject: Re: [PATCH 2/2] iio: exynos-adc: add experimental touchscreen support
-Message-ID: <20140721161932.GA12180@core.coreip.homeip.net>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
- <5158672.dMAnnUQc7Z@wuerfel>
- <20140721144442.GB9112@core.coreip.homeip.net>
- <6569004.FG0IRy8WyL@wuerfel>
+	Mon, 21 Jul 2014 12:25:04 -0400
+Date: Mon, 21 Jul 2014 17:24:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: Takashi Iwai <tiwai@suse.de>, perex@perex.cz, lgirdwood@gmail.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140721162448.GD17528@sirena.org.uk>
+References: <20140716121029.GA22222@opensource.wolfsonmicro.com>
+ <20140717194215.GH17528@sirena.org.uk>
+ <20140721090104.GA21400@opensource.wolfsonmicro.com>
+ <s5hsilvnkuf.wl%tiwai@suse.de>
+ <20140721103327.GA29141@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5JJEVRmBpje5aLKk"
 Content-Disposition: inline
-In-Reply-To: <6569004.FG0IRy8WyL@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140721103327.GA29141@opensource.wolfsonmicro.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: arizona: Disable AIF TX/RX before configuring it
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 05:11:27PM +0200, Arnd Bergmann wrote:
-> On Monday 21 July 2014 07:44:42 Dmitry Torokhov wrote:
-> > > > 
-> > > > It would be nice to actually close the device even if someone is
-> > > > touching screen. Please implement open/close methods and have them set a
-> > > > flag that you would check here.
-> > > 
-> > > Ok. I think it's even better to move the request_irq() into the open function,
-> > > which will avoid the flag and defer the error handling into the actual opening,
-> > > as well as syncing the running irq with the close function.
-> > 
-> > I do not quite like acquiring resources needed in open. I think drivers should
-> > do all resource acquisition in probe() and leave open()/close() to
-> > activate/quiesce devices.
-> 
-> Ok, I'll move it back then. I'm not sure what I'm supposed to do
-> in open/close then. Isn't it enough to check info->input->users
-> like this?
-> 
-> static irqreturn_t exynos_ts_isr(int irq, void *dev_id)
-> {
->         struct exynos_adc *info = dev_id;
->         struct iio_dev *dev = dev_get_drvdata(info->dev);
->         u32 x, y;
->         bool pressed;
->         int ret;
-> 
->         while (info->input->users) {
->                 ret = exynos_read_s3c64xx_ts(dev, &x, &y);
->                 if (ret == -ETIMEDOUT)
->                         break;
-> 
->                 pressed = x & y & ADC_DATX_PRESSED;
->                 if (!pressed) {
->                         input_report_key(info->input, BTN_TOUCH, 0);
->                         input_sync(info->input);
->                         break;
->                 }
-> 
->                 input_report_abs(info->input, ABS_X, x & ADC_DATX_MASK);
->                 input_report_abs(info->input, ABS_Y, y & ADC_DATY_MASK);
->                 input_report_key(info->input, BTN_TOUCH, 1);
->                 input_sync(info->input);
-> 
->                 msleep(1);
->         };
-> 
->         writel(0, ADC_V1_CLRINTPNDNUP(info->regs));
-> 
->         return IRQ_HANDLED;
-> }
-> 
-> I could do enable_irq()/disable_irq(), but that leaves a small
-> race at startup where we request the irq line and then immediately
-> disable it again.
 
-I think the above (or a separate flag in driver structure) coupled with
-enable/disable IRQ is fine - input core can deal with calls to input_report_*
-on devices that have been properly allocated but have not been registered yet.
+--5JJEVRmBpje5aLKk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-drivers/input/keyboard/samsung-keypad.c does similar handling.
+On Mon, Jul 21, 2014 at 11:33:27AM +0100, Richard Fitzgerald wrote:
+> On Mon, Jul 21, 2014 at 11:04:56AM +0200, Takashi Iwai wrote:
+> > Richard Fitzgerald wrote:
 
-Thanks.
+> > > The case being fixed is like this:
 
--- 
-Dmitry
+> > > aplay 48kHz.wav; aplay 96kHz.wav
+
+> > > The second open happens before pmdown_time so the AIF is still enabled.
+> > > Writes to the AIF config registers only take effect if the AIF is disabled.
+> > > Without this patch, the 96kHz.wav will play at 48kHz
+
+> > If the glitch really matters, the driver can minimize by checking the
+> > change of sample rate and doing temporary turn on/off only when
+> > required.
+
+> That's a fair point.
+
+The case I was particularly worrying about here was simultaneous
+playback and capture - we won't be changing rates here since these
+devices currently require symmetry which is enforced via constraints but
+we are likely to at least be starting multiple streams close to each
+other frequently.
+
+--5JJEVRmBpje5aLKk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTzT7MAAoJELSic+t+oim9v/oP/RvaN2sXIp6/pczl+SuIWu4Z
+GBqN6tyBw4krZ7Go3CwrdS7e4pp+4KTtb2FVJGZL5r5u24O3zld67wfyYQohbyrb
+1xEsRy51FM2wOGHaVC+wqqQrUgpKPRIHvNbhO7TSTDrSWWnFldXRzJdIttFUKY2h
+KDyDD4f6+gOC4UamVLRG2T+wuX/N+i6ey/Nk4cVE/gF1ZvGbJiL2WLoQSQcpFS+K
+7PDECrQSWxklo9cVETTs0i2Uz1HxSytdhFvmzUuL90pFtjkxAVD5AbB9d8R2LyiG
+kkYU8+wja770a1D0qtTHDPDHMa4/7VMfNML8n2HLQaHF9aCNG2hwzzAGDbV85270
+qjOe2OUplf5/T5pBAaV3fSOeFaR+uVU4Ubp1dNgYncmTZL1L+G/0kW3agetUlzGx
+rx/0D16pRUwbH6HTHLPEMal+MwQJXme9jgxmivaYXRPnJrtLvjQvnmWg61lY/Kd0
+/CV9m6Dtauc1x1gGzT6c8An92vbggo/iGRQegkuNK6EFmGR3lqxLv/o/CueX6DDw
+KMYxM9HWuz+1YrNuOL/gTwowtpReiKoSaI5E91rqw5pm+jyFUNpQJ5CVcFQ92hpM
+Lc3HvILfip2vkInkoxbJPCBm0G8N4eZaD5+0IK55x5lvKqhVpoqMrXYNy7xF1SA9
+M2J40n8BpmF73bWqWPPD
+=tlur
+-----END PGP SIGNATURE-----
+
+--5JJEVRmBpje5aLKk--
