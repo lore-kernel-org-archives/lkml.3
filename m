@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaGUVGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:06:13 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:45799 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903AbaGUVGI (ORCPT
+	id S1754115AbaGUVGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:06:36 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:39094 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753754AbaGUVGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:06:08 -0400
+	Mon, 21 Jul 2014 17:06:11 -0400
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,9 +15,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, hns@goldelico.com,
         Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 6/7] arm: dts: omap3-gta04: Add display alias
-Date: Mon, 21 Jul 2014 23:05:26 +0200
-Message-Id: <1405976727-15166-7-git-send-email-marek@goldelico.com>
+Subject: [PATCH 7/7] arm: dts: omap3-gta04: Add twl4030 regulators parameters
+Date: Mon, 21 Jul 2014 23:05:27 +0200
+Message-Id: <1405976727-15166-8-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405976727-15166-1-git-send-email-marek@goldelico.com>
 References: <1405976727-15166-1-git-send-email-marek@goldelico.com>
@@ -27,24 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek@goldelico.com>
 ---
- arch/arm/boot/dts/omap3-gta04.dts | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/boot/dts/omap3-gta04.dts | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
 diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 370c08b..05fd4d2 100644
+index 05fd4d2..e39ede2 100644
 --- a/arch/arm/boot/dts/omap3-gta04.dts
 +++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -26,6 +26,10 @@
- 		reg = <0x80000000 0x20000000>; /* 512 MB */
- 	};
+@@ -346,11 +346,37 @@
+ 	bb_uamp = <150>;
+ };
  
-+	aliases {
-+		display0 = &lcd;
-+	};
++/* spare */
++&vaux1 {
++	regulator-min-microvolt = <2500000>;
++	regulator-max-microvolt = <3000000>;
++};
 +
- 	gpio-keys {
- 		compatible = "gpio-keys";
++/* sensors */
++&vaux2 {
++	regulator-min-microvolt = <2800000>;
++	regulator-max-microvolt = <2800000>;
++	regulator-always-on;
++};
++
++/* camera */
++&vaux3 {
++	regulator-min-microvolt = <2500000>;
++	regulator-max-microvolt = <2500000>;
++};
++
++/* WLAN/BT */
+ &vaux4 {
+ 	regulator-min-microvolt = <2800000>;
+ 	regulator-max-microvolt = <3150000>;
+ };
  
++/* GPS LNA */
++&vsim {
++	regulator-min-microvolt = <2800000>;
++	regulator-max-microvolt = <3150000>;
++};
++
+ /* Needed to power the DPI pins */
+ &vpll2 {
+ 	regulator-always-on;
 -- 
 1.9.1
 
