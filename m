@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306AbaGUSGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 14:06:35 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55459 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320AbaGUSGe (ORCPT
+	id S933324AbaGUSL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 14:11:26 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41316 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320AbaGUSLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 14:06:34 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        lxc-devel@lists.linuxcontainers.org,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Michael H. Warfield" <mhw@wittsend.com>
-References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
-	<1405365496-58404-4-git-send-email-seth.forshee@canonical.com>
-	<CAJfpegvMeiZG09U3aXvxKV+GPSn6zFgLbUwXGpTuoVSbnvgfmw@mail.gmail.com>
-	<20140721124725.GB111224@ubuntu-hedt>
-	<CAJfpegs=V5BpNdgn1JSLsvUsAnmhPvGJZobF1y_NAysb==Z1-A@mail.gmail.com>
-	<20140721143442.GD111224@ubuntu-hedt>
-Date: Mon, 21 Jul 2014 11:02:53 -0700
-In-Reply-To: <20140721143442.GD111224@ubuntu-hedt> (Seth Forshee's message of
-	"Mon, 21 Jul 2014 09:34:42 -0500")
-Message-ID: <87r41er3n6.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 21 Jul 2014 14:11:24 -0400
+Date: Mon, 21 Jul 2014 11:11:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 06/10] nohz: Define meaningful symbol for nohz full
+ timekeeper
+Message-ID: <20140721181118.GG8690@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
+ <1405730661-9355-7-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+ZyLDWQ+f0R3AK1plvHC4BdClKCRgQBuY=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4397]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 3/3] fuse: Allow mounts from user namespaces
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405730661-9355-7-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072118-1344-0000-0000-000002F8748C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth Forshee <seth.forshee@canonical.com> writes:
+On Sat, Jul 19, 2014 at 02:44:17AM +0200, Frederic Weisbecker wrote:
+> The nohz full timekeeper is always CPU 0. Lets add it to the list of
+> special tick_do_timer_cpu symbols for more self explanatory code.
+> 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-> On Mon, Jul 21, 2014 at 03:09:14PM +0200, Miklos Szeredi wrote:
->> On Mon, Jul 21, 2014 at 2:47 PM, Seth Forshee
->> <seth.forshee@canonical.com> wrote:
->> > On Fri, Jul 18, 2014 at 05:33:23PM +0200, Miklos Szeredi wrote:
->> >> On Mon, Jul 14, 2014 at 9:18 PM, Seth Forshee
->> >> <seth.forshee@canonical.com> wrote:
->> >> > Update fuse to allow mounts from user namespaces. During mount
->> >> > current_user_ns() is stashed away,
->> >>
->> >> Same thing here.  While practically this may work, it's theoretically
->> >> wrong, and possibly may go wrong in special situations.   In fuse
->> >> there's no official "server process", so storing information, like
->> >> namespace, about one is going to be wrong.
->> >
->> > What you're suggesting would probably work fine when dealing with pids.
->> > It's not going to work though for the checks I've added in
->> > fuse_allow_current_process() that the process is in the mount owner's
->> > user ns, and without those checks or something similar I don't think
->> > it's safe to permit allow_other for user ns mounts.
->> 
->> You can add that check in fuse_dev_do_read() as well.  If the
->> fsuid/fsgid doesn't exist in the "server's" namespace, then set
->> req->out.h.error and call request_end().
->
-> Okay, that seems like it should work.
->
->> > Can you elaborate on what special situations might violate these
->> > assumptions or otherwise cause problems?
->> 
->> What's preventing a fuse fs implementation from handling FUSE_INIT in
->> one process and then handling the rest in a different process
->> (possibly in a different namespace)?
->
-> Nothing, but I'm having a hard time imagining why that would ever be
-> useful. The user/group ids passed in the mount options would have to be
-> mapped into that namespace, otherwise all requests will just fail in the
-> check you suggest above. The only thing I can think of would be if
-> someone wanted to proxy mounts trough a process in a more privileged
-> context, but then the main point of these patches is to make that
-> unnecessary.
->
-> But I also think your approach should work just as well as mine for the
-> use cases that do make sense to me, so I'll go ahead and give it a
-> try.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-A few observations that I don't think I have seen come up in this
-thread.
+> ---
+>  kernel/time/tick-internal.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+> index 7ab92b1..6b592a8 100644
+> --- a/kernel/time/tick-internal.h
+> +++ b/kernel/time/tick-internal.h
+> @@ -10,6 +10,7 @@ extern seqlock_t jiffies_lock;
+> 
+>  #ifdef CONFIG_GENERIC_CLOCKEVENTS_BUILD
+> 
+> +#define TICK_DO_TIMER_DEFAULT	0
+>  #define TICK_DO_TIMER_NONE	-1
+>  #define TICK_DO_TIMER_BOOT	-2
+> 
+> -- 
+> 1.8.3.1
+> 
 
-In my earlier experiments with mounting filesystems in other user
-namespaces it did wind up making sense to have a notion of this is
-the user namespace that things are represented in on disk, and
-that wound up covering odd corner cases like acls.  For fuse
-I don't recall if any of those corner cases exists.
-
-At the same time my conversion experience also showed that performing
-the conversion to/from kuid and kgids as close to the user space
-interface as close as possible was the lease error prone and most
-secure way of handling things.
-
-For the file descriptors used for talking to a fuse server I would be
-inclined to capture a user and pid namespace at open time to use for
-your conversions.   This avoids using current and getting into the
-problem of file descriptors that change behavior when passed from
-process to process.
-
-I definitely agree that using kuids kgids, and struct pid through the
-fuse filesystem internally is the least error prone way to go.
-
-Eric
