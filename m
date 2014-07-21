@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaGULX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:23:26 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37774 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584AbaGULXY (ORCPT
+	id S932101AbaGULYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:24:19 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41693 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561AbaGULYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:23:24 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk/tegra: Fix a bunch of sparse warnings
-Date: Mon, 21 Jul 2014 13:23:21 +0200
-Message-Id: <1405941801-27455-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Mon, 21 Jul 2014 07:24:18 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
+Subject: [GIT PULL] KVM changes for 3.16-rc7
+Date: Mon, 21 Jul 2014 13:24:05 +0200
+Message-Id: <1405941845-2052-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+Linus,
 
-The second to last parameter of the TEGRA_CLK_PERIPH macro denotes a
-table and should therefore users should pass in NULL instead of 0.
+The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
 
-Fixes a bunch of sparse warnings like this:
+  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
 
-	warning: Using plain integer as NULL pointer
+are available in the git repository at:
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/clk/tegra/clk-tegra-periph.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
 
-diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
-index adf6b814b5bc..0bc59fba9e6a 100644
---- a/drivers/clk/tegra/clk-tegra-periph.c
-+++ b/drivers/clk/tegra/clk-tegra-periph.c
-@@ -218,7 +218,7 @@
- 		.clk_id = _clk_id,					\
- 		.p.parent_name = _parent_name,				\
- 		.periph = TEGRA_CLK_PERIPH(0, 0, 0, 0, 0, 0, 0,		\
--				_clk_num, _gate_flags, 0, NULL),	\
-+				_clk_num, _gate_flags, NULL, NULL),	\
- 		.flags = _flags						\
- 	}
- 
--- 
-2.0.1
+for you to fetch changes up to bb18b526a9d8d4a3fe56f234d5013b9f6036978d:
 
+  Merge tag 'signed-for-3.16' of git://github.com/agraf/linux-2.6 into kvm-master (2014-07-08 12:08:58 +0200)
+
+----------------------------------------------------------------
+
+These are mostly PPC changes for 3.16-new things.  However, there is
+an x86 change too and it is a regression from 3.14.  As it only affects
+nested virtualization and there were other changes in this area in 3.16,
+I am not nominating it for 3.15-stable.
+
+----------------------------------------------------------------
+Alexander Graf (3):
+      PPC: Add _GLOBAL_TOC for 32bit
+      KVM: PPC: Book3S PR: Fix ABIv2 on LE
+      KVM: PPC: RTAS: Do byte swaps explicitly
+
+Aneesh Kumar K.V (1):
+      KVM: PPC: BOOK3S: HV: Use base page size when comparing against slb value
+
+Anton Blanchard (1):
+      KVM: PPC: Assembly functions exported to modules need _GLOBAL_TOC()
+
+Bandan Das (1):
+      KVM: x86: Check for nested events if there is an injectable interrupt
+
+Mihai Caraman (1):
+      KVM: PPC: Book3E: Unlock mmu_lock when setting caching atttribute
+
+Paolo Bonzini (1):
+      Merge tag 'signed-for-3.16' of git://github.com/agraf/linux-2.6 into kvm-master
+
+ arch/powerpc/include/asm/kvm_book3s_64.h | 19 +++++++++-
+ arch/powerpc/include/asm/ppc_asm.h       |  2 +
+ arch/powerpc/kvm/book3s_64_mmu_hv.c      |  2 +-
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c      |  7 +---
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S  |  2 +-
+ arch/powerpc/kvm/book3s_interrupts.S     |  4 ++
+ arch/powerpc/kvm/book3s_rmhandlers.S     |  6 ++-
+ arch/powerpc/kvm/book3s_rtas.c           | 65 +++++++++-----------------------
+ arch/powerpc/kvm/e500_mmu_host.c         |  3 +-
+ arch/x86/kvm/x86.c                       | 12 ++++++
+ 10 files changed, 64 insertions(+), 58 deletions(-)
