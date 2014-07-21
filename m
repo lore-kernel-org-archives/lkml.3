@@ -1,131 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267AbaGUPoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:44:32 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19644 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932958AbaGUPjs (ORCPT
+	id S933270AbaGUPpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:45:07 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48021 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932420AbaGUPpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:39:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Jul 2014 08:32:02 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>, <devicetree@vger.kernel.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 03/16] clk: tegra: Add binding for the Tegra124 DFLL clocksource
-Date: Mon, 21 Jul 2014 18:38:49 +0300
-Message-ID: <1405957142-19416-4-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 21 Jul 2014 11:45:01 -0400
+Date: Mon, 21 Jul 2014 16:44:42 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <bcousson@baylibre.com>, Charulatha V <charu@ti.com>
+Message-ID: <20140721154442.GB17528@sirena.org.uk>
+References: <1405683053-14104-1-git-send-email-LW@KARO-electronics.de>
+ <20140718171035.GQ17528@sirena.org.uk>
+ <20140721075144.251bb67d@ipc1.ka-ro>
+ <20140721121820.GW17528@sirena.org.uk>
+ <20140721144104.5e37f1a0@ipc1.ka-ro>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YOxyDEsNCn0QNWql"
+Content-Disposition: inline
+In-Reply-To: <20140721144104.5e37f1a0@ipc1.ka-ro>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: omap2-mcspi: fix blatant abuse of the resource
+ subsystem
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DFLL is the main clocksource for the fast CPU cluster on Tegra124
-and also provides automatic CPU rail voltage scaling as well. The DFLL
-is a separate IP block from the usual Tegra124 clock-and-reset
-controller, so it gets its own node in the device tree.
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
----
-v2 changes:
-    - dropped most of the I2C properties, as they are now queried from
-      the regulator framework
-    - s/vdd_cpu-supply/vdd-cpu-supply/ to better match what other Tegra
-      bindings do
+--YOxyDEsNCn0QNWql
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- .../bindings/clock/nvidia,tegra124-dfll.txt        | 69 ++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
+On Mon, Jul 21, 2014 at 02:41:04PM +0200, Lothar Wa=DFmann wrote:
+> Mark Brown wrote:
 
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
-new file mode 100644
-index 0000000..54c62ac
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
-@@ -0,0 +1,69 @@
-+NVIDIA Tegra124 DFLL FCPU clocksource
-+
-+This binding uses the common clock binding:
-+Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+The DFLL IP block on Tegra is a root clocksource designed for clocking
-+the fast CPU cluster. It consists of a free-running voltage controlled
-+oscillator connected to the CPU voltage rail (VDD_CPU), and a closed loop
-+control module that will automatically adjust the VDD_CPU voltage by
-+communicating with an off-chip PMIC either via an I2C bus or via PWM signals.
-+
-+Required properties:
-+- compatible : should be "nvidia,tegra124-dfll-fcpu"
-+- reg : Defines the following set of registers, in the order listed:
-+        - registers for the DFLL control logic.
-+        - registers for the I2C output logic.
-+        - registers for the integrated I2C master controller.
-+        - look-up table RAM for voltage register values.
-+- interrupts: Should contain the DFLL block interrupt.
-+- clocks: Must contain an entry for each entry in clock-names.
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names: Must include the following entries:
-+  - soc: Clock source for the DFLL control logic.
-+  - ref: The closed loop reference clock
-+  - i2c: Clock source for the integrated I2C master.
-+- #clock-cells: Must be 0.
-+- clock-output-names: Name of the clock output.
-+- vdd-cpu-supply: Regulator for the CPU voltage rail that the DFLL
-+  hardware will start controlling.
-+
-+Required properties for the control loop parameters:
-+- nvidia,sample-rate: Sample rate of the DFLL control loop.
-+- nvidia,droop-ctrl: See the register CL_DVFS_DROOP_CTRL in the TRM.
-+- nvidia,force-mode: See the field DFLL_PARAMS_FORCE_MODE in the TRM.
-+- nvidia,cf: Numeric value, see the field DFLL_PARAMS_CF_PARAM in the TRM.
-+- nvidia,ci: Numeric value, see the field DFLL_PARAMS_CI_PARAM in the TRM.
-+- nvidia,cg: Numeric value, see the field DFLL_PARAMS_CG_PARAM in the TRM.
-+- nvidia,cg-scale: Boolean value, see the field DFLL_PARAMS_CG_SCALE in the TRM.
-+
-+Required properties for I2C mode:
-+- nvidia,i2c-fs-rate: I2C transfer rate, if using FS mode.
-+
-+Example:
-+
-+dfll@0,70110000 {
-+        compatible = "nvidia,tegra124-dfll";
-+        reg = <0 0x70110000 0 0x100>, /* DFLL control */
-+              <0 0x70110000 0 0x100>, /* I2C output control */
-+              <0 0x70110100 0 0x100>, /* Integrated I2C controller */
-+              <0 0x70110200 0 0x100>; /* Look-up table RAM */
-+        interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
-+        clocks = <&tegra_car TEGRA124_CLK_DFLL_SOC>,
-+                 <&tegra_car TEGRA124_CLK_DFLL_REF>,
-+                 <&tegra_car TEGRA124_CLK_I2C5>;
-+        clock-names = "soc", "ref", "i2c";
-+        #clock-cells = <0>;
-+        clock-output-names = "dfllCPU_out";
-+        vdd-cpu-supply = <&vdd_cpu>;
-+        status = "okay";
-+
-+        nvidia,sample-rate = <12500>;
-+        nvidia,droop-ctrl = <0x00000f00>;
-+        nvidia,force-mode = <1>;
-+        nvidia,cf = <10>;
-+        nvidia,ci = <0>;
-+        nvidia,cg = <2>;
-+
-+        nvidia,i2c-fs-rate = <400000>;
-+};
--- 
-1.8.1.5
+> > Just to be clear the issue is with the presentation of your change, it
+> > is not appropriate to provide a changelog which consists mainly of
+> > widely directed personal insults especially given that it omits basic
+> > technical content.
 
+> I understood that, but I feel incapable to come up with a reasonable
+> changelog for this.
+
+Just describe in a specific, technical fashion what the problem is and
+what the fix does without reference to personal qualities of the various
+parties involved in the code being the way it is.
+
+--YOxyDEsNCn0QNWql
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTzTVnAAoJELSic+t+oim9JSgP/1YbQarKbfq0/M89Klmqnvf5
+CVXLUgVL+EPAAI9UEDn6+53S5OqshLAvtD5/4KU7FWxIwyT+DP0eKTespp3O+nMb
+J8gHuG4KevPqzoJi8xmuZGCff3QCA4LPY1S0UUk3sYQ6hTQZzdP1qJjxgHytTDUl
+n2u24e54PtqmsubcPuYFnhUIvK2t57j4U7dY1hYbot5zOMBBubwvEJZ+TJQRa/xN
+/kymMpiO+1jFgTTatqARQmp1abI9TeXZAm6071WBzm0T9lxshKjW49usT9TBVvqv
++ZkadN/n+rBfv85xaBOJu1H0/mEh1wfceirndoqzDkCKoe0Y2dtnVZ0qun9MUJIB
+qQKyXwNOPRkp1Oe/9qjz4twDlzfeyCrNZvLnQ7Ez0hPmxmTuE84qjeVKQfcmFHJ5
+k6e0TMOvhaPp1y5HiXMgjPilHDlHC/0hMl8PE2trrOA83tFL+CIuBB1B1FuqWp3p
+pTa+3WizSC0WK+5LXbFHtlOkcOdocTdoTLLD5ESOYqP3CB9AGQUghWNWJN8s/Bd/
+BbyQA3APGRo5XjdZepNDgqIdIEYYhweNZqpV49jzuCdQzGDM/dZK1P28EkxUuHap
+1q57uDphql+FWObGg2whYBvzEm6Qm5u6dQf4c4eGQ2eU8n3b3EBKYNID7uPYxGWu
+2KJlnYG1hpfxBDItg0KC
+=xbpx
+-----END PGP SIGNATURE-----
+
+--YOxyDEsNCn0QNWql--
