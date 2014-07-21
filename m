@@ -1,210 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaGUFod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 01:44:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61456 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896AbaGUFm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 01:42:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
-   d="scan'208";a="576270761"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v7 02/10] x86, mpx: add MPX specific mmap interface
-Date: Mon, 21 Jul 2014 13:38:36 +0800
-Message-Id: <1405921124-4230-3-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
-References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
+	id S1752858AbaGUFqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 01:46:53 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:40771 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443AbaGUFqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 01:46:51 -0400
+Date: Mon, 21 Jul 2014 07:46:46 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Wang YanQing <udknight@gmail.com>, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, jhovold@gmail.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, andi@lisas.de, dforsi@gmail.com
+Subject: Re: [PATCH v3] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140721054646.GB29620@rhlx01.hs-esslingen.de>
+References: <20140721024624.GA25469@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721024624.GA25469@udknight>
+X-Priority: none
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds one MPX specific mmap interface, which only handles
-mpx related maps, including bounds table and bounds directory.
+Hi,
 
-In order to track MPX specific memory usage, this interface is added
-to stick new vm_flag VM_MPX in the vma_area_struct when create a
-bounds table or bounds directory.
+Did some more review, sorry ;)
 
-These bounds tables can take huge amounts of memory.  In the
-worst-case scenario, the tables can be 4x the size of the data
-structure being tracked. IOW, a 1-page structure can require 4
-bounds-table pages.
+On Mon, Jul 21, 2014 at 10:46:24AM +0800, Wang YanQing wrote:
+> +static struct gpio_chip template_chip = {
+> +	.label                  = "pl2303-gpio",
+> +	.owner                  = THIS_MODULE,
+> +	.direction_input        = pl2303_gpio_direction_in,
+> +	.get                    = pl2303_gpio_get,
+> +	.direction_output       = pl2303_gpio_direction_out,
+> +	.set                    = pl2303_gpio_set,
+> +	.can_sleep              = 1,
+> +};
 
-My expectation is that folks using MPX are going to be keen on
-figuring out how much memory is being dedicated to it. With this
-feature, plus some grepping in /proc/$pid/smaps one could take a
-pretty good stab at it.
+Could this be made static const? (since it's for one-time copy purposes only)
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- arch/x86/Kconfig           |    4 ++
- arch/x86/include/asm/mpx.h |   38 +++++++++++++++++++++
- arch/x86/mm/Makefile       |    2 +
- arch/x86/mm/mpx.c          |   79 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 123 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/mpx.h
- create mode 100644 arch/x86/mm/mpx.c
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a8f749e..020db35 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -238,6 +238,10 @@ config HAVE_INTEL_TXT
- 	def_bool y
- 	depends on INTEL_IOMMU && ACPI
- 
-+config X86_INTEL_MPX
-+	def_bool y
-+	depends on CPU_SUP_INTEL
-+
- config X86_32_SMP
- 	def_bool y
- 	depends on X86_32 && SMP
-diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-new file mode 100644
-index 0000000..5725ac4
---- /dev/null
-+++ b/arch/x86/include/asm/mpx.h
-@@ -0,0 +1,38 @@
-+#ifndef _ASM_X86_MPX_H
-+#define _ASM_X86_MPX_H
-+
-+#include <linux/types.h>
-+#include <asm/ptrace.h>
-+
-+#ifdef CONFIG_X86_64
-+
-+/* upper 28 bits [47:20] of the virtual address in 64-bit used to
-+ * index into bounds directory (BD).
-+ */
-+#define MPX_BD_ENTRY_OFFSET	28
-+#define MPX_BD_ENTRY_SHIFT	3
-+/* bits [19:3] of the virtual address in 64-bit used to index into
-+ * bounds table (BT).
-+ */
-+#define MPX_BT_ENTRY_OFFSET	17
-+#define MPX_BT_ENTRY_SHIFT	5
-+#define MPX_IGN_BITS		3
-+
-+#else
-+
-+#define MPX_BD_ENTRY_OFFSET	20
-+#define MPX_BD_ENTRY_SHIFT	2
-+#define MPX_BT_ENTRY_OFFSET	10
-+#define MPX_BT_ENTRY_SHIFT	4
-+#define MPX_IGN_BITS		2
-+
-+#endif
-+
-+#define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
-+#define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
-+
-+#define MPX_BNDSTA_ERROR_CODE	0x3
-+
-+unsigned long mpx_mmap(unsigned long len);
-+
-+#endif /* _ASM_X86_MPX_H */
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index 6a19ad9..ecfdc46 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -30,3 +30,5 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
- obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
- 
- obj-$(CONFIG_MEMTEST)		+= memtest.o
-+
-+obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
-diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
-new file mode 100644
-index 0000000..e1b28e6
---- /dev/null
-+++ b/arch/x86/mm/mpx.c
-@@ -0,0 +1,79 @@
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+#include <asm/mpx.h>
-+#include <asm/mman.h>
-+#include <linux/sched/sysctl.h>
-+
-+static const char *mpx_mapping_name(struct vm_area_struct *vma)
-+{
-+	return "[mpx]";
-+}
-+
-+static struct vm_operations_struct mpx_vma_ops = {
-+	.name = mpx_mapping_name,
-+};
-+
-+/*
-+ * this is really a simplified "vm_mmap". it only handles mpx
-+ * related maps, including bounds table and bounds directory.
-+ *
-+ * here we can stick new vm_flag VM_MPX in the vma_area_struct
-+ * when create a bounds table or bounds directory, in order to
-+ * track MPX specific memory.
-+ */
-+unsigned long mpx_mmap(unsigned long len)
-+{
-+	unsigned long ret;
-+	unsigned long addr, pgoff;
-+	struct mm_struct *mm = current->mm;
-+	vm_flags_t vm_flags;
-+	struct vm_area_struct *vma;
-+
-+	/* Only bounds table and bounds directory can be allocated here */
-+	if (len != MPX_BD_SIZE_BYTES && len != MPX_BT_SIZE_BYTES)
-+		return -EINVAL;
-+
-+	down_write(&mm->mmap_sem);
-+
-+	/* Too many mappings? */
-+	if (mm->map_count > sysctl_max_map_count) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/* Obtain the address to map to. we verify (or select) it and ensure
-+	 * that it represents a valid section of the address space.
-+	 */
-+	addr = get_unmapped_area(NULL, 0, len, 0, MAP_ANONYMOUS | MAP_PRIVATE);
-+	if (addr & ~PAGE_MASK) {
-+		ret = addr;
-+		goto out;
-+	}
-+
-+	vm_flags = VM_READ | VM_WRITE | VM_MPX |
-+			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
-+
-+	/* Set pgoff according to addr for anon_vma */
-+	pgoff = addr >> PAGE_SHIFT;
-+
-+	ret = mmap_region(NULL, addr, len, vm_flags, pgoff);
-+	if (IS_ERR_VALUE(ret))
-+		goto out;
-+
-+	vma = find_vma(mm, ret);
-+	if (!vma) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	vma->vm_ops = &mpx_vma_ops;
-+
-+	if (vm_flags & VM_LOCKED) {
-+		up_write(&mm->mmap_sem);
-+		mm_populate(ret, len);
-+		return ret;
-+	}
-+
-+out:
-+	up_write(&mm->mmap_sem);
-+	return ret;
-+}
+> +struct pl2303_gpio {
+> +       /*
+> +        * 0..3: unknown (zero)
+> +        * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
+> +        * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
+> +        * 6: gp0 pin value
+> +        * 7: gp1 pin value
+> +        */
+> +       u8 index;
+
+Most frequently accessed member at first position - good.
+
+
+> +static inline struct pl2303_gpio *to_pl2303_gpio(struct gpio_chip
+> *chip)
+> +{
+> +       return container_of(chip, struct pl2303_gpio, gpio_chip);
+> +}
+
+Nicely cast-avoiding helper :)
+
+
+> +		spriv->gpio->index = 0x00;
+> +		spriv->gpio->serial = serial;
+> +		spriv->gpio->gpio_chip = template_chip;
+> +		spriv->gpio->gpio_chip.ngpio = GPIO_NUM;
+> +		spriv->gpio->gpio_chip.base = -1;
+> +		spriv->gpio->gpio_chip.dev = &serial->interface->dev;
+> +		/* initialize GPIOs, input mode as default */
+> +		pl2303_vendor_write(spriv->gpio->serial, 1, spriv->gpio->index);
+
+Perhaps the index line should better be moved
+right before the pl2303_vendor_write() line,
+to more obviously hint at why it's "input mode"
+(but OTOH currently you're cleanly initializing things in correct member order,
+so it's probably better to keep it that way).
+
+Also, it's perhaps a better idea to do this initial init call
+via calls of actual GPIO API rather than implementation-specific call
+(e.g. that way one could simple reuse the generic GPIO call for devices
+which happen to implement GPIO via a different mechanism...).
+(hmm, nope, from a layering POV it's not recommendable,
+since we clearly are at hardware-specific init here,
+where you want to firmly guarantee
+that the hardware is directly and fully initialized).
+
+
+Since there are several repeated
+pl2303_vendor_write(...serial, 1, ...index) calls,
+it's possibly a good idea to wrap these calls in a convenience
+pl2303_gpio_state_update(gpio)
+This would also increase GPIO hardware abstraction,
+by then simply having to provide an alternative for this single function
+if needed.
+Also, it may (depending on the number of callers,
+which is on the low side here unfortunately)
+reduce instruction cache footprint.
+
+
+So these are my additional thoughts about the implementation,
+which you may or may not choose to adopt.
+
+HTH,
+
+Andreas Mohr
+
 -- 
-1.7.1
-
+GNU/Linux. It's not the software that's free, it's you.
