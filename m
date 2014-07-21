@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaGUGcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 02:32:05 -0400
-Received: from smtp4.infomaniak.ch ([84.16.68.92]:40465 "EHLO
-	smtp4.infomaniak.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaGUGcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 02:32:03 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jul 2014 02:32:02 EDT
-Message-ID: <53CCB282.7070901@brownhat.org>
-Date: Mon, 21 Jul 2014 08:26:10 +0200
-From: Daniele Venzano <venza@brownhat.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753194AbaGUGp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 02:45:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9645 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187AbaGUGp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 02:45:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
+   d="scan'208";a="564779807"
+Message-ID: <53CCB6AE.6020505@intel.com>
+Date: Mon, 21 Jul 2014 09:43:58 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-CC: davem@davemloft.net, joe@perches.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 24/30] sis900: remove unnecessary break after return
-References: <1405866475-24754-1-git-send-email-fabf@skynet.be> <1405866475-24754-5-git-send-email-fabf@skynet.be>
-In-Reply-To: <1405866475-24754-5-git-send-email-fabf@skynet.be>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
+References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/07/2014 16:27, Fabian Frederick ha scritto:
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Signed-off-by: Daniele Venzano <venza@brownhat.org>
-
-> ---
->  drivers/net/ethernet/sis/sis900.c | 1 -
->  1 file changed, 1 deletion(-)
+On 07/21/2014 12:55 AM, Jiri Olsa wrote:
+> hi,
+> this patchset factors session's ordered samples queue,
+> and allows to limit the size of this queue.
 > 
-> diff --git a/drivers/net/ethernet/sis/sis900.c b/drivers/net/ethernet/sis/sis900.c
-> index 6072f09..7bea17c 100644
-> --- a/drivers/net/ethernet/sis/sis900.c
-> +++ b/drivers/net/ethernet/sis/sis900.c
-> @@ -2258,7 +2258,6 @@ static int sis900_set_config(struct net_device *dev, struct ifmap *map)
->  		case IF_PORT_100BASEFX: /* 100BaseFx */
->                  	/* These Modes are not supported (are they?)*/
->  			return -EOPNOTSUPP;
-> -			break;
->  
->  		default:
->  			return -EINVAL;
+> v3 changes:
+>   - rebased to latest tip/perf/core
+>   - add comment for WARN in patch 8 (David)
+>   - added ordered-events debug variable (David)
+>   - renamed ordered_events_(get|put) to ordered_events_(new|delete)
+>   - renamed struct ordered_events_queue to struct ordered_events
 > 
+> v2 changes:
+>   - several small changes for review comments (Namhyung)
+> 
+> 
+> The report command queues events till any of following
+> conditions is reached:
+>   - PERF_RECORD_FINISHED_ROUND event is processed
+>   - end of the file is reached
+> 
+> Any of above conditions will force the queue to flush some
+> events while keeping all allocated memory for next events.
+> 
+> If PERF_RECORD_FINISHED_ROUND is missing the queue will
 
+Why is it missing?
 
--- 
-Daniele Venzano
-http://www.brownhat.org
+> allocate memory for every single event in the perf.data.
+> This could lead to enormous memory consuption and speed
+> degradation of report command for huge perf.data files.
+> 
+> With the quue allocation limit of 100 MB, I've got around
+> 15% speedup on reporting of ~10GB perf.data file.
+
+How do you know the results are still valid?  Wouldn't it
+be better to wait that extra 15% and know that the data has
+been processed correctly?
 
