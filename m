@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaGULK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:10:27 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20318 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595AbaGULK0 (ORCPT
+	id S1754900AbaGULKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:10:36 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:33461 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754663AbaGULK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:10:26 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+o8701im3lj6/F9y8kr+km
-Date: Mon, 21 Jul 2014 04:09:02 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] ARM: OMAP2+: timer: Fix error message to not use
- hwmod structure
-Message-ID: <20140721110902.GY18374@atomide.com>
-References: <1398216429-4681-1-git-send-email-joelf@ti.com>
- <1398216429-4681-7-git-send-email-joelf@ti.com>
+	Mon, 21 Jul 2014 07:10:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398216429-4681-7-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <17740341.0lUJQdnn9z@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<5348663.eHVXUR5shS@wuerfel>
+	<CAFiDJ5-v7BEuLNEn0OyLpbLUJkeeZuKnDrFZZwQrjhFSU4PZSw@mail.gmail.com>
+	<17740341.0lUJQdnn9z@wuerfel>
+Date: Mon, 21 Jul 2014 19:10:25 +0800
+X-Google-Sender-Auth: GOoUM12RH4UerU2BEAzmhEnB2-g
+Message-ID: <CAFiDJ58t6pNgkAda2PRpoPS=UsBLKcm0GxP1kbNBms_2pkkmdA@mail.gmail.com>
+Subject: Re: [PATCH v2 19/29] nios2: Time keeping
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joel Fernandes <joelf@ti.com> [140422 18:27]:
-> oh->name is no longer used, correct the error message.
+On Mon, Jul 21, 2014 at 6:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 21 July 2014 18:07:02 Ley Foon Tan wrote:
+>> >
+>> >> +#ifndef _ASM_NIOS2_TIMEX_H
+>> >> +#define _ASM_NIOS2_TIMEX_H
+>> >> +
+>> >> +/* Supply dummy tick-rate. Real value will be read from devicetree */
+>> >> +#define CLOCK_TICK_RATE              (HZ * 100000UL)
+>> >> +
+>> >> +#include <asm-generic/timex.h>
+>> >> +
+>> >> +#endif
+>> >
+>> > CLOCK_TICK_RATE is no longer used anywhere, no need for this file.
+>>
+>> I found jiffies.h still using this define. Can we still remove this?
+>> In include/linux/jiffies.h:
+>> #define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)   /* For divider */
+>>
+>
+> Ah, I thought we had killed off LATCH, but at least it is only used
+> on architecture specific code, and only in two files:
+>
+> arch/x86/kernel/apm_32.c:       outb_p(LATCH & 0xff, PIT_CH0);  /* LSB */
+> arch/unicore32/kernel/time.c:   writel(readl(OST_OSMR0) - LATCH, OST_OSCR);
+>
+> We could decide to move the LATCH definition into those two files to
+> remove it from common code, but it doesn't really hurt otherwise,
+> and everything works fine if you don't define CLOCK_TICK_RATE on
+> architectures that don't need LATCH or CLOCK_TICK_RATE in their
+> architecture-specific code.
 
-I guess this error is created by one of the patchs in this
-series? So maybe fold it into the patch creating this error?
+Okay, will remove CLOCK_TICK_RATE define.
 
-Regards,
+Thanks.
 
-Tony
- 
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->  arch/arm/mach-omap2/timer.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> index 4fcfd7a..519ccfd 100644
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -331,8 +331,8 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
->  	if (clk_get_parent(timer->fclk) != src) {
->  		r = clk_set_parent(timer->fclk, src);
->  		if (r < 0) {
-> -			pr_warn("%s: %s cannot set source\n", __func__,
-> -				oh->name);
-> +			pr_warn("%s: cannot set timer's source\n", __func__);
-> +			WARN_ON(1);
->  			clk_put(src);
->  			return r;
->  		}
-> -- 
-> 1.7.9.5
-> 
+Regards
+Ley Foon
