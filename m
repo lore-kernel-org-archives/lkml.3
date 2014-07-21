@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933611AbaGUTep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 15:34:45 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47709 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933568AbaGUTeo (ORCPT
+	id S933584AbaGUTj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 15:39:27 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:46436 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933482AbaGUTj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 15:34:44 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-X-Google-Original-From: Andy Lutomirski <luto@mit.edu>
-Message-ID: <53CD6B50.5010404@mit.edu>
-Date: Mon, 21 Jul 2014 12:34:40 -0700
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 21 Jul 2014 15:39:26 -0400
+Date: Mon, 21 Jul 2014 21:39:21 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
+Message-ID: <20140721193921.GO18735@two.firstfloor.org>
+References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
+ <53CCB6AE.6020505@intel.com>
+ <20140721080219.GA4183@krava.redhat.com>
+ <53CCD3A7.5070002@intel.com>
+ <20140721095415.GB8865@krava.redhat.com>
+ <87d2cy3c7m.fsf@tassilo.jf.intel.com>
+ <53CD5AB5.3000307@intel.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
-References: <20140719130602.GA5101@pd.tnic>
-In-Reply-To: <20140719130602.GA5101@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CD5AB5.3000307@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2014 06:06 AM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
+On Mon, Jul 21, 2014 at 09:23:49PM +0300, Adrian Hunter wrote:
+> On 21/07/2014 7:31 p.m., Andi Kleen wrote:
+> >Jiri Olsa <jolsa@redhat.com> writes:
+> >>
+> >>[jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
+> >>Timestamp below last timeslice flush
+> >>0x2276f58 [0x68]: failed to process type: 9
+> >
+> >FWIW we're seeing this frequently too.
 > 
-> There are machines which do have stable and always-running TSCs but the
-> last get started at different points in time by the platform, causing
-> the TSCs to have a small constant diff.
-> 
-> It has been tried a couple of times to resync those during that
-> sync check but the procedure is error prone and flaky, and not 100%
-> successful.
-> 
-> So, instead of doing that, let's not touch the TSCs at all but save a
-> per-CPU TSC offset which we add to the TSC value we've read from the
-> Time-Stamp Counter. The hope is thus to still salvage the TSC on those
-> machines.
-> 
-> For that to work, we need to populate the TSC AUX MSR with the core ID
-> prior to doing the TSC sync check so that RDTSCP can give us the correct
-> core number and we can add the offset atomically. And yes, we need a
-> X86_FEATURE_RDTSCP CPU for the whole deal to work. Older ones simply
-> lose.
+> Jiri's example didn't work for me.  Do you have one?
 
-I'm sure I'm missing something, but where is tsc_offset used outside the
-tsc startup code?  Is it somehow getting programmed into the TSC config
-registers?
+Did you try it on a idle system? Do it during some work load
+that generates a lot of context switches.
 
---Andy
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
