@@ -1,192 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaGUKqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 06:46:20 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:61256 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324AbaGUKqS (ORCPT
+	id S1754661AbaGUKrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 06:47:47 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59064 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbaGUKro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 06:46:18 -0400
-Message-ID: <53CCEF76.4040002@gmail.com>
-Date: Mon, 21 Jul 2014 13:46:14 +0300
-From: Timofey Titovets <nefelim4ag@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 21 Jul 2014 06:47:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, Chanwoo Choi <cwchoi00@gmail.com>,
+        jic23@kernel.org, naveen krishna <ch.naveen@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        rdunlap@infradead.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCHv6 3/4] iio: devicetree: Add DT binding documentation for Exynos3250 ADC
+Date: Mon, 21 Jul 2014 12:47:01 +0200
+Message-ID: <5314104.0WdOMs1CRl@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53CCEDBF.7010300@gmail.com>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <7477106.gq1AqisQx4@wuerfel> <53CCEDBF.7010300@gmail.com>
 MIME-Version: 1.0
-To: minchan@kernel.org
-CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: [PATCH v3 RESEND] zram: auto add new devices on demand
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/Ghh7J6qu5Iz3QqYXHW1lJjXBLU7Kn4Obt6xDupoI9p
+ 9Ji78tIiOkC3COGDtDWdP8qssuhImMena38le/LRN77g4BoTrB
+ NJbwmd15n521uYfDuEahXMwwNIjLdgz+uCgoH8/5HNYrXiIMmV
+ M3VBnhroT9AYrkFBpm3WIPlrOsz+s0tOPRZrmlgzBX5jR/p1Mi
+ VsOZEZroI8/JznaMEd/FuxjWsVGgiGG26lVUvCIecLwaHLNtmk
+ REqLm1BrVPFmdJW+DKcxvVci4g7fBrq+4+iGaGJwXC5CAAnAaX
+ Bbrtqk+yEYm3oo30CGKJ5VB5LVuGj+kT3TYfJDBNwn9MUcIwhC
+ KFvbFShAahNXNxEC/pPo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Timofey Titovets <nefelim4ag@gmail.com>
+On Monday 21 July 2014 12:38:55 Tomasz Figa wrote:
+> 
+> I believe we should be enforcing as much correctness on DT data as
+> possible without too much burden in the code. Otherwise how we are
+> supposed to know if an error is caused by wrong/missing data in DT, bug
+> in the driver or who knows else?
+> 
+> In this case making this clock required depending on compatible string
+> doesn't seem too bothersome to me.
 
-This add supporting of auto allocate new zram devices on demand, like 
-loop devices
+It makes some sense given that we already need the separate compatible
+string (for the number of channels). Without that part, I'd probably
+prefer not having the new string just for the extra clock being required,
+that could be handled more easily by just making it an optional clock.
 
-This working by following rules:
-	- Pre create zram devices specified by num_device
-	- if all device already in use -> add new free device
-
- From v1 -> v2:
-Delete useless variable 'ret', added documentation for explain new zram 
-behavior
-
- From v2 -> v3
-Delete logic to destroy not used devices, for avoid concurrency issues
-Code refactoring for made patch small and clean as possible
-Patch can pass the test:
-
-#!/bin/sh
-modprobe zram
-while true; do
-                 echo 10485760 > /sys/block/zram0/disksize&
-                 echo 1 > /sys/block/zram0/reset&
-done
-
-Can be pulled from:
-https://github.com/Nefelim4ag/linux.git
-
-Tested on 3.15.5-2-ARCH, can be applied on any kernel version
-after this patch 'zram: add LZ4 compression support' - 
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
-
----
-
-diff --git a/Documentation/blockdev/zram.txt 
-b/Documentation/blockdev/zram.txt
-index 0595c3f..a090ac7 100644
---- a/Documentation/blockdev/zram.txt
-+++ b/Documentation/blockdev/zram.txt
-@@ -21,6 +21,9 @@ Following shows a typical sequence of steps for using 
-zram.
-  	This creates 4 devices: /dev/zram{0,1,2,3}
-  	(num_devices parameter is optional. Default: 1)
-
-+	If all device in use kernel will create new zram device
-+	(between num_devices and 31)
-+
-  2) Set max number of compression streams
-  	Compression backend may use up to max_comp_streams compression streams,
-  	thus allowing up to max_comp_streams concurrent compression operations.
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 089e72c..cc78779 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -43,6 +43,8 @@ static const char *default_compressor = "lzo";
-  /* Module params (documentation at end) */
-  static unsigned int num_devices = 1;
-
-+static inline int zram_add_dev(void);
-+
-  #define ZRAM_ATTR_RO(name)						\
-  static ssize_t zram_attr_##name##_show(struct device *d,		\
-  				struct device_attribute *attr, char *b)	\
-@@ -168,6 +170,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
-  		struct device_attribute *attr, const char *buf, size_t len)
-  {
-  	struct zram *zram = dev_to_zram(dev);
-+
-  	down_write(&zram->init_lock);
-  	if (init_done(zram)) {
-  		up_write(&zram->init_lock);
-@@ -239,6 +242,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
-  {
-  	size_t num_pages;
-  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-+
-  	if (!meta)
-  		goto out;
-
-@@ -374,6 +378,7 @@ static int zram_bvec_read(struct zram *zram, struct 
-bio_vec *bvec,
-  	struct page *page;
-  	unsigned char *user_mem, *uncmem = NULL;
-  	struct zram_meta *meta = zram->meta;
-+
-  	page = bvec->bv_page;
-
-  	read_lock(&meta->tb_lock);
-@@ -607,6 +612,7 @@ static void zram_reset_device(struct zram *zram, 
-bool reset_capacity)
-  	/* Free all pages that are still in this zram device */
-  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-  		unsigned long handle = meta->table[index].handle;
-+
-  		if (!handle)
-  			continue;
-
-@@ -667,6 +673,7 @@ static ssize_t disksize_store(struct device *dev,
-  	zram->disksize = disksize;
-  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-  	revalidate_disk(zram->disk);
-+	zram_add_dev();
-  	up_write(&zram->init_lock);
-  	return len;
-
-@@ -954,6 +961,34 @@ static void destroy_device(struct zram *zram)
-  	blk_cleanup_queue(zram->queue);
-  }
-
-+/*
-+ * Automatically add empty zram device,
-+ * if all created devices already initialized
-+ */
-+static inline int zram_add_dev(void)
-+{
-+	int dev_id;
-+
-+	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-+		if (!zram_devices[dev_id].disksize)
-+			return 0;
-+	}
-+
-+	if (max_num_devices <= num_devices) {
-+		pr_warn("Can't add zram%u, max device number reached\n", num_devices);
-+		return 1;
-+	}
-+
-+	if (create_device(&zram_devices[num_devices], num_devices)) {
-+		destroy_device(&zram_devices[num_devices]);
-+		return 1;
-+	}
-+	pr_info("Created zram%u device\n", num_devices);
-+	num_devices++;
-+
-+	return 0;
-+}
-+
-  static int __init zram_init(void)
-  {
-  	int ret, dev_id;
-@@ -972,13 +1007,14 @@ static int __init zram_init(void)
-  		goto out;
-  	}
-
--	/* Allocate the device array and initialize each one */
--	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
-+	/* Allocate the device array */
-+	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
-  	if (!zram_devices) {
-  		ret = -ENOMEM;
-  		goto unregister;
-  	}
-
-+	/* Initialise zram{0..num_devices} */
-  	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-  		ret = create_device(&zram_devices[dev_id], dev_id);
-  		if (ret)
-@@ -1025,7 +1061,7 @@ module_init(zram_init);
-  module_exit(zram_exit);
-
-  module_param(num_devices, uint, 0);
--MODULE_PARM_DESC(num_devices, "Number of zram devices");
-+MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
-
-  MODULE_LICENSE("Dual BSD/GPL");
-  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+	Arnd
