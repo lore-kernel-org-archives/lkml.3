@@ -1,272 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671AbaGUK0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 06:26:46 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:60452 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410AbaGUK0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 06:26:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Chanwoo Choi <cw00.choi@samsung.com>, ch.naveen@samsung.com,
-        mark.rutland@arm.com, devicetree@vger.kernel.org,
-        kgene.kim@samsung.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
-        t.figa@samsung.com, rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
-        heiko.stuebner@bq.com, Ben Dooks <ben-linux@fluff.org>,
-        linux-input <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 2/2] iio: exynos-adc: add experimental touchscreen support
-Date: Mon, 21 Jul 2014 12:26:24 +0200
-Message-ID: <6295669.xsr4x9Lmj1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5158672.dMAnnUQc7Z@wuerfel>
-References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com> <20140720202842.GB18347@core.coreip.homeip.net> <5158672.dMAnnUQc7Z@wuerfel>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uX6SVjxHrUcyaO2+705GyCCKN/ubEni5Shyee3/pbhm
- ekf0Ez6J7cxqW5sH4PwFS0eLZ628xBteb/Lh9y/JBeFYVlK/KD
- v1+wjdictE0U2Vmib+RTIKYHEw8CEVvfECFXw3afZaxK0kJKOd
- maj8JqpVfXc2Q2rJCRvHQ/ob/4H4qFLwohJ9jtHEemxc/0qWZY
- +R3LIExr5MN61VC7GKrpweisntOcIU9m9VRfcpf/6wXjWNG/KB
- Z+I5uPZUxYmZJUXEN/e6xRrqnHwJofmJS56hdWvdsPd8qTPEjD
- JJuq0g2JuovzqiqWru4r0Q3S8Y9H5jlLl2iF4N75zKfKAQwg8d
- O0qcBh4R3OmAriotoSFY=
+	id S1754714AbaGUK1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 06:27:10 -0400
+Received: from 8bytes.org ([81.169.241.247]:50842 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166AbaGUK1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 06:27:06 -0400
+From: Joerg Roedel <joro@8bytes.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3/6] PM / Hibernate: Implement position keeping in radix tree
+Date: Mon, 21 Jul 2014 12:26:59 +0200
+Message-Id: <1405938422-21900-4-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405938422-21900-1-git-send-email-joro@8bytes.org>
+References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 July 2014 12:23:58 Arnd Bergmann wrote:
-> 
-> Thanks a lot for the review! I'll send out the new version after some build testing.
+From: Joerg Roedel <jroedel@suse.de>
 
-Here are the changes I did to the adc driver based on the review comments.
-I'll start a new thread for the updated version that includes the changes.
+Add code to remember the last position that was requested in
+the radix tree. Use it as a cache for faster linear walking
+of the bitmap in the memory_bm_rtree_next_pfn() function
+which is also added with this patch.
 
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index 3d2caea05977..823d7ebc7f52 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -67,6 +67,9 @@
- 
- #define ADC_S3C2410_CON_SELMUX(x) (((x)&0x7)<<3)
- 
-+/* touch screen always uses channel 0 */
-+#define ADC_S3C2410_MUX_TS	0
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ kernel/power/snapshot.c | 102 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 100 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index d5eea1b..6c09879 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -309,6 +309,11 @@ struct mem_zone_bm_rtree {
+ struct bm_position {
+ 	struct bm_block *block;
+ 	int bit;
 +
- /* ADCTSC Register Bits */
- #define ADC_S3C2443_TSC_UD_SEN		(1u << 8)
- #define ADC_S3C2410_TSC_YM_SEN		(1u << 7)
-@@ -106,6 +109,7 @@
- #define ADC_CON_EN_START	(1u << 0)
- #define ADC_DATX_PRESSED	(1u << 15)
- #define ADC_DATX_MASK		0xFFF
-+#define ADC_DATY_MASK		0xFFF
- 
- #define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
- 
-@@ -123,10 +127,12 @@ struct exynos_adc {
- 
- 	struct completion	completion;
- 
--	bool			read_ts;
- 	u32			value;
--	u32			value2;
- 	unsigned int            version;
-+
-+	bool			read_ts;
-+	u32			ts_x;
-+	u32			ts_y;
++	struct mem_zone_bm_rtree *zone;
++	struct rtree_node *node;
++	unsigned long node_pfn;
++	int node_bit;
  };
  
- struct exynos_adc_data {
-@@ -396,21 +402,14 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- 	return ret;
+ struct memory_bitmap {
+@@ -487,6 +492,13 @@ static void memory_bm_position_reset(struct memory_bitmap *bm)
+ {
+ 	bm->cur.block = list_entry(bm->blocks.next, struct bm_block, hook);
+ 	bm->cur.bit = 0;
++
++	bm->cur.zone = list_entry(bm->zones.next, struct mem_zone_bm_rtree,
++				  list);
++	bm->cur.node = list_entry(bm->cur.zone->leaves.next,
++				  struct rtree_node, list);
++	bm->cur.node_pfn = 0;
++	bm->cur.node_bit = 0;
  }
  
--static int exynos_read_s3c64xx_ts(struct iio_dev *indio_dev,
--				struct iio_chan_spec const *chan,
--				int *val,
--				int *val2,
--				long mask)
-+static int exynos_read_s3c64xx_ts(struct iio_dev *indio_dev, int *x, int *y)
- {
- 	struct exynos_adc *info = iio_priv(indio_dev);
- 	unsigned long timeout;
- 	int ret;
+ static void memory_bm_free(struct memory_bitmap *bm, int clear_nosave_free);
+@@ -734,6 +746,11 @@ static int memory_rtree_find_bit(struct memory_bitmap *bm, unsigned long pfn,
+ 	struct rtree_node *node;
+ 	int i, block_nr;
  
--	if (mask != IIO_CHAN_INFO_RAW)
--		return -EINVAL;
--
- 	mutex_lock(&indio_dev->mlock);
--	info->read_ts = 1;
-+	info->read_ts = true;
++	zone = bm->cur.zone;
++
++	if (pfn >= zone->start_pfn && pfn < zone->end_pfn)
++		goto zone_found;
++
+ 	zone = NULL;
  
- 	reinit_completion(&info->completion);
+ 	/* Find the right zone */
+@@ -747,10 +764,16 @@ static int memory_rtree_find_bit(struct memory_bitmap *bm, unsigned long pfn,
+ 	if (!zone)
+ 		return -EFAULT;
  
-@@ -418,7 +417,7 @@ static int exynos_read_s3c64xx_ts(struct iio_dev *indio_dev,
- 	       ADC_V1_TSC(info->regs));
++zone_found:
+ 	/*
+ 	 * We have a zone. Now walk the radix tree to find the leave
+ 	 * node for our pfn.
+ 	 */
++
++	node = bm->cur.node;
++	if (((pfn - zone->start_pfn) & ~BM_BLOCK_MASK) == bm->cur.node_pfn)
++		goto node_found;
++
+ 	node      = zone->rtree;
+ 	block_nr  = (pfn - zone->start_pfn) >> BM_BLOCK_SHIFT;
  
- 	/* Select the ts channel to be used and Trigger conversion */
--	info->data->start_conv(info, 0);
-+	info->data->start_conv(info, ADC_S3C2410_MUX_TS);
- 
- 	timeout = wait_for_completion_timeout
- 			(&info->completion, EXYNOS_ADC_TIMEOUT);
-@@ -428,12 +427,12 @@ static int exynos_read_s3c64xx_ts(struct iio_dev *indio_dev,
- 			info->data->init_hw(info);
- 		ret = -ETIMEDOUT;
- 	} else {
--		*val = info->value;
--		*val2 = info->value2;
--		ret = IIO_VAL_INT;
-+		*x = info->ts_x;
-+		*y = info->ts_y;
-+		ret = 0;
+@@ -763,9 +786,15 @@ static int memory_rtree_find_bit(struct memory_bitmap *bm, unsigned long pfn,
+ 		node = (struct rtree_node *)node->data[index];
  	}
  
--	info->read_ts = 0;
-+	info->read_ts = false;
- 	mutex_unlock(&indio_dev->mlock);
- 
- 	return ret;
-@@ -445,8 +444,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
- 
- 	/* Read value */
- 	if (info->read_ts) {
--		info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
--		info->value2 = readl(ADC_V1_DATY(info->regs)) & ADC_DATX_MASK;
-+		info->ts_x = readl(ADC_V1_DATX(info->regs));
-+		info->ts_y = readl(ADC_V1_DATY(info->regs));
- 		writel(ADC_TSC_WAIT4INT | ADC_S3C2443_TSC_UD_SEN, ADC_V1_TSC(info->regs));
- 	} else {
- 		info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
-@@ -477,7 +476,7 @@ static irqreturn_t exynos_ts_isr(int irq, void *dev_id)
- 	int ret;
- 
- 	do {
--		ret =exynos_read_s3c64xx_ts(dev, NULL, &x, &y, IIO_CHAN_INFO_RAW);
-+		ret = exynos_read_s3c64xx_ts(dev, &x, &y);
- 		if (ret == -ETIMEDOUT)
- 			break;
- 
-@@ -486,11 +485,15 @@ static irqreturn_t exynos_ts_isr(int irq, void *dev_id)
- 			break;
- 
- 		input_report_abs(info->input, ABS_X, x & ADC_DATX_MASK);
--		input_report_abs(info->input, ABS_Y, y & ADC_DATX_MASK);
-+		input_report_abs(info->input, ABS_Y, y & ADC_DATY_MASK);
- 		input_report_key(info->input, BTN_TOUCH, 1);
- 		input_sync(info->input);
- 
- 		msleep(1);
++node_found:
++	/* Update last position */
++	bm->cur.zone     = zone;
++	bm->cur.node     = node;
++	bm->cur.node_pfn = (pfn - zone->start_pfn) & ~BM_BLOCK_MASK;
 +
-+		/* device may have been closed while touched */
-+		if (!info->input->users)
-+			return IRQ_HANDLED;
- 	} while (1);
+ 	/* Set return values */
+-	*addr   = node->data;
+-	*bit_nr = (pfn - zone->start_pfn) & BM_BLOCK_MASK;
++	*addr            = node->data;
++	*bit_nr          = (pfn - zone->start_pfn) & BM_BLOCK_MASK;
  
- 	input_report_key(info->input, BTN_TOUCH, 0);
-@@ -552,10 +555,28 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
  	return 0;
  }
+@@ -860,11 +889,16 @@ static bool memory_bm_pfn_present(struct memory_bitmap *bm, unsigned long pfn)
+  *	this function.
+  */
  
-+static int exynos_adc_ts_open(struct input_dev *dev)
-+{
-+	struct exynos_adc *info = input_get_drvdata(dev);
++static unsigned long memory_bm_rtree_next_pfn(struct memory_bitmap *bm);
 +
-+	return request_threaded_irq(info->tsirq, NULL, exynos_ts_isr,
-+				    0, "touchscreen", info);
-+}
-+
-+static void exynos_adc_ts_close(struct input_dev *dev)
-+{
-+	struct exynos_adc *info = input_get_drvdata(dev);
-+
-+	free_irq(info->tsirq, info);
-+}
-+
- static int exynos_adc_ts_init(struct exynos_adc *info)
+ static unsigned long memory_bm_next_pfn(struct memory_bitmap *bm)
  {
- 	int ret;
++	unsigned long rtree_pfn;
+ 	struct bm_block *bb;
+ 	int bit;
  
-+	if (info->tsirq <= 0)
-+		return -ENODEV;
++	rtree_pfn = memory_bm_rtree_next_pfn(bm);
 +
- 	info->input = input_allocate_device();
- 	if (!info->input)
- 		return -ENOMEM;
-@@ -566,33 +587,17 @@ static int exynos_adc_ts_init(struct exynos_adc *info)
- 	input_set_abs_params(info->input, ABS_X, 0, 0x3FF, 0, 0);
- 	input_set_abs_params(info->input, ABS_Y, 0, 0x3FF, 0, 0);
+ 	bb = bm->cur.block;
+ 	do {
+ 		bit = bm->cur.bit;
+@@ -878,13 +912,77 @@ static unsigned long memory_bm_next_pfn(struct memory_bitmap *bm)
+ 	} while (&bb->hook != &bm->blocks);
  
--	/* data from s3c2410_ts driver */
- 	info->input->name = "S3C24xx TouchScreen";
- 	info->input->id.bustype = BUS_HOST;
--	info->input->id.vendor = 0xDEAD;
--	info->input->id.product = 0xBEEF;
--	info->input->id.version = 0x0200;
-+	info->input->open = exynos_adc_ts_open;
-+	info->input->close = exynos_adc_ts_close;
-+	
-+	input_set_drvdata(info->input, info);
+ 	memory_bm_position_reset(bm);
++	WARN_ON_ONCE(rtree_pfn != BM_END_OF_MAP);
+ 	return BM_END_OF_MAP;
  
- 	ret = input_register_device(info->input);
--	if (ret) {
-+	if (ret)
- 		input_free_device(info->input);
--		goto err;
--	}
--
--	if (info->tsirq > 0)
--		ret = request_threaded_irq(info->irq, NULL, exynos_ts_isr,
--					0, "touchscreen", info);
--	if (ret < 0) {
--		dev_err(info->dev, "failed requesting touchsccreen irq, irq = %d\n",
--							info->irq);
--		goto err_input;
--	}
--
--	return 0;
- 
--err_input:
--	input_unregister_device(info->input);
--err:
- 	return ret;
+  Return_pfn:
++	WARN_ON_ONCE(bb->start_pfn + bit != rtree_pfn);
+ 	bm->cur.bit = bit + 1;
+ 	return bb->start_pfn + bit;
  }
  
-@@ -602,7 +607,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	struct device_node *np = pdev->dev.of_node;
- 	struct iio_dev *indio_dev = NULL;
- 	struct resource	*mem;
--	bool has_ts;
-+	bool has_ts = false;
- 	int ret = -ENODEV;
- 	int irq;
- 
-@@ -711,7 +716,10 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	if (info->data->init_hw)
- 		info->data->init_hw(info);
- 
--	has_ts = of_property_read_bool(pdev->dev.of_node, "has-touchscreen");
-+	/* leave out any TS related code if unreachable */
-+	if (IS_BUILTIN(CONFIG_INPUT) ||
-+	    (IS_MODULE(CONFIG_INPUT) && config_enabled(MODULE)))
-+		has_ts = of_property_read_bool(pdev->dev.of_node, "has-touchscreen");
- 	if (has_ts)
- 		ret = exynos_adc_ts_init(info);
- 	if (ret)
-@@ -752,7 +760,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
- 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
- 	struct exynos_adc *info = iio_priv(indio_dev);
- 
--	input_free_device(info->input);	
-+	input_unregister_device(info->input);	
- 	device_for_each_child(&indio_dev->dev, NULL,
- 				exynos_adc_remove_devices);
- 	iio_device_unregister(indio_dev);
++/*
++ *	rtree_next_node - Jumps to the next leave node
++ *
++ *	Sets the position to the beginning of the next node in the
++ *	memory bitmap. This is either the next node in the current
++ *	zone's radix tree or the first node in the radix tree of the
++ *	next zone.
++ *
++ *	Returns true if there is a next node, false otherwise.
++ */
++static bool rtree_next_node(struct memory_bitmap *bm)
++{
++	bm->cur.node = list_entry(bm->cur.node->list.next,
++				  struct rtree_node, list);
++	if (&bm->cur.node->list != &bm->cur.zone->leaves) {
++		bm->cur.node_pfn += BM_BITS_PER_BLOCK;
++		bm->cur.node_bit  = 0;
++		return true;
++	}
++
++	/* No more nodes, goto next zone */
++	bm->cur.zone = list_entry(bm->cur.zone->list.next,
++				  struct mem_zone_bm_rtree, list);
++	if (&bm->cur.zone->list != &bm->zones) {
++		bm->cur.node = list_entry(bm->cur.zone->leaves.next,
++					  struct rtree_node, list);
++		bm->cur.node_pfn = 0;
++		bm->cur.node_bit = 0;
++		return true;
++	}
++
++	/* No more zones */
++	return false;
++}
++
++/*
++ *	memory_bm_rtree_next_pfn - Find the next set bit
++ *
++ *	Starting from the last returned position this function searches
++ *	for the next set bit in the memory bitmap and returns its
++ *	number. If no more bit is set BM_END_OF_MAP is returned.
++ */
++static unsigned long memory_bm_rtree_next_pfn(struct memory_bitmap *bm)
++{
++	unsigned long bits, pfn, pages;
++	int bit;
++
++	do {
++		pages	  = bm->cur.zone->end_pfn - bm->cur.zone->start_pfn;
++		bits      = min(pages - bm->cur.node_pfn, BM_BITS_PER_BLOCK);
++		bit	  = find_next_bit(bm->cur.node->data, bits,
++					  bm->cur.node_bit);
++		if (bit < bits) {
++			pfn = bm->cur.zone->start_pfn + bm->cur.node_pfn + bit;
++			bm->cur.node_bit = bit + 1;
++			return pfn;
++		}
++	} while (rtree_next_node(bm));
++
++	return BM_END_OF_MAP;
++}
++
+ /**
+  *	This structure represents a range of page frames the contents of which
+  *	should not be saved during the suspend.
+-- 
+1.9.1
 
