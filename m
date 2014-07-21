@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaGUMj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:39:58 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:43318 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579AbaGUMj5 (ORCPT
+	id S932177AbaGUMlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:41:14 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51596 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141AbaGUMlN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:39:57 -0400
-Date: Mon, 21 Jul 2014 13:39:50 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: kernel@stlinux.com, thierry.reding@gmail.com, linux-pwm@vger.kernel.org,
-        devicetree@vger.kernel.org, ajitpal.singh@st.com
-Subject: Re: [PATCH v2 00/11] pwm: Introduce ST's PWM driver
-Message-ID: <20140721123950.GY30888@lee--X1>
-References: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Jul 2014 08:41:13 -0400
+Date: Mon, 21 Jul 2014 14:41:04 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <bcousson@baylibre.com>, Charulatha V <charu@ti.com>
+Subject: Re: [PATCH] spi: omap2-mcspi: fix blatant abuse of the resource
+ subsystem
+Message-ID: <20140721144104.5e37f1a0@ipc1.ka-ro>
+In-Reply-To: <20140721121820.GW17528@sirena.org.uk>
+References: <1405683053-14104-1-git-send-email-LW@KARO-electronics.de>
+	<20140718171035.GQ17528@sirena.org.uk>
+	<20140721075144.251bb67d@ipc1.ka-ro>
+	<20140721121820.GW17528@sirena.org.uk>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Hi,
 
-Did you find some time to look at this set?
+Mark Brown wrote:
+> On Mon, Jul 21, 2014 at 07:51:44AM +0200, Lothar Waßmann wrote:
+> > Mark Brown wrote:
+> 
+> > > I'm not going to apply this with a commit message such as the above.
+> > > Quite aside from the tone the fact that it doesn't describe the issue
+> > > is not helpful for review, one of the things done in review is to try to
+> > > check that the change has the intended effect.
+> 
+> > Maybe the original author or the maintainer who accepted this can come
+> > up with a decent fix for this.
+> 
+> Just to be clear the issue is with the presentation of your change, it
+> is not appropriate to provide a changelog which consists mainly of
+> widely directed personal insults especially given that it omits basic
+> technical content.
+>
+I understood that, but I feel incapable to come up with a reasonable
+changelog for this.
 
-> I'm pretty sure all of your review comments have been tended to
-> now.  Some have been fixed-up by myself and re-rolled into the
-> original set.  The larger changes have been fixed as subsequent
-> patches for ease of review and history tracking on the internal
-> kernel.
-> 
-> Kind regards,
-> Lee
-> 
-> Ajit Pal Singh (4):
->   pwm: st: Fix PWM prescaler handling
->   pwm: sti: Ensure same period values for all channels
->   pwm: sti: Sync between enable/disable calls
->   pwm: sti: Remove PWM period table
-> 
-> Lee Jones (7):
->   ARM: stih407: Add DT nodes for for PWM
->   ARM: stih416: Add Pinctrl settings for PWM
->   ARM: stih416: Add DT nodes for PWM
->   ARM: stih416-b2020e: Enable PWM on the B2020 Rev-E
->   ARM: multi_v7_defconfig: Enable ST's PWM driver
->   pwm: sti: Add new driver for ST's PWM IP
->   pwm: sti: Supply Device Tree binding documentation for ST's PWM IP
-> 
->  Documentation/devicetree/bindings/pwm/pwm-st.txt |  41 +++
->  arch/arm/boot/dts/stih407.dtsi                   |  28 ++
->  arch/arm/boot/dts/stih416-b2020e.dts             |  10 +
->  arch/arm/boot/dts/stih416-pinctrl.dtsi           |  50 +++
->  arch/arm/boot/dts/stih416.dtsi                   |  44 ++-
->  arch/arm/configs/multi_v7_defconfig              |   1 +
->  drivers/pwm/Kconfig                              |  10 +
->  drivers/pwm/Makefile                             |   1 +
->  drivers/pwm/pwm-sti.c                            | 418 +++++++++++++++++++++++
->  9 files changed, 602 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-st.txt
->  create mode 100644 drivers/pwm/pwm-sti.c
-> 
 
+Lothar Waßmann
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
