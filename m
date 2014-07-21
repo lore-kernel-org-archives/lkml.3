@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaGUUQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 16:16:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33292 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaGUUQ5 (ORCPT
+	id S1753856AbaGUURX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 16:17:23 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:8287 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaGUURV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 16:16:57 -0400
-Date: Mon, 21 Jul 2014 22:16:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+	Mon, 21 Jul 2014 16:17:21 -0400
+Message-ID: <1405973838.4677.11.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH 2/5] futex: add optimistic spinning to
+ FUTEX_SPIN_LOCK
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
         Davidlohr Bueso <davidlohr@hp.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-In-Reply-To: <CFF29E4A.9D44E%dvhart@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1407212025130.20847@nanos>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+        linux-doc@vger.kernel.org, Scott J Norton <scott.norton@hp.com>
+Date: Mon, 21 Jul 2014 13:17:18 -0700
+In-Reply-To: <1405956271-34339-3-git-send-email-Waiman.Long@hp.com>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+	 <1405956271-34339-3-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Darren Hart wrote:
-> We observed some significant improvements under some very specific use
-> cases, but a more thorough dive into performance impact in the other cases
-> as well as security implications with the vdso is still wanting.
+On Mon, 2014-07-21 at 11:24 -0400, Waiman Long wrote:
+> This patch adds code to do optimistic spinning for the FUTEX_SPIN_LOCK
+> primitive on the futex value when the lock owner is running. It is
+> the same optimistic spinning technique that is done in the mutex and
+> rw semaphore code to improve their performance especially on large
+> systems with large number of CPUs. When the lock owner is not running,
+> the spinning tasks will go to sleep.
 
-The security implication is that the feature can only be available for
-process private futexes. There is no way to expose information which
-crosses the process spaces.
+Perhaps we could introduce a "CONFIG_FUTEX_SPIN_ON_OWNER" that depends
+on SMP and ARCH_SUPPORTS_ATOMIC_RMW?
 
-But the way worse issue is storage.
+> There is 2 major advantages of doing optimistic spinning here:
+>  1) It eliminates the context switching latency and overhead (at
+>     least a few us) associated with sleeping and wakeup.
+>  2) It eliminates most of the need to call futex(2) with
+>     FUTEX_SPIN_UNLOCK as spinning is done without the need to set
+>     the FUTEX_WAITERS bit.
 
-While you can cache the namespace specific TID of a thread in the
-task_struct, you still need a O(1) zero overhead mechanism to update
-the thread state (only on/off cpu is interesting) in a per process
-shared data structure from the guts of schedule()
+>  struct futex_q_head {
+>  	struct list_head	      hnode;
+>  	struct list_head	      waitq;
+>  	union futex_key		      key;
+> +	struct optimistic_spin_queue *osq;
 
-For that you have basically two choices:
+And this would have to be updated to
 
-1) cpu_thread_id[NR_CPUS]
++	struct optimistic_spin_queue osq;
 
-   Simple to update from the scheduler, and a halfways moderate
-   storage size (NR_CPUS * 4 bytes) in the worst case, i.e. 16k
-   today. Set to 0 on scheduling out and to the namespace specific TID
-   on scheduling in.
-
-   But that requires a linear search in the user space spin loop. And
-   that's required for every iteration of the loop. Can you imagine
-   how well that works performance wise?
-
-2) Bitmap threads_on_cpu
-   
-   Again, simple to update from the scheduler, cache line bouncing
-   issues aside. Clear the bit on schedule out and set it on schedule
-   in.
-
-   But the bitmap needs the size of PID_MAX_LIMIT, which is a whopping
-   512k per process in the worst case.
-
-Anything else would involve search/lookup schemes which are just
-overkill in both the scheduler and the user space loop.
-   
-Now for enhanced fun you need immutable pages for that storage, as you
-can't have pagefaults in the guts of schedule().
-
-So once you found a way to make that opt-in as you don't want inflict
-any of this to all processes by default, it might be a worthwhile
-optimization. So the probably tolerable impact on schedule() would be
-
-schedule_out()
-	if (curr->threads_on_cpu)
-		clear_bit(curr->ns_tid, curr->threads_on_cpu);
-and
-
-schedule_in()
-	if (curr->threads_on_cpu)
-		clear_bit(curr->ns_tid, curr->threads_on_cpu);
-
-Anything more complex is just going to defeat the whole purpose.
-
-Thanks,
-
-	tglx
+given the recent changes to the osq lock.
 
 
