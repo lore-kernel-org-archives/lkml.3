@@ -1,71 +1,885 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaGUCdq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 22:33:46 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:55733 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaGUCdo (ORCPT
+	id S1752605AbaGUCd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 22:33:58 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:56240 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaGUCdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 22:33:44 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53CC7C05.3060703@lge.com>
-Date: Mon, 21 Jul 2014 11:33:41 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 20 Jul 2014 22:33:55 -0400
+Date: Sun, 20 Jul 2014 22:33:54 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH v2 14/25] amdkfd: Add mqd_manager module
+Message-ID: <20140721023351.GK3068@gmail.com>
+References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
+ <1405603773-32688-15-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        =?EUC-KR?B?J7Howdi89ic=?= <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>
-Subject: [PATCHv2] CMA/HOTPLUG: clear buffer-head lru before page migration
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405603773-32688-15-git-send-email-oded.gabbay@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I removed checking migratetype of v1: https://lkml.org/lkml/2014/7/18/82.
-Thanks a lot.
+On Thu, Jul 17, 2014 at 04:29:21PM +0300, Oded Gabbay wrote:
+> From: Ben Goz <ben.goz@amd.com>
+> 
+> The mqd_manager module handles MQD data structures. MQD stands for Memory Queue Descriptor, which is used by the H/W to keep the usermode queue state in memory.
+> 
+> Signed-off-by: Ben Goz <ben.goz@amd.com>
+> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> ---
+>  drivers/gpu/drm/radeon/amdkfd/Makefile          |   2 +-
+>  drivers/gpu/drm/radeon/amdkfd/cik_mqds.h        | 185 +++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/cik_regs.h        | 220 ++++++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c | 291 ++++++++++++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h |  54 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h        |   8 +
+>  6 files changed, 759 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_mqds.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+> 
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/Makefile b/drivers/gpu/drm/radeon/amdkfd/Makefile
+> index dbff147..b5201f4 100644
+> --- a/drivers/gpu/drm/radeon/amdkfd/Makefile
+> +++ b/drivers/gpu/drm/radeon/amdkfd/Makefile
+> @@ -6,6 +6,6 @@ ccflags-y := -Iinclude/drm
+>  
+>  amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o \
+>  		kfd_pasid.o kfd_doorbell.o kfd_vidmem.o kfd_aperture.o \
+> -		kfd_process.o kfd_queue.o
+> +		kfd_process.o kfd_queue.o kfd_mqd_manager.o
+>  
+>  obj-$(CONFIG_HSA_RADEON)	+= amdkfd.o
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/cik_mqds.h b/drivers/gpu/drm/radeon/amdkfd/cik_mqds.h
+> new file mode 100644
+> index 0000000..ce75604
+> --- /dev/null
+> +++ b/drivers/gpu/drm/radeon/amdkfd/cik_mqds.h
+> @@ -0,0 +1,185 @@
+> +/*
+> + * Copyright 2014 Advanced Micro Devices, Inc.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + * OTHER DEALINGS IN THE SOFTWARE.
+> + *
+> + */
+> +
+> +#ifndef CIK_MQDS_H_
+> +#define CIK_MQDS_H_
+> +
+> +#pragma pack(push, 4)
 
+No pragma pack.
 
----------------------------- 8< ------------------------------
->From 95addf7f1644cde3a0944629ff5c6a8d6f43e5d6 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Fri, 18 Jul 2014 13:40:01 +0900
-Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+> +
+> +struct cik_hpd_registers {
+> +	u32 cp_hpd_roq_offsets;
+> +	u32 cp_hpd_eop_base_addr;
+> +	u32 cp_hpd_eop_base_addr_hi;
+> +	u32 cp_hpd_eop_vmid;
+> +	u32 cp_hpd_eop_control;
+> +};
+> +
+> +/* This structure represents mqd used for cp scheduling queue
+> + * taken from Gfx72_cp_program_spec.pdf
+> + */
+> +struct cik_compute_mqd {
+> +	u32 header;
+> +	u32 compute_dispatch_initiator;
+> +	u32 compute_dim_x;
+> +	u32 compute_dim_y;
+> +	u32 compute_dim_z;
+> +	u32 compute_start_x;
+> +	u32 compute_start_y;
+> +	u32 compute_start_z;
+> +	u32 compute_num_thread_x;
+> +	u32 compute_num_thread_y;
+> +	u32 compute_num_thread_z;
+> +	u32 compute_pipelinestat_enable;
+> +	u32 compute_perfcount_enable;
+> +	u32 compute_pgm_lo;
+> +	u32 compute_pgm_hi;
+> +	u32 compute_tba_lo;
+> +	u32 compute_tba_hi;
+> +	u32 compute_tma_lo;
+> +	u32 compute_tma_hi;
+> +	u32 compute_pgm_rsrc1;
+> +	u32 compute_pgm_rsrc2;
+> +	u32 compute_vmid;
+> +	u32 compute_resource_limits;
+> +	u32 compute_static_thread_mgmt_se0;
+> +	u32 compute_static_thread_mgmt_se1;
+> +	u32 compute_tmpring_size;
+> +	u32 compute_static_thread_mgmt_se2;
+> +	u32 compute_static_thread_mgmt_se3;
+> +	u32 compute_restart_x;
+> +	u32 compute_restart_y;
+> +	u32 compute_restart_z;
+> +	u32 compute_thread_trace_enable;
+> +	u32 compute_misc_reserved;
+> +	u32 compute_user_data[16];
+> +	u32 vgt_csinvoc_count_lo;
+> +	u32 vgt_csinvoc_count_hi;
+> +	u32 cp_mqd_base_addr51;
+> +	u32 cp_mqd_base_addr_hi;
+> +	u32 cp_hqd_active;
+> +	u32 cp_hqd_vmid;
+> +	u32 cp_hqd_persistent_state;
+> +	u32 cp_hqd_pipe_priority;
+> +	u32 cp_hqd_queue_priority;
+> +	u32 cp_hqd_quantum;
+> +	u32 cp_hqd_pq_base;
+> +	u32 cp_hqd_pq_base_hi;
+> +	u32 cp_hqd_pq_rptr;
+> +	u32 cp_hqd_pq_rptr_report_addr;
+> +	u32 cp_hqd_pq_rptr_report_addr_hi;
+> +	u32 cp_hqd_pq_wptr_poll_addr;
+> +	u32 cp_hqd_pq_wptr_poll_addr_hi;
+> +	u32 cp_hqd_pq_doorbell_control;
+> +	u32 cp_hqd_pq_wptr;
+> +	u32 cp_hqd_pq_control;
+> +	u32 cp_hqd_ib_base_addr;
+> +	u32 cp_hqd_ib_base_addr_hi;
+> +	u32 cp_hqd_ib_rptr;
+> +	u32 cp_hqd_ib_control;
+> +	u32 cp_hqd_iq_timer;
+> +	u32 cp_hqd_iq_rptr;
+> +	u32 cp_hqd_dequeue_request;
+> +	u32 cp_hqd_dma_offload;
+> +	u32 cp_hqd_sema_cmd;
+> +	u32 cp_hqd_msg_type;
+> +	u32 cp_hqd_atomic0_preop_lo;
+> +	u32 cp_hqd_atomic0_preop_hi;
+> +	u32 cp_hqd_atomic1_preop_lo;
+> +	u32 cp_hqd_atomic1_preop_hi;
+> +	u32 cp_hqd_hq_scheduler0;
+> +	u32 cp_hqd_hq_scheduler1;
+> +	u32 cp_mqd_control;
+> +	u32 reserved1[10];
+> +	u32 cp_mqd_query_time_lo;
+> +	u32 cp_mqd_query_time_hi;
+> +	u32 reserved2[4];
+> +	u32 cp_mqd_connect_start_time_lo;
+> +	u32 cp_mqd_connect_start_time_hi;
+> +	u32 cp_mqd_connect_end_time_lo;
+> +	u32 cp_mqd_connect_end_time_hi;
+> +	u32 cp_mqd_connect_end_wf_count;
+> +	u32 cp_mqd_connect_end_pq_rptr;
+> +	u32 cp_mqd_connect_end_pq_wptr;
+> +	u32 cp_mqd_connect_end_ib_rptr;
+> +	u32 reserved3[18];
+> +};
+> +
+> +/* This structure represents all *IQs
+> + * Taken from Gfx73_CPC_Eng_Init_Prog.pdf
+> + */
+> +struct cik_interface_mqd {
+> +	u32 reserved1[128];
+> +	u32 cp_mqd_base_addr;
+> +	u32 cp_mqd_base_addr_hi;
+> +	u32 cp_hqd_active;
+> +	u32 cp_hqd_vmid;
+> +	u32 cp_hqd_persistent_state;
+> +	u32 cp_hqd_pipe_priority;
+> +	u32 cp_hqd_queue_priority;
+> +	u32 cp_hqd_quantum;
+> +	u32 cp_hqd_pq_base;
+> +	u32 cp_hqd_pq_base_hi;
+> +	u32 cp_hqd_pq_rptr;
+> +	u32 cp_hqd_pq_rptr_report_addr;
+> +	u32 cp_hqd_pq_rptr_report_addr_hi;
+> +	u32 cp_hqd_pq_wptr_poll_addr;
+> +	u32 cp_hqd_pq_wptr_poll_addr_hi;
+> +	u32 cp_hqd_pq_doorbell_control;
+> +	u32 cp_hqd_pq_wptr;
+> +	u32 cp_hqd_pq_control;
+> +	u32 cp_hqd_ib_base_addr;
+> +	u32 cp_hqd_ib_base_addr_hi;
+> +	u32 cp_hqd_ib_rptr;
+> +	u32 cp_hqd_ib_control;
+> +	u32 cp_hqd_iq_timer;
+> +	u32 cp_hqd_iq_rptr;
+> +	u32 cp_hqd_dequeue_request;
+> +	u32 cp_hqd_dma_offload;
+> +	u32 cp_hqd_sema_cmd;
+> +	u32 cp_hqd_msg_type;
+> +	u32 cp_hqd_atomic0_preop_lo;
+> +	u32 cp_hqd_atomic0_preop_hi;
+> +	u32 cp_hqd_atomic1_preop_lo;
+> +	u32 cp_hqd_atomic1_preop_hi;
+> +	u32 cp_hqd_hq_status0;
+> +	u32 cp_hqd_hq_control0;
+> +	u32 cp_mqd_control;
+> +	u32 reserved2[3];
+> +	u32 cp_hqd_hq_status1;
+> +	u32 cp_hqd_hq_control1;
+> +	u32 reserved3[16];
+> +	u32 cp_hqd_hq_status2;
+> +	u32 cp_hqd_hq_control2;
+> +	u32 cp_hqd_hq_status3;
+> +	u32 cp_hqd_hq_control3;
+> +	u32 reserved4[2];
+> +	u32 cp_mqd_query_time_lo;
+> +	u32 cp_mqd_query_time_hi;
+> +	u32 reserved5[48];
+> +	u32 cp_mqd_skip_process[16];
+> +};
 
-The bh must be free to migrate a page at which bh is mapped.
-The reference count of bh is increased when it is installed
-into lru so that the bh of lru must be freed before migrating the page.
+I have not fully check but very few of the above fields are use. So please
+do strip this structure to only used field we need to keep stack use as low
+as possible. Moreover the whole reserved* business kind of tell me that this
+is done to match register layout which i would rather avoid being use as a
+struct.
 
-This frees every bh of lru. We could free only bh of migrating page.
-But searching lru costs more than invalidating entire lru.
+> +
+> +#pragma pack(pop)
+> +
+> +
+> +#endif /* CIK_MQDS_H_ */
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/cik_regs.h b/drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+> new file mode 100644
+> index 0000000..a6404e3
+> --- /dev/null
+> +++ b/drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+> @@ -0,0 +1,220 @@
+> +/*
+> + * Copyright 2014 Advanced Micro Devices, Inc.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + * OTHER DEALINGS IN THE SOFTWARE.
+> + */
+> +
+> +#ifndef CIK_REGS_H
+> +#define CIK_REGS_H
+> +
+> +#define IH_VMID_0_LUT					0x3D40u
+> +
+> +#define BIF_DOORBELL_CNTL				0x530Cu
+> +
+> +#define	SRBM_GFX_CNTL					0xE44
+> +#define	PIPEID(x)					((x) << 0)
+> +#define	MEID(x)						((x) << 2)
+> +#define	VMID(x)						((x) << 4)
+> +#define	QUEUEID(x)					((x) << 8)
+> +
+> +#define	SQ_CONFIG					0x8C00
+> +
+> +#define	SH_MEM_BASES					0x8C28
+> +/* if PTR32, these are the bases for scratch and lds */
+> +#define	PRIVATE_BASE(x)					((x) << 0) /* scratch */
+> +#define	SHARED_BASE(x)					((x) << 16) /* LDS */
+> +#define	SH_MEM_APE1_BASE				0x8C2C
+> +/* if PTR32, this is the base location of GPUVM */
+> +#define	SH_MEM_APE1_LIMIT				0x8C30
+> +/* if PTR32, this is the upper limit of GPUVM */
+> +#define	SH_MEM_CONFIG					0x8C34
+> +#define	PTR32						(1 << 0)
+> +#define PRIVATE_ATC					(1 << 1)
+> +#define	ALIGNMENT_MODE(x)				((x) << 2)
+> +#define	SH_MEM_ALIGNMENT_MODE_DWORD			0
+> +#define	SH_MEM_ALIGNMENT_MODE_DWORD_STRICT		1
+> +#define	SH_MEM_ALIGNMENT_MODE_STRICT			2
+> +#define	SH_MEM_ALIGNMENT_MODE_UNALIGNED			3
+> +#define	DEFAULT_MTYPE(x)				((x) << 4)
+> +#define	APE1_MTYPE(x)					((x) << 7)
+> +
+> +/* valid for both DEFAULT_MTYPE and APE1_MTYPE */
+> +#define	MTYPE_CACHED					0
+> +#define	MTYPE_NONCACHED					3
+> +
+> +
+> +#define SH_STATIC_MEM_CONFIG				0x9604u
+> +
+> +#define	TC_CFG_L1_LOAD_POLICY0				0xAC68
+> +#define	TC_CFG_L1_LOAD_POLICY1				0xAC6C
+> +#define	TC_CFG_L1_STORE_POLICY				0xAC70
+> +#define	TC_CFG_L2_LOAD_POLICY0				0xAC74
+> +#define	TC_CFG_L2_LOAD_POLICY1				0xAC78
+> +#define	TC_CFG_L2_STORE_POLICY0				0xAC7C
+> +#define	TC_CFG_L2_STORE_POLICY1				0xAC80
+> +#define	TC_CFG_L2_ATOMIC_POLICY				0xAC84
+> +#define	TC_CFG_L1_VOLATILE				0xAC88
+> +#define	TC_CFG_L2_VOLATILE				0xAC8C
+> +
+> +#define CP_PQ_WPTR_POLL_CNTL				0xC20C
+> +#define	WPTR_POLL_EN					(1 << 31)
+> +
+> +#define CPC_INT_CNTL					0xC2D0
+> +#define CP_ME1_PIPE0_INT_CNTL				0xC214
+> +#define CP_ME1_PIPE1_INT_CNTL				0xC218
+> +#define CP_ME1_PIPE2_INT_CNTL				0xC21C
+> +#define CP_ME1_PIPE3_INT_CNTL				0xC220
+> +#define CP_ME2_PIPE0_INT_CNTL				0xC224
+> +#define CP_ME2_PIPE1_INT_CNTL				0xC228
+> +#define CP_ME2_PIPE2_INT_CNTL				0xC22C
+> +#define CP_ME2_PIPE3_INT_CNTL				0xC230
+> +#define DEQUEUE_REQUEST_INT_ENABLE			(1 << 13)
+> +#define WRM_POLL_TIMEOUT_INT_ENABLE			(1 << 17)
+> +#define PRIV_REG_INT_ENABLE				(1 << 23)
+> +#define TIME_STAMP_INT_ENABLE				(1 << 26)
+> +#define GENERIC2_INT_ENABLE				(1 << 29)
+> +#define GENERIC1_INT_ENABLE				(1 << 30)
+> +#define GENERIC0_INT_ENABLE				(1 << 31)
+> +#define CP_ME1_PIPE0_INT_STATUS				0xC214
+> +#define CP_ME1_PIPE1_INT_STATUS				0xC218
+> +#define CP_ME1_PIPE2_INT_STATUS				0xC21C
+> +#define CP_ME1_PIPE3_INT_STATUS				0xC220
+> +#define CP_ME2_PIPE0_INT_STATUS				0xC224
+> +#define CP_ME2_PIPE1_INT_STATUS				0xC228
+> +#define CP_ME2_PIPE2_INT_STATUS				0xC22C
+> +#define CP_ME2_PIPE3_INT_STATUS				0xC230
+> +#define DEQUEUE_REQUEST_INT_STATUS			(1 << 13)
+> +#define WRM_POLL_TIMEOUT_INT_STATUS			(1 << 17)
+> +#define PRIV_REG_INT_STATUS				(1 << 23)
+> +#define TIME_STAMP_INT_STATUS				(1 << 26)
+> +#define GENERIC2_INT_STATUS				(1 << 29)
+> +#define GENERIC1_INT_STATUS				(1 << 30)
+> +#define GENERIC0_INT_STATUS				(1 << 31)
+> +
+> +#define CP_HPD_EOP_BASE_ADDR				0xC904
+> +#define CP_HPD_EOP_BASE_ADDR_HI				0xC908
+> +#define CP_HPD_EOP_VMID					0xC90C
+> +#define CP_HPD_EOP_CONTROL				0xC910
+> +#define	EOP_SIZE(x)					((x) << 0)
+> +#define	EOP_SIZE_MASK					(0x3f << 0)
+> +#define CP_MQD_BASE_ADDR				0xC914
+> +#define CP_MQD_BASE_ADDR_HI				0xC918
+> +#define CP_HQD_ACTIVE					0xC91C
+> +#define CP_HQD_VMID					0xC920
+> +
+> +#define CP_HQD_PERSISTENT_STATE				0xC924u
+> +#define	DEFAULT_CP_HQD_PERSISTENT_STATE			(0x33U << 8)
+> +
+> +#define CP_HQD_PIPE_PRIORITY				0xC928u
+> +#define CP_HQD_QUEUE_PRIORITY				0xC92Cu
+> +#define CP_HQD_QUANTUM					0xC930u
+> +#define	QUANTUM_EN					1U
+> +#define	QUANTUM_SCALE_1MS				(1U << 4)
+> +#define	QUANTUM_DURATION(x)				((x) << 8)
+> +
+> +#define CP_HQD_PQ_BASE					0xC934
+> +#define CP_HQD_PQ_BASE_HI				0xC938
+> +#define CP_HQD_PQ_RPTR					0xC93C
+> +#define CP_HQD_PQ_RPTR_REPORT_ADDR			0xC940
+> +#define CP_HQD_PQ_RPTR_REPORT_ADDR_HI			0xC944
+> +#define CP_HQD_PQ_WPTR_POLL_ADDR			0xC948
+> +#define CP_HQD_PQ_WPTR_POLL_ADDR_HI			0xC94C
+> +#define CP_HQD_PQ_DOORBELL_CONTROL			0xC950
+> +#define	DOORBELL_OFFSET(x)				((x) << 2)
+> +#define	DOORBELL_OFFSET_MASK				(0x1fffff << 2)
+> +#define	DOORBELL_SOURCE					(1 << 28)
+> +#define	DOORBELL_SCHD_HIT				(1 << 29)
+> +#define	DOORBELL_EN					(1 << 30)
+> +#define	DOORBELL_HIT					(1 << 31)
+> +#define CP_HQD_PQ_WPTR					0xC954
+> +#define CP_HQD_PQ_CONTROL				0xC958
+> +#define	QUEUE_SIZE(x)					((x) << 0)
+> +#define	QUEUE_SIZE_MASK					(0x3f << 0)
+> +#define	RPTR_BLOCK_SIZE(x)				((x) << 8)
+> +#define	RPTR_BLOCK_SIZE_MASK				(0x3f << 8)
+> +#define	MIN_AVAIL_SIZE(x)				((x) << 20)
+> +#define	PQ_ATC_EN					(1 << 23)
+> +#define	PQ_VOLATILE					(1 << 26)
+> +#define	NO_UPDATE_RPTR					(1 << 27)
+> +#define	UNORD_DISPATCH					(1 << 28)
+> +#define	ROQ_PQ_IB_FLIP					(1 << 29)
+> +#define	PRIV_STATE					(1 << 30)
+> +#define	KMD_QUEUE					(1 << 31)
+> +
+> +#define	DEFAULT_RPTR_BLOCK_SIZE				RPTR_BLOCK_SIZE(5)
+> +#define	DEFAULT_MIN_AVAIL_SIZE				MIN_AVAIL_SIZE(3)
+> +
+> +#define CP_HQD_IB_BASE_ADDR				0xC95Cu
+> +#define CP_HQD_IB_BASE_ADDR_HI				0xC960u
+> +#define CP_HQD_IB_RPTR					0xC964u
+> +#define CP_HQD_IB_CONTROL				0xC968u
+> +#define	IB_ATC_EN					(1U << 23)
+> +#define	DEFAULT_MIN_IB_AVAIL_SIZE			(3U << 20)
+> +
+> +#define CP_HQD_DEQUEUE_REQUEST				0xC974
+> +#define	DEQUEUE_REQUEST_DRAIN				1
+> +#define DEQUEUE_REQUEST_RESET				2
+> +#define		DEQUEUE_INT					(1U << 8)
+> +
+> +#define CP_HQD_SEMA_CMD					0xC97Cu
+> +#define CP_HQD_MSG_TYPE					0xC980u
+> +#define CP_HQD_ATOMIC0_PREOP_LO				0xC984u
+> +#define CP_HQD_ATOMIC0_PREOP_HI				0xC988u
+> +#define CP_HQD_ATOMIC1_PREOP_LO				0xC98Cu
+> +#define CP_HQD_ATOMIC1_PREOP_HI				0xC990u
+> +#define CP_HQD_HQ_SCHEDULER0				0xC994u
+> +#define CP_HQD_HQ_SCHEDULER1				0xC998u
+> +
+> +
+> +#define CP_MQD_CONTROL					0xC99C
+> +#define	MQD_VMID(x)					((x) << 0)
+> +#define	MQD_VMID_MASK					(0xf << 0)
+> +#define	MQD_CONTROL_PRIV_STATE_EN			(1U << 8)
+> +
+> +#define GRBM_GFX_INDEX					0x30800
+> +#define	INSTANCE_INDEX(x)				((x) << 0)
+> +#define	SH_INDEX(x)					((x) << 8)
+> +#define	SE_INDEX(x)					((x) << 16)
+> +#define	SH_BROADCAST_WRITES				(1 << 29)
+> +#define	INSTANCE_BROADCAST_WRITES			(1 << 30)
+> +#define	SE_BROADCAST_WRITES				(1 << 31)
+> +
+> +#define SQC_CACHES					0x30d20
+> +#define SQC_POLICY					0x8C38u
+> +#define SQC_VOLATILE					0x8C3Cu
+> +
+> +#define CP_PERFMON_CNTL					0x36020
+> +
+> +#define ATC_VMID0_PASID_MAPPING				0x339Cu
+> +#define	ATC_VMID_PASID_MAPPING_UPDATE_STATUS		0x3398u
+> +#define	ATC_VMID_PASID_MAPPING_VALID			(1U << 31)
+> +
+> +#define ATC_VM_APERTURE0_CNTL				0x3310u
+> +#define	ATS_ACCESS_MODE_NEVER				0
+> +#define	ATS_ACCESS_MODE_ALWAYS				1
+> +
+> +#define ATC_VM_APERTURE0_CNTL2				0x3318u
+> +#define ATC_VM_APERTURE0_HIGH_ADDR			0x3308u
+> +#define ATC_VM_APERTURE0_LOW_ADDR			0x3300u
+> +#define ATC_VM_APERTURE1_CNTL				0x3314u
+> +#define ATC_VM_APERTURE1_CNTL2				0x331Cu
+> +#define ATC_VM_APERTURE1_HIGH_ADDR			0x330Cu
+> +#define ATC_VM_APERTURE1_LOW_ADDR			0x3304u
+> +
+> +#endif
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+> new file mode 100644
+> index 0000000..5f9f9b9
+> --- /dev/null
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+> @@ -0,0 +1,291 @@
+> +/*
+> + * Copyright 2014 Advanced Micro Devices, Inc.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + * OTHER DEALINGS IN THE SOFTWARE.
+> + *
+> + */
+> +
+> +#include <linux/printk.h>
+> +#include <linux/slab.h>
+> +#include "kfd_priv.h"
+> +#include "kfd_mqd_manager.h"
+> +#include "cik_mqds.h"
+> +#include "cik_regs.h"
+> +#include "../cik_reg.h"
+> +
+> +inline uint32_t lower_32(uint64_t x)
+> +{
+> +	return (uint32_t)x;
+> +}
+> +
+> +inline uint32_t upper_32(uint64_t x)
+> +{
+> +	return (uint32_t)(x >> 32);
+> +}
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
----
- mm/page_alloc.c |    2 ++
- 1 file changed, 2 insertions(+)
+Do use kernel macro upper_32_bits or lower_32_bits. Each time you do something
+like that go check for existing macro.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b99643d4..c00dedf 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6369,6 +6369,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
-        if (ret)
-                return ret;
+> +
+> +inline void busy_wait(unsigned long ms)
+> +{
+> +	while (time_before(jiffies, ms))
+> +		cpu_relax();
+> +}
+> +
+> +static inline struct cik_mqd *get_mqd(void *mqd)
+> +{
+> +	return (struct cik_mqd *)mqd;
+> +}
+> +
+> +static int init_mqd(struct mqd_manager *mm, void **mqd, kfd_mem_obj *mqd_mem_obj,
+> +		uint64_t *gart_addr, struct queue_properties *q)
+> +{
+> +	uint64_t addr;
+> +	struct cik_mqd *m;
+> +	int retval;
+> +
+> +	BUG_ON(!mm || !q || !mqd);
+> +
+> +	pr_debug("kfd: In func %s\n", __func__);
+> +
+> +	retval = kfd_vidmem_alloc_map(
+> +				mm->dev,
+> +				mqd_mem_obj,
+> +				(void **)&m,
+> +				&addr,
+> +				ALIGN(sizeof(struct cik_mqd), 256));
+> +
+> +	if (retval != 0)
+> +		return -ENOMEM;
+> +
+> +	memset(m, 0, sizeof(struct cik_mqd));
+> +
+> +	m->header = 0xC0310800;
+> +	m->pipeline_stat_enable = 1;
+> +	m->static_thread_mgmt01[0] = 0xFFFFFFFF;
+> +	m->static_thread_mgmt01[1] = 0xFFFFFFFF;
+> +	m->static_thread_mgmt23[0] = 0xFFFFFFFF;
+> +	m->static_thread_mgmt23[1] = 0xFFFFFFFF;
+> +
+> +	m->queue_state.cp_hqd_persistent_state = DEFAULT_CP_HQD_PERSISTENT_STATE;
+> +
+> +	m->queue_state.cp_mqd_control             = MQD_CONTROL_PRIV_STATE_EN;
+> +	m->queue_state.cp_mqd_base_addr           = lower_32(addr);
+> +	m->queue_state.cp_mqd_base_addr_hi        = upper_32(addr);
+> +
+> +	m->queue_state.cp_hqd_ib_control = DEFAULT_MIN_IB_AVAIL_SIZE | IB_ATC_EN;
+> +	/* Although WinKFD writes this, I suspect it should not be necessary. */
+> +	m->queue_state.cp_hqd_ib_control = IB_ATC_EN | DEFAULT_MIN_IB_AVAIL_SIZE;
+> +
+> +	m->queue_state.cp_hqd_quantum = QUANTUM_EN | QUANTUM_SCALE_1MS | QUANTUM_DURATION(10);
+> +
+> +	m->queue_state.cp_hqd_pipe_priority = 1;
+> +	m->queue_state.cp_hqd_queue_priority = 15;
+> +
+> +	*mqd = m;
+> +	if (gart_addr != NULL)
+> +		*gart_addr = addr;
+> +	retval = mm->update_mqd(mm, m, q);
+> +
+> +	return retval;
+> +}
+> +
+> +static void uninit_mqd(struct mqd_manager *mm, void *mqd, kfd_mem_obj mqd_mem_obj)
+> +{
+> +	BUG_ON(!mm || !mqd);
+> +	kfd_vidmem_free_unmap(mm->dev, mqd_mem_obj);
+> +}
+> +
+> +static int load_mqd(struct mqd_manager *mm, void *mqd, uint32_t pipe_id, uint32_t queue_id, uint32_t __user *wptr)
+> +{
+> +	return kfd2kgd->hqd_load(mm->dev->kgd, mqd, pipe_id, queue_id, wptr);
+> +
+> +}
+> +
+> +static int update_mqd(struct mqd_manager *mm, void *mqd, struct queue_properties *q)
+> +{
+> +	struct cik_mqd *m;
+> +
+> +	BUG_ON(!mm || !q || !mqd);
+> +
+> +	pr_debug("kfd: In func %s\n", __func__);
+> +
+> +	m = get_mqd(mqd);
+> +	m->queue_state.cp_hqd_pq_control = DEFAULT_RPTR_BLOCK_SIZE | DEFAULT_MIN_AVAIL_SIZE | PQ_ATC_EN;
+> +	/* calculating queue size which is log base 2 of actual queue size -1 dwords and another -1 for ffs */
+> +	m->queue_state.cp_hqd_pq_control |= ffs(q->queue_size / sizeof(unsigned int)) - 1 - 1;
+> +	m->queue_state.cp_hqd_pq_base = lower_32((uint64_t)q->queue_address >> 8);
+> +	m->queue_state.cp_hqd_pq_base_hi = upper_32((uint64_t)q->queue_address >> 8);
+> +	m->queue_state.cp_hqd_pq_rptr_report_addr = lower_32((uint64_t)q->read_ptr);
+> +	m->queue_state.cp_hqd_pq_rptr_report_addr_hi = upper_32((uint64_t)q->read_ptr);
+> +	m->queue_state.cp_hqd_pq_doorbell_control = DOORBELL_EN | DOORBELL_OFFSET(q->doorbell_off);
+> +
+> +	m->queue_state.cp_hqd_vmid = q->vmid;
+> +
+> +	m->queue_state.cp_hqd_active = 0;
+> +	q->is_active = false;
+> +	if (q->queue_size > 0 &&
+> +			q->queue_address != 0 &&
+> +			q->queue_percent > 0) {
+> +		m->queue_state.cp_hqd_active = 1;
+> +		q->is_active = true;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int destroy_mqd(struct mqd_manager *mm, bool is_reset, unsigned int timeout, uint32_t pipe_id, uint32_t queue_id)
+> +{
+> +	return kfd2kgd->hqd_destroy(mm->dev->kgd, is_reset, timeout, pipe_id, queue_id);
+> +}
+> +
+> +bool is_occupied(struct mqd_manager *mm, uint64_t queue_address, uint32_t pipe_id, uint32_t queue_id)
+> +{
+> +
+> +	return kfd2kgd->hqd_is_occupies(mm->dev->kgd, queue_address, pipe_id, queue_id);
+> +
+> +}
+> +
+> +/*
+> + * HIQ MQD Implementation
+> + */
 
-+       invalidate_bh_lrus();
-+
-        ret = __alloc_contig_migrate_range(&cc, start, end);
-        if (ret)
-                goto done;
---
-1.7.9.5
+A more useful comment than that.
+
+> +
+> +static int init_mqd_hiq(struct mqd_manager *mm, void **mqd, kfd_mem_obj *mqd_mem_obj,
+> +		uint64_t *gart_addr, struct queue_properties *q)
+> +{
+> +	uint64_t addr;
+> +	struct cik_mqd *m;
+> +	int retval;
+> +
+> +	BUG_ON(!mm || !q || !mqd || !mqd_mem_obj);
+> +
+> +	pr_debug("kfd: In func %s\n", __func__);
+> +
+> +	retval = kfd_vidmem_alloc_map(
+> +				mm->dev,
+> +				mqd_mem_obj,
+> +				(void **)&m,
+> +				&addr,
+> +				ALIGN(sizeof(struct cik_mqd), PAGE_SIZE));
+> +
+> +	if (retval != 0)
+> +		return -ENOMEM;
+> +
+> +	memset(m, 0, sizeof(struct cik_mqd));
+> +
+> +	m->header = 0xC0310800;
+> +	m->pipeline_stat_enable = 1;
+> +	m->static_thread_mgmt01[0] = 0xFFFFFFFF;
+> +	m->static_thread_mgmt01[1] = 0xFFFFFFFF;
+> +	m->static_thread_mgmt23[0] = 0xFFFFFFFF;
+> +	m->static_thread_mgmt23[1] = 0xFFFFFFFF;
+> +
+> +	m->queue_state.cp_hqd_persistent_state = DEFAULT_CP_HQD_PERSISTENT_STATE;
+> +
+> +	m->queue_state.cp_mqd_control             = MQD_CONTROL_PRIV_STATE_EN;
+> +	m->queue_state.cp_mqd_base_addr           = lower_32(addr);
+> +	m->queue_state.cp_mqd_base_addr_hi        = upper_32(addr);
+> +
+> +	m->queue_state.cp_hqd_ib_control = DEFAULT_MIN_IB_AVAIL_SIZE;
+> +
+> +	m->queue_state.cp_hqd_quantum = QUANTUM_EN | QUANTUM_SCALE_1MS | QUANTUM_DURATION(10);
+> +
+> +	m->queue_state.cp_hqd_pipe_priority = 1;
+> +	m->queue_state.cp_hqd_queue_priority = 15;
+> +
+> +	*mqd = m;
+> +	if (gart_addr)
+> +		*gart_addr = addr;
+> +	retval = mm->update_mqd(mm, m, q);
+> +
+> +	return retval;
+> +}
+> +
+> +static int update_mqd_hiq(struct mqd_manager *mm, void *mqd, struct queue_properties *q)
+> +{
+> +	struct cik_mqd *m;
+> +
+> +	BUG_ON(!mm || !q || !mqd);
+> +
+> +	pr_debug("kfd: In func %s\n", __func__);
+> +
+> +	m = get_mqd(mqd);
+> +	m->queue_state.cp_hqd_pq_control = DEFAULT_RPTR_BLOCK_SIZE | DEFAULT_MIN_AVAIL_SIZE | PRIV_STATE | KMD_QUEUE;
+> +	/* calculating queue size which is log base 2 of actual queue size -1 dwords */
+> +	m->queue_state.cp_hqd_pq_control |= ffs(q->queue_size / sizeof(unsigned int)) - 1 - 1;
+> +	m->queue_state.cp_hqd_pq_base = lower_32((uint64_t)q->queue_address >> 8);
+> +	m->queue_state.cp_hqd_pq_base_hi = upper_32((uint64_t)q->queue_address >> 8);
+> +	m->queue_state.cp_hqd_pq_rptr_report_addr = lower_32((uint64_t)q->read_ptr);
+> +	m->queue_state.cp_hqd_pq_rptr_report_addr_hi = upper_32((uint64_t)q->read_ptr);
+> +	m->queue_state.cp_hqd_pq_doorbell_control = DOORBELL_EN | DOORBELL_OFFSET(q->doorbell_off);
+> +
+> +	m->queue_state.cp_hqd_vmid = q->vmid;
+> +
+> +	m->queue_state.cp_hqd_active = 0;
+> +	q->is_active = false;
+> +	if (q->queue_size > 0 &&
+> +			q->queue_address != 0 &&
+> +			q->queue_percent > 0) {
+> +		m->queue_state.cp_hqd_active = 1;
+> +		q->is_active = true;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +struct mqd_manager *mqd_manager_init(enum KFD_MQD_TYPE type, struct kfd_dev *dev)
+> +{
+> +	struct mqd_manager *mqd;
+> +
+> +	BUG_ON(!dev);
+> +	BUG_ON(type >= KFD_MQD_TYPE_MAX);
+> +
+> +	pr_debug("kfd: In func %s\n", __func__);
+> +
+> +	mqd = kzalloc(sizeof(struct mqd_manager), GFP_KERNEL);
+> +	if (!mqd)
+> +		return NULL;
+> +
+> +	mqd->dev = dev;
+> +
+> +	switch (type) {
+> +	case KFD_MQD_TYPE_CIK_CP:
+> +	case KFD_MQD_TYPE_CIK_COMPUTE:
+> +		mqd->init_mqd = init_mqd;
+> +		mqd->uninit_mqd = uninit_mqd;
+> +		mqd->load_mqd = load_mqd;
+> +		mqd->update_mqd = update_mqd;
+> +		mqd->destroy_mqd = destroy_mqd;
+> +		mqd->is_occupied = is_occupied;
+> +		break;
+> +	case KFD_MQD_TYPE_CIK_HIQ:
+> +		mqd->init_mqd = init_mqd_hiq;
+> +		mqd->uninit_mqd = uninit_mqd;
+> +		mqd->load_mqd = load_mqd;
+> +		mqd->update_mqd = update_mqd_hiq;
+> +		mqd->destroy_mqd = destroy_mqd;
+> +		mqd->is_occupied = is_occupied;
+> +		break;
+> +	default:
+> +		kfree(mqd);
+> +		return NULL;
+> +		break;
+> +	}
+> +
+> +	return mqd;
+> +}
+> +
+> +/* SDMA queues should be implemented here when the cp will supports them */
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+> new file mode 100644
+> index 0000000..a6b0007
+> --- /dev/null
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+> @@ -0,0 +1,54 @@
+> +/*
+> + * Copyright 2014 Advanced Micro Devices, Inc.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + * OTHER DEALINGS IN THE SOFTWARE.
+> + *
+> + */
+> +
+> +#ifndef KFD_MQD_MANAGER_H_
+> +#define KFD_MQD_MANAGER_H_
+> +
+> +#include "kfd_priv.h"
+> +
+> +struct mqd_manager {
+> +	int	(*init_mqd)(struct mqd_manager *mm, void **mqd,
+> +			kfd_mem_obj *mqd_mem_obj, uint64_t *gart_addr,
+> +			struct queue_properties *q);
+> +
+> +	int	(*load_mqd)(struct mqd_manager *mm, void *mqd,
+> +				uint32_t pipe_id, uint32_t queue_id,
+> +				uint32_t __user *wptr);
+> +
+> +	int	(*update_mqd)(struct mqd_manager *mm, void *mqd,
+> +				struct queue_properties *q);
+> +
+> +	int	(*destroy_mqd)(struct mqd_manager *mm, bool is_reset,
+> +				unsigned int timeout, uint32_t pipe_id,
+> +				uint32_t queue_id);
+> +
+> +	void	(*uninit_mqd)(struct mqd_manager *mm, void *mqd,
+> +				kfd_mem_obj mqd_mem_obj);
+> +	bool	(*is_occupied)(struct mqd_manager *mm, uint64_t queue_address,
+> +				uint32_t pipe_id, uint32_t queue_id);
+> +
+> +	struct mutex	mqd_mutex;
+> +	struct kfd_dev	*dev;
+> +};
+
+Would be nice to have this interface documented. For reference see how ttm
+document things (include/drm/ttm/*.h)
+
+> +
+> +#endif /* KFD_MQD_MANAGER_H_ */
+> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+> index 94ff1c3..76494757 100644
+> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+> @@ -179,6 +179,14 @@ struct queue {
+>  	struct kfd_dev		*device;
+>  };
+>  
+> +enum KFD_MQD_TYPE {
+> +	KFD_MQD_TYPE_CIK_COMPUTE = 0, /* for no cp scheduling */
+> +	KFD_MQD_TYPE_CIK_HIQ, /* for hiq */
+> +	KFD_MQD_TYPE_CIK_CP, /* for cp queues and diq */
+> +	KFD_MQD_TYPE_CIK_SDMA, /* for sdma queues */
+> +	KFD_MQD_TYPE_MAX
+> +};
+> +
+>  /* Data that is per-process-per device. */
+>  struct kfd_process_device {
+>  	/*
+> -- 
+> 1.9.1
+> 
