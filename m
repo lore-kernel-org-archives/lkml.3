@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaGUIDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:03:20 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:62007 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaGUIDR convert rfc822-to-8bit (ORCPT
+	id S1753032AbaGUIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:04:29 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:52732 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaGUIE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:03:17 -0400
-Date: Mon, 21 Jul 2014 10:03:07 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
-        George Cherian <george.cherian@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 8/9] usb: phy: am335x: call
- usb_gen_phy_init()/usb_gen_phy_shutdown() in
- am335x_init()/am335x_shutdown()
-Message-ID: <20140721100307.21172b65@ipc1.ka-ro>
-In-Reply-To: <20140718135713.GH24914@saruman.home>
-References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-2-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-3-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-4-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-6-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-7-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-8-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-9-git-send-email-LW@KARO-electronics.de>
-	<20140718135713.GH24914@saruman.home>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Jul 2014 04:04:27 -0400
+Date: Mon, 21 Jul 2014 09:04:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
+        RTC-LINUX <rtc-linux@googlegroups.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Support Opensource <support.opensource@diasemi.com>
+Subject: Re: [RFC V1] mfd: da9063: Add support for AD silicon variant
+Message-ID: <20140721080420.GU30888@lee--X1>
+References: <201407161655.s6GGtsHS030285@swsrvapps-01.diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201407161655.s6GGtsHS030285@swsrvapps-01.diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> On Fri, Jul 18, 2014 at 11:31:29AM +0200, Lothar Waßmann wrote:
-> > This patch makes it possible to use the musb driver with HW that
-> > requires external regulators or clocks.
+On Wed, 16 Jul 2014, Opensource [Steve Twiss] wrote:
+> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 > 
-> can you provide an example of such HW ? Are you not using the internal
-> PHYs ?
+> Add register definitions for DA9063 AD (0x3) silicon variant ID
+> and Kconfig support to choose the silicon variant at compile time.
+> This patch also adds RTC support for the AD silicon changes.
 > 
-The Ka-Ro electronics TX48 module uses the mmc0_clk pin as VBUSEN
-rathern than usb0_drvvbus. This patch makes it possible to use an
-external regulator to handle the VBUS switch through the 'vcc-supply'
-property of the underlying generic_phy device.
-
-> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > ---
-> >  drivers/usb/phy/phy-am335x.c |    2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/drivers/usb/phy/phy-am335x.c b/drivers/usb/phy/phy-am335x.c
-> > index 6522fa7..de25674 100644
-> > --- a/drivers/usb/phy/phy-am335x.c
-> > +++ b/drivers/usb/phy/phy-am335x.c
-> > @@ -22,6 +22,7 @@ static int am335x_init(struct usb_phy *phy)
-> >  {
-> >  	struct am335x_phy *am_phy = dev_get_drvdata(phy->dev);
-> >  
-> > +	usb_gen_phy_init(phy);
-> >  	phy_ctrl_power(am_phy->phy_ctrl, am_phy->id, true);
-> >  	return 0;
-> >  }
-> > @@ -31,6 +32,7 @@ static void am335x_shutdown(struct usb_phy *phy)
-> >  	struct am335x_phy *am_phy = dev_get_drvdata(phy->dev);
-> >  
-> >  	phy_ctrl_power(am_phy->phy_ctrl, am_phy->id, false);
-> > +	usb_gen_phy_shutdown(phy);
-> >  }
-> >  
-> >  static int am335x_phy_probe(struct platform_device *pdev)
-> > -- 
-> > 1.7.10.4
-> > 
+> It adds AD support as a compile-time flag under a new menu item in
+> Kconfig called 'Support DA9063 AD silicon variant ID'. This allows
+> the user to choose AD support, or to leave blank and choose support
+> for the newer silicon variant ID, but not both at the same time.
 > 
+> This extra option for supporting AD will only appear if the main 'Dialog
+> Semiconductor DA9063 PMIC Support' option is chosen. The AD support
+> boolean will be defaulted to false (unchecked) until the user
+> modifies it. This means that AD support is not turned on by default.
+> 
+> The DA9063 probe function has been modified to use the compile time
+> directive CONFIG_MFD_DA9063_AD. This configuration option will allow
+> AD support only if this boolean is true, otherwise it will default to
+> support BB (or greater) silicon.
+> 
+> 
+> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+> ---
 
+[...]
+
+> --- a/drivers/mfd/da9063-core.c
+> +++ b/drivers/mfd/da9063-core.c
+
+[...]
+
+> -	if (variant_code != PMIC_DA9063_BB) {
+> -		dev_err(da9063->dev, "Unknown chip variant code: 0x%02X\n",
+> -				variant_code);
+> +#ifdef CONFIG_MFD_DA9063_AD
+> +	if (variant_code != PMIC_DA9063_AD) {
+> +		dev_err(da9063->dev,
+> +			"Only AD (0x3) silicon is supported in this configuration: 0x%02X\n",
+> +			variant_code);
+>  		return -ENODEV;
+>  	}
+> +#else
+> +	if (variant_code < PMIC_DA9063_BB) {
+> +		dev_err(da9063->dev,
+> +			"Cannot support variant code < BB (0x5): 0x%02X\n",
+> +			variant_code);
+> +		return -ENODEV;
+> +	}
+> +#endif
+
+[...]
+
+> diff --git a/drivers/rtc/rtc-da9063.c b/drivers/rtc/rtc-da9063.c
+> index 5953930..66c3073 100644
+> --- a/drivers/rtc/rtc-da9063.c
+> +++ b/drivers/rtc/rtc-da9063.c
+
+[...]
+
+> +#ifdef CONFIG_MFD_DA9063_AD
+> +	data[RTC_SEC] = 0;
+> +	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_ALARM_MI,
+> +			       &data[RTC_MIN], RTC_ALARM_DATA_LEN);
+> +#else
+>  	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_ALARM_S,
+>  			       &data[RTC_SEC], RTC_DATA_LEN);
+> +#endif
+
+This isn't how we normally do things.  You need to create local
+variables for the differences and populated them in a switch statement
+based on variant ID.
 
 -- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
