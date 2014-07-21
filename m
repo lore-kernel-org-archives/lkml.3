@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777AbaGUOGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:06:37 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14398 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526AbaGUOEZ (ORCPT
+	id S932795AbaGUOGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:06:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:40645 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932526AbaGUOGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:04:25 -0400
-From: Richard Weinberger <richard@sigma-star.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, monstr@monstr.eu
-Subject: [PATCH 39/43] microblaze: Use sigsp()
-Date: Mon, 21 Jul 2014 16:03:25 +0200
-Message-Id: <1405951409-16953-40-git-send-email-richard@sigma-star.at>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
-References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+	Mon, 21 Jul 2014 10:06:38 -0400
+Date: Mon, 21 Jul 2014 10:06:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Amit Virdi <amit.virdi@st.com>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rdunlap@infradead.org>,
+        <ming.lei@canonical.com>, <hdegoede@redhat.com>,
+        <spear-devel@list.st.com>
+Subject: Re: [PATCH V2] usb: core: allow zero packet flag for interrupt urbs
+In-Reply-To: <c6287280f42a976eed5c3fe46901f40e3f5db816.1405919768.git.amit.virdi@st.com>
+Message-ID: <Pine.LNX.4.44L0.1407211006190.875-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Weinberger <richard@nod.at>
+On Mon, 21 Jul 2014, Amit Virdi wrote:
 
-Use sigsp() instead of the open coded variant.
+> Section 4.4.7.2 "Interrupt Transfer Bandwidth Requirements" of the USB3.0 spec
+> says:
+> 	A zero-length data payload is a valid transfer and may be useful for
+> 	some implementations.
+> 
+> So, extend the logic of allowing URB_ZERO_PACKET to interrupt urbs too.
+> Otherwise, the kernel throws warning of BOGUS transfer flags.
+> 
+> Signed-off-by: Amit Virdi <amit.virdi@st.com>
+> Acked-by: Hans de Goede <hdegoede@redhat.com>
+> ---
+>  drivers/usb/core/urb.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/usb/core/urb.c b/drivers/usb/core/urb.c
+> index 991386ceb4ec..c9e8ee81b6b7 100644
+> --- a/drivers/usb/core/urb.c
+> +++ b/drivers/usb/core/urb.c
+> @@ -454,6 +454,7 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
+>  			URB_FREE_BUFFER);
+>  	switch (xfertype) {
+>  	case USB_ENDPOINT_XFER_BULK:
+> +	case USB_ENDPOINT_XFER_INT:
+>  		if (is_out)
+>  			allowed |= URB_ZERO_PACKET;
+>  		/* FALLTHROUGH */
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/microblaze/kernel/signal.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/arch/microblaze/kernel/signal.c b/arch/microblaze/kernel/signal.c
-index 83137e8..8955a38 100644
---- a/arch/microblaze/kernel/signal.c
-+++ b/arch/microblaze/kernel/signal.c
-@@ -145,13 +145,10 @@ setup_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs,
-  * Determine which stack to use..
-  */
- static inline void __user *
--get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size)
-+get_sigframe(struct ksignal *ksig, struct pt_regs *regs, size_t frame_size)
- {
- 	/* Default to using normal stack */
--	unsigned long sp = regs->r1;
--
--	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && !on_sig_stack(sp))
--		sp = current->sas_ss_sp + current->sas_ss_size;
-+	unsigned long sp = sigsp(regs->r1, ksig);
- 
- 	return (void __user *)((sp - frame_size) & -8UL);
- }
-@@ -168,7 +165,7 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
- 	pte_t *ptep;
- #endif
- 
--	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
-+	frame = get_sigframe(ksig, regs, sizeof(*frame));
- 
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
- 		return -EFAULT;
--- 
-1.8.4.5
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
