@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386AbaGUN3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:29:13 -0400
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:53908 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114AbaGUN3L (ORCPT
+	id S932409AbaGUN3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:29:43 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:38808 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125AbaGUN3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:29:11 -0400
-X-Greylist: delayed 845 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jul 2014 09:29:11 EDT
-Date: Mon, 21 Jul 2014 09:14:45 -0400
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: solos-pci.c: Fix me
-Message-ID: <20140721091445.1ee700bb@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <CAPDOMVjnK=OF8mQrXbbgGUtCRJO8oG4+PQOETEcskNk=95GLrg@mail.gmail.com>
-References: <CAPDOMVjnK=OF8mQrXbbgGUtCRJO8oG4+PQOETEcskNk=95GLrg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Mon, 21 Jul 2014 09:29:41 -0400
+Date: Mon, 21 Jul 2014 09:29:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: general protection fault on 3.15.6
+Message-ID: <20140721132937.GF12921@htj.dyndns.org>
+References: <CAKbGBLjYWrooGZjZS_MaDe9kxacoaL9dHJM1oDe7_a-vQuhsJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=0
-X-NRLCMF-Virus-Scanned: No virus found
-X-NRLCMF-Languages: en
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKbGBLjYWrooGZjZS_MaDe9kxacoaL9dHJM1oDe7_a-vQuhsJw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jul 2014 00:59:42 -0400
-Nick Krause <xerofoify@gmail.com> wrote:
+Hello, Steven.
 
-> Hey Chas,
-> There seems to be a fix me in this file in the function, solos_bh.
-> Is the default statement correct and I remove the fix me or
-> does it need to be rewritten.
-> Cheers Nick
+On Sun, Jul 20, 2014 at 09:27:42PM -0700, Steven Noonan wrote:
+> My router/storage box suddenly stopped responding (originally noticed
+> because dnsmasq wasn't responding) and I had to reboot it. I checked
+> the systemd journal when it came back and these were the last thing in
+> there for the previous boot. Any ideas about pinning down the cause?
 > 
+> general protection fault: 0000 [#1] SMP
+...
+> CPU: 3 PID: 8881 Comm: systemd Tainted: P        WC O  3.15.6 #1
+> Hardware name: Shuttle Inc. SH67H/FH67H, BIOS 2.04 04/10/2013
+> task: ffff8802f473d880 ti: ffff8802f0abc000 task.ti: ffff8802f0abc000
+> RIP: 0010:[<ffffffff811ad226>]  [<ffffffff811ad226>]
+> __kmalloc_track_caller+0x86/0x260
 
-I am afraid that I don't know enough about the solos hardware to know
-if it needs to be rewritten.  I gather the solos returns at least three
-kinds of packets, data, status and command.  If you wish to eliminate
-the FIXME comment, you could just write:
+So, GFP in kmalloc,
 
-@@ -850,8 +850,7 @@ static void solos_bh(unsigned long card_arg)
-                                dev_kfree_skb_any(skb);
-                                break;
- 
--                       case PKT_COMMAND:
--                       default: /* FIXME: Not really, surely? */
-+                       default: /* PKT_COMMAND */
-                                if (process_command(card, port, skb))
-                                        break;
-                                spin_lock(&card->cli_queue_lock);
+> Call Trace:
+>  [<ffffffff8116fb11>] kstrdup+0x31/0x60
 
-and be done with it since that will preserve existing behavior.
+called from kstrdup()
+
+>  [<ffffffff8123a4f4>] __kernfs_new_node+0x34/0xf0
+>  [<ffffffff8123b386>] kernfs_new_node+0x26/0x50
+
+which was invoked to copy the node name while creating a new kernfs
+node.
+
+>  [<ffffffff8123cc59>] __kernfs_create_file+0x39/0xa0
+>  [<ffffffff810edb60>] cgroup_addrm_files+0x110/0x250
+>  [<ffffffff810ee9ab>] cgroup_mkdir+0x21b/0x540
+>  [<ffffffff8125ca36>] ? security_inode_notifysecctx+0x16/0x20
+>  [<ffffffff8123b30a>] kernfs_iop_mkdir+0x5a/0x90
+>  [<ffffffff811d3120>] vfs_mkdir+0xe0/0x180
+>  [<ffffffff811d7bea>] SyS_mkdirat+0xaa/0xe0
+>  [<ffffffff811d7c39>] SyS_mkdir+0x19/0x20
+>  [<ffffffff8151496d>] system_call_fastpath+0x1a/0x1f
+> Code: 25 88 dd 00 00 49 8b 50 08 4d 8b 20 4d 85 e4 0f 84 50 01 00 00
+> 49 83 78 10 00 0f 84 45 01 00 00 49 63 47 20 48 8d 4a 01 4d 8b 07 <49>
+> 8b 1c 04 4c 89 e0 65 49 0f c7 08 0f 94 c0 84 c0 74 bb 49 63
+> RIP  [<ffffffff811ad226>] __kmalloc_track_caller+0x86/0x260
+>  RSP <ffff8802f0abfc88>
+
+followed by another GPF
+
+> general protection fault: 0000 [#2] SMP
+...
+> RIP: 0010:[<ffffffff811aa26a>]  [<ffffffff811aa26a>] __kmalloc+0x8a/0x280
+
+in __kmalloc()
+
+>  [<ffffffff8132d81f>] acpi_ns_internalize_name+0x68/0xad
+
+called from acpi to copy a different name.
+
+I don't think the problem is anything cgroup / kernfs specific.  The
+allocator is GPFing inside it from multiple callers and it's not even
+using a caller-provided cache.  It looks like something screwed up the
+memory allocator and it's now faulting on unrelated callers.  Most
+likely illegal free or use-after-free.
+
+Steven, can you please post the full kernel log from boot till reboot?
+It usually is a good idea to include full log when reporting bugs as
+it's very easy to exclude the actually relevant part.
+
+Thanks.
+
+-- 
+tejun
