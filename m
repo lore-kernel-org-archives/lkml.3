@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771AbaGUPcA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:32:00 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:48935 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332AbaGUPb6 (ORCPT
+	id S932660AbaGUPfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:35:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33263 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322AbaGUPfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:31:58 -0400
-X-AuditID: cbfec37b-b7fbe6d000006742-b7-53cd326c87d4
-Message-id: <53CD3263.1060509@samsung.com>
-Date: Mon, 21 Jul 2014 09:31:47 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.12 000/170] 3.12.25-stable review
-References: <cover.1405685481.git.jslaby@suse.cz> <53C9101B.6020006@suse.cz>
-In-reply-to: <53C9101B.6020006@suse.cz>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.209]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9hP90co7PBBnOPyFt8/r2L1eLyrjls
-	Fk8WnmGymHpqAovFgo2PGB1YPXbOusvusfN7A7vHmQVH2D0+b5ILYInisklJzcksSy3St0vg
-	ypj//CNLwS7WirNbV7E0MC5n6WLk4JAQMJGY/V6ri5ETyBSTuHBvPVsXIxeHkMAyRonWt1fZ
-	IZxeJomzF/4wQTjbGCW2LW9gAWnhFdCS2LjhFBOIzSKgKvHq8yJGEJtNQF3i8+sd7CC2kICc
-	RNOS1cwgtqhAhMSBvmesEL2CEj8m3wObIyJgLvHgzgGwemaBEonrz7+wgdjCQPHt/w4xQszx
-	kdh16BfYHE6g+Xu73zJC1JtJPGpZxwxhy0tsXvOWGaJeWeLPZYjbJIDsiY23WSYwisxCsnoW
-	kvZZSNoXMDKvYhQrLU4uKE5KT60w0itOzC0uzUvXS87P3cQIiZXqHYx3v9ocYhTgYFTi4Z2g
-	eDZYiDWxrLgy9xCjBAezkggvrzZQiDclsbIqtSg/vqg0J7X4ECMTB6dUAyOf4X0vFUZ27xS7
-	jYmWr5TUNs7wucmop3otf4v/htk3X8Q8a4orENXrO6D42D1fQf7MdaNnVwKi7pyVSxa5aSsh
-	ytXleO/BdkWLFEM+l6sLy9/f+eR+Ps1y2g5hRua7f6ZnvJbsXNvyWdSezdSa9cmcfVIy07tF
-	mPlvpm9e+3Vx5KLQxV8vTFBiKc5INNRiLipOBAB/c0aEcwIAAA==
+	Mon, 21 Jul 2014 11:35:31 -0400
+Message-ID: <53CD333F.2070805@wwwdotorg.org>
+Date: Mon, 21 Jul 2014 09:35:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Terje Bergstrom <tbergstrom@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ARM: tegra: roth: add display DT node
+References: <1404303560-32209-1-git-send-email-acourbot@nvidia.com> <1404303560-32209-5-git-send-email-acourbot@nvidia.com> <53B42B60.1000600@wwwdotorg.org> <53B4C9C0.4000605@nvidia.com>
+In-Reply-To: <53B4C9C0.4000605@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 06:16 AM, Jiri Slaby wrote:
-> On 07/18/2014 02:12 PM, Jiri Slaby wrote:
->> This is the start of the stable review cycle for the 3.12.25 release.
->> There are 170 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
+On 07/02/2014 09:10 PM, Alexandre Courbot wrote:
+> On 07/03/2014 12:55 AM, Stephen Warren wrote:
+>> On 07/02/2014 06:19 AM, Alexandre Courbot wrote:
+>>> DSI support has been fixed to support continuous clock behavior that the
+>>> panel used on SHIELD requires, so finally add its device tree node since
+>>> it is functional.
 >>
->> Responses should be made by Sun Jul 20 12:11:21 2014
->
-> Oh, this should have been two *workdays*, i.e. the deadline is Jul 22.
->
+>>> diff --git a/arch/arm/boot/dts/tegra114-roth.dts
+>>> b/arch/arm/boot/dts/tegra114-roth.dts
+>>
+>>> +    host1x@50000000 {
+>>> +        dsi@54300000 {
+>>
+>> That node looks fine, but I wonder why we need to mark a bunch of
+>> regulators as always-on? shouldn't the references to vdd-supply and
+>> power-supply from this node be enough? If not, perhaps the tree
+>> structure of the regulators isn't correct, or the DSI or panel bindings
+>> don't allow enough regulators to be referenced?
+> 
+> regulator-always-on is indeed not needed for vdd_lcd. I actually had a
+> patch in my tree removing this line that I forgot to squash. Will post a
+> v2 for this patch that fixes this, thanks.
+> 
+> vdd-2v8-display needs to remain always-on however. Here we may hit a
+> limitation of the simple-panel driver, where only one power supply can
+> be provided.
 
-Compiled and booted on my test system. No dmesg regressions.
+Can't we fix the simple-panel driver to allow a list of regulators in
+the property?
 
--- Shuah
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+I suppose that this technique is OK though; we can always simplify the
+DT later if the simple-panel binding gets enhanced.
