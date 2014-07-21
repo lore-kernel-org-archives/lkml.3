@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaGUInc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:43:32 -0400
-Received: from rslrsmtp2.opaltelecom.net ([62.24.128.202]:2386 "EHLO
-	iprslrsmtp2msp.cpwnetworks.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752277AbaGUInb (ORCPT
+	id S1753806AbaGUIoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:44:22 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:51680 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134AbaGUIoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:43:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au4EAEfRzFM+GID9/2dsb2JhbABaDoQpgnjJdQGBLHaEAwEBBSMEUhALDgYBAwICJgICLCsGARKIRqczlnQXgSyOHweCeIFOBaI6hEyIToMCQ2s
-X-IPAS-Result: Au4EAEfRzFM+GID9/2dsb2JhbABaDoQpgnjJdQGBLHaEAwEBBSMEUhALDgYBAwICJgICLCsGARKIRqczlnQXgSyOHweCeIFOBaI6hEyIToMCQ2s
-X-IronPort-AV: E=Sophos;i="5.01,699,1400022000"; 
-   d="scan'208";a="485585816"
-Message-ID: <1405932178.3485.66.camel@samson1.armitage.org.uk>
-Subject: Re: [PATCH] ipv4: Make IP_MULTICAST_ALL and IP_MSFILTER work on raw
- sockets
-From: Quentin Armitage <quentin@armitage.org.uk>
-To: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 21 Jul 2014 09:42:58 +0100
-In-Reply-To: <20140720.212728.2235972803070688024.davem@davemloft.net>
-References: <1405701503.3485.49.camel@samson1.armitage.org.uk>
-	 <20140720.212728.2235972803070688024.davem@davemloft.net>
-Organization: The Armitage family
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Mon, 21 Jul 2014 04:44:21 -0400
+Message-ID: <53CCD2DF.4010307@collabora.co.uk>
+Date: Mon, 21 Jul 2014 10:44:15 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Dan Williams <dan.j.williams@intel.com>
+CC: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] dmaengine: pl330: Check if the DMA descriptor is
+ NULL
+References: <1405732907-30964-1-git-send-email-javier.martinez@collabora.co.uk> <53CBCFBF.1040208@metafoo.de> <53CC032C.4000105@collabora.co.uk> <53CCCDAD.5080001@metafoo.de>
+In-Reply-To: <53CCCDAD.5080001@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-07-20 at 21:27 -0700, David Miller wrote:
-> From: Quentin Armitage <quentin@armitage.org.uk>
-> Date: Fri, 18 Jul 2014 17:38:23 +0100
+On 07/21/2014 10:22 AM, Lars-Peter Clausen wrote:
+> On 07/20/2014 07:58 PM, Javier Martinez Canillas wrote:
+>>
+>> If this should not really happen and this patch is only a workaround since the
+>> bug is elsewhere, please give me some hints and I'll try to fix it properly. I'm
+>> not familiar with the PL330 DMA controller but just found what was the NULL
+>> pointer being dereferenced and looked at your changes to see what was different now.
 > 
-> Currently, although IP_MULTICAST_ALL and IP_MSFILTER ioctl calls succeed on
-> raw sockets, there is no code to implement the functionality on received
-> packets; it is only implemented for UDP sockets. The raw(7) man page states:
-> "In addition, all ip(7) IPPROTO_IP socket options valid for datagram sockets
-> are supported", which implies these ioctls should work on raw sockets.
+> I think the patch is fine as a quick workaround since it is simple and the 
+> previous commit broke previously working code.
 > 
-> To fix this, add a call to ip_mc_sf_allow on raw sockets.
-> 
-> This should not break any existing code, since the current position of
-> not calling ip_mc_sf_filter makes it behave as if neither the IP_MULTICAST_ALL
-> nor the IP_MSFILTER ioctl had been called. Adding the call to ip_mc_sf_allow
-> will therefore maintain the current behaviour so long as IP_MULTICAST_ALL and
-> IP_MSFILTER ioctls are not called. Any code that currently is calling
-> IP_MULTICAST_ALL or IP_MSFILTER ioctls on raw sockets presumably is wanting
-> the filter to be applied, although no filtering will currently be occurring.
-> 
-> Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
-> ---
->  net/ipv4/raw.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-> index 2c65160..2e1628c 100644
-> --- a/net/ipv4/raw.c
-> +++ b/net/ipv4/raw.c
-> @@ -58,6 +58,7 @@
->  #include <linux/in_route.h>
->  #include <linux/route.h>
->  #include <linux/skbuff.h>
-> +#include <linux/igmp.h>
->  #include <net/net_namespace.h>
->  #include <net/dst.h>
->  #include <net/sock.h>
-> @@ -174,7 +175,9 @@ static int raw_v4_input(struct sk_buff *skb, const struct iphdr *iph, int hash)
->  
->         while (sk) {
->                 delivered = 1;
-> -               if (iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) {
-> +               if ((iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) &&
-> +                   ip_mc_sf_allow(sk, iph->daddr, iph->saddr,
-> +                                  skb->dev->ifindex)) {
->                         struct sk_buff *clone = skb_clone(skb, GFP_ATOMIC);
->  
->                         /* Not releasing hash table! */
-> -- 
-> 1.7.7.6
-> 
-> 
-> 
-> Please form your subject line properly, the text should be of the form:
-> 
-> [PATCH] ${SUBSYSTEM}: Description.
-> 
-> Your's is missing the subsystem prefix, which should probable be "ipv4: "
-> in this case.
 
-Subsystem ipv4: added to subject.
+Agreed, it matches what the old code was doing and other code is relying on this
+behavior so works as a quick fix to avoid the current kernel oops.
 
+> The long term fix is to stop calling dma_pl330_rqcb() from 
+> pl330_release_channel(). The first thing is you wouldn't expect any transfer 
+> to be active when the channel is released. And even if it was by accident we 
+> should not call the descriptor callback, but rather but it just back onto 
+> the descriptor pool.
+
+Thanks a lot for the clarification. I thought it was something along the lines
+of not calling the callback from pl330_release_channel() but preferred to not
+change anything that I could not completely understand its side effects.
+
+I'll study the driver more deeply and try to come up with a patch on top of this
+one that fixes the actual cause rather than the consequence.
+
+> 
+> - Lars
+> 
+
+Best regards,
+Javier
