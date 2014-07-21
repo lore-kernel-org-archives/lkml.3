@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbaGUMSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:18:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47823 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854AbaGUMSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:18:40 -0400
-Date: Mon, 21 Jul 2014 13:18:20 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>, Charulatha V <charu@ti.com>
-Message-ID: <20140721121820.GW17528@sirena.org.uk>
-References: <1405683053-14104-1-git-send-email-LW@KARO-electronics.de>
- <20140718171035.GQ17528@sirena.org.uk>
- <20140721075144.251bb67d@ipc1.ka-ro>
+	id S1755010AbaGUMSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:18:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754971AbaGUMSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:18:49 -0400
+Message-ID: <53CD0514.8040308@redhat.com>
+Date: Mon, 21 Jul 2014 14:18:28 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H25ow1gEc5p8sQPX"
-Content-Disposition: inline
-In-Reply-To: <20140721075144.251bb67d@ipc1.ka-ro>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: omap2-mcspi: fix blatant abuse of the resource
- subsystem
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Nadav Amit <namit@cs.technion.ac.il>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] KVM: x86: Function for determining exception type
+References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il> <1405942650-22589-3-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1405942650-22589-3-git-send-email-namit@cs.technion.ac.il>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 21/07/2014 13:37, Nadav Amit ha scritto:
+> +int kvm_exception_type(unsigned int nr)
 
---H25ow1gEc5p8sQPX
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The manual calls this the exception class.
 
-On Mon, Jul 21, 2014 at 07:51:44AM +0200, Lothar Wa=DFmann wrote:
-> Mark Brown wrote:
+Please open code this as an if like this
 
-> > I'm not going to apply this with a commit message such as the above.
-> > Quite aside from the tone the fact that it doesn't describe the issue
-> > is not helpful for review, one of the things done in review is to try to
-> > check that the change has the intended effect.
+	int mask;
 
-> Maybe the original author or the maintainer who accepted this can come
-> up with a decent fix for this.
+	/* This should never happen, right? */
+	if (WARN_ON(nr > 31))
+		return EXCPT_INTERRUPT;
 
-Just to be clear the issue is with the presentation of your change, it
-is not appropriate to provide a changelog which consists mainly of
-widely directed personal insults especially given that it omits basic
-technical content.
+	mask = 1 << nr;
+	if (mask &
+	    ((1 << DB_VECTOR) | (1 << BP_VECTOR) |
+	     (1 << OF_VECTOR)))
+		return EXCPT_TRAP;
 
---H25ow1gEc5p8sQPX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+	/*
+	 * If it is reserved, assume it is a fault and
+	 * set RF.
+	 */
+	return EXCPT_FAULT;
 
-iQIcBAEBAgAGBQJTzQUIAAoJELSic+t+oim9Q58P/jC360Y7iq9npvSiol1xL6hH
-vja+q9PZe6hZBdjqsvM2mhIaCmTcKGexOTlquBkafYZlZrFUxUpH4LkgE9TZBOz8
-X4UUr1M1N1bi3gCUYlNYiGPl0cx7tar4r2iv1xEclI3DvN2Q/jFGOQEFzwFrtJcY
-L8DQjOn6TIwl/S43mYcly5E7AobuZGkmghMc6h8gEyhZQ+imSA/xj8KvvKGf4lAF
-UX8L76X2cuaArCr1aEVp5orgaOnGxmeewmJPfyZ5pxPTZjNCFz/W7OjfOkPVlS97
-Alc/4drzhyMRiJu4IfrUaDqsuLOkJVqoV7zir/ltS6PmDgRKcife6SphZx4kABss
-FL69UO5H1TvUqnpTF/qevg+2Yo+UyzzxDkkHGWfso8YyuSb0xClEAJ0mjF9MBwsx
-VRxl9bnfi1vOB5pkryZ97s0TaLnH4DOZYi78D0AwHAFY3CE4xqf+UUOfFcuw9oOI
-Kdj3LedOfQvwDIZJ/99AzF/dmTBuGgVuGj68PJ35DX9dmZ7RMO7NdWCQmzY0wPAX
-JfQQlhw2SgcuZ2AEmRHMIduSiWvi2nNokoqSd7lYzvnAnY8JlO9JFKjLx6zU7Utx
-AR+q46BAtju6oF4zbvVgu5zvP6blHP2qfVoQAU2LEXvUnUwoDUkUVcCLiN7ZOc3G
-eXBk1FwoiafhpRn0HEuq
-=HS4X
------END PGP SIGNATURE-----
+> +	case VE_VECTOR:
+> +		return EXCPT_FAULT;
+> +	case DB_VECTOR:
+> +		return EXCPT_FAULT_OR_TRAP;
 
---H25ow1gEc5p8sQPX--
+It is only a fault for instruction fetch breakpoints.  You can modify
+kvm_vcpu_check_breakpoint to set RF, add a comment here that fault
+handling is done elsewhere, and return EXCPT_TRAP.
+
+Paolo
