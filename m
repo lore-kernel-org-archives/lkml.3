@@ -1,89 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999AbaGUP72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:59:28 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:40054 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420AbaGUP71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:59:27 -0400
-Date: Mon, 21 Jul 2014 08:59:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
- for non-nohz_full= CPUs
-Message-ID: <20140721155922.GX8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140719165350.GA18411@linux.vnet.ibm.com>
- <20140719180120.GA20887@localhost.localdomain>
- <20140720114759.GO8690@linux.vnet.ibm.com>
- <20140720221245.GA2138@lerouge>
+	id S933012AbaGUQAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:00:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60450 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932420AbaGUQAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:00:22 -0400
+Date: Mon, 21 Jul 2014 10:58:53 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+CC: Felipe Balbi <balbi@ti.com>,
+        Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        George Cherian <george.cherian@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 0/9] usb: musb: several bugfixes for the musb driver
+Message-ID: <20140721155853.GK6852@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405675890-8802-1-git-send-email-LW@KARO-electronics.de>
+ <20140718161636.GA18460@arch.cereza>
+ <20140718165044.GA30821@saruman.home>
+ <20140721093430.3f528cc7@ipc1.ka-ro>
+ <20140721151140.GG6852@saruman.home>
+ <20140721155352.GA20226@arch.cereza>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="08ATZu8fEq0x2T3M"
 Content-Disposition: inline
-In-Reply-To: <20140720221245.GA2138@lerouge>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072115-3532-0000-0000-0000034D5F7A
+In-Reply-To: <20140721155352.GA20226@arch.cereza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 12:12:48AM +0200, Frederic Weisbecker wrote:
-> On Sun, Jul 20, 2014 at 04:47:59AM -0700, Paul E. McKenney wrote:
-> > On Sat, Jul 19, 2014 at 08:01:24PM +0200, Frederic Weisbecker wrote:
-> > > On Sat, Jul 19, 2014 at 09:53:50AM -0700, Paul E. McKenney wrote:
-> > > > If a non-nohz_full= CPU is non-idle, it will have a scheduling-clock
-> > > > interrupt, and therefore doesn't need the timekeeping CPU to keep
-> > > > its scheduling-clock interrupt going.  This commit therefore ignores
-> > > > the idle state of non-nohz_full CPUs when determining whether or not
-> > > > the timekeeping CPU can safely turn off its scheduling-clock interrupt.
-> > > > 
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > Unfortunately that's not how things work. Running a CPU tick doesn't necessarily
-> > > imply to run the timekeeping duty.
-> > > 
-> > > Only the timekeeper can update the timekeeping. There is an exception though:
-> > > the timekeeping is also updated by dynticks idle CPUs when they wake up in an
-> > > interrupt from idle.
-> > > 
-> > > Here is in practice why it doesn't work:
-> > > 
-> > > So lets say CPU 0 is timekeeper, CPU 1 a non-nohz-full CPU and all others are full-nohz.
-> > > CPU 0 is sleeping. CPU 1 wakes up from idle, so it has an uptodate timekeeping but then
-> > > if it continues to execute further without waking up CPU 0, it risks stale timestamps.
-> > > 
-> > > This can be changed by allowing timekeeping duty from all non-nohz_full CPUs, that's
-> > > the initial direction I took, but it involved a lot of complications and scalability
-> > > issues.
-> > 
-> > So we really have to have -all- the CPUs be idle to turn off the timekeeper.
-> > This won't make the battery-powered embedded guys happy...
-> 
-> I can imagine all sorts of solutions to solve this. None of them look simple
-> though. And I'm really convinced this isn't worth until some user comes up
-> and report me that 1) he seriously uses full dynticks and 2) he needs non-full-nohz
-> CPUs other than CPU 0.
-> 
-> If 1 and 2 ever happen, I'll gladly work on this.
+--08ATZu8fEq0x2T3M
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Does the thought of special-casing the situation where CONFIG_NO_HZ_FULL=y,
-CONFIG_NO_HZ_FULL_SYSIDLE=y, and there are no nohz_full= CPUs make sense?
+On Mon, Jul 21, 2014 at 12:53:52PM -0300, Ezequiel Garcia wrote:
+> On 21 Jul 10:11 AM, Felipe Balbi wrote:
+> > On Mon, Jul 21, 2014 at 09:34:30AM +0200, Lothar Wa=DFmann wrote:
+> > > Hi,
+> > >=20
+> > > Felipe Balbi wrote:
+> > > > Hi,
+> > > >=20
+> > > > On Fri, Jul 18, 2014 at 01:16:36PM -0300, Ezequiel Garcia wrote:
+> > > > > Hi Lothar,
+> > > > >=20
+> > > > > On 18 Jul 11:31 AM, Lothar Wa=DFmann wrote:
+> > > > > > The first three patches do some source code cleanup in the file=
+s that
+> > > > > > are modified in the subsequent patches.
+> > > > > >=20
+> > > > >=20
+> > > > > I've applied patches 4 and 9 on a recent -next, after fixing a co=
+nflict
+> > > > > due to patch 3 ("usb: musb_am335x: source cleanup"):
+> > > > >=20
+> > > > > > Patch 4 carries the proper fix reported in commit:
+> > > > > >         7adb5c876e9c ("usb: musb: Fix panic upon musb_am335x mo=
+dule removal")
+> > > > > >=20
+> > > > > > Patch 9 reinstates module unloading support for the musb_am335x=
+ driver
+> > > > > >         which was disabled due to a false failure analysis
+> > > > > >=20
+> > > > >=20
+> > > > > For these two patches, Tested-by: Ezequiel Garcia <ezequiel@vangu=
+ardiasur.com.ar>
+> > > > >=20
+> > > > > Tested on a beaglebone with a mass storage USB device, module loa=
+d/unload
+> > > > > works without issues. The module_get/put in the phy is now preven=
+ting the
+> > > > > musb_am335x driver unload, which seems to be the real cause of th=
+e issue
+> > > > > I reported. Thanks for providing a proper fix!
+> > > >=20
+> > > > I don't that's a good fix. The problem is that even after am335x
+> > > > removing all its child, someone else tried to release the PHY. That
+> > > > ordering is the one that needs to be fixed. Doing a module_get on t=
+he
+> > > > parent device looks like a hack to me.
+> > > >=20
+> > > No. It guarantees that the module cannot be unloaded when its resourc=
+es
+> > > are still in use!
+> >=20
+> > it's still a hack. You have a child incrementing the usage count on its
+> > parent just because a sibbling isn't doing the right thing.
+> >=20
+>=20
+> How about having the musb_am335x (glue driver) call request_module and
+> module_get on the phy-am335x? Wouldn't this be a cleaner approach?
+>=20
+> I haven't checked if this possible, though.
 
-> > Other thoughts on this?  We really should not be setting
-> > CONFIG_NO_HZ_FULL_SYSIDLE by default until this is solved.
-> 
-> Well it's better to save energy when all CPUs are idle than never.
+at most, you would have the phy layer do that so that all PHYs get usage
+counter incremented when they're in use. We can't have this 'fixed' for
+MUSB only.
 
-Fair point!
+--=20
+balbi
 
-								Thanx, Paul
+--08ATZu8fEq0x2T3M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTzTi9AAoJEIaOsuA1yqRERCMQAJZVGRdD4NN0SGZSnQglcJvx
++dzOJfWZ6Abw7ai13jD1TC1i1j6aMxoSUC+wgx0MnX+mGJi5bMpJThpxCwhsu0W9
+hoMDokIsd9rmOFt3iQvo2LqRmi9YuPHfN0J8RQdl370Az2pDiIMfx+6EoTCUjwsi
+A4l/NRUN0nkDkb1znKtJnU12luWuJ9QgkWgi+UAykYC+LrDGIgSUiMzBZZWevZK6
+GU3uS4ca/EshzTiso1NkGR5byJJqtRVIasQiDFIVX9wxFV8kOGFDisayn9unBk+A
+1X/WKVTq4rggfGUCRPTi87RHDP4+J9VK4pFCSvGboqv48ZZ1ZLIlKdWQaomZgjG2
+ynl1rre+msXvVTVDOkdhJ1RFjfP2mNYs3W33tPoPn+qWQhETg1MefnKvLQ4fen6M
+LeH5K6E3L6/m6PawqLlsLzfB2wGyTNtE4oedUl7+noOs9OQlmHh+2sLKQcICAFUV
+wC7Jjt+oTUrCcBzaqnpbV5ba+235BjEWiAIdEMj+3b6izuKgj5ywxmscWyWNPZV2
+s9akXc00OCsU6XkCaa+JUx+HN0hhPYt6cYumnvsmrqqZ4ds/z/xQHx6zKG5pBE4G
+FA0lr4YBKmzrJkgDhc57F5NQqjvFv4zYH1jYeVpXkuhmmvyJvnBP7FP7PRPHti79
+/xE3UlTNoDN6RxobGEth
+=NGSA
+-----END PGP SIGNATURE-----
+
+--08ATZu8fEq0x2T3M--
