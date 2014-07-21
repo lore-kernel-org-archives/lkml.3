@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaGUQQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:16:41 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:45141 "EHLO extserv.mm-sol.com"
+	id S1755373AbaGUQSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:18:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54555 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332AbaGUQQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:16:39 -0400
-Message-ID: <1405959376.28520.3.camel@iivanov-dev>
-Subject: Re: [PATCH v2 2/4] pinctrl: qpnp: Qualcomm PMIC pin controller
- driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: divya ojha <odivya77@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Mon, 21 Jul 2014 19:16:16 +0300
-In-Reply-To: <CADsdr6Pwa+Vzugy7_-yWePmT6Wj5bpJRDq=qq2KLdG2woioY4g@mail.gmail.com>
-References: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
-	 <1405610748-7583-3-git-send-email-iivanov@mm-sol.com>
-	 <CADsdr6Pwa+Vzugy7_-yWePmT6Wj5bpJRDq=qq2KLdG2woioY4g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755332AbaGUQSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:18:30 -0400
+Date: Mon, 21 Jul 2014 18:18:28 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu
+ buffer in parallel
+Message-ID: <20140721161828.GH20751@pathway.suse.cz>
+References: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
+ <20140716124356.398e21f4@gandalf.local.home>
+ <20140718153443.GC6774@pathway.suse.cz>
+ <20140721144324.GG20751@pathway.suse.cz>
+ <20140721154317.GS8690@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140721154317.GS8690@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 21:32 +0530, divya ojha wrote:
-> Hi,
+On Mon 2014-07-21 08:43:17, Paul E. McKenney wrote:
+> On Mon, Jul 21, 2014 at 04:43:24PM +0200, Petr Mládek wrote:
 > 
-> On Thu, Jul 17, 2014 at 8:55 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >
-> > This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-> > Qualcomm GPIO and MPP sub-function blocks found in the PMIC chips.
-> >
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >  drivers/pinctrl/Kconfig                       |   12 +
-> >  drivers/pinctrl/Makefile                      |    1 +
-> >  drivers/pinctrl/pinctrl-qpnp.c                | 1565 +++++++++++++++++++++++++
-> >  include/dt-bindings/pinctrl/qcom,pm8xxx-mpp.h |   34 +
-> ..
-> +       struct device *dev = qctrl->dev;
-> > +       struct pinctrl_pin_desc *desc, *descs;
-> > +       struct qpnp_padinfo *pad, *pads;
-> > +       int idx, ret, cnt, gps, ais, aos, css;
-> > +       const char **names, *format;
-> > +       unsigned int addr;
-> > +
-> > +       pads = devm_kcalloc(dev, qchip->npads, sizeof(*pads), GFP_KERNEL);
+> IIRC, deadlock in the case where two CPUs attempt to invoke
+> smp_call_function_single() at each other, but both have
+> interrupts disabled.  It might be possible to avoid this by telling
+> smp_call_function_single() not to wait for a response, but this often
+> just re-introduces the deadlock at a higher level.
+
+I thought that IPI used NMI and thus could not be blocked if the
+called function was reasonable. Note that ring_buffer_swap_cpu() does not take
+any lock and can't block anywhere. I am probably too optimistic here.
+
+
+> > Any pointers or ideas are welcome.
 > 
-> when do we free these structures..?
+> Not immediately.  Mark Batty (mark.batty@cl.cam.ac.uk) has come up with
+> cute ring-buffer tricks in the past, but would need a clear statement of
+> the problem.  I would be happy to bring him into the discussion if it
+> would help.
 
-Good description could be found here[1].
+In short. We have two operations: writing and swap. They "block" each
+other by setting the variables "committing" and "record_disabled".
+It is not a real block. The other operation is "nop" when the other
+one is in the critical section.
 
-Regards,
-Ivan
+We want to keep writing fast and avoid memory barriers there. Writing
+works with per-CPU buffer. It would help when also the swap happens
+on the same CPU.
 
-[1] Documentation/driver-model/devres.txt
+More detailed description of the current race can be found at
+https://lkml.org/lkml/2014/7/16/178
 
+
+> And yes, my knee-jerk reaction of suggesting RCU runs into the problem
+> that it is not so good to invoke synchronize_rcu() with interrupts
+> disabled.  Might be able to use call_rcu(), but if that worked, then
+> just telling smp_call_function_single() not to wait would probably
+> be a lot simpler.
+
+I am still not sure if it really has to be called with IRQs disabled.
+
+BTW: I have just got another idea. If we store pointer to the used
+cpu_buffer into struct ring_buffer_event, it might be possible
+to keep the write operation consistent even when the cpu buffers
+are switched.
+
+
+Best Regards,
+Petr
