@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaGUCSC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 22:18:02 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:29761 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaGUCR5 (ORCPT
+	id S1752597AbaGUCSo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 22:18:44 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:41198 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270AbaGUCSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 22:17:57 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-d3-53cc7852fe62
+	Sun, 20 Jul 2014 22:18:01 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-ef-53cc785594b0
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: jic23@kernel.org, ch.naveen@samsung.com
 Cc: arnd@arndb.de, kgene.kim@samsung.com, robh+dt@kernel.org,
@@ -18,38 +18,39 @@ Cc: arnd@arndb.de, kgene.kim@samsung.com, robh+dt@kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv7 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and code
- clean
-Date: Mon, 21 Jul 2014 11:17:44 +0900
-Message-id: <1405909068-22539-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv7 4/4] ARM: dts: Fix wrong compatible string for Exynos3250 ADC
+Date: Mon, 21 Jul 2014 11:17:48 +0900
+Message-id: <1405909068-22539-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsWyRsSkSDeo4kywwccFShZ/Jx1jt7j7/DCj
+In-reply-to: <1405909068-22539-1-git-send-email-cw00.choi@samsung.com>
+References: <1405909068-22539-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsWyRsSkSDe04kywwfolQhZ/Jx1jt7j7/DCj
 	xfUvz1kt5h85x2rR/2Yhq8W5VysZLR40rWKy6F1wlc3ibNMbdotNj6+xWixsW8JiMe/IOxaL
 	y7vmsFnMOL+PyWLp9YtMFhOmr2WxeHtnOotF694j7BbrZ7xmcRD2WDNvDaPH71+TGD0u9/Uy
-	eaxc/oXNY/MKLY9NqzqBjCX1Hn1bVjF6fN4kF8AZxWWTkpqTWZZapG+XwJXxZOVEpoIJAhU/
-	bnI3MH7m6WLk5JAQMJG4+PwXM4QtJnHh3nq2LkYuDiGBpYwSf58+Z4QpurKyjR3EFhJYxCjR
-	e5IZoqiJSaLzXS9YEZuAlsT+FzfYQGwRAW2JCQs7wCYxC5xhluhtWwnWLSwQInF/ySOgbg4O
-	FgFViYeP0kDCvAKuEosevoC6Qk7iw55H7CC9EgIf2SWOTvrFApJgERCQ+Db5EAtIr4SArMSm
-	A1D1khIHV9xgmcAouICRYRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGYESd/vesbwfjzQPW
-	hxiTgcZNZJYSTc4HRmReSbyhsZmRhamJqbGRuaUZacJK4ryLHiYFCQmkJ5akZqemFqQWxReV
-	5qQWH2Jk4uCUamAssrVISfh98YPclrLEqo3n+jOcGC1ThDnyb2wJijbsiP188Ft81L3NDS27
-	/vMft+uazySTyp19MH8Ny+V2wwPayxMKlDZUM7gs2sj0d3pBh5206b0MHe19WtNTd++f5bha
-	odfI6NKMQhXOTcyN8v91Z8pd2rLzdQ2j6ZPtPgI/v+g4L21e1KLEUpyRaKjFXFScCADOamuf
-	vgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAd2gijPBBouPS1r8nXSM3eLu88OM
-	Fte/PGe1mH/kHKtF/5uFrBbnXq1ktHjQtIrJonfBVTaLs01v2C02Pb7GarGwbQmLxbwj71gs
-	Lu+aw2Yx4/w+Joul1y8yWUyYvpbF4u2d6SwWrXuPsFusn/GaxUHYY828NYwev39NYvS43NfL
-	5LFy+Rc2j80rtDw2reoEMpbUe/RtWcXo8XmTXABnVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8
-	c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QV0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0
-	fUOC4HqMDNBAwhrGjCcrJzIVTBCo+HGTu4HxM08XIyeHhICJxJWVbewQtpjEhXvr2UBsIYFF
-	jBK9J5m7GLmA7CYmic53vYwgCTYBLYn9L26AFYkIaEtMWNjBBlLELHCGWaK3bSXYJGGBEIn7
-	Sx4BdXNwsAioSjx8lAYS5hVwlVj08AUzxDI5iQ97HrFPYORewMiwilE0tSC5oDgpPddQrzgx
-	t7g0L10vOT93EyM4Xp9J7WBc2WBxiFGAg1GJh9eD8UywEGtiWXFl7iFGCQ5mJRHeExlAId6U
-	xMqq1KL8+KLSnNTiQ4ymQMsnMkuJJucDU0leSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS
-	1OzU1ILUIpg+Jg5OqQZG9pWv8jdsV/T4aXjbfu+7gMMufx6oPJ+Y16u2beU3BfHFe5+a9ExP
-	ixbha9ir2vw20ci5762n/Ao+Th9zEetK/auuRwI3736msm7mpGmTrN9dUls5wT5a2lmGv9dh
-	2cdt/06X+bKqrgqsY/lfXFgZutuRIc+iPO3isbUCqmKiez+V3Ot4aOymxFKckWioxVxUnAgA
-	sKEEbe0CAAA=
+	eaxc/oXNY/MKLY9NqzqBjCX1Hn1bVjF6fN4kF8AZxWWTkpqTWZZapG+XwJWxctYHloJdnBWP
+	z85ibWB8zd7FyMkhIWAisWzRJBYIW0ziwr31bF2MXBxCAksZJR7vO8ACU9Q98QZUYhGjRP/n
+	78wQThOTxJFPS8BGsQloSex/AVLFySEioC0xYWEHWAezwBlmid62lWBFwgL+EgvnXGQGsVkE
+	VCX2P1/ACGLzCrhKfNh6hw1inZzEhz2PwOo5Bdwk2h+3sYLYQkA1/ybdYQQZKiHQyiGx9/YU
+	VohBAhLfJh8CupUDKCErsekAM8QcSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IUK84Mbe4NC9d
+	Lzk/dxMjMA5P/3vWu4Px9gHrQ4zJQOMmMkuJJucD4zivJN7Q2MzIwtTE1NjI3NKMNGElcd6k
+	h0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhi1c27dYH4hbP313peHJjWGG+vN+jmqFOcI
+	TDufdZDrLVeA75zmL/f3PeHbKhO07/LhXcF+OfPk//f9k12cX6PVxW3rz2B360DOEyW/yxk3
+	RHqevsl8y+h850+1ry9LrndpwWojdvVVd3evmVPOe/y33ZlbytcEPoc8FJ3y9lrZQec1wv8P
+	9IcqsRRnJBpqMRcVJwIAW1gPW9kCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jAd3QijPBBtuaOC3+TjrGbnH3+WFG
+	i+tfnrNazD9yjtWi/81CVotzr1YyWjxoWsVk0bvgKpvF2aY37BabHl9jtVjYtoTFYt6RdywW
+	l3fNYbOYcX4fk8XS6xeZLCZMX8ti8fbOdBaL1r1H2C3Wz3jN4iDssWbeGkaP378mMXpc7utl
+	8li5/Aubx+YVWh6bVnUCGUvqPfq2rGL0+LxJLoAzqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzje
+	Od7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoKyWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6
+	viFBcD1GBmggYQ1jxspZH1gKdnFWPD47i7WB8TV7FyMnh4SAiUT3xBtsELaYxIV764FsLg4h
+	gUWMEv2fvzNDOE1MEkc+LQHrYBPQktj/AqJDREBbYsLCDrAOZoEzzBK9bSvBioQF/CUWzrnI
+	DGKzCKhK7H++gBHE5hVwlfiw9Q7UOjmJD3segdVzCrhJtD9uYwWxhYBq/k26wziBkXcBI8Mq
+	RtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOAofya9g3FVg8UhRgEORiUeXg/GM8FCrIllxZW5
+	hxglOJiVRHhPZACFeFMSK6tSi/Lji0pzUosPMZoCXTWRWUo0OR+YgPJK4g2NTcyMLI3MDS2M
+	jM2VxHkPtloHCgmkJ5akZqemFqQWwfQxcXBKNTDWPjEvmbiI1fjXJCG9SbM2yH1MPek8/6t/
+	u7jpY7eyF5qH5nrzznlSMNfn4cMZqsek5vN9OBcmGs9q+SxwMsMvPY3rs0T9E+cumJMoM73V
+	pCaDrff2rCmzDvFVtiZN9X2R9NDbhztLw3NGrWa44VZdnnntj96VtgfdKbyVWfqm5InsOaFX
+	WolKLMUZiYZazEXFiQBKTq2+CAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,57 +58,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset support Exynos3250 ADC (Analog Digital Converter) because
-Exynos3250 has additional special clock for ADC IP.
+This patchset fix wrong compatible string for Exynos3250 ADC. Exynos3250 SoC
+need to control only special clock for ADC. Exynos SoC except for Exynos3250
+has not included special clock for ADC. The exynos ADC driver can control
+special clock if compatible string is 'exynos3250-adc-v2'.
 
-Changes from v6:
-- Use "exynos3250-adc" compatible string instead of "exynos3250-adc-v2"
-- Use "sclk" clock name instead of "sclk_adc"
-- Remove un-necessary macro for exyno-adc-data-v2 structure.
-- Remove '(void *)' cast and mark the exynos-adc-data structure as 'const'
-- Change the number of ADC channels (Exynos3250 has only two channels for ADC)
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Changes from v5:
-- Add acked message by Kukjin Kim
-- Add reviewed messgae by Tomasz Figa
-- Fix typo (for for -> for)
-
-Changes from v4:
-- Use 'exynos_adc_data' structure instead of 'exynos_adc_ops' structure
-  and remove enum variable of ADC version
-- Fix wrong name of special clock (sclk_tsadc -> sclk_adc)
-- Add reviewed message by Naveen Krishna Chatradhi
-- Add functions for ADC clock control
-
-Changes from v3:
-- Add new 'exynos_adc_ops' structure to improve readability according to
- Tomasz Figa comment[1]
- [1] https://lkml.org/lkml/2014/4/16/238
-- Add new 'exynos3250-adc-v2' compatible string to support Exynos3250 ADC
-- Fix wrong compaitlbe string of ADC in Exynos3250 dtsi file
-
-Changes from v2:
-- Check return value of clock function to deal with error exception
-- Fix minor coding style to improve readability
-
-Changes from v1:
-- Add new "samsung,exynos-adc-v3" compatible to support Exynos3250 ADC
-- Add a patch about DT binding documentation
-
-
-Chanwoo Choi (4):
-  iio: adc: exynos_adc: Add exynos_adc_data structure to improve
-    readability
-  iio: adc: exynos_adc: Control special clock of ADC to support
-    Exynos3250 ADC
-  iio: devicetree: Add DT binding documentation for Exynos3250 ADC
-  ARM: dts: Fix wrong compatible string for Exynos3250 ADC
-
- .../devicetree/bindings/arm/samsung/exynos-adc.txt |  25 +-
- arch/arm/boot/dts/exynos3250.dtsi                  |   4 +-
- drivers/iio/adc/exynos_adc.c                       | 335 +++++++++++++++------
- 3 files changed, 274 insertions(+), 90 deletions(-)
-
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 15c9c87..8ab1289 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -407,10 +407,10 @@
+ 		};
+ 
+ 		adc: adc@126C0000 {
+-			compatible = "samsung,exynos-adc-v3";
++			compatible = "samsung,exynos3250-adc";
+ 			reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+ 			interrupts = <0 137 0>;
+-			clock-names = "adc", "sclk_tsadc";
++			clock-names = "adc", "sclk";
+ 			clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+ 			#io-channel-cells = <1>;
+ 			io-channel-ranges;
 -- 
 1.8.0
 
