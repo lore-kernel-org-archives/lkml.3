@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933379AbaGURv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:51:57 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39877 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647AbaGURv4 (ORCPT
+	id S933411AbaGURwm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:52:42 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58896 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647AbaGURwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:51:56 -0400
-Date: Mon, 21 Jul 2014 10:51:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 10/10] nohz: Warn on illegal timekeeper switch in nohz
- full
-Message-ID: <20140721175150.GE8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
- <1405730661-9355-11-git-send-email-fweisbec@gmail.com>
+	Mon, 21 Jul 2014 13:52:39 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Richard Weinberger <richard@nod.at>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>
+	<87lhrpayl4.fsf@igel.home>
+	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>
+	<87fvhwxps6.fsf@igel.home>
+	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
+	<87bnskxn7g.fsf@igel.home> <53CBB143.1020206@nod.at>
+Date: Mon, 21 Jul 2014 10:48:55 -0700
+In-Reply-To: <53CBB143.1020206@nod.at> (Richard Weinberger's message of "Sun,
+	20 Jul 2014 14:08:35 +0200")
+Message-ID: <87k376siuw.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405730661-9355-11-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072117-9332-0000-0000-00000173EFD6
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+j+anHHxnRry7BOU8R/dQQfX8QZ+1i+HQ=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4705]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Richard Weinberger <richard@nod.at>
+X-Spam-Relay-Country: 
+Subject: Re: ls -l /proc/1/exe -> Permission denied
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 02:44:21AM +0200, Frederic Weisbecker wrote:
-> In full dynticks idle mode, the timekeeper should never be set to another
-> CPU than 0.
-> 
-> Lets enforce that through a dedicated mutator.
-> 
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Richard Weinberger <richard@nod.at> writes:
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Am 20.07.2014 13:51, schrieb Andreas Schwab:
+>> Richard Weinberger <richard.weinberger@gmail.com> writes:
+>>> Do you have an example?
+>> 
+>> proc symlinks are special because they actually resolve to the inode.
+>
+> Ah. If an attacker manages the kernel to follow the symlink he could
+> indirectly access that file.
+> Thanks for pointing this out!
 
-> ---
->  kernel/time/tick-common.c   | 9 ++++-----
->  kernel/time/tick-internal.h | 7 +++++++
->  kernel/time/tick-sched.c    | 7 +++----
->  3 files changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-> index cb57bce..72ccaf2 100644
-> --- a/kernel/time/tick-common.c
-> +++ b/kernel/time/tick-common.c
-> @@ -180,9 +180,9 @@ static void tick_setup_device(struct tick_device *td,
->  		 */
->  		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
->  			if (tick_nohz_full_enabled())
-> -				tick_do_timer_cpu = TICK_DO_TIMER_DEFAULT;
-> +				tick_do_timer_cpu_set(TICK_DO_TIMER_DEFAULT);
->  			else
-> -				tick_do_timer_cpu = cpu;
-> +				tick_do_timer_cpu_set(cpu);
->  			tick_next_period = ktime_get();
->  			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
->  		}
-> @@ -341,9 +341,8 @@ void tick_handover_do_timer(int *cpup)
->  {
->  	if (*cpup == tick_do_timer_cpu) {
->  		int cpu = cpumask_first(cpu_online_mask);
-> -
-> -		tick_do_timer_cpu = (cpu < nr_cpu_ids) ? cpu :
-> -			TICK_DO_TIMER_NONE;
-> +		tick_do_timer_cpu_set((cpu < nr_cpu_ids) ? cpu :
-> +				      TICK_DO_TIMER_NONE);
->  	}
->  }
-> 
-> diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-> index 6b592a8..eadfd89 100644
-> --- a/kernel/time/tick-internal.h
-> +++ b/kernel/time/tick-internal.h
-> @@ -23,6 +23,13 @@ extern void tick_setup_periodic(struct clock_event_device *dev, int broadcast);
->  extern void tick_handle_periodic(struct clock_event_device *dev);
->  extern void tick_check_new_device(struct clock_event_device *dev);
->  extern void tick_handover_do_timer(int *cpup);
-> +
-> +static inline void tick_do_timer_cpu_set(int cpu)
-> +{
-> +	WARN_ON_ONCE(tick_nohz_full_enabled() && cpu != TICK_DO_TIMER_DEFAULT);
-> +	tick_do_timer_cpu = cpu;
-> +}
-> +
->  extern void tick_shutdown(unsigned int *cpup);
->  extern void tick_suspend(void);
->  extern void tick_resume(void);
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 845aaff..3b5102a 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -123,7 +123,7 @@ static void tick_sched_do_timer(ktime_t now)
->  	 */
->  	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
->  	    && !tick_nohz_full_cpu(cpu))
-> -		tick_do_timer_cpu = cpu;
-> +		tick_do_timer_cpu_set(cpu);
->  #endif
-> 
->  	/* Check, if the jiffies need an update */
-> @@ -550,7 +550,7 @@ static u64 timekeeping_deferment(struct tick_sched *ts, int cpu)
->  		ts->do_timer_last = 1;
->  		/* In full dynticks mode, CPU 0 always keeps the duty */
->  		if (!tick_nohz_full_enabled())
-> -			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-> +			tick_do_timer_cpu_set(TICK_DO_TIMER_NONE);
->  	} else if (ts->do_timer_last) {
->  		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
->  			time_delta = timekeeping_max_deferment();
-> @@ -600,7 +600,6 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
->  	/* Schedule the tick, if we are at least one jiffie off */
->  	if ((long)delta_jiffies >= 1) {
->  		u64 time_delta = timekeeping_deferment(ts, cpu);
-> -
->  #ifdef CONFIG_NO_HZ_FULL
->  		if (!ts->inidle) {
->  			time_delta = min(time_delta,
-> @@ -717,7 +716,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->  	 */
->  	if (unlikely(!cpu_online(cpu))) {
->  		if (cpu == tick_do_timer_cpu)
-> -			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-> +			tick_do_timer_cpu_set(TICK_DO_TIMER_NONE);
->  		return false;
->  	}
-> 
-> -- 
-> 1.8.3.1
-> 
+We only allow this access for processes that we are allowed to ptrace
+because knowing intimate details of a process such as which files it has
+open and in this case which file it is executing can make it more
+attackable. (Say by looking to see if a processes is still running some
+old vulnerable version and hasn't been restarted yet).
 
+Normally this only applies to processes owned by different users.
+
+However some configurations restrict ptrace on processes that you own.
+You will have to look at the ``security'' modules you have enabled
+and configured to see what that policy is, to see why you aren't allowed
+to access your own processes.
+
+Eric
