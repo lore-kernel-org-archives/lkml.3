@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaGUOjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:39:09 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42579 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083AbaGUOjI (ORCPT
+	id S1755251AbaGUOnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:43:17 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:33869 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125AbaGUOnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:39:08 -0400
-Date: Mon, 21 Jul 2014 16:39:05 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] PM / Hibernate: Memory bitmap scalability
- improvements
-Message-ID: <20140721143905.GA16454@amd.pavel.ucw.cz>
-References: <1405684643-30234-1-git-send-email-joro@8bytes.org>
- <20140719134904.GA2852@amd.pavel.ucw.cz>
- <20140721083211.GK30979@8bytes.org>
- <20140721114507.GA13921@amd.pavel.ucw.cz>
- <20140721142951.GN30979@8bytes.org>
+	Mon, 21 Jul 2014 10:43:15 -0400
+Date: Mon, 21 Jul 2014 09:34:42 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        lxc-devel@lists.linuxcontainers.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH 3/3] fuse: Allow mounts from user namespaces
+Message-ID: <20140721143442.GD111224@ubuntu-hedt>
+Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
+	Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	fuse-devel <fuse-devel@lists.sourceforge.net>,
+	lxc-devel@lists.linuxcontainers.org,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Serge Hallyn <serge.hallyn@ubuntu.com>,
+	"Michael H. Warfield" <mhw@wittsend.com>
+References: <1405365496-58404-1-git-send-email-seth.forshee@canonical.com>
+ <1405365496-58404-4-git-send-email-seth.forshee@canonical.com>
+ <CAJfpegvMeiZG09U3aXvxKV+GPSn6zFgLbUwXGpTuoVSbnvgfmw@mail.gmail.com>
+ <20140721124725.GB111224@ubuntu-hedt>
+ <CAJfpegs=V5BpNdgn1JSLsvUsAnmhPvGJZobF1y_NAysb==Z1-A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140721142951.GN30979@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJfpegs=V5BpNdgn1JSLsvUsAnmhPvGJZobF1y_NAysb==Z1-A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-07-21 16:29:51, Joerg Roedel wrote:
-> Hi,
+On Mon, Jul 21, 2014 at 03:09:14PM +0200, Miklos Szeredi wrote:
+> On Mon, Jul 21, 2014 at 2:47 PM, Seth Forshee
+> <seth.forshee@canonical.com> wrote:
+> > On Fri, Jul 18, 2014 at 05:33:23PM +0200, Miklos Szeredi wrote:
+> >> On Mon, Jul 14, 2014 at 9:18 PM, Seth Forshee
+> >> <seth.forshee@canonical.com> wrote:
+> >> > Update fuse to allow mounts from user namespaces. During mount
+> >> > current_user_ns() is stashed away,
+> >>
+> >> Same thing here.  While practically this may work, it's theoretically
+> >> wrong, and possibly may go wrong in special situations.   In fuse
+> >> there's no official "server process", so storing information, like
+> >> namespace, about one is going to be wrong.
+> >
+> > What you're suggesting would probably work fine when dealing with pids.
+> > It's not going to work though for the checks I've added in
+> > fuse_allow_current_process() that the process is in the mount owner's
+> > user ns, and without those checks or something similar I don't think
+> > it's safe to permit allow_other for user ns mounts.
 > 
-> On Mon, Jul 21, 2014 at 01:45:07PM +0200, Pavel Machek wrote:
-> > Ok, so you have sped it up from O(n) to O(log(n)) speed, and increased
-> > memory requirements from O(n) to O(n * log(n)), right?
+> You can add that check in fuse_dev_do_read() as well.  If the
+> fsuid/fsgid doesn't exist in the "server's" namespace, then set
+> req->out.h.error and call request_end().
+
+Okay, that seems like it should work.
+
+> > Can you elaborate on what special situations might violate these
+> > assumptions or otherwise cause problems?
 > 
-> No, new memory requirements are still ~O(n), because the additional pages
-> needed for the index in the radix tree are outweighted by the memory
-> saved by the smaller size of struct rtree_node compared to struct
-> bm_block.
+> What's preventing a fuse fs implementation from handling FUSE_INIT in
+> one process and then handling the rest in a different process
+> (possibly in a different namespace)?
 
-Are we in agreement how O() notation works?
+Nothing, but I'm having a hard time imagining why that would ever be
+useful. The user/group ids passed in the mount options would have to be
+mapped into that namespace, otherwise all requests will just fail in the
+check you suggest above. The only thing I can think of would be if
+someone wanted to proxy mounts trough a process in a more privileged
+context, but then the main point of these patches is to make that
+unnecessary.
 
-So you reduced O(n) to O(n/2 log(n)) ... that's still O(n log(n)), right?
+But I also think your approach should work just as well as mine for the
+use cases that do make sense to me, so I'll go ahead and give it a try.
 
-> You can also modify the above tool to give you some data to plot, then
-> you will also SEE that there is still a linear relationship between RAM
-> size and memory required by the old and new memory bitmap
-> implementation.
-
-I believe radix tree is O(log(N)) per operation, but its memory is
-certainly not linear.
-
-Yes, log(n) is looks quite constant even for huge n :-).
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Seth
