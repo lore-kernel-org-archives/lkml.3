@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaGULhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:37:43 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:41714 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157AbaGULhl (ORCPT
+	id S1754840AbaGULii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:38:38 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:48127 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754157AbaGULih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:37:41 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: phy: tegra: Avoid use of sizeof(void)
-Date: Mon, 21 Jul 2014 13:37:37 +0200
-Message-Id: <1405942657-2080-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Mon, 21 Jul 2014 07:38:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjcBAIb6zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBSdSEFFXGYhCuCiGTBePSwcWhDAFil+oPGk
+X-IPAS-Result: AjcBAIb6zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBSdSEFFXGYhCuCiGTBePSwcWhDAFil+oPGk
+X-IronPort-AV: E=Sophos;i="5.01,700,1400014800"; 
+   d="scan'208";a="116353322"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, linux-kernel@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH 3/7] KVM: x86: Clearing rflags.rf upon skipped emulated instruction
+Date: Mon, 21 Jul 2014 14:37:26 +0300
+Message-Id: <1405942650-22589-4-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
+References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+When skipping an emulated instruction, rflags.rf should be cleared as it would
+be on real x86 CPU.
 
-The PHY configuration is stored in an opaque "config" field, but when
-allocating the structure, its proper size needs to be known. In the case
-of UTMI, the proper structure is tegra_utmip_config of which a local
-variable already exists, so we can use that to obtain the size from.
-
-Fixes the following warning from the sparse checker:
-
-	drivers/usb/phy/phy-tegra-usb.c:882:17: warning: expression using sizeof(void)
-
-Fixes: 81d5dfe6d8b3 (usb: phy: tegra: Read UTMIP parameters from device tree)
-Cc: stable@vger.kernel.org
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 ---
- drivers/usb/phy/phy-tegra-usb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 13b4fa287da8..886f1807a67b 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -878,8 +878,8 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
- 		return -ENOMEM;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c2aa58e..120ee83 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5264,6 +5264,8 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
+ 
+ 	if (emulation_type & EMULTYPE_SKIP) {
+ 		kvm_rip_write(vcpu, ctxt->_eip);
++		if (ctxt->eflags & X86_EFLAGS_RF)
++			kvm_set_rflags(vcpu, ctxt->eflags & ~X86_EFLAGS_RF);
+ 		return EMULATE_DONE;
  	}
  
--	tegra_phy->config = devm_kzalloc(&pdev->dev,
--		sizeof(*tegra_phy->config), GFP_KERNEL);
-+	tegra_phy->config = devm_kzalloc(&pdev->dev, sizeof(*config),
-+					 GFP_KERNEL);
- 	if (!tegra_phy->config) {
- 		dev_err(&pdev->dev,
- 			"unable to allocate memory for USB UTMIP config\n");
 -- 
-2.0.1
+1.9.1
 
