@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaGUVCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:02:04 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:53858 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751336AbaGUVCC (ORCPT
+	id S1753334AbaGUVFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:05:54 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:58809 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaGUVFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:02:02 -0400
-Date: Mon, 21 Jul 2014 17:01:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josef Bacik <jbacik@fb.com>
-Cc: <linux-kernel@vger.kernel.org>, Darren Hart <darren@dvhart.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] trace-cmd: add trace-record.o to the python shared lib
-Message-ID: <20140721170153.42a0d5d2@gandalf.local.home>
-In-Reply-To: <1405975844-2361-1-git-send-email-jbacik@fb.com>
-References: <1405975844-2361-1-git-send-email-jbacik@fb.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Mon, 21 Jul 2014 17:05:52 -0400
+From: Marek Belisko <marek@goldelico.com>
+To: bcousson@baylibre.com, tony@atomide.com
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, hns@goldelico.com,
+        Marek Belisko <marek@goldelico.com>
+Subject: [PATCH 0/7] arm: dts: oma3-gta04: Various updates
+Date: Mon, 21 Jul 2014 23:05:20 +0200
+Message-Id: <1405976727-15166-1-git-send-email-marek@goldelico.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc'd my python gurus.
+Following patchset add various improvements to gta04 devicetree.
 
-Acks?
+Marek Belisko (7):
+  arm: dts: omap3-gta04: Add nand support
+  arm: dts: omap3-gta04: Fix magnetometer model
+  arm: dts: omap3-gta04: Add wifi reset node
+  arm: dts: omap3-gta04: Move spi gpio pins to pmx_core2
+  arm: dts: omap3-gta04: Add USB host support
+  arm: dts: omap3-gta04: Add display alias
+  arm: dts: omap3-gta04: Add twl4030 regulators parameters
 
--- Steve
+ arch/arm/boot/dts/omap3-gta04.dts | 150 ++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 145 insertions(+), 5 deletions(-)
 
-
-On Mon, 21 Jul 2014 16:50:44 -0400
-Josef Bacik <jbacik@fb.com> wrote:
-
-> When trying to use the python library it was giving me an error about not being
-> able to resolve tracecmd_stat_cpu.  This is because we weren't linking
-> trace-record.o to ctracecmd.so.  Fix this in the makefile and now I can import
-> trace-cmd in python properly.  Thanks,
-> 
-> Signed-off-by: Josef Bacik <jbacik@fb.com>
-> ---
->  Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index df5ec72..f6c2875 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -321,7 +321,7 @@ KERNEL_SHARK_OBJS = $(TRACE_VIEW_OBJS) $(TRACE_GRAPH_OBJS) $(TRACE_GUI_OBJS) \
->  PEVENT_LIB_OBJS = event-parse.o trace-seq.o parse-filter.o parse-utils.o
->  TCMD_LIB_OBJS = $(PEVENT_LIB_OBJS) trace-util.o trace-input.o trace-ftrace.o \
->  			trace-output.o trace-recorder.o trace-restore.o trace-usage.o \
-> -			trace-blk-hack.o kbuffer-parse.o event-plugin.o
-> +			trace-blk-hack.o kbuffer-parse.o event-plugin.o trace-record.o
->  
->  PLUGIN_OBJS =
->  PLUGIN_OBJS += plugin_jbd2.o
+-- 
+1.9.1
 
