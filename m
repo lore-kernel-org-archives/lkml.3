@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaGUKXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 06:23:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41248 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182AbaGUKXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 06:23:53 -0400
-Date: Mon, 21 Jul 2014 12:23:46 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Borislav Petkov <bp@suse.de>, Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v4 4/6] acerhdf: Use bang-bang thermal governor
-Message-ID: <20140721102346.GC10016@pd.tnic>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1405817480-25347-1-git-send-email-peter@piie.net>
- <1405817480-25347-5-git-send-email-peter@piie.net>
+	id S1754600AbaGUKYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 06:24:10 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:54618 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580AbaGUKYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 06:24:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1405817480-25347-5-git-send-email-peter@piie.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5003438.ZMUcOxtMrE@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<5659104.6O7AZx76W6@wuerfel>
+	<CAFiDJ5_hjBQ4tOpsUdgqgwRrJ1TgFSa9pEqc2m+srMj5Fkir=w@mail.gmail.com>
+	<5003438.ZMUcOxtMrE@wuerfel>
+Date: Mon, 21 Jul 2014 18:24:07 +0800
+X-Google-Sender-Auth: DUG5KMM4pKfW6ScTFUp798wwK70
+Message-ID: <CAFiDJ5_HeUDDO4mCyGEd=vMMAs5MYAXZ-XuTxwLEvwBspf98XA@mail.gmail.com>
+Subject: Re: [PATCH v2 21/29] nios2: Futex operations
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 02:51:18AM +0200, Peter Feuerer wrote:
-> acerhdf has been doing an on-off fan control using hysteresis by
-> post-manipulating the outcome of thermal subsystem trip point handling.
-> This patch enables acerhdf to use the bang-bang governor, which is
-> intended for on-off controlled fans.
+On Mon, Jul 21, 2014 at 4:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Initial testing looks good.
+>>
+>> Okay, I will copy m68k implementation to asm-generic/futex.h.
+>> Do you prefer this as separate patch submission or this can be part of
+>> nios2 patchset?
+>
+> I think it's better for everybody if you include it in your nios2
+> patchset, once I've seen the patch and provided an Ack. You can send
+> it separately for review at first.
+Okay. Will add to my next revision of nios2 patchset.
 
-It wasn't that easy to test though, judging by the current weather
-temperatures - I had to go into the fridge with the laptop to cause it
-to go under fanoff :-)
+Thanks.
 
-Acked-and-tested-by: Borislav Petkov <bp@suse.de>
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Regards
+Ley Foon
