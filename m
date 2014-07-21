@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaGUFmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 01:42:52 -0400
+	id S1753109AbaGUFmh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 01:42:37 -0400
 Received: from mga09.intel.com ([134.134.136.24]:61456 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061AbaGUFmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 01:42:49 -0400
+	id S1753057AbaGUFme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 01:42:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
-   d="scan'208";a="576270913"
+   d="scan'208";a="576270832"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v7 10/10] x86, mpx: add documentation on Intel MPX
-Date: Mon, 21 Jul 2014 13:38:44 +0800
-Message-Id: <1405921124-4230-11-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH v7 05/10] x86, mpx: extend siginfo structure to include bound violation information
+Date: Mon, 21 Jul 2014 13:38:39 +0800
+Message-Id: <1405921124-4230-6-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
 References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
@@ -24,148 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Documentation/x86/intel_mpx.txt file with some
-information about Intel MPX.
+This patch adds new fields about bound violation into siginfo
+structure. si_lower and si_upper are respectively lower bound
+and upper bound when bound violation is caused.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- Documentation/x86/intel_mpx.txt |  127 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 127 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/x86/intel_mpx.txt
+ include/uapi/asm-generic/siginfo.h |    9 ++++++++-
+ kernel/signal.c                    |    4 ++++
+ 2 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
-new file mode 100644
-index 0000000..1af9809
---- /dev/null
-+++ b/Documentation/x86/intel_mpx.txt
-@@ -0,0 +1,127 @@
-+1. Intel(R) MPX Overview
-+========================
-+
-+Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
-+capability introduced into Intel Architecture. Intel MPX provides
-+hardware features that can be used in conjunction with compiler
-+changes to check memory references, for those references whose
-+compile-time normal intentions are usurped at runtime due to
-+buffer overflow or underflow.
-+
-+For more information, please refer to Intel(R) Architecture
-+Instruction Set Extensions Programming Reference, Chapter 9:
-+Intel(R) Memory Protection Extensions.
-+
-+Note: Currently no hardware with MPX ISA is available but it is always
-+possible to use SDE (Intel(R) Software Development Emulator) instead,
-+which can be downloaded from
-+http://software.intel.com/en-us/articles/intel-software-development-emulator
-+
-+
-+2. How does MPX kernel code work
-+================================
-+
-+Handling #BR faults caused by MPX
-+---------------------------------
-+
-+When MPX is enabled, there are 2 new situations that can generate
-+#BR faults.
-+  * bounds violation caused by MPX instructions.
-+  * new bounds tables (BT) need to be allocated to save bounds.
-+
-+We hook #BR handler to handle these two new situations.
-+
-+Decoding MPX instructions
-+-------------------------
-+
-+If a #BR is generated due to a bounds violation caused by MPX.
-+We need to decode MPX instructions to get violation address and
-+set this address into extended struct siginfo.
-+
-+The _sigfault feild of struct siginfo is extended as follow:
-+
-+87		/* SIGILL, SIGFPE, SIGSEGV, SIGBUS */
-+88		struct {
-+89			void __user *_addr; /* faulting insn/memory ref. */
-+90 #ifdef __ARCH_SI_TRAPNO
-+91			int _trapno;	/* TRAP # which caused the signal */
-+92 #endif
-+93			short _addr_lsb; /* LSB of the reported address */
-+94			struct {
-+95				void __user *_lower;
-+96				void __user *_upper;
-+97			} _addr_bnd;
-+98		} _sigfault;
-+
-+The '_addr' field refers to violation address, and new '_addr_and'
-+field refers to the upper/lower bounds when a #BR is caused.
-+
-+Glibc will be also updated to support this new siginfo. So user
-+can get violation address and bounds when bounds violations occur.
-+
-+Freeing unused bounds tables
-+----------------------------
-+
-+When a BNDSTX instruction attempts to save bounds to a bounds directory
-+entry marked as invalid, a #BR is generated. This is an indication that
-+no bounds table exists for this entry. In this case the fault handler
-+will allocate a new bounds table on demand.
-+
-+Since the kernel allocated those tables on-demand without userspace
-+knowledge, it is also responsible for freeing them when the associated
-+mappings go away.
-+
-+Here, the solution for this issue is to hook do_munmap() to check
-+whether one process is MPX enabled. If yes, those bounds tables covered
-+in the virtual address region which is being unmapped will be freed also.
-+
-+Adding new prctl commands
-+-------------------------
-+
-+Runtime library in userspace is responsible for allocation of bounds
-+directory. So kernel have to use XSAVE instruction to get the base
-+of bounds directory from BNDCFG register.
-+
-+But XSAVE is expected to be very expensive. In order to do performance
-+optimization, we have to add new prctl command to get the base of
-+bounds directory to be used in future.
-+
-+Two new prctl commands are added to register and unregister MPX related
-+resource.
-+
-+155	#define PR_MPX_REGISTER         41
-+156	#define PR_MPX_UNREGISTER       42
-+
-+The base of the bounds directory is set into mm_struct during
-+PR_MPX_REGISTER command execution. This member can be used to
-+check whether one application is mpx enabled.
-+
-+
-+3. Tips
-+=======
-+
-+1) Users are not allowed to create bounds tables and point the bounds
-+directory at them in the userspace. In fact, it is not also necessary
-+for users to create bounds tables in the userspace.
-+
-+When #BR fault is produced due to invalid entry, bounds table will be
-+created in kernel on demand and kernel will not transfer this fault to
-+userspace. So usersapce can't receive #BR fault for invalid entry, and
-+it is not also necessary for users to create bounds tables by themselves.
-+
-+Certainly users can allocate bounds tables and forcibly point the bounds
-+directory at them through XSAVE instruction, and then set valid bit
-+of bounds entry to have this entry valid. But we have no way to track
-+the memory usage of these user-created bounds tables. In regard to this,
-+this behaviour is outlawed here.
-+
-+2) We will not support the case that multiple bounds directory entries
-+are pointed at the same bounds table.
-+
-+Users can be allowed to take multiple bounds directory entries and point
-+them at the same bounds table. See more information "Intel(R) Architecture
-+Instruction Set Extensions Programming Reference" (9.3.4).
-+
-+If userspace did this, it will be possible for kernel to unmap an in-use
-+bounds table since it does not recognize sharing. So this behavior is
-+also outlawed here.
+diff --git a/include/uapi/asm-generic/siginfo.h b/include/uapi/asm-generic/siginfo.h
+index ba5be7f..1e35520 100644
+--- a/include/uapi/asm-generic/siginfo.h
++++ b/include/uapi/asm-generic/siginfo.h
+@@ -91,6 +91,10 @@ typedef struct siginfo {
+ 			int _trapno;	/* TRAP # which caused the signal */
+ #endif
+ 			short _addr_lsb; /* LSB of the reported address */
++			struct {
++				void __user *_lower;
++				void __user *_upper;
++			} _addr_bnd;
+ 		} _sigfault;
+ 
+ 		/* SIGPOLL */
+@@ -131,6 +135,8 @@ typedef struct siginfo {
+ #define si_trapno	_sifields._sigfault._trapno
+ #endif
+ #define si_addr_lsb	_sifields._sigfault._addr_lsb
++#define si_lower	_sifields._sigfault._addr_bnd._lower
++#define si_upper	_sifields._sigfault._addr_bnd._upper
+ #define si_band		_sifields._sigpoll._band
+ #define si_fd		_sifields._sigpoll._fd
+ #ifdef __ARCH_SIGSYS
+@@ -199,7 +205,8 @@ typedef struct siginfo {
+  */
+ #define SEGV_MAPERR	(__SI_FAULT|1)	/* address not mapped to object */
+ #define SEGV_ACCERR	(__SI_FAULT|2)	/* invalid permissions for mapped object */
+-#define NSIGSEGV	2
++#define SEGV_BNDERR	(__SI_FAULT|3)  /* failed address bound checks */
++#define NSIGSEGV	3
+ 
+ /*
+  * SIGBUS si_codes
+diff --git a/kernel/signal.c b/kernel/signal.c
+index a4077e9..2131636 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2748,6 +2748,10 @@ int copy_siginfo_to_user(siginfo_t __user *to, const siginfo_t *from)
+ 		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
+ 			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
+ #endif
++#ifdef SEGV_BNDERR
++		err |= __put_user(from->si_lower, &to->si_lower);
++		err |= __put_user(from->si_upper, &to->si_upper);
++#endif
+ 		break;
+ 	case __SI_CHLD:
+ 		err |= __put_user(from->si_pid, &to->si_pid);
 -- 
 1.7.1
 
