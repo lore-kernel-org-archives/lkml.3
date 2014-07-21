@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622AbaGUPUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:20:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932332AbaGUPUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:20:54 -0400
-Message-ID: <53CD2FA0.90009@redhat.com>
-Date: Mon, 21 Jul 2014 17:20:00 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nadav Amit <namit@cs.technion.ac.il>
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH kvm-unit-tests] x86: Check DR6.RTM is writable
-References: <1405435066-8936-1-git-send-email-namit@cs.technion.ac.il> <1405435316-9506-1-git-send-email-namit@cs.technion.ac.il>
-In-Reply-To: <1405435316-9506-1-git-send-email-namit@cs.technion.ac.il>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S932729AbaGUPYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:24:50 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:9135 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367AbaGUPYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 11:24:47 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+Date: Mon, 21 Jul 2014 11:24:26 -0400
+Message-Id: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 15/07/2014 16:41, Nadav Amit ha scritto:
-> Recently discovered bug shows DR6.RTM is fixed to one. The bug is only apparent
-> when the host emulates the MOV-DR instruction or when the host debugs the
-> guest kernel. This patch tests whether DR6.RTM is indeed accessible according
-> to RTM support as reported by cpuid.
-> 
-> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-> ---
->  x86/emulator.c | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/x86/emulator.c b/x86/emulator.c
-> index 1fd0ca6..f68882f 100644
-> --- a/x86/emulator.c
-> +++ b/x86/emulator.c
-> @@ -3,6 +3,7 @@
->  #include "libcflat.h"
->  #include "desc.h"
->  #include "types.h"
-> +#include "processor.h"
->  
->  #define memset __builtin_memset
->  #define TESTDEV_IO_PORT 0xe0
-> @@ -870,6 +871,19 @@ static void test_nop(uint64_t *mem, uint8_t *insn_page,
->  	report("nop", outregs.rax == inregs.rax);
->  }
->  
-> +static void test_mov_dr(uint64_t *mem, uint8_t *insn_page,
-> +		uint8_t *alt_insn_page, void *insn_ram)
-> +{
-> +	bool rtm_support = cpuid(7).b & (1 << 11);
-> +	unsigned long dr6_fixed_1 = rtm_support ? 0xfffe0ff0ul : 0xffff0ff0ul;
-> +	inregs = (struct regs){ .rax = 0 };
-> +	MK_INSN(mov_to_dr6, "movq %rax, %dr6\n\t");
-> +	trap_emulator(mem, alt_insn_page, &insn_mov_to_dr6);
-> +	MK_INSN(mov_from_dr6, "movq %dr6, %rax\n\t");
-> +	trap_emulator(mem, alt_insn_page, &insn_mov_from_dr6);
-> +	report("mov_dr6", outregs.rax == dr6_fixed_1);
-> +}
-> +
->  static void test_crosspage_mmio(volatile uint8_t *mem)
->  {
->      volatile uint16_t w, *pw;
-> @@ -1072,6 +1086,7 @@ int main()
->  	test_movabs(mem, insn_page, alt_insn_page, insn_ram);
->  	test_smsw_reg(mem, insn_page, alt_insn_page, insn_ram);
->  	test_nop(mem, insn_page, alt_insn_page, insn_ram);
-> +	test_mov_dr(mem, insn_page, alt_insn_page, insn_ram);
->  	test_crosspage_mmio(mem);
->  
->  	test_string_io_mmio(mem);
-> 
+This patch series introduces two new futex command codes to support
+a new optimistic spinning futex for implementing an exclusive lock
+primitive that should perform better than the same primitive using
+the wait-wake futex in cases where the lock owner is actively working
+instead of waiting for I/O completion.
 
-Thanks, applying.
+Optimistic spinning means that the waiting tasks spin within the
+kernel for the lock owner to release the lock while it is running
+instead of going to sleep and to be woken up later on. It is the same
+mechanism that improves kernel mutex and rw semaphore performance,
+especially on large system with many sockets and CPUs.
 
-Paolo
+This patch series improves futex performance on two different fronts:
+ 1) Reducing the amount of the futex spinlock contention by using 2
+    different spinlocks instead of just one for the wait-wake futex.
+ 2) Eliminating the context switching overhead and latency due to the
+    sleeping and the waking of the waiting tasks.
+
+The performance improvement varies depending on, to a certain extent,
+the length of the critical section protected by futex.
+
+Testing done on a 4-socket Westmere-EX boxes with 40 cores (HT off)
+showed the following performance data (average kops/s) with various
+load factor (number of pause instructions) used in the critical
+section using an userspace mutex microbenchmark.
+
+  Threads  Load	Waiting Futex	Spinning Futex 	  %Change
+  -------  ----	-------------	--------------	  -------
+    256	     1	     6894	    8883	    +29%
+    256	    10	     3656	    4912	    +34%
+    256	    50	     1332	    4358	   +227%
+    256	   100	      792	    2753	   +248%
+     10	     1	     6382	    4838	    -24%
+     10	    10	     3614	    4748	    +31%
+     10	    50	     1319	    3900	   +196%
+     10	   100	      782	    2459	   +214%
+      2	     1	     7905	    7194	   -9.0%
+      2	    10	     4556	    4717	   +3.5%
+      2	    50	     2191	    4167	    +90%
+      2	   100	     1767	    2407	    +36%
+
+Patch 1 introduces new futex command codes to provide a
+mutex abstraction where the waiting tasks just go to sleep (no
+spinning).
+
+Patch 2 adds spinning to the mix.
+
+Patch 3 enables wakened tasks to go back to the spinning state if
+the owner is running.
+
+Patch 4 changes sleeping queue from a simple FIFO list to an rbtree
+sorted by process priority as well as the sequeunce the tasks enter
+the kernel.
+
+Patch 5 adds a new document file to describe the spinning futex.
+
+Waiman Long (5):
+  futex: add new exclusive lock & unlock command codes
+  futex: add optimistic spinning to FUTEX_SPIN_LOCK
+  spinning futex: move a wakened task to spinning
+  spinning futex: put waiting tasks in a sorted rbtree
+  futex, doc: add a document on how to use the spinning futexes
+
+ Documentation/spinning-futex.txt |  109 +++++++
+ include/uapi/linux/futex.h       |    4 +
+ kernel/futex.c                   |  659 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 772 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/spinning-futex.txt
+
