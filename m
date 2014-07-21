@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933411AbaGURwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:52:42 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:58896 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647AbaGURwj (ORCPT
+	id S933426AbaGURwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:52:55 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34772 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647AbaGURwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:52:39 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Richard Weinberger <richard@nod.at>
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <OF6F10655B.C9BFC08D-ONC1257D18.003D22DF-C1257D18.003E2204@transmode.se>
-	<87lhrpayl4.fsf@igel.home>
-	<OF152BAB0C.4FB2E7A9-ONC1257D1B.0031887F-C1257D1B.0031B248@transmode.se>
-	<87fvhwxps6.fsf@igel.home>
-	<CAFLxGvyAzUwMqi5vAGzoUoP6J4m+6FGC-J4=zKG2ZGguTgO8cg@mail.gmail.com>
-	<87bnskxn7g.fsf@igel.home> <53CBB143.1020206@nod.at>
-Date: Mon, 21 Jul 2014 10:48:55 -0700
-In-Reply-To: <53CBB143.1020206@nod.at> (Richard Weinberger's message of "Sun,
-	20 Jul 2014 14:08:35 +0200")
-Message-ID: <87k376siuw.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 21 Jul 2014 13:52:53 -0400
+Date: Mon, 21 Jul 2014 10:52:41 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [RFC Patch V1 22/30] mm, of: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+Message-ID: <20140721175241.GF4156@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-23-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+j+anHHxnRry7BOU8R/dQQfX8QZ+1i+HQ=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4705]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Richard Weinberger <richard@nod.at>
-X-Spam-Relay-Country: 
-Subject: Re: ls -l /proc/1/exe -> Permission denied
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405064267-11678-23-git-send-email-jiang.liu@linux.intel.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072117-0928-0000-0000-00000386E522
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard@nod.at> writes:
+On 11.07.2014 [15:37:39 +0800], Jiang Liu wrote:
+> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> may return a node without memory, and later cause system failure/panic
+> when calling kmalloc_node() and friends with returned node id.
+> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+> memory for the/current cpu.
+> 
+> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+> is the same as cpu_to_node()/numa_node_id().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/of/base.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index b9864806e9b8..40d4772973ad 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -85,7 +85,7 @@ EXPORT_SYMBOL(of_n_size_cells);
+>  #ifdef CONFIG_NUMA
+>  int __weak of_node_to_nid(struct device_node *np)
+>  {
+> -	return numa_node_id();
+> +	return numa_mem_id();
+>  }
+>  #endif
 
-> Am 20.07.2014 13:51, schrieb Andreas Schwab:
->> Richard Weinberger <richard.weinberger@gmail.com> writes:
->>> Do you have an example?
->> 
->> proc symlinks are special because they actually resolve to the inode.
->
-> Ah. If an attacker manages the kernel to follow the symlink he could
-> indirectly access that file.
-> Thanks for pointing this out!
+Um, NAK. of_node_to_nid() returns the NUMA node ID for a given device
+tree node. The default should be the physically local NUMA node, not the
+nearest memory-containing node.
 
-We only allow this access for processes that we are allowed to ptrace
-because knowing intimate details of a process such as which files it has
-open and in this case which file it is executing can make it more
-attackable. (Say by looking to see if a processes is still running some
-old vulnerable version and hasn't been restarted yet).
+I think the general direction of this patchset is good -- what NUMA
+information do we actually are about at each callsite. But the execution
+is blind and doesn't consider at all what the code is actually doing.
+The changelogs are all identical and don't actually provide any
+information about what errors this (or any) specific patch are
+resolving.
 
-Normally this only applies to processes owned by different users.
+Thanks,
+Nish
 
-However some configurations restrict ptrace on processes that you own.
-You will have to look at the ``security'' modules you have enabled
-and configured to see what that policy is, to see why you aren't allowed
-to access your own processes.
-
-Eric
