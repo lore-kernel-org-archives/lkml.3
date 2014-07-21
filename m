@@ -1,154 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889AbaGUPZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:25:10 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:52954 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468AbaGUPZF (ORCPT
+	id S932916AbaGUPZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:25:47 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:9305 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932793AbaGUPYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:25:05 -0400
-Date: Mon, 21 Jul 2014 17:25:11 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>
-Cc: Oded Gabbay <oded.gabbay@amd.com>, Jerome Glisse <j.glisse@gmail.com>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-Message-ID: <20140721152511.GW15237@phenom.ffwll.local>
-Mail-Followup-To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-	Oded Gabbay <oded.gabbay@amd.com>,
-	Jerome Glisse <j.glisse@gmail.com>, David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	John Bridgman <John.Bridgman@amd.com>,
-	Joerg Roedel <joro@8bytes.org>,
-	Andrew Lewycky <Andrew.Lewycky@amd.com>,
-	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-	Ben Goz <Ben.Goz@amd.com>,
-	Alexey Skidanov <Alexey.Skidanov@amd.com>,
-	Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	linux-mm <linux-mm@kvack.org>
-References: <53C7D645.3070607@amd.com>
- <20140720174652.GE3068@gmail.com>
- <53CD0961.4070505@amd.com>
- <53CD17FD.3000908@vodafone.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53CD17FD.3000908@vodafone.de>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 21 Jul 2014 11:24:55 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [RFC PATCH 4/5] spinning futex: put waiting tasks in a sorted rbtree
+Date: Mon, 21 Jul 2014 11:24:30 -0400
+Message-Id: <1405956271-34339-5-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 03:39:09PM +0200, Christian König wrote:
-> Am 21.07.2014 14:36, schrieb Oded Gabbay:
-> >On 20/07/14 20:46, Jerome Glisse wrote:
-> >>On Thu, Jul 17, 2014 at 04:57:25PM +0300, Oded Gabbay wrote:
-> >>>Forgot to cc mailing list on cover letter. Sorry.
-> >>>
-> >>>As a continuation to the existing discussion, here is a v2 patch series
-> >>>restructured with a cleaner history and no
-> >>>totally-different-early-versions
-> >>>of the code.
-> >>>
-> >>>Instead of 83 patches, there are now a total of 25 patches, where 5 of
-> >>>them
-> >>>are modifications to radeon driver and 18 of them include only amdkfd
-> >>>code.
-> >>>There is no code going away or even modified between patches, only
-> >>>added.
-> >>>
-> >>>The driver was renamed from radeon_kfd to amdkfd and moved to reside
-> >>>under
-> >>>drm/radeon/amdkfd. This move was done to emphasize the fact that this
-> >>>driver
-> >>>is an AMD-only driver at this point. Having said that, we do foresee a
-> >>>generic hsa framework being implemented in the future and in that
-> >>>case, we
-> >>>will adjust amdkfd to work within that framework.
-> >>>
-> >>>As the amdkfd driver should support multiple AMD gfx drivers, we want
-> >>>to
-> >>>keep it as a seperate driver from radeon. Therefore, the amdkfd code is
-> >>>contained in its own folder. The amdkfd folder was put under the radeon
-> >>>folder because the only AMD gfx driver in the Linux kernel at this
-> >>>point
-> >>>is the radeon driver. Having said that, we will probably need to move
-> >>>it
-> >>>(maybe to be directly under drm) after we integrate with additional
-> >>>AMD gfx
-> >>>drivers.
-> >>>
-> >>>For people who like to review using git, the v2 patch set is located
-> >>>at:
-> >>>http://cgit.freedesktop.org/~gabbayo/linux/log/?h=kfd-next-3.17-v2
-> >>>
-> >>>Written by Oded Gabbayh <oded.gabbay@amd.com>
-> >>
-> >>So quick comments before i finish going over all patches. There is many
-> >>things that need more documentation espacialy as of right now there is
-> >>no userspace i can go look at.
-> >So quick comments on some of your questions but first of all, thanks for
-> >the time you dedicated to review the code.
-> >>
-> >>There few show stopper, biggest one is gpu memory pinning this is a big
-> >>no, that would need serious arguments for any hope of convincing me on
-> >>that side.
-> >We only do gpu memory pinning for kernel objects. There are no userspace
-> >objects that are pinned on the gpu memory in our driver. If that is the
-> >case, is it still a show stopper ?
-> >
-> >The kernel objects are:
-> >- pipelines (4 per device)
-> >- mqd per hiq (only 1 per device)
-> >- mqd per userspace queue. On KV, we support up to 1K queues per process,
-> >for a total of 512K queues. Each mqd is 151 bytes, but the allocation is
-> >done in 256 alignment. So total *possible* memory is 128MB
-> >- kernel queue (only 1 per device)
-> >- fence address for kernel queue
-> >- runlists for the CP (1 or 2 per device)
-> 
-> The main questions here are if it's avoid able to pin down the memory and if
-> the memory is pinned down at driver load, by request from userspace or by
-> anything else.
-> 
-> As far as I can see only the "mqd per userspace queue" might be a bit
-> questionable, everything else sounds reasonable.
+A simple FIFO list for the waiting tasks is easy to use. However, it
+differs in behavior from the other futex primitives that the waiting
+tasks are put in a priority list.
 
-Aside, i915 perspective again (i.e. how we solved this): When scheduling
-away from contexts we unpin them and put them into the lru. And in the
-shrinker we have a last-ditch callback to switch to a default context
-(since you can't ever have no context once you've started) which means we
-can evict any context object if it's getting in the way.
+In order to make a sorted list ranked on priority as well as the
+order they enter the kernel, we need to convert the simple list into
+a rbtree.
 
-We must do that since the contexts have to be in global gtt, which is
-shared for scanouts. So fragmenting that badly with lots of context
-objects and other stuff is a no-go, since that means we'll start to fail
-pageflips.
+This patch changes the waiting queue into an rbtree sorted first by
+process priority followed by the order the tasks enter the kernel.
 
-I don't know whether ttm has a ready-made concept for such
-opportunistically pinned stuff. I guess you could wire up the "switch to
-dflt context" action to the evict/move function if ttm wants to get rid of
-the currently used hw context.
+The optimistic spinning itself is strictly FIFO. There is no easy
+way to make it priority based. In fact, the spinlock contention in
+a wait-wake futex when the contending tasks enter the kernel also
+serves as a kind of FIFO queue for processing the request. Priority
+doesn't play a role there too.
 
-Oh and: This is another reason for letting the kernel schedule contexts,
-since you can't do this defrag trick if the gpu does all the scheduling
-itself.
--Daniel
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ kernel/futex.c |   64 +++++++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 52 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index cca6457..12d855c 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -3011,10 +3011,11 @@ void exit_robust_list(struct task_struct *curr)
+ /**
+  * struct futex_q_head - head of the optspin futex queue, one per unique key
+  * @hnode:	list entry from the hash bucket
+- * @waitq:	a list of waiting tasks
++ * @waitq:	a rbtree of waiting tasks sorted by priority & sequence number
+  * @key:	the key the futex is hashed on
+  * @osq:	pointer to optimisitic spinning queue
+  * @owner:	task_struct pointer of the futex owner
++ * @seq:	last used sequence number + 1
+  * @otid:	TID of the futex owner
+  * @wlock:	spinlock for managing wait queue
+  * @lcnt:	locker count (spinners + waiters)
+@@ -3027,7 +3028,7 @@ void exit_robust_list(struct task_struct *curr)
+  *    - enqueue into the spinner queue and wait for its turn.
+  * 4) For waiter:
+  *    - lock futex queue head spinlock
+- *    - enqueue into the wait queue
++ *    - enqueue into the wait rbtree queue
+  *    - release the lock & sleep
+  * 5) For unlocker:
+  *    - locate the queue head just like a locker does
+@@ -3037,10 +3038,11 @@ void exit_robust_list(struct task_struct *curr)
+  */
+ struct futex_q_head {
+ 	struct list_head	      hnode;
+-	struct list_head	      waitq;
++	struct rb_root		      waitq;
+ 	union futex_key		      key;
+ 	struct optimistic_spin_queue *osq;
+ 	struct task_struct	     *owner;
++	unsigned long		      seq;
+ 	pid_t			      otid;
+ 	spinlock_t		      wlock;
+ 	atomic_t		      lcnt;
+@@ -3050,10 +3052,14 @@ struct futex_q_head {
+  * struct futex_q_node - a node in the optspin futex queue
+  * @wnode:	a list entry for the waiting queue
+  * @task:	task_struct pointer of the current task
++ * @seq:	unique sequence number that shows order of kernel entry
++ * @prio:	process priority
+  */
+ struct futex_q_node {
+-	struct list_head	wnode;
++	struct rb_node		wnode;
+ 	struct task_struct     *task;
++	unsigned long		seq;
++	int			prio;
+ };
+ 
+ /*
+@@ -3113,7 +3119,7 @@ qhead_alloc_init(struct futex_hash_bucket *hb, union futex_key *key, u32 uval)
+ 		if (unlikely(!qh->owner))
+ 			qh->otid = 0;
+ 		atomic_set(&qh->lcnt, 1);
+-		INIT_LIST_HEAD(&qh->waitq);
++		qh->waitq = RB_ROOT;
+ 		spin_lock_init(&qh->wlock);
+ 		list_add(&qh->hnode, &hb->oslist);
+ 	}
+@@ -3155,7 +3161,7 @@ qhead_free(struct futex_q_head *qh, struct futex_hash_bucket *hb)
+ 	/*
+ 	 * Free the queue head structure
+ 	 */
+-	BUG_ON(!list_empty(&qh->waitq) || qh->osq);
++	BUG_ON(!RB_EMPTY_ROOT(&qh->waitq) || qh->osq);
+ 	list_del(&qh->hnode);
+ 	spin_unlock(&hb->lock);
+ 	if (qh->owner)
+@@ -3167,6 +3173,38 @@ qhead_free(struct futex_q_head *qh, struct futex_hash_bucket *hb)
+ }
+ 
+ /*
++ * qnode_insert - insert queue node into an rbtree sorted by priority
++ * 		  and then the unique sequence number
++ */
++static inline void qnode_insert(struct rb_root *root, struct futex_q_node *node)
++{
++	struct rb_node **new = &(root->rb_node), *parent = NULL;
++
++	/*
++	 * Locate where to put the new node
++	 */
++	while (*new) {
++		struct futex_q_node *this = container_of(*new,
++					    struct futex_q_node, wnode);
++		parent = *new;
++		if (likely(node->prio == this->prio)) {
++			if (node->seq < this->seq)
++				new = &(parent->rb_left);
++			else /* node->seq > this->seq */
++				new = &(parent->rb_right);
++		} else if (node->prio < this->prio) {
++			new =  &(parent->rb_left);
++		} else {
++			new = &(parent->rb_right);
++		}
++	}
++
++	/* Add new node and rebalance tree */
++	rb_link_node(&node->wnode, parent, new);
++	rb_insert_color(&node->wnode, root);
++}
++
++/*
+  * futex_spin_trylock - attempt to take the lock
+  * Return: 1 if successful or an error happen
+  *	   0 otherwise
+@@ -3336,6 +3374,7 @@ static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+ 	} else {
+ 		atomic_inc(&qh->lcnt);
+ 	}
++	qnode.seq = qh->seq++;
+ 	spin_unlock(&hb->lock);
+ 
+ 	/*
+@@ -3353,8 +3392,9 @@ optspin:
+ 	 * Put the task into the wait queue and sleep
+ 	 */
+ 	get_task_struct(qnode.task);
++	qnode.prio = min(qnode.task->normal_prio, MAX_RT_PRIO);
+ 	spin_lock(&qh->wlock);
+-	list_add_tail(&qnode.wnode, &qh->waitq);
++	qnode_insert(&qh->waitq, &qnode);
+ 	__set_current_state(TASK_INTERRUPTIBLE);
+ 	spin_unlock(&qh->wlock);
+ 	slept = gotlock = false;
+@@ -3421,12 +3461,12 @@ dequeue:
+ 	 */
+ 	put_task_struct(qnode.task);
+ 	spin_lock(&qh->wlock);
+-	list_del(&qnode.wnode);
++	rb_erase(&qnode.wnode, &qh->waitq);
+ 
+ 	/*
+ 	 * Try to clear the waiter bit if the wait queue is empty
+ 	 */
+-	if (list_empty(&qh->waitq)) {
++	if (RB_EMPTY_ROOT(&qh->waitq)) {
+ 		int retval = get_futex_value_locked(&uval, uaddr);
+ 
+ 		if (!retval && FUTEX_HAS_WAITERS(uval)) {
+@@ -3529,9 +3569,9 @@ static noinline int futex_spin_unlock(u32 __user *uaddr, unsigned int flags)
+ 	lcnt = atomic_read(&qh->lcnt);
+ 	if (lcnt) {
+ 		spin_lock(&qh->wlock);
+-		if (!list_empty(&qh->waitq))
+-			wtask = list_entry(qh->waitq.next, struct futex_q_node,
+-					   wnode)->task;
++		if (!RB_EMPTY_ROOT(&qh->waitq))
++			wtask = container_of(rb_first(&qh->waitq),
++				struct futex_q_node, wnode)->task;
+ 		spin_unlock(&qh->wlock);
+ 	}
+ 	spin_unlock(&hb->lock);
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.1
+
