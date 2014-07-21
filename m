@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302AbaGUMvJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:51:09 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57904 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205AbaGUMvG (ORCPT
+	id S932338AbaGUMwC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:52:02 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:63476 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188AbaGUMwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:51:06 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53CD0CB6.1050803@roeck-us.net>
-Date: Mon, 21 Jul 2014 05:51:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 21 Jul 2014 08:52:00 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 0/7] kernel: Add support for restart handler call chain
-References: <1405668856-13738-1-git-send-email-linux@roeck-us.net> <20140721123056.GF12817@arm.com>
-In-Reply-To: <20140721123056.GF12817@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
+References: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
+Date: Mon, 21 Jul 2014 13:51:59 +0100
+Message-ID: <CAD8Lp45UtZ_aao2ScUUjRq9AfnxGq9GuT24SLzY-koeBfTTDCw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] clk: samsung: exynos4: Enable ARMCLK down feature
+From: Daniel Drake <drake@endlessm.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
-
-On 07/21/2014 05:30 AM, Catalin Marinas wrote:
-> On Fri, Jul 18, 2014 at 08:34:09AM +0100, Guenter Roeck wrote:
->> Patch 1 of this series implements the restart handler function. Patches 2 and 3
->> implement calling the restart handler chain from arm and arm64 restart code.
->>
->> Patch 4 modifies the restart-poweroff driver to no longer call arm_pm_restart
->> directly but machine_restart. This is done to avoid calling arm_pm_restart
->> from more than one place. The change makes the driver architecture independent,
->> so it would be possible to drop the arm dependency from its Kconfig entry.
->>
->> Patch 5 and 6 convert existing restart handlers in the watchdog subsystem
->> to use the restart handler. Patch 7 unexports arm_pm_restart to ensure
->> that no one gets the idea to implement a restart handler as module.
+On Fri, Jul 18, 2014 at 3:36 PM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
+> Enable ARMCLK down feature on all Exynos4 SoCs. The frequency of
+> ARMCLK will be reduced upon entering idle mode (WFI or WFE).
 >
-> For the current patches:
+> The feature behaves like very fast cpufreq ondemand governor. In idle
+> mode this reduces energy consumption on full frequency chosen by
+> cpufreq governor by approximately:
+>  - Trats2:  6.5% (153 mA -> 143 mA)
+>  - Trats:  33.0% (180 mA -> 120 mA)
+>  - Gear1:  27.0% (180 mA -> 130 mA)
 >
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> The patch uses simillar settings as Exynos5250 (clk-exynos5250.c),
+> except it disables clock up feature and on Exynos4412 ARMCLK down is
+> enabled for all 4 cores.
 >
-> Do you plan to convert more of the power/drivers/reset/ code?
+> Tested on Trats board (Exynos4210), Trats2 board (Exynos4412) and
+> Samsung Gear 1 (Exynos4212).
 >
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Once this series has been accepted, I at least wanted to give it a try.
+Tested on ODROID-U2, seems to be working. I don't have a way of
+measuring the power usage, but the system seems as stable as before.
 
-> BTW, is it worth doing something similar for pm_power_off (there is
-> generic code calling it directly, so slightly more complicated than
-> pm_restart)?
-
-I have not thought about it yet.
-
-A quick glance suggests it is much more widely used than the reset handler.
-It looks like the original idea, like with machine_restart, was to have
-one function per architecture, but it seems that is widely abused.
-
-Looks pretty messy to me. Maybe after this one is done, if there is interest
-and, more importantly, the need to do something about it.
-
-Thanks,
-Guenter
-
+Tested-by: Daniel Drake <drake@endlessm.com>
