@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158AbaGUPkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:40:36 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11288 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933119AbaGUPkc (ORCPT
+	id S933177AbaGUPkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:40:41 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5202 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933153AbaGUPkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:40:32 -0400
+	Mon, 21 Jul 2014 11:40:36 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Jul 2014 08:32:46 -0700
+	by hqnvupgp08.nvidia.com on Mon, 21 Jul 2014 08:32:49 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
@@ -21,9 +21,9 @@ CC: Stephen Warren <swarren@wwwdotorg.org>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Paul Walmsley <pwalmsley@nvidia.com>, <devicetree@vger.kernel.org>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 15/16] ARM: tegra: Add entries for cpufreq on Tegra124
-Date: Mon, 21 Jul 2014 18:39:01 +0300
-Message-ID: <1405957142-19416-16-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 16/16] ARM: tegra: Update defconfig for tegra124-cpufreq
+Date: Mon, 21 Jul 2014 18:39:02 +0300
+Message-ID: <1405957142-19416-17-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
@@ -34,37 +34,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra124 cpufreq driver relies on certain clocks being present
-in the /cpus/cpu@0 node.
+The tegra124-cpufreq driver depends on cpufreq-cpu0, so enable
+GENERIC_CPUFREQ_CPU0 to get the Tegra driver to build by default.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
-v2 changes:
-    - The clock-latency property was added, as cpufreq-cpu0 wants that
+ arch/arm/configs/tegra_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
- arch/arm/boot/dts/tegra124.dtsi | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 8ff4332..db51438 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -786,6 +786,15 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a15";
- 			reg = <0>;
-+
-+			clocks = <&tegra_car TEGRA124_CLK_CCLK_G>,
-+				 <&tegra_car TEGRA124_CLK_CCLK_LP>,
-+				 <&tegra_car TEGRA124_CLK_PLL_X>,
-+				 <&tegra_car TEGRA124_CLK_PLL_P>,
-+				 <&dfll>;
-+			clock-names = "cpu_g", "cpu_lp", "pll_x", "pll_p", "dfll";
-+			/* FIXME: what's the actual transition time? */
-+			clock-latency = <300000>;
- 		};
- 
- 		cpu@1 {
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index 285c433..afaa97c 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -43,6 +43,7 @@ CONFIG_KEXEC=y
+ CONFIG_CPU_FREQ=y
+ CONFIG_CPU_FREQ_STAT_DETAILS=y
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
++CONFIG_GENERIC_CPUFREQ_CPU0=y
+ CONFIG_CPU_IDLE=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
 -- 
 1.8.1.5
 
