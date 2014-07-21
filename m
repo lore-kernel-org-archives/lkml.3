@@ -1,56 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaGUUGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 16:06:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56884 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaGUUGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 16:06:32 -0400
-Date: Mon, 21 Jul 2014 22:06:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-hotplug@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
-Message-ID: <20140721200625.GR3935@laptop>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <20140721172331.GB4156@linux.vnet.ibm.com>
- <CA+8MBbK+ZdisT_yXh_jkWSd4hWEMisG614s4s0EyNV3j-7YOow@mail.gmail.com>
+	id S1753555AbaGUUM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 16:12:56 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:35052 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753284AbaGUUMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 16:12:54 -0400
+Date: Mon, 21 Jul 2014 23:01:56 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, dcb314@hotmail.com,
+        David Miller <davem@davemloft.net>, kadlec@blackhole.kfki.hu,
+        Patrick McHardy <kaber@trash.net>, pablo@netfilter.org,
+        Simon Horman <horms@verge.net.au>, wensong@linux-vs.org
+Subject: Re: [PATCH 3/5] net/netfilter/ipvs/ip_vs_ctl.c: drop argument range
+ check just before the check for equality
+In-Reply-To: <CANZNk83dJCXAWrQ+i5rh=sdUuiiD5ZhzDua-rjJpBZCzzNGDJA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1407212253100.2358@ja.home.ssi.bg>
+References: <1405697638-23767-1-git-send-email-andrey.krieger.utkin@gmail.com> <alpine.LFD.2.11.1407182339160.2273@ja.home.ssi.bg> <CANZNk83dJCXAWrQ+i5rh=sdUuiiD5ZhzDua-rjJpBZCzzNGDJA@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbK+ZdisT_yXh_jkWSd4hWEMisG614s4s0EyNV3j-7YOow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 10:41:59AM -0700, Tony Luck wrote:
-> On Mon, Jul 21, 2014 at 10:23 AM, Nishanth Aravamudan
-> <nacc@linux.vnet.ibm.com> wrote:
-> > It seems like the issue is the order of onlining of resources on a
-> > specific x86 platform?
-> 
-> Yes. When we online a node the BIOS hits us with some ACPI hotplug events:
-> 
-> First: Here are some new cpus
-> Next: Here is some new memory
-> Last; Here are some new I/O things (PCIe root ports, PCIe devices,
-> IOAPICs, IOMMUs, ...)
-> 
-> So there is a period where the node is memoryless - although that will generally
-> be resolved when the memory hot plug event arrives ... that isn't guaranteed to
-> occur (there might not be any memory on the node, or what memory there is
-> may have failed self-test and been disabled).
 
-Right, but we could 'easily' capture that in arch code and make it look
-like it was done in a 'sane' order. No need to wreck the rest of the
-kernel to support this particular BIOS fuckup.
+	Hello,
+
+On Sat, 19 Jul 2014, Andrey Utkin wrote:
+
+> 2014-07-18 23:48 GMT+03:00 Julian Anastasov <ja@ssi.bg>:
+> >         The above check ensures the set_arglen[] value (some
+> > struct size) does not exceed the arg[MAX_ARG_LEN] space. You can check
+> > commit 04bcef2a83f40c ("ipvs: Add boundary check on ioctl arguments")
+> > for more info.
+> 
+> Thanks for info.
+> What about static check at compilation time?
+> 
+> #if (DAEMON_ARG_LEN > MAX_ARG_LEN) \
+>  || (SERVICE_ARG_LEN > MAX_ARG_LEN) \
+>  || (SVCDEST_ARG_LEN > MAX_ARG_LEN)
+> #error MAX_ARG_LEN exceeded in set_arglen table
+> #endif
+
+	I prefer this to be fixed once and for all.
+Here is my attempt, it appears to work. I use union
+to get the max size to use for stack space. checkpatch.pl
+is noisy... Let me know if you have a better idea.
+
+ipvs: reduce stack usage for sockopt data
+
+Use macros and union to reserve the required stack space for
+sockopt data. Now the tables for commands should be more safe
+to extend. The checks added for readability are optimized by
+compiler or warn at compile time if command uses too much stack.
+
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+---
+ net/netfilter/ipvs/ip_vs_ctl.c | 98 ++++++++++++++++++++++++------------------
+ 1 file changed, 55 insertions(+), 43 deletions(-)
+
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index 581a658..08c3389 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -2266,28 +2266,34 @@ static int ip_vs_set_timeout(struct net *net, struct ip_vs_timeout_user *u)
+ }
+ 
+ 
+-#define SET_CMDID(cmd)		(cmd - IP_VS_BASE_CTL)
+-#define SERVICE_ARG_LEN		(sizeof(struct ip_vs_service_user))
+-#define SVCDEST_ARG_LEN		(sizeof(struct ip_vs_service_user) +	\
+-				 sizeof(struct ip_vs_dest_user))
+-#define TIMEOUT_ARG_LEN		(sizeof(struct ip_vs_timeout_user))
+-#define DAEMON_ARG_LEN		(sizeof(struct ip_vs_daemon_user))
+-#define MAX_ARG_LEN		SVCDEST_ARG_LEN
++#define SET_CMDID(cmd)			(cmd - IP_VS_BASE_CTL)
++#define IP_VS_SET_CMDID(c, t)		[SET_CMDID(c)] = sizeof(t),
++#define IP_VS_SET_CMDID_LEN(c, t)	t field_ ## c;
++
++struct ip_vs_svcdest_user {
++	struct ip_vs_service_user	s;
++	struct ip_vs_dest_user		d;
++};
++
++#define IP_VS_SET_CMDID_TABLE(e)					\
++	e(IP_VS_SO_SET_ADD,		struct ip_vs_service_user)	\
++	e(IP_VS_SO_SET_EDIT,		struct ip_vs_service_user)	\
++	e(IP_VS_SO_SET_DEL,		struct ip_vs_service_user)	\
++	e(IP_VS_SO_SET_ADDDEST,		struct ip_vs_svcdest_user)	\
++	e(IP_VS_SO_SET_DELDEST,		struct ip_vs_svcdest_user)	\
++	e(IP_VS_SO_SET_EDITDEST,	struct ip_vs_svcdest_user)	\
++	e(IP_VS_SO_SET_TIMEOUT,		struct ip_vs_timeout_user)	\
++	e(IP_VS_SO_SET_STARTDAEMON,	struct ip_vs_daemon_user)	\
++	e(IP_VS_SO_SET_STOPDAEMON,	struct ip_vs_daemon_user)	\
++	e(IP_VS_SO_SET_ZERO,		struct ip_vs_service_user)
+ 
+ static const unsigned char set_arglen[SET_CMDID(IP_VS_SO_SET_MAX)+1] = {
+-	[SET_CMDID(IP_VS_SO_SET_ADD)]		= SERVICE_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_EDIT)]		= SERVICE_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_DEL)]		= SERVICE_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_FLUSH)]		= 0,
+-	[SET_CMDID(IP_VS_SO_SET_ADDDEST)]	= SVCDEST_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_DELDEST)]	= SVCDEST_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_EDITDEST)]	= SVCDEST_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_TIMEOUT)]	= TIMEOUT_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_STARTDAEMON)]	= DAEMON_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_STOPDAEMON)]	= DAEMON_ARG_LEN,
+-	[SET_CMDID(IP_VS_SO_SET_ZERO)]		= SERVICE_ARG_LEN,
++	IP_VS_SET_CMDID_TABLE(IP_VS_SET_CMDID)
+ };
+ 
++union ip_vs_set_arglen { IP_VS_SET_CMDID_TABLE(IP_VS_SET_CMDID_LEN) };
++#define MAX_SET_ARGLEN	sizeof(union ip_vs_set_arglen)
++
+ static void ip_vs_copy_usvc_compat(struct ip_vs_service_user_kern *usvc,
+ 				  struct ip_vs_service_user *usvc_compat)
+ {
+@@ -2325,7 +2331,7 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
+ {
+ 	struct net *net = sock_net(sk);
+ 	int ret;
+-	unsigned char arg[MAX_ARG_LEN];
++	unsigned char arg[MAX_SET_ARGLEN];
+ 	struct ip_vs_service_user *usvc_compat;
+ 	struct ip_vs_service_user_kern usvc;
+ 	struct ip_vs_service *svc;
+@@ -2333,13 +2339,12 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
+ 	struct ip_vs_dest_user_kern udest;
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
++	BUILD_BUG_ON(sizeof(arg) > 256);
+ 	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (cmd < IP_VS_BASE_CTL || cmd > IP_VS_SO_SET_MAX)
+ 		return -EINVAL;
+-	if (len < 0 || len >  MAX_ARG_LEN)
+-		return -EINVAL;
+ 	if (len != set_arglen[SET_CMDID(cmd)]) {
+ 		pr_err("set_ctl: len %u != %u\n",
+ 		       len, set_arglen[SET_CMDID(cmd)]);
+@@ -2606,49 +2611,56 @@ __ip_vs_get_timeouts(struct net *net, struct ip_vs_timeout_user *u)
+ }
+ 
+ 
+-#define GET_CMDID(cmd)		(cmd - IP_VS_BASE_CTL)
+-#define GET_INFO_ARG_LEN	(sizeof(struct ip_vs_getinfo))
+-#define GET_SERVICES_ARG_LEN	(sizeof(struct ip_vs_get_services))
+-#define GET_SERVICE_ARG_LEN	(sizeof(struct ip_vs_service_entry))
+-#define GET_DESTS_ARG_LEN	(sizeof(struct ip_vs_get_dests))
+-#define GET_TIMEOUT_ARG_LEN	(sizeof(struct ip_vs_timeout_user))
+-#define GET_DAEMON_ARG_LEN	(sizeof(struct ip_vs_daemon_user) * 2)
++#define GET_CMDID(cmd)			(cmd - IP_VS_BASE_CTL)
++#define IP_VS_GET_CMDID(c, t)		[GET_CMDID(c)] = sizeof(t),
++#define IP_VS_GET_CMDID_LEN(c, t)	t field_ ## c;
++
++struct ip_vs_version_user {
++	char	v[64];
++};
++
++struct ip_vs_daemon_user2 {
++	struct ip_vs_daemon_user	d1, d2;
++};
++
++#define IP_VS_GET_CMDID_TABLE(e)					\
++	e(IP_VS_SO_GET_VERSION,		struct ip_vs_version_user)	\
++	e(IP_VS_SO_GET_INFO,		struct ip_vs_getinfo)		\
++	e(IP_VS_SO_GET_SERVICES,	struct ip_vs_get_services)	\
++	e(IP_VS_SO_GET_SERVICE,		struct ip_vs_service_entry)	\
++	e(IP_VS_SO_GET_DESTS,		struct ip_vs_get_dests)		\
++	e(IP_VS_SO_GET_TIMEOUT,		struct ip_vs_timeout_user)	\
++	e(IP_VS_SO_GET_DAEMON,		struct ip_vs_daemon_user2)
+ 
+ static const unsigned char get_arglen[GET_CMDID(IP_VS_SO_GET_MAX)+1] = {
+-	[GET_CMDID(IP_VS_SO_GET_VERSION)]	= 64,
+-	[GET_CMDID(IP_VS_SO_GET_INFO)]		= GET_INFO_ARG_LEN,
+-	[GET_CMDID(IP_VS_SO_GET_SERVICES)]	= GET_SERVICES_ARG_LEN,
+-	[GET_CMDID(IP_VS_SO_GET_SERVICE)]	= GET_SERVICE_ARG_LEN,
+-	[GET_CMDID(IP_VS_SO_GET_DESTS)]		= GET_DESTS_ARG_LEN,
+-	[GET_CMDID(IP_VS_SO_GET_TIMEOUT)]	= GET_TIMEOUT_ARG_LEN,
+-	[GET_CMDID(IP_VS_SO_GET_DAEMON)]	= GET_DAEMON_ARG_LEN,
++	IP_VS_GET_CMDID_TABLE(IP_VS_GET_CMDID)
+ };
+ 
++union ip_vs_get_arglen { IP_VS_GET_CMDID_TABLE(IP_VS_GET_CMDID_LEN) };
++#define MAX_GET_ARGLEN	sizeof(union ip_vs_get_arglen)
++
+ static int
+ do_ip_vs_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
+ {
+-	unsigned char arg[128];
++	unsigned char arg[MAX_GET_ARGLEN];
+ 	int ret = 0;
+ 	unsigned int copylen;
+ 	struct net *net = sock_net(sk);
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+ 	BUG_ON(!net);
++	BUILD_BUG_ON(sizeof(arg) > 256);
+ 	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (cmd < IP_VS_BASE_CTL || cmd > IP_VS_SO_GET_MAX)
+ 		return -EINVAL;
+ 
+-	if (*len < get_arglen[GET_CMDID(cmd)]) {
+-		pr_err("get_ctl: len %u < %u\n",
+-		       *len, get_arglen[GET_CMDID(cmd)]);
+-		return -EINVAL;
+-	}
+-
+ 	copylen = get_arglen[GET_CMDID(cmd)];
+-	if (copylen > 128)
++	if (*len < (int) copylen || *len < 0) {
++		pr_err("get_ctl: len %d < %u\n", *len, copylen);
+ 		return -EINVAL;
++	}
+ 
+ 	if (copy_from_user(arg, user, copylen) != 0)
+ 		return -EFAULT;
+-- 
+1.9.0
+
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
