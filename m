@@ -1,144 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaGUML0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:11:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57109 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753937AbaGUMLZ (ORCPT
+	id S1754848AbaGUMRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:17:47 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:57996 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036AbaGUMRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:11:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18rMZUyC4mpDZYx5/kGpI0YiAQ/59ACc4Y=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 90F1D5B1499
-Date: Mon, 21 Jul 2014 08:11:16 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, Amos Kong <akong@redhat.com>
-Subject: Re: [PATCH v2 3/4] virtio: rng: delay hwrng_register() till driver
- is ready
-Message-ID: <20140721121116.GA18750@titan.lakedaemon.net>
-References: <cover.1405942162.git.amit.shah@redhat.com>
- <91cb7c5b87cf2ba5ef1bacd55a7ee7bc827293a2.1405942162.git.amit.shah@redhat.com>
+	Mon, 21 Jul 2014 08:17:46 -0400
+Date: Mon, 21 Jul 2014 08:17:40 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [GIT PULL] libata fixes for v3.16-rc6
+Message-ID: <20140721121740.GB12921@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <91cb7c5b87cf2ba5ef1bacd55a7ee7bc827293a2.1405942162.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 05:15:51PM +0530, Amit Shah wrote:
-> Instead of calling hwrng_register() in the probe routing, call it in the
-> scan routine.  This ensures that when hwrng_register() is successful,
-> and it requests a few random bytes to seed the kernel's pool at init,
-> we're ready to service that request.
-> 
-> This will also enable us to remove the workaround added previously to
-> check whether probe was completed, and only then ask for data from the
-> host.  The revert follows in the next commit.
-> 
-> There's a slight behaviour change here on unsuccessful hwrng_register().
-> Previously, when hwrng_unregister() failed, the probe() routine would
-> fail, and the vqs would be torn down, and driver would be marked not
-> initialized.  Now, the vqs will remain initialized, driver would be
-> marked initialized as well, but won't be available in the list of RNGs
-> available to hwrng core.  To fix the failures, the procedure remains the
-> same, i.e. unload and re-load the module, and hope things succeed the
-> next time around.
+Hello, Linus.
 
-I'm not too comfortable with this.  I'll try to take a closer look
-tonight, but in the meantime...
+Late libata fixes.
 
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> ---
->  drivers/char/hw_random/virtio-rng.c | 25 +++++++++++++++----------
->  1 file changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-> index a156284..d9927eb 100644
-> --- a/drivers/char/hw_random/virtio-rng.c
-> +++ b/drivers/char/hw_random/virtio-rng.c
-> @@ -35,6 +35,7 @@ struct virtrng_info {
->  	unsigned int data_avail;
->  	int index;
->  	bool busy;
-> +	bool hwrng_register_done;
->  };
->  
->  static bool probe_done;
-> @@ -136,15 +137,6 @@ static int probe_common(struct virtio_device *vdev)
->  		return err;
->  	}
->  
-> -	err = hwrng_register(&vi->hwrng);
-> -	if (err) {
-> -		vdev->config->del_vqs(vdev);
-> -		vi->vq = NULL;
-> -		kfree(vi);
-> -		ida_simple_remove(&rng_index_ida, index);
-> -		return err;
-> -	}
-> -
+The most important one is from Kevin Hao which makes sure that libata
+only allocates tags inside the max tag number the controller supports.
+libata always had this problem but the recent tag allocation change
+and addition of support for sata_fsl which only supports queue depth
+of 16 exposed the issue.
 
-This needs to stay.  register, and failure to do so, should occur in the
-probe routine.
+Hans de Goede agreed to become the maintainer of libahci_platform
+which is under higher than usual development pressure from all the new
+controllers popping up from the ARM world.
 
->  	probe_done = true;
->  	return 0;
->  }
-> @@ -152,9 +144,11 @@ static int probe_common(struct virtio_device *vdev)
->  static void remove_common(struct virtio_device *vdev)
->  {
->  	struct virtrng_info *vi = vdev->priv;
-> +
->  	vdev->config->reset(vdev);
->  	vi->busy = false;
-> -	hwrng_unregister(&vi->hwrng);
-> +	if (vi->hwrng_register_done)
-> +		hwrng_unregister(&vi->hwrng);
->  	vdev->config->del_vqs(vdev);
->  	ida_simple_remove(&rng_index_ida, vi->index);
->  	kfree(vi);
-> @@ -170,6 +164,16 @@ static void virtrng_remove(struct virtio_device *vdev)
->  	remove_common(vdev);
->  }
->  
-> +static void virtrng_scan(struct virtio_device *vdev)
-> +{
-> +	struct virtrng_info *vi = vdev->priv;
-> +	int err;
-> +
-> +	err = hwrng_register(&vi->hwrng);
-> +	if (!err)
-> +		vi->hwrng_register_done = true;
+Thanks.
 
-Instead, perhaps we should just feed the entropy pool from here?  We
-would still need to prevent the core from doing so.  Perhaps back to the
-flag idea?
+The following changes since commit 2a0bdff6b958d1b2523d2754b6cd5e0ea4053016:
 
-thx,
+  ahci_xgene: fix the dma state machine lockup for the IDENTIFY DEVICE PIO mode command. (2014-07-08 11:46:05 -0400)
 
-Jason.
+are available in the git repository at:
 
-> +}
-> +
->  #ifdef CONFIG_PM_SLEEP
->  static int virtrng_freeze(struct virtio_device *vdev)
->  {
-> @@ -194,6 +198,7 @@ static struct virtio_driver virtio_rng_driver = {
->  	.id_table =	id_table,
->  	.probe =	virtrng_probe,
->  	.remove =	virtrng_remove,
-> +	.scan =		virtrng_scan,
->  #ifdef CONFIG_PM_SLEEP
->  	.freeze =	virtrng_freeze,
->  	.restore =	virtrng_restore,
-> -- 
-> 1.9.3
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git 
+
+for you to fetch changes up to b32bfc06aefab61acc872dec3222624e6cd867ed:
+
+  ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode) (2014-07-18 18:00:50 -0400)
+
+----------------------------------------------------------------
+Alexey Asemov (1):
+      libata: EH should handle AMNF error condition as a media error
+
+Andrey Utkin (1):
+      drivers/ata/pata_ep93xx.c: use signed int type for result of platform_get_irq()
+
+Hans de Goede (1):
+      MAINTAINERS: Add Hans de Goede as ahci-platform maintainer
+
+Kevin Hao (1):
+      libata: support the ata host which implements a queue depth less than 32
+
+Romain Degez (1):
+      ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode)
+
+ MAINTAINERS               | 10 ++++++++++
+ drivers/ata/ahci.c        |  1 +
+ drivers/ata/libata-core.c | 22 +++++++++++++++++++---
+ drivers/ata/libata-eh.c   |  9 +++++----
+ drivers/ata/pata_ep93xx.c |  2 +-
+ 5 files changed, 36 insertions(+), 8 deletions(-)
+
+-- 
+tejun
