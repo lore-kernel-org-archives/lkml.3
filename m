@@ -1,176 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282AbaGUPpZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:45:25 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49123 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420AbaGUPpV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:45:21 -0400
-Message-ID: <53CD3582.707@infradead.org>
-Date: Mon, 21 Jul 2014 08:45:06 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933294AbaGUPpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:45:45 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:47400 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933134AbaGUPpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 11:45:41 -0400
+Date: Mon, 21 Jul 2014 08:43:07 -0700
+From: Kees Cook <kees@outflux.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kees Cook <keescook@chromium.org>, Ming Lei <ming.lei@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
+Message-ID: <20140721154307.GG5412@outflux.net>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+ <1405373897-31671-7-git-send-email-keescook@chromium.org>
+ <CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
+ <CAGXu5j+xx2exZdD64mXWzmvVUzBrFUOg-kZ5E4+tvKAuGTKW4w@mail.gmail.com>
+ <CACVXFVMk5hTAvMgL0V2ycy-P=LCtOktimw5Hst+aFYLS6jewXw@mail.gmail.com>
+ <CAGXu5jLD=9cqzV90JKEBJjwzTXVzGhz9_1nnwFCG_0zcA1TE8A@mail.gmail.com>
+ <20140721152635.GB6363@kroah.com>
 MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 5/5] futex, doc: add a document on how to use the
- spinning futexes
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <1405956271-34339-6-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1405956271-34339-6-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721152635.GB6363@kroah.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 08:24 AM, Waiman Long wrote:
-> This patch adds a new document file on how to use the spinning futexes.
+On Mon, Jul 21, 2014 at 08:26:35AM -0700, Greg Kroah-Hartman wrote:
+> On Mon, Jul 21, 2014 at 08:08:16AM -0700, Kees Cook wrote:
+> > Perhaps it would be easier if I also sent the patch to udev's helper,
+> > so you could see how I propose handling the userspace change to using
+> > the new interface?
 > 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> ---
->  Documentation/spinning-futex.txt |  109 ++++++++++++++++++++++++++++++++++++++
->  1 files changed, 109 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/spinning-futex.txt
+> As there is no more "udev firmware helper", I don't know what you would
+> be patching here.  Firmware should always be loaded by the kernel
+> directly, udev isn't involved anyore at all.
 > 
-> diff --git a/Documentation/spinning-futex.txt b/Documentation/spinning-futex.txt
-> new file mode 100644
-> index 0000000..e3cb5a2
-> --- /dev/null
-> +++ b/Documentation/spinning-futex.txt
-> @@ -0,0 +1,109 @@
-> +Started by: Waiman Long <waiman.long@hp.com>
-> +
-> +Spinning Futex
-> +--------------
-> +
-> +There are two main problems for a wait-wake futex (FUTEX_WAIT and
-> +FUTEX_WAKE) when used for creating user-space lock primitives:
-> +
-> + 1) With a wait-wake futex, tasks waiting for a lock are put to sleep
-> +    in the futex queue to be woken up by the lock owner when it is done
-> +    with the lock. Waking up a sleeping task, however, introduces some
-> +    additional latency which can be large especially if the critical
-> +    section protected by the lock is relatively short. This may cause
-> +    a performance bottleneck on large systems with many CPUs running
-> +    applications that need a lot of inter-thread synchronization.
-> +
-> + 2) The performance of the wait-wake futex is currently
-> +    spinlock-constrained.  When many threads are contending for a
-> +    futex in a large system with many CPUs, it is not unusual to have
-> +    spinlock contention accounting for more than 90% of the total
-> +    CPU cycles consumed at various points in time.
-> +
-> +Spinning futex is a solution to both the wakeup latency and spinlock
-> +contention problems by optimistically spinning on a locked futex
-> +when the lock owner is running within the kernel until the lock is
-> +free. This is the same optimistic spinning mechanism used by the kernel
-> +mutex and rw semaphore implementations to improve performance. The
-> +optimistic spinning was done without taking any lock.
-
-                       is done
-
-> +
-> +Implementation
-> +--------------
-> +
-> +Like the PI and robust futexes, a lock acquirer has to atomically
-> +put its thread ID (TID) into the lower 30 bits of the 32-bit futex
-> +which should has an original value of 0. If it succeeds, it will be
-
-                have
-
-> +the owner of the futex. Otherwise, it has to call into the kernel
-> +using the new FUTEX_SPIN_LOCK futex(2) syscall.
-> +
-> +The kernel will use the setting of the most significant bit
-> +(FUTEX_WAITERS) in the futex value to indicate one or more waiters
-> +are sleeping and need to be woken up later on.
-> +
-> +When it is time to unlock, the lock owner has to atomically clear
-> +the TID portion of the futex value. If the FUTEX_WAITERS bit is set,
-> +it has to issue a FUTEX_SPIN_UNLOCK futex system call to wake up the
-> +sleeping task.
-> +
-> +A return value of 1 from the FUTEX_SPIN_UNLOCK futex(2) syscall
-> +indicates a task has been woken up. The syscall returns 0 if no
-> +sleeping task is found or spinners are present to take the lock.
-> +
-> +The error number returned by a FUTEX_SPIN_UNLOCK call on an empty
-> +futex can be used to decide if the spinning futex functionality is
-> +implemented in the kernel. If it is present, the returned error number
-> +should be ESRCH. Otherwise it will be ENOSYS.
-> +
-> +Currently, only the first and the second arguments (the futex address
-> +and the opcode) of the futex(2) syscall is used. All the other
-
-                                           are used.
-
-> +arguments must be set to 0 or NULL to avoid forward compatibility
-> +problem.
-> +
-> +The spinning futex requires the kernel to have support for the cmpxchg
-> +functionality. For architectures that don't support cmpxchg, spinning
-> +futex will not be supported as well.
-> +
-> +Usage Scenario
-> +--------------
-> +
-> +A spinning futex can be used as an exclusive lock to guard a critical
-> +section which are unlikely to go to sleep in the kernel. The spinners
-
-                 is
-
-> +in a spinning futex, however, will fall back to sleep in a wait queue
-> +if the lock owner isn't running. Therefore, it can also be used when
-> +the critical section is long and prone to sleeping. However, it may
-> +not have the performance benefit when compared with a wait-wake futex
-> +in this case.
-> +
-> +Sample Code
-> +-----------
-> +
-> +The following are sample code to implement a simple lock and unlock
-
-                 is
-
-> +function.
-> +
-> +__thread int tid;	/* Thread ID */
-> +
-> +void mutex_lock(int *faddr)
-> +{
-> +	if (cmpxchg(faddr, 0, tid) == 0)
-> +		return;
-> +	for (;;)
-> +		if (futex(faddr, FUTEX_SPIN_LOCK, ...) == 0)
-> +			break;
-> +}
-> +
-> +void mutex_unlock(int *faddr)
-> +{
-> +	int old, fval;
-> +
-> +	if ((fval = cmpxchg(faddr, tid, 0)) == tid)
-> +		return;
-> +	/* Clear only the TID portion of the futex */
-> +	for (;;) {
-> +		old  = fval;
-> +		fval = cmpxchg(faddr, old, old & ~FUTEX_TID_MASK);
-> +		if (fval == old)
-> +			break;
-> +	}
-> +	if (fval & FUTEX_WAITERS)
-> +		futex(faddr, FUTEX_SPIN_UNLOCK, ...);
-> +}
+> confused,
 > 
+> greg k-h
+
+The kernel _can_ load directly (when the paths are configured correctly),
+but I'm not sure why you say udev isn't involved any more. It's been like
+this for years, and even the latest systemd shows the udev rule is still in
+place:
+http://cgit.freedesktop.org/systemd/systemd/tree/rules/50-firmware.rules
+and that the firmware loader is still in the source tree:
+http://cgit.freedesktop.org/systemd/systemd/tree/src/udev/udev-builtin-firmware.c
+
+Here's the patch for the new interface...
+
+-Kees
+
+---
+From: Kees Cook <keescook@chromium.org>
+Date: Sun, 23 Mar 2014 07:46:07 -0700
+Subject: [PATCH] firmware: use fd-based interface if available
+
+The new kernel firmware_class interface file "fd" performs the firmware
+loading in a single step, allowing the kernel to validate the firmware
+origin and contents.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ src/udev/udev-builtin-firmware.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/src/udev/udev-builtin-firmware.c b/src/udev/udev-builtin-firmware.c
+index 8cfeed6..893ec13 100644
+--- a/src/udev/udev-builtin-firmware.c
++++ b/src/udev/udev-builtin-firmware.c
+@@ -80,6 +80,7 @@ static int builtin_firmware(struct udev_device *dev, int argc, char *argv[], boo
+         static const char *searchpath[] = { FIRMWARE_PATH };
+         char loadpath[UTIL_PATH_SIZE];
+         char datapath[UTIL_PATH_SIZE];
++        char fdpath[UTIL_PATH_SIZE];
+         char fwpath[UTIL_PATH_SIZE];
+         const char *firmware;
+         FILE *fwfile = NULL;
+@@ -131,6 +132,16 @@ static int builtin_firmware(struct udev_device *dev, int argc, char *argv[], boo
+                 goto exit;
+         }
+ 
++        /* Use fd-based firmware loading interface. */
++        strscpyl(fdpath, sizeof(fdpath), udev_device_get_syspath(dev), "/fd", NULL);
++        if (stat(fdpath, &statbuf) == 0) {
++                snprintf(datapath, sizeof(datapath), "%d", fileno(fwfile));
++                /* We're done if the we gave the kernel our fw fd. */
++                if (set_loading(udev, fdpath, (const char *)datapath))
++                        goto exit;
++        }
++
++        /* Fallback to legacy blob loading. */
+         if (!set_loading(udev, loadpath, "1"))
+                 goto exit;
+ 
+-- 
+1.7.9.5
+
 
 
 -- 
-~Randy
+Kees Cook
+Chrome OS Security
