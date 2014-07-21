@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933572AbaGUTHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 15:07:40 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48599 "EHLO smtp.outflux.net"
+	id S933516AbaGUTMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 15:12:34 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48218 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933431AbaGUTGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 15:06:52 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v2 2/2] firmware_class: perform new LSM checks
-Date: Mon, 21 Jul 2014 12:06:41 -0700
-Message-Id: <1405969601-4234-3-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405969601-4234-1-git-send-email-keescook@chromium.org>
-References: <1405969601-4234-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S933419AbaGUTMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 15:12:33 -0400
+Date: Mon, 21 Jul 2014 15:11:48 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Olof Johansson <olof@lixom.net>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/ext4/super.c: Let 'counters' switched by SMP
+Message-ID: <20140721191148.GB24960@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Olof Johansson <olof@lixom.net>,
+	Chen Gang <gang.chen.5i5j@gmail.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <53C47E59.8030502@gmail.com>
+ <20140715093154.GB1451@thunk.org>
+ <CAOesGMhmENA+eojUYBOCJQBNq4zcWx8C-qDCv5umNPm0it8qxg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMhmENA+eojUYBOCJQBNq4zcWx8C-qDCv5umNPm0it8qxg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This attaches LSM hooks to the existing firmware loading interfaces:
-filesystem-found firmware and demand-loaded blobs.
+On Mon, Jul 21, 2014 at 10:40:02AM -0700, Olof Johansson wrote:
+> > I'll respin the "ext4: rearrange initialization to fix EXT4FS_DEBUG"
+> > commit to include this fix and give you credit in the commit logs for
+> > pointing out this issue.
+> 
+> Friendly ping, since all !SMP builds in -next seem to be broken by this still.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/base/firmware_class.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+Right, sorry, I'm currently in vacation in Rome, and the network
+connection was really lousy here now that I'm no longer at the ACACES
+summer school in Fiuggi.  (Also, now that I'm no longer actually
+teaching, I've beeen trying to actually do the disconnecting and
+sightseeing thing.  :-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index d276e33880be..7399bab71ced 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -28,6 +28,7 @@
- #include <linux/suspend.h>
- #include <linux/syscore_ops.h>
- #include <linux/reboot.h>
-+#include <linux/security.h>
- 
- #include <generated/utsrelease.h>
- 
-@@ -308,12 +309,17 @@ static int fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
- 	if (rc != size) {
- 		if (rc > 0)
- 			rc = -EIO;
--		vfree(buf);
--		return rc;
-+		goto fail;
- 	}
-+	rc = security_kernel_fw_from_file(file, buf, size);
-+	if (rc)
-+		goto fail;
- 	fw_buf->data = buf;
- 	fw_buf->size = size;
- 	return 0;
-+fail:
-+	vfree(buf);
-+	return rc;
- }
- 
- static int fw_get_filesystem_firmware(struct device *device,
-@@ -640,6 +646,12 @@ static ssize_t firmware_loading_store(struct device *dev,
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_buf->status)) {
-+			if (security_kernel_fw_from_file(NULL, fw_buf->data,
-+							 fw_buf->size)) {
-+				fw_load_abort(fw_priv);
-+				break;
-+			}
-+
- 			set_bit(FW_STATUS_DONE, &fw_buf->status);
- 			clear_bit(FW_STATUS_LOADING, &fw_buf->status);
- 
--- 
-1.7.9.5
+Pushed now.
 
+						- Ted
