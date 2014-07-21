@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099AbaGUQbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:31:43 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:3493 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977AbaGUQbl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:31:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Jul 2014 09:19:16 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH] PCI/AER: Forward declare struct pci_dev to avoid warning
-Date: Mon, 21 Jul 2014 19:30:43 +0300
-Message-ID: <1405960243-589-1-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S933107AbaGUQdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:33:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46159 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755210AbaGUQdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:33:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,702,1400050800"; 
+   d="scan'208";a="576528735"
+From: Andi Kleen <andi@firstfloor.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
+References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
+	<53CCB6AE.6020505@intel.com> <20140721080219.GA4183@krava.redhat.com>
+	<53CCD3A7.5070002@intel.com> <20140721095415.GB8865@krava.redhat.com>
+5ATo: Jiri Olsa <jolsa@redhat.com>
+Date: Mon, 21 Jul 2014 09:31:41 -0700
+In-Reply-To: <20140721095415.GB8865@krava.redhat.com> (Jiri Olsa's message of
+	"Mon, 21 Jul 2014 11:54:15 +0200")
+Message-ID: <87d2cy3c7m.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-NVConfidentiality: public
+Content-Type: text/plain
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forward declaring struct pci_dev in aer.h avoids this warning:
+Jiri Olsa <jolsa@redhat.com> writes:
+>
+> [jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
+> Timestamp below last timeslice flush
+> 0x2276f58 [0x68]: failed to process type: 9
 
-In file included from include/ras/ras_event.h:11:0,
-                 from drivers/ras/ras.c:13:
-include/linux/aer.h:38:44: warning: 'struct pci_dev’ declared inside parameter list [enabled by default]
-include/linux/aer.h:38:44: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+FWIW we're seeing this frequently too.
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
----
- include/linux/aer.h | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/aer.h b/include/linux/aer.h
-index 4dbaa70..d9ec8dd 100644
---- a/include/linux/aer.h
-+++ b/include/linux/aer.h
-@@ -7,6 +7,8 @@
- #ifndef _AER_H_
- #define _AER_H_
- 
-+struct pci_dev;
-+
- #define AER_NONFATAL			0
- #define AER_FATAL			1
- #define AER_CORRECTABLE			2
+-Andi
+
 -- 
-1.8.1.5
-
+ak@linux.intel.com -- Speaking for myself only
